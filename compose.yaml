@@ -1,0 +1,7 @@
+﻿services:
+  unistart:
+    image: unistart
+    build:
+      context: .
+      dockerfile: Dockerfile
+
