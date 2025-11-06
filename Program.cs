@@ -11,7 +11,14 @@ using UniStart.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        // Игнорировать циклические ссылки (Flashcard <-> FlashcardSet, Quiz <-> Question)
+        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+        // Для более читаемого JSON (опционально в production можно убрать)
+        options.JsonSerializerOptions.WriteIndented = true;
+    });
 
 // Database
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -66,7 +73,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp", policy =>
     {
-        policy.WithOrigins("http://localhost:3000", "http://localhost:5173") // React dev servers
+        policy.WithOrigins("http://localhost:3000", "http://localhost:3001", "http://localhost:3002", "http://localhost:5173") // React dev servers
               .AllowAnyMethod()
               .AllowAnyHeader()
               .AllowCredentials();
@@ -124,11 +131,10 @@ if (app.Environment.IsDevelopment())
         var context = services.GetRequiredService<ApplicationDbContext>();
         var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
         
-        // Удаляем и пересоздаём базу данных (для разработки)
-        await context.Database.EnsureDeletedAsync();
-        await context.Database.EnsureCreatedAsync();
+        // Применяем миграции автоматически (создаёт БД если её нет)
+        await context.Database.MigrateAsync();
         
-        // Заполняем базу тестовыми данными
+        // Заполняем базу тестовыми данными (только если БД пустая)
         await UniStart.Seeders.DatabaseSeeder.SeedAsync(context, userManager);
     }
     catch (Exception ex)
@@ -148,7 +154,9 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-app.UseHttpsRedirection();
+// Статические файлы (wwwroot)
+app.UseDefaultFiles(); // Использует index.html по умолчанию - ДОЛЖЕН БЫТЬ ПЕРЕД UseStaticFiles()
+app.UseStaticFiles();
 
 // Включаем CORS
 app.UseCors("AllowReactApp");
