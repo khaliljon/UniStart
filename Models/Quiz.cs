@@ -33,17 +33,31 @@ namespace UniStart.Models
         [Display(Name = "Опубликован")]
         public bool IsPublished { get; set; } = false;
         
+        [Display(Name = "Публичный доступ")]
+        public bool IsPublic { get; set; } = false; // true = доступен всем студентам, false = только автор
+        
         [Display(Name = "Дата создания")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         
         [Display(Name = "Дата обновления")]
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
         
+        // Foreign Keys
+        [Display(Name = "Идентификатор пользователя")]
+        [Required(ErrorMessage = "Пользователь обязателен")]
+        public string UserId { get; set; } = string.Empty;
+        
         // Навигационные свойства
+        [Display(Name = "Пользователь")]
+        public ApplicationUser? User { get; set; }
+        
         [Display(Name = "Вопросы")]
         public List<Question> Questions { get; set; } = new();
         
         [Display(Name = "Попытки прохождения")]
         public List<UserQuizAttempt> Attempts { get; set; } = new();
+        
+        [Display(Name = "Теги")]
+        public List<Tag> Tags { get; set; } = new();
     }
 }

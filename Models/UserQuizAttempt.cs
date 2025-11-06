@@ -40,6 +40,9 @@ namespace UniStart.Models
         [Display(Name = "Тест")]
         public Quiz Quiz { get; set; } = null!;
         
+        // Навигационное свойство к пользователю
+        public ApplicationUser User { get; set; } = null!;
+        
         // JSON с ответами пользователя
         [Display(Name = "Ответы пользователя (JSON)")]
         public string UserAnswersJson { get; set; } = "{}"; // {"questionId": [answerId1, answerId2]}

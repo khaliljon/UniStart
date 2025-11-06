@@ -1,5 +1,7 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using UniStart.Data;
 using UniStart.DTOs;
 using UniStart.Models;
@@ -9,6 +11,7 @@ namespace UniStart.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class FlashcardsController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
@@ -22,16 +25,56 @@ namespace UniStart.Controllers
             _spacedRepetitionService = spacedRepetitionService;
         }
 
+        private string GetUserId() => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+
         // ============ FLASHCARD SETS ============
 
         /// <summary>
-        /// Получить все наборы карточек
+        /// Получить все наборы карточек текущего пользователя с поиском и фильтрацией
         /// </summary>
         [HttpGet("sets")]
-        public async Task<ActionResult<List<FlashcardSetDto>>> GetFlashcardSets()
+        public async Task<ActionResult<List<FlashcardSetDto>>> GetFlashcardSets(
+            [FromQuery] string? search = null,
+            [FromQuery] DateTime? createdAfter = null,
+            [FromQuery] DateTime? createdBefore = null,
+            [FromQuery] int? page = null,
+            [FromQuery] int? pageSize = null)
         {
-            var sets = await _context.FlashcardSets
+            var userId = GetUserId();
+            
+            var query = _context.FlashcardSets
+                .Where(fs => fs.UserId == userId)
                 .Include(fs => fs.Flashcards)
+                .AsQueryable();
+
+            // Поиск по названию и описанию
+            if (!string.IsNullOrEmpty(search))
+            {
+                query = query.Where(fs => 
+                    fs.Title.ToLower().Contains(search.ToLower()) ||
+                    fs.Description.ToLower().Contains(search.ToLower()));
+            }
+
+            // Фильтр по дате создания
+            if (createdAfter.HasValue)
+            {
+                query = query.Where(fs => fs.CreatedAt >= createdAfter.Value);
+            }
+
+            if (createdBefore.HasValue)
+            {
+                query = query.Where(fs => fs.CreatedAt <= createdBefore.Value);
+            }
+
+            // Пагинация
+            if (page.HasValue && pageSize.HasValue)
+            {
+                query = query
+                    .Skip((page.Value - 1) * pageSize.Value)
+                    .Take(pageSize.Value);
+            }
+
+            var sets = await query
                 .Select(fs => new FlashcardSetDto
                 {
                     Id = fs.Id,
@@ -48,12 +91,15 @@ namespace UniStart.Controllers
         }
 
         /// <summary>
-        /// Получить набор по ID с карточками
+        /// Получить набор по ID с карточками (только свои)
         /// </summary>
         [HttpGet("sets/{id}")]
         public async Task<ActionResult<FlashcardSet>> GetFlashcardSet(int id)
         {
+            var userId = GetUserId();
+            
             var set = await _context.FlashcardSets
+                .Where(fs => fs.UserId == userId)
                 .Include(fs => fs.Flashcards)
                 .FirstOrDefaultAsync(fs => fs.Id == id);
 
@@ -69,10 +115,13 @@ namespace UniStart.Controllers
         [HttpPost("sets")]
         public async Task<ActionResult<FlashcardSet>> CreateFlashcardSet(CreateFlashcardSetDto dto)
         {
+            var userId = GetUserId();
+            
             var set = new FlashcardSet
             {
                 Title = dto.Title,
-                Description = dto.Description
+                Description = dto.Description,
+                UserId = userId
             };
 
             _context.FlashcardSets.Add(set);
@@ -82,12 +131,16 @@ namespace UniStart.Controllers
         }
 
         /// <summary>
-        /// Обновить набор карточек
+        /// Обновить набор карточек (только свои)
         /// </summary>
         [HttpPut("sets/{id}")]
         public async Task<IActionResult> UpdateFlashcardSet(int id, UpdateFlashcardSetDto dto)
         {
-            var set = await _context.FlashcardSets.FindAsync(id);
+            var userId = GetUserId();
+            
+            var set = await _context.FlashcardSets
+                .FirstOrDefaultAsync(fs => fs.Id == id && fs.UserId == userId);
+                
             if (set == null)
                 return NotFound();
 
@@ -100,12 +153,16 @@ namespace UniStart.Controllers
         }
 
         /// <summary>
-        /// Удалить набор карточек
+        /// Удалить набор карточек (только свои)
         /// </summary>
         [HttpDelete("sets/{id}")]
         public async Task<IActionResult> DeleteFlashcardSet(int id)
         {
-            var set = await _context.FlashcardSets.FindAsync(id);
+            var userId = GetUserId();
+            
+            var set = await _context.FlashcardSets
+                .FirstOrDefaultAsync(fs => fs.Id == id && fs.UserId == userId);
+                
             if (set == null)
                 return NotFound();
 
@@ -117,11 +174,20 @@ namespace UniStart.Controllers
         // ============ FLASHCARDS ============
 
         /// <summary>
-        /// Получить карточки для повторения из набора
+        /// Получить карточки для повторения из набора (только свои)
         /// </summary>
         [HttpGet("sets/{setId}/review")]
         public async Task<ActionResult<List<FlashcardDto>>> GetCardsForReview(int setId)
         {
+            var userId = GetUserId();
+            
+            // Проверяем, что набор принадлежит пользователю
+            var setExists = await _context.FlashcardSets
+                .AnyAsync(fs => fs.Id == setId && fs.UserId == userId);
+                
+            if (!setExists)
+                return NotFound("FlashcardSet not found or access denied");
+            
             var cards = await _context.Flashcards
                 .Where(f => f.FlashcardSetId == setId)
                 .Where(f => f.NextReviewDate == null || f.NextReviewDate <= DateTime.UtcNow)
@@ -142,15 +208,19 @@ namespace UniStart.Controllers
         }
 
         /// <summary>
-        /// Создать новую карточку
+        /// Создать новую карточку (только в своих наборах)
         /// </summary>
         [HttpPost("cards")]
         public async Task<ActionResult<Flashcard>> CreateFlashcard(CreateFlashcardDto dto)
         {
-            // Проверяем существование набора
-            var setExists = await _context.FlashcardSets.AnyAsync(fs => fs.Id == dto.FlashcardSetId);
+            var userId = GetUserId();
+            
+            // Проверяем существование набора и принадлежность пользователю
+            var setExists = await _context.FlashcardSets
+                .AnyAsync(fs => fs.Id == dto.FlashcardSetId && fs.UserId == userId);
+                
             if (!setExists)
-                return BadRequest("FlashcardSet not found");
+                return BadRequest("FlashcardSet not found or access denied");
 
             var flashcard = new Flashcard
             {
@@ -170,12 +240,17 @@ namespace UniStart.Controllers
         }
 
         /// <summary>
-        /// Получить карточку по ID
+        /// Получить карточку по ID (только свои)
         /// </summary>
         [HttpGet("cards/{id}")]
         public async Task<ActionResult<Flashcard>> GetFlashcard(int id)
         {
-            var card = await _context.Flashcards.FindAsync(id);
+            var userId = GetUserId();
+            
+            var card = await _context.Flashcards
+                .Include(f => f.FlashcardSet)
+                .FirstOrDefaultAsync(f => f.Id == id && f.FlashcardSet.UserId == userId);
+                
             if (card == null)
                 return NotFound();
 
@@ -183,12 +258,17 @@ namespace UniStart.Controllers
         }
 
         /// <summary>
-        /// Обновить карточку
+        /// Обновить карточку (только свои)
         /// </summary>
         [HttpPut("cards/{id}")]
         public async Task<IActionResult> UpdateFlashcard(int id, UpdateFlashcardDto dto)
         {
-            var card = await _context.Flashcards.FindAsync(id);
+            var userId = GetUserId();
+            
+            var card = await _context.Flashcards
+                .Include(f => f.FlashcardSet)
+                .FirstOrDefaultAsync(f => f.Id == id && f.FlashcardSet.UserId == userId);
+                
             if (card == null)
                 return NotFound();
 
@@ -201,12 +281,17 @@ namespace UniStart.Controllers
         }
 
         /// <summary>
-        /// Удалить карточку
+        /// Удалить карточку (только свои)
         /// </summary>
         [HttpDelete("cards/{id}")]
         public async Task<IActionResult> DeleteFlashcard(int id)
         {
-            var card = await _context.Flashcards.FindAsync(id);
+            var userId = GetUserId();
+            
+            var card = await _context.Flashcards
+                .Include(f => f.FlashcardSet)
+                .FirstOrDefaultAsync(f => f.Id == id && f.FlashcardSet.UserId == userId);
+                
             if (card == null)
                 return NotFound();
 
@@ -216,14 +301,19 @@ namespace UniStart.Controllers
         }
 
         /// <summary>
-        /// Отметить повторение карточки (Spaced Repetition)
+        /// Отметить повторение карточки (Spaced Repetition) - только свои
         /// </summary>
         [HttpPost("cards/review")]
         public async Task<ActionResult<ReviewResultDto>> ReviewFlashcard(ReviewFlashcardDto dto)
         {
-            var card = await _context.Flashcards.FindAsync(dto.FlashcardId);
+            var userId = GetUserId();
+            
+            var card = await _context.Flashcards
+                .Include(f => f.FlashcardSet)
+                .FirstOrDefaultAsync(f => f.Id == dto.FlashcardId && f.FlashcardSet.UserId == userId);
+                
             if (card == null)
-                return NotFound("Flashcard not found");
+                return NotFound("Flashcard not found or access denied");
 
             if (dto.Quality < 0 || dto.Quality > 5)
                 return BadRequest("Quality must be between 0 and 5");

@@ -23,8 +23,19 @@ namespace UniStart.Models
         [Display(Name = "Дата обновления")]
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
         
+        // Foreign Keys
+        [Display(Name = "Идентификатор пользователя")]
+        [Required(ErrorMessage = "Пользователь обязателен")]
+        public string UserId { get; set; } = string.Empty;
+        
         // Навигационные свойства
+        [Display(Name = "Пользователь")]
+        public ApplicationUser? User { get; set; }
+        
         [Display(Name = "Карточки")]
         public List<Flashcard> Flashcards { get; set; } = new();
+        
+        [Display(Name = "Теги")]
+        public List<Tag> Tags { get; set; } = new();
     }
 }

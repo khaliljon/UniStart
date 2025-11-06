@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace UniStart.DTOs
 {
     // DTOs для Quiz
@@ -11,6 +13,8 @@ namespace UniStart.DTOs
         public string Difficulty { get; set; } = string.Empty;
         public int QuestionCount { get; set; }
         public int TotalPoints { get; set; }
+        public bool IsPublic { get; set; }
+        public DateTime CreatedAt { get; set; }
     }
 
     public class QuizDetailDto
@@ -26,10 +30,23 @@ namespace UniStart.DTOs
 
     public class CreateQuizDto
     {
+        [Required(ErrorMessage = "Название теста обязательно")]
+        [StringLength(200, ErrorMessage = "Название не должно превышать 200 символов")]
         public string Title { get; set; } = string.Empty;
+        
+        [Required(ErrorMessage = "Описание обязательно")]
+        [StringLength(1000, ErrorMessage = "Описание не должно превышать 1000 символов")]
         public string Description { get; set; } = string.Empty;
+        
+        [Range(0, 300, ErrorMessage = "Время должно быть от 0 до 300 минут")]
         public int TimeLimit { get; set; }
+        
+        [Required(ErrorMessage = "Предмет обязателен")]
+        [StringLength(100, ErrorMessage = "Название предмета не должно превышать 100 символов")]
         public string Subject { get; set; } = string.Empty;
+        
+        [Required(ErrorMessage = "Уровень сложности обязателен")]
+        [RegularExpression("^(Easy|Medium|Hard)$", ErrorMessage = "Сложность должна быть: Easy, Medium или Hard")]
         public string Difficulty { get; set; } = "Medium";
     }
 
@@ -43,6 +60,50 @@ namespace UniStart.DTOs
         public List<AnswerDto> Answers { get; set; } = new();
     }
 
+    public class CreateQuestionDto
+    {
+        [Required(ErrorMessage = "Текст вопроса обязателен")]
+        [StringLength(1000, ErrorMessage = "Текст вопроса не должен превышать 1000 символов")]
+        public string Text { get; set; } = string.Empty;
+        
+        [Required(ErrorMessage = "Тип вопроса обязателен")]
+        [RegularExpression("^(SingleChoice|MultipleChoice|TrueFalse)$", ErrorMessage = "Тип должен быть: SingleChoice, MultipleChoice или TrueFalse")]
+        public string QuestionType { get; set; } = "SingleChoice";
+        
+        [Range(1, 100, ErrorMessage = "Баллы должны быть от 1 до 100")]
+        public int Points { get; set; } = 1;
+        
+        [StringLength(500, ErrorMessage = "URL не должен превышать 500 символов")]
+        public string? ImageUrl { get; set; }
+        
+        [StringLength(2000, ErrorMessage = "Объяснение не должно превышать 2000 символов")]
+        public string? Explanation { get; set; }
+        
+        [Required(ErrorMessage = "ID квиза обязателен")]
+        [Range(1, int.MaxValue, ErrorMessage = "ID квиза должен быть больше 0")]
+        public int QuizId { get; set; }
+    }
+
+    public class UpdateQuestionDto
+    {
+        [Required(ErrorMessage = "Текст вопроса обязателен")]
+        [StringLength(1000, ErrorMessage = "Текст вопроса не должен превышать 1000 символов")]
+        public string Text { get; set; } = string.Empty;
+        
+        [Required(ErrorMessage = "Тип вопроса обязателен")]
+        [RegularExpression("^(SingleChoice|MultipleChoice|TrueFalse)$", ErrorMessage = "Тип должен быть: SingleChoice, MultipleChoice или TrueFalse")]
+        public string QuestionType { get; set; } = "SingleChoice";
+        
+        [Range(1, 100, ErrorMessage = "Баллы должны быть от 1 до 100")]
+        public int Points { get; set; } = 1;
+        
+        [StringLength(500, ErrorMessage = "URL не должен превышать 500 символов")]
+        public string? ImageUrl { get; set; }
+        
+        [StringLength(2000, ErrorMessage = "Объяснение не должно превышать 2000 символов")]
+        public string? Explanation { get; set; }
+    }
+
     public class AnswerDto
     {
         public int Id { get; set; }
@@ -50,10 +111,38 @@ namespace UniStart.DTOs
         public bool? IsCorrect { get; set; } // Null при отправке пользователю
     }
 
+    public class CreateAnswerDto
+    {
+        [Required(ErrorMessage = "Текст ответа обязателен")]
+        [StringLength(500, ErrorMessage = "Текст ответа не должен превышать 500 символов")]
+        public string Text { get; set; } = string.Empty;
+        
+        public bool IsCorrect { get; set; } = false;
+        
+        [Required(ErrorMessage = "ID вопроса обязателен")]
+        [Range(1, int.MaxValue, ErrorMessage = "ID вопроса должен быть больше 0")]
+        public int QuestionId { get; set; }
+    }
+
+    public class UpdateAnswerDto
+    {
+        [Required(ErrorMessage = "Текст ответа обязателен")]
+        [StringLength(500, ErrorMessage = "Текст ответа не должен превышать 500 символов")]
+        public string Text { get; set; } = string.Empty;
+        
+        public bool IsCorrect { get; set; } = false;
+    }
+
     public class SubmitQuizDto
     {
+        [Required(ErrorMessage = "ID теста обязателен")]
+        [Range(1, int.MaxValue, ErrorMessage = "ID теста должен быть больше 0")]
         public int QuizId { get; set; }
+        
+        [Range(0, int.MaxValue, ErrorMessage = "Время должно быть положительным")]
         public int TimeSpentSeconds { get; set; }
+        
+        [Required(ErrorMessage = "Ответы обязательны")]
         public Dictionary<int, List<int>> UserAnswers { get; set; } = new(); // QuestionId -> AnswerIds
     }
 

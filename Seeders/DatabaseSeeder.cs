@@ -30,7 +30,7 @@ namespace UniStart.Seeders
             await CreateFlashcardSetsAsync(context, testUser.Id);
 
             // 3. Создаем тесты
-            await CreateQuizzesAsync(context);
+            await CreateQuizzesAsync(context, testUser.Id);
 
             await context.SaveChangesAsync();
             Console.WriteLine("✅ База данных успешно заполнена тестовыми данными!");
@@ -68,6 +68,7 @@ namespace UniStart.Seeders
             {
                 Title = "Алгебра - Основы",
                 Description = "Базовые формулы и понятия алгебры для подготовки к ЕНТ",
+                UserId = userId,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
                 Flashcards = new List<Flashcard>
@@ -115,6 +116,7 @@ namespace UniStart.Seeders
             {
                 Title = "Физика - Механика",
                 Description = "Основные формулы кинематики и динамики",
+                UserId = userId,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
                 Flashcards = new List<Flashcard>
@@ -155,6 +157,7 @@ namespace UniStart.Seeders
             {
                 Title = "История Казахстана - Ключевые даты",
                 Description = "Важные события в истории Казахстана",
+                UserId = userId,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
                 Flashcards = new List<Flashcard>
@@ -188,6 +191,7 @@ namespace UniStart.Seeders
             {
                 Title = "English - Irregular Verbs",
                 Description = "Неправильные глаголы английского языка",
+                UserId = userId,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
                 Flashcards = new List<Flashcard>
@@ -229,7 +233,7 @@ namespace UniStart.Seeders
             Console.WriteLine($"✅ Создано {4} наборов карточек с общим количеством {mathSet.Flashcards.Count + physicsSet.Flashcards.Count + historySet.Flashcards.Count + englishSet.Flashcards.Count} карточек");
         }
 
-        private static async Task CreateQuizzesAsync(ApplicationDbContext context)
+        private static async Task CreateQuizzesAsync(ApplicationDbContext context, string userId)
         {
             // Тест 1: Математика - Квадратные уравнения
             var mathQuiz = new Quiz
@@ -240,6 +244,7 @@ namespace UniStart.Seeders
                 Subject = "Математика",
                 Difficulty = "Medium",
                 IsPublished = true,
+                UserId = userId,
                 Questions = new List<Question>
                 {
                     new Question
@@ -299,6 +304,7 @@ namespace UniStart.Seeders
                 Subject = "Физика",
                 Difficulty = "Easy",
                 IsPublished = true,
+                UserId = userId,
                 Questions = new List<Question>
                 {
                     new Question
@@ -343,6 +349,7 @@ namespace UniStart.Seeders
                 Subject = "История",
                 Difficulty = "Easy",
                 IsPublished = true,
+                UserId = userId,
                 Questions = new List<Question>
                 {
                     new Question

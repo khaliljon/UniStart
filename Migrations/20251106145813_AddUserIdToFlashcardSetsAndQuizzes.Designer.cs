@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using UniStart.Data;
@@ -11,9 +12,11 @@ using UniStart.Data;
 namespace UniStart.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251106145813_AddUserIdToFlashcardSetsAndQuizzes")]
+    partial class AddUserIdToFlashcardSetsAndQuizzes
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,21 +24,6 @@ namespace UniStart.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
-
-            modelBuilder.Entity("FlashcardSetTag", b =>
-                {
-                    b.Property<int>("FlashcardSetsId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("TagsId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("FlashcardSetsId", "TagsId");
-
-                    b.HasIndex("TagsId");
-
-                    b.ToTable("FlashcardSetTag");
-                });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
                 {
@@ -167,21 +155,6 @@ namespace UniStart.Migrations
                     b.HasKey("UserId", "LoginProvider", "Name");
 
                     b.ToTable("AspNetUserTokens", (string)null);
-                });
-
-            modelBuilder.Entity("QuizTag", b =>
-                {
-                    b.Property<int>("QuizzesId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("TagsId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("QuizzesId", "TagsId");
-
-                    b.HasIndex("TagsId");
-
-                    b.ToTable("QuizTag");
                 });
 
             modelBuilder.Entity("UniStart.Models.Answer", b =>
@@ -448,9 +421,6 @@ namespace UniStart.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<bool>("IsPublic")
-                        .HasColumnType("boolean");
-
                     b.Property<bool>("IsPublished")
                         .HasColumnType("boolean");
 
@@ -479,32 +449,6 @@ namespace UniStart.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("Quizzes");
-                });
-
-            modelBuilder.Entity("UniStart.Models.Tag", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Color")
-                        .IsRequired()
-                        .HasMaxLength(7)
-                        .HasColumnType("character varying(7)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Tag");
                 });
 
             modelBuilder.Entity("UniStart.Models.UserQuizAttempt", b =>
@@ -551,21 +495,6 @@ namespace UniStart.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("UserQuizAttempts");
-                });
-
-            modelBuilder.Entity("FlashcardSetTag", b =>
-                {
-                    b.HasOne("UniStart.Models.FlashcardSet", null)
-                        .WithMany()
-                        .HasForeignKey("FlashcardSetsId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("UniStart.Models.Tag", null)
-                        .WithMany()
-                        .HasForeignKey("TagsId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -615,21 +544,6 @@ namespace UniStart.Migrations
                     b.HasOne("UniStart.Models.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("QuizTag", b =>
-                {
-                    b.HasOne("UniStart.Models.Quiz", null)
-                        .WithMany()
-                        .HasForeignKey("QuizzesId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("UniStart.Models.Tag", null)
-                        .WithMany()
-                        .HasForeignKey("TagsId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
@@ -697,15 +611,7 @@ namespace UniStart.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("UniStart.Models.ApplicationUser", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.Navigation("Quiz");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("UniStart.Models.FlashcardSet", b =>

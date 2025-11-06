@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using UniStart.Data;
+using UniStart.Middleware;
 using UniStart.Models;
 using UniStart.Services;
 
@@ -130,9 +131,13 @@ if (app.Environment.IsDevelopment())
     {
         var context = services.GetRequiredService<ApplicationDbContext>();
         var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
+        var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
         
         // Применяем миграции автоматически (создаёт БД если её нет)
         await context.Database.MigrateAsync();
+        
+        // Инициализируем роли и создаём администратора (ПЕРВЫМ!)
+        await UniStart.Seeders.RoleSeeder.SeedRolesAndAdminAsync(roleManager, userManager);
         
         // Заполняем базу тестовыми данными (только если БД пустая)
         await UniStart.Seeders.DatabaseSeeder.SeedAsync(context, userManager);
@@ -145,6 +150,10 @@ if (app.Environment.IsDevelopment())
 }
 
 // Configure the HTTP request pipeline.
+
+// Глобальная обработка ошибок
+app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
