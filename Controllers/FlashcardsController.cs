@@ -80,8 +80,11 @@ namespace UniStart.Controllers
                     Id = fs.Id,
                     Title = fs.Title,
                     Description = fs.Description,
+                    Subject = fs.Subject,
+                    IsPublic = fs.IsPublic,
                     CreatedAt = fs.CreatedAt,
                     UpdatedAt = fs.UpdatedAt,
+                    CardCount = fs.Flashcards.Count,
                     TotalCards = fs.Flashcards.Count,
                     CardsToReview = fs.Flashcards.Count(f => f.NextReviewDate == null || f.NextReviewDate <= DateTime.UtcNow)
                 })
@@ -121,6 +124,8 @@ namespace UniStart.Controllers
             {
                 Title = dto.Title,
                 Description = dto.Description,
+                Subject = dto.Subject,
+                IsPublic = dto.IsPublic,
                 UserId = userId
             };
 
@@ -146,6 +151,8 @@ namespace UniStart.Controllers
 
             set.Title = dto.Title;
             set.Description = dto.Description;
+            set.Subject = dto.Subject;
+            set.IsPublic = dto.IsPublic;
             set.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();

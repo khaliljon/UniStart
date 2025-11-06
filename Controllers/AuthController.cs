@@ -58,7 +58,7 @@ namespace UniStart.Controllers
             }
 
             // Генерация JWT токена
-            var token = _tokenService.GenerateToken(user);
+            var token = await _tokenService.GenerateTokenAsync(user);
 
             return Ok(new AuthResponseDto
             {
@@ -89,7 +89,7 @@ namespace UniStart.Controllers
             await _userManager.UpdateAsync(user);
 
             // Генерация JWT токена
-            var token = _tokenService.GenerateToken(user);
+            var token = await _tokenService.GenerateTokenAsync(user);
 
             return Ok(new AuthResponseDto
             {
@@ -143,8 +143,8 @@ namespace UniStart.Controllers
             if (user == null)
                 return NotFound();
 
-            user.FirstName = dto.FirstName;
-            user.LastName = dto.LastName;
+            user.FirstName = dto.FirstName ?? user.FirstName;
+            user.LastName = dto.LastName ?? user.LastName;
 
             var result = await _userManager.UpdateAsync(user);
             if (!result.Succeeded)
@@ -152,11 +152,5 @@ namespace UniStart.Controllers
 
             return NoContent();
         }
-    }
-
-    public class UpdateProfileDto
-    {
-        public string FirstName { get; set; } = string.Empty;
-        public string LastName { get; set; } = string.Empty;
     }
 }

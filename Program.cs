@@ -139,6 +139,9 @@ if (app.Environment.IsDevelopment())
         // Инициализируем роли и создаём администратора (ПЕРВЫМ!)
         await UniStart.Seeders.RoleSeeder.SeedRolesAndAdminAsync(roleManager, userManager);
         
+        // Инициализируем достижения
+        await UniStart.Seeders.AchievementSeeder.SeedAchievementsAsync(context);
+        
         // Заполняем базу тестовыми данными (только если БД пустая)
         await UniStart.Seeders.DatabaseSeeder.SeedAsync(context, userManager);
     }

@@ -1,0 +1,328 @@
+import { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import { Users, Trash2, Lock, Unlock, ArrowLeft, UserPlus } from 'lucide-react';
+import Card from '../components/common/Card';
+import Button from '../components/common/Button';
+import api from '../services/api';
+
+interface User {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  roles: string[];
+  lockoutEnd: string | null;
+  totalCardsStudied: number;
+  totalQuizzesTaken: number;
+}
+
+const AdminUsersPage = () => {
+  const navigate = useNavigate();
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterRole, setFilterRole] = useState<string>('');
+
+  useEffect(() => {
+    loadUsers();
+  }, []);
+
+  const loadUsers = async () => {
+    try {
+      const response = await api.get('/admin/users');
+      setUsers(response.data);
+    } catch (error) {
+      console.error('Ошибка загрузки пользователей:', error);
+      alert('Ошибка загрузки пользователей');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleUserLockout = async (userId: string, isLocked: boolean) => {
+    if (!confirm(`Вы уверены, что хотите ${isLocked ? 'разблокировать' : 'заблокировать'} пользователя?`)) {
+      return;
+    }
+
+    try {
+      if (isLocked) {
+        await api.delete(`/admin/users/${userId}/lockout`);
+      } else {
+        await api.post(`/admin/users/${userId}/lockout`);
+      }
+      loadUsers();
+      alert(`Пользователь успешно ${isLocked ? 'разблокирован' : 'заблокирован'}`);
+    } catch (error) {
+      console.error('Ошибка блокировки пользователя:', error);
+      alert('Ошибка выполнения операции');
+    }
+  };
+
+  const deleteUser = async (userId: string) => {
+    if (!confirm('Вы уверены, что хотите удалить этого пользователя? Это действие необратимо!')) {
+      return;
+    }
+
+    try {
+      await api.delete(`/admin/users/${userId}`);
+      loadUsers();
+      alert('Пользователь успешно удален');
+    } catch (error) {
+      console.error('Ошибка удаления пользователя:', error);
+      alert('Ошибка удаления пользователя');
+    }
+  };
+
+  const changeUserRole = async (userId: string, role: string, action: 'add' | 'remove') => {
+    try {
+      if (action === 'add') {
+        await api.post(`/admin/users/${userId}/role`, { role });
+      } else {
+        await api.delete(`/admin/users/${userId}/role`, { data: { role } });
+      }
+      loadUsers();
+      alert(`Роль успешно ${action === 'add' ? 'добавлена' : 'удалена'}`);
+    } catch (error) {
+      console.error('Ошибка изменения роли:', error);
+      alert('Ошибка изменения роли');
+    }
+  };
+
+  const filteredUsers = users.filter((user) => {
+    const matchesSearch =
+      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      `${user.firstName} ${user.lastName}`.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesRole = !filterRole || user.roles?.includes(filterRole);
+
+    return matchesSearch && matchesRole;
+  });
+
+  const getRoleBadgeColor = (role: string) => {
+    switch (role) {
+      case 'Admin':
+        return 'bg-red-100 text-red-800';
+      case 'Teacher':
+        return 'bg-blue-100 text-blue-800';
+      case 'Student':
+        return 'bg-green-100 text-green-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-xl text-gray-600">Загрузка...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-red-50 py-8 px-4">
+      <div className="max-w-7xl mx-auto">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-8"
+        >
+          <Button
+            variant="secondary"
+            onClick={() => navigate('/dashboard')}
+            className="mb-4 flex items-center gap-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Назад к панели
+          </Button>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-4xl font-bold text-gray-900 mb-2">
+                👥 Управление пользователями
+              </h1>
+              <p className="text-gray-600">
+                Всего пользователей: {users.length}
+              </p>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Фильтры */}
+        <Card className="p-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Поиск
+              </label>
+              <input
+                type="text"
+                placeholder="Поиск по имени или email..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Фильтр по роли
+              </label>
+              <select
+                value={filterRole}
+                onChange={(e) => setFilterRole(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              >
+                <option value="">Все роли</option>
+                <option value="Admin">Администраторы</option>
+                <option value="Teacher">Преподаватели</option>
+                <option value="Student">Студенты</option>
+              </select>
+            </div>
+          </div>
+        </Card>
+
+        {/* Список пользователей */}
+        <Card className="p-6">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Пользователь
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Роли
+                  </th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Активность
+                  </th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Статус
+                  </th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Действия
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredUsers.map((user) => {
+                  const isLocked = user.lockoutEnd && new Date(user.lockoutEnd) > new Date();
+                  
+                  return (
+                    <motion.tr
+                      key={user.id}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="hover:bg-gray-50 transition-colors"
+                    >
+                      <td className="px-6 py-4">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-10 w-10 bg-primary-500 rounded-full flex items-center justify-center text-white font-semibold">
+                            {user.firstName?.charAt(0) || user.email.charAt(0).toUpperCase()}
+                          </div>
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-gray-900">
+                              {user.firstName} {user.lastName}
+                            </div>
+                            <div className="text-sm text-gray-500">{user.email}</div>
+                          </div>
+                        </div>
+                      </td>
+
+                      <td className="px-6 py-4">
+                        <div className="flex flex-wrap gap-2">
+                          {user.roles?.map((role) => (
+                            <span
+                              key={role}
+                              className={`px-2 py-1 text-xs font-medium rounded-full ${getRoleBadgeColor(role)}`}
+                            >
+                              {role}
+                            </span>
+                          ))}
+                        </div>
+                      </td>
+
+                      <td className="px-6 py-4 text-center">
+                        <div className="text-sm text-gray-900">
+                          Тесты: {user.totalQuizzesTaken}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          Карточки: {user.totalCardsStudied}
+                        </div>
+                      </td>
+
+                      <td className="px-6 py-4 text-center">
+                        {isLocked ? (
+                          <span className="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">
+                            Заблокирован
+                          </span>
+                        ) : (
+                          <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                            Активен
+                          </span>
+                        )}
+                      </td>
+
+                      <td className="px-6 py-4">
+                        <div className="flex items-center justify-center gap-2">
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => toggleUserLockout(user.id, !!isLocked)}
+                            title={isLocked ? 'Разблокировать' : 'Заблокировать'}
+                          >
+                            {isLocked ? (
+                              <Unlock className="w-4 h-4" />
+                            ) : (
+                              <Lock className="w-4 h-4" />
+                            )}
+                          </Button>
+
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => {
+                              const role = prompt('Введите роль (Admin, Teacher, Student):');
+                              if (role) changeUserRole(user.id, role, 'add');
+                            }}
+                            title="Добавить роль"
+                          >
+                            <UserPlus className="w-4 h-4" />
+                          </Button>
+
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            onClick={() => deleteUser(user.id)}
+                            title="Удалить пользователя"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </motion.tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {filteredUsers.length === 0 && (
+            <div className="text-center py-12">
+              <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-600">
+                {searchTerm || filterRole
+                  ? 'Пользователи не найдены'
+                  : 'Нет зарегистрированных пользователей'}
+              </p>
+            </div>
+          )}
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+export default AdminUsersPage;

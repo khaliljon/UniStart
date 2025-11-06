@@ -356,4 +356,187 @@ public class TeacherController : ControllerBase
             IsPublic = quiz.IsPublic
         });
     }
+
+    /// <summary>
+    /// Экспорт результатов квиза в CSV
+    /// </summary>
+    [HttpGet("quizzes/{quizId}/export-results")]
+    public async Task<ActionResult> ExportQuizResults(int quizId)
+    {
+        var userId = GetUserId();
+
+        var quiz = await _context.Quizzes
+            .FirstOrDefaultAsync(q => q.Id == quizId && q.UserId == userId);
+
+        if (quiz == null)
+            return NotFound(new { Message = "Тест не найден или у вас нет доступа" });
+
+        var attempts = await _context.UserQuizAttempts
+            .Include(qa => qa.User)
+            .Where(qa => qa.QuizId == quizId)
+            .OrderByDescending(qa => qa.CompletedAt)
+            .ToListAsync();
+
+        // Создаём CSV
+        var csv = new System.Text.StringBuilder();
+        csv.AppendLine("Email,UserName,Score,MaxScore,Percentage,TimeSpent(sec),CompletedAt");
+
+        foreach (var attempt in attempts)
+        {
+            csv.AppendLine($"{attempt.User.Email},{attempt.User.UserName},{attempt.Score},{attempt.MaxScore},{attempt.Percentage:F2},{attempt.TimeSpentSeconds},{attempt.CompletedAt:yyyy-MM-dd HH:mm:ss}");
+        }
+
+        var bytes = System.Text.Encoding.UTF8.GetBytes(csv.ToString());
+        var fileName = $"Quiz_{quiz.Id}_{quiz.Title}_Results_{DateTime.UtcNow:yyyyMMdd}.csv";
+
+        return File(bytes, "text/csv", fileName);
+    }
+
+    /// <summary>
+    /// Получить детальный отчёт по конкретной попытке студента
+    /// </summary>
+    [HttpGet("quiz-attempts/{attemptId}/detailed")]
+    public async Task<ActionResult<object>> GetAttemptDetails(int attemptId)
+    {
+        var userId = GetUserId();
+
+        var attempt = await _context.UserQuizAttempts
+            .Include(qa => qa.Quiz)
+                .ThenInclude(q => q.Questions)
+                    .ThenInclude(q => q.Answers)
+            .Include(qa => qa.User)
+            .FirstOrDefaultAsync(qa => qa.Id == attemptId);
+
+        if (attempt == null)
+            return NotFound(new { Message = "Попытка не найдена" });
+
+        // Проверяем, что это тест преподавателя
+        if (attempt.Quiz.UserId != userId)
+            return Forbid();
+
+        // Парсим ответы пользователя
+        var userAnswers = System.Text.Json.JsonSerializer.Deserialize<Dictionary<int, List<int>>>(attempt.UserAnswersJson);
+
+        var questionDetails = attempt.Quiz.Questions.Select(q =>
+        {
+            var correctAnswerIds = q.Answers.Where(a => a.IsCorrect).Select(a => a.Id).ToList();
+            var userAnswerIds = userAnswers?.ContainsKey(q.Id) == true ? userAnswers[q.Id] : new List<int>();
+            
+            var isCorrect = correctAnswerIds.OrderBy(x => x).SequenceEqual(userAnswerIds.OrderBy(x => x));
+
+            return new
+            {
+                QuestionId = q.Id,
+                QuestionText = q.Text,
+                QuestionType = q.QuestionType,
+                Points = q.Points,
+                IsCorrect = isCorrect,
+                CorrectAnswers = q.Answers.Where(a => a.IsCorrect).Select(a => new { a.Id, a.Text }),
+                UserAnswers = q.Answers.Where(a => userAnswerIds.Contains(a.Id)).Select(a => new { a.Id, a.Text }),
+                Explanation = q.Explanation
+            };
+        }).ToList();
+
+        return Ok(new
+        {
+            AttemptId = attempt.Id,
+            Student = new
+            {
+                attempt.User.Id,
+                attempt.User.Email,
+                attempt.User.UserName
+            },
+            Quiz = new
+            {
+                attempt.Quiz.Id,
+                attempt.Quiz.Title,
+                attempt.Quiz.Subject
+            },
+            Score = attempt.Score,
+            MaxScore = attempt.MaxScore,
+            Percentage = attempt.Percentage,
+            TimeSpentSeconds = attempt.TimeSpentSeconds,
+            CompletedAt = attempt.CompletedAt,
+            Questions = questionDetails
+        });
+    }
+
+    /// <summary>
+    /// Создать приватный набор карточек (доступен только преподавателю)
+    /// </summary>
+    [HttpPost("flashcard-sets/private")]
+    public async Task<ActionResult<FlashcardSetDto>> CreatePrivateFlashcardSet([FromBody] CreateFlashcardSetDto dto)
+    {
+        var userId = GetUserId();
+
+        var flashcardSet = new FlashcardSet
+        {
+            Title = dto.Title,
+            Description = dto.Description,
+            Subject = dto.Subject,
+            IsPublic = false, // Приватный набор
+            UserId = userId,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+
+        _context.FlashcardSets.Add(flashcardSet);
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation("Преподаватель создал приватный набор карточек: {Title}", flashcardSet.Title);
+
+        return CreatedAtAction("GetFlashcardSet", "Flashcards", new { id = flashcardSet.Id }, new FlashcardSetDto
+        {
+            Id = flashcardSet.Id,
+            Title = flashcardSet.Title,
+            Description = flashcardSet.Description,
+            Subject = flashcardSet.Subject,
+            IsPublic = flashcardSet.IsPublic,
+            CreatedAt = flashcardSet.CreatedAt,
+            UpdatedAt = flashcardSet.UpdatedAt,
+            CardCount = 0,
+            TotalCards = 0,
+            CardsToReview = 0
+        });
+    }
+
+    /// <summary>
+    /// Получить все свои наборы карточек (публичные и приватные)
+    /// </summary>
+    [HttpGet("flashcard-sets/my")]
+    public async Task<ActionResult<IEnumerable<FlashcardSetDto>>> GetMyFlashcardSets(
+        [FromQuery] bool? isPublic = null,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20)
+    {
+        var userId = GetUserId();
+
+        var query = _context.FlashcardSets
+            .Include(fs => fs.Flashcards)
+            .Where(fs => fs.UserId == userId);
+
+        if (isPublic.HasValue)
+            query = query.Where(fs => fs.IsPublic == isPublic.Value);
+
+        var flashcardSets = await query
+            .OrderByDescending(fs => fs.UpdatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(fs => new FlashcardSetDto
+            {
+                Id = fs.Id,
+                Title = fs.Title,
+                Description = fs.Description,
+                Subject = fs.Subject,
+                IsPublic = fs.IsPublic,
+                CreatedAt = fs.CreatedAt,
+                UpdatedAt = fs.UpdatedAt,
+                CardCount = fs.Flashcards.Count,
+                TotalCards = fs.Flashcards.Count,
+                CardsToReview = fs.Flashcards.Count(f => f.NextReviewDate == null || f.NextReviewDate <= DateTime.UtcNow)
+            })
+            .ToListAsync();
+
+        return Ok(flashcardSets);
+    }
 }

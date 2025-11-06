@@ -70,6 +70,80 @@ namespace UniStart.Seeders
                 await userManager.AddToRoleAsync(testUser, UserRoles.Student);
                 Console.WriteLine($"✅ Роль Student добавлена тестовому пользователю");
             }
+
+            // Создаём тестового преподавателя
+            var teacherEmail = "teacher@unistart.kz";
+            var teacherUser = await userManager.FindByEmailAsync(teacherEmail);
+
+            if (teacherUser == null)
+            {
+                teacherUser = new ApplicationUser
+                {
+                    UserName = teacherEmail,
+                    Email = teacherEmail,
+                    FirstName = "Иван",
+                    LastName = "Преподавателев",
+                    EmailConfirmed = true,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                var result = await userManager.CreateAsync(teacherUser, "Teacher123!");
+
+                if (result.Succeeded)
+                {
+                    await userManager.AddToRoleAsync(teacherUser, UserRoles.Teacher);
+                    Console.WriteLine($"✅ Преподаватель создан: {teacherEmail} / Teacher123!");
+                }
+                else
+                {
+                    Console.WriteLine($"❌ Ошибка создания преподавателя: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+                }
+            }
+            else
+            {
+                if (!await userManager.IsInRoleAsync(teacherUser, UserRoles.Teacher))
+                {
+                    await userManager.AddToRoleAsync(teacherUser, UserRoles.Teacher);
+                    Console.WriteLine($"✅ Роль Teacher добавлена пользователю {teacherEmail}");
+                }
+            }
+
+            // Создаём тестового студента
+            var studentEmail = "student@unistart.kz";
+            var studentUser = await userManager.FindByEmailAsync(studentEmail);
+
+            if (studentUser == null)
+            {
+                studentUser = new ApplicationUser
+                {
+                    UserName = studentEmail,
+                    Email = studentEmail,
+                    FirstName = "Алия",
+                    LastName = "Студентова",
+                    EmailConfirmed = true,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                var result = await userManager.CreateAsync(studentUser, "Student123!");
+
+                if (result.Succeeded)
+                {
+                    await userManager.AddToRoleAsync(studentUser, UserRoles.Student);
+                    Console.WriteLine($"✅ Студент создан: {studentEmail} / Student123!");
+                }
+                else
+                {
+                    Console.WriteLine($"❌ Ошибка создания студента: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+                }
+            }
+            else
+            {
+                if (!await userManager.IsInRoleAsync(studentUser, UserRoles.Student))
+                {
+                    await userManager.AddToRoleAsync(studentUser, UserRoles.Student);
+                    Console.WriteLine($"✅ Роль Student добавлена пользователю {studentEmail}");
+                }
+            }
         }
     }
 }

@@ -18,6 +18,22 @@ namespace UniStart.Data
         public DbSet<Question> Questions { get; set; }
         public DbSet<Answer> Answers { get; set; }
         public DbSet<UserQuizAttempt> UserQuizAttempts { get; set; }
+        
+        // Tags & Achievements
+        public DbSet<Tag> Tags { get; set; }
+        public DbSet<Achievement> Achievements { get; set; }
+        public DbSet<UserAchievement> UserAchievements { get; set; }
+        
+        // Reviews
+        public DbSet<QuizReview> QuizReviews { get; set; }
+        public DbSet<FlashcardSetReview> FlashcardSetReviews { get; set; }
+        
+        // Streaks
+        public DbSet<UserStreak> UserStreaks { get; set; }
+        
+        // Social
+        public DbSet<UserFollow> UserFollows { get; set; }
+        public DbSet<ActivityFeed> ActivityFeeds { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

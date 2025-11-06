@@ -17,6 +17,13 @@ namespace UniStart.Models
         [StringLength(1000, ErrorMessage = "Описание не должно превышать 1000 символов")]
         public string Description { get; set; } = string.Empty;
         
+        [Display(Name = "Предмет")]
+        [StringLength(100, ErrorMessage = "Название предмета не должно превышать 100 символов")]
+        public string Subject { get; set; } = string.Empty; // Математика, Физика, и т.д.
+        
+        [Display(Name = "Публичный доступ")]
+        public bool IsPublic { get; set; } = false; // true = доступен всем студентам, false = только автор
+        
         [Display(Name = "Дата создания")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         

@@ -338,6 +338,137 @@ public class AdminController : ControllerBase
 
         return Ok(roleDtos);
     }
+
+    /// <summary>
+    /// Получить детальную аналитику платформы с графиками
+    /// </summary>
+    [HttpGet("analytics/detailed")]
+    public async Task<ActionResult<object>> GetDetailedAnalytics([FromQuery] int days = 30)
+    {
+        var startDate = DateTime.UtcNow.AddDays(-days);
+
+        // Активность по дням
+        var dailyActivity = await _context.UserQuizAttempts
+            .Where(qa => qa.CompletedAt >= startDate)
+            .GroupBy(qa => qa.CompletedAt!.Value.Date)
+            .Select(g => new
+            {
+                Date = g.Key,
+                QuizAttempts = g.Count(),
+                UniqueUsers = g.Select(qa => qa.UserId).Distinct().Count()
+            })
+            .OrderBy(x => x.Date)
+            .ToListAsync();
+
+        // Популярные предметы
+        var popularSubjects = await _context.Quizzes
+            .GroupBy(q => q.Subject)
+            .Select(g => new
+            {
+                Subject = g.Key,
+                QuizCount = g.Count(),
+                TotalAttempts = g.SelectMany(q => q.Attempts).Count()
+            })
+            .OrderByDescending(x => x.TotalAttempts)
+            .Take(10)
+            .ToListAsync();
+
+        // Топ активных пользователей
+        var topUsers = await _context.UserQuizAttempts
+            .Where(qa => qa.CompletedAt >= startDate)
+            .GroupBy(qa => qa.UserId)
+            .Select(g => new
+            {
+                UserId = g.Key,
+                AttemptsCount = g.Count(),
+                AverageScore = g.Average(qa => qa.Percentage)
+            })
+            .OrderByDescending(x => x.AttemptsCount)
+            .Take(10)
+            .ToListAsync();
+
+        var topUsersWithDetails = new List<object>();
+        foreach (var userStat in topUsers)
+        {
+            var user = await _userManager.FindByIdAsync(userStat.UserId);
+            if (user != null)
+            {
+                topUsersWithDetails.Add(new
+                {
+                    UserName = user.UserName ?? user.Email,
+                    userStat.AttemptsCount,
+                    AverageScore = Math.Round(userStat.AverageScore, 2)
+                });
+            }
+        }
+
+        // Статистика по достижениям
+        var achievementStats = await _context.UserAchievements
+            .Where(ua => ua.IsCompleted)
+            .GroupBy(ua => ua.AchievementId)
+            .Select(g => new
+            {
+                AchievementId = g.Key,
+                UnlockedBy = g.Count()
+            })
+            .OrderByDescending(x => x.UnlockedBy)
+            .Take(10)
+            .ToListAsync();
+
+        return Ok(new
+        {
+            Period = $"Last {days} days",
+            DailyActivity = dailyActivity,
+            PopularSubjects = popularSubjects,
+            TopUsers = topUsersWithDetails,
+            AchievementStats = achievementStats
+        });
+    }
+
+    /// <summary>
+    /// Получить статистику по времени (почасовая активность)
+    /// </summary>
+    [HttpGet("analytics/hourly")]
+    public async Task<ActionResult<object>> GetHourlyAnalytics()
+    {
+        var last24Hours = DateTime.UtcNow.AddHours(-24);
+
+        var hourlyActivity = await _context.UserQuizAttempts
+            .Where(qa => qa.CompletedAt >= last24Hours)
+            .GroupBy(qa => qa.CompletedAt!.Value.Hour)
+            .Select(g => new
+            {
+                Hour = g.Key,
+                Count = g.Count()
+            })
+            .OrderBy(x => x.Hour)
+            .ToListAsync();
+
+        return Ok(hourlyActivity);
+    }
+
+    /// <summary>
+    /// Экспорт полной статистики в CSV
+    /// </summary>
+    [HttpGet("export/full-stats")]
+    public async Task<ActionResult> ExportFullStats()
+    {
+        var users = await _userManager.Users.ToListAsync();
+        var csv = new System.Text.StringBuilder();
+        
+        csv.AppendLine("UserId,Email,UserName,CreatedAt,TotalCardsStudied,TotalQuizzesTaken,Roles");
+
+        foreach (var user in users)
+        {
+            var roles = await _userManager.GetRolesAsync(user);
+            csv.AppendLine($"{user.Id},{user.Email},{user.UserName},{user.CreatedAt:yyyy-MM-dd},{user.TotalCardsStudied},{user.TotalQuizzesTaken},\"{string.Join(";", roles)}\"");
+        }
+
+        var bytes = System.Text.Encoding.UTF8.GetBytes(csv.ToString());
+        var fileName = $"UniStart_Users_Export_{DateTime.UtcNow:yyyyMMdd}.csv";
+
+        return File(bytes, "text/csv", fileName);
+    }
 }
 
 // DTOs для AdminController
