@@ -1,5 +1,29 @@
+# Build results
 bin/
 obj/
 /packages/
 riderModule.iml
 /_ReSharper.Caches/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# JetBrains Rider
+.idea/
+*.sln.iml
+
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Frontend
+unistart-frontend/node_modules/
+unistart-frontend/dist/
+unistart-frontend/.env.local
