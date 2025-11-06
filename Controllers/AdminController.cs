@@ -469,6 +469,66 @@ public class AdminController : ControllerBase
 
         return File(bytes, "text/csv", fileName);
     }
+
+    /// <summary>
+    /// Получить все квизы в системе (для админа), исключая seed данные
+    /// </summary>
+    [HttpGet("quizzes")]
+    public async Task<ActionResult> GetAllQuizzes()
+    {
+        // Получаем ID тестового пользователя (seed user)
+        var seedUser = await _userManager.FindByEmailAsync("test@unistart.kz");
+        var seedUserId = seedUser?.Id;
+
+        var quizzes = await _context.Quizzes
+            .Include(q => q.Questions)
+            .Where(q => seedUserId == null || q.UserId != seedUserId) // Исключаем seed квизы
+            .Select(q => new
+            {
+                q.Id,
+                q.Title,
+                q.Description,
+                q.Subject,
+                q.Difficulty,
+                q.IsPublished,
+                q.UserId,
+                QuestionCount = q.Questions.Count,
+                TotalPoints = q.Questions.Sum(qu => qu.Points),
+                q.CreatedAt
+            })
+            .ToListAsync();
+
+        return Ok(quizzes);
+    }
+
+    /// <summary>
+    /// Получить все наборы карточек в системе (для админа), исключая seed данные
+    /// </summary>
+    [HttpGet("flashcards")]
+    public async Task<ActionResult> GetAllFlashcardSets()
+    {
+        // Получаем ID тестового пользователя (seed user)
+        var seedUser = await _userManager.FindByEmailAsync("test@unistart.kz");
+        var seedUserId = seedUser?.Id;
+
+        var flashcardSets = await _context.FlashcardSets
+            .Include(fs => fs.Flashcards)
+            .Where(fs => seedUserId == null || fs.UserId != seedUserId) // Исключаем seed карточки
+            .Select(fs => new
+            {
+                fs.Id,
+                fs.Title,
+                fs.Description,
+                fs.Subject,
+                fs.IsPublic,
+                fs.UserId,
+                CardCount = fs.Flashcards.Count,
+                fs.CreatedAt
+            })
+            .ToListAsync();
+
+        return Ok(flashcardSets);
+    }
 }
 
 // DTOs для AdminController

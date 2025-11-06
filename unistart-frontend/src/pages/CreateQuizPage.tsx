@@ -123,26 +123,54 @@ const CreateQuizPage = () => {
 
     setLoading(true);
     try {
-      await api.post('/teacher/quizzes/public', {
+      // Шаг 1: Создаем квиз
+      const quizResponse = await api.post('/quizzes', {
         title: quiz.title,
         subject: quiz.subject,
         difficulty: quiz.difficulty,
         timeLimit: quiz.timeLimit,
-        isPublished: quiz.isPublic,
-        questions: quiz.questions.map(q => ({
-          text: q.text,
-          questionType: q.questionType,
-          points: q.points,
-          explanation: q.explanation,
-          answers: q.answers,
-        })),
+        description: quiz.title, // Используем title как description
       });
+
+      const quizId = quizResponse.data.id;
+      console.log('Quiz created with ID:', quizId);
+
+      // Шаг 2: Добавляем вопросы к квизу
+      for (const question of quiz.questions) {
+        const questionResponse = await api.post('/quizzes/questions', {
+          quizId: quizId,
+          text: question.text,
+          questionType: question.questionType,
+          points: question.points,
+          explanation: question.explanation || '',
+        });
+
+        const questionId = questionResponse.data.id;
+        console.log('Question created with ID:', questionId);
+
+        // Шаг 3: Добавляем ответы к вопросу
+        for (const answer of question.answers) {
+          await api.post('/quizzes/answers', {
+            questionId: questionId,
+            text: answer.text,
+            isCorrect: answer.isCorrect,
+          });
+        }
+      }
+
+      // Шаг 4: Публикуем квиз если нужно
+      if (quiz.isPublic) {
+        await api.patch(`/quizzes/${quizId}/publish`, true, {
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
 
       alert('Квиз успешно создан!');
       navigate('/dashboard');
     } catch (error: any) {
       console.error('Ошибка создания квиза:', error);
-      alert(error.response?.data?.message || 'Ошибка создания квиза');
+      console.error('Response data:', error.response?.data);
+      alert(error.response?.data?.message || error.response?.data || 'Ошибка создания квиза');
     } finally {
       setLoading(false);
     }

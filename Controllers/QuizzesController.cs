@@ -367,6 +367,126 @@ namespace UniStart.Controllers
         }
 
         /// <summary>
+        /// Получить подробную статистику по тесту для страницы статистики (только для владельца теста)
+        /// </summary>
+        [HttpGet("{id}/stats")]
+        [Authorize]
+        public async Task<ActionResult> GetQuizStats(int id)
+        {
+            var userId = GetUserId()!;
+            
+            // Проверяем, что тест принадлежит текущему пользователю или пользователь админ
+            var quiz = await _context.Quizzes
+                .Include(q => q.Questions)
+                    .ThenInclude(qu => qu.Answers)
+                .FirstOrDefaultAsync(q => q.Id == id);
+                
+            if (quiz == null)
+                return NotFound("Quiz not found");
+
+            // Проверка доступа: владелец или админ
+            var userRoles = User.FindAll(ClaimTypes.Role).Select(c => c.Value);
+            if (quiz.UserId != userId && !userRoles.Contains("Admin") && !userRoles.Contains("Teacher"))
+                return Forbid();
+            
+            var attempts = await _context.UserQuizAttempts
+                .Include(a => a.User)
+                .Where(a => a.QuizId == id && a.CompletedAt != null)
+                .OrderByDescending(a => a.CompletedAt)
+                .ToListAsync();
+
+            // Если нет попыток, возвращаем пустую статистику
+            if (!attempts.Any())
+            {
+                return Ok(new
+                {
+                    quizId = id,
+                    quizTitle = quiz.Title,
+                    totalAttempts = 0,
+                    averageScore = 0.0,
+                    averageTimeSpent = 0,
+                    passRate = 0.0,
+                    questionStats = new List<object>(),
+                    recentAttempts = new List<object>()
+                });
+            }
+
+            // Подсчет статистики по вопросам
+            var questionStats = new List<object>();
+            foreach (var question in quiz.Questions.OrderBy(q => q.OrderIndex))
+            {
+                int totalAnswers = 0;
+                int correctAnswers = 0;
+
+                foreach (var attempt in attempts)
+                {
+                    if (string.IsNullOrEmpty(attempt.UserAnswersJson))
+                        continue;
+
+                    try
+                    {
+                        var userAnswers = JsonSerializer.Deserialize<Dictionary<int, List<int>>>(attempt.UserAnswersJson);
+                        if (userAnswers == null || !userAnswers.ContainsKey(question.Id))
+                            continue;
+
+                        totalAnswers++;
+
+                        var correctAnswerIds = question.Answers
+                            .Where(a => a.IsCorrect)
+                            .Select(a => a.Id)
+                            .OrderBy(id => id)
+                            .ToList();
+
+                        var userAnswerIds = userAnswers[question.Id].OrderBy(id => id).ToList();
+
+                        if (correctAnswerIds.SequenceEqual(userAnswerIds))
+                            correctAnswers++;
+                    }
+                    catch
+                    {
+                        // Пропускаем невалидные данные
+                    }
+                }
+
+                questionStats.Add(new
+                {
+                    questionId = question.Id,
+                    questionText = question.Text,
+                    correctAnswers,
+                    totalAnswers,
+                    successRate = totalAnswers > 0 ? (double)correctAnswers / totalAnswers * 100 : 0
+                });
+            }
+
+            // Последние попытки
+            var recentAttempts = attempts.Take(10).Select(a => new
+            {
+                id = a.Id,
+                studentName = $"{a.User?.FirstName} {a.User?.LastName}".Trim(),
+                score = a.Score,
+                maxScore = a.MaxScore,
+                percentage = a.Percentage,
+                timeSpent = a.TimeSpentSeconds,
+                completedAt = a.CompletedAt
+            }).ToList();
+
+            // Общая статистика
+            var stats = new
+            {
+                quizId = id,
+                quizTitle = quiz.Title,
+                totalAttempts = attempts.Count,
+                averageScore = attempts.Average(a => a.Percentage),
+                averageTimeSpent = (int)attempts.Average(a => a.TimeSpentSeconds),
+                passRate = attempts.Count(a => a.Percentage >= 50) * 100.0 / attempts.Count,
+                questionStats,
+                recentAttempts
+            };
+
+            return Ok(stats);
+        }
+
+        /// <summary>
         /// Получить статистику по тесту (только для владельца теста)
         /// </summary>
         [HttpGet("{quizId}/statistics")]

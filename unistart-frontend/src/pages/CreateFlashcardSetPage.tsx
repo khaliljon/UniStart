@@ -73,8 +73,8 @@ const CreateFlashcardSetPage = () => {
 
     setLoading(true);
     try {
-      // Сначала создаем набор
-      const setResponse = await api.post('/teacher/flashcard-sets/private', {
+      // Шаг 1: Создаем набор карточек
+      const setResponse = await api.post('/flashcards/sets', {
         title: flashcardSet.title,
         description: flashcardSet.description,
         subject: flashcardSet.subject,
@@ -82,24 +82,24 @@ const CreateFlashcardSetPage = () => {
       });
 
       const setId = setResponse.data.id;
+      console.log('FlashcardSet created with ID:', setId);
 
-      // Затем добавляем карточки
-      await Promise.all(
-        flashcardSet.flashcards.map((card) =>
-          api.post('/flashcards/cards', {
-            flashcardSetId: setId,
-            question: card.question,
-            answer: card.answer,
-            explanation: card.explanation,
-          })
-        )
-      );
+      // Шаг 2: Добавляем карточки к набору
+      for (const card of flashcardSet.flashcards) {
+        await api.post('/flashcards/cards', {
+          flashcardSetId: setId,
+          question: card.question,
+          answer: card.answer,
+          explanation: card.explanation || '',
+        });
+      }
 
       alert('Набор карточек успешно создан!');
       navigate('/dashboard');
     } catch (error: any) {
       console.error('Ошибка создания набора карточек:', error);
-      alert(error.response?.data?.message || 'Ошибка создания набора карточек');
+      console.error('Response data:', error.response?.data);
+      alert(error.response?.data?.message || error.response?.data || 'Ошибка создания набора карточек');
     } finally {
       setLoading(false);
     }

@@ -26,19 +26,62 @@ const TeacherDashboard = () => {
 
   useEffect(() => {
     loadTeacherData();
+
+    // Перезагружаем данные при возврате на страницу
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        loadTeacherData();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   const loadTeacherData = async () => {
     try {
-      const [statsData, quizzesData] = await Promise.all([
-        api.get('/teacher/stats/overview'),
-        api.get('/teacher/quizzes/my'),
+      const [quizzesData, flashcardsData] = await Promise.allSettled([
+        api.get('/quizzes/my'),         // Получаем свои квизы
+        api.get('/flashcards/sets'),    // Получаем свои наборы карточек
       ]);
 
-      setStats(statsData.data);
-      setMyQuizzes(quizzesData.data.slice(0, 5));
+      console.log('Teacher quizzes:', quizzesData);
+      console.log('Teacher flashcards:', flashcardsData);
+
+      // Обработка квизов
+      let quizzes: any[] = [];
+      if (quizzesData.status === 'fulfilled') {
+        const data = quizzesData.value.data;
+        quizzes = Array.isArray(data) ? data : (data.quizzes || data.Quizzes || []);
+      }
+
+      // Обработка карточек
+      let flashcardSets: any[] = [];
+      if (flashcardsData.status === 'fulfilled') {
+        const data = flashcardsData.value.data;
+        flashcardSets = Array.isArray(data) ? data : (data.flashcardSets || data.FlashcardSets || []);
+      }
+
+      setStats({
+        myQuizzes: quizzes.length,
+        myFlashcardSets: flashcardSets.length,
+        totalStudents: 0,  // TODO: добавить подсчет студентов
+        averageScore: 0,   // TODO: добавить подсчет среднего балла
+      });
+
+      setMyQuizzes(quizzes.slice(0, 5));
     } catch (error) {
       console.error('Ошибка загрузки данных учителя:', error);
+      setStats({
+        myQuizzes: 0,
+        myFlashcardSets: 0,
+        totalStudents: 0,
+        averageScore: 0,
+      });
+      setMyQuizzes([]);
     } finally {
       setLoading(false);
     }
@@ -186,7 +229,8 @@ const TeacherDashboard = () => {
                         <Button
                           variant="secondary"
                           size="sm"
-                          onClick={() => navigate(`/teacher/quizzes/${quiz.id}/stats`)}
+                          onClick={() => navigate(`/quizzes/${quiz.id}/stats`)}
+                          title="Статистика квиза"
                         >
                           <BarChart3 className="w-4 h-4" />
                         </Button>

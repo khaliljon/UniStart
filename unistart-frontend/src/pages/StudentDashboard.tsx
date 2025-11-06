@@ -334,13 +334,54 @@ const StudentDashboard = () => {
         >
           <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
             <TrendingUp className="w-6 h-6 text-primary-500" />
-            Прогресс за последние 30 дней
+            Мой прогресс
           </h2>
-          <Card className="p-8">
-            <div className="h-64 flex items-center justify-center text-gray-500">
-              График в разработке - здесь будет отображаться ваш прогресс
-            </div>
-          </Card>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer">
+              <div
+                onClick={() => navigate('/student/progress')}
+                className="text-center"
+              >
+                <TrendingUp className="w-12 h-12 text-green-500 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  Детальный прогресс
+                </h3>
+                <p className="text-gray-600 text-sm">
+                  Смотрите статистику по предметам и активности
+                </p>
+              </div>
+            </Card>
+
+            <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer">
+              <div
+                onClick={() => navigate('/student/achievements')}
+                className="text-center"
+              >
+                <Award className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  Мои достижения
+                </h3>
+                <p className="text-gray-600 text-sm">
+                  Разблокируйте награды за успехи в обучении
+                </p>
+              </div>
+            </Card>
+
+            <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer">
+              <div
+                onClick={() => navigate('/student/leaderboard')}
+                className="text-center"
+              >
+                <Target className="w-12 h-12 text-purple-500 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  Таблица лидеров
+                </h3>
+                <p className="text-gray-600 text-sm">
+                  Соревнуйтесь с другими студентами
+                </p>
+              </div>
+            </Card>
+          </div>
         </motion.div>
       </div>
     </div>

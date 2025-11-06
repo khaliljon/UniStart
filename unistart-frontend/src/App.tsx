@@ -14,6 +14,7 @@ import FlashcardStudyPage from './pages/FlashcardStudyPage'
 import QuizzesPage from './pages/QuizzesPage'
 import QuizTakingPage from './pages/QuizTakingPage'
 import QuizResultPage from './pages/QuizResultPage'
+import QuizStatsPage from './pages/QuizStatsPage'
 
 // Teacher Pages
 import CreateQuizPage from './pages/CreateQuizPage'
@@ -25,6 +26,14 @@ import TeacherExportPage from './pages/TeacherExportPage'
 
 // Admin Pages
 import AdminUsersPage from './pages/AdminUsersPage'
+import AdminAnalyticsPage from './pages/AdminAnalyticsPage'
+import AdminExportPage from './pages/AdminExportPage'
+import AdminAchievementsPage from './pages/AdminAchievementsPage'
+
+// Student Pages
+import StudentProgressPage from './pages/StudentProgressPage'
+import StudentAchievementsPage from './pages/StudentAchievementsPage'
+import StudentLeaderboardPage from './pages/StudentLeaderboardPage'
 
 function App() {
   return (
@@ -83,6 +92,16 @@ function App() {
             element={
               <PrivateRoute>
                 <QuizResultPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/quizzes/:id/stats"
+            element={
+              <PrivateRoute>
+                <RoleRoute allowedRoles={['Teacher', 'Admin']}>
+                  <QuizStatsPage />
+                </RoleRoute>
               </PrivateRoute>
             }
           />
@@ -147,7 +166,9 @@ function App() {
               </RoleRoute>
             </PrivateRoute>
           }
-        />          {/* Страницы для администраторов */}
+        />
+          
+          {/* Страницы для администраторов */}
           <Route
             path="/admin/users"
             element={
@@ -155,6 +176,62 @@ function App() {
                 <RoleRoute allowedRoles={['Admin']}>
                   <AdminUsersPage />
                 </RoleRoute>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/admin/analytics"
+            element={
+              <PrivateRoute>
+                <RoleRoute allowedRoles={['Admin']}>
+                  <AdminAnalyticsPage />
+                </RoleRoute>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/admin/export"
+            element={
+              <PrivateRoute>
+                <RoleRoute allowedRoles={['Admin']}>
+                  <AdminExportPage />
+                </RoleRoute>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/admin/achievements"
+            element={
+              <PrivateRoute>
+                <RoleRoute allowedRoles={['Admin']}>
+                  <AdminAchievementsPage />
+                </RoleRoute>
+              </PrivateRoute>
+            }
+          />
+
+          {/* Страницы для студентов */}
+          <Route
+            path="/student/progress"
+            element={
+              <PrivateRoute>
+                <StudentProgressPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/student/achievements"
+            element={
+              <PrivateRoute>
+                <StudentAchievementsPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/student/leaderboard"
+            element={
+              <PrivateRoute>
+                <StudentLeaderboardPage />
               </PrivateRoute>
             }
           />

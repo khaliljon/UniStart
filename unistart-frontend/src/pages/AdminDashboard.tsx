@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Users, TrendingUp, Award, AlertCircle, FileText, Activity } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Users, TrendingUp, Award, AlertCircle, FileText, Activity, BarChart3, Download } from 'lucide-react';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import api from '../services/api';
@@ -13,6 +14,7 @@ interface AdminStats {
 }
 
 const AdminDashboard = () => {
+  const navigate = useNavigate();
   const [stats, setStats] = useState<AdminStats>({
     totalUsers: 0,
     totalQuizzes: 0,
@@ -24,19 +26,87 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     loadAdminData();
+
+    // Перезагружаем данные при возврате на страницу (когда окно получает фокус)
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        loadAdminData();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   const loadAdminData = async () => {
     try {
-      const [statsData, usersData] = await Promise.all([
-        api.get('/admin/stats'),
+      // Загружаем данные параллельно, если какой-то запрос упадет - используем 0
+      const [usersResponse, quizzesResponse, flashcardsResponse] = await Promise.allSettled([
         api.get('/admin/users'),
+        api.get('/admin/quizzes'),      // Используем админский эндпоинт
+        api.get('/admin/flashcards'),   // Используем админский эндпоинт
       ]);
 
-      setStats(statsData.data);
-      setUsers(usersData.data.slice(0, 5)); // Показываем только 5 последних пользователей
+      console.log('Users response:', usersResponse);
+      console.log('Quizzes response:', quizzesResponse);
+      console.log('Flashcards response:', flashcardsResponse);
+
+      // Обработка пользователей
+      let usersArray: any[] = [];
+      if (usersResponse.status === 'fulfilled') {
+        const data = usersResponse.value.data;
+        usersArray = Array.isArray(data) 
+          ? data 
+          : (data.users || data.Users || []);
+      }
+
+      // Обработка квизов
+      let quizzesCount = 0;
+      if (quizzesResponse.status === 'fulfilled') {
+        const data = quizzesResponse.value.data;
+        const quizzesArray = Array.isArray(data) 
+          ? data 
+          : (data.quizzes || data.Quizzes || []);
+        quizzesCount = quizzesArray.length;
+      }
+
+      // Обработка карточек
+      let flashcardsCount = 0;
+      if (flashcardsResponse.status === 'fulfilled') {
+        const data = flashcardsResponse.value.data;
+        const flashcardsArray = Array.isArray(data) 
+          ? data 
+          : (data.flashcardSets || data.FlashcardSets || []);
+        flashcardsCount = flashcardsArray.length;
+      }
+
+      // Подсчет активных пользователей (у кого есть активность)
+      const activeToday = usersArray.filter((user: any) => {
+        return user.totalCardsStudied > 0 || user.totalQuizzesTaken > 0;
+      }).length;
+
+      // Обновляем статистику
+      setStats({
+        totalUsers: usersArray.length,
+        totalQuizzes: quizzesCount,
+        totalFlashcardSets: flashcardsCount,
+        activeToday: activeToday,
+      });
+
+      setUsers(usersArray.slice(0, 5)); // Показываем только 5 последних пользователей
     } catch (error) {
       console.error('Ошибка загрузки данных админа:', error);
+      // Даже при ошибке показываем 0, а не падаем
+      setStats({
+        totalUsers: 0,
+        totalQuizzes: 0,
+        totalFlashcardSets: 0,
+        activeToday: 0,
+      });
+      setUsers([]);
     } finally {
       setLoading(false);
     }
@@ -139,22 +209,33 @@ const AdminDashboard = () => {
 
             <Card className="p-6">
               <div className="space-y-4">
-                {users.map((user) => (
-                  <div
-                    key={user.id}
-                    className="flex items-center justify-between py-3 border-b last:border-0"
-                  >
-                    <div>
-                      <p className="font-medium text-gray-900">
-                        {user.firstName} {user.lastName}
-                      </p>
-                      <p className="text-sm text-gray-600">{user.email}</p>
+                {users.length > 0 ? (
+                  users.map((user) => (
+                    <div
+                      key={user.id}
+                      className="flex items-center justify-between py-3 border-b last:border-0"
+                    >
+                      <div>
+                        <p className="font-medium text-gray-900">
+                          {user.firstName} {user.lastName}
+                        </p>
+                        <p className="text-sm text-gray-600">{user.email}</p>
+                      </div>
+                      <Button 
+                        variant="secondary" 
+                        size="sm"
+                        onClick={() => navigate('/admin/users')}
+                      >
+                        Управление
+                      </Button>
                     </div>
-                    <Button variant="secondary" size="sm">
-                      Управление
-                    </Button>
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <Users className="w-12 h-12 mx-auto mb-2 text-gray-400" />
+                    <p>Пользователи не найдены</p>
                   </div>
-                ))}
+                )}
               </div>
             </Card>
           </motion.div>
@@ -172,20 +253,37 @@ const AdminDashboard = () => {
 
             <Card className="p-6">
               <div className="space-y-3">
-                <Button variant="primary" className="w-full">
+                <Button 
+                  variant="primary" 
+                  className="w-full flex items-center justify-center gap-2"
+                  onClick={() => navigate('/admin/users')}
+                >
+                  <Users className="w-4 h-4" />
                   Просмотреть всех пользователей
                 </Button>
-                <Button variant="secondary" className="w-full">
+                <Button 
+                  variant="secondary" 
+                  className="w-full flex items-center justify-center gap-2"
+                  onClick={() => navigate('/admin/analytics')}
+                >
+                  <BarChart3 className="w-4 h-4" />
                   Аналитика платформы
                 </Button>
-                <Button variant="secondary" className="w-full">
+                <Button 
+                  variant="secondary" 
+                  className="w-full flex items-center justify-center gap-2"
+                  onClick={() => navigate('/admin/export')}
+                >
+                  <Download className="w-4 h-4" />
                   Экспорт данных (CSV)
                 </Button>
-                <Button variant="secondary" className="w-full">
-                  Создать достижение
-                </Button>
-                <Button variant="secondary" className="w-full">
-                  Управление ролями
+                <Button 
+                  variant="secondary" 
+                  className="w-full flex items-center justify-center gap-2"
+                  onClick={() => navigate('/admin/achievements')}
+                >
+                  <Award className="w-4 h-4" />
+                  Управление достижениями
                 </Button>
               </div>
             </Card>

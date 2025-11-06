@@ -23,6 +23,9 @@ const AdminUsersPage = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState<string>('');
+  const [showRoleModal, setShowRoleModal] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [selectedRole, setSelectedRole] = useState<string>('Student');
 
   useEffect(() => {
     loadUsers();
@@ -31,7 +34,14 @@ const AdminUsersPage = () => {
   const loadUsers = async () => {
     try {
       const response = await api.get('/admin/users');
-      setUsers(response.data);
+      console.log('Users response:', response.data);
+      
+      // API может вернуть массив или объект с массивом users
+      const usersArray = Array.isArray(response.data) 
+        ? response.data 
+        : (response.data.users || response.data.Users || []);
+      
+      setUsers(usersArray);
     } catch (error) {
       console.error('Ошибка загрузки пользователей:', error);
       alert('Ошибка загрузки пользователей');
@@ -89,7 +99,7 @@ const AdminUsersPage = () => {
     }
   };
 
-  const filteredUsers = users.filter((user) => {
+  const filteredUsers = Array.isArray(users) ? users.filter((user) => {
     const matchesSearch =
       user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       `${user.firstName} ${user.lastName}`.toLowerCase().includes(searchTerm.toLowerCase());
@@ -97,7 +107,7 @@ const AdminUsersPage = () => {
     const matchesRole = !filterRole || user.roles?.includes(filterRole);
 
     return matchesSearch && matchesRole;
-  });
+  }) : [];
 
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
@@ -234,12 +244,18 @@ const AdminUsersPage = () => {
                       <td className="px-6 py-4">
                         <div className="flex flex-wrap gap-2">
                           {user.roles?.map((role) => (
-                            <span
+                            <button
                               key={role}
-                              className={`px-2 py-1 text-xs font-medium rounded-full ${getRoleBadgeColor(role)}`}
+                              onClick={() => {
+                                if (confirm(`Удалить роль "${role}" у пользователя?`)) {
+                                  changeUserRole(user.id, role, 'remove');
+                                }
+                              }}
+                              className={`px-2 py-1 text-xs font-medium rounded-full ${getRoleBadgeColor(role)} hover:opacity-70 transition-opacity cursor-pointer`}
+                              title="Нажмите, чтобы удалить роль"
                             >
-                              {role}
-                            </span>
+                              {role} ×
+                            </button>
                           ))}
                         </div>
                       </td>
@@ -284,8 +300,8 @@ const AdminUsersPage = () => {
                             variant="secondary"
                             size="sm"
                             onClick={() => {
-                              const role = prompt('Введите роль (Admin, Teacher, Student):');
-                              if (role) changeUserRole(user.id, role, 'add');
+                              setSelectedUserId(user.id);
+                              setShowRoleModal(true);
                             }}
                             title="Добавить роль"
                           >
@@ -321,6 +337,60 @@ const AdminUsersPage = () => {
           )}
         </Card>
       </div>
+
+      {/* Модальное окно для выбора роли */}
+      {showRoleModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4"
+          >
+            <h3 className="text-xl font-bold text-gray-900 mb-4">
+              Добавить роль пользователю
+            </h3>
+
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Выберите роль:
+              </label>
+              <select
+                value={selectedRole}
+                onChange={(e) => setSelectedRole(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              >
+                <option value="Student">Student (Студент)</option>
+                <option value="Teacher">Teacher (Преподаватель)</option>
+                <option value="Admin">Admin (Администратор)</option>
+              </select>
+            </div>
+
+            <div className="flex gap-3 justify-end">
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setShowRoleModal(false);
+                  setSelectedUserId(null);
+                }}
+              >
+                Отмена
+              </Button>
+              <Button
+                variant="primary"
+                onClick={() => {
+                  if (selectedUserId) {
+                    changeUserRole(selectedUserId, selectedRole, 'add');
+                    setShowRoleModal(false);
+                    setSelectedUserId(null);
+                  }
+                }}
+              >
+                Добавить
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 };
