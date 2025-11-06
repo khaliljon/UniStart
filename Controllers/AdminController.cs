@@ -471,18 +471,14 @@ public class AdminController : ControllerBase
     }
 
     /// <summary>
-    /// Получить все квизы в системе (для админа), исключая seed данные
+    /// Получить все квизы в системе (для админа)
     /// </summary>
     [HttpGet("quizzes")]
     public async Task<ActionResult> GetAllQuizzes()
     {
-        // Получаем ID тестового пользователя (seed user)
-        var seedUser = await _userManager.FindByEmailAsync("test@unistart.kz");
-        var seedUserId = seedUser?.Id;
-
         var quizzes = await _context.Quizzes
             .Include(q => q.Questions)
-            .Where(q => seedUserId == null || q.UserId != seedUserId) // Исключаем seed квизы
+            .Include(q => q.User)
             .Select(q => new
             {
                 q.Id,
@@ -492,28 +488,26 @@ public class AdminController : ControllerBase
                 q.Difficulty,
                 q.IsPublished,
                 q.UserId,
+                UserName = q.User.UserName,
                 QuestionCount = q.Questions.Count,
                 TotalPoints = q.Questions.Sum(qu => qu.Points),
                 q.CreatedAt
             })
+            .OrderByDescending(q => q.CreatedAt)
             .ToListAsync();
 
         return Ok(quizzes);
     }
 
     /// <summary>
-    /// Получить все наборы карточек в системе (для админа), исключая seed данные
+    /// Получить все наборы карточек в системе (для админа)
     /// </summary>
     [HttpGet("flashcards")]
     public async Task<ActionResult> GetAllFlashcardSets()
     {
-        // Получаем ID тестового пользователя (seed user)
-        var seedUser = await _userManager.FindByEmailAsync("test@unistart.kz");
-        var seedUserId = seedUser?.Id;
-
         var flashcardSets = await _context.FlashcardSets
             .Include(fs => fs.Flashcards)
-            .Where(fs => seedUserId == null || fs.UserId != seedUserId) // Исключаем seed карточки
+            .Include(fs => fs.User)
             .Select(fs => new
             {
                 fs.Id,
@@ -522,12 +516,45 @@ public class AdminController : ControllerBase
                 fs.Subject,
                 fs.IsPublic,
                 fs.UserId,
+                UserName = fs.User.UserName,
                 CardCount = fs.Flashcards.Count,
                 fs.CreatedAt
             })
+            .OrderByDescending(fs => fs.CreatedAt)
             .ToListAsync();
 
         return Ok(flashcardSets);
+    }
+
+    /// <summary>
+    /// Получить все тесты в системе (для админа)
+    /// </summary>
+    [HttpGet("tests")]
+    public async Task<ActionResult> GetAllTests()
+    {
+        var tests = await _context.Tests
+            .Include(t => t.Questions)
+            .Include(t => t.User)
+            .Select(t => new
+            {
+                t.Id,
+                t.Title,
+                t.Description,
+                t.Subject,
+                t.Difficulty,
+                t.IsPublished,
+                t.UserId,
+                UserName = t.User.UserName,
+                QuestionCount = t.Questions.Count,
+                t.TotalPoints,
+                t.MaxAttempts,
+                t.PassingScore,
+                t.CreatedAt
+            })
+            .OrderByDescending(t => t.CreatedAt)
+            .ToListAsync();
+
+        return Ok(tests);
     }
 }
 

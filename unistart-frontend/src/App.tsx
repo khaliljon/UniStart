@@ -15,6 +15,7 @@ import QuizzesPage from './pages/QuizzesPage'
 import QuizTakingPage from './pages/QuizTakingPage'
 import QuizResultPage from './pages/QuizResultPage'
 import QuizStatsPage from './pages/QuizStatsPage'
+import TestsPage from './pages/TestsPage'
 
 // Teacher Pages
 import CreateQuizPage from './pages/CreateQuizPage'
@@ -29,6 +30,8 @@ import AdminUsersPage from './pages/AdminUsersPage'
 import AdminAnalyticsPage from './pages/AdminAnalyticsPage'
 import AdminExportPage from './pages/AdminExportPage'
 import AdminAchievementsPage from './pages/AdminAchievementsPage'
+import AdminQuizzesPage from './pages/AdminQuizzesPage'
+import AdminTestsPage from './pages/AdminTestsPage'
 
 // Student Pages
 import StudentProgressPage from './pages/StudentProgressPage'
@@ -106,6 +109,34 @@ function App() {
             }
           />
 
+          {/* Тесты */}
+          <Route
+            path="/tests"
+            element={
+              <PrivateRoute>
+                <TestsPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/tests/:testId/take"
+            element={
+              <PrivateRoute>
+                <TestsPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/tests/:id/stats"
+            element={
+              <PrivateRoute>
+                <RoleRoute allowedRoles={['Teacher', 'Admin']}>
+                  <TestsPage />
+                </RoleRoute>
+              </PrivateRoute>
+            }
+          />
+
           {/* Страницы для преподавателей */}
           <Route
             path="/quizzes/create"
@@ -175,6 +206,26 @@ function App() {
               <PrivateRoute>
                 <RoleRoute allowedRoles={['Admin']}>
                   <AdminUsersPage />
+                </RoleRoute>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/admin/quizzes"
+            element={
+              <PrivateRoute>
+                <RoleRoute allowedRoles={['Admin']}>
+                  <AdminQuizzesPage />
+                </RoleRoute>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/admin/tests"
+            element={
+              <PrivateRoute>
+                <RoleRoute allowedRoles={['Admin']}>
+                  <AdminTestsPage />
                 </RoleRoute>
               </PrivateRoute>
             }

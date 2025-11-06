@@ -9,6 +9,7 @@ import api from '../services/api';
 interface AdminStats {
   totalUsers: number;
   totalQuizzes: number;
+  totalTests: number;
   totalFlashcardSets: number;
   activeToday: number;
 }
@@ -18,6 +19,7 @@ const AdminDashboard = () => {
   const [stats, setStats] = useState<AdminStats>({
     totalUsers: 0,
     totalQuizzes: 0,
+    totalTests: 0,
     totalFlashcardSets: 0,
     activeToday: 0,
   });
@@ -44,14 +46,16 @@ const AdminDashboard = () => {
   const loadAdminData = async () => {
     try {
       // Загружаем данные параллельно, если какой-то запрос упадет - используем 0
-      const [usersResponse, quizzesResponse, flashcardsResponse] = await Promise.allSettled([
+      const [usersResponse, quizzesResponse, testsResponse, flashcardsResponse] = await Promise.allSettled([
         api.get('/admin/users'),
         api.get('/admin/quizzes'),      // Используем админский эндпоинт
+        api.get('/admin/tests'),        // Добавлен эндпоинт для тестов
         api.get('/admin/flashcards'),   // Используем админский эндпоинт
       ]);
 
       console.log('Users response:', usersResponse);
       console.log('Quizzes response:', quizzesResponse);
+      console.log('Tests response:', testsResponse);
       console.log('Flashcards response:', flashcardsResponse);
 
       // Обработка пользователей
@@ -73,6 +77,16 @@ const AdminDashboard = () => {
         quizzesCount = quizzesArray.length;
       }
 
+      // Обработка тестов
+      let testsCount = 0;
+      if (testsResponse.status === 'fulfilled') {
+        const data = testsResponse.value.data;
+        const testsArray = Array.isArray(data) 
+          ? data 
+          : (data.tests || data.Tests || []);
+        testsCount = testsArray.length;
+      }
+
       // Обработка карточек
       let flashcardsCount = 0;
       if (flashcardsResponse.status === 'fulfilled') {
@@ -92,6 +106,7 @@ const AdminDashboard = () => {
       setStats({
         totalUsers: usersArray.length,
         totalQuizzes: quizzesCount,
+        totalTests: testsCount,
         totalFlashcardSets: flashcardsCount,
         activeToday: activeToday,
       });
@@ -103,6 +118,7 @@ const AdminDashboard = () => {
       setStats({
         totalUsers: 0,
         totalQuizzes: 0,
+        totalTests: 0,
         totalFlashcardSets: 0,
         activeToday: 0,
       });
@@ -124,6 +140,12 @@ const AdminDashboard = () => {
       label: 'Квизов создано',
       value: stats.totalQuizzes,
       color: 'bg-green-500',
+    },
+    {
+      icon: FileText,
+      label: 'Тестов создано',
+      value: stats.totalTests,
+      color: 'bg-indigo-500',
     },
     {
       icon: Award,
@@ -260,6 +282,22 @@ const AdminDashboard = () => {
                 >
                   <Users className="w-4 h-4" />
                   Просмотреть всех пользователей
+                </Button>
+                <Button 
+                  variant="secondary" 
+                  className="w-full flex items-center justify-center gap-2"
+                  onClick={() => navigate('/admin/quizzes')}
+                >
+                  <FileText className="w-4 h-4" />
+                  Управление квизами
+                </Button>
+                <Button 
+                  variant="secondary" 
+                  className="w-full flex items-center justify-center gap-2"
+                  onClick={() => navigate('/admin/tests')}
+                >
+                  <FileText className="w-4 h-4" />
+                  Управление тестами
                 </Button>
                 <Button 
                   variant="secondary" 

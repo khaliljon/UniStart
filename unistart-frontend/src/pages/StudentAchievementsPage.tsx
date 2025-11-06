@@ -38,8 +38,23 @@ const StudentAchievementsPage = () => {
 
   const loadAchievements = async () => {
     try {
-      const response = await api.get('/student/achievements');
-      setAchievements(response.data);
+      setLoading(true);
+      const response = await api.get('/achievements');
+      
+      // Форматируем данные под наш интерфейс
+      const formattedAchievements = response.data.map((ach: any) => ({
+        id: ach.id,
+        name: ach.name,
+        description: ach.description,
+        icon: ach.icon || '🏆',
+        requiredValue: ach.pointsRequired || 0,
+        category: ach.category || 'Общее',
+        isUnlocked: ach.isUnlocked,
+        unlockedAt: ach.unlockedAt,
+        progress: ach.progress || 0,
+      }));
+      
+      setAchievements(formattedAchievements);
     } catch (error) {
       console.error('Ошибка загрузки достижений:', error);
       // Моковые данные

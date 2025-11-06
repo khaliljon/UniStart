@@ -1,0 +1,65 @@
+using System.ComponentModel.DataAnnotations;
+
+namespace UniStart.Models;
+
+/// <summary>
+/// Модель теста - серьёзное образовательное тестирование с ограничениями и контролем
+/// </summary>
+public class Test
+{
+    public int Id { get; set; }
+    
+    [Required(ErrorMessage = "Название теста обязательно")]
+    [StringLength(200, ErrorMessage = "Название не должно превышать 200 символов")]
+    public string Title { get; set; } = string.Empty;
+    
+    [StringLength(1000, ErrorMessage = "Описание не должно превышать 1000 символов")]
+    public string? Description { get; set; }
+    
+    [Required(ErrorMessage = "Предмет обязателен")]
+    [StringLength(100)]
+    public string Subject { get; set; } = string.Empty;
+    
+    [Required]
+    [StringLength(50)]
+    public string Difficulty { get; set; } = "Medium"; // Easy, Medium, Hard
+    
+    // Ограничения теста
+    [Range(1, 10, ErrorMessage = "Количество попыток должно быть от 1 до 10")]
+    public int MaxAttempts { get; set; } = 3; // Максимальное количество попыток
+    
+    [Range(0, 100, ErrorMessage = "Проходной балл должен быть от 0 до 100%")]
+    public int PassingScore { get; set; } = 70; // Проходной балл в процентах
+    
+    public bool IsProctored { get; set; } = false; // Требуется ли контроль
+    public bool ShuffleQuestions { get; set; } = true; // Перемешивать вопросы
+    public bool ShuffleAnswers { get; set; } = true; // Перемешивать варианты ответов
+    
+    // Настройки показа результатов
+    [Required]
+    [StringLength(50)]
+    public string ShowResultsAfter { get; set; } = "Immediate"; // Immediate, AfterDeadline, Manual
+    
+    public bool ShowCorrectAnswers { get; set; } = true; // Показывать правильные ответы
+    public bool ShowDetailedFeedback { get; set; } = true; // Показывать детальную обратную связь
+    
+    // Временные ограничения
+    [Range(1, 300, ErrorMessage = "Ограничение времени должно быть от 1 до 300 минут")]
+    public int TimeLimit { get; set; } = 60; // Ограничение времени в минутах
+    
+    public DateTime? StartDate { get; set; } // Когда тест становится доступным
+    public DateTime? EndDate { get; set; } // Дедлайн теста
+    
+    // Метаданные
+    public bool IsPublished { get; set; } = false;
+    public int TotalPoints { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? UpdatedAt { get; set; }
+    
+    // Связи
+    public string UserId { get; set; } = string.Empty; // Создатель теста
+    public ApplicationUser User { get; set; } = null!;
+    public ICollection<TestQuestion> Questions { get; set; } = new List<TestQuestion>();
+    public ICollection<UserTestAttempt> Attempts { get; set; } = new List<UserTestAttempt>();
+    public ICollection<Tag> Tags { get; set; } = new List<Tag>();
+}

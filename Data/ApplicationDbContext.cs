@@ -19,6 +19,13 @@ namespace UniStart.Data
         public DbSet<Answer> Answers { get; set; }
         public DbSet<UserQuizAttempt> UserQuizAttempts { get; set; }
         
+        // Tests
+        public DbSet<Test> Tests { get; set; }
+        public DbSet<TestQuestion> TestQuestions { get; set; }
+        public DbSet<TestAnswer> TestAnswers { get; set; }
+        public DbSet<UserTestAttempt> UserTestAttempts { get; set; }
+        public DbSet<UserTestAnswer> UserTestAnswers { get; set; }
+        
         // Tags & Achievements
         public DbSet<Tag> Tags { get; set; }
         public DbSet<Achievement> Achievements { get; set; }
@@ -67,12 +74,43 @@ namespace UniStart.Data
                 .HasForeignKey(ua => ua.QuizId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            // Конфигурация Test -> TestQuestions
+            modelBuilder.Entity<TestQuestion>()
+                .HasOne(tq => tq.Test)
+                .WithMany(t => t.Questions)
+                .HasForeignKey(tq => tq.TestId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Конфигурация TestQuestion -> TestAnswers
+            modelBuilder.Entity<TestAnswer>()
+                .HasOne(ta => ta.Question)
+                .WithMany(tq => tq.Answers)
+                .HasForeignKey(ta => ta.QuestionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Конфигурация Test -> UserTestAttempts
+            modelBuilder.Entity<UserTestAttempt>()
+                .HasOne(uta => uta.Test)
+                .WithMany(t => t.Attempts)
+                .HasForeignKey(uta => uta.TestId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Конфигурация UserTestAttempt -> UserTestAnswers
+            modelBuilder.Entity<UserTestAnswer>()
+                .HasOne(uta => uta.Attempt)
+                .WithMany(a => a.UserAnswers)
+                .HasForeignKey(uta => uta.AttemptId)
+                .OnDelete(DeleteBehavior.Cascade);
+
             // Индексы для производительности
             modelBuilder.Entity<Flashcard>()
                 .HasIndex(f => f.NextReviewDate);
 
             modelBuilder.Entity<UserQuizAttempt>()
                 .HasIndex(ua => ua.UserId);
+
+            modelBuilder.Entity<UserTestAttempt>()
+                .HasIndex(uta => uta.UserId);
         }
     }
 }

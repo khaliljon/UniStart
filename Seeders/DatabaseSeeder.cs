@@ -14,26 +14,9 @@ namespace UniStart.Seeders
             ApplicationDbContext context,
             UserManager<ApplicationUser> userManager)
         {
-            // Проверяем, есть ли уже данные
-            if (await context.FlashcardSets.AnyAsync())
-            {
-                Console.WriteLine("База данных уже содержит данные. Пропускаем seeding.");
-                return;
-            }
-
-            Console.WriteLine("Начинаем заполнение базы данных тестовыми данными...");
-
-            // 1. Создаем тестового пользователя
-            var testUser = await CreateTestUserAsync(userManager);
-
-            // 2. Создаем наборы карточек
-            await CreateFlashcardSetsAsync(context, testUser.Id);
-
-            // 3. Создаем тесты
-            await CreateQuizzesAsync(context, testUser.Id);
-
-            await context.SaveChangesAsync();
-            Console.WriteLine("✅ База данных успешно заполнена тестовыми данными!");
+            // Не создаём тестовые данные
+            Console.WriteLine("DatabaseSeeder: тестовые данные отключены.");
+            await Task.CompletedTask;
         }
 
         private static async Task<ApplicationUser> CreateTestUserAsync(UserManager<ApplicationUser> userManager)

@@ -228,16 +228,17 @@ namespace UniStart.Controllers
         }
 
         /// <summary>
-        /// Удалить тест (только свои)
+        /// Удалить тест (свои или любые для админа)
         /// </summary>
         [HttpDelete("{id}")]
         [Authorize]
         public async Task<IActionResult> DeleteQuiz(int id)
         {
             var userId = GetUserId()!;
+            var isAdmin = User.IsInRole("Admin");
             
             var quiz = await _context.Quizzes
-                .FirstOrDefaultAsync(q => q.Id == id && q.UserId == userId);
+                .FirstOrDefaultAsync(q => q.Id == id && (q.UserId == userId || isAdmin));
                 
             if (quiz == null)
                 return NotFound();
@@ -248,16 +249,17 @@ namespace UniStart.Controllers
         }
 
         /// <summary>
-        /// Опубликовать/снять с публикации тест (только свои)
+        /// Опубликовать/снять с публикации тест (свои или любые для админа)
         /// </summary>
         [HttpPatch("{id}/publish")]
         [Authorize]
         public async Task<IActionResult> TogglePublish(int id, [FromBody] bool isPublished)
         {
             var userId = GetUserId()!;
+            var isAdmin = User.IsInRole("Admin");
             
             var quiz = await _context.Quizzes
-                .FirstOrDefaultAsync(q => q.Id == id && q.UserId == userId);
+                .FirstOrDefaultAsync(q => q.Id == id && (q.UserId == userId || isAdmin));
                 
             if (quiz == null)
                 return NotFound();

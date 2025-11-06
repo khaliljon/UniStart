@@ -39,9 +39,23 @@ const StudentLeaderboardPage = () => {
 
   const loadLeaderboard = async () => {
     try {
-      const response = await api.get(`/student/leaderboard?period=${filter}`);
-      setLeaderboard(response.data.leaderboard);
-      setCurrentUser(response.data.currentUser);
+      setLoading(true);
+      const response = await api.get(`/student/leaderboard?period=${filter === 'all' ? 'all-time' : filter}&top=50`);
+      
+      // Форматируем данные под наш интерфейс
+      const formattedLeaderboard = response.data.leaderboard.map((entry: any) => ({
+        rank: entry.rank,
+        userId: entry.userId || '0',
+        userName: entry.userName,
+        email: entry.email || '',
+        totalPoints: entry.totalPoints,
+        quizzesTaken: entry.totalAttempts,
+        averageScore: entry.averageScore,
+        achievementsUnlocked: 0, // TODO: добавить когда будут достижения
+        isCurrentUser: false // TODO: определить текущего пользователя
+      }));
+      
+      setLeaderboard(formattedLeaderboard);
     } catch (error) {
       console.error('Ошибка загрузки таблицы лидеров:', error);
       // Моковые данные

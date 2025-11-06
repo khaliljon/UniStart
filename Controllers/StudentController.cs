@@ -31,6 +31,100 @@ public class StudentController : ControllerBase
         ?? throw new UnauthorizedAccessException("Пользователь не аутентифицирован");
 
     /// <summary>
+    /// Получить полный прогресс студента (для страницы прогресса)
+    /// </summary>
+    [HttpGet("progress")]
+    public async Task<ActionResult<object>> GetProgress()
+    {
+        var userId = GetUserId();
+        var user = await _userManager.FindByIdAsync(userId);
+
+        if (user == null)
+            return NotFound(new { Message = "Пользователь не найден" });
+
+        // Статистика по квизам
+        var quizAttempts = await _context.UserQuizAttempts
+            .Where(qa => qa.UserId == userId)
+            .Include(qa => qa.Quiz)
+            .ToListAsync();
+
+        var totalQuizzesTaken = quizAttempts.Select(qa => qa.QuizId).Distinct().Count();
+        var averageQuizScore = quizAttempts.Any() ? quizAttempts.Average(qa => qa.Percentage) : 0;
+        var totalTimeSpent = quizAttempts.Sum(qa => qa.TimeSpentSeconds);
+
+        // Серия (streak) - считаем последовательные дни с активностью
+        var activeDates = quizAttempts
+            .Select(qa => qa.CompletedAt!.Value.Date)
+            .Distinct()
+            .OrderByDescending(d => d)
+            .ToList();
+
+        int currentStreak = 0;
+        int longestStreak = 0;
+        int tempStreak = 0;
+
+        for (int i = 0; i < activeDates.Count; i++)
+        {
+            if (i == 0 || (activeDates[i - 1] - activeDates[i]).Days == 1)
+            {
+                tempStreak++;
+                if (i == 0) currentStreak = tempStreak;
+            }
+            else
+            {
+                if (i > 0) currentStreak = 0;
+                tempStreak = 1;
+            }
+            longestStreak = Math.Max(longestStreak, tempStreak);
+        }
+
+        // Достижения (пока 0, можно расширить)
+        var totalAchievements = 0;
+
+        // Прогресс по предметам
+        var subjectProgress = quizAttempts
+            .GroupBy(qa => qa.Quiz.Subject)
+            .Select(g => new
+            {
+                subject = g.Key,
+                quizzesTaken = g.Select(qa => qa.QuizId).Distinct().Count(),
+                averageScore = Math.Round(g.Average(qa => qa.Percentage), 1),
+                cardsStudied = 0 // TODO: добавить подсчет карточек по предметам
+            })
+            .ToList();
+
+        // Недавняя активность
+        var recentActivity = quizAttempts
+            .OrderByDescending(qa => qa.CompletedAt)
+            .Take(10)
+            .Select(qa => new
+            {
+                id = qa.Id,
+                type = "quiz",
+                title = qa.Quiz.Title,
+                score = (int)qa.Percentage,
+                date = qa.CompletedAt
+            })
+            .ToList();
+
+        return Ok(new
+        {
+            stats = new
+            {
+                totalCardsStudied = user.TotalCardsStudied,
+                totalQuizzesTaken,
+                averageQuizScore = Math.Round(averageQuizScore, 1),
+                totalTimeSpent,
+                currentStreak,
+                longestStreak,
+                totalAchievements
+            },
+            recentActivity,
+            subjectProgress
+        });
+    }
+
+    /// <summary>
     /// Получить свою статистику обучения
     /// </summary>
     [HttpGet("my-stats")]

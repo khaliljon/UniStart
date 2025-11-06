@@ -6,7 +6,8 @@ import {
   Users, 
   Settings, 
   LogOut,
-  LayoutDashboard
+  LayoutDashboard,
+  ClipboardCheck
 } from 'lucide-react';
 import Button from '../common/Button';
 
@@ -59,6 +60,14 @@ const Layout = () => {
                   className="flex items-center gap-2 text-gray-700 hover:text-primary-600 transition-colors"
                 >
                   <FileText className="w-5 h-5" />
+                  <span>Квизы</span>
+                </Link>
+
+                <Link
+                  to="/tests"
+                  className="flex items-center gap-2 text-gray-700 hover:text-primary-600 transition-colors"
+                >
+                  <ClipboardCheck className="w-5 h-5" />
                   <span>Тесты</span>
                 </Link>
 
