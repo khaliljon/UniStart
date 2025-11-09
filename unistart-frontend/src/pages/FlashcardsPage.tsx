@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { BookOpen, Play, Target, Clock } from 'lucide-react';
+import { BookOpen, Play, Target, Clock, Plus } from 'lucide-react';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import { flashcardService } from '../services/flashcardService';
 import { FlashcardSet } from '../types';
+import { useAuth } from '../context/AuthContext';
 
 const FlashcardsPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { isTeacher, isAdmin } = useAuth();
   const [sets, setSets] = useState<FlashcardSet[]>([]);
   const [loading, setLoading] = useState(true);
   const [successMessage, setSuccessMessage] = useState('');
@@ -50,14 +52,27 @@ const FlashcardsPage = () => {
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
+          className="mb-8 flex justify-between items-start"
         >
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            Интерактивные карточки
-          </h1>
-          <p className="text-gray-600">
-            Изучайте материал с помощью алгоритма интервального повторения
-          </p>
+          <div>
+            <h1 className="text-4xl font-bold text-gray-900 mb-2">
+              Интерактивные карточки
+            </h1>
+            <p className="text-gray-600">
+              Изучайте материал с помощью алгоритма интервального повторения
+            </p>
+          </div>
+          
+          {(isTeacher || isAdmin) && (
+            <Button
+              variant="primary"
+              onClick={() => navigate('/flashcards/create')}
+              className="flex items-center gap-2"
+            >
+              <Plus className="w-5 h-5" />
+              Создать набор
+            </Button>
+          )}
         </motion.div>
 
         {/* Сообщение об успехе */}

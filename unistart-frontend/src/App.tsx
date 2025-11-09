@@ -32,6 +32,7 @@ import AdminExportPage from './pages/AdminExportPage'
 import AdminAchievementsPage from './pages/AdminAchievementsPage'
 import AdminQuizzesPage from './pages/AdminQuizzesPage'
 import AdminTestsPage from './pages/AdminTestsPage'
+import AdminSettingsPage from './pages/AdminSettingsPage'
 
 // Student Pages
 import StudentProgressPage from './pages/StudentProgressPage'
@@ -256,6 +257,16 @@ function App() {
               <PrivateRoute>
                 <RoleRoute allowedRoles={['Admin']}>
                   <AdminAchievementsPage />
+                </RoleRoute>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/admin/settings"
+            element={
+              <PrivateRoute>
+                <RoleRoute allowedRoles={['Admin']}>
+                  <AdminSettingsPage />
                 </RoleRoute>
               </PrivateRoute>
             }

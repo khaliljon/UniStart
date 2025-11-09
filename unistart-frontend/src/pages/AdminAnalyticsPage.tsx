@@ -20,6 +20,7 @@ import api from '../services/api';
 interface PlatformStats {
   totalUsers: number;
   totalQuizzes: number;
+  totalTests: number;
   totalFlashcardSets: number;
   totalQuestions: number;
   totalFlashcards: number;
@@ -43,22 +44,24 @@ const AdminAnalyticsPage = () => {
   const loadAnalytics = async () => {
     try {
       const response = await api.get('/admin/analytics');
-      setStats(response.data.stats);
+      // Правильно читаем данные из Stats (с большой буквы, как отправляет backend)
+      setStats(response.data.stats || response.data.Stats);
     } catch (error) {
       console.error('Ошибка загрузки аналитики:', error);
-      // Используем моковые данные если API не работает
+      // Используем данные из AdminDashboard если API не работает
       setStats({
-        totalUsers: 4,
-        totalQuizzes: 3,
-        totalFlashcardSets: 4,
-        totalQuestions: 45,
-        totalFlashcards: 120,
+        totalUsers: 0,
+        totalQuizzes: 0,
+        totalTests: 0,
+        totalFlashcardSets: 0,
+        totalQuestions: 0,
+        totalFlashcards: 0,
         totalAttempts: 0,
         activeToday: 0,
-        activeThisWeek: 2,
-        activeThisMonth: 4,
+        activeThisWeek: 0,
+        activeThisMonth: 0,
         averageQuizScore: 0,
-        totalAchievements: 16,
+        totalAchievements: 0,
       });
     } finally {
       setLoading(false);
@@ -133,10 +136,10 @@ const AdminAnalyticsPage = () => {
           <Card className="p-6 bg-gradient-to-br from-green-500 to-green-600 text-white">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-green-100 text-sm mb-1">Всего тестов</p>
+                <p className="text-green-100 text-sm mb-1">Квизов</p>
                 <p className="text-3xl font-bold">{stats.totalQuizzes}</p>
                 <p className="text-green-100 text-xs mt-1">
-                  Вопросов: {stats.totalQuestions}
+                  Тестов: {stats.totalTests}
                 </p>
               </div>
               <FileText className="w-12 h-12 text-green-200" />

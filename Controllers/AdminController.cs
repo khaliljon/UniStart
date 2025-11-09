@@ -340,6 +340,62 @@ public class AdminController : ControllerBase
     }
 
     /// <summary>
+    /// Получить основную аналитику платформы
+    /// </summary>
+    [HttpGet("analytics")]
+    public async Task<ActionResult<object>> GetAnalytics()
+    {
+        var totalUsers = await _context.Users.CountAsync();
+        var totalQuizzes = await _context.Quizzes.CountAsync();
+        var totalTests = await _context.Tests.CountAsync();
+        var totalFlashcardSets = await _context.FlashcardSets.CountAsync();
+        var totalQuestions = await _context.Questions.CountAsync();
+        var totalFlashcards = await _context.Flashcards.CountAsync();
+        var totalAttempts = await _context.UserQuizAttempts.CountAsync();
+        
+        var today = DateTime.UtcNow.Date;
+        var weekAgo = DateTime.UtcNow.AddDays(-7);
+        var monthAgo = DateTime.UtcNow.AddMonths(-1);
+        
+        var activeToday = await _context.Users
+            .Where(u => u.LastLoginAt != null && u.LastLoginAt >= today)
+            .CountAsync();
+            
+        var activeThisWeek = await _context.Users
+            .Where(u => u.LastLoginAt != null && u.LastLoginAt >= weekAgo)
+            .CountAsync();
+            
+        var activeThisMonth = await _context.Users
+            .Where(u => u.LastLoginAt != null && u.LastLoginAt >= monthAgo)
+            .CountAsync();
+        
+        var averageQuizScore = await _context.UserQuizAttempts.AnyAsync() 
+            ? await _context.UserQuizAttempts.AverageAsync(qa => qa.Percentage)
+            : 0.0;
+            
+        var totalAchievements = await _context.Achievements.CountAsync();
+        
+        return Ok(new
+        {
+            Stats = new
+            {
+                TotalUsers = totalUsers,
+                TotalQuizzes = totalQuizzes,
+                TotalTests = totalTests,
+                TotalFlashcardSets = totalFlashcardSets,
+                TotalQuestions = totalQuestions,
+                TotalFlashcards = totalFlashcards,
+                TotalAttempts = totalAttempts,
+                ActiveToday = activeToday,
+                ActiveThisWeek = activeThisWeek,
+                ActiveThisMonth = activeThisMonth,
+                AverageQuizScore = Math.Round(averageQuizScore, 2),
+                TotalAchievements = totalAchievements
+            }
+        });
+    }
+
+    /// <summary>
     /// Получить детальную аналитику платформы с графиками
     /// </summary>
     [HttpGet("analytics/detailed")]
@@ -467,6 +523,100 @@ public class AdminController : ControllerBase
         var bytes = System.Text.Encoding.UTF8.GetBytes(csv.ToString());
         var fileName = $"UniStart_Users_Export_{DateTime.UtcNow:yyyyMMdd}.csv";
 
+        return File(bytes, "text/csv", fileName);
+    }
+
+    /// <summary>
+    /// Экспорт пользователей в CSV
+    /// </summary>
+    [HttpGet("export/users")]
+    public async Task<ActionResult> ExportUsers()
+    {
+        var users = await _userManager.Users.ToListAsync();
+        var csv = new System.Text.StringBuilder();
+        
+        csv.AppendLine("Email,UserName,FirstName,LastName,CreatedAt,LastLoginAt,TotalCardsStudied,TotalQuizzesTaken,Roles");
+
+        foreach (var user in users)
+        {
+            var roles = await _userManager.GetRolesAsync(user);
+            csv.AppendLine($"{user.Email},{user.UserName},{user.FirstName},{user.LastName},{user.CreatedAt:yyyy-MM-dd HH:mm},{user.LastLoginAt:yyyy-MM-dd HH:mm},{user.TotalCardsStudied},{user.TotalQuizzesTaken},\"{string.Join(";", roles)}\"");
+        }
+
+        var bytes = System.Text.Encoding.UTF8.GetBytes(csv.ToString());
+        var fileName = $"UniStart_Users_{DateTime.UtcNow:yyyyMMdd}.csv";
+        return File(bytes, "text/csv", fileName);
+    }
+
+    /// <summary>
+    /// Экспорт квизов в CSV
+    /// </summary>
+    [HttpGet("export/quizzes")]
+    public async Task<ActionResult> ExportQuizzes()
+    {
+        var quizzes = await _context.Quizzes
+            .Include(q => q.Questions)
+            .Include(q => q.User)
+            .ToListAsync();
+
+        var csv = new System.Text.StringBuilder();
+        csv.AppendLine("QuizId,Title,Subject,Difficulty,CreatedBy,QuestionCount,TotalPoints,IsPublished,CreatedAt");
+
+        foreach (var quiz in quizzes)
+        {
+            csv.AppendLine($"{quiz.Id},\"{quiz.Title}\",{quiz.Subject},{quiz.Difficulty},{quiz.User.UserName},{quiz.Questions.Count},{quiz.Questions.Sum(q => q.Points)},{quiz.IsPublished},{quiz.CreatedAt:yyyy-MM-dd}");
+        }
+
+        var bytes = System.Text.Encoding.UTF8.GetBytes(csv.ToString());
+        var fileName = $"UniStart_Quizzes_{DateTime.UtcNow:yyyyMMdd}.csv";
+        return File(bytes, "text/csv", fileName);
+    }
+
+    /// <summary>
+    /// Экспорт наборов карточек в CSV
+    /// </summary>
+    [HttpGet("export/flashcards")]
+    public async Task<ActionResult> ExportFlashcards()
+    {
+        var sets = await _context.FlashcardSets
+            .Include(fs => fs.Flashcards)
+            .Include(fs => fs.User)
+            .ToListAsync();
+
+        var csv = new System.Text.StringBuilder();
+        csv.AppendLine("SetId,Title,Subject,CreatedBy,CardCount,IsPublic,CreatedAt");
+
+        foreach (var set in sets)
+        {
+            csv.AppendLine($"{set.Id},\"{set.Title}\",{set.Subject},{set.User.UserName},{set.Flashcards.Count},{set.IsPublic},{set.CreatedAt:yyyy-MM-dd}");
+        }
+
+        var bytes = System.Text.Encoding.UTF8.GetBytes(csv.ToString());
+        var fileName = $"UniStart_Flashcards_{DateTime.UtcNow:yyyyMMdd}.csv";
+        return File(bytes, "text/csv", fileName);
+    }
+
+    /// <summary>
+    /// Экспорт попыток тестов в CSV
+    /// </summary>
+    [HttpGet("export/attempts")]
+    public async Task<ActionResult> ExportAttempts()
+    {
+        var attempts = await _context.UserQuizAttempts
+            .Include(qa => qa.User)
+            .Include(qa => qa.Quiz)
+            .ToListAsync();
+
+        var csv = new System.Text.StringBuilder();
+        csv.AppendLine("AttemptId,User,Quiz,Score,MaxScore,Percentage,TimeSpent,CompletedAt");
+
+        foreach (var attempt in attempts)
+        {
+            csv.AppendLine($"{attempt.Id},{attempt.User.Email},\"{attempt.Quiz.Title}\",{attempt.Score},{attempt.MaxScore},{attempt.Percentage:F2},{attempt.TimeSpentSeconds},{attempt.CompletedAt:yyyy-MM-dd HH:mm}");
+        }
+
+        var bytes = System.Text.Encoding.UTF8.GetBytes(csv.ToString());
+        var fileName = $"UniStart_Attempts_{DateTime.UtcNow:yyyyMMdd}.csv";
         return File(bytes, "text/csv", fileName);
     }
 

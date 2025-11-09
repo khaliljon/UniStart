@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Users, TrendingUp, BookOpen, Award, ArrowLeft } from 'lucide-react';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
-import api from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 interface Student {
   userId: string;
@@ -26,6 +26,7 @@ interface StudentStats {
 
 const TeacherStudentsPage = () => {
   const navigate = useNavigate();
+  const { isAdmin } = useAuth();
   const [students, setStudents] = useState<Student[]>([]);
   const [stats, setStats] = useState<StudentStats>({
     totalStudents: 0,
@@ -103,10 +104,12 @@ const TeacherStudentsPage = () => {
           </Button>
 
           <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            👥 Мои студенты
+            👥 {isAdmin ? 'Студенты' : 'Мои студенты'}
           </h1>
           <p className="text-gray-600">
-            Отслеживайте прогресс и достижения ваших студентов
+            {isAdmin
+              ? 'Все студенты платформы и их прогресс'
+              : 'Отслеживайте прогресс и достижения ваших студентов'}
           </p>
         </motion.div>
 

@@ -54,8 +54,14 @@ const TestsPage = () => {
     try {
       setLoading(true);
       
-      // Учителя и админы видят свои тесты, студенты - все опубликованные
-      const endpoint = (isTeacher || isAdmin) ? '/tests/my' : '/tests';
+      // Админы видят все тесты, учителя - свои, студенты - опубликованные
+      let endpoint = '/tests'; // По умолчанию для студентов
+      
+      if (isAdmin) {
+        endpoint = '/admin/tests'; // Админ видит все тесты
+      } else if (isTeacher) {
+        endpoint = '/tests/my'; // Учитель видит свои тесты
+      }
       
       const params = new URLSearchParams();
       if (subjectFilter) params.append('subject', subjectFilter);
@@ -127,12 +133,14 @@ const TestsPage = () => {
         <div>
           <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
             <FileText className="w-8 h-8 text-primary-500" />
-            {(isTeacher || isAdmin) ? 'Мои Тесты' : 'Доступные Тесты'}
+            {isAdmin ? 'Тесты' : (isTeacher ? 'Мои Тесты' : 'Доступные Тесты')}
           </h1>
           <p className="text-gray-600 mt-2">
-            {(isTeacher || isAdmin)
-              ? 'Управляйте своими тестами и отслеживайте результаты студентов'
-              : 'Проверьте свои знания с помощью тестов'}
+            {isAdmin
+              ? 'Все тесты в системе'
+              : (isTeacher
+                ? 'Управляйте своими тестами и отслеживайте результаты студентов'
+                : 'Проверьте свои знания с помощью тестов')}
           </p>
         </div>
         {(isTeacher || isAdmin) && (
