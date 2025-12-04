@@ -23,7 +23,6 @@ namespace UniStart.DTOs
         [StringLength(200, ErrorMessage = "Название не должно превышать 200 символов")]
         public string Title { get; set; } = string.Empty;
         
-        [Required(ErrorMessage = "Описание обязательно")]
         [StringLength(1000, ErrorMessage = "Описание не должно превышать 1000 символов")]
         public string Description { get; set; } = string.Empty;
         
@@ -39,7 +38,6 @@ namespace UniStart.DTOs
         [StringLength(200, ErrorMessage = "Название не должно превышать 200 символов")]
         public string Title { get; set; } = string.Empty;
         
-        [Required(ErrorMessage = "Описание обязательно")]
         [StringLength(1000, ErrorMessage = "Описание не должно превышать 1000 символов")]
         public string Description { get; set; } = string.Empty;
         

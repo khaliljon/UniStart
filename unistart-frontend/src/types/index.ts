@@ -37,10 +37,13 @@ export interface FlashcardSet {
   id: number;
   title: string;
   description: string;
+  subject?: string;
+  isPublic?: boolean;
   createdAt: string;
   updatedAt: string;
   totalCards: number;
   cardsToReview: number;
+  flashcards?: Flashcard[]; // Массив карточек (когда загружается детально)
 }
 
 export interface Flashcard {

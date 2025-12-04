@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { BookOpen, Play, Target, Clock, Plus } from 'lucide-react';
+import { BookOpen, Play, Target, Clock, Plus, Trash2 } from 'lucide-react';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import { flashcardService } from '../services/flashcardService';
@@ -34,6 +34,22 @@ const FlashcardsPage = () => {
       console.error('Ошибка загрузки наборов:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: number, title: string) => {
+    if (!window.confirm(`Вы уверены, что хотите удалить набор "${title}"? Это действие необратимо.`)) {
+      return;
+    }
+
+    try {
+      await flashcardService.deleteSet(id);
+      setSuccessMessage('Набор карточек успешно удален');
+      setTimeout(() => setSuccessMessage(''), 3000);
+      loadSets();
+    } catch (error) {
+      console.error('Ошибка удаления набора:', error);
+      alert('Ошибка при удалении набора');
     }
   };
 
@@ -144,14 +160,30 @@ const FlashcardsPage = () => {
                       </div>
                     </div>
 
-                    {/* Кнопка изучения */}
-                    <Button
-                      onClick={() => navigate(`/flashcards/${set.id}/study`)}
-                      className="w-full flex items-center justify-center gap-2 group-hover:scale-105 transition-transform"
-                    >
-                      <Play className="w-4 h-4" />
-                      Начать изучение
-                    </Button>
+                    {/* Кнопки действий */}
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => navigate(`/flashcards/${set.id}/study`)}
+                        className="flex-1 flex items-center justify-center gap-2 group-hover:scale-105 transition-transform"
+                      >
+                        <Play className="w-4 h-4" />
+                        Начать изучение
+                      </Button>
+                      
+                      {(isTeacher || isAdmin) && (
+                        <Button
+                          variant="danger"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(set.id, set.title);
+                          }}
+                          className="px-3"
+                          title="Удалить набор"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </Card>
               </motion.div>

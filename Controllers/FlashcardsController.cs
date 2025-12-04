@@ -16,13 +16,16 @@ namespace UniStart.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly ISpacedRepetitionService _spacedRepetitionService;
+        private readonly ILogger<FlashcardsController> _logger;
 
         public FlashcardsController(
             ApplicationDbContext context,
-            ISpacedRepetitionService spacedRepetitionService)
+            ISpacedRepetitionService spacedRepetitionService,
+            ILogger<FlashcardsController> logger)
         {
             _context = context;
             _spacedRepetitionService = spacedRepetitionService;
+            _logger = logger;
         }
 
         private string GetUserId() => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
@@ -108,6 +111,9 @@ namespace UniStart.Controllers
 
             if (set == null)
                 return NotFound($"FlashcardSet with ID {id} not found");
+
+            _logger.LogInformation("GetFlashcardSet: ID={Id}, UserId={UserId}, FlashcardsCount={Count}", 
+                id, userId, set.Flashcards.Count);
 
             return Ok(set);
         }
@@ -222,12 +228,19 @@ namespace UniStart.Controllers
         {
             var userId = GetUserId();
             
+            _logger.LogInformation("CreateFlashcard: FlashcardSetId={SetId}, UserId={UserId}", 
+                dto.FlashcardSetId, userId);
+            
             // Проверяем существование набора и принадлежность пользователю
             var setExists = await _context.FlashcardSets
                 .AnyAsync(fs => fs.Id == dto.FlashcardSetId && fs.UserId == userId);
                 
             if (!setExists)
+            {
+                _logger.LogWarning("CreateFlashcard: FlashcardSet not found or access denied. SetId={SetId}, UserId={UserId}", 
+                    dto.FlashcardSetId, userId);
                 return BadRequest("FlashcardSet not found or access denied");
+            }
 
             var flashcard = new Flashcard
             {
@@ -242,6 +255,9 @@ namespace UniStart.Controllers
 
             _context.Flashcards.Add(flashcard);
             await _context.SaveChangesAsync();
+
+            _logger.LogInformation("CreateFlashcard: Created flashcard ID={Id} in set {SetId}", 
+                flashcard.Id, dto.FlashcardSetId);
 
             return CreatedAtAction(nameof(GetFlashcard), new { id = flashcard.Id }, flashcard);
         }

@@ -31,6 +31,9 @@ const FlashcardStudyPage = () => {
   const loadFlashcardSet = async () => {
     try {
       const data = await flashcardService.getSet(Number(setId));
+      console.log('Loaded flashcard set:', data);
+      console.log('Flashcards in set:', data.flashcards);
+      console.log('Flashcards count:', data.flashcards?.length || 0);
       setFlashcardSet(data);
       setCards(data.flashcards || []);
     } catch (error) {

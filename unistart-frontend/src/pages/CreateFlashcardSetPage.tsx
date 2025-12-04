@@ -98,8 +98,25 @@ const CreateFlashcardSetPage = () => {
       navigate('/dashboard');
     } catch (error: any) {
       console.error('Ошибка создания набора карточек:', error);
+      console.error('Response:', error.response);
       console.error('Response data:', error.response?.data);
-      alert(error.response?.data?.message || error.response?.data || 'Ошибка создания набора карточек');
+      console.error('Response status:', error.response?.status);
+      
+      let errorMessage = 'Ошибка создания набора карточек';
+      
+      if (error.response?.status === 401) {
+        errorMessage = 'Ошибка авторизации. Пожалуйста, войдите в систему.';
+      } else if (error.response?.status === 403) {
+        errorMessage = 'У вас нет прав для создания карточек.';
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (typeof error.response?.data === 'string') {
+        errorMessage = error.response.data;
+      } else if (error.response?.data?.errors) {
+        errorMessage = Object.values(error.response.data.errors).flat().join(', ');
+      }
+      
+      alert(errorMessage);
     } finally {
       setLoading(false);
     }

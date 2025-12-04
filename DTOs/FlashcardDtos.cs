@@ -25,7 +25,6 @@ namespace UniStart.DTOs
         [StringLength(500, ErrorMessage = "Ответ не должен превышать 500 символов")]
         public string Answer { get; set; } = string.Empty;
         
-        [Required(ErrorMessage = "Объяснение обязательно")]
         [StringLength(1000, ErrorMessage = "Объяснение не должно превышать 1000 символов")]
         public string Explanation { get; set; } = string.Empty;
         
@@ -44,7 +43,6 @@ namespace UniStart.DTOs
         [StringLength(500, ErrorMessage = "Ответ не должен превышать 500 символов")]
         public string Answer { get; set; } = string.Empty;
         
-        [Required(ErrorMessage = "Объяснение обязательно")]
         [StringLength(1000, ErrorMessage = "Объяснение не должно превышать 1000 символов")]
         public string Explanation { get; set; } = string.Empty;
     }
