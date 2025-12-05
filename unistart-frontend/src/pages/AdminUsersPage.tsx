@@ -56,16 +56,17 @@ const AdminUsersPage = () => {
     }
 
     try {
-      if (isLocked) {
-        await api.delete(`/admin/users/${userId}/lockout`);
-      } else {
-        await api.post(`/admin/users/${userId}/lockout`);
-      }
+      // Отправляем isLocked = !isLocked (инвертируем текущее состояние)
+      await api.post(`/admin/users/${userId}/lockout`, { 
+        isLocked: !isLocked 
+      });
+      
       loadUsers();
       alert(`Пользователь успешно ${isLocked ? 'разблокирован' : 'заблокирован'}`);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Ошибка блокировки пользователя:', error);
-      alert('Ошибка выполнения операции');
+      const errorMessage = error.response?.data?.message || error.response?.data?.Message || 'Ошибка выполнения операции';
+      alert(errorMessage);
     }
   };
 
@@ -87,15 +88,17 @@ const AdminUsersPage = () => {
   const changeUserRole = async (userId: string, role: string, action: 'add' | 'remove') => {
     try {
       if (action === 'add') {
-        await api.post(`/admin/users/${userId}/role`, { role });
+        await api.post(`/admin/users/${userId}/role`, { roleName: role });
+        alert(`Роль "${role}" успешно добавлена`);
       } else {
-        await api.delete(`/admin/users/${userId}/role`, { data: { role } });
+        await api.delete(`/admin/users/${userId}/role`, { data: { roleName: role } });
+        alert(`Роль "${role}" успешно удалена`);
       }
       loadUsers();
-      alert(`Роль успешно ${action === 'add' ? 'добавлена' : 'удалена'}`);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Ошибка изменения роли:', error);
-      alert('Ошибка изменения роли');
+      const errorMessage = error.response?.data?.message || error.response?.data?.Message || 'Ошибка изменения роли';
+      alert(errorMessage);
     }
   };
 

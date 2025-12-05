@@ -33,7 +33,7 @@ namespace UniStart.Controllers
         // ============ FLASHCARD SETS ============
 
         /// <summary>
-        /// Получить все наборы карточек текущего пользователя с поиском и фильтрацией
+        /// Получить все наборы карточек: свои + публичные наборы других пользователей
         /// </summary>
         [HttpGet("sets")]
         public async Task<ActionResult<List<FlashcardSetDto>>> GetFlashcardSets(
@@ -45,8 +45,9 @@ namespace UniStart.Controllers
         {
             var userId = GetUserId();
             
+            // Получаем свои наборы + публичные наборы других пользователей
             var query = _context.FlashcardSets
-                .Where(fs => fs.UserId == userId)
+                .Where(fs => fs.UserId == userId || fs.IsPublic)
                 .Include(fs => fs.Flashcards)
                 .AsQueryable();
 
@@ -97,15 +98,16 @@ namespace UniStart.Controllers
         }
 
         /// <summary>
-        /// Получить набор по ID с карточками (только свои)
+        /// Получить набор по ID с карточками (свои или публичные)
         /// </summary>
         [HttpGet("sets/{id}")]
         public async Task<ActionResult<FlashcardSet>> GetFlashcardSet(int id)
         {
             var userId = GetUserId();
             
+            // Можно просматривать свои наборы или публичные наборы других пользователей
             var set = await _context.FlashcardSets
-                .Where(fs => fs.UserId == userId)
+                .Where(fs => fs.UserId == userId || fs.IsPublic)
                 .Include(fs => fs.Flashcards)
                 .FirstOrDefaultAsync(fs => fs.Id == id);
 
@@ -187,16 +189,16 @@ namespace UniStart.Controllers
         // ============ FLASHCARDS ============
 
         /// <summary>
-        /// Получить карточки для повторения из набора (только свои)
+        /// Получить карточки для повторения из набора (свои или публичные)
         /// </summary>
         [HttpGet("sets/{setId}/review")]
         public async Task<ActionResult<List<FlashcardDto>>> GetCardsForReview(int setId)
         {
             var userId = GetUserId();
             
-            // Проверяем, что набор принадлежит пользователю
+            // Проверяем, что набор существует и доступен (свой или публичный)
             var setExists = await _context.FlashcardSets
-                .AnyAsync(fs => fs.Id == setId && fs.UserId == userId);
+                .AnyAsync(fs => fs.Id == setId && (fs.UserId == userId || fs.IsPublic));
                 
             if (!setExists)
                 return NotFound("FlashcardSet not found or access denied");
@@ -263,7 +265,7 @@ namespace UniStart.Controllers
         }
 
         /// <summary>
-        /// Получить карточку по ID (только свои)
+        /// Получить карточку по ID (свои или из публичных наборов)
         /// </summary>
         [HttpGet("cards/{id}")]
         public async Task<ActionResult<Flashcard>> GetFlashcard(int id)
@@ -272,7 +274,7 @@ namespace UniStart.Controllers
             
             var card = await _context.Flashcards
                 .Include(f => f.FlashcardSet)
-                .FirstOrDefaultAsync(f => f.Id == id && f.FlashcardSet.UserId == userId);
+                .FirstOrDefaultAsync(f => f.Id == id && (f.FlashcardSet.UserId == userId || f.FlashcardSet.IsPublic));
                 
             if (card == null)
                 return NotFound();
@@ -324,7 +326,7 @@ namespace UniStart.Controllers
         }
 
         /// <summary>
-        /// Отметить повторение карточки (Spaced Repetition) - только свои
+        /// Отметить повторение карточки (Spaced Repetition) - свои или из публичных наборов
         /// </summary>
         [HttpPost("cards/review")]
         public async Task<ActionResult<ReviewResultDto>> ReviewFlashcard(ReviewFlashcardDto dto)
@@ -333,7 +335,7 @@ namespace UniStart.Controllers
             
             var card = await _context.Flashcards
                 .Include(f => f.FlashcardSet)
-                .FirstOrDefaultAsync(f => f.Id == dto.FlashcardId && f.FlashcardSet.UserId == userId);
+                .FirstOrDefaultAsync(f => f.Id == dto.FlashcardId && (f.FlashcardSet.UserId == userId || f.FlashcardSet.IsPublic));
                 
             if (card == null)
                 return NotFound("Flashcard not found or access denied");

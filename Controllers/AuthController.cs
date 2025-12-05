@@ -57,6 +57,9 @@ namespace UniStart.Controllers
                 });
             }
 
+            // Автоматически присваиваем роль Student новому пользователю
+            await _userManager.AddToRoleAsync(user, UserRoles.Student);
+
             // Генерация JWT токена
             var token = await _tokenService.GenerateTokenAsync(user);
 
@@ -79,6 +82,10 @@ namespace UniStart.Controllers
             var user = await _userManager.FindByEmailAsync(dto.Email);
             if (user == null)
                 return Unauthorized(new { message = "Неверный email или пароль" });
+
+            // Проверяем, заблокирован ли пользователь
+            if (await _userManager.IsLockedOutAsync(user))
+                return Unauthorized(new { message = "Ваш аккаунт заблокирован. Обратитесь к администратору." });
 
             var result = await _signInManager.CheckPasswordSignInAsync(user, dto.Password, false);
             if (!result.Succeeded)

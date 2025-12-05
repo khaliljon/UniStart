@@ -10,7 +10,10 @@ const Home = () => {
       <nav className="container mx-auto px-4 py-6 flex justify-between items-center">
         <div className="flex items-center space-x-2">
           <GraduationCap className="w-8 h-8 text-primary-500" />
-          <span className="text-2xl font-bold text-gray-900">UniStart</span>
+          <span className="text-2xl font-bold text-gray-900">
+            <span className="inline-flex items-center justify-center w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-600 rounded text-white mr-0.5">U</span>
+            <span>niStart</span>
+          </span>
         </div>
         <div className="flex items-center space-x-4">
           <Link to="/login">

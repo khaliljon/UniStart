@@ -46,7 +46,10 @@ const Register = () => {
         <div className="flex justify-center mb-8">
           <div className="flex items-center space-x-2">
             <GraduationCap className="w-10 h-10 text-primary-500" />
-            <span className="text-3xl font-bold text-gray-900">UniStart</span>
+            <span className="text-3xl font-bold text-gray-900">
+              <span className="inline-flex items-center justify-center w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-600 rounded text-white mr-1">U</span>
+              <span>niStart</span>
+            </span>
           </div>
         </div>
 

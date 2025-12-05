@@ -12,6 +12,8 @@ interface AdminStats {
   totalTests: number;
   totalFlashcardSets: number;
   activeToday: number;
+  activeThisWeek: number;
+  activeThisMonth: number;
 }
 
 const AdminDashboard = () => {
@@ -22,6 +24,8 @@ const AdminDashboard = () => {
     totalTests: 0,
     totalFlashcardSets: 0,
     activeToday: 0,
+    activeThisWeek: 0,
+    activeThisMonth: 0,
   });
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,18 +49,22 @@ const AdminDashboard = () => {
 
   const loadAdminData = async () => {
     try {
-      // Загружаем данные параллельно, если какой-то запрос упадет - используем 0
-      const [usersResponse, quizzesResponse, testsResponse, flashcardsResponse] = await Promise.allSettled([
+      // Загружаем аналитику и список пользователей
+      const [analyticsResponse, usersResponse] = await Promise.allSettled([
+        api.get('/admin/analytics'),
         api.get('/admin/users'),
-        api.get('/admin/quizzes'),      // Используем админский эндпоинт
-        api.get('/admin/tests'),        // Добавлен эндпоинт для тестов
-        api.get('/admin/flashcards'),   // Используем админский эндпоинт
       ]);
 
+      console.log('Analytics response:', analyticsResponse);
       console.log('Users response:', usersResponse);
-      console.log('Quizzes response:', quizzesResponse);
-      console.log('Tests response:', testsResponse);
-      console.log('Flashcards response:', flashcardsResponse);
+
+      // Обработка аналитики
+      let analyticsData: any = {};
+      if (analyticsResponse.status === 'fulfilled') {
+        const data = analyticsResponse.value.data;
+        // API может вернуть stats или Stats
+        analyticsData = data.stats || data.Stats || data;
+      }
 
       // Обработка пользователей
       let usersArray: any[] = [];
@@ -67,48 +75,15 @@ const AdminDashboard = () => {
           : (data.users || data.Users || []);
       }
 
-      // Обработка квизов
-      let quizzesCount = 0;
-      if (quizzesResponse.status === 'fulfilled') {
-        const data = quizzesResponse.value.data;
-        const quizzesArray = Array.isArray(data) 
-          ? data 
-          : (data.quizzes || data.Quizzes || []);
-        quizzesCount = quizzesArray.length;
-      }
-
-      // Обработка тестов
-      let testsCount = 0;
-      if (testsResponse.status === 'fulfilled') {
-        const data = testsResponse.value.data;
-        const testsArray = Array.isArray(data) 
-          ? data 
-          : (data.tests || data.Tests || []);
-        testsCount = testsArray.length;
-      }
-
-      // Обработка карточек
-      let flashcardsCount = 0;
-      if (flashcardsResponse.status === 'fulfilled') {
-        const data = flashcardsResponse.value.data;
-        const flashcardsArray = Array.isArray(data) 
-          ? data 
-          : (data.flashcardSets || data.FlashcardSets || []);
-        flashcardsCount = flashcardsArray.length;
-      }
-
-      // Подсчет активных пользователей (у кого есть активность)
-      const activeToday = usersArray.filter((user: any) => {
-        return user.totalCardsStudied > 0 || user.totalQuizzesTaken > 0;
-      }).length;
-
-      // Обновляем статистику
+      // Обновляем статистику из аналитики
       setStats({
-        totalUsers: usersArray.length,
-        totalQuizzes: quizzesCount,
-        totalTests: testsCount,
-        totalFlashcardSets: flashcardsCount,
-        activeToday: activeToday,
+        totalUsers: analyticsData.totalUsers || 0,
+        totalQuizzes: analyticsData.totalQuizzes || 0,
+        totalTests: analyticsData.totalTests || 0,
+        totalFlashcardSets: analyticsData.totalFlashcardSets || 0,
+        activeToday: analyticsData.activeToday || 0,
+        activeThisWeek: analyticsData.activeThisWeek || 0,
+        activeThisMonth: analyticsData.activeThisMonth || 0,
       });
 
       setUsers(usersArray.slice(0, 5)); // Показываем только 5 последних пользователей
@@ -121,6 +96,8 @@ const AdminDashboard = () => {
         totalTests: 0,
         totalFlashcardSets: 0,
         activeToday: 0,
+        activeThisWeek: 0,
+        activeThisMonth: 0,
       });
       setUsers([]);
     } finally {

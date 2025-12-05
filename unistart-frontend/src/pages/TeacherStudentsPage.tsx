@@ -44,12 +44,38 @@ const TeacherStudentsPage = () => {
   const loadStudents = async () => {
     console.log('🔍 Начинаем загрузку студентов...');
     try {
-      const response = await api.get('/teacher/students');
+      // Для админа используем другой эндпоинт
+      const endpoint = isAdmin ? '/admin/users?role=Student&pageSize=1000' : '/teacher/students';
+      console.log('📡 Используем эндпоинт:', endpoint);
+      
+      const response = await api.get(endpoint);
       console.log('✅ Ответ от API:', response.data);
       
-      // API возвращает объект с полем Students
-      const studentsData = response.data.students || response.data.Students || [];
-      console.log('✅ Студенты:', studentsData);
+      let studentsData;
+      
+      if (isAdmin) {
+        // Для админа API возвращает объект с полем Users
+        const usersArray = response.data.Users || response.data.users || [];
+        console.log('👥 Массив пользователей:', usersArray);
+        
+        // Преобразуем формат данных админа в формат студентов
+        studentsData = usersArray.map((user: any) => ({
+          userId: user.Id || user.id,
+          email: user.Email || user.email,
+          userName: user.UserName || user.userName || `${user.FirstName || ''} ${user.LastName || ''}`.trim() || user.Email || user.email,
+          totalAttempts: user.TotalQuizzesTaken || 0,
+          averageScore: 0,
+          averagePercentage: 0,
+          bestScore: 0,
+          lastAttemptDate: user.LastLoginAt || user.CreatedAt || '',
+          quizzesTaken: user.TotalQuizzesTaken || 0,
+        }));
+      } else {
+        // Для учителя API возвращает объект с полем Students
+        studentsData = response.data.students || response.data.Students || [];
+      }
+      
+      console.log('✅ Обработанные студенты:', studentsData);
       
       setStudents(studentsData);
       

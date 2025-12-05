@@ -92,10 +92,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }
 
   const login = async (credentials: LoginDto) => {
-    const response = await authService.login(credentials)
-    localStorage.setItem('token', response.token)
-    setToken(response.token)
-    await loadUser(response.token)
+    try {
+      const response = await authService.login(credentials)
+      localStorage.setItem('token', response.token)
+      setToken(response.token)
+      await loadUser(response.token)
+    } catch (error) {
+      // Пробрасываем ошибку дальше, чтобы Login.tsx мог её обработать
+      throw error
+    }
   }
 
   const register = async (data: RegisterDto) => {

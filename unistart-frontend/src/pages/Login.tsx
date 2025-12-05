@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { GraduationCap } from 'lucide-react'
@@ -7,22 +7,49 @@ import Input from '../components/common/Input'
 
 const Login = () => {
   const navigate = useNavigate()
-  const { login } = useAuth()
+  const { user, login } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
+  // Редирект когда user установлен
+  useEffect(() => {
+    if (user) {
+      navigate('/dashboard')
+    }
+  }, [user, navigate])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError('')
     setIsLoading(true)
 
     try {
       await login({ email, password })
-      navigate('/dashboard')
+      // navigate УБРАН - редирект через useEffect
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Неверный email или пароль')
+      console.error('Login error:', err);
+      
+      // Проверяем различные типы ошибок
+      const errorData = err.response?.data;
+      const status = err.response?.status;
+      
+      let errorMessage = 'Неверный email или пароль';
+      
+      if (status === 401) {
+        // Проверяем, заблокирован ли пользователь
+        if (errorData?.message?.toLowerCase().includes('заблокирован') || 
+            errorData?.message?.toLowerCase().includes('locked') ||
+            errorData?.message?.toLowerCase().includes('lockout')) {
+          errorMessage = '🔒 Ваш аккаунт заблокирован. Обратитесь к администратору для разблокировки.';
+        } else {
+          errorMessage = errorData?.message || 'Неверный email или пароль';
+        }
+      } else if (errorData?.message) {
+        errorMessage = errorData.message;
+      }
+      
+      setError(errorMessage);
     } finally {
       setIsLoading(false)
     }
@@ -35,7 +62,10 @@ const Login = () => {
         <div className="flex justify-center mb-8">
           <div className="flex items-center space-x-2">
             <GraduationCap className="w-10 h-10 text-primary-500" />
-            <span className="text-3xl font-bold text-gray-900">UniStart</span>
+            <span className="text-3xl font-bold text-gray-900">
+              <span className="inline-flex items-center justify-center w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-600 rounded text-white mr-1">U</span>
+              <span>niStart</span>
+            </span>
           </div>
         </div>
 
@@ -58,7 +88,10 @@ const Login = () => {
             label="Email"
             placeholder="your@email.com"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => {
+              setEmail(e.target.value)
+              setError('') // Очищаем ошибку при вводе
+            }}
             required
           />
 
@@ -67,7 +100,10 @@ const Login = () => {
             label="Пароль"
             placeholder="••••••••"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(e) => {
+              setPassword(e.target.value)
+              setError('') // Очищаем ошибку при вводе
+            }}
             required
           />
 
