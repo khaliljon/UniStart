@@ -99,6 +99,31 @@ public class ExamDto
     public string UserName { get; set; } = string.Empty;
     
     public List<string> Tags { get; set; } = new();
+    public List<ExamQuestionDto> Questions { get; set; } = new();
+}
+
+/// <summary>
+/// DTO для вопроса экзамена с ответами (для редактирования)
+/// </summary>
+public class ExamQuestionDto
+{
+    public int Id { get; set; }
+    public string Text { get; set; } = string.Empty;
+    public string? Explanation { get; set; }
+    public int Points { get; set; }
+    public int Order { get; set; }
+    public List<ExamAnswerDto> Answers { get; set; } = new();
+}
+
+/// <summary>
+/// DTO для ответа на вопрос (для редактирования)
+/// </summary>
+public class ExamAnswerDto
+{
+    public int Id { get; set; }
+    public string Text { get; set; } = string.Empty;
+    public bool IsCorrect { get; set; }
+    public int Order { get; set; }
 }
 
 /// <summary>

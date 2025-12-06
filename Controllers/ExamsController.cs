@@ -142,6 +142,7 @@ public class ExamsController : ControllerBase
             .Include(t => t.User)
             .Include(t => t.Tags)
             .Include(t => t.Questions)
+                .ThenInclude(q => q.Answers)
             .FirstOrDefaultAsync(t => t.Id == id);
 
         if (exam == null)
@@ -149,9 +150,10 @@ public class ExamsController : ControllerBase
 
         var userId = await GetUserId();
         var userRoles = await _userManager.GetRolesAsync(await _userManager.GetUserAsync(User));
+        var isOwnerOrAdmin = exam.UserId == userId || userRoles.Contains("Admin") || userRoles.Contains("Teacher");
 
         // Проверка доступа: должен быть опубликован или создан текущим пользователем или админом
-        if (!exam.IsPublished && exam.UserId != userId && !userRoles.Contains("Admin"))
+        if (!exam.IsPublished && !isOwnerOrAdmin)
             return Forbid();
 
         var examDto = new ExamDto
@@ -180,6 +182,26 @@ public class ExamsController : ControllerBase
             UserName = exam.User.UserName ?? "Unknown",
             Tags = exam.Tags.Select(tag => tag.Name).ToList()
         };
+
+        // Добавляем вопросы и ответы для владельца/админа
+        if (isOwnerOrAdmin)
+        {
+            examDto.Questions = exam.Questions.OrderBy(q => q.Order).Select(q => new ExamQuestionDto
+            {
+                Id = q.Id,
+                Text = q.Text,
+                Explanation = q.Explanation,
+                Points = q.Points,
+                Order = q.Order,
+                Answers = q.Answers.OrderBy(a => a.Order).Select(a => new ExamAnswerDto
+                {
+                    Id = a.Id,
+                    Text = a.Text,
+                    IsCorrect = a.IsCorrect,
+                    Order = a.Order
+                }).ToList()
+            }).ToList();
+        }
 
         return Ok(examDto);
     }

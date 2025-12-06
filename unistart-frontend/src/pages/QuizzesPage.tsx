@@ -10,6 +10,7 @@ import {
   Search,
   TrendingUp,
   BookOpen,
+  Edit,
 } from 'lucide-react';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
@@ -280,6 +281,15 @@ const QuizzesPage = () => {
                   <div className="flex gap-2">
                     {(isTeacher || isAdmin) ? (
                       <>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          className="flex-1 flex items-center justify-center gap-2"
+                          onClick={() => navigate(`/quizzes/${quiz.id}/edit`)}
+                        >
+                          <Edit className="w-4 h-4" />
+                          Редактировать
+                        </Button>
                         <Button
                           variant="primary"
                           size="sm"

@@ -17,9 +17,12 @@ import QuizResultPage from './pages/QuizResultPage'
 import QuizStatsPage from './pages/QuizStatsPage'
 import ExamsPage from './pages/ExamsPage'
 import CreateExamPage from './pages/CreateExamPage'
+import EditExamPage from './pages/EditExamPage'
+import ExamStatsPage from './pages/ExamStatsPage'
 
 // Teacher Pages
 import CreateQuizPage from './pages/CreateQuizPage'
+import EditQuizPage from './pages/EditQuizPage'
 import CreateFlashcardSetPage from './pages/CreateFlashcardSetPage'
 import TeacherStudentsPage from './pages/TeacherStudentsPage'
 import StudentDetailPage from './pages/StudentDetailPage'
@@ -110,6 +113,16 @@ function App() {
               </PrivateRoute>
             }
           />
+          <Route
+            path="/quizzes/:id/edit"
+            element={
+              <PrivateRoute>
+                <RoleRoute allowedRoles={['Teacher', 'Admin']}>
+                  <EditQuizPage />
+                </RoleRoute>
+              </PrivateRoute>
+            }
+          />
 
           {/* Экзамены */}
           <Route
@@ -143,7 +156,17 @@ function App() {
             element={
               <PrivateRoute>
                 <RoleRoute allowedRoles={['Teacher', 'Admin']}>
-                  <ExamsPage />
+                  <ExamStatsPage />
+                </RoleRoute>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/exams/:id/edit"
+            element={
+              <PrivateRoute>
+                <RoleRoute allowedRoles={['Teacher', 'Admin']}>
+                  <EditExamPage />
                 </RoleRoute>
               </PrivateRoute>
             }
