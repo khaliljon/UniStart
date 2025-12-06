@@ -3,9 +3,9 @@ using System.ComponentModel.DataAnnotations;
 namespace UniStart.Models;
 
 /// <summary>
-/// Вопрос теста
+/// Вопрос экзамена
 /// </summary>
-public class TestQuestion
+public class ExamQuestion
 {
     public int Id { get; set; }
     
@@ -22,7 +22,7 @@ public class TestQuestion
     public int Order { get; set; }
     
     // Связи
-    public int TestId { get; set; }
-    public Test Test { get; set; } = null!;
-    public ICollection<TestAnswer> Answers { get; set; } = new List<TestAnswer>();
+    public int ExamId { get; set; }
+    public Exam Exam { get; set; } = null!;
+    public ICollection<ExamAnswer> Answers { get; set; } = new List<ExamAnswer>();
 }

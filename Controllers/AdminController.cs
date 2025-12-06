@@ -347,7 +347,7 @@ public class AdminController : ControllerBase
     {
         var totalUsers = await _context.Users.CountAsync();
         var totalQuizzes = await _context.Quizzes.CountAsync();
-        var totalTests = await _context.Tests.CountAsync();
+        var totalExams = await _context.Exams.CountAsync();
         var totalFlashcardSets = await _context.FlashcardSets.CountAsync();
         var totalQuestions = await _context.Questions.CountAsync();
         var totalFlashcards = await _context.Flashcards.CountAsync();
@@ -381,7 +381,7 @@ public class AdminController : ControllerBase
             {
                 TotalUsers = totalUsers,
                 TotalQuizzes = totalQuizzes,
-                TotalTests = totalTests,
+                TotalExams = totalExams,
                 TotalFlashcardSets = totalFlashcardSets,
                 TotalQuestions = totalQuestions,
                 TotalFlashcards = totalFlashcards,
@@ -677,34 +677,34 @@ public class AdminController : ControllerBase
     }
 
     /// <summary>
-    /// Получить все тесты в системе (для админа)
+    /// Получить все экзамены в системе (для админа)
     /// </summary>
-    [HttpGet("tests")]
-    public async Task<ActionResult> GetAllTests()
+    [HttpGet("exams")]
+    public async Task<ActionResult> GetAllExams()
     {
-        var tests = await _context.Tests
-            .Include(t => t.Questions)
-            .Include(t => t.User)
-            .Select(t => new
+        var exams = await _context.Exams
+            .Include(e => e.Questions)
+            .Include(e => e.User)
+            .Select(e => new
             {
-                t.Id,
-                t.Title,
-                t.Description,
-                t.Subject,
-                t.Difficulty,
-                t.IsPublished,
-                t.UserId,
-                UserName = t.User.UserName,
-                QuestionCount = t.Questions.Count,
-                t.TotalPoints,
-                t.MaxAttempts,
-                t.PassingScore,
-                t.CreatedAt
+                e.Id,
+                e.Title,
+                e.Description,
+                e.Subject,
+                e.Difficulty,
+                e.IsPublished,
+                e.UserId,
+                UserName = e.User.UserName,
+                QuestionCount = e.Questions.Count,
+                e.TotalPoints,
+                e.MaxAttempts,
+                e.PassingScore,
+                e.CreatedAt
             })
-            .OrderByDescending(t => t.CreatedAt)
+            .OrderByDescending(e => e.CreatedAt)
             .ToListAsync();
 
-        return Ok(tests);
+        return Ok(exams);
     }
 }
 

@@ -3,13 +3,13 @@ using System.ComponentModel.DataAnnotations;
 namespace UniStart.Models;
 
 /// <summary>
-/// Модель теста - серьёзное образовательное тестирование с ограничениями и контролем
+/// Модель экзамена - серьёзное образовательное тестирование с ограничениями и контролем
 /// </summary>
-public class Test
+public class Exam
 {
     public int Id { get; set; }
     
-    [Required(ErrorMessage = "Название теста обязательно")]
+    [Required(ErrorMessage = "Название экзамена обязательно")]
     [StringLength(200, ErrorMessage = "Название не должно превышать 200 символов")]
     public string Title { get; set; } = string.Empty;
     
@@ -24,7 +24,7 @@ public class Test
     [StringLength(50)]
     public string Difficulty { get; set; } = "Medium"; // Easy, Medium, Hard
     
-    // Ограничения теста
+    // Ограничения экзамена
     [Range(1, 10, ErrorMessage = "Количество попыток должно быть от 1 до 10")]
     public int MaxAttempts { get; set; } = 3; // Максимальное количество попыток
     
@@ -47,8 +47,8 @@ public class Test
     [Range(1, 300, ErrorMessage = "Ограничение времени должно быть от 1 до 300 минут")]
     public int TimeLimit { get; set; } = 60; // Ограничение времени в минутах
     
-    public DateTime? StartDate { get; set; } // Когда тест становится доступным
-    public DateTime? EndDate { get; set; } // Дедлайн теста
+    public DateTime? StartDate { get; set; } // Когда экзамен становится доступным
+    public DateTime? EndDate { get; set; } // Дедлайн экзамена
     
     // Метаданные
     public bool IsPublished { get; set; } = false;
@@ -57,9 +57,9 @@ public class Test
     public DateTime? UpdatedAt { get; set; }
     
     // Связи
-    public string UserId { get; set; } = string.Empty; // Создатель теста
+    public string UserId { get; set; } = string.Empty; // Создатель экзамена
     public ApplicationUser User { get; set; } = null!;
-    public ICollection<TestQuestion> Questions { get; set; } = new List<TestQuestion>();
-    public ICollection<UserTestAttempt> Attempts { get; set; } = new List<UserTestAttempt>();
+    public ICollection<ExamQuestion> Questions { get; set; } = new List<ExamQuestion>();
+    public ICollection<UserExamAttempt> Attempts { get; set; } = new List<UserExamAttempt>();
     public ICollection<Tag> Tags { get; set; } = new List<Tag>();
 }

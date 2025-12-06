@@ -64,11 +64,11 @@ const Layout = () => {
                 </Link>
 
                 <Link
-                  to="/tests"
+                  to="/exams"
                   className="flex items-center gap-2 text-gray-700 hover:text-primary-600 transition-colors"
                 >
                   <ClipboardCheck className="w-5 h-5" />
-                  <span>Тесты</span>
+                  <span>Экзамены</span>
                 </Link>
 
                 {(isTeacher || isAdmin) && (

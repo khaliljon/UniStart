@@ -17,7 +17,7 @@ import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import api from '../services/api';
 
-interface Test {
+interface Exam {
   id: number;
   title: string;
   description: string;
@@ -33,45 +33,45 @@ interface Test {
   createdAt: string;
 }
 
-const AdminTestsPage = () => {
+const AdminExamsPage = () => {
   const navigate = useNavigate();
-  const [tests, setTests] = useState<Test[]>([]);
+  const [exams, setExams] = useState<Exam[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
-    loadTests();
+    loadExams();
   }, []);
 
-  const loadTests = async () => {
+  const loadExams = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/admin/tests');
-      setTests(response.data);
+      const response = await api.get('/admin/exams');
+      setExams(response.data);
     } catch (error) {
-      console.error('Ошибка загрузки тестов:', error);
+      console.error('Ошибка загрузки экзаменов:', error);
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Вы уверены, что хотите удалить этот тест?')) return;
+    if (!confirm('Вы уверены, что хотите удалить этот экзамен?')) return;
 
     try {
-      await api.delete(`/tests/${id}`);
-      setTests(tests.filter(t => t.id !== id));
+      await api.delete(`/exams/${id}`);
+      setExams(exams.filter(e => e.id !== id));
     } catch (error) {
-      console.error('Ошибка удаления теста:', error);
-      alert('Не удалось удалить тест');
+      console.error('Ошибка удаления экзамена:', error);
+      alert('Не удалось удалить экзамен');
     }
   };
 
   const handleTogglePublish = async (id: number, currentStatus: boolean) => {
     try {
-      await api.patch(`/tests/${id}/publish`);
-      setTests(tests.map(t => 
-        t.id === id ? { ...t, isPublished: !currentStatus } : t
+      await api.patch(`/exams/${id}/publish`);
+      setExams(exams.map(e => 
+        e.id === id ? { ...e, isPublished: !currentStatus } : e
       ));
     } catch (error) {
       console.error('Ошибка изменения статуса публикации:', error);
@@ -79,10 +79,10 @@ const AdminTestsPage = () => {
     }
   };
 
-  const filteredTests = tests.filter(test =>
-    test.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    test.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    test.userName.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredExams = exams.filter(exam =>
+    exam.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    exam.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    exam.userName.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const getDifficultyColor = (difficulty: string) => {
@@ -122,10 +122,10 @@ const AdminTestsPage = () => {
         <div>
           <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
             <ClipboardCheck className="w-8 h-8 text-primary-500" />
-            Управление тестами
+            Управление экзаменами
           </h1>
           <p className="text-gray-600 mt-2">
-            Все тесты в системе • Всего: {tests.length}
+            Все экзамены в системе • Всего: {exams.length}
           </p>
         </div>
       </div>
@@ -144,22 +144,22 @@ const AdminTestsPage = () => {
         </div>
       </Card>
 
-      {/* Список тестов */}
-      {filteredTests.length === 0 ? (
+      {/* Список экзаменов */}
+      {filteredExams.length === 0 ? (
         <Card className="text-center py-12">
           <ClipboardCheck className="w-16 h-16 text-gray-400 mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-gray-700 mb-2">
-            {searchQuery ? 'Тесты не найдены' : 'Нет тестов в системе'}
+            {searchQuery ? 'Экзамены не найдены' : 'Нет экзаменов в системе'}
           </h3>
           <p className="text-gray-600">
-            {searchQuery ? 'Попробуйте изменить параметры поиска' : 'Тесты будут отображаться здесь после создания'}
+            {searchQuery ? 'Попробуйте изменить параметры поиска' : 'Экзамены будут отображаться здесь после создания'}
           </p>
         </Card>
       ) : (
         <div className="space-y-4">
-          {filteredTests.map((test, index) => (
+          {filteredExams.map((exam, index) => (
             <motion.div
-              key={test.id}
+              key={exam.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
@@ -170,16 +170,16 @@ const AdminTestsPage = () => {
                     {/* Заголовок и статус */}
                     <div className="flex items-start gap-3 mb-2">
                       <h3 className="text-lg font-semibold text-gray-900 flex-1">
-                        {test.title}
+                        {exam.title}
                       </h3>
                       <span
                         className={`px-2 py-1 rounded-full text-xs font-medium ${getDifficultyColor(
-                          test.difficulty
+                          exam.difficulty
                         )}`}
                       >
-                        {getDifficultyLabel(test.difficulty)}
+                        {getDifficultyLabel(exam.difficulty)}
                       </span>
-                      {test.isPublished ? (
+                      {exam.isPublished ? (
                         <span className="flex items-center gap-1 text-green-600 text-sm">
                           <CheckCircle className="w-4 h-4" />
                           Опубликован
@@ -193,29 +193,29 @@ const AdminTestsPage = () => {
                     </div>
 
                     {/* Описание */}
-                    <p className="text-gray-600 text-sm mb-3">{test.description}</p>
+                    <p className="text-gray-600 text-sm mb-3">{exam.description}</p>
 
                     {/* Метаданные */}
                     <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
                       <div className="flex items-center gap-1">
                         <User className="w-4 h-4" />
-                        <span>{test.userName}</span>
+                        <span>{exam.userName}</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <ClipboardCheck className="w-4 h-4" />
-                        <span>{test.questionCount} вопросов</span>
+                        <span>{exam.questionCount} вопросов</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <Award className="w-4 h-4" />
-                        <span>{test.totalPoints} баллов</span>
+                        <span>{exam.totalPoints} баллов</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <AlertCircle className="w-4 h-4" />
-                        <span>{test.maxAttempts} попытки, {test.passingScore}% проходной</span>
+                        <span>{exam.maxAttempts} попытки, {exam.passingScore}% проходной</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <Clock className="w-4 h-4" />
-                        <span>{new Date(test.createdAt).toLocaleDateString('ru-RU')}</span>
+                        <span>{new Date(exam.createdAt).toLocaleDateString('ru-RU')}</span>
                       </div>
                     </div>
                   </div>
@@ -223,7 +223,7 @@ const AdminTestsPage = () => {
                   {/* Кнопки действий */}
                   <div className="flex items-center gap-2 ml-4">
                     <Button
-                      onClick={() => navigate(`/tests/${test.id}/stats`)}
+                      onClick={() => navigate(`/exams/${exam.id}/stats`)}
                       variant="secondary"
                       className="px-3 py-2"
                       title="Статистика"
@@ -231,15 +231,15 @@ const AdminTestsPage = () => {
                       <Eye className="w-4 h-4" />
                     </Button>
                     <Button
-                      onClick={() => handleTogglePublish(test.id, test.isPublished)}
-                      variant={test.isPublished ? 'secondary' : 'success'}
+                      onClick={() => handleTogglePublish(exam.id, exam.isPublished)}
+                      variant={exam.isPublished ? 'secondary' : 'success'}
                       className="px-3 py-2"
-                      title={test.isPublished ? 'Снять с публикации' : 'Опубликовать'}
+                      title={exam.isPublished ? 'Снять с публикации' : 'Опубликовать'}
                     >
-                      {test.isPublished ? <XCircle className="w-4 h-4" /> : <CheckCircle className="w-4 h-4" />}
+                      {exam.isPublished ? <XCircle className="w-4 h-4" /> : <CheckCircle className="w-4 h-4" />}
                     </Button>
                     <Button
-                      onClick={() => handleDelete(test.id)}
+                      onClick={() => handleDelete(exam.id)}
                       variant="danger"
                       className="px-3 py-2"
                       title="Удалить"
@@ -257,4 +257,4 @@ const AdminTestsPage = () => {
   );
 };
 
-export default AdminTestsPage;
+export default AdminExamsPage;

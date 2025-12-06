@@ -1,9 +1,9 @@
 namespace UniStart.Models;
 
 /// <summary>
-/// Ответ студента на вопрос теста
+/// Ответ студента на вопрос экзамена
 /// </summary>
-public class UserTestAnswer
+public class UserExamAnswer
 {
     public int Id { get; set; }
     
@@ -13,9 +13,9 @@ public class UserTestAnswer
     
     // Связи
     public int AttemptId { get; set; }
-    public UserTestAttempt Attempt { get; set; } = null!;
+    public UserExamAttempt Attempt { get; set; } = null!;
     public int QuestionId { get; set; }
-    public TestQuestion Question { get; set; } = null!;
+    public ExamQuestion Question { get; set; } = null!;
     public int SelectedAnswerId { get; set; }
-    public TestAnswer SelectedAnswer { get; set; } = null!;
+    public ExamAnswer SelectedAnswer { get; set; } = null!;
 }

@@ -19,7 +19,7 @@ import Button from '../components/common/Button';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
-interface Test {
+interface Exam {
   id: number;
   title: string;
   description: string;
@@ -37,30 +37,30 @@ interface Test {
   createdAt: string;
 }
 
-const TestsPage = () => {
+const ExamsPage = () => {
   const navigate = useNavigate();
   const { isTeacher, isAdmin } = useAuth();
-  const [tests, setTests] = useState<Test[]>([]);
+  const [exams, setExams] = useState<Exam[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [subjectFilter, setSubjectFilter] = useState<string>('');
   const [difficultyFilter, setDifficultyFilter] = useState<string>('');
 
   useEffect(() => {
-    loadTests();
+    loadExams();
   }, [subjectFilter, difficultyFilter]);
 
-  const loadTests = async () => {
+  const loadExams = async () => {
     try {
       setLoading(true);
       
-      // Админы видят все тесты, учителя - свои, студенты - опубликованные
-      let endpoint = '/tests'; // По умолчанию для студентов
+      // Админы видят все экзамены, учителя - свои, студенты - опубликованные
+      let endpoint = '/exams'; // По умолчанию для студентов
       
       if (isAdmin) {
-        endpoint = '/admin/tests'; // Админ видит все тесты
+        endpoint = '/admin/exams'; // Админ видит все экзамены
       } else if (isTeacher) {
-        endpoint = '/tests/my'; // Учитель видит свои тесты
+        endpoint = '/exams/my'; // Учитель видит свои экзамены
       }
       
       const params = new URLSearchParams();
@@ -68,17 +68,17 @@ const TestsPage = () => {
       if (difficultyFilter) params.append('difficulty', difficultyFilter);
       
       const response = await api.get(`${endpoint}?${params.toString()}`);
-      setTests(response.data);
+      setExams(response.data);
     } catch (error) {
-      console.error('Ошибка загрузки тестов:', error);
+      console.error('Ошибка загрузки экзаменов:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const filteredTests = tests.filter(test =>
-    test.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    test.description.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredExams = exams.filter(exam =>
+    exam.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    exam.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const getDifficultyColor = (difficulty: string) => {
@@ -107,10 +107,10 @@ const TestsPage = () => {
     }
   };
 
-  const isTestAvailable = (test: Test) => {
+  const isExamAvailable = (exam: Exam) => {
     const now = new Date();
-    if (test.startDate && new Date(test.startDate) > now) return false;
-    if (test.endDate && new Date(test.endDate) < now) return false;
+    if (exam.startDate && new Date(exam.startDate) > now) return false;
+    if (exam.endDate && new Date(exam.endDate) < now) return false;
     return true;
   };
 
@@ -133,24 +133,24 @@ const TestsPage = () => {
         <div>
           <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
             <FileText className="w-8 h-8 text-primary-500" />
-            {isAdmin ? 'Тесты' : (isTeacher ? 'Мои Тесты' : 'Доступные Тесты')}
+            {isAdmin ? 'Экзамены' : (isTeacher ? 'Мои Экзамены' : 'Доступные Экзамены')}
           </h1>
           <p className="text-gray-600 mt-2">
             {isAdmin
-              ? 'Все тесты в системе'
+              ? 'Все экзамены в системе'
               : (isTeacher
-                ? 'Управляйте своими тестами и отслеживайте результаты студентов'
-                : 'Проверьте свои знания с помощью тестов')}
+                ? 'Управляйте своими экзаменами и отслеживайте результаты студентов'
+                : 'Проверьте свои знания с помощью экзаменов')}
           </p>
         </div>
         {(isTeacher || isAdmin) && (
           <Button
-            onClick={() => navigate('/tests/create')}
+            onClick={() => navigate('/exams/create')}
             variant="primary"
             className="flex items-center gap-2"
           >
             <Plus className="w-5 h-5" />
-            Создать тест
+            Создать экзамен
           </Button>
         )}
       </div>
@@ -162,7 +162,7 @@ const TestsPage = () => {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
               type="text"
-              placeholder="Поиск тестов..."
+              placeholder="Поиск экзаменов..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
@@ -194,67 +194,67 @@ const TestsPage = () => {
         </div>
       </Card>
 
-      {/* Список тестов */}
-      {filteredTests.length === 0 ? (
+      {/* Список экзаменов */}
+      {filteredExams.length === 0 ? (
         <Card className="text-center py-12">
           <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-gray-700 mb-2">
             {searchQuery || subjectFilter || difficultyFilter
-              ? 'Тесты не найдены'
-              : 'Нет доступных тестов'}
+              ? 'Экзамены не найдены'
+              : 'Нет доступных экзаменов'}
           </h3>
           <p className="text-gray-600 mb-6">
             {(isTeacher || isAdmin)
-              ? 'Создайте свой первый тест для студентов'
-              : 'Пока нет доступных тестов для прохождения'}
+              ? 'Создайте свой первый экзамен для студентов'
+              : 'Пока нет доступных экзаменов для прохождения'}
           </p>
           {(isTeacher || isAdmin) && (
             <Button
-              onClick={() => navigate('/tests/create')}
+              onClick={() => navigate('/exams/create')}
               variant="primary"
               className="inline-flex items-center gap-2"
             >
               <Plus className="w-5 h-5" />
-              Создать тест
+              Создать экзамен
             </Button>
           )}
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredTests.map((test, index) => {
-            const available = isTestAvailable(test);
+          {filteredExams.map((exam, index) => {
+            const available = isExamAvailable(exam);
             
             return (
               <motion.div
-                key={test.id}
+                key={exam.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
               >
                 <Card className="h-full flex flex-col hover:shadow-lg transition-shadow">
-                  {/* Заголовок теста */}
+                  {/* Заголовок экзамена */}
                   <div className="flex justify-between items-start mb-3">
                     <h3 className="text-lg font-semibold text-gray-900 flex-1">
-                      {test.title}
+                      {exam.title}
                     </h3>
                     <span
                       className={`px-2 py-1 rounded-full text-xs font-medium ${getDifficultyColor(
-                        test.difficulty
+                        exam.difficulty
                       )}`}
                     >
-                      {getDifficultyLabel(test.difficulty)}
+                      {getDifficultyLabel(exam.difficulty)}
                     </span>
                   </div>
 
                   {/* Описание */}
                   <p className="text-gray-600 text-sm mb-4 flex-1">
-                    {test.description}
+                    {exam.description}
                   </p>
 
                   {/* Предмет */}
                   <div className="flex items-center gap-2 mb-3">
                     <BookOpen className="w-4 h-4 text-gray-400" />
-                    <span className="text-sm text-gray-700">{test.subject}</span>
+                    <span className="text-sm text-gray-700">{exam.subject}</span>
                   </div>
 
                   {/* Статистика */}
@@ -262,34 +262,34 @@ const TestsPage = () => {
                     <div className="flex items-center gap-2">
                       <FileText className="w-4 h-4 text-gray-400" />
                       <span className="text-sm text-gray-600">
-                        {test.questionCount} вопросов
+                        {exam.questionCount} вопросов
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Clock className="w-4 h-4 text-gray-400" />
-                      <span className="text-sm text-gray-600">{test.timeLimit} мин</span>
+                      <span className="text-sm text-gray-600">{exam.timeLimit} мин</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Award className="w-4 h-4 text-gray-400" />
                       <span className="text-sm text-gray-600">
-                        {test.totalPoints} баллов
+                        {exam.totalPoints} баллов
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <TrendingUp className="w-4 h-4 text-gray-400" />
                       <span className="text-sm text-gray-600">
-                        {test.passingScore}% проходной
+                        {exam.passingScore}% проходной
                       </span>
                     </div>
                   </div>
 
-                  {/* Особенности теста */}
+                  {/* Особенности экзамена */}
                   <div className="flex flex-wrap gap-2 mb-4">
                     <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs flex items-center gap-1">
                       <AlertCircle className="w-3 h-3" />
-                      {test.maxAttempts} {test.maxAttempts === 1 ? 'попытка' : 'попытки'}
+                      {exam.maxAttempts} {exam.maxAttempts === 1 ? 'попытка' : 'попытки'}
                     </span>
-                    {test.isProctored && (
+                    {exam.isProctored && (
                       <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs flex items-center gap-1">
                         <Lock className="w-3 h-3" />
                         С контролем
@@ -307,7 +307,7 @@ const TestsPage = () => {
                   {(isTeacher || isAdmin) ? (
                     <div className="flex gap-2">
                       <Button
-                        onClick={() => navigate(`/tests/${test.id}/stats`)}
+                        onClick={() => navigate(`/exams/${exam.id}/stats`)}
                         variant="secondary"
                         className="flex-1 flex items-center justify-center gap-2"
                       >
@@ -315,7 +315,7 @@ const TestsPage = () => {
                         Статистика
                       </Button>
                       <Button
-                        onClick={() => navigate(`/tests/${test.id}/edit`)}
+                        onClick={() => navigate(`/exams/${exam.id}/edit`)}
                         variant="secondary"
                         className="px-4"
                       >
@@ -324,7 +324,7 @@ const TestsPage = () => {
                     </div>
                   ) : (
                     <Button
-                      onClick={() => navigate(`/tests/${test.id}/take`)}
+                      onClick={() => navigate(`/exams/${exam.id}/take`)}
                       variant="primary"
                       className="w-full flex items-center justify-center gap-2"
                       disabled={!available}
@@ -332,7 +332,7 @@ const TestsPage = () => {
                       {available ? (
                         <>
                           <Play className="w-4 h-4" />
-                          Начать тест
+                          Начать экзамен
                         </>
                       ) : (
                         <>
@@ -347,7 +347,7 @@ const TestsPage = () => {
                   {(isTeacher || isAdmin) && (
                     <div className="mt-3 pt-3 border-t border-gray-200 flex items-center justify-between">
                       <span className="text-xs text-gray-500">
-                        {test.isPublished ? (
+                        {exam.isPublished ? (
                           <span className="flex items-center gap-1 text-green-600">
                             <CheckCircle className="w-3 h-3" />
                             Опубликован
@@ -360,7 +360,7 @@ const TestsPage = () => {
                         )}
                       </span>
                       <span className="text-xs text-gray-400">
-                        {new Date(test.createdAt).toLocaleDateString('ru-RU')}
+                        {new Date(exam.createdAt).toLocaleDateString('ru-RU')}
                       </span>
                     </div>
                   )}
@@ -374,4 +374,4 @@ const TestsPage = () => {
   );
 };
 
-export default TestsPage;
+export default ExamsPage;

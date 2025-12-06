@@ -15,7 +15,8 @@ import QuizzesPage from './pages/QuizzesPage'
 import QuizTakingPage from './pages/QuizTakingPage'
 import QuizResultPage from './pages/QuizResultPage'
 import QuizStatsPage from './pages/QuizStatsPage'
-import TestsPage from './pages/TestsPage'
+import ExamsPage from './pages/ExamsPage'
+import CreateExamPage from './pages/CreateExamPage'
 
 // Teacher Pages
 import CreateQuizPage from './pages/CreateQuizPage'
@@ -31,7 +32,7 @@ import AdminAnalyticsPage from './pages/AdminAnalyticsPage'
 import AdminExportPage from './pages/AdminExportPage'
 import AdminAchievementsPage from './pages/AdminAchievementsPage'
 import AdminQuizzesPage from './pages/AdminQuizzesPage'
-import AdminTestsPage from './pages/AdminTestsPage'
+import AdminExamsPage from './pages/AdminExamsPage'
 import AdminSettingsPage from './pages/AdminSettingsPage'
 
 // Student Pages
@@ -110,29 +111,39 @@ function App() {
             }
           />
 
-          {/* Тесты */}
+          {/* Экзамены */}
           <Route
-            path="/tests"
+            path="/exams"
             element={
               <PrivateRoute>
-                <TestsPage />
+                <ExamsPage />
               </PrivateRoute>
             }
           />
           <Route
-            path="/tests/:testId/take"
-            element={
-              <PrivateRoute>
-                <TestsPage />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/tests/:id/stats"
+            path="/exams/create"
             element={
               <PrivateRoute>
                 <RoleRoute allowedRoles={['Teacher', 'Admin']}>
-                  <TestsPage />
+                  <CreateExamPage />
+                </RoleRoute>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/exams/:examId/take"
+            element={
+              <PrivateRoute>
+                <ExamsPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/exams/:id/stats"
+            element={
+              <PrivateRoute>
+                <RoleRoute allowedRoles={['Teacher', 'Admin']}>
+                  <ExamsPage />
                 </RoleRoute>
               </PrivateRoute>
             }
@@ -222,11 +233,11 @@ function App() {
             }
           />
           <Route
-            path="/admin/tests"
+            path="/admin/exams"
             element={
               <PrivateRoute>
                 <RoleRoute allowedRoles={['Admin']}>
-                  <AdminTestsPage />
+                  <AdminExamsPage />
                 </RoleRoute>
               </PrivateRoute>
             }

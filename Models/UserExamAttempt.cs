@@ -3,9 +3,9 @@ using System.ComponentModel.DataAnnotations;
 namespace UniStart.Models;
 
 /// <summary>
-/// Попытка прохождения теста студентом
+/// Попытка прохождения экзамена студентом
 /// </summary>
-public class UserTestAttempt
+public class UserExamAttempt
 {
     public int Id { get; set; }
     
@@ -15,7 +15,7 @@ public class UserTestAttempt
     [Range(0, 100)]
     public double Percentage { get; set; } // Процент правильных ответов
     
-    public bool Passed { get; set; } // Сдан ли тест (Score >= PassingScore)
+    public bool Passed { get; set; } // Сдан ли экзамен (Score >= PassingScore)
     public TimeSpan TimeSpent { get; set; }
     public DateTime StartedAt { get; set; } = DateTime.UtcNow;
     public DateTime? CompletedAt { get; set; }
@@ -33,7 +33,7 @@ public class UserTestAttempt
     // Связи
     public string UserId { get; set; } = string.Empty;
     public ApplicationUser User { get; set; } = null!;
-    public int TestId { get; set; }
-    public Test Test { get; set; } = null!;
-    public ICollection<UserTestAnswer> UserAnswers { get; set; } = new List<UserTestAnswer>();
+    public int ExamId { get; set; }
+    public Exam Exam { get; set; } = null!;
+    public ICollection<UserExamAnswer> UserAnswers { get; set; } = new List<UserExamAnswer>();
 }
