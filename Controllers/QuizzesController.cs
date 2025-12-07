@@ -166,7 +166,6 @@ namespace UniStart.Controllers
                 {
                     Id = q.Id,
                     Text = q.Text,
-                    QuestionType = q.QuestionType,
                     Points = q.Points,
                     ImageUrl = q.ImageUrl,
                     Answers = q.Answers.OrderBy(a => a.OrderIndex).Select(a => new AnswerDto
@@ -242,7 +241,6 @@ namespace UniStart.Controllers
                 var question = new Question
                 {
                     Text = questionDto.Text,
-                    QuestionType = questionDto.QuestionType,
                     Points = questionDto.Points,
                     Explanation = questionDto.Explanation,
                     OrderIndex = questionDto.Order,
@@ -604,7 +602,6 @@ namespace UniStart.Controllers
             var question = new Question
             {
                 Text = dto.Text,
-                QuestionType = dto.QuestionType,
                 Points = dto.Points,
                 ImageUrl = dto.ImageUrl,
                 Explanation = dto.Explanation,
@@ -653,7 +650,6 @@ namespace UniStart.Controllers
                 return NotFound("Question not found or access denied");
 
             question.Text = dto.Text;
-            question.QuestionType = dto.QuestionType;
             question.Points = dto.Points;
             question.ImageUrl = dto.ImageUrl;
             question.Explanation = dto.Explanation;

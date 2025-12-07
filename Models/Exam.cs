@@ -47,9 +47,6 @@ public class Exam
     [Range(1, 300, ErrorMessage = "Ограничение времени должно быть от 1 до 300 минут")]
     public int TimeLimit { get; set; } = 60; // Ограничение времени в минутах
     
-    public DateTime? StartDate { get; set; } // Когда экзамен становится доступным
-    public DateTime? EndDate { get; set; } // Дедлайн экзамена
-    
     // Метаданные
     public bool IsPublished { get; set; } = false;
     public bool IsPublic { get; set; } = false; // true = доступен всем студентам, false = только студентам автора

@@ -14,7 +14,6 @@ interface Answer {
 
 interface Question {
   text: string;
-  questionType: string;
   points: number;
   explanation: string;
   answers: Answer[];
@@ -68,7 +67,6 @@ const EditQuizPage = () => {
         isPublished: quizData.isPublished || false,
         questions: quizData.questions.map((q: any) => ({
           text: q.text,
-          questionType: q.questionType,
           points: q.points,
           explanation: q.explanation || '',
           answers: q.answers.map((a: any) => ({
@@ -93,7 +91,6 @@ const EditQuizPage = () => {
         ...quiz.questions,
         {
           text: '',
-          questionType: 'SingleChoice',
           points: 1,
           explanation: '',
           answers: [
@@ -149,20 +146,11 @@ const EditQuizPage = () => {
       const newQuestions = [...prev.questions];
       const question = { ...newQuestions[questionIndex] };
       
-      if (question.questionType === 'SingleChoice') {
-        // Для одиночного выбора - создаем новый массив ответов
-        question.answers = question.answers.map((answer, i) => ({
-          ...answer,
-          isCorrect: i === answerIndex
-        }));
-      } else {
-        // Для множественного выбора - создаем новый массив с переключенным состоянием
-        question.answers = question.answers.map((answer, i) => 
-          i === answerIndex 
-            ? { ...answer, isCorrect: !answer.isCorrect }
-            : answer
-        );
-      }
+      // Для одиночного выбора - только один правильный ответ
+      question.answers = question.answers.map((answer, i) => ({
+        ...answer,
+        isCorrect: i === answerIndex
+      }));
       
       newQuestions[questionIndex] = question;
       return { ...prev, questions: newQuestions };
@@ -218,7 +206,6 @@ const EditQuizPage = () => {
         isPublished: publish ? true : quiz.isPublished,
         questions: quiz.questions.map((q, index) => ({
           text: q.text,
-          questionType: q.questionType,
           points: q.points,
           explanation: q.explanation || '',
           order: index,
@@ -300,14 +287,28 @@ const EditQuizPage = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Предмет *
                   </label>
-                  <input
-                    type="text"
+                  <select
                     value={quiz.subject}
                     onChange={(e) => setQuiz({ ...quiz, subject: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                    placeholder="Математика"
                     required
-                  />
+                  >
+                    <option value="">Выберите предмет</option>
+                    <option value="Математика">Математика</option>
+                    <option value="Физика">Физика</option>
+                    <option value="Химия">Химия</option>
+                    <option value="Биология">Биология</option>
+                    <option value="История">История</option>
+                    <option value="Информатика">Информатика</option>
+                    <option value="Английский язык">Английский язык</option>
+                    <option value="Русский язык">Русский язык</option>
+                    <option value="Литература">Литература</option>
+                    <option value="География">География</option>
+                    <option value="Обществознание">Обществознание</option>
+                    <option value="Программирование">Программирование</option>
+                    <option value="Экономика">Экономика</option>
+                    <option value="Право">Право</option>
+                  </select>
                 </div>
 
                 <div>
@@ -415,33 +416,17 @@ const EditQuizPage = () => {
                         />
                       </div>
 
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Тип вопроса
-                          </label>
-                          <select
-                            value={question.questionType}
-                            onChange={(e) => updateQuestion(qIndex, 'questionType', e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                          >
-                            <option value="SingleChoice">Одиночный выбор</option>
-                            <option value="MultipleChoice">Множественный выбор</option>
-                          </select>
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Баллы
-                          </label>
-                          <input
-                            type="number"
-                            value={question.points}
-                            onChange={(e) => updateQuestion(qIndex, 'points', Number(e.target.value))}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                            min="1"
-                          />
-                        </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Баллы
+                        </label>
+                        <input
+                          type="number"
+                          value={question.points}
+                          onChange={(e) => updateQuestion(qIndex, 'points', Number(e.target.value))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                          min="1"
+                        />
                       </div>
 
                       <div>
@@ -477,8 +462,8 @@ const EditQuizPage = () => {
                           {question.answers.map((answer, aIndex) => (
                             <div key={aIndex} className="flex items-center gap-2">
                               <input
-                                type={question.questionType === 'SingleChoice' ? 'radio' : 'checkbox'}
-                                name={question.questionType === 'SingleChoice' ? `correct-${qIndex}` : undefined}
+                                type="radio"
+                                name={`correct-${qIndex}`}
                                 checked={answer.isCorrect}
                                 onChange={() => toggleCorrectAnswer(qIndex, aIndex)}
                                 className="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500"
@@ -512,9 +497,7 @@ const EditQuizPage = () => {
                           ))}
                         </div>
                         <p className="text-xs text-gray-500 mt-1">
-                          {question.questionType === 'SingleChoice'
-                            ? 'Отметьте один правильный ответ'
-                            : 'Отметьте все правильные ответы'}
+                          Отметьте один правильный ответ
                         </p>
                       </div>
                     </div>

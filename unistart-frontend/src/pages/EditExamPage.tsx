@@ -21,6 +21,7 @@ import { useAuth } from '../context/AuthContext';
 interface ExamQuestion {
   text: string;
   explanation: string;
+  questionType: string;
   points: number;
   answers: ExamAnswer[];
 }
@@ -53,8 +54,6 @@ const EditExamPage = () => {
   const [showResultsAfter, setShowResultsAfter] = useState('Immediate');
   const [showCorrectAnswers, setShowCorrectAnswers] = useState(true);
   const [showDetailedFeedback, setShowDetailedFeedback] = useState(true);
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
   const [isPublished, setIsPublished] = useState(false);
   const [isPublic, setIsPublic] = useState(false);
 
@@ -63,6 +62,7 @@ const EditExamPage = () => {
     {
       text: '',
       explanation: '',
+      questionType: 'SingleChoice',
       points: 1,
       answers: [
         { text: '', isCorrect: false },
@@ -95,19 +95,13 @@ const EditExamPage = () => {
       setShowCorrectAnswers(exam.showCorrectAnswers);
       setShowDetailedFeedback(exam.showDetailedFeedback);
       setIsPublished(exam.isPublished);
-      
-      if (exam.startDate) {
-        setStartDate(new Date(exam.startDate).toISOString().slice(0, 16));
-      }
-      if (exam.endDate) {
-        setEndDate(new Date(exam.endDate).toISOString().slice(0, 16));
-      }
 
       if (exam.questions && exam.questions.length > 0) {
         setQuestions(
           exam.questions.map((q: any) => ({
             text: q.text,
             explanation: q.explanation || '',
+            questionType: q.questionType || 'SingleChoice',
             points: q.points,
             answers: q.answers.map((a: any) => ({
               text: a.text,
@@ -131,6 +125,7 @@ const EditExamPage = () => {
       {
         text: '',
         explanation: '',
+        questionType: 'SingleChoice',
         points: 1,
         answers: [
           { text: '', isCorrect: false },
@@ -187,8 +182,17 @@ const EditExamPage = () => {
 
   const toggleCorrectAnswer = (questionIndex: number, answerIndex: number) => {
     const updatedQuestions = [...questions];
-    updatedQuestions[questionIndex].answers.forEach((a) => (a.isCorrect = false));
-    updatedQuestions[questionIndex].answers[answerIndex].isCorrect = true;
+    const question = updatedQuestions[questionIndex];
+    
+    if (question.questionType === 'SingleChoice') {
+      // Для одиночного выбора - сбросить все и выбрать один
+      question.answers.forEach((a) => (a.isCorrect = false));
+      question.answers[answerIndex].isCorrect = true;
+    } else {
+      // Для множественного выбора - переключить состояние
+      question.answers[answerIndex].isCorrect = !question.answers[answerIndex].isCorrect;
+    }
+    
     setQuestions(updatedQuestions);
   };
 
@@ -239,14 +243,13 @@ const EditExamPage = () => {
         showResultsAfter,
         showCorrectAnswers,
         showDetailedFeedback,
-        startDate: startDate || null,
-        endDate: endDate || null,
         isPublished: isPublished,
         isPublic: isPublic,
         tagIds: [],
         questions: questions.map((q, index) => ({
           text: q.text,
           explanation: q.explanation,
+          questionType: q.questionType,
           points: q.points,
           order: index,
           answers: q.answers.map((a, aIndex) => ({
@@ -355,14 +358,27 @@ const EditExamPage = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Предмет *
                   </label>
-                  <input
-                    type="text"
+                  <select
                     value={subject}
                     onChange={(e) => setSubject(e.target.value)}
-                    placeholder="Математика"
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                    maxLength={100}
-                  />
+                  >
+                    <option value="">Выберите предмет</option>
+                    <option value="Математика">Математика</option>
+                    <option value="Физика">Физика</option>
+                    <option value="Химия">Химия</option>
+                    <option value="Биология">Биология</option>
+                    <option value="История">История</option>
+                    <option value="Информатика">Информатика</option>
+                    <option value="Английский язык">Английский язык</option>
+                    <option value="Русский язык">Русский язык</option>
+                    <option value="Литература">Литература</option>
+                    <option value="География">География</option>
+                    <option value="Обществознание">Обществознание</option>
+                    <option value="Программирование">Программирование</option>
+                    <option value="Экономика">Экономика</option>
+                    <option value="Право">Право</option>
+                  </select>
                 </div>
 
                 <div>
@@ -436,32 +452,6 @@ const EditExamPage = () => {
                     value={maxAttempts}
                     onChange={(e) => setMaxAttempts(Number(e.target.value))}
                     min="1"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Дата начала
-                  </label>
-                  <input
-                    type="datetime-local"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Дата окончания
-                  </label>
-                  <input
-                    type="datetime-local"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   />
                 </div>
@@ -608,6 +598,25 @@ const EditExamPage = () => {
                     </div>
 
                     <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Тип вопроса *
+                      </label>
+                      <select
+                        value={question.questionType}
+                        onChange={(e) => updateQuestion(qIndex, 'questionType', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      >
+                        <option value="SingleChoice">Одиночный выбор</option>
+                        <option value="MultipleChoice">Множественный выбор</option>
+                      </select>
+                      <p className="mt-1 text-xs text-gray-500">
+                        {question.questionType === 'SingleChoice' 
+                          ? 'Только один правильный ответ' 
+                          : 'Можно выбрать несколько правильных ответов'}
+                      </p>
+                    </div>
+
+                    <div>
                       <div className="flex items-center justify-between mb-2">
                         <label className="text-sm font-medium text-gray-700">
                           Варианты ответов *
@@ -625,8 +634,8 @@ const EditExamPage = () => {
                         {question.answers.map((answer, aIndex) => (
                           <div key={aIndex} className="flex items-center gap-2">
                             <input
-                              type="radio"
-                              name={`correct-${qIndex}`}
+                              type={question.questionType === 'SingleChoice' ? 'radio' : 'checkbox'}
+                              name={question.questionType === 'SingleChoice' ? `correct-${qIndex}` : undefined}
                               checked={answer.isCorrect}
                               onChange={() => toggleCorrectAnswer(qIndex, aIndex)}
                               className="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500"

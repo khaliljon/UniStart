@@ -16,6 +16,9 @@ public class ExamQuestion
     [StringLength(2000, ErrorMessage = "Объяснение не должно превышать 2000 символов")]
     public string? Explanation { get; set; } // Объяснение правильного ответа
     
+    [Required(ErrorMessage = "Тип вопроса обязателен")]
+    public string QuestionType { get; set; } = "SingleChoice"; // SingleChoice, MultipleChoice
+    
     [Range(1, 100, ErrorMessage = "Баллы должны быть от 1 до 100")]
     public int Points { get; set; } = 1;
     

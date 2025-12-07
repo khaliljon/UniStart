@@ -101,7 +101,6 @@ namespace UniStart.DTOs
     {
         public int Id { get; set; }
         public string Text { get; set; } = string.Empty;
-        public string QuestionType { get; set; } = string.Empty;
         public int Points { get; set; }
         public string? ImageUrl { get; set; }
         public List<AnswerDto> Answers { get; set; } = new();
@@ -112,10 +111,6 @@ namespace UniStart.DTOs
         [Required(ErrorMessage = "Текст вопроса обязателен")]
         [StringLength(1000, ErrorMessage = "Текст вопроса не должен превышать 1000 символов")]
         public string Text { get; set; } = string.Empty;
-        
-        [Required(ErrorMessage = "Тип вопроса обязателен")]
-        [RegularExpression("^(SingleChoice|MultipleChoice|TrueFalse)$", ErrorMessage = "Тип должен быть: SingleChoice, MultipleChoice или TrueFalse")]
-        public string QuestionType { get; set; } = "SingleChoice";
         
         [Range(1, 100, ErrorMessage = "Баллы должны быть от 1 до 100")]
         public int Points { get; set; } = 1;

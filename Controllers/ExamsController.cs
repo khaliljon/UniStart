@@ -71,8 +71,6 @@ public class ExamsController : ControllerBase
                 ShowCorrectAnswers = t.ShowCorrectAnswers,
                 ShowDetailedFeedback = t.ShowDetailedFeedback,
                 TimeLimit = t.TimeLimit,
-                StartDate = t.StartDate,
-                EndDate = t.EndDate,
                 IsPublished = t.IsPublished,
                 IsPublic = t.IsPublic,
                 TotalPoints = t.TotalPoints,
@@ -118,8 +116,6 @@ public class ExamsController : ControllerBase
                 ShowCorrectAnswers = t.ShowCorrectAnswers,
                 ShowDetailedFeedback = t.ShowDetailedFeedback,
                 TimeLimit = t.TimeLimit,
-                StartDate = t.StartDate,
-                EndDate = t.EndDate,
                 IsPublished = t.IsPublished,
                 IsPublic = t.IsPublic,
                 TotalPoints = t.TotalPoints,
@@ -174,8 +170,6 @@ public class ExamsController : ControllerBase
             ShowCorrectAnswers = exam.ShowCorrectAnswers,
             ShowDetailedFeedback = exam.ShowDetailedFeedback,
             TimeLimit = exam.TimeLimit,
-            StartDate = exam.StartDate,
-            EndDate = exam.EndDate,
             IsPublished = exam.IsPublished,
             IsPublic = exam.IsPublic,
             TotalPoints = exam.TotalPoints,
@@ -194,6 +188,7 @@ public class ExamsController : ControllerBase
                 Id = q.Id,
                 Text = q.Text,
                 Explanation = q.Explanation,
+                QuestionType = q.QuestionType,
                 Points = q.Points,
                 Order = q.Order,
                 Answers = q.Answers.OrderBy(a => a.Order).Select(a => new ExamAnswerDto
@@ -225,14 +220,6 @@ public class ExamsController : ControllerBase
 
         if (exam == null)
             return NotFound("Экзамен не найден или не опубликован");
-
-        // Проверка временных ограничений
-        var now = DateTime.UtcNow;
-        if (exam.StartDate.HasValue && now < exam.StartDate.Value)
-            return BadRequest("Экзамен ещё не начался");
-
-        if (exam.EndDate.HasValue && now > exam.EndDate.Value)
-            return BadRequest("Дедлайн экзамена истёк");
 
         // Проверка количества попыток
         var attemptsCount = exam.Attempts.Count(a => a.CompletedAt != null);
@@ -497,8 +484,6 @@ public class ExamsController : ControllerBase
             ShowCorrectAnswers = dto.ShowCorrectAnswers,
             ShowDetailedFeedback = dto.ShowDetailedFeedback,
             TimeLimit = dto.TimeLimit,
-            StartDate = dto.StartDate,
-            EndDate = dto.EndDate,
             IsPublished = dto.IsPublished,
             IsPublic = dto.IsPublic,
             UserId = userId,
@@ -600,8 +585,6 @@ public class ExamsController : ControllerBase
         exam.ShowCorrectAnswers = dto.ShowCorrectAnswers;
         exam.ShowDetailedFeedback = dto.ShowDetailedFeedback;
         exam.TimeLimit = dto.TimeLimit;
-        exam.StartDate = dto.StartDate;
-        exam.EndDate = dto.EndDate;
         exam.IsPublished = dto.IsPublished;
         exam.IsPublic = dto.IsPublic;
         exam.UpdatedAt = DateTime.UtcNow;
@@ -618,6 +601,7 @@ public class ExamsController : ControllerBase
             {
                 Text = questionDto.Text,
                 Explanation = questionDto.Explanation,
+                QuestionType = questionDto.QuestionType,
                 Points = questionDto.Points,
                 Order = questionDto.Order,
                 Exam = exam

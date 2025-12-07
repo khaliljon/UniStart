@@ -14,7 +14,6 @@ interface Answer {
 
 interface Question {
   text: string;
-  questionType: string;
   points: number;
   explanation: string;
   answers: Answer[];
@@ -51,7 +50,6 @@ const CreateQuizPage = () => {
         ...quiz.questions,
         {
           text: '',
-          questionType: 'SingleChoice',
           points: 1,
           explanation: '',
           answers: [
@@ -146,7 +144,6 @@ const CreateQuizPage = () => {
         const questionResponse = await api.post('/quizzes/questions', {
           quizId: quizId,
           text: question.text,
-          questionType: question.questionType,
           points: question.points,
           explanation: question.explanation || '',
         });
@@ -238,14 +235,20 @@ const CreateQuizPage = () => {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 >
                   <option value="">Выберите предмет</option>
-                  <option value="Mathematics">Математика</option>
-                  <option value="Physics">Физика</option>
-                  <option value="Chemistry">Химия</option>
-                  <option value="Biology">Биология</option>
-                  <option value="History">История Казахстана</option>
-                  <option value="English">Английский язык</option>
-                  <option value="Kazakh">Казахский язык</option>
-                  <option value="Russian">Русский язык</option>
+                  <option value="Математика">Математика</option>
+                  <option value="Физика">Физика</option>
+                  <option value="Химия">Химия</option>
+                  <option value="Биология">Биология</option>
+                  <option value="История">История</option>
+                  <option value="Информатика">Информатика</option>
+                  <option value="Английский язык">Английский язык</option>
+                  <option value="Русский язык">Русский язык</option>
+                  <option value="Литература">Литература</option>
+                  <option value="География">География</option>
+                  <option value="Обществознание">Обществознание</option>
+                  <option value="Программирование">Программирование</option>
+                  <option value="Экономика">Экономика</option>
+                  <option value="Право">Право</option>
                 </select>
               </div>
 
@@ -376,22 +379,6 @@ const CreateQuizPage = () => {
                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                           />
                         </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Тип вопроса
-                          </label>
-                          <select
-                            value={question.questionType}
-                            onChange={(e) =>
-                              updateQuestion(qIndex, 'questionType', e.target.value)
-                            }
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                          >
-                            <option value="SingleChoice">Одиночный выбор</option>
-                            <option value="MultipleChoice">Множественный выбор</option>
-                          </select>
-                        </div>
                       </div>
 
                       <div>
@@ -429,32 +416,16 @@ const CreateQuizPage = () => {
                           {question.answers.map((answer, aIndex) => (
                             <div key={aIndex} className="flex items-start gap-3">
                               <input
-                                type={
-                                  question.questionType === 'SingleChoice'
-                                    ? 'radio'
-                                    : 'checkbox'
-                                }
+                                type="radio"
                                 name={`question-${qIndex}-correct`}
                                 checked={answer.isCorrect}
-                                onChange={(e) =>
-                                  updateAnswer(
-                                    qIndex,
-                                    aIndex,
-                                    'isCorrect',
-                                    question.questionType === 'SingleChoice'
-                                      ? true
-                                      : e.target.checked
-                                  )
-                                }
-                                onClick={() => {
-                                  if (question.questionType === 'SingleChoice') {
-                                    // Сбросить все остальные ответы
-                                    const newQuestions = [...quiz.questions];
-                                    newQuestions[qIndex].answers.forEach((a, i) => {
-                                      a.isCorrect = i === aIndex;
-                                    });
-                                    setQuiz({ ...quiz, questions: newQuestions });
-                                  }
+                                onChange={() => {
+                                  // Сбросить все остальные ответы
+                                  const newQuestions = [...quiz.questions];
+                                  newQuestions[qIndex].answers.forEach((a, i) => {
+                                    a.isCorrect = i === aIndex;
+                                  });
+                                  setQuiz({ ...quiz, questions: newQuestions });
                                 }}
                                 className="mt-2 w-4 h-4 text-primary-600 rounded focus:ring-primary-500"
                               />

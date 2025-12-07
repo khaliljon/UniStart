@@ -12,10 +12,6 @@ namespace UniStart.Models
         [StringLength(1000, ErrorMessage = "Текст вопроса не должен превышать 1000 символов")]
         public string Text { get; set; } = string.Empty;
         
-        [Display(Name = "Тип вопроса")]
-        [Required(ErrorMessage = "Тип вопроса обязателен")]
-        public string QuestionType { get; set; } = "SingleChoice"; // SingleChoice, MultipleChoice, TrueFalse
-        
         [Display(Name = "Баллы")]
         [Range(1, 100, ErrorMessage = "Баллы должны быть от 1 до 100")]
         public int Points { get; set; } = 1;

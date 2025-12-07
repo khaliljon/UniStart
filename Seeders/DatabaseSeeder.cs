@@ -233,7 +233,6 @@ namespace UniStart.Seeders
                     new Question
                     {
                         Text = "Решите уравнение: x² - 5x + 6 = 0",
-                        QuestionType = "SingleChoice",
                         Points = 2,
                         OrderIndex = 0,
                         Explanation = "Используя теорему Виета: x₁ + x₂ = 5, x₁ · x₂ = 6. Корни: x₁ = 2, x₂ = 3",
@@ -248,7 +247,6 @@ namespace UniStart.Seeders
                     new Question
                     {
                         Text = "Чему равен дискриминант уравнения x² + 4x + 4 = 0?",
-                        QuestionType = "SingleChoice",
                         Points = 1,
                         OrderIndex = 1,
                         Explanation = "D = b² - 4ac = 16 - 16 = 0. При D = 0 уравнение имеет один корень.",
@@ -263,7 +261,6 @@ namespace UniStart.Seeders
                     new Question
                     {
                         Text = "Какие из следующих утверждений верны? (Выберите все правильные)",
-                        QuestionType = "MultipleChoice",
                         Points = 3,
                         OrderIndex = 2,
                         Explanation = "Правильные утверждения: квадратное уравнение может иметь два корня, и сумма корней равна -b/a.",
@@ -293,7 +290,6 @@ namespace UniStart.Seeders
                     new Question
                     {
                         Text = "Автомобиль проехал 120 км за 2 часа. Какова его средняя скорость?",
-                        QuestionType = "SingleChoice",
                         Points = 1,
                         OrderIndex = 0,
                         Explanation = "v = S / t = 120 км / 2 ч = 60 км/ч",
@@ -308,7 +304,6 @@ namespace UniStart.Seeders
                     new Question
                     {
                         Text = "Второй закон Ньютона формулируется как:",
-                        QuestionType = "SingleChoice",
                         Points = 1,
                         OrderIndex = 1,
                         Explanation = "F = ma - сила равна произведению массы на ускорение",
@@ -338,7 +333,6 @@ namespace UniStart.Seeders
                     new Question
                     {
                         Text = "В каком году Казахстан получил независимость?",
-                        QuestionType = "SingleChoice",
                         Points = 1,
                         OrderIndex = 0,
                         Explanation = "16 декабря 1991 года была провозглашена независимость Республики Казахстан",
@@ -353,7 +347,6 @@ namespace UniStart.Seeders
                     new Question
                     {
                         Text = "Когда был образован Казахский ханат?",
-                        QuestionType = "SingleChoice",
                         Points = 2,
                         OrderIndex = 1,
                         Explanation = "Казахский ханат был образован в 1465 году Жанибеком и Кереем",

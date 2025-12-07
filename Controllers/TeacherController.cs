@@ -428,7 +428,6 @@ public class TeacherController : ControllerBase
             {
                 QuestionId = q.Id,
                 QuestionText = q.Text,
-                QuestionType = q.QuestionType,
                 Points = q.Points,
                 IsCorrect = isCorrect,
                 CorrectAnswers = q.Answers.Where(a => a.IsCorrect).Select(a => new { a.Id, a.Text }),

@@ -34,8 +34,6 @@ public class CreateExamDto
     
     // Временные ограничения
     public int TimeLimit { get; set; } = 60;
-    public DateTime? StartDate { get; set; }
-    public DateTime? EndDate { get; set; }
     
     public bool IsPublished { get; set; } = false;
     public bool IsPublic { get; set; } = false;
@@ -51,6 +49,7 @@ public class CreateExamQuestionDto
 {
     public string Text { get; set; } = string.Empty;
     public string? Explanation { get; set; }
+    public string QuestionType { get; set; } = "SingleChoice";
     public int Points { get; set; } = 1;
     public int Order { get; set; }
     public List<CreateExamAnswerDto> Answers { get; set; } = new();
@@ -88,8 +87,6 @@ public class ExamDto
     public bool ShowDetailedFeedback { get; set; }
     
     public int TimeLimit { get; set; }
-    public DateTime? StartDate { get; set; }
-    public DateTime? EndDate { get; set; }
     
     public bool IsPublished { get; set; }
     public bool IsPublic { get; set; }
@@ -112,6 +109,7 @@ public class ExamQuestionDto
     public int Id { get; set; }
     public string Text { get; set; } = string.Empty;
     public string? Explanation { get; set; }
+    public string QuestionType { get; set; } = string.Empty;
     public int Points { get; set; }
     public int Order { get; set; }
     public List<ExamAnswerDto> Answers { get; set; } = new();
