@@ -503,6 +503,7 @@ public class ExamsController : ControllerBase
             IsPublic = dto.IsPublic,
             UserId = userId,
             CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
             TotalPoints = dto.Questions.Sum(q => q.Points)
         };
 
@@ -601,6 +602,8 @@ public class ExamsController : ControllerBase
         exam.TimeLimit = dto.TimeLimit;
         exam.StartDate = dto.StartDate;
         exam.EndDate = dto.EndDate;
+        exam.IsPublished = dto.IsPublished;
+        exam.IsPublic = dto.IsPublic;
         exam.UpdatedAt = DateTime.UtcNow;
         exam.TotalPoints = dto.Questions.Sum(q => q.Points);
 

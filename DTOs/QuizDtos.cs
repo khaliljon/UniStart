@@ -25,6 +25,8 @@ namespace UniStart.DTOs
         public int TimeLimit { get; set; }
         public string Subject { get; set; } = string.Empty;
         public string Difficulty { get; set; } = string.Empty;
+        public bool IsPublic { get; set; }
+        public bool IsPublished { get; set; }
         public List<QuestionDto> Questions { get; set; } = new();
     }
 
@@ -48,6 +50,51 @@ namespace UniStart.DTOs
         [Required(ErrorMessage = "Уровень сложности обязателен")]
         [RegularExpression("^(Easy|Medium|Hard)$", ErrorMessage = "Сложность должна быть: Easy, Medium или Hard")]
         public string Difficulty { get; set; } = "Medium";
+    }
+
+    public class UpdateQuizDto
+    {
+        [Required(ErrorMessage = "Название теста обязательно")]
+        [StringLength(200, ErrorMessage = "Название не должно превышать 200 символов")]
+        public string Title { get; set; } = string.Empty;
+        
+        [StringLength(1000, ErrorMessage = "Описание не должно превышать 1000 символов")]
+        public string Description { get; set; } = string.Empty;
+        
+        [Range(0, 300, ErrorMessage = "Время должно быть от 0 до 300 минут")]
+        public int TimeLimit { get; set; }
+        
+        [Required(ErrorMessage = "Предмет обязателен")]
+        [StringLength(100, ErrorMessage = "Название предмета не должно превышать 100 символов")]
+        public string Subject { get; set; } = string.Empty;
+        
+        [Required(ErrorMessage = "Уровень сложности обязателен")]
+        [RegularExpression("^(Easy|Medium|Hard)$", ErrorMessage = "Сложность должна быть: Easy, Medium или Hard")]
+        public string Difficulty { get; set; } = "Medium";
+
+        public bool IsPublic { get; set; }
+        public bool IsPublished { get; set; }
+        
+        public List<UpdateQuestionWithAnswersDto> Questions { get; set; } = new();
+    }
+
+    public class UpdateQuestionWithAnswersDto
+    {
+        [Required]
+        public string Text { get; set; } = string.Empty;
+        public string QuestionType { get; set; } = "SingleChoice";
+        public int Points { get; set; } = 1;
+        public string? Explanation { get; set; }
+        public int Order { get; set; }
+        public List<UpdateAnswerInQuestionDto> Answers { get; set; } = new();
+    }
+
+    public class UpdateAnswerInQuestionDto
+    {
+        [Required]
+        public string Text { get; set; } = string.Empty;
+        public bool IsCorrect { get; set; }
+        public int Order { get; set; }
     }
 
     public class QuestionDto

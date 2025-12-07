@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Plus, Trash2, Save, ArrowLeft } from 'lucide-react';
+import { Plus, Trash2, Save, ArrowLeft, FileX } from 'lucide-react';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import api from '../services/api';
@@ -22,6 +22,7 @@ interface Question {
 
 interface QuizForm {
   title: string;
+  description?: string;
   subject: string;
   difficulty: string;
   timeLimit: number;
@@ -38,6 +39,7 @@ const EditQuizPage = () => {
   const [fetching, setFetching] = useState(true);
   const [quiz, setQuiz] = useState<QuizForm>({
     title: '',
+    description: '',
     subject: '',
     difficulty: 'Medium',
     timeLimit: 30,
@@ -58,6 +60,7 @@ const EditQuizPage = () => {
       
       setQuiz({
         title: quizData.title,
+        description: quizData.description || '',
         subject: quizData.subject,
         difficulty: quizData.difficulty,
         timeLimit: quizData.timeLimit,
@@ -142,20 +145,28 @@ const EditQuizPage = () => {
   };
 
   const toggleCorrectAnswer = (questionIndex: number, answerIndex: number) => {
-    const newQuestions = [...quiz.questions];
-    const question = newQuestions[questionIndex];
-
-    if (question.questionType === 'SingleChoice') {
-      // Для одиночного выбора - сбросить все и установить только выбранный
-      question.answers.forEach((a, i) => {
-        a.isCorrect = i === answerIndex;
-      });
-    } else {
-      // Для множественного выбора - переключить
-      question.answers[answerIndex].isCorrect = !question.answers[answerIndex].isCorrect;
-    }
-
-    setQuiz({ ...quiz, questions: newQuestions });
+    setQuiz(prev => {
+      const newQuestions = [...prev.questions];
+      const question = { ...newQuestions[questionIndex] };
+      
+      if (question.questionType === 'SingleChoice') {
+        // Для одиночного выбора - создаем новый массив ответов
+        question.answers = question.answers.map((answer, i) => ({
+          ...answer,
+          isCorrect: i === answerIndex
+        }));
+      } else {
+        // Для множественного выбора - создаем новый массив с переключенным состоянием
+        question.answers = question.answers.map((answer, i) => 
+          i === answerIndex 
+            ? { ...answer, isCorrect: !answer.isCorrect }
+            : answer
+        );
+      }
+      
+      newQuestions[questionIndex] = question;
+      return { ...prev, questions: newQuestions };
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent, publish: boolean = false) => {
@@ -198,12 +209,22 @@ const EditQuizPage = () => {
       setLoading(true);
 
       const quizData = {
-        ...quiz,
+        title: quiz.title,
+        description: quiz.description || '',
+        subject: quiz.subject,
+        difficulty: quiz.difficulty,
+        timeLimit: quiz.timeLimit,
+        isPublic: quiz.isPublic,
+        isPublished: publish ? true : quiz.isPublished,
         questions: quiz.questions.map((q, index) => ({
-          ...q,
+          text: q.text,
+          questionType: q.questionType,
+          points: q.points,
+          explanation: q.explanation || '',
           order: index,
           answers: q.answers.map((a, aIndex) => ({
-            ...a,
+            text: a.text,
+            isCorrect: a.isCorrect,
             order: aIndex,
           })),
         })),
@@ -211,11 +232,9 @@ const EditQuizPage = () => {
 
       await api.put(`/quizzes/${id}`, quizData);
       
-      // Публикуем или снимаем с публикации если нужно
+      // Публикуем если нужно
       if (publish && !quiz.isPublished) {
         await api.patch(`/quizzes/${id}/publish`);
-      } else if (!publish && quiz.isPublished) {
-        await api.patch(`/quizzes/${id}/unpublish`);
       }
       
       alert('Квиз успешно обновлен!');
@@ -459,9 +478,11 @@ const EditQuizPage = () => {
                             <div key={aIndex} className="flex items-center gap-2">
                               <input
                                 type={question.questionType === 'SingleChoice' ? 'radio' : 'checkbox'}
+                                name={question.questionType === 'SingleChoice' ? `correct-${qIndex}` : undefined}
                                 checked={answer.isCorrect}
                                 onChange={() => toggleCorrectAnswer(qIndex, aIndex)}
-                                className="w-4 h-4 text-primary-600 border-gray-300 focus:ring-primary-500"
+                                className="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500"
+                                title="Отметить как правильный ответ"
                               />
                               <input
                                 type="text"
@@ -469,7 +490,11 @@ const EditQuizPage = () => {
                                 onChange={(e) =>
                                   updateAnswer(qIndex, aIndex, 'text', e.target.value)
                                 }
-                                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                className={`flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                                  answer.isCorrect
+                                    ? 'border-green-500 bg-green-50'
+                                    : 'border-gray-300'
+                                }`}
                                 placeholder={`Вариант ${aIndex + 1}`}
                                 required
                               />
@@ -477,7 +502,8 @@ const EditQuizPage = () => {
                                 <button
                                   type="button"
                                   onClick={() => removeAnswer(qIndex, aIndex)}
-                                  className="text-red-600 hover:text-red-700"
+                                  className="p-1 text-red-600 hover:bg-red-50 rounded"
+                                  title="Удалить вариант"
                                 >
                                   <Trash2 className="w-4 h-4" />
                                 </button>
@@ -518,7 +544,27 @@ const EditQuizPage = () => {
               <Save className="w-4 h-4" />
               {loading ? 'Сохранение...' : 'Сохранить'}
             </Button>
-            {!quiz.isPublished && (
+            {quiz.isPublished ? (
+              <Button
+                type="button"
+                onClick={async () => {
+                  try {
+                    await api.patch(`/quizzes/${id}/unpublish`);
+                    setQuiz({ ...quiz, isPublished: false });
+                    alert('Квиз снят с публикации');
+                  } catch (error) {
+                    console.error('Ошибка снятия с публикации:', error);
+                    alert('Не удалось снять квиз с публикации');
+                  }
+                }}
+                variant="secondary"
+                disabled={loading}
+                className="flex items-center gap-2"
+              >
+                <FileX className="w-4 h-4" />
+                Снять с публикации
+              </Button>
+            ) : (
               <Button
                 type="button"
                 onClick={(e: any) => handleSubmit(e, true)}

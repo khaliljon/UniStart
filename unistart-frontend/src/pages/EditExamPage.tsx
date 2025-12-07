@@ -11,6 +11,7 @@ import {
   Award,
   AlertCircle,
   Settings,
+  FileX,
 } from 'lucide-react';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
@@ -240,7 +241,7 @@ const EditExamPage = () => {
         showDetailedFeedback,
         startDate: startDate || null,
         endDate: endDate || null,
-        isPublished: publish !== undefined ? publish : isPublished,
+        isPublished: isPublished,
         isPublic: isPublic,
         tagIds: [],
         questions: questions.map((q, index) => ({
@@ -257,6 +258,13 @@ const EditExamPage = () => {
       };
 
       await api.put(`/exams/${id}`, examData);
+      
+      // Публикуем если нужно
+      if (publish && !isPublished) {
+        await api.patch(`/exams/${id}/publish`);
+        setIsPublished(true);
+      }
+      
       alert('Экзамен успешно обновлен!');
       navigate('/exams');
     } catch (error: any) {
@@ -299,28 +307,6 @@ const EditExamPage = () => {
               <FileText className="w-8 h-8 text-primary-500" />
               Редактирование экзамена
             </h1>
-          </div>
-          <div className="flex gap-2">
-            <Button
-              onClick={() => handleSubmit(false)}
-              variant="secondary"
-              disabled={loading}
-              className="flex items-center gap-2"
-            >
-              <Save className="w-4 h-4" />
-              Сохранить
-            </Button>
-            {!isPublished && (
-              <Button
-                onClick={() => handleSubmit(true)}
-                variant="primary"
-                disabled={loading}
-                className="flex items-center gap-2"
-              >
-                <Save className="w-4 h-4" />
-                Опубликовать
-              </Button>
-            )}
           </div>
         </div>
 
@@ -714,14 +700,44 @@ const EditExamPage = () => {
             Отмена
           </Button>
           <Button
-            onClick={() => handleSubmit()}
-            variant="primary"
+            onClick={() => handleSubmit(false)}
+            variant="secondary"
             disabled={loading}
             className="flex items-center gap-2"
           >
             <Save className="w-4 h-4" />
-            Сохранить изменения
+            {loading ? 'Сохранение...' : 'Сохранить'}
           </Button>
+          {isPublished ? (
+            <Button
+              onClick={async () => {
+                try {
+                  await api.patch(`/exams/${id}/unpublish`);
+                  setIsPublished(false);
+                  alert('Экзамен снят с публикации');
+                } catch (error) {
+                  console.error('Ошибка снятия с публикации:', error);
+                  alert('Не удалось снять экзамен с публикации');
+                }
+              }}
+              variant="secondary"
+              disabled={loading}
+              className="flex items-center gap-2"
+            >
+              <FileX className="w-4 h-4" />
+              Снять с публикации
+            </Button>
+          ) : (
+            <Button
+              onClick={() => handleSubmit(true)}
+              variant="primary"
+              disabled={loading}
+              className="flex items-center gap-2"
+            >
+              <Save className="w-4 h-4" />
+              {loading ? 'Публикация...' : 'Опубликовать'}
+            </Button>
+          )}
         </div>
       </div>
     </div>

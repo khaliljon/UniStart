@@ -149,6 +149,9 @@ namespace UniStart.Controllers
             if (quiz == null)
                 return NotFound($"Quiz with ID {id} not found");
 
+            var userId = GetUserId();
+            var isOwnerOrAdmin = quiz.UserId == userId || User.IsInRole("Admin") || User.IsInRole("Teacher");
+
             var quizDto = new QuizDetailDto
             {
                 Id = quiz.Id,
@@ -157,6 +160,8 @@ namespace UniStart.Controllers
                 TimeLimit = quiz.TimeLimit,
                 Subject = quiz.Subject,
                 Difficulty = quiz.Difficulty,
+                IsPublic = quiz.IsPublic,
+                IsPublished = quiz.IsPublished,
                 Questions = quiz.Questions.OrderBy(q => q.OrderIndex).Select(q => new QuestionDto
                 {
                     Id = q.Id,
@@ -168,7 +173,7 @@ namespace UniStart.Controllers
                     {
                         Id = a.Id,
                         Text = a.Text,
-                        IsCorrect = null // Скрываем правильные ответы при прохождении
+                        IsCorrect = isOwnerOrAdmin ? a.IsCorrect : null // Показываем правильные ответы только владельцу/админу
                     }).ToList()
                 }).ToList()
             };
@@ -202,26 +207,60 @@ namespace UniStart.Controllers
         }
 
         /// <summary>
-        /// Обновить тест (только свои)
+        /// Обновить тест (только свои) включая вопросы и ответы
         /// </summary>
         [HttpPut("{id}")]
         [Authorize]
-        public async Task<IActionResult> UpdateQuiz(int id, CreateQuizDto dto)
+        public async Task<IActionResult> UpdateQuiz(int id, UpdateQuizDto dto)
         {
             var userId = GetUserId()!;
             
             var quiz = await _context.Quizzes
+                .Include(q => q.Questions)
+                    .ThenInclude(qu => qu.Answers)
                 .FirstOrDefaultAsync(q => q.Id == id && q.UserId == userId);
                 
             if (quiz == null)
                 return NotFound();
 
+            // Обновляем базовую информацию
             quiz.Title = dto.Title;
             quiz.Description = dto.Description;
             quiz.TimeLimit = dto.TimeLimit;
             quiz.Subject = dto.Subject;
             quiz.Difficulty = dto.Difficulty;
+            quiz.IsPublic = dto.IsPublic;
+            quiz.IsPublished = dto.IsPublished;
             quiz.UpdatedAt = DateTime.UtcNow;
+
+            // Удаляем старые вопросы и ответы
+            _context.Questions.RemoveRange(quiz.Questions);
+
+            // Добавляем новые вопросы с ответами
+            foreach (var questionDto in dto.Questions)
+            {
+                var question = new Question
+                {
+                    Text = questionDto.Text,
+                    QuestionType = questionDto.QuestionType,
+                    Points = questionDto.Points,
+                    Explanation = questionDto.Explanation,
+                    OrderIndex = questionDto.Order,
+                    QuizId = quiz.Id
+                };
+
+                foreach (var answerDto in questionDto.Answers)
+                {
+                    question.Answers.Add(new Answer
+                    {
+                        Text = answerDto.Text,
+                        IsCorrect = answerDto.IsCorrect,
+                        OrderIndex = answerDto.Order
+                    });
+                }
+
+                quiz.Questions.Add(question);
+            }
 
             await _context.SaveChangesAsync();
             return NoContent();
