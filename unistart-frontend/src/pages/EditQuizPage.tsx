@@ -5,6 +5,7 @@ import { Plus, Trash2, Save, ArrowLeft } from 'lucide-react';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import api from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 interface Answer {
   text: string;
@@ -25,12 +26,14 @@ interface QuizForm {
   difficulty: string;
   timeLimit: number;
   isPublic: boolean;
+  isPublished: boolean;
   questions: Question[];
 }
 
 const EditQuizPage = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
+  const { isAdmin } = useAuth();
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [quiz, setQuiz] = useState<QuizForm>({
@@ -38,7 +41,8 @@ const EditQuizPage = () => {
     subject: '',
     difficulty: 'Medium',
     timeLimit: 30,
-    isPublic: true,
+    isPublic: false,
+    isPublished: false,
     questions: [],
   });
 
@@ -57,7 +61,8 @@ const EditQuizPage = () => {
         subject: quizData.subject,
         difficulty: quizData.difficulty,
         timeLimit: quizData.timeLimit,
-        isPublic: quizData.isPublic,
+        isPublic: isAdmin ? true : (quizData.isPublic || false),
+        isPublished: quizData.isPublished || false,
         questions: quizData.questions.map((q: any) => ({
           text: q.text,
           questionType: q.questionType,
@@ -153,7 +158,7 @@ const EditQuizPage = () => {
     setQuiz({ ...quiz, questions: newQuestions });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent, publish: boolean = false) => {
     e.preventDefault();
 
     if (!quiz.title || !quiz.subject) {
@@ -205,6 +210,14 @@ const EditQuizPage = () => {
       };
 
       await api.put(`/quizzes/${id}`, quizData);
+      
+      // Публикуем или снимаем с публикации если нужно
+      if (publish && !quiz.isPublished) {
+        await api.patch(`/quizzes/${id}/publish`);
+      } else if (!publish && quiz.isPublished) {
+        await api.patch(`/quizzes/${id}/unpublish`);
+      }
+      
       alert('Квиз успешно обновлен!');
       navigate('/quizzes');
     } catch (error: any) {
@@ -308,19 +321,21 @@ const EditQuizPage = () => {
                   />
                 </div>
 
-                <div className="flex items-end">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={quiz.isPublic}
-                      onChange={(e) => setQuiz({ ...quiz, isPublic: e.target.checked })}
-                      className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-                    />
-                    <span className="text-sm font-medium text-gray-700">
-                      Публичный квиз (доступен всем)
-                    </span>
-                  </label>
-                </div>
+                {!isAdmin && (
+                  <div className="flex items-end">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={quiz.isPublic}
+                        onChange={(e) => setQuiz({ ...quiz, isPublic: e.target.checked })}
+                        className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                      />
+                      <span className="text-sm font-medium text-gray-700">
+                        Публичный квиз (доступен всем)
+                      </span>
+                    </label>
+                  </div>
+                )}
               </div>
             </div>
           </Card>
@@ -494,14 +509,27 @@ const EditQuizPage = () => {
               Отмена
             </Button>
             <Button
-              type="submit"
-              variant="primary"
+              type="button"
+              onClick={(e: any) => handleSubmit(e, false)}
+              variant="secondary"
               disabled={loading}
               className="flex items-center gap-2"
             >
               <Save className="w-4 h-4" />
-              {loading ? 'Сохранение...' : 'Сохранить изменения'}
+              {loading ? 'Сохранение...' : 'Сохранить'}
             </Button>
+            {!quiz.isPublished && (
+              <Button
+                type="button"
+                onClick={(e: any) => handleSubmit(e, true)}
+                variant="primary"
+                disabled={loading}
+                className="flex items-center gap-2"
+              >
+                <Save className="w-4 h-4" />
+                {loading ? 'Публикация...' : 'Опубликовать'}
+              </Button>
+            )}
           </div>
         </form>
       </div>

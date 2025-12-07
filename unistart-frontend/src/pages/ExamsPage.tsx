@@ -13,6 +13,10 @@ import {
   AlertCircle,
   CheckCircle,
   Lock,
+  Trash2,
+  Upload,
+  FileX,
+  Edit,
 } from 'lucide-react';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
@@ -112,6 +116,45 @@ const ExamsPage = () => {
     if (exam.startDate && new Date(exam.startDate) > now) return false;
     if (exam.endDate && new Date(exam.endDate) < now) return false;
     return true;
+  };
+
+  const handlePublish = async (examId: number) => {
+    if (!confirm('Вы уверены, что хотите опубликовать этот экзамен?')) {
+      return;
+    }
+    try {
+      await api.patch(`/exams/${examId}/publish`);
+      loadExams(); // Перезагружаем список
+    } catch (error) {
+      console.error('Ошибка публикации экзамена:', error);
+      alert('Не удалось опубликовать экзамен');
+    }
+  };
+
+  const handleUnpublish = async (examId: number) => {
+    if (!confirm('Вы уверены, что хотите снять экзамен с публикации?')) {
+      return;
+    }
+    try {
+      await api.patch(`/exams/${examId}/unpublish`);
+      loadExams(); // Перезагружаем список
+    } catch (error) {
+      console.error('Ошибка отмены публикации экзамена:', error);
+      alert('Не удалось снять экзамен с публикации');
+    }
+  };
+
+  const handleDelete = async (examId: number) => {
+    if (!confirm('Вы уверены, что хотите удалить этот экзамен? Это действие нельзя отменить.')) {
+      return;
+    }
+    try {
+      await api.delete(`/exams/${examId}`);
+      loadExams(); // Перезагружаем список
+    } catch (error) {
+      console.error('Ошибка удаления экзамена:', error);
+      alert('Не удалось удалить экзамен');
+    }
   };
 
   if (loading) {
@@ -305,22 +348,56 @@ const ExamsPage = () => {
 
                   {/* Кнопки действий */}
                   {(isTeacher || isAdmin) ? (
-                    <div className="flex gap-2">
-                      <Button
-                        onClick={() => navigate(`/exams/${exam.id}/stats`)}
-                        variant="secondary"
-                        className="flex-1 flex items-center justify-center gap-2"
-                      >
-                        <TrendingUp className="w-4 h-4" />
-                        Статистика
-                      </Button>
-                      <Button
-                        onClick={() => navigate(`/exams/${exam.id}/edit`)}
-                        variant="secondary"
-                        className="px-4"
-                      >
-                        Редактировать
-                      </Button>
+                    <div className="flex flex-col gap-2">
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={() => navigate(`/exams/${exam.id}/edit`)}
+                          variant="secondary"
+                          className="flex-1 flex items-center justify-center gap-2"
+                        >
+                          <Edit className="w-4 h-4" />
+                          Редактировать
+                        </Button>
+                        <Button
+                          onClick={() => navigate(`/exams/${exam.id}/stats`)}
+                          variant="primary"
+                          className="flex-1 flex items-center justify-center gap-2"
+                        >
+                          <TrendingUp className="w-4 h-4" />
+                          Статистика
+                        </Button>
+                      </div>
+                      <div className="flex gap-2">
+                        {exam.isPublished ? (
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            className="flex-1 flex items-center justify-center gap-2"
+                            onClick={() => handleUnpublish(exam.id)}
+                          >
+                            <FileX className="w-4 h-4" />
+                            Снять с публикации
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700"
+                            onClick={() => handlePublish(exam.id)}
+                          >
+                            <Upload className="w-4 h-4" />
+                            Опубликовать
+                          </Button>
+                        )}
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          className="px-4 flex items-center justify-center gap-2"
+                          onClick={() => handleDelete(exam.id)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
                   ) : (
                     <Button

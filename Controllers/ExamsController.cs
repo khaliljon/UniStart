@@ -74,6 +74,7 @@ public class ExamsController : ControllerBase
                 StartDate = t.StartDate,
                 EndDate = t.EndDate,
                 IsPublished = t.IsPublished,
+                IsPublic = t.IsPublic,
                 TotalPoints = t.TotalPoints,
                 QuestionCount = t.Questions.Count,
                 CreatedAt = t.CreatedAt,
@@ -120,6 +121,7 @@ public class ExamsController : ControllerBase
                 StartDate = t.StartDate,
                 EndDate = t.EndDate,
                 IsPublished = t.IsPublished,
+                IsPublic = t.IsPublic,
                 TotalPoints = t.TotalPoints,
                 QuestionCount = t.Questions.Count,
                 CreatedAt = t.CreatedAt,
@@ -175,6 +177,7 @@ public class ExamsController : ControllerBase
             StartDate = exam.StartDate,
             EndDate = exam.EndDate,
             IsPublished = exam.IsPublished,
+            IsPublic = exam.IsPublic,
             TotalPoints = exam.TotalPoints,
             QuestionCount = exam.Questions.Count,
             CreatedAt = exam.CreatedAt,
@@ -497,6 +500,7 @@ public class ExamsController : ControllerBase
             StartDate = dto.StartDate,
             EndDate = dto.EndDate,
             IsPublished = dto.IsPublished,
+            IsPublic = dto.IsPublic,
             UserId = userId,
             CreatedAt = DateTime.UtcNow,
             TotalPoints = dto.Questions.Sum(q => q.Points)
@@ -549,6 +553,7 @@ public class ExamsController : ControllerBase
             MaxAttempts = exam.MaxAttempts,
             PassingScore = exam.PassingScore,
             IsPublished = exam.IsPublished,
+            IsPublic = exam.IsPublic,
             TotalPoints = exam.TotalPoints,
             QuestionCount = exam.Questions.Count,
             CreatedAt = exam.CreatedAt,
@@ -644,11 +649,11 @@ public class ExamsController : ControllerBase
     }
 
     /// <summary>
-    /// Опубликовать/снять с публикации экзамен
+    /// Опубликовать экзамен
     /// </summary>
     [HttpPatch("{id}/publish")]
     [Authorize(Roles = "Teacher,Admin")]
-    public async Task<ActionResult> TogglePublish(int id)
+    public async Task<ActionResult> PublishExam(int id)
     {
         var userId = await GetUserId();
         var userRoles = await _userManager.GetRolesAsync(await _userManager.GetUserAsync(User));
@@ -661,7 +666,33 @@ public class ExamsController : ControllerBase
         if (exam.UserId != userId && !userRoles.Contains("Admin"))
             return Forbid();
 
-        exam.IsPublished = !exam.IsPublished;
+        exam.IsPublished = true;
+        exam.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        return Ok(new { isPublished = exam.IsPublished });
+    }
+
+    /// <summary>
+    /// Снять экзамен с публикации
+    /// </summary>
+    [HttpPatch("{id}/unpublish")]
+    [Authorize(Roles = "Teacher,Admin")]
+    public async Task<ActionResult> UnpublishExam(int id)
+    {
+        var userId = await GetUserId();
+        var userRoles = await _userManager.GetRolesAsync(await _userManager.GetUserAsync(User));
+
+        var exam = await _context.Exams.FindAsync(id);
+        if (exam == null)
+            return NotFound("Экзамен не найден");
+
+        // Проверка доступа
+        if (exam.UserId != userId && !userRoles.Contains("Admin"))
+            return Forbid();
+
+        exam.IsPublished = false;
         exam.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();

@@ -249,11 +249,11 @@ namespace UniStart.Controllers
         }
 
         /// <summary>
-        /// Опубликовать/снять с публикации тест (свои или любые для админа)
+        /// Опубликовать квиз
         /// </summary>
         [HttpPatch("{id}/publish")]
-        [Authorize]
-        public async Task<IActionResult> TogglePublish(int id, [FromBody] bool isPublished)
+        [Authorize(Roles = "Teacher,Admin")]
+        public async Task<IActionResult> PublishQuiz(int id)
         {
             var userId = GetUserId()!;
             var isAdmin = User.IsInRole("Admin");
@@ -264,9 +264,30 @@ namespace UniStart.Controllers
             if (quiz == null)
                 return NotFound();
 
-            quiz.IsPublished = isPublished;
+            quiz.IsPublished = true;
             await _context.SaveChangesAsync();
-            return NoContent();
+            return Ok(new { isPublished = quiz.IsPublished });
+        }
+
+        /// <summary>
+        /// Снять квиз с публикации
+        /// </summary>
+        [HttpPatch("{id}/unpublish")]
+        [Authorize(Roles = "Teacher,Admin")]
+        public async Task<IActionResult> UnpublishQuiz(int id)
+        {
+            var userId = GetUserId()!;
+            var isAdmin = User.IsInRole("Admin");
+            
+            var quiz = await _context.Quizzes
+                .FirstOrDefaultAsync(q => q.Id == id && (q.UserId == userId || isAdmin));
+                
+            if (quiz == null)
+                return NotFound();
+
+            quiz.IsPublished = false;
+            await _context.SaveChangesAsync();
+            return Ok(new { isPublished = quiz.IsPublished });
         }
 
         // ============ SUBMIT & GRADE QUIZ ============

@@ -52,6 +52,7 @@ public class Exam
     
     // Метаданные
     public bool IsPublished { get; set; } = false;
+    public bool IsPublic { get; set; } = false; // true = доступен всем студентам, false = только студентам автора
     public int TotalPoints { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }

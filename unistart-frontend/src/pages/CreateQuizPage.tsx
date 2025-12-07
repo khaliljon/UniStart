@@ -5,6 +5,7 @@ import { Plus, Trash2, Save, ArrowLeft } from 'lucide-react';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import api from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 interface Answer {
   text: string;
@@ -25,18 +26,21 @@ interface QuizForm {
   difficulty: string;
   timeLimit: number;
   isPublic: boolean;
+  isPublished: boolean;
   questions: Question[];
 }
 
 const CreateQuizPage = () => {
   const navigate = useNavigate();
+  const { isAdmin } = useAuth();
   const [loading, setLoading] = useState(false);
   const [quiz, setQuiz] = useState<QuizForm>({
     title: '',
     subject: '',
     difficulty: 'Medium',
     timeLimit: 30,
-    isPublic: true,
+    isPublic: isAdmin, // Админ всегда создает публичные квизы
+    isPublished: false,
     questions: [],
   });
 
@@ -98,7 +102,7 @@ const CreateQuizPage = () => {
     setQuiz({ ...quiz, questions: newQuestions });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent, publish: boolean = false) => {
     e.preventDefault();
     
     if (quiz.questions.length === 0) {
@@ -129,7 +133,9 @@ const CreateQuizPage = () => {
         subject: quiz.subject,
         difficulty: quiz.difficulty,
         timeLimit: quiz.timeLimit,
-        description: quiz.title, // Используем title как description
+        description: quiz.title,
+        isPublic: quiz.isPublic,
+        isPublished: false, // Всегда создаем как черновик, потом публикуем отдельно
       });
 
       const quizId = quizResponse.data.id;
@@ -159,14 +165,12 @@ const CreateQuizPage = () => {
       }
 
       // Шаг 4: Публикуем квиз если нужно
-      if (quiz.isPublic) {
-        await api.patch(`/quizzes/${quizId}/publish`, true, {
-          headers: { 'Content-Type': 'application/json' }
-        });
+      if (publish) {
+        await api.patch(`/quizzes/${quizId}/publish`);
       }
 
-      alert('Квиз успешно создан!');
-      navigate('/dashboard');
+      alert(`Квиз успешно ${publish ? 'создан и опубликован' : 'сохранен как черновик'}!`);
+      navigate('/quizzes');
     } catch (error: any) {
       console.error('Ошибка создания квиза:', error);
       console.error('Response data:', error.response?.data);
@@ -274,19 +278,21 @@ const CreateQuizPage = () => {
               </div>
             </div>
 
-            <div className="mt-6">
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={quiz.isPublic}
-                  onChange={(e) => setQuiz({ ...quiz, isPublic: e.target.checked })}
-                  className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500"
-                />
-                <span className="text-sm text-gray-700">
-                  Сделать квиз публичным (доступен всем студентам)
-                </span>
-              </label>
-            </div>
+            {!isAdmin && (
+              <div className="mt-6 space-y-3">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={quiz.isPublic}
+                    onChange={(e) => setQuiz({ ...quiz, isPublic: e.target.checked })}
+                    className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500"
+                  />
+                  <span className="text-sm text-gray-700">
+                    Публичный доступ (доступен всем студентам, а не только вашим)
+                  </span>
+                </label>
+              </div>
+            )}
           </Card>
 
           {/* Вопросы */}
@@ -488,18 +494,29 @@ const CreateQuizPage = () => {
             <Button
               type="button"
               variant="secondary"
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate('/quizzes')}
             >
               Отмена
             </Button>
             <Button
-              type="submit"
-              variant="primary"
+              type="button"
+              variant="secondary"
+              onClick={(e: any) => handleSubmit(e, false)}
               disabled={loading || quiz.questions.length === 0}
               className="flex items-center gap-2"
             >
               <Save className="w-5 h-5" />
-              {loading ? 'Сохранение...' : 'Создать квиз'}
+              {loading ? 'Сохранение...' : 'Сохранить как черновик'}
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              onClick={(e: any) => handleSubmit(e, true)}
+              disabled={loading || quiz.questions.length === 0}
+              className="flex items-center gap-2"
+            >
+              <Save className="w-5 h-5" />
+              {loading ? 'Публикация...' : 'Опубликовать'}
             </Button>
           </div>
         </form>

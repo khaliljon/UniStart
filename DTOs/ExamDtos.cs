@@ -38,6 +38,7 @@ public class CreateExamDto
     public DateTime? EndDate { get; set; }
     
     public bool IsPublished { get; set; } = false;
+    public bool IsPublic { get; set; } = false;
     
     public List<CreateExamQuestionDto> Questions { get; set; } = new();
     public List<int> TagIds { get; set; } = new();
@@ -91,6 +92,7 @@ public class ExamDto
     public DateTime? EndDate { get; set; }
     
     public bool IsPublished { get; set; }
+    public bool IsPublic { get; set; }
     public int TotalPoints { get; set; }
     public int QuestionCount { get; set; }
     public DateTime CreatedAt { get; set; }

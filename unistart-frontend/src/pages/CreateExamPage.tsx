@@ -15,6 +15,7 @@ import {
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import api from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 interface ExamQuestion {
   text: string;
@@ -30,6 +31,7 @@ interface ExamAnswer {
 
 const CreateExamPage = () => {
   const navigate = useNavigate();
+  const { isAdmin } = useAuth();
   const [loading, setLoading] = useState(false);
 
   // Основная информация
@@ -50,6 +52,7 @@ const CreateExamPage = () => {
   const [showDetailedFeedback, setShowDetailedFeedback] = useState(true);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [isPublic, setIsPublic] = useState(isAdmin); // Админ всегда создает публичные экзамены
 
   // Вопросы
   const [questions, setQuestions] = useState<ExamQuestion[]>([
@@ -183,6 +186,7 @@ const CreateExamPage = () => {
         startDate: startDate || null,
         endDate: endDate || null,
         isPublished: publish,
+        isPublic: isPublic,
         tagIds: [],
         questions: questions.map((q, index) => ({
           text: q.text,
@@ -458,6 +462,18 @@ const CreateExamPage = () => {
                   />
                   <span className="text-sm text-gray-700">Показывать подробную обратную связь</span>
                 </label>
+
+                {!isAdmin && (
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={isPublic}
+                      onChange={(e) => setIsPublic(e.target.checked)}
+                      className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                    />
+                    <span className="text-sm text-gray-700">Публичный доступ (доступен всем студентам, а не только вашим)</span>
+                  </label>
+                )}
               </div>
             </div>
           </Card>
