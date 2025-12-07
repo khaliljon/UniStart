@@ -109,7 +109,7 @@ const AdminSubjectsPage = () => {
             onClick={() => navigate('/dashboard')}
           >
             <ArrowLeft className="w-4 h-4" />
-            Назад в панель
+            Назад к панели
           </Button>
           
           <div className="flex justify-between items-center">

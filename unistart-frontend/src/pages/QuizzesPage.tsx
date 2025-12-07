@@ -35,10 +35,16 @@ interface Quiz {
   createdAt: string;
 }
 
+interface Subject {
+  id: number;
+  name: string;
+}
+
 const QuizzesPage = () => {
   const navigate = useNavigate();
   const { isTeacher, isAdmin } = useAuth();
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
+  const [subjectsList, setSubjectsList] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [subjectFilter, setSubjectFilter] = useState<string>('');
@@ -46,7 +52,17 @@ const QuizzesPage = () => {
 
   useEffect(() => {
     loadQuizzes();
+    loadSubjects();
   }, [subjectFilter, difficultyFilter]);
+
+  const loadSubjects = async () => {
+    try {
+      const response = await api.get('/subjects');
+      setSubjectsList(response.data);
+    } catch (error) {
+      console.error('Ошибка загрузки предметов:', error);
+    }
+  };
 
   const loadQuizzes = async () => {
     try {
@@ -146,8 +162,6 @@ const QuizzesPage = () => {
     quiz.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const subjects = [...new Set(quizzes.map((q) => q.subject))];
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -209,9 +223,9 @@ const QuizzesPage = () => {
               className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             >
               <option value="">Все предметы</option>
-              {subjects.map((subject) => (
-                <option key={subject} value={subject}>
-                  {subject}
+              {subjectsList.map((subject) => (
+                <option key={subject.id} value={subject.name}>
+                  {subject.name}
                 </option>
               ))}
             </select>

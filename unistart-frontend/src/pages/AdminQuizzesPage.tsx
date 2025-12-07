@@ -11,6 +11,7 @@ import {
   XCircle,
   User,
   Search,
+  ArrowLeft,
 } from 'lucide-react';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
@@ -114,6 +115,15 @@ const AdminQuizzesPage = () => {
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
+      <Button 
+        variant="secondary" 
+        className="mb-4 flex items-center gap-2"
+        onClick={() => navigate('/dashboard')}
+      >
+        <ArrowLeft className="w-4 h-4" />
+        Назад к панели
+      </Button>
+
       {/* Заголовок */}
       <div className="flex justify-between items-center mb-8">
         <div>

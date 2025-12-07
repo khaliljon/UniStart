@@ -41,10 +41,16 @@ interface Exam {
   createdAt: string;
 }
 
+interface Subject {
+  id: number;
+  name: string;
+}
+
 const ExamsPage = () => {
   const navigate = useNavigate();
   const { isTeacher, isAdmin } = useAuth();
   const [exams, setExams] = useState<Exam[]>([]);
+  const [subjectsList, setSubjectsList] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [subjectFilter, setSubjectFilter] = useState<string>('');
@@ -52,7 +58,17 @@ const ExamsPage = () => {
 
   useEffect(() => {
     loadExams();
+    loadSubjects();
   }, [subjectFilter, difficultyFilter]);
+
+  const loadSubjects = async () => {
+    try {
+      const response = await api.get('/subjects');
+      setSubjectsList(response.data);
+    } catch (error) {
+      console.error('Ошибка загрузки предметов:', error);
+    }
+  };
 
   const loadExams = async () => {
     try {
@@ -217,12 +233,11 @@ const ExamsPage = () => {
             className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           >
             <option value="">Все предметы</option>
-            <option value="Математика">Математика</option>
-            <option value="Физика">Физика</option>
-            <option value="Информатика">Информатика</option>
-            <option value="История">История</option>
-            <option value="Литература">Литература</option>
-            <option value="Английский">Английский</option>
+            {subjectsList.map((subject) => (
+              <option key={subject.id} value={subject.name}>
+                {subject.name}
+              </option>
+            ))}
           </select>
           <select
             value={difficultyFilter}
