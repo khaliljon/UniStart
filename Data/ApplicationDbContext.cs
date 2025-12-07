@@ -42,6 +42,8 @@ namespace UniStart.Data
         public DbSet<UserFollow> UserFollows { get; set; }
         public DbSet<ActivityFeed> ActivityFeeds { get; set; }
 
+        public DbSet<Subject> Subjects { get; set; } = null!;
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder); // Р’РђР–РќРћ РґР»СЏ Identity!

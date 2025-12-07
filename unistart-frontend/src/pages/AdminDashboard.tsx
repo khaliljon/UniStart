@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Users, TrendingUp, Award, AlertCircle, FileText, Activity, BarChart3, Download } from 'lucide-react';
+import { Users, TrendingUp, Award, AlertCircle, FileText, Activity, BarChart3, Download, BookOpen } from 'lucide-react';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import api from '../services/api';
@@ -263,6 +263,14 @@ const AdminDashboard = () => {
                 <Button 
                   variant="secondary" 
                   className="w-full flex items-center justify-center gap-2"
+                  onClick={() => navigate('/admin/subjects')}
+                >
+                  <BookOpen className="w-4 h-4" />
+                  Управление предметами
+                </Button>
+                <Button 
+                  variant="secondary" 
+                  className="w-full flex items-center justify-center gap-2"
                   onClick={() => navigate('/admin/quizzes')}
                 >
                   <FileText className="w-4 h-4" />
@@ -271,10 +279,10 @@ const AdminDashboard = () => {
                 <Button 
                   variant="secondary" 
                   className="w-full flex items-center justify-center gap-2"
-                  onClick={() => navigate('/admin/tests')}
+                  onClick={() => navigate('/admin/exams')}
                 >
                   <FileText className="w-4 h-4" />
-                  Управление тестами
+                  Управление экзаменами
                 </Button>
                 <Button 
                   variant="secondary" 

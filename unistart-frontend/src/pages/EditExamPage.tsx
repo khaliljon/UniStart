@@ -37,6 +37,7 @@ const EditExamPage = () => {
   const { isAdmin } = useAuth();
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
+  const [subjects, setSubjects] = useState<any[]>([]);
 
   // Основная информация
   const [title, setTitle] = useState('');
@@ -72,8 +73,18 @@ const EditExamPage = () => {
   ]);
 
   useEffect(() => {
+    loadSubjects();
     loadExam();
   }, [id]);
+
+  const loadSubjects = async () => {
+    try {
+      const response = await api.get('/subjects');
+      setSubjects(response.data);
+    } catch (error) {
+      console.error('Ошибка загрузки предметов:', error);
+    }
+  };
 
   const loadExam = async () => {
     try {
@@ -364,20 +375,11 @@ const EditExamPage = () => {
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   >
                     <option value="">Выберите предмет</option>
-                    <option value="Математика">Математика</option>
-                    <option value="Физика">Физика</option>
-                    <option value="Химия">Химия</option>
-                    <option value="Биология">Биология</option>
-                    <option value="История">История</option>
-                    <option value="Информатика">Информатика</option>
-                    <option value="Английский язык">Английский язык</option>
-                    <option value="Русский язык">Русский язык</option>
-                    <option value="Литература">Литература</option>
-                    <option value="География">География</option>
-                    <option value="Обществознание">Обществознание</option>
-                    <option value="Программирование">Программирование</option>
-                    <option value="Экономика">Экономика</option>
-                    <option value="Право">Право</option>
+                    {subjects.map((subject) => (
+                      <option key={subject.id} value={subject.name}>
+                        {subject.name}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
