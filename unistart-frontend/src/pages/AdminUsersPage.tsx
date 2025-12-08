@@ -228,7 +228,7 @@ const AdminUsersPage = () => {
                       key={user.id}
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
-                      className="hover:bg-gray-50 transition-colors"
+                      className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                     >
                       <td className="px-6 py-4">
                         <div className="flex items-center">
@@ -239,7 +239,7 @@ const AdminUsersPage = () => {
                             <div className="text-sm font-medium text-gray-900 dark:text-white">
                               {user.firstName} {user.lastName}
                             </div>
-                            <div className="text-sm text-gray-500">{user.email}</div>
+                            <div className="text-sm text-gray-500 dark:text-gray-400">{user.email}</div>
                           </div>
                         </div>
                       </td>
@@ -267,7 +267,7 @@ const AdminUsersPage = () => {
                         <div className="text-sm text-gray-900 dark:text-gray-100">
                           Тесты: {user.totalQuizzesTaken}
                         </div>
-                        <div className="text-sm text-gray-500">
+                        <div className="text-sm text-gray-500 dark:text-gray-400">
                           Карточки: {user.totalCardsStudied}
                         </div>
                       </td>
