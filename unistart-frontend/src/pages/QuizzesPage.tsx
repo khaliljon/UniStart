@@ -171,7 +171,7 @@ const QuizzesPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 py-8 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <motion.div
@@ -181,10 +181,10 @@ const QuizzesPage = () => {
         >
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-4xl font-bold text-gray-900 mb-2">
+              <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
                 📝 {isAdmin ? 'Квизы' : (isTeacher ? 'Мои Квизы' : 'Квизы')}
               </h1>
-              <p className="text-gray-600">
+              <p className="text-gray-600 dark:text-gray-400">
                 {isAdmin
                   ? 'Все квизы в системе'
                   : ((isTeacher)
@@ -213,14 +213,14 @@ const QuizzesPage = () => {
                 placeholder="Поиск по названию или описанию..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
               />
             </div>
 
             <select
               value={subjectFilter}
               onChange={(e) => setSubjectFilter(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
             >
               <option value="">Все предметы</option>
               {subjectsList.map((subject) => (
@@ -233,7 +233,7 @@ const QuizzesPage = () => {
             <select
               value={difficultyFilter}
               onChange={(e) => setDifficultyFilter(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
             >
               <option value="">Любая сложность</option>
               <option value="Easy">Легко</option>
@@ -276,7 +276,7 @@ const QuizzesPage = () => {
                 <Card className="h-full flex flex-col hover:shadow-lg transition-shadow">
                   {/* Заголовок квиза */}
                   <div className="flex justify-between items-start mb-3">
-                    <h3 className="text-lg font-semibold text-gray-900 flex-1">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex-1">
                       {quiz.title}
                     </h3>
                     <span
@@ -289,7 +289,7 @@ const QuizzesPage = () => {
                   </div>
 
                   {/* Описание */}
-                  <p className="text-gray-600 text-sm mb-4 flex-1">
+                  <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 flex-1">
                     {quiz.description}
                   </p>
 
@@ -303,17 +303,17 @@ const QuizzesPage = () => {
                   <div className="grid grid-cols-2 gap-3 mb-4">
                     <div className="flex items-center gap-2">
                       <Target className="w-4 h-4 text-gray-400" />
-                      <span className="text-sm text-gray-600">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">
                         {quiz.questionCount} вопросов
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Clock className="w-4 h-4 text-gray-400" />
-                      <span className="text-sm text-gray-600">{quiz.timeLimit} мин</span>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">{quiz.timeLimit} мин</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Award className="w-4 h-4 text-gray-400" />
-                      <span className="text-sm text-gray-600">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">
                         {quiz.totalPoints} баллов
                       </span>
                     </div>

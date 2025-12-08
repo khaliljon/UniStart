@@ -62,7 +62,7 @@ const FlashcardsPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 py-8 px-4">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 py-8 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Заголовок */}
         <motion.div
@@ -196,25 +196,25 @@ const FlashcardsPage = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
-          className="mt-12 bg-gradient-to-r from-primary-50 to-blue-50 border border-primary-200 rounded-lg p-6"
+          className="mt-12 bg-gradient-to-r from-primary-50 to-blue-50 dark:from-gray-800 dark:to-gray-850 border border-primary-200 dark:border-gray-700 rounded-lg p-6"
         >
-          <h3 className="text-lg font-bold text-gray-900 mb-2">
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
             💡 Как работает интервальное повторение?
           </h3>
-          <p className="text-gray-700 mb-4">
+          <p className="text-gray-700 dark:text-gray-300 mb-4">
             Мы используем алгоритм SM-2 (SuperMemo 2), который автоматически определяет оптимальное время для повторения каждой карточки на основе вашей оценки.
           </p>
-          <ul className="space-y-2 text-sm text-gray-700">
+          <ul className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
             <li className="flex items-start gap-2">
-              <span className="text-green-600 font-bold">✓</span>
+              <span className="text-green-600 dark:text-green-400 font-bold">✓</span>
               <span><strong>Легко</strong> — карточка будет показана через большой интервал времени</span>
             </li>
             <li className="flex items-start gap-2">
-              <span className="text-yellow-600 font-bold">✓</span>
+              <span className="text-yellow-600 dark:text-yellow-400 font-bold">✓</span>
               <span><strong>Нормально</strong> — карточка будет показана через средний интервал</span>
             </li>
             <li className="flex items-start gap-2">
-              <span className="text-red-600 font-bold">✓</span>
+              <span className="text-red-600 dark:text-red-400 font-bold">✓</span>
               <span><strong>Сложно</strong> — карточка будет показана снова в ближайшее время</span>
             </li>
           </ul>

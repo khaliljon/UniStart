@@ -141,13 +141,13 @@ const AdminDashboard = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-xl text-gray-600">Загрузка...</div>
+        <div className="text-xl text-gray-600 dark:text-gray-400">Загрузка...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 py-8 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Заголовок */}
         <motion.div
@@ -159,11 +159,11 @@ const AdminDashboard = () => {
             <div className="bg-red-500 p-2 rounded-lg">
               <AlertCircle className="w-6 h-6 text-white" />
             </div>
-            <h1 className="text-4xl font-bold text-gray-900">
+            <h1 className="text-4xl font-bold text-gray-900 dark:text-white">
               Панель Администратора
             </h1>
           </div>
-          <p className="text-gray-600">
+          <p className="text-gray-600 dark:text-gray-400">
             Управление платформой и мониторинг активности
           </p>
         </motion.div>
@@ -180,8 +180,8 @@ const AdminDashboard = () => {
               <Card className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600 mb-1">{stat.label}</p>
-                    <p className="text-3xl font-bold text-gray-900">
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">{stat.label}</p>
+                    <p className="text-3xl font-bold text-gray-900 dark:text-white">
                       {stat.value}
                     </p>
                   </div>
@@ -201,7 +201,7 @@ const AdminDashboard = () => {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2 }}
           >
-            <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
               <Users className="w-6 h-6 text-primary-500" />
               Последние пользователи
             </h2>
@@ -215,10 +215,10 @@ const AdminDashboard = () => {
                       className="flex items-center justify-between py-3 border-b last:border-0"
                     >
                       <div>
-                        <p className="font-medium text-gray-900">
+                        <p className="font-medium text-gray-900 dark:text-white">
                           {user.firstName} {user.lastName}
                         </p>
-                        <p className="text-sm text-gray-600">{user.email}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">{user.email}</p>
                       </div>
                       <Button 
                         variant="secondary" 
@@ -245,7 +245,7 @@ const AdminDashboard = () => {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2 }}
           >
-            <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
               <TrendingUp className="w-6 h-6 text-primary-500" />
               Быстрые действия
             </h2>

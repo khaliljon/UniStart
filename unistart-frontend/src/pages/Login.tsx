@@ -56,13 +56,13 @@ const Login = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-purple-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 w-full max-w-md">
         {/* Logo */}
         <div className="flex justify-center mb-8">
           <div className="flex items-center space-x-2">
             <GraduationCap className="w-10 h-10 text-primary-500" />
-            <span className="text-3xl font-bold text-gray-900">
+            <span className="text-3xl font-bold text-gray-900 dark:text-white">
               <span className="inline-flex items-center justify-center w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-600 rounded text-white mr-1">U</span>
               <span>niStart</span>
             </span>
@@ -70,7 +70,7 @@ const Login = () => {
         </div>
 
         {/* Title */}
-        <h2 className="text-2xl font-bold text-center text-gray-900 mb-8">
+        <h2 className="text-2xl font-bold text-center text-gray-900 dark:text-white mb-8">
           Войти в аккаунт
         </h2>
 
@@ -116,15 +116,8 @@ const Login = () => {
           </Button>
         </form>
 
-        {/* Test Credentials */}
-        <div className="mt-4 p-3 bg-blue-50 rounded-lg text-sm">
-          <p className="font-medium text-blue-900 mb-1">Тестовый аккаунт:</p>
-          <p className="text-blue-700">Email: test@unistart.kz</p>
-          <p className="text-blue-700">Пароль: Test123!</p>
-        </div>
-
         {/* Register Link */}
-        <p className="text-center mt-6 text-gray-600">
+        <p className="text-center mt-6 text-gray-600 dark:text-gray-400">
           Нет аккаунта?{' '}
           <Link to="/register" className="text-primary-500 font-medium hover:text-primary-600">
             Зарегистрироваться

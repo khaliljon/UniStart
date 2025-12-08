@@ -134,7 +134,7 @@ const AdminUsersPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-red-50 py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 py-8 px-4">
       <div className="max-w-7xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -152,7 +152,7 @@ const AdminUsersPage = () => {
 
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-4xl font-bold text-gray-900 mb-2">
+              <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
                 👥 Управление пользователями
               </h1>
               <p className="text-gray-600">
@@ -200,12 +200,12 @@ const AdminUsersPage = () => {
         <Card className="p-6">
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50">
+              <thead className="bg-gray-50 dark:bg-gray-700">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Пользователь
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Роли
                   </th>
                   <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -236,7 +236,7 @@ const AdminUsersPage = () => {
                             {user.firstName?.charAt(0) || user.email.charAt(0).toUpperCase()}
                           </div>
                           <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">
+                            <div className="text-sm font-medium text-gray-900 dark:text-white">
                               {user.firstName} {user.lastName}
                             </div>
                             <div className="text-sm text-gray-500">{user.email}</div>
@@ -264,7 +264,7 @@ const AdminUsersPage = () => {
                       </td>
 
                       <td className="px-6 py-4 text-center">
-                        <div className="text-sm text-gray-900">
+                        <div className="text-sm text-gray-900 dark:text-gray-100">
                           Тесты: {user.totalQuizzesTaken}
                         </div>
                         <div className="text-sm text-gray-500">
@@ -349,7 +349,7 @@ const AdminUsersPage = () => {
             animate={{ opacity: 1, scale: 1 }}
             className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4"
           >
-            <h3 className="text-xl font-bold text-gray-900 mb-4">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
               Добавить роль пользователю
             </h3>
 

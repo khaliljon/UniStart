@@ -13,7 +13,7 @@ const Card = ({ children, className = '', hoverable = false, onClick }: CardProp
     <motion.div
       whileHover={hoverable ? { y: -4 } : undefined}
       className={`
-        bg-white rounded-xl shadow-md p-6
+        bg-white dark:bg-gray-850 rounded-xl shadow-md p-6 dark:text-white
         ${hoverable ? 'cursor-pointer card-hover' : ''}
         ${className}
       `}

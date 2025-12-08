@@ -114,7 +114,7 @@ const TeacherStudentsPage = () => {
   console.log('🎨 Рендеринг страницы. Студентов:', students.length);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-purple-50 py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 py-8 px-4">
       <div className="max-w-7xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -211,12 +211,12 @@ const TeacherStudentsPage = () => {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gray-50">
+                <thead className="bg-gray-50 dark:bg-gray-700">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Студент
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Email
                     </th>
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">

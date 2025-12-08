@@ -192,7 +192,7 @@ const CreateQuizPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 py-8 px-4">
       <div className="max-w-5xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: -20 }}

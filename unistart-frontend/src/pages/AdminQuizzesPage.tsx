@@ -114,7 +114,8 @@ const AdminQuizzesPage = () => {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 py-8 px-4">
+      <div className="max-w-7xl mx-auto">
       <Button 
         variant="secondary" 
         className="mb-4 flex items-center gap-2"
@@ -127,11 +128,11 @@ const AdminQuizzesPage = () => {
       {/* Заголовок */}
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
             <FileText className="w-8 h-8 text-primary-500" />
             Управление квизами
           </h1>
-          <p className="text-gray-600 mt-2">
+          <p className="text-gray-600 dark:text-gray-300 mt-2">
             Все квизы в системе • Всего: {quizzes.length}
           </p>
         </div>
@@ -146,7 +147,7 @@ const AdminQuizzesPage = () => {
             placeholder="Поиск по названию, описанию или автору..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-800 dark:border-gray-700 dark:text-white"
           />
         </div>
       </Card>
@@ -155,10 +156,10 @@ const AdminQuizzesPage = () => {
       {filteredQuizzes.length === 0 ? (
         <Card className="text-center py-12">
           <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-gray-700 mb-2">
+          <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">
             {searchQuery ? 'Квизы не найдены' : 'Нет квизов в системе'}
           </h3>
-          <p className="text-gray-600">
+          <p className="text-gray-600 dark:text-gray-400">
             {searchQuery ? 'Попробуйте изменить параметры поиска' : 'Квизы будут отображаться здесь после создания'}
           </p>
         </Card>
@@ -176,7 +177,7 @@ const AdminQuizzesPage = () => {
                   <div className="flex-1">
                     {/* Заголовок и статус */}
                     <div className="flex items-start gap-3 mb-2">
-                      <h3 className="text-lg font-semibold text-gray-900 flex-1">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex-1">
                         {quiz.title}
                       </h3>
                       <span
@@ -187,12 +188,12 @@ const AdminQuizzesPage = () => {
                         {getDifficultyLabel(quiz.difficulty)}
                       </span>
                       {quiz.isPublished ? (
-                        <span className="flex items-center gap-1 text-green-600 text-sm">
+                        <span className="flex items-center gap-1 text-green-600 dark:text-green-400 text-sm">
                           <CheckCircle className="w-4 h-4" />
                           Опубликован
                         </span>
                       ) : (
-                        <span className="flex items-center gap-1 text-gray-600 text-sm">
+                        <span className="flex items-center gap-1 text-gray-600 dark:text-gray-400 text-sm">
                           <XCircle className="w-4 h-4" />
                           Черновик
                         </span>
@@ -256,6 +257,7 @@ const AdminQuizzesPage = () => {
           ))}
         </div>
       )}
+      </div>
     </div>
   );
 };

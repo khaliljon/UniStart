@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: 'class',
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
@@ -18,6 +19,9 @@ export default {
           700: '#0369a1',
           800: '#075985',
           900: '#0c4a6e',
+        },
+        gray: {
+          850: '#18212f', // Кастомный тёмный оттенок между 800 и 900
         },
         success: '#10b981',
         warning: '#f59e0b',

@@ -5,12 +5,12 @@ import Button from '../components/common/Button'
 
 const Home = () => {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
       {/* Header */}
       <nav className="container mx-auto px-4 py-6 flex justify-between items-center">
         <div className="flex items-center space-x-2">
           <GraduationCap className="w-8 h-8 text-primary-500" />
-          <span className="text-2xl font-bold text-gray-900">
+          <span className="text-2xl font-bold text-gray-900 dark:text-white">
             <span className="inline-flex items-center justify-center w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-600 rounded text-white mr-0.5">U</span>
             <span>niStart</span>
           </span>
@@ -32,10 +32,10 @@ const Home = () => {
         transition={{ duration: 0.6 }}
         className="container mx-auto px-4 py-20 text-center"
       >
-        <h1 className="text-6xl font-bold text-gray-900 mb-6">
+        <h1 className="text-6xl font-bold text-gray-900 dark:text-white mb-6">
           Твой путь в <span className="text-primary-500">университет мечты</span>
         </h1>
-        <p className="text-xl text-gray-600 mb-12 max-w-2xl mx-auto">
+        <p className="text-xl text-gray-600 dark:text-gray-300 mb-12 max-w-2xl mx-auto">
           Современная платформа для подготовки к поступлению в Назарбаевский Университет 
           и другие ведущие вузы Казахстана
         </p>
@@ -55,13 +55,13 @@ const Home = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2, duration: 0.5 }}
-            className="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow"
+            className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow"
           >
             <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center mb-4">
               <BookOpen className="w-6 h-6 text-primary-500" />
             </div>
-            <h3 className="text-xl font-bold mb-3">Интерактивные карточки</h3>
-            <p className="text-gray-600">
+            <h3 className="text-xl font-bold mb-3 text-gray-900 dark:text-white">Интерактивные карточки</h3>
+            <p className="text-gray-600 dark:text-gray-300">
               Изучай материал с помощью умного алгоритма интервального повторения. 
               Эффективность обучения +40%!
             </p>
@@ -72,13 +72,13 @@ const Home = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3, duration: 0.5 }}
-            className="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow"
+            className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow"
           >
             <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
               <Brain className="w-6 h-6 text-purple-500" />
             </div>
-            <h3 className="text-xl font-bold mb-3">Тесты и симуляции</h3>
-            <p className="text-gray-600">
+            <h3 className="text-xl font-bold mb-3 text-gray-900 dark:text-white">Тесты и симуляции</h3>
+            <p className="text-gray-600 dark:text-gray-300">
               Проходи тесты в формате ЕНТ. Получай детальную аналитику и 
               рекомендации по улучшению результатов.
             </p>
@@ -89,13 +89,13 @@ const Home = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4, duration: 0.5 }}
-            className="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow"
+            className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow"
           >
             <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
               <TrendingUp className="w-6 h-6 text-green-500" />
             </div>
-            <h3 className="text-xl font-bold mb-3">Отслеживай прогресс</h3>
-            <p className="text-gray-600">
+            <h3 className="text-xl font-bold mb-3 text-gray-900 dark:text-white">Отслеживай прогресс</h3>
+            <p className="text-gray-600 dark:text-gray-300">
               Визуализируй свои достижения с помощью графиков и статистики. 
               Мотивируйся каждый день!
             </p>

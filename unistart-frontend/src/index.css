@@ -4,10 +4,94 @@
 
 @layer base {
   * {
-    @apply border-gray-200;
+    @apply border-gray-200 dark:border-gray-700;
   }
   body {
-    @apply bg-gray-50 text-gray-900 antialiased;
+    @apply bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100 antialiased;
+  }
+  
+  /* Улучшенные стили для тёмной темы */
+  input, textarea, select {
+    @apply dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600;
+  }
+  
+  input::placeholder, textarea::placeholder {
+    @apply dark:text-gray-500;
+  }
+  
+  /* Опции в select */
+  option {
+    @apply dark:bg-gray-800 dark:text-gray-100;
+  }
+  
+  /* Автоматическая светлая окраска текста в тёмной теме */
+  .dark .text-gray-900:not(.keep-dark) {
+    color: rgb(243 244 246) !important; /* gray-100 */
+  }
+  
+  .dark .text-gray-800:not(.keep-dark) {
+    color: rgb(229 231 235) !important; /* gray-200 */
+  }
+  
+  .dark .text-gray-700:not(.keep-dark) {
+    color: rgb(209 213 219) !important; /* gray-300 */
+  }
+  
+  .dark .text-gray-600:not(.keep-dark) {
+    color: rgb(156 163 175) !important; /* gray-400 */
+  }
+  
+  /* Labels */
+  .dark label {
+    color: rgb(209 213 219) !important; /* gray-300 */
+  }
+  
+  /* Иконки серого цвета */
+  .dark .text-gray-400 {
+    color: rgb(156 163 175) !important; /* оставляем gray-400 для иконок */
+  }
+  
+  .dark .text-gray-500 {
+    color: rgb(107 114 128) !important; /* оставляем gray-500 для плейсхолдеров */
+  }
+  
+  /* Смягчение белых фонов в тёмной теме */
+  .dark .bg-white {
+    background-color: rgb(24 33 47) !important; /* между gray-800 и gray-900 - более тёмный */
+  }
+  
+  /* Светлые акцентные фоны */
+  .dark .bg-gray-50 {
+    background-color: rgb(24 33 47) !important; /* темнее */
+  }
+  
+  .dark .bg-gray-100 {
+    background-color: rgb(31 41 55) !important; /* gray-800 */
+  }
+  
+  .dark .bg-blue-50 {
+    background-color: rgba(30, 58, 138, 0.3) !important; /* blue-900 с прозрачностью */
+  }
+  
+  .dark .bg-green-50 {
+    background-color: rgba(20, 83, 45, 0.3) !important; /* green-900 */
+  }
+  
+  .dark .bg-red-50 {
+    background-color: rgba(127, 29, 29, 0.3) !important; /* red-900 */
+  }
+  
+  .dark .bg-yellow-50 {
+    background-color: rgba(120, 53, 15, 0.3) !important; /* yellow-900 */
+  }
+  
+  /* Границы в таблицах и карточках */
+  .dark .border-gray-200 {
+    border-color: rgb(55 65 81) !important; /* gray-700 */
+  }
+  
+  .dark .border-gray-300 {
+    border-color: rgb(75 85 99) !important; /* gray-600 */
   }
 }
 
@@ -31,6 +115,20 @@
   .input-field {
     @apply w-full px-4 py-2.5 border border-gray-300 rounded-lg
            focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent
-           transition-all duration-200;
+           transition-all duration-200
+           bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100
+           placeholder:text-gray-400 dark:placeholder:text-gray-500;
+  }
+  
+  /* Улучшенные стили для полей в тёмной теме */
+  .search-input {
+    @apply bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 
+           border-gray-300 dark:border-gray-600
+           placeholder:text-gray-400 dark:placeholder:text-gray-500;
+  }
+  
+  .select-input {
+    @apply bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 
+           border-gray-300 dark:border-gray-600;
   }
 }

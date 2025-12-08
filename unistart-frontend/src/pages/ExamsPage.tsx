@@ -186,15 +186,16 @@ const ExamsPage = () => {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 py-8 px-4">
+      <div className="max-w-7xl mx-auto">
       {/* Заголовок и кнопка создания */}
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
             <FileText className="w-8 h-8 text-primary-500" />
             {isAdmin ? 'Экзамены' : (isTeacher ? 'Мои Экзамены' : 'Доступные Экзамены')}
           </h1>
-          <p className="text-gray-600 mt-2">
+          <p className="text-gray-600 dark:text-gray-400 mt-2">
             {isAdmin
               ? 'Все экзамены в системе'
               : (isTeacher
@@ -224,13 +225,13 @@ const ExamsPage = () => {
               placeholder="Поиск экзаменов..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
             />
           </div>
           <select
             value={subjectFilter}
             onChange={(e) => setSubjectFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
           >
             <option value="">Все предметы</option>
             {subjectsList.map((subject) => (
@@ -242,7 +243,7 @@ const ExamsPage = () => {
           <select
             value={difficultyFilter}
             onChange={(e) => setDifficultyFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
           >
             <option value="">Все уровни</option>
             <option value="Easy">Легкий</option>
@@ -292,7 +293,7 @@ const ExamsPage = () => {
                 <Card className="h-full flex flex-col hover:shadow-lg transition-shadow">
                   {/* Заголовок экзамена */}
                   <div className="flex justify-between items-start mb-3">
-                    <h3 className="text-lg font-semibold text-gray-900 flex-1">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex-1">
                       {exam.title}
                     </h3>
                     <span
@@ -305,7 +306,7 @@ const ExamsPage = () => {
                   </div>
 
                   {/* Описание */}
-                  <p className="text-gray-600 text-sm mb-4 flex-1">
+                  <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 flex-1">
                     {exam.description}
                   </p>
 
@@ -462,6 +463,7 @@ const ExamsPage = () => {
           })}
         </div>
       )}
+      </div>
     </div>
   );
 };
