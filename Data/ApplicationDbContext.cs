@@ -15,8 +15,8 @@ namespace UniStart.Data
         
         // Quizzes
         public DbSet<Quiz> Quizzes { get; set; }
-        public DbSet<Question> Questions { get; set; }
-        public DbSet<Answer> Answers { get; set; }
+        public DbSet<QuizQuestion> QuizQuestions { get; set; }
+        public DbSet<QuizAnswer> QuizAnswers { get; set; }
         public DbSet<UserQuizAttempt> UserQuizAttempts { get; set; }
         
         // Exams
@@ -56,14 +56,14 @@ namespace UniStart.Data
                 .OnDelete(DeleteBehavior.Cascade);
 
             // РљРѕРЅС„РёРіСѓСЂР°С†РёСЏ Quiz -> Questions
-            modelBuilder.Entity<Question>()
+            modelBuilder.Entity<QuizQuestion>()
                 .HasOne(q => q.Quiz)
                 .WithMany(qz => qz.Questions)
                 .HasForeignKey(q => q.QuizId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             // РљРѕРЅС„РёРіСѓСЂР°С†РёСЏ Question -> Answers
-            modelBuilder.Entity<Answer>()
+            modelBuilder.Entity<QuizAnswer>()
                 .HasOne(a => a.Question)
                 .WithMany(q => q.Answers)
                 .HasForeignKey(a => a.QuestionId)

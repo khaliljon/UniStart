@@ -349,7 +349,7 @@ public class AdminController : ControllerBase
         var totalQuizzes = await _context.Quizzes.CountAsync();
         var totalExams = await _context.Exams.CountAsync();
         var totalFlashcardSets = await _context.FlashcardSets.CountAsync();
-        var totalQuestions = await _context.Questions.CountAsync();
+        var totalQuestions = await _context.QuizQuestions.CountAsync();
         var totalFlashcards = await _context.Flashcards.CountAsync();
         var totalAttempts = await _context.UserQuizAttempts.CountAsync();
         

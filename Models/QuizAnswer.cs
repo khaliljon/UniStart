@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace UniStart.Models
 {
-    public class Answer
+    public class QuizAnswer
     {
         [Display(Name = "Идентификатор")]
         public int Id { get; set; }
@@ -23,6 +23,6 @@ namespace UniStart.Models
         public int QuestionId { get; set; }
         
         [Display(Name = "Вопрос")]
-        public Question Question { get; set; } = null!;
+        public QuizQuestion Question { get; set; } = null!;
     }
 }

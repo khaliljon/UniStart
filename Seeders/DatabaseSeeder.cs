@@ -228,48 +228,48 @@ namespace UniStart.Seeders
                 Difficulty = "Medium",
                 IsPublished = true,
                 UserId = userId,
-                Questions = new List<Question>
+                Questions = new List<QuizQuestion>
                 {
-                    new Question
+                    new QuizQuestion
                     {
                         Text = "Решите уравнение: x² - 5x + 6 = 0",
                         Points = 2,
                         OrderIndex = 0,
                         Explanation = "Используя теорему Виета: x₁ + x₂ = 5, x₁ · x₂ = 6. Корни: x₁ = 2, x₂ = 3",
-                        Answers = new List<Answer>
+                        Answers = new List<QuizAnswer>
                         {
-                            new Answer { Text = "x₁ = 2, x₂ = 3", IsCorrect = true, OrderIndex = 0 },
-                            new Answer { Text = "x₁ = 1, x₂ = 6", IsCorrect = false, OrderIndex = 1 },
-                            new Answer { Text = "x₁ = -2, x₂ = -3", IsCorrect = false, OrderIndex = 2 },
-                            new Answer { Text = "x₁ = 5, x₂ = 1", IsCorrect = false, OrderIndex = 3 }
+                            new QuizAnswer { Text = "x₁ = 2, x₂ = 3", IsCorrect = true, OrderIndex = 0 },
+                            new QuizAnswer { Text = "x₁ = 1, x₂ = 6", IsCorrect = false, OrderIndex = 1 },
+                            new QuizAnswer { Text = "x₁ = -2, x₂ = -3", IsCorrect = false, OrderIndex = 2 },
+                            new QuizAnswer { Text = "x₁ = 5, x₂ = 1", IsCorrect = false, OrderIndex = 3 }
                         }
                     },
-                    new Question
+                    new QuizQuestion
                     {
                         Text = "Чему равен дискриминант уравнения x² + 4x + 4 = 0?",
                         Points = 1,
                         OrderIndex = 1,
                         Explanation = "D = b² - 4ac = 16 - 16 = 0. При D = 0 уравнение имеет один корень.",
-                        Answers = new List<Answer>
+                        Answers = new List<QuizAnswer>
                         {
-                            new Answer { Text = "0", IsCorrect = true, OrderIndex = 0 },
-                            new Answer { Text = "4", IsCorrect = false, OrderIndex = 1 },
-                            new Answer { Text = "16", IsCorrect = false, OrderIndex = 2 },
-                            new Answer { Text = "-4", IsCorrect = false, OrderIndex = 3 }
+                            new QuizAnswer { Text = "0", IsCorrect = true, OrderIndex = 0 },
+                            new QuizAnswer { Text = "4", IsCorrect = false, OrderIndex = 1 },
+                            new QuizAnswer { Text = "16", IsCorrect = false, OrderIndex = 2 },
+                            new QuizAnswer { Text = "-4", IsCorrect = false, OrderIndex = 3 }
                         }
                     },
-                    new Question
+                    new QuizQuestion
                     {
                         Text = "Какие из следующих утверждений верны? (Выберите все правильные)",
                         Points = 3,
                         OrderIndex = 2,
                         Explanation = "Правильные утверждения: квадратное уравнение может иметь два корня, и сумма корней равна -b/a.",
-                        Answers = new List<Answer>
+                        Answers = new List<QuizAnswer>
                         {
-                            new Answer { Text = "Квадратное уравнение всегда имеет два корня", IsCorrect = false, OrderIndex = 0 },
-                            new Answer { Text = "Квадратное уравнение может иметь два корня", IsCorrect = true, OrderIndex = 1 },
-                            new Answer { Text = "Сумма корней квадратного уравнения равна -b/a", IsCorrect = true, OrderIndex = 2 },
-                            new Answer { Text = "Дискриминант всегда положителен", IsCorrect = false, OrderIndex = 3 }
+                            new QuizAnswer { Text = "Квадратное уравнение всегда имеет два корня", IsCorrect = false, OrderIndex = 0 },
+                            new QuizAnswer { Text = "Квадратное уравнение может иметь два корня", IsCorrect = true, OrderIndex = 1 },
+                            new QuizAnswer { Text = "Сумма корней квадратного уравнения равна -b/a", IsCorrect = true, OrderIndex = 2 },
+                            new QuizAnswer { Text = "Дискриминант всегда положителен", IsCorrect = false, OrderIndex = 3 }
                         }
                     }
                 }
@@ -285,34 +285,34 @@ namespace UniStart.Seeders
                 Difficulty = "Easy",
                 IsPublished = true,
                 UserId = userId,
-                Questions = new List<Question>
+                Questions = new List<QuizQuestion>
                 {
-                    new Question
+                    new QuizQuestion
                     {
                         Text = "Автомобиль проехал 120 км за 2 часа. Какова его средняя скорость?",
                         Points = 1,
                         OrderIndex = 0,
                         Explanation = "v = S / t = 120 км / 2 ч = 60 км/ч",
-                        Answers = new List<Answer>
+                        Answers = new List<QuizAnswer>
                         {
-                            new Answer { Text = "60 км/ч", IsCorrect = true, OrderIndex = 0 },
-                            new Answer { Text = "120 км/ч", IsCorrect = false, OrderIndex = 1 },
-                            new Answer { Text = "240 км/ч", IsCorrect = false, OrderIndex = 2 },
-                            new Answer { Text = "30 км/ч", IsCorrect = false, OrderIndex = 3 }
+                            new QuizAnswer { Text = "60 км/ч", IsCorrect = true, OrderIndex = 0 },
+                            new QuizAnswer { Text = "120 км/ч", IsCorrect = false, OrderIndex = 1 },
+                            new QuizAnswer { Text = "240 км/ч", IsCorrect = false, OrderIndex = 2 },
+                            new QuizAnswer { Text = "30 км/ч", IsCorrect = false, OrderIndex = 3 }
                         }
                     },
-                    new Question
+                    new QuizQuestion
                     {
                         Text = "Второй закон Ньютона формулируется как:",
                         Points = 1,
                         OrderIndex = 1,
                         Explanation = "F = ma - сила равна произведению массы на ускорение",
-                        Answers = new List<Answer>
+                        Answers = new List<QuizAnswer>
                         {
-                            new Answer { Text = "F = ma", IsCorrect = true, OrderIndex = 0 },
-                            new Answer { Text = "F = mv", IsCorrect = false, OrderIndex = 1 },
-                            new Answer { Text = "F = m/a", IsCorrect = false, OrderIndex = 2 },
-                            new Answer { Text = "F = a/m", IsCorrect = false, OrderIndex = 3 }
+                            new QuizAnswer { Text = "F = ma", IsCorrect = true, OrderIndex = 0 },
+                            new QuizAnswer { Text = "F = mv", IsCorrect = false, OrderIndex = 1 },
+                            new QuizAnswer { Text = "F = m/a", IsCorrect = false, OrderIndex = 2 },
+                            new QuizAnswer { Text = "F = a/m", IsCorrect = false, OrderIndex = 3 }
                         }
                     }
                 }
@@ -328,34 +328,34 @@ namespace UniStart.Seeders
                 Difficulty = "Easy",
                 IsPublished = true,
                 UserId = userId,
-                Questions = new List<Question>
+                Questions = new List<QuizQuestion>
                 {
-                    new Question
+                    new QuizQuestion
                     {
                         Text = "В каком году Казахстан получил независимость?",
                         Points = 1,
                         OrderIndex = 0,
                         Explanation = "16 декабря 1991 года была провозглашена независимость Республики Казахстан",
-                        Answers = new List<Answer>
+                        Answers = new List<QuizAnswer>
                         {
-                            new Answer { Text = "1991", IsCorrect = true, OrderIndex = 0 },
-                            new Answer { Text = "1990", IsCorrect = false, OrderIndex = 1 },
-                            new Answer { Text = "1992", IsCorrect = false, OrderIndex = 2 },
-                            new Answer { Text = "1989", IsCorrect = false, OrderIndex = 3 }
+                            new QuizAnswer { Text = "1991", IsCorrect = true, OrderIndex = 0 },
+                            new QuizAnswer { Text = "1990", IsCorrect = false, OrderIndex = 1 },
+                            new QuizAnswer { Text = "1992", IsCorrect = false, OrderIndex = 2 },
+                            new QuizAnswer { Text = "1989", IsCorrect = false, OrderIndex = 3 }
                         }
                     },
-                    new Question
+                    new QuizQuestion
                     {
                         Text = "Когда был образован Казахский ханат?",
                         Points = 2,
                         OrderIndex = 1,
                         Explanation = "Казахский ханат был образован в 1465 году Жанибеком и Кереем",
-                        Answers = new List<Answer>
+                        Answers = new List<QuizAnswer>
                         {
-                            new Answer { Text = "1465", IsCorrect = true, OrderIndex = 0 },
-                            new Answer { Text = "1456", IsCorrect = false, OrderIndex = 1 },
-                            new Answer { Text = "1500", IsCorrect = false, OrderIndex = 2 },
-                            new Answer { Text = "1400", IsCorrect = false, OrderIndex = 3 }
+                            new QuizAnswer { Text = "1465", IsCorrect = true, OrderIndex = 0 },
+                            new QuizAnswer { Text = "1456", IsCorrect = false, OrderIndex = 1 },
+                            new QuizAnswer { Text = "1500", IsCorrect = false, OrderIndex = 2 },
+                            new QuizAnswer { Text = "1400", IsCorrect = false, OrderIndex = 3 }
                         }
                     }
                 }

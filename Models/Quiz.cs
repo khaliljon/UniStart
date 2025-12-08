@@ -52,7 +52,7 @@ namespace UniStart.Models
         public ApplicationUser? User { get; set; }
         
         [Display(Name = "Вопросы")]
-        public List<Question> Questions { get; set; } = new();
+        public List<QuizQuestion> Questions { get; set; } = new();
         
         [Display(Name = "Попытки прохождения")]
         public List<UserQuizAttempt> Attempts { get; set; } = new();

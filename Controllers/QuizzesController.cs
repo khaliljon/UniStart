@@ -162,13 +162,13 @@ namespace UniStart.Controllers
                 Difficulty = quiz.Difficulty,
                 IsPublic = quiz.IsPublic,
                 IsPublished = quiz.IsPublished,
-                Questions = quiz.Questions.OrderBy(q => q.OrderIndex).Select(q => new QuestionDto
+                Questions = quiz.Questions.OrderBy(q => q.OrderIndex).Select(q => new QuizQuestionDto
                 {
                     Id = q.Id,
                     Text = q.Text,
                     Points = q.Points,
                     ImageUrl = q.ImageUrl,
-                    Answers = q.Answers.OrderBy(a => a.OrderIndex).Select(a => new AnswerDto
+                    Answers = q.Answers.OrderBy(a => a.OrderIndex).Select(a => new QuizAnswerDto
                     {
                         Id = a.Id,
                         Text = a.Text,
@@ -233,12 +233,12 @@ namespace UniStart.Controllers
             quiz.UpdatedAt = DateTime.UtcNow;
 
             // Удаляем старые вопросы и ответы
-            _context.Questions.RemoveRange(quiz.Questions);
+            _context.QuizQuestions.RemoveRange(quiz.Questions);
 
             // Добавляем новые вопросы с ответами
             foreach (var questionDto in dto.Questions)
             {
-                var question = new Question
+                var QuizQuestion = new QuizQuestion
                 {
                     Text = questionDto.Text,
                     Points = questionDto.Points,
@@ -249,7 +249,7 @@ namespace UniStart.Controllers
 
                 foreach (var answerDto in questionDto.Answers)
                 {
-                    question.Answers.Add(new Answer
+                    QuizQuestion.Answers.Add(new QuizAnswer
                     {
                         Text = answerDto.Text,
                         IsCorrect = answerDto.IsCorrect,
@@ -257,7 +257,7 @@ namespace UniStart.Controllers
                     });
                 }
 
-                quiz.Questions.Add(question);
+                quiz.Questions.Add(QuizQuestion);
             }
 
             await _context.SaveChangesAsync();
@@ -347,36 +347,36 @@ namespace UniStart.Controllers
                 return NotFound("Quiz not found");
 
             // Проверка ответов и подсчет результатов
-            var questionResults = new List<QuestionResultDto>();
+            var questionResults = new List<QuizQuestionResultDto>();
             int totalScore = 0;
             int maxScore = quiz.Questions.Sum(q => q.Points);
 
-            foreach (var question in quiz.Questions)
+            foreach (var QuizQuestion in quiz.Questions)
             {
-                var correctAnswerIds = question.Answers
+                var correctAnswerIds = QuizQuestion.Answers
                     .Where(a => a.IsCorrect)
                     .Select(a => a.Id)
                     .OrderBy(id => id)
                     .ToList();
 
-                var userAnswerIds = dto.UserAnswers.ContainsKey(question.Id)
-                    ? dto.UserAnswers[question.Id].OrderBy(id => id).ToList()
+                var userAnswerIds = dto.UserAnswers.ContainsKey(QuizQuestion.Id)
+                    ? dto.UserAnswers[QuizQuestion.Id].OrderBy(id => id).ToList()
                     : new List<int>();
 
                 bool isCorrect = correctAnswerIds.SequenceEqual(userAnswerIds);
-                int pointsEarned = isCorrect ? question.Points : 0;
+                int pointsEarned = isCorrect ? QuizQuestion.Points : 0;
                 totalScore += pointsEarned;
 
-                questionResults.Add(new QuestionResultDto
+                questionResults.Add(new QuizQuestionResultDto
                 {
-                    QuestionId = question.Id,
-                    QuestionText = question.Text,
+                    QuestionId = QuizQuestion.Id,
+                    QuestionText = QuizQuestion.Text,
                     IsCorrect = isCorrect,
                     PointsEarned = pointsEarned,
-                    MaxPoints = question.Points,
+                    MaxPoints = QuizQuestion.Points,
                     CorrectAnswerIds = correctAnswerIds,
                     UserAnswerIds = userAnswerIds,
-                    Explanation = question.Explanation
+                    Explanation = QuizQuestion.Explanation
                 });
             }
 
@@ -473,7 +473,7 @@ namespace UniStart.Controllers
 
             // Подсчет статистики по вопросам
             var questionStats = new List<object>();
-            foreach (var question in quiz.Questions.OrderBy(q => q.OrderIndex))
+            foreach (var QuizQuestion in quiz.Questions.OrderBy(q => q.OrderIndex))
             {
                 int totalAnswers = 0;
                 int correctAnswers = 0;
@@ -486,18 +486,18 @@ namespace UniStart.Controllers
                     try
                     {
                         var userAnswers = JsonSerializer.Deserialize<Dictionary<int, List<int>>>(attempt.UserAnswersJson);
-                        if (userAnswers == null || !userAnswers.ContainsKey(question.Id))
+                        if (userAnswers == null || !userAnswers.ContainsKey(QuizQuestion.Id))
                             continue;
 
                         totalAnswers++;
 
-                        var correctAnswerIds = question.Answers
+                        var correctAnswerIds = QuizQuestion.Answers
                             .Where(a => a.IsCorrect)
                             .Select(a => a.Id)
                             .OrderBy(id => id)
                             .ToList();
 
-                        var userAnswerIds = userAnswers[question.Id].OrderBy(id => id).ToList();
+                        var userAnswerIds = userAnswers[QuizQuestion.Id].OrderBy(id => id).ToList();
 
                         if (correctAnswerIds.SequenceEqual(userAnswerIds))
                             correctAnswers++;
@@ -510,8 +510,8 @@ namespace UniStart.Controllers
 
                 questionStats.Add(new
                 {
-                    questionId = question.Id,
-                    questionText = question.Text,
+                    questionId = QuizQuestion.Id,
+                    questionText = QuizQuestion.Text,
                     correctAnswers,
                     totalAnswers,
                     successRate = totalAnswers > 0 ? (double)correctAnswers / totalAnswers * 100 : 0
@@ -588,7 +588,7 @@ namespace UniStart.Controllers
         /// </summary>
         [HttpPost("questions")]
         [Authorize]
-        public async Task<ActionResult<Question>> CreateQuestion(CreateQuestionDto dto)
+        public async Task<ActionResult<QuizQuestion>> CreateQuestion(CreateQuizQuestionDto dto)
         {
             var userId = GetUserId()!;
             
@@ -599,38 +599,38 @@ namespace UniStart.Controllers
             if (quiz == null)
                 return NotFound("Quiz not found or access denied");
 
-            var question = new Question
+            var QuizQuestion = new QuizQuestion
             {
                 Text = dto.Text,
                 Points = dto.Points,
                 ImageUrl = dto.ImageUrl,
                 Explanation = dto.Explanation,
                 QuizId = dto.QuizId,
-                OrderIndex = await _context.Questions
+                OrderIndex = await _context.QuizQuestions
                     .Where(q => q.QuizId == dto.QuizId)
                     .CountAsync()
             };
 
-            _context.Questions.Add(question);
+            _context.QuizQuestions.Add(QuizQuestion);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetQuestion), new { id = question.Id }, question);
+            return CreatedAtAction(nameof(GetQuestion), new { id = QuizQuestion.Id }, QuizQuestion);
         }
 
         /// <summary>
         /// Получить вопрос по ID
         /// </summary>
         [HttpGet("questions/{id}")]
-        public async Task<ActionResult<Question>> GetQuestion(int id)
+        public async Task<ActionResult<QuizQuestion>> GetQuestion(int id)
         {
-            var question = await _context.Questions
+            var QuizQuestion = await _context.QuizQuestions
                 .Include(q => q.Answers)
                 .FirstOrDefaultAsync(q => q.Id == id);
 
-            if (question == null)
+            if (QuizQuestion == null)
                 return NotFound();
 
-            return Ok(question);
+            return Ok(QuizQuestion);
         }
 
         /// <summary>
@@ -638,21 +638,21 @@ namespace UniStart.Controllers
         /// </summary>
         [HttpPut("questions/{id}")]
         [Authorize]
-        public async Task<IActionResult> UpdateQuestion(int id, UpdateQuestionDto dto)
+        public async Task<IActionResult> UpdateQuestion(int id, UpdateQuizQuestionDto dto)
         {
             var userId = GetUserId()!;
             
-            var question = await _context.Questions
+            var QuizQuestion = await _context.QuizQuestions
                 .Include(q => q.Quiz)
                 .FirstOrDefaultAsync(q => q.Id == id && q.Quiz.UserId == userId);
                 
-            if (question == null)
-                return NotFound("Question not found or access denied");
+            if (QuizQuestion == null)
+                return NotFound("QuizQuestion not found or access denied");
 
-            question.Text = dto.Text;
-            question.Points = dto.Points;
-            question.ImageUrl = dto.ImageUrl;
-            question.Explanation = dto.Explanation;
+            QuizQuestion.Text = dto.Text;
+            QuizQuestion.Points = dto.Points;
+            QuizQuestion.ImageUrl = dto.ImageUrl;
+            QuizQuestion.Explanation = dto.Explanation;
 
             await _context.SaveChangesAsync();
             return NoContent();
@@ -667,14 +667,14 @@ namespace UniStart.Controllers
         {
             var userId = GetUserId()!;
             
-            var question = await _context.Questions
+            var QuizQuestion = await _context.QuizQuestions
                 .Include(q => q.Quiz)
                 .FirstOrDefaultAsync(q => q.Id == id && q.Quiz.UserId == userId);
                 
-            if (question == null)
-                return NotFound("Question not found or access denied");
+            if (QuizQuestion == null)
+                return NotFound("QuizQuestion not found or access denied");
 
-            _context.Questions.Remove(question);
+            _context.QuizQuestions.Remove(QuizQuestion);
             await _context.SaveChangesAsync();
             return NoContent();
         }
@@ -686,46 +686,46 @@ namespace UniStart.Controllers
         /// </summary>
         [HttpPost("answers")]
         [Authorize]
-        public async Task<ActionResult<Answer>> CreateAnswer(CreateAnswerDto dto)
+        public async Task<ActionResult<QuizAnswer>> CreateAnswer(CreateQuizAnswerDto dto)
         {
             var userId = GetUserId()!;
             
             // Проверяем, что вопрос принадлежит квизу пользователя
-            var question = await _context.Questions
+            var QuizQuestion = await _context.QuizQuestions
                 .Include(q => q.Quiz)
                 .FirstOrDefaultAsync(q => q.Id == dto.QuestionId && q.Quiz.UserId == userId);
                 
-            if (question == null)
-                return NotFound("Question not found or access denied");
+            if (QuizQuestion == null)
+                return NotFound("QuizQuestion not found or access denied");
 
-            var answer = new Answer
+            var QuizAnswer = new QuizAnswer
             {
                 Text = dto.Text,
                 IsCorrect = dto.IsCorrect,
                 QuestionId = dto.QuestionId,
-                OrderIndex = await _context.Answers
+                OrderIndex = await _context.QuizAnswers
                     .Where(a => a.QuestionId == dto.QuestionId)
                     .CountAsync()
             };
 
-            _context.Answers.Add(answer);
+            _context.QuizAnswers.Add(QuizAnswer);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetAnswer), new { id = answer.Id }, answer);
+            return CreatedAtAction(nameof(GetAnswer), new { id = QuizAnswer.Id }, QuizAnswer);
         }
 
         /// <summary>
         /// Получить ответ по ID
         /// </summary>
         [HttpGet("answers/{id}")]
-        public async Task<ActionResult<Answer>> GetAnswer(int id)
+        public async Task<ActionResult<QuizAnswer>> GetAnswer(int id)
         {
-            var answer = await _context.Answers.FindAsync(id);
+            var QuizAnswer = await _context.QuizAnswers.FindAsync(id);
 
-            if (answer == null)
+            if (QuizAnswer == null)
                 return NotFound();
 
-            return Ok(answer);
+            return Ok(QuizAnswer);
         }
 
         /// <summary>
@@ -733,20 +733,20 @@ namespace UniStart.Controllers
         /// </summary>
         [HttpPut("answers/{id}")]
         [Authorize]
-        public async Task<IActionResult> UpdateAnswer(int id, UpdateAnswerDto dto)
+        public async Task<IActionResult> UpdateAnswer(int id, UpdateQuizAnswerDto dto)
         {
             var userId = GetUserId()!;
             
-            var answer = await _context.Answers
+            var QuizAnswer = await _context.QuizAnswers
                 .Include(a => a.Question)
                     .ThenInclude(q => q.Quiz)
                 .FirstOrDefaultAsync(a => a.Id == id && a.Question.Quiz.UserId == userId);
                 
-            if (answer == null)
-                return NotFound("Answer not found or access denied");
+            if (QuizAnswer == null)
+                return NotFound("QuizAnswer not found or access denied");
 
-            answer.Text = dto.Text;
-            answer.IsCorrect = dto.IsCorrect;
+            QuizAnswer.Text = dto.Text;
+            QuizAnswer.IsCorrect = dto.IsCorrect;
 
             await _context.SaveChangesAsync();
             return NoContent();
@@ -761,15 +761,15 @@ namespace UniStart.Controllers
         {
             var userId = GetUserId()!;
             
-            var answer = await _context.Answers
+            var QuizAnswer = await _context.QuizAnswers
                 .Include(a => a.Question)
                     .ThenInclude(q => q.Quiz)
                 .FirstOrDefaultAsync(a => a.Id == id && a.Question.Quiz.UserId == userId);
                 
-            if (answer == null)
-                return NotFound("Answer not found or access denied");
+            if (QuizAnswer == null)
+                return NotFound("QuizAnswer not found or access denied");
 
-            _context.Answers.Remove(answer);
+            _context.QuizAnswers.Remove(QuizAnswer);
             await _context.SaveChangesAsync();
             return NoContent();
         }

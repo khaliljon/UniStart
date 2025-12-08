@@ -27,7 +27,7 @@ namespace UniStart.DTOs
         public string Difficulty { get; set; } = string.Empty;
         public bool IsPublic { get; set; }
         public bool IsPublished { get; set; }
-        public List<QuestionDto> Questions { get; set; } = new();
+        public List<QuizQuestionDto> Questions { get; set; } = new();
     }
 
     public class CreateQuizDto
@@ -97,16 +97,16 @@ namespace UniStart.DTOs
         public int Order { get; set; }
     }
 
-    public class QuestionDto
+    public class QuizQuestionDto
     {
         public int Id { get; set; }
         public string Text { get; set; } = string.Empty;
         public int Points { get; set; }
         public string? ImageUrl { get; set; }
-        public List<AnswerDto> Answers { get; set; } = new();
+        public List<QuizAnswerDto> Answers { get; set; } = new();
     }
 
-    public class CreateQuestionDto
+    public class CreateQuizQuestionDto
     {
         [Required(ErrorMessage = "Текст вопроса обязателен")]
         [StringLength(1000, ErrorMessage = "Текст вопроса не должен превышать 1000 символов")]
@@ -126,7 +126,7 @@ namespace UniStart.DTOs
         public int QuizId { get; set; }
     }
 
-    public class UpdateQuestionDto
+    public class UpdateQuizQuestionDto
     {
         [Required(ErrorMessage = "Текст вопроса обязателен")]
         [StringLength(1000, ErrorMessage = "Текст вопроса не должен превышать 1000 символов")]
@@ -146,14 +146,14 @@ namespace UniStart.DTOs
         public string? Explanation { get; set; }
     }
 
-    public class AnswerDto
+    public class QuizAnswerDto
     {
         public int Id { get; set; }
         public string Text { get; set; } = string.Empty;
         public bool? IsCorrect { get; set; } // Null при отправке пользователю
     }
 
-    public class CreateAnswerDto
+    public class CreateQuizAnswerDto
     {
         [Required(ErrorMessage = "Текст ответа обязателен")]
         [StringLength(500, ErrorMessage = "Текст ответа не должен превышать 500 символов")]
@@ -166,7 +166,7 @@ namespace UniStart.DTOs
         public int QuestionId { get; set; }
     }
 
-    public class UpdateAnswerDto
+    public class UpdateQuizAnswerDto
     {
         [Required(ErrorMessage = "Текст ответа обязателен")]
         [StringLength(500, ErrorMessage = "Текст ответа не должен превышать 500 символов")]
@@ -194,10 +194,10 @@ namespace UniStart.DTOs
         public int MaxScore { get; set; }
         public double Percentage { get; set; }
         public int TimeSpentSeconds { get; set; }
-        public List<QuestionResultDto> QuestionResults { get; set; } = new();
+        public List<QuizQuestionResultDto> QuestionResults { get; set; } = new();
     }
 
-    public class QuestionResultDto
+    public class QuizQuestionResultDto
     {
         public int QuestionId { get; set; }
         public string QuestionText { get; set; } = string.Empty;
