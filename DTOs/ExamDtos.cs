@@ -20,6 +20,11 @@ public class CreateExamDto
     
     public string Difficulty { get; set; } = "Medium";
     
+    // Международная система (опционально)
+    public int? CountryId { get; set; }
+    public int? UniversityId { get; set; }
+    public int? ExamTypeId { get; set; }
+    
     // Ограничения экзамена
     public int MaxAttempts { get; set; } = 3;
     public int PassingScore { get; set; } = 70;
@@ -76,6 +81,11 @@ public class ExamDto
     public string? Description { get; set; }
     public string Subject { get; set; } = string.Empty;
     public string Difficulty { get; set; } = string.Empty;
+    
+    // Международная система (опционально)
+    public int? CountryId { get; set; }
+    public int? UniversityId { get; set; }
+    public int? ExamTypeId { get; set; }
     
     public int MaxAttempts { get; set; }
     public int RemainingAttempts { get; set; }

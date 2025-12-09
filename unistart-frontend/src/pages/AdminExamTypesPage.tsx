@@ -152,11 +152,11 @@ const AdminExamTypesPage = () => {
         <div className="mb-8">
           <Button
             variant="secondary"
-            onClick={() => navigate('/admin')}
-            className="mb-4"
+            onClick={() => navigate('/dashboard')}
+            className="mb-4 flex items-center gap-2"
           >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Назад к панели администратора
+            <ArrowLeft className="w-4 h-4" />
+            Назад к панели
           </Button>
 
           <div className="flex items-center justify-between">
@@ -169,8 +169,8 @@ const AdminExamTypesPage = () => {
                 Стандартизированные типы экзаменов (ЕНТ, ЕГЭ, SAT, IELTS и т.д.)
               </p>
             </div>
-            <Button variant="primary" onClick={handleAddNew}>
-              <Plus className="w-4 h-4 mr-2" />
+            <Button variant="primary" onClick={handleAddNew} className="flex items-center gap-2">
+              <Plus className="w-4 h-4" />
               Добавить тип экзамена
             </Button>
           </div>

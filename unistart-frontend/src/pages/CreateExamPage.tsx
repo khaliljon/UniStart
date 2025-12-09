@@ -35,12 +35,21 @@ const CreateExamPage = () => {
   const { isAdmin } = useAuth();
   const [loading, setLoading] = useState(false);
   const [subjects, setSubjects] = useState<any[]>([]);
+  const [countries, setCountries] = useState<any[]>([]);
+  const [universities, setUniversities] = useState<any[]>([]);
+  const [examTypes, setExamTypes] = useState<any[]>([]);
+  const [allExamTypes, setAllExamTypes] = useState<any[]>([]);
 
   // Основная информация
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [subject, setSubject] = useState('');
   const [difficulty, setDifficulty] = useState('Medium');
+  
+  // Международная система
+  const [countryId, setCountryId] = useState<number | null>(null);
+  const [universityId, setUniversityId] = useState<number | null>(null);
+  const [examTypeId, setExamTypeId] = useState<number | null>(null);
   
   // Настройки экзамена
   const [timeLimit, setTimeLimit] = useState(60);
@@ -71,7 +80,39 @@ const CreateExamPage = () => {
 
   useEffect(() => {
     loadSubjects();
+    loadInternationalData();
   }, []);
+
+  useEffect(() => {
+    if (countryId) {
+      loadUniversities(countryId);
+    } else {
+      setUniversities([]);
+      setUniversityId(null);
+    }
+  }, [countryId]);
+
+  useEffect(() => {
+    if (universityId) {
+      // Фильтруем типы экзаменов по выбранному университету
+      const university = universities.find(u => u.id === universityId);
+      if (university && university.examTypeIds && university.examTypeIds.length > 0) {
+        // Фильтруем из всех типов только те, что поддерживает университет
+        const filteredTypes = allExamTypes.filter(et => university.examTypeIds.includes(et.id));
+        setExamTypes(filteredTypes);
+        // Сбрасываем выбранный тип, если он не поддерживается университетом
+        if (examTypeId && !university.examTypeIds.includes(examTypeId)) {
+          setExamTypeId(null);
+        }
+      } else {
+        // Если типов нет, показываем все
+        setExamTypes(allExamTypes);
+      }
+    } else {
+      // Если университет не выбран, показываем все типы
+      setExamTypes(allExamTypes);
+    }
+  }, [universityId, universities, allExamTypes]);
 
   const loadSubjects = async () => {
     try {
@@ -79,6 +120,29 @@ const CreateExamPage = () => {
       setSubjects(response.data);
     } catch (error) {
       console.error('Ошибка загрузки предметов:', error);
+    }
+  };
+
+  const loadInternationalData = async () => {
+    try {
+      const [countriesRes, examTypesRes] = await Promise.all([
+        api.get('/countries'),
+        api.get('/examtypes')
+      ]);
+      setCountries(countriesRes.data);
+      setAllExamTypes(examTypesRes.data);
+      setExamTypes(examTypesRes.data);
+    } catch (error) {
+      console.error('Ошибка загрузки международных данных:', error);
+    }
+  };
+
+  const loadUniversities = async (cId: number) => {
+    try {
+      const response = await api.get(`/universities?countryId=${cId}`);
+      setUniversities(response.data);
+    } catch (error) {
+      console.error('Ошибка загрузки университетов:', error);
     }
   };
 
@@ -209,6 +273,9 @@ const CreateExamPage = () => {
         isPublished: publish,
         isPublic: isPublic,
         strictTiming: strictTiming,
+        countryId: countryId,
+        universityId: universityId,
+        examTypeId: examTypeId,
         tagIds: [],
         questions: questions.map((q, index) => ({
           text: q.text,
@@ -349,6 +416,64 @@ const CreateExamPage = () => {
                     <option value="Easy">Легкий</option>
                     <option value="Medium">Средний</option>
                     <option value="Hard">Сложный</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Страна
+                  </label>
+                  <select
+                    value={countryId || ''}
+                    onChange={(e) => setCountryId(e.target.value ? Number(e.target.value) : null)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  >
+                    <option value="">Не указано</option>
+                    {countries.map((country) => (
+                      <option key={country.id} value={country.id}>
+                        {country.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Университет
+                  </label>
+                  <select
+                    value={universityId || ''}
+                    onChange={(e) => setUniversityId(e.target.value ? Number(e.target.value) : null)}
+                    disabled={!countryId}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  >
+                    <option value="">Не указано</option>
+                    {universities.map((university) => (
+                      <option key={university.id} value={university.id}>
+                        {university.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Тип экзамена
+                  </label>
+                  <select
+                    value={examTypeId || ''}
+                    onChange={(e) => setExamTypeId(e.target.value ? Number(e.target.value) : null)}
+                    disabled={!universityId}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  >
+                    <option value="">{universityId ? 'Не указано' : 'Сначала выберите университет'}</option>
+                    {examTypes.map((examType) => (
+                      <option key={examType.id} value={examType.id}>
+                        {examType.name}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>

@@ -167,6 +167,9 @@ public class ExamsController : ControllerBase
             Description = exam.Description,
             Subject = exam.Subject,
             Difficulty = exam.Difficulty,
+            CountryId = exam.CountryId,
+            UniversityId = exam.UniversityId,
+            ExamTypeId = exam.ExamTypeId,
             MaxAttempts = exam.MaxAttempts,
             PassingScore = exam.PassingScore,
             IsProctored = exam.IsProctored,
@@ -623,6 +626,9 @@ public class ExamsController : ControllerBase
             Description = dto.Description,
             Subject = dto.Subject,
             Difficulty = dto.Difficulty,
+            CountryId = dto.CountryId,
+            UniversityId = dto.UniversityId,
+            ExamTypeId = dto.ExamTypeId,
             MaxAttempts = dto.MaxAttempts,
             PassingScore = dto.PassingScore,
             IsProctored = dto.IsProctored,
@@ -724,6 +730,9 @@ public class ExamsController : ControllerBase
         exam.Description = dto.Description;
         exam.Subject = dto.Subject;
         exam.Difficulty = dto.Difficulty;
+        exam.CountryId = dto.CountryId;
+        exam.UniversityId = dto.UniversityId;
+        exam.ExamTypeId = dto.ExamTypeId;
         exam.MaxAttempts = dto.MaxAttempts;
         exam.PassingScore = dto.PassingScore;
         exam.IsProctored = dto.IsProctored;

@@ -18,6 +18,7 @@ interface University {
   countryId: number;
   countryName: string;
   countryCode: string;
+  examTypeIds: number[];
   examsCount: number;
 }
 
@@ -38,6 +39,7 @@ const AdminUniversitiesPage = () => {
   const [universities, setUniversities] = useState<University[]>([]);
   const [filteredUniversities, setFilteredUniversities] = useState<University[]>([]);
   const [countries, setCountries] = useState<Country[]>([]);
+  const [examTypes, setExamTypes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCountryId, setFilterCountryId] = useState<number | null>(null);
@@ -51,6 +53,7 @@ const AdminUniversitiesPage = () => {
     website: '',
     type: 0,
     countryId: 0,
+    examTypeIds: [] as number[],
     isActive: true
   });
 
@@ -65,13 +68,15 @@ const AdminUniversitiesPage = () => {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [universitiesRes, countriesRes] = await Promise.all([
+      const [universitiesRes, countriesRes, examTypesRes] = await Promise.all([
         api.get('/universities'),
-        api.get('/countries')
+        api.get('/countries'),
+        api.get('/examtypes')
       ]);
       setUniversities(universitiesRes.data);
       setFilteredUniversities(universitiesRes.data);
       setCountries(countriesRes.data);
+      setExamTypes(examTypesRes.data);
     } catch (error) {
       console.error('Ошибка загрузки данных:', error);
       alert('Не удалось загрузить данные');
@@ -135,6 +140,7 @@ const AdminUniversitiesPage = () => {
       website: university.website || '',
       type: university.type,
       countryId: university.countryId,
+      examTypeIds: university.examTypeIds || [],
       isActive: university.isActive
     });
     setShowModal(true);
@@ -169,6 +175,7 @@ const AdminUniversitiesPage = () => {
       website: '',
       type: 0,
       countryId: countries.length > 0 ? countries[0].id : 0,
+      examTypeIds: [],
       isActive: true
     });
     setEditingUniversity(null);
@@ -186,11 +193,11 @@ const AdminUniversitiesPage = () => {
         <div className="mb-8">
           <Button
             variant="secondary"
-            onClick={() => navigate('/admin')}
-            className="mb-4"
+            onClick={() => navigate('/dashboard')}
+            className="mb-4 flex items-center gap-2"
           >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Назад к панели администратора
+            <ArrowLeft className="w-4 h-4" />
+            Назад к панели
           </Button>
 
           <div className="flex items-center justify-between">
@@ -203,8 +210,8 @@ const AdminUniversitiesPage = () => {
                 Университеты и вузы для международной системы
               </p>
             </div>
-            <Button variant="primary" onClick={handleAddNew}>
-              <Plus className="w-4 h-4 mr-2" />
+            <Button variant="primary" onClick={handleAddNew} className="flex items-center gap-2">
+              <Plus className="w-4 h-4" />
               Добавить университет
             </Button>
           </div>
@@ -456,6 +463,34 @@ const AdminUniversitiesPage = () => {
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     placeholder="Краткое описание университета..."
                   />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Типы экзаменов
+                  </label>
+                  <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800">
+                    {examTypes.map((examType) => (
+                      <label key={examType.id} className="flex items-center gap-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded">
+                        <input
+                          type="checkbox"
+                          checked={formData.examTypeIds.includes(examType.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setFormData({ ...formData, examTypeIds: [...formData.examTypeIds, examType.id] });
+                            } else {
+                              setFormData({ ...formData, examTypeIds: formData.examTypeIds.filter(id => id !== examType.id) });
+                            }
+                          }}
+                          className="rounded border-gray-300 dark:border-gray-600 text-primary-600"
+                        />
+                        <span className="text-sm text-gray-700 dark:text-gray-300">{examType.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Выберите типы экзаменов, которые принимает университет
+                  </p>
                 </div>
 
                 <div className="flex items-center gap-2">

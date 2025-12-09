@@ -48,6 +48,7 @@ namespace UniStart.Models
         
         // Навигационные свойства
         public List<Exam> Exams { get; set; } = new();
+        public List<ExamType> ExamTypes { get; set; } = new();
     }
     
     public enum UniversityType

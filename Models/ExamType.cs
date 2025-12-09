@@ -40,5 +40,6 @@ namespace UniStart.Models
         
         // Навигационные свойства
         public List<Exam> Exams { get; set; } = new();
+        public List<University> Universities { get; set; } = new();
     }
 }

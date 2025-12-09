@@ -27,6 +27,7 @@ namespace UniStart.Controllers
             var query = _context.Universities
                 .Include(u => u.Country)
                 .Include(u => u.Exams)
+                .Include(u => u.ExamTypes)
                 .Where(u => u.IsActive);
 
             if (countryId.HasValue)
@@ -47,6 +48,7 @@ namespace UniStart.Controllers
                     CountryId = u.CountryId,
                     CountryName = u.Country.Name,
                     CountryCode = u.Country.Code,
+                    ExamTypeIds = u.ExamTypes.Select(et => et.Id).ToList(),
                     CreatedAt = u.CreatedAt,
                     ExamsCount = u.Exams.Count
                 })
@@ -64,6 +66,7 @@ namespace UniStart.Controllers
             var university = await _context.Universities
                 .Include(u => u.Country)
                 .Include(u => u.Exams)
+                .Include(u => u.ExamTypes)
                 .Where(u => u.Id == id)
                 .Select(u => new UniversityDto
                 {
@@ -78,6 +81,7 @@ namespace UniStart.Controllers
                     CountryId = u.CountryId,
                     CountryName = u.Country.Name,
                     CountryCode = u.Country.Code,
+                    ExamTypeIds = u.ExamTypes.Select(et => et.Id).ToList(),
                     CreatedAt = u.CreatedAt,
                     ExamsCount = u.Exams.Count
                 })
@@ -113,6 +117,15 @@ namespace UniStart.Controllers
                 CreatedAt = DateTime.UtcNow
             };
 
+            // Добавляем типы экзаменов
+            if (dto.ExamTypeIds != null && dto.ExamTypeIds.Any())
+            {
+                var examTypes = await _context.ExamTypes
+                    .Where(et => dto.ExamTypeIds.Contains(et.Id))
+                    .ToListAsync();
+                university.ExamTypes = examTypes;
+            }
+
             _context.Universities.Add(university);
             await _context.SaveChangesAsync();
 
@@ -126,7 +139,10 @@ namespace UniStart.Controllers
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> UpdateUniversity(int id, UpdateUniversityDto dto)
         {
-            var university = await _context.Universities.FindAsync(id);
+            var university = await _context.Universities
+                .Include(u => u.ExamTypes)
+                .FirstOrDefaultAsync(u => u.Id == id);
+            
             if (university == null)
                 return NotFound();
 
@@ -142,6 +158,16 @@ namespace UniStart.Controllers
             university.Type = (UniversityType)dto.Type;
             university.CountryId = dto.CountryId;
             university.IsActive = dto.IsActive;
+
+            // Обновляем типы экзаменов
+            university.ExamTypes.Clear();
+            if (dto.ExamTypeIds != null && dto.ExamTypeIds.Any())
+            {
+                var examTypes = await _context.ExamTypes
+                    .Where(et => dto.ExamTypeIds.Contains(et.Id))
+                    .ToListAsync();
+                university.ExamTypes = examTypes;
+            }
 
             await _context.SaveChangesAsync();
             return NoContent();

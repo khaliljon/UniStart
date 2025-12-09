@@ -66,6 +66,7 @@ namespace UniStart.DTOs
         public int CountryId { get; set; }
         public string CountryName { get; set; } = string.Empty;
         public string? CountryCode { get; set; }
+        public List<int> ExamTypeIds { get; set; } = new();
         public DateTime CreatedAt { get; set; }
         public int ExamsCount { get; set; }
     }
@@ -93,6 +94,10 @@ namespace UniStart.DTOs
         
         [Required(ErrorMessage = "Страна обязательна")]
         public int CountryId { get; set; }
+        
+        [Required(ErrorMessage = "Необходимо выбрать хотя бы один тип экзамена")]
+        [MinLength(1, ErrorMessage = "Необходимо выбрать хотя бы один тип экзамена")]
+        public List<int> ExamTypeIds { get; set; } = new();
     }
 
     public class UpdateUniversityDto
@@ -118,6 +123,10 @@ namespace UniStart.DTOs
         
         [Required]
         public int CountryId { get; set; }
+        
+        [Required(ErrorMessage = "Необходимо выбрать хотя бы один тип экзамена")]
+        [MinLength(1, ErrorMessage = "Необходимо выбрать хотя бы один тип экзамена")]
+        public List<int> ExamTypeIds { get; set; } = new();
         
         public bool IsActive { get; set; }
     }
