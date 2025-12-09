@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Users, TrendingUp, Award, AlertCircle, FileText, Activity, BarChart3, Download, BookOpen } from 'lucide-react';
+import { Users, TrendingUp, Award, AlertCircle, FileText, Activity, BarChart3, Download, BookOpen, Globe, Building2, ClipboardList } from 'lucide-react';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import api from '../services/api';
@@ -307,6 +307,30 @@ const AdminDashboard = () => {
                 >
                   <Award className="w-4 h-4" />
                   Управление достижениями
+                </Button>
+                <Button 
+                  variant="secondary" 
+                  className="w-full flex items-center justify-center gap-2"
+                  onClick={() => navigate('/admin/countries')}
+                >
+                  <Globe className="w-4 h-4" />
+                  Управление странами
+                </Button>
+                <Button 
+                  variant="secondary" 
+                  className="w-full flex items-center justify-center gap-2"
+                  onClick={() => navigate('/admin/universities')}
+                >
+                  <Building2 className="w-4 h-4" />
+                  Управление вузами
+                </Button>
+                <Button 
+                  variant="secondary" 
+                  className="w-full flex items-center justify-center gap-2"
+                  onClick={() => navigate('/admin/exam-types')}
+                >
+                  <ClipboardList className="w-4 h-4" />
+                  Типы экзаменов
                 </Button>
               </div>
             </Card>

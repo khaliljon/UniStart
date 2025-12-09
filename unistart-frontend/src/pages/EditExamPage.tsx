@@ -701,12 +701,12 @@ const EditExamPage = () => {
         </motion.div>
 
         {/* Итоговая информация */}
-        <Card className="mb-6 bg-blue-50 border-blue-200">
+        <Card className="mb-6 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
           <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
-            <div className="text-sm text-blue-900">
+            <AlertCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" />
+            <div className="text-sm text-blue-900 dark:text-blue-100">
               <p className="font-medium mb-1">Сводка экзамена:</p>
-              <ul className="list-disc list-inside space-y-1 text-blue-800">
+              <ul className="list-disc list-inside space-y-1 text-blue-800 dark:text-blue-200">
                 <li>Вопросов: {questions.length}</li>
                 <li>Всего баллов: {totalPoints}</li>
                 <li>Проходной балл: {Math.ceil((totalPoints * passingScore) / 100)} из {totalPoints} ({passingScore}%)</li>

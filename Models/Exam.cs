@@ -56,6 +56,19 @@ public class Exam
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
     
+    // Международная система
+    [Display(Name = "Страна")]
+    public int? CountryId { get; set; }
+    public Country? Country { get; set; }
+    
+    [Display(Name = "Университет")]
+    public int? UniversityId { get; set; }
+    public University? University { get; set; }
+    
+    [Display(Name = "Тип экзамена")]
+    public int? ExamTypeId { get; set; }
+    public ExamType? ExamType { get; set; }
+    
     // Связи
     public string UserId { get; set; } = string.Empty; // Создатель экзамена
     public ApplicationUser User { get; set; } = null!;

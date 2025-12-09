@@ -43,6 +43,9 @@ import AdminAchievementsPage from './pages/AdminAchievementsPage'
 import AdminQuizzesPage from './pages/AdminQuizzesPage'
 import AdminExamsPage from './pages/AdminExamsPage'
 import AdminSettingsPage from './pages/AdminSettingsPage'
+import AdminCountriesPage from './pages/AdminCountriesPage'
+import AdminUniversitiesPage from './pages/AdminUniversitiesPage'
+import AdminExamTypesPage from './pages/AdminExamTypesPage'
 
 // Student Pages
 import StudentProgressPage from './pages/StudentProgressPage'
@@ -353,6 +356,36 @@ function App() {
               <PrivateRoute>
                 <RoleRoute allowedRoles={['Admin']}>
                   <AdminSettingsPage />
+                </RoleRoute>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/admin/countries"
+            element={
+              <PrivateRoute>
+                <RoleRoute allowedRoles={['Admin']}>
+                  <AdminCountriesPage />
+                </RoleRoute>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/admin/universities"
+            element={
+              <PrivateRoute>
+                <RoleRoute allowedRoles={['Admin']}>
+                  <AdminUniversitiesPage />
+                </RoleRoute>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/admin/exam-types"
+            element={
+              <PrivateRoute>
+                <RoleRoute allowedRoles={['Admin']}>
+                  <AdminExamTypesPage />
                 </RoleRoute>
               </PrivateRoute>
             }

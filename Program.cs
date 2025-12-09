@@ -142,6 +142,9 @@ if (app.Environment.IsDevelopment())
         // Инициализируем достижения
         await UniStart.Seeders.AchievementSeeder.SeedAchievementsAsync(context);
         
+        // Инициализируем страны и типы экзаменов
+        await UniStart.Seeders.InternationalSeeder.SeedInternationalData(context);
+        
         // Заполняем базу тестовыми данными (только если БД пустая)
         await UniStart.Seeders.DatabaseSeeder.SeedAsync(context, userManager);
     }
