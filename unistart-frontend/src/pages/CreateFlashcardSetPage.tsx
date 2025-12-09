@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Trash2, Save, ArrowLeft } from 'lucide-react';
@@ -6,6 +6,8 @@ import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import api from '../services/api';
 import { FlashcardType } from '../types';
+import { subjectService, Subject } from '../services/subjectService';
+import { useAuth } from '../context/AuthContext';
 
 interface Flashcard {
   question: string;
@@ -27,14 +29,29 @@ interface FlashcardSetForm {
 
 const CreateFlashcardSetPage = () => {
   const navigate = useNavigate();
+  const { isAdmin } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
   const [flashcardSet, setFlashcardSet] = useState<FlashcardSetForm>({
     title: '',
     description: '',
     subject: '',
-    isPublic: true,
+    isPublic: isAdmin ? true : false,
     flashcards: [],
   });
+
+  useEffect(() => {
+    loadSubjects();
+  }, []);
+
+  const loadSubjects = async () => {
+    try {
+      const data = await subjectService.getSubjects();
+      setSubjects(data);
+    } catch (error) {
+      console.error('Ошибка загрузки предметов:', error);
+    }
+  };
 
   const addFlashcard = () => {
     setFlashcardSet({
@@ -84,13 +101,6 @@ const CreateFlashcardSetPage = () => {
     const sequence = [...(newFlashcards[cardIndex].sequence || [])];
     sequence[itemIndex] = value;
     newFlashcards[cardIndex] = { ...newFlashcards[cardIndex], sequence };
-    setFlashcardSet({ ...flashcardSet, flashcards: newFlashcards });
-  };
-
-  const addOption = (cardIndex: number) => {
-    const newFlashcards = [...flashcardSet.flashcards];
-    const options = [...(newFlashcards[cardIndex].options || []), ''];
-    newFlashcards[cardIndex] = { ...newFlashcards[cardIndex], options };
     setFlashcardSet({ ...flashcardSet, flashcards: newFlashcards });
   };
 
@@ -214,7 +224,7 @@ const CreateFlashcardSetPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-green-50 py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-green-50 dark:from-gray-900 dark:to-gray-800 py-8 px-4">
       <div className="max-w-5xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -230,10 +240,10 @@ const CreateFlashcardSetPage = () => {
             Назад к панели
           </Button>
 
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
             📚 Создание набора карточек
           </h1>
-          <p className="text-gray-600">
+          <p className="text-gray-600 dark:text-gray-400">
             Создайте новый набор карточек для изучения
           </p>
         </motion.div>
@@ -241,13 +251,13 @@ const CreateFlashcardSetPage = () => {
         <form onSubmit={handleSubmit}>
           {/* Основная информация */}
           <Card className="p-6 mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
               Основная информация
             </h2>
 
             <div className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Название набора *
                 </label>
                 <input
@@ -257,13 +267,13 @@ const CreateFlashcardSetPage = () => {
                   onChange={(e) =>
                     setFlashcardSet({ ...flashcardSet, title: e.target.value })
                   }
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                   placeholder="Введите название набора"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Описание
                 </label>
                 <textarea
@@ -272,13 +282,13 @@ const CreateFlashcardSetPage = () => {
                     setFlashcardSet({ ...flashcardSet, description: e.target.value })
                   }
                   rows={3}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                   placeholder="Краткое описание набора карточек"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Предмет
                 </label>
                 <select
@@ -286,37 +296,34 @@ const CreateFlashcardSetPage = () => {
                   onChange={(e) =>
                     setFlashcardSet({ ...flashcardSet, subject: e.target.value })
                   }
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                 >
                   <option value="">Выберите предмет</option>
-                  <option value="Mathematics">Математика</option>
-                  <option value="Physics">Физика</option>
-                  <option value="Chemistry">Химия</option>
-                  <option value="Biology">Биология</option>
-                  <option value="History">История Казахстана</option>
-                  <option value="English">Английский язык</option>
-                  <option value="Kazakh">Казахский язык</option>
-                  <option value="Russian">Русский язык</option>
-                  <option value="Geography">География</option>
-                  <option value="Computer Science">Информатика</option>
+                  {subjects.map((subject) => (
+                    <option key={subject.id} value={subject.name}>
+                      {subject.name}
+                    </option>
+                  ))}
                 </select>
               </div>
 
-              <div>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={flashcardSet.isPublic}
-                    onChange={(e) =>
-                      setFlashcardSet({ ...flashcardSet, isPublic: e.target.checked })
-                    }
-                    className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500"
-                  />
-                  <span className="text-sm text-gray-700">
-                    Сделать набор публичным (доступен всем студентам)
-                  </span>
-                </label>
-              </div>
+              {!isAdmin && (
+                <div>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={flashcardSet.isPublic}
+                      onChange={(e) =>
+                        setFlashcardSet({ ...flashcardSet, isPublic: e.target.checked })
+                      }
+                      className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500"
+                    />
+                    <span className="text-sm text-gray-700 dark:text-gray-300">
+                      Сделать набор публичным (доступен всем студентам)
+                    </span>
+                  </label>
+                </div>
+              )}
             </div>
           </Card>
 
@@ -376,7 +383,7 @@ const CreateFlashcardSetPage = () => {
 
                     <div className="space-y-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                           Тип карточки *
                         </label>
                         <select
@@ -392,7 +399,7 @@ const CreateFlashcardSetPage = () => {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                           Вопрос *
                         </label>
                         <textarea
@@ -402,63 +409,74 @@ const CreateFlashcardSetPage = () => {
                             updateFlashcard(index, 'question', e.target.value)
                           }
                           rows={2}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                           placeholder="Введите вопрос"
                         />
                       </div>
 
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Правильный ответ *
-                        </label>
-                        <textarea
-                          required
-                          value={card.answer}
-                          onChange={(e) =>
-                            updateFlashcard(index, 'answer', e.target.value)
-                          }
-                          rows={2}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                          placeholder={card.type === FlashcardType.MultipleChoice ? "Введите правильный ответ (должен совпадать с одним из вариантов)" : "Введите правильный ответ"}
-                        />
-                      </div>
+                      {/* Правильный ответ только для Fill in the Blank */}
+                      {card.type === FlashcardType.FillInTheBlank && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Правильный ответ *
+                          </label>
+                          <textarea
+                            required
+                            value={card.answer}
+                            onChange={(e) =>
+                              updateFlashcard(index, 'answer', e.target.value)
+                            }
+                            rows={2}
+                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                            placeholder="Введите правильный ответ"
+                          />
+                        </div>
+                      )}
 
                       {/* Multiple Choice Options */}
                       {card.type === FlashcardType.MultipleChoice && (
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             Варианты ответов *
                           </label>
                           <div className="space-y-2">
                             {card.options?.map((option, optIndex) => (
-                              <input
-                                key={optIndex}
-                                type="text"
-                                value={option}
-                                onChange={(e) => updateFlashcardOption(index, optIndex, e.target.value)}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                                placeholder={`Вариант ${optIndex + 1}`}
-                                required
-                              />
+                              <div key={optIndex} className="flex items-center gap-2">
+                                <input
+                                  type="radio"
+                                  name={`correct-answer-${index}`}
+                                  checked={card.answer === option}
+                                  onChange={() => updateFlashcard(index, 'answer', option)}
+                                  className="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500"
+                                  title="Отметить как правильный ответ"
+                                />
+                                <input
+                                  type="text"
+                                  value={option}
+                                  onChange={(e) => {
+                                    const newValue = e.target.value;
+                                    updateFlashcardOption(index, optIndex, newValue);
+                                    if (card.answer === option) {
+                                      updateFlashcard(index, 'answer', newValue);
+                                    }
+                                  }}
+                                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                  placeholder={`Вариант ${optIndex + 1}`}
+                                  required
+                                />
+                              </div>
                             ))}
-                            <Button
-                              type="button"
-                              variant="secondary"
-                              size="sm"
-                              onClick={() => addOption(index)}
-                              className="flex items-center gap-1"
-                            >
-                              <Plus className="w-4 h-4" />
-                              Добавить вариант
-                            </Button>
                           </div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            Отметьте один правильный ответ
+                          </p>
                         </div>
                       )}
 
                       {/* Matching Pairs */}
                       {card.type === FlashcardType.Matching && (
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             Пары для сопоставления *
                           </label>
                           <div className="space-y-3">
@@ -468,7 +486,7 @@ const CreateFlashcardSetPage = () => {
                                   type="text"
                                   value={pair.term}
                                   onChange={(e) => updateMatchingPair(index, pairIndex, 'term', e.target.value)}
-                                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                   placeholder="Термин"
                                   required
                                 />
@@ -476,7 +494,7 @@ const CreateFlashcardSetPage = () => {
                                   type="text"
                                   value={pair.definition}
                                   onChange={(e) => updateMatchingPair(index, pairIndex, 'definition', e.target.value)}
-                                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                   placeholder="Определение"
                                   required
                                 />
@@ -499,18 +517,18 @@ const CreateFlashcardSetPage = () => {
                       {/* Sequence Items */}
                       {card.type === FlashcardType.Sequencing && (
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             Элементы для упорядочивания * (в правильном порядке)
                           </label>
                           <div className="space-y-2">
                             {card.sequence?.map((item, itemIndex) => (
                               <div key={itemIndex} className="flex items-center gap-2">
-                                <span className="text-sm text-gray-600 w-6">{itemIndex + 1}.</span>
+                                <span className="text-sm text-gray-600 dark:text-gray-400 w-6">{itemIndex + 1}.</span>
                                 <input
                                   type="text"
                                   value={item}
                                   onChange={(e) => updateSequenceItem(index, itemIndex, e.target.value)}
-                                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                   placeholder={`Шаг ${itemIndex + 1}`}
                                   required
                                 />
@@ -531,8 +549,8 @@ const CreateFlashcardSetPage = () => {
                       )}
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Дополнительное объяснение (опционально)
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Объяснение (опционально)
                         </label>
                         <textarea
                           value={card.explanation}
@@ -540,7 +558,7 @@ const CreateFlashcardSetPage = () => {
                             updateFlashcard(index, 'explanation', e.target.value)
                           }
                           rows={2}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                           placeholder="Дополнительные пояснения или примеры"
                         />
                       </div>

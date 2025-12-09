@@ -70,9 +70,10 @@ const ExamStatsPage = () => {
   }
 
   const formatTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60)
-    const secs = seconds % 60
-    return `${minutes}м ${secs}с`
+    if (!seconds || isNaN(seconds)) return '0м 0с';
+    const minutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${minutes}м ${secs}с`;
   }
 
   const formatDate = (dateString: string) => {

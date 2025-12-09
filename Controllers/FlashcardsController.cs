@@ -86,6 +86,7 @@ namespace UniStart.Controllers
                     Description = fs.Description,
                     Subject = fs.Subject,
                     IsPublic = fs.IsPublic,
+                    IsPublished = fs.IsPublished,
                     CreatedAt = fs.CreatedAt,
                     UpdatedAt = fs.UpdatedAt,
                     CardCount = fs.Flashcards.Count,
@@ -183,6 +184,48 @@ namespace UniStart.Controllers
 
             _context.FlashcardSets.Remove(set);
             await _context.SaveChangesAsync();
+            return NoContent();
+        }
+
+        /// <summary>
+        /// Опубликовать набор карточек (только свои)
+        /// </summary>
+        [HttpPatch("sets/{id}/publish")]
+        public async Task<IActionResult> PublishFlashcardSet(int id)
+        {
+            var userId = GetUserId();
+            
+            var set = await _context.FlashcardSets
+                .FirstOrDefaultAsync(fs => fs.Id == id && fs.UserId == userId);
+                
+            if (set == null)
+                return NotFound();
+
+            set.IsPublished = true;
+            set.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+            
+            return NoContent();
+        }
+
+        /// <summary>
+        /// Снять набор карточек с публикации (только свои)
+        /// </summary>
+        [HttpPatch("sets/{id}/unpublish")]
+        public async Task<IActionResult> UnpublishFlashcardSet(int id)
+        {
+            var userId = GetUserId();
+            
+            var set = await _context.FlashcardSets
+                .FirstOrDefaultAsync(fs => fs.Id == id && fs.UserId == userId);
+                
+            if (set == null)
+                return NotFound();
+
+            set.IsPublished = false;
+            set.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+            
             return NoContent();
         }
 

@@ -24,6 +24,9 @@ namespace UniStart.Models
         [Display(Name = "Публичный доступ")]
         public bool IsPublic { get; set; } = false; // true = доступен всем студентам, false = только автор
         
+        [Display(Name = "Опубликован")]
+        public bool IsPublished { get; set; } = false; // true = виден студентам, false = черновик
+        
         [Display(Name = "Дата создания")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         

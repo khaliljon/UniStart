@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { BookOpen, Play, Target, Clock, Plus, Trash2 } from 'lucide-react';
+import { BookOpen, Play, Target, Clock, Plus, Trash2, Edit, TrendingUp, Upload, FileX, CheckCircle, AlertCircle } from 'lucide-react';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import { flashcardService } from '../services/flashcardService';
 import { FlashcardSet } from '../types';
 import { useAuth } from '../context/AuthContext';
+import api from '../services/api';
 
 const FlashcardsPage = () => {
   const navigate = useNavigate();
@@ -50,6 +51,36 @@ const FlashcardsPage = () => {
     } catch (error) {
       console.error('Ошибка удаления набора:', error);
       alert('Ошибка при удалении набора');
+    }
+  };
+
+  const handlePublish = async (id: number) => {
+    if (!window.confirm('Вы уверены, что хотите опубликовать этот набор карточек?')) {
+      return;
+    }
+    try {
+      await api.patch(`/flashcards/sets/${id}/publish`);
+      setSuccessMessage('Набор успешно опубликован');
+      setTimeout(() => setSuccessMessage(''), 3000);
+      loadSets();
+    } catch (error) {
+      console.error('Ошибка публикации:', error);
+      alert('Не удалось опубликовать набор');
+    }
+  };
+
+  const handleUnpublish = async (id: number) => {
+    if (!window.confirm('Вы уверены, что хотите снять набор с публикации?')) {
+      return;
+    }
+    try {
+      await api.patch(`/flashcards/sets/${id}/unpublish`);
+      setSuccessMessage('Набор снят с публикации');
+      setTimeout(() => setSuccessMessage(''), 3000);
+      loadSets();
+    } catch (error) {
+      console.error('Ошибка отмены публикации:', error);
+      alert('Не удалось снять набор с публикации');
     }
   };
 
@@ -159,36 +190,63 @@ const FlashcardsPage = () => {
                   {/* Кнопки действий */}
                   <div className="flex flex-col gap-2">
                     {(isTeacher || isAdmin) ? (
-                      <div className="flex gap-2">
-                        <Button
-                          onClick={() => navigate(`/flashcards/${set.id}/edit`)}
-                          variant="secondary"
-                          size="sm"
-                          className="flex-1 flex items-center justify-center gap-2"
-                        >
-                          Редактировать
-                        </Button>
-                        <Button
-                          onClick={() => navigate(`/flashcards/${set.id}/stats`)}
-                          variant="primary"
-                          size="sm"
-                          className="flex-1 flex items-center justify-center gap-2"
-                        >
-                          Статистика
-                        </Button>
-                        <Button
-                          variant="danger"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDelete(set.id, set.title);
-                          }}
-                          className="px-4"
-                          title="Удалить набор"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
+                      <>
+                        <div className="flex gap-2">
+                          <Button
+                            onClick={() => navigate(`/flashcards/${set.id}/edit`)}
+                            variant="secondary"
+                            size="sm"
+                            className="flex-1 flex items-center justify-center gap-2"
+                          >
+                            <Edit className="w-4 h-4" />
+                            Редактировать
+                          </Button>
+                          <Button
+                            onClick={() => navigate(`/flashcards/${set.id}/stats`)}
+                            variant="primary"
+                            size="sm"
+                            className="flex-1 flex items-center justify-center gap-2"
+                          >
+                            <TrendingUp className="w-4 h-4" />
+                            Статистика
+                          </Button>
+                        </div>
+                        <div className="flex gap-2">
+                          {set.isPublished ? (
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              className="flex-1 flex items-center justify-center gap-2"
+                              onClick={() => handleUnpublish(set.id)}
+                            >
+                              <FileX className="w-4 h-4" />
+                              Снять с публикации
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700"
+                              onClick={() => handlePublish(set.id)}
+                            >
+                              <Upload className="w-4 h-4" />
+                              Опубликовать
+                            </Button>
+                          )}
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete(set.id, set.title);
+                            }}
+                            className="px-4"
+                            title="Удалить набор"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </>
                     ) : (
                       <Button
                         onClick={() => navigate(`/flashcards/${set.id}/study`)}
@@ -200,6 +258,27 @@ const FlashcardsPage = () => {
                         Начать изучение
                       </Button>
                     )}
+                  </div>
+
+                  {/* Дата и статус публикации */}
+                  <div className="mt-4 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700 pt-3">
+                    {(isTeacher || isAdmin) && (
+                      <span className="flex items-center gap-1">
+                        {set.isPublished ? (
+                          <span className="flex items-center gap-1 text-green-600 dark:text-green-500">
+                            <CheckCircle className="w-3 h-3" />
+                            Опубликован
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
+                            <AlertCircle className="w-3 h-3" />
+                            Черновик
+                          </span>
+                        )}
+                      </span>
+                    )}
+                    {!(isTeacher || isAdmin) && <div />}
+                    <span>{new Date(set.updatedAt).toLocaleDateString('ru-RU')}</span>
                   </div>
                 </Card>
               </motion.div>

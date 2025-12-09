@@ -11,6 +11,8 @@ import Register from './pages/Register'
 import DashboardRouter from './pages/DashboardRouter'
 import FlashcardsPage from './pages/FlashcardsPage'
 import FlashcardStudyPage from './pages/FlashcardStudyPage'
+import FlashcardEditPage from './pages/FlashcardEditPage'
+import FlashcardStatsPage from './pages/FlashcardStatsPage'
 import QuizzesPage from './pages/QuizzesPage'
 import QuizTakePage from './pages/QuizTakePage'
 import QuizResultPage from './pages/QuizResultPage'
@@ -80,6 +82,26 @@ function App() {
             element={
               <PrivateRoute>
                 <FlashcardStudyPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/flashcards/:id/edit"
+            element={
+              <PrivateRoute>
+                <RoleRoute allowedRoles={['Teacher', 'Admin']}>
+                  <FlashcardEditPage />
+                </RoleRoute>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/flashcards/:id/stats"
+            element={
+              <PrivateRoute>
+                <RoleRoute allowedRoles={['Teacher', 'Admin']}>
+                  <FlashcardStatsPage />
+                </RoleRoute>
               </PrivateRoute>
             }
           />

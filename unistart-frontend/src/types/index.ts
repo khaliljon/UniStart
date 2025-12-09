@@ -46,6 +46,7 @@ export interface FlashcardSet {
   description: string;
   subject?: string;
   isPublic?: boolean;
+  isPublished?: boolean;
   createdAt: string;
   updatedAt: string;
   totalCards: number;
