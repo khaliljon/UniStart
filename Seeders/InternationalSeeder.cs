@@ -417,162 +417,77 @@ namespace UniStart.Seeders
                 }
             }
 
-            // Связь университетов с типами экзаменов
-            if (context.Universities.Any() && context.ExamTypes.Any())
+            // Связь университетов с типами экзаменов - выполняется всегда
+            var allUniversities = await context.Universities.Include(u => u.ExamTypes).ToListAsync();
+            var allExamTypes = await context.ExamTypes.ToListAsync();
+
+            if (allUniversities.Any() && allExamTypes.Any())
             {
-                // Загружаем типы экзаменов
-                var ent = await context.ExamTypes.FirstOrDefaultAsync(et => et.Code == "ENT");
-                var ege = await context.ExamTypes.FirstOrDefaultAsync(et => et.Code == "EGE");
-                var sat = await context.ExamTypes.FirstOrDefaultAsync(et => et.Code == "SAT");
-                var act = await context.ExamTypes.FirstOrDefaultAsync(et => et.Code == "ACT");
-                var ielts = await context.ExamTypes.FirstOrDefaultAsync(et => et.Code == "IELTS");
-                var toefl = await context.ExamTypes.FirstOrDefaultAsync(et => et.Code == "TOEFL");
-                var aLevel = await context.ExamTypes.FirstOrDefaultAsync(et => et.Code == "A-LEVEL");
-                var gaokao = await context.ExamTypes.FirstOrDefaultAsync(et => et.Code == "GAOKAO");
+                var examTypesDict = allExamTypes.ToDictionary(et => et.Code ?? "", et => et);
 
-                // Загружаем университеты
-                var nazarbayev = await context.Universities
-                    .Include(u => u.ExamTypes)
-                    .FirstOrDefaultAsync(u => u.NameEn == "Nazarbayev University");
-                var kaznu = await context.Universities
-                    .Include(u => u.ExamTypes)
-                    .FirstOrDefaultAsync(u => u.NameEn == "Al-Farabi Kazakh National University");
-                var kbtu = await context.Universities
-                    .Include(u => u.ExamTypes)
-                    .FirstOrDefaultAsync(u => u.NameEn == "Kazakh-British Technical University");
-                var enu = await context.Universities
-                    .Include(u => u.ExamTypes)
-                    .FirstOrDefaultAsync(u => u.NameEn == "L.N. Gumilyov Eurasian National University");
-                var iitu = await context.Universities
-                    .Include(u => u.ExamTypes)
-                    .FirstOrDefaultAsync(u => u.NameEn == "International IT University");
-                
-                var msu = await context.Universities
-                    .Include(u => u.ExamTypes)
-                    .FirstOrDefaultAsync(u => u.NameEn == "Moscow State University");
-                var spbu = await context.Universities
-                    .Include(u => u.ExamTypes)
-                    .FirstOrDefaultAsync(u => u.NameEn == "Saint Petersburg State University");
-                
-                var harvard = await context.Universities
-                    .Include(u => u.ExamTypes)
-                    .FirstOrDefaultAsync(u => u.NameEn == "Harvard University");
-                var mit = await context.Universities
-                    .Include(u => u.ExamTypes)
-                    .FirstOrDefaultAsync(u => u.NameEn == "Massachusetts Institute of Technology");
-                
-                var oxford = await context.Universities
-                    .Include(u => u.ExamTypes)
-                    .FirstOrDefaultAsync(u => u.NameEn == "University of Oxford");
-                var cambridge = await context.Universities
-                    .Include(u => u.ExamTypes)
-                    .FirstOrDefaultAsync(u => u.NameEn == "University of Cambridge");
-                
-                var tsinghua = await context.Universities
-                    .Include(u => u.ExamTypes)
-                    .FirstOrDefaultAsync(u => u.NameEn == "Tsinghua University");
-
-                // Назначаем типы экзаменов университетам
-                // Казахстанские университеты принимают ЕНТ + международные экзамены
-                if (nazarbayev != null && ent != null && ielts != null && toefl != null && sat != null)
+                foreach (var university in allUniversities)
                 {
-                    nazarbayev.ExamTypes.Clear();
-                    nazarbayev.ExamTypes.Add(ent);
-                    nazarbayev.ExamTypes.Add(ielts);
-                    nazarbayev.ExamTypes.Add(toefl);
-                    nazarbayev.ExamTypes.Add(sat);
-                }
+                    university.ExamTypes.Clear();
 
-                if (kaznu != null && ent != null && ielts != null)
-                {
-                    kaznu.ExamTypes.Clear();
-                    kaznu.ExamTypes.Add(ent);
-                    kaznu.ExamTypes.Add(ielts);
-                }
+                    // Присваиваем типы на основе страны и университета
+                    switch (university.NameEn)
+                    {
+                        // Казахстан
+                        case "Nazarbayev University":
+                            AddExamTypesIfExist(university, examTypesDict, "ENT", "IELTS", "TOEFL", "SAT");
+                            break;
+                        case "Al-Farabi Kazakh National University":
+                            AddExamTypesIfExist(university, examTypesDict, "ENT", "IELTS");
+                            break;
+                        case "Kazakh-British Technical University":
+                            AddExamTypesIfExist(university, examTypesDict, "ENT", "IELTS", "TOEFL");
+                            break;
+                        case "L.N. Gumilyov Eurasian National University":
+                            AddExamTypesIfExist(university, examTypesDict, "ENT");
+                            break;
+                        case "International IT University":
+                            AddExamTypesIfExist(university, examTypesDict, "ENT", "IELTS");
+                            break;
 
-                if (kbtu != null && ent != null && ielts != null && toefl != null)
-                {
-                    kbtu.ExamTypes.Clear();
-                    kbtu.ExamTypes.Add(ent);
-                    kbtu.ExamTypes.Add(ielts);
-                    kbtu.ExamTypes.Add(toefl);
-                }
+                        // Россия
+                        case "Moscow State University":
+                            AddExamTypesIfExist(university, examTypesDict, "EGE", "IELTS", "TOEFL");
+                            break;
+                        case "Saint Petersburg State University":
+                            AddExamTypesIfExist(university, examTypesDict, "EGE", "IELTS");
+                            break;
 
-                if (enu != null && ent != null)
-                {
-                    enu.ExamTypes.Clear();
-                    enu.ExamTypes.Add(ent);
-                }
+                        // США
+                        case "Harvard University":
+                        case "Massachusetts Institute of Technology":
+                            AddExamTypesIfExist(university, examTypesDict, "SAT", "ACT", "TOEFL", "IELTS");
+                            break;
 
-                if (iitu != null && ent != null && ielts != null)
-                {
-                    iitu.ExamTypes.Clear();
-                    iitu.ExamTypes.Add(ent);
-                    iitu.ExamTypes.Add(ielts);
-                }
+                        // Великобритания
+                        case "University of Oxford":
+                        case "University of Cambridge":
+                            AddExamTypesIfExist(university, examTypesDict, "A-LEVEL", "IELTS", "TOEFL");
+                            break;
 
-                // Российские университеты принимают ЕГЭ + международные экзамены
-                if (msu != null && ege != null && ielts != null && toefl != null)
-                {
-                    msu.ExamTypes.Clear();
-                    msu.ExamTypes.Add(ege);
-                    msu.ExamTypes.Add(ielts);
-                    msu.ExamTypes.Add(toefl);
-                }
-
-                if (spbu != null && ege != null && ielts != null)
-                {
-                    spbu.ExamTypes.Clear();
-                    spbu.ExamTypes.Add(ege);
-                    spbu.ExamTypes.Add(ielts);
-                }
-
-                // Американские университеты принимают SAT/ACT + языковые экзамены
-                if (harvard != null && sat != null && act != null && toefl != null && ielts != null)
-                {
-                    harvard.ExamTypes.Clear();
-                    harvard.ExamTypes.Add(sat);
-                    harvard.ExamTypes.Add(act);
-                    harvard.ExamTypes.Add(toefl);
-                    harvard.ExamTypes.Add(ielts);
-                }
-
-                if (mit != null && sat != null && act != null && toefl != null && ielts != null)
-                {
-                    mit.ExamTypes.Clear();
-                    mit.ExamTypes.Add(sat);
-                    mit.ExamTypes.Add(act);
-                    mit.ExamTypes.Add(toefl);
-                    mit.ExamTypes.Add(ielts);
-                }
-
-                // Британские университеты принимают A-Level + языковые экзамены
-                if (oxford != null && aLevel != null && ielts != null && toefl != null)
-                {
-                    oxford.ExamTypes.Clear();
-                    oxford.ExamTypes.Add(aLevel);
-                    oxford.ExamTypes.Add(ielts);
-                    oxford.ExamTypes.Add(toefl);
-                }
-
-                if (cambridge != null && aLevel != null && ielts != null && toefl != null)
-                {
-                    cambridge.ExamTypes.Clear();
-                    cambridge.ExamTypes.Add(aLevel);
-                    cambridge.ExamTypes.Add(ielts);
-                    cambridge.ExamTypes.Add(toefl);
-                }
-
-                // Китайские университеты принимают Gaokao + языковые экзамены
-                if (tsinghua != null && gaokao != null && ielts != null && toefl != null)
-                {
-                    tsinghua.ExamTypes.Clear();
-                    tsinghua.ExamTypes.Add(gaokao);
-                    tsinghua.ExamTypes.Add(ielts);
-                    tsinghua.ExamTypes.Add(toefl);
+                        // Китай
+                        case "Tsinghua University":
+                            AddExamTypesIfExist(university, examTypesDict, "GAOKAO", "IELTS", "TOEFL");
+                            break;
+                    }
                 }
 
                 await context.SaveChangesAsync();
+            }
+        }
+
+        private static void AddExamTypesIfExist(University university, Dictionary<string, ExamType> examTypesDict, params string[] codes)
+        {
+            foreach (var code in codes)
+            {
+                if (examTypesDict.TryGetValue(code, out var examType))
+                {
+                    university.ExamTypes.Add(examType);
+                }
             }
         }
     }

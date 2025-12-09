@@ -98,7 +98,7 @@ namespace UniStart.Controllers
         /// </summary>
         [HttpPost]
         [Authorize(Roles = "Admin")]
-        public async Task<ActionResult<University>> CreateUniversity(CreateUniversityDto dto)
+        public async Task<IActionResult> CreateUniversity([FromBody] CreateUniversityDto dto)
         {
             var country = await _context.Countries.FindAsync(dto.CountryId);
             if (country == null)
@@ -137,7 +137,7 @@ namespace UniStart.Controllers
         /// </summary>
         [HttpPut("{id}")]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> UpdateUniversity(int id, UpdateUniversityDto dto)
+        public async Task<IActionResult> UpdateUniversity(int id, [FromBody] UpdateUniversityDto dto)
         {
             var university = await _context.Universities
                 .Include(u => u.ExamTypes)
@@ -166,7 +166,10 @@ namespace UniStart.Controllers
                 var examTypes = await _context.ExamTypes
                     .Where(et => dto.ExamTypeIds.Contains(et.Id))
                     .ToListAsync();
-                university.ExamTypes = examTypes;
+                foreach (var examType in examTypes)
+                {
+                    university.ExamTypes.Add(examType);
+                }
             }
 
             await _context.SaveChangesAsync();

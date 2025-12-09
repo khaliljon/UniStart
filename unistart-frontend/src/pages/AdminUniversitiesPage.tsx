@@ -112,12 +112,37 @@ const AdminUniversitiesPage = () => {
       return;
     }
 
+    if (!formData.examTypeIds || formData.examTypeIds.length === 0) {
+      alert('Выберите хотя бы один тип экзамена');
+      return;
+    }
+
+    // Убедимся что все числовые поля имеют правильный тип
+    const payload = {
+      name: formData.name,
+      nameEn: formData.nameEn || null,
+      city: formData.city || null,
+      description: formData.description || null,
+      website: formData.website || null,
+      type: Number(formData.type),
+      countryId: Number(formData.countryId),
+      examTypeIds: formData.examTypeIds.map(id => Number(id)),
+      isActive: Boolean(formData.isActive)
+    };
+
+    console.log('=== Отправка данных ===');
+    console.log('payload:', JSON.stringify(payload, null, 2));
+
     try {
       if (editingUniversity) {
-        await api.put(`/universities/${editingUniversity.id}`, formData);
+        console.log('PUT запрос к:', `/universities/${editingUniversity.id}`);
+        const response = await api.put(`/universities/${editingUniversity.id}`, payload);
+        console.log('Ответ:', response);
         alert('Университет успешно обновлен');
       } else {
-        await api.post('/universities', formData);
+        console.log('POST запрос к: /universities');
+        const response = await api.post('/universities', payload);
+        console.log('Ответ:', response);
         alert('Университет успешно добавлен');
       }
       
@@ -125,8 +150,16 @@ const AdminUniversitiesPage = () => {
       resetForm();
       loadData();
     } catch (error: any) {
-      console.error('Ошибка сохранения университета:', error);
-      alert(error.response?.data?.message || 'Не удалось сохранить университет');
+      console.error('=== ОШИБКА ===');
+      console.error('Полная ошибка:', error);
+      console.error('response:', error.response);
+      console.error('response.data:', error.response?.data);
+      console.error('response.status:', error.response?.status);
+      console.error('response.data.errors:', error.response?.data?.errors);
+      alert(
+        'Ошибка валидации:\n' + 
+        JSON.stringify(error.response?.data?.errors || error.response?.data, null, 2)
+      );
     }
   };
 
