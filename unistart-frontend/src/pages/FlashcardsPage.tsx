@@ -158,18 +158,24 @@ const FlashcardsPage = () => {
 
                   {/* Кнопки действий */}
                   <div className="flex flex-col gap-2">
-                    <div className="flex gap-2">
-                      <Button
-                        onClick={() => navigate(`/flashcards/${set.id}/study`)}
-                        variant="primary"
-                        size="sm"
-                        className="flex-1 flex items-center justify-center gap-2"
-                      >
-                        <Play className="w-4 h-4" />
-                        Начать изучение
-                      </Button>
-                      
-                      {(isTeacher || isAdmin) && (
+                    {(isTeacher || isAdmin) ? (
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={() => navigate(`/flashcards/${set.id}/edit`)}
+                          variant="secondary"
+                          size="sm"
+                          className="flex-1 flex items-center justify-center gap-2"
+                        >
+                          Редактировать
+                        </Button>
+                        <Button
+                          onClick={() => navigate(`/flashcards/${set.id}/stats`)}
+                          variant="primary"
+                          size="sm"
+                          className="flex-1 flex items-center justify-center gap-2"
+                        >
+                          Статистика
+                        </Button>
                         <Button
                           variant="danger"
                           size="sm"
@@ -182,8 +188,18 @@ const FlashcardsPage = () => {
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
-                      )}
-                    </div>
+                      </div>
+                    ) : (
+                      <Button
+                        onClick={() => navigate(`/flashcards/${set.id}/study`)}
+                        variant="primary"
+                        size="sm"
+                        className="w-full flex items-center justify-center gap-2"
+                      >
+                        <Play className="w-4 h-4" />
+                        Начать изучение
+                      </Button>
+                    )}
                   </div>
                 </Card>
               </motion.div>

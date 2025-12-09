@@ -9,14 +9,14 @@ import api from '../services/api';
 interface Answer {
   id: number;
   text: string;
-  isCorrect: boolean;
+  isCorrect?: boolean; // Может быть null для обычного режима
 }
 
 interface Question {
   id: number;
   text: string;
   points: number;
-  explanation: string;
+  explanation?: string;
   answers: Answer[];
 }
 
@@ -31,12 +31,6 @@ interface Quiz {
   questions: Question[];
 }
 
-interface UserAnswer {
-  questionId: number;
-  answerId: number;
-  isCorrect: boolean;
-}
-
 const QuizTakePage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -44,8 +38,8 @@ const QuizTakePage = () => {
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [userAnswers, setUserAnswers] = useState<UserAnswer[]>([]);
-  const [selectedAnswerId, setSelectedAnswerId] = useState<number | null>(null);
+  const [userAnswers, setUserAnswers] = useState<Map<number, number[]>>(new Map());
+  const [selectedAnswerIds, setSelectedAnswerIds] = useState<number[]>([]);
   const [showFeedback, setShowFeedback] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [quizStartTime] = useState(Date.now());
@@ -94,51 +88,61 @@ const QuizTakePage = () => {
   };
 
   const handleAnswerSelect = (answerId: number) => {
-    if (showFeedback && quiz?.isLearningMode) return; // Don't allow changing answer in learning mode after feedback
-    setSelectedAnswerId(answerId);
+    if (showFeedback) return; // Don't allow changing answer after feedback is shown
+    
+    if (!quiz) return;
+    
+    const currentQuestion = quiz.questions[currentQuestionIndex];
+    const isMultipleChoice = currentQuestion.answers.filter(a => a.isCorrect).length > 1;
+    
+    let newSelectedIds: number[];
+    
+    if (isMultipleChoice) {
+      // Toggle answer for multiple choice
+      if (selectedAnswerIds.includes(answerId)) {
+        newSelectedIds = selectedAnswerIds.filter(id => id !== answerId);
+      } else {
+        newSelectedIds = [...selectedAnswerIds, answerId];
+      }
+    } else {
+      // Replace for single choice
+      newSelectedIds = [answerId];
+      // Show feedback immediately for single choice
+      setShowFeedback(true);
+    }
+    
+    setSelectedAnswerIds(newSelectedIds);
+    
+    // Save answer immediately to userAnswers Map
+    const newUserAnswers = new Map(userAnswers);
+    if (newSelectedIds.length > 0) {
+      newUserAnswers.set(currentQuestion.id, newSelectedIds);
+    } else {
+      newUserAnswers.delete(currentQuestion.id);
+    }
+    setUserAnswers(newUserAnswers);
   };
 
   const handleNextQuestion = () => {
-    if (!quiz || selectedAnswerId === null) return;
+    if (!quiz || selectedAnswerIds.length === 0) return;
 
     const currentQuestion = quiz.questions[currentQuestionIndex];
-    const selectedAnswer = currentQuestion.answers.find(a => a.id === selectedAnswerId);
+    const isMultipleChoice = currentQuestion.answers.filter(a => a.isCorrect).length > 1;
     
-    if (!selectedAnswer) return;
-
-    // Save user answer
-    const newAnswer: UserAnswer = {
-      questionId: currentQuestion.id,
-      answerId: selectedAnswerId,
-      isCorrect: selectedAnswer.isCorrect,
-    };
-
-    setUserAnswers([...userAnswers, newAnswer]);
-
-    if (quiz.isLearningMode) {
-      // In learning mode, show feedback immediately
+    // For multiple choice, show feedback when clicking Next if not already shown
+    if (isMultipleChoice && !showFeedback) {
       setShowFeedback(true);
-      
-      // Auto-advance after 3 seconds
-      setTimeout(() => {
-        setShowFeedback(false);
-        setSelectedAnswerId(null);
-        
-        if (currentQuestionIndex < quiz.questions.length - 1) {
-          setCurrentQuestionIndex(currentQuestionIndex + 1);
-        } else {
-          handleSubmitQuiz();
-        }
-      }, 3000);
+      return;
+    }
+
+    // Reset for next question
+    setShowFeedback(false);
+    setSelectedAnswerIds([]);
+    
+    if (currentQuestionIndex < quiz.questions.length - 1) {
+      setCurrentQuestionIndex(currentQuestionIndex + 1);
     } else {
-      // In normal mode, just move to next question
-      setSelectedAnswerId(null);
-      
-      if (currentQuestionIndex < quiz.questions.length - 1) {
-        setCurrentQuestionIndex(currentQuestionIndex + 1);
-      } else {
-        handleSubmitQuiz();
-      }
+      handleSubmitQuiz();
     }
   };
 
@@ -150,14 +154,17 @@ const QuizTakePage = () => {
     try {
       const timeSpent = Math.floor((Date.now() - quizStartTime) / 1000);
       
-      // Convert userAnswers array to Dictionary<int, List<int>> format
+      console.log('User answers Map:', userAnswers);
+      
+      // Convert Map to Dictionary<int, List<int>> format
       const userAnswersDict: Record<number, number[]> = {};
-      userAnswers.forEach(ua => {
-        if (!userAnswersDict[ua.questionId]) {
-          userAnswersDict[ua.questionId] = [];
-        }
-        userAnswersDict[ua.questionId].push(ua.answerId);
+      userAnswers.forEach((answerIds, questionId) => {
+        userAnswersDict[questionId] = answerIds;
       });
+
+      console.log('Submitting quiz with answers:', userAnswersDict);
+      console.log('Total answered questions:', userAnswers.size);
+      console.log('Total questions:', quiz.questions.length);
 
       const response = await api.post(`/quizzes/${id}/attempts/${attemptId}/submit`, {
         quizId: parseInt(id!),
@@ -165,16 +172,18 @@ const QuizTakePage = () => {
         userAnswers: userAnswersDict,
       });
 
+      console.log('Server response:', response.data);
+
       navigate(`/quizzes/${id}/results`, {
         state: {
           score: response.data.score,
           maxScore: response.data.maxScore,
           percentage: response.data.percentage,
           passed: response.data.passed,
-          totalQuestions: quiz.questions.length,
-          correctAnswers: userAnswers.filter(a => a.isCorrect).length,
+          totalQuestions: response.data.totalQuestions,
+          correctAnswers: response.data.correctQuestions,
           timeSpent,
-          userAnswers,
+          userAnswers: userAnswersDict,
           quiz,
         },
       });
@@ -289,7 +298,8 @@ const QuizTakePage = () => {
               {/* Answers */}
               <div className="space-y-3">
                 {currentQuestion.answers.map((answer) => {
-                  const isSelected = selectedAnswerId === answer.id;
+                  const isMultipleChoice = currentQuestion.answers.filter(a => a.isCorrect).length > 1;
+                  const isSelected = selectedAnswerIds.includes(answer.id);
                   const showCorrect = showFeedback && quiz.isLearningMode;
                   
                   return (
@@ -309,8 +319,23 @@ const QuizTakePage = () => {
                           : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 hover:border-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/10'
                       }`}
                     >
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-900 dark:text-white">{answer.text}</span>
+                      <div className="flex items-center gap-3">
+                        {isMultipleChoice ? (
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => {}}
+                            className="w-5 h-5 text-blue-600 rounded"
+                          />
+                        ) : (
+                          <input
+                            type="radio"
+                            checked={isSelected}
+                            onChange={() => {}}
+                            className="w-5 h-5 text-blue-600"
+                          />
+                        )}
+                        <span className="flex-1 text-gray-900 dark:text-white">{answer.text}</span>
                         {showCorrect && (
                           <>
                             {answer.isCorrect && (
@@ -328,51 +353,64 @@ const QuizTakePage = () => {
               </div>
 
               {/* Feedback in Learning Mode */}
-              {showFeedback && quiz.isLearningMode && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className={`mt-4 p-4 rounded-lg ${
-                    currentQuestion.answers.find(a => a.id === selectedAnswerId)?.isCorrect
-                      ? 'bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700'
-                      : 'bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700'
-                  }`}
-                >
-                  <div className="flex items-start gap-2">
-                    {currentQuestion.answers.find(a => a.id === selectedAnswerId)?.isCorrect ? (
-                      <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                    ) : (
-                      <XCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                    )}
-                    <div>
-                      <p className={`font-semibold mb-1 ${
-                        currentQuestion.answers.find(a => a.id === selectedAnswerId)?.isCorrect
-                          ? 'text-green-800 dark:text-green-300'
-                          : 'text-red-800 dark:text-red-300'
-                      }`}>
-                        {currentQuestion.answers.find(a => a.id === selectedAnswerId)?.isCorrect
-                          ? 'Правильно!'
-                          : 'Неправильно'}
-                      </p>
-                      {currentQuestion.explanation && (
-                        <p className="text-gray-700 dark:text-gray-300 text-sm">
-                          {currentQuestion.explanation}
-                        </p>
+              {showFeedback && quiz.isLearningMode && selectedAnswerIds.length > 0 && (() => {
+                const correctAnswerIds = currentQuestion.answers.filter(a => a.isCorrect).map(a => a.id).sort();
+                const sortedSelected = [...selectedAnswerIds].sort();
+                const isCorrect = correctAnswerIds.length === sortedSelected.length && 
+                                 correctAnswerIds.every((id, index) => id === sortedSelected[index]);
+                
+                return (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className={`mt-4 p-4 rounded-lg ${
+                      isCorrect
+                        ? 'bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700'
+                        : 'bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700'
+                    }`}
+                  >
+                    <div className="flex items-start gap-2">
+                      {isCorrect ? (
+                        <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                      ) : (
+                        <XCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
                       )}
+                      <div>
+                        <p className={`font-semibold mb-1 ${
+                          isCorrect
+                            ? 'text-green-800 dark:text-green-300'
+                            : 'text-red-800 dark:text-red-300'
+                        }`}>
+                          {isCorrect ? 'Правильно!' : 'Неправильно'}
+                        </p>
+                        {currentQuestion.explanation && (
+                          <p className="text-gray-700 dark:text-gray-300 text-sm">
+                            {currentQuestion.explanation}
+                          </p>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </motion.div>
-              )}
+                  </motion.div>
+                );
+              })()}
             </Card>
           </motion.div>
         </AnimatePresence>
 
         {/* Navigation */}
-        <div className="flex justify-end">
+        <div className="flex justify-between items-center">
+          {(() => {
+            const isMultipleChoice = quiz.questions[currentQuestionIndex].answers.filter(a => a.isCorrect).length > 1;
+            return isMultipleChoice && !showFeedback ? (
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Выберите все правильные варианты
+              </p>
+            ) : <div />;
+          })()}
           <Button
             variant="primary"
             onClick={handleNextQuestion}
-            disabled={selectedAnswerId === null || showFeedback || isSubmitting}
+            disabled={selectedAnswerIds.length === 0 || isSubmitting}
             className="flex items-center gap-2"
           >
             {currentQuestionIndex < quiz.questions.length - 1 ? (

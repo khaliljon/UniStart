@@ -56,7 +56,9 @@ const ExamTakePage = () => {
   const loadExam = async () => {
     try {
       setLoading(true);
+      console.log('Loading exam with ID:', id);
       const response = await api.get(`/exams/${id}/take`);
+      console.log('Exam loaded:', response.data);
       let examData = response.data;
       
       // Shuffle questions if needed
@@ -75,11 +77,15 @@ const ExamTakePage = () => {
       setExam(examData);
       
       // Start exam attempt
+      console.log('Starting exam attempt...');
       const attemptResponse = await api.post(`/exams/${id}/attempts/start`);
+      console.log('Attempt started:', attemptResponse.data);
       setAttemptId(attemptResponse.data.id);
     } catch (error: any) {
       console.error('Ошибка загрузки экзамена:', error);
-      alert(error.response?.data?.message || 'Не удалось загрузить экзамен');
+      console.error('Error details:', error.response);
+      const errorMessage = error.response?.data?.message || error.response?.data || 'Не удалось загрузить экзамен';
+      alert(typeof errorMessage === 'string' ? errorMessage : 'Не удалось загрузить экзамен');
       navigate('/exams');
     } finally {
       setLoading(false);
@@ -137,37 +143,37 @@ const ExamTakePage = () => {
 
       exam.questions.forEach(question => {
         totalPoints += question.points;
-        const userAnswerIds = userAnswers.get(question.id) || [];
-        const correctAnswerIds = question.answers.filter(a => a.isCorrect).map(a => a.id);
+        const userAnswerIds = (userAnswers.get(question.id) || []).sort((a, b) => a - b);
+        const correctAnswerIds = question.answers.filter(a => a.isCorrect).map(a => a.id).sort((a, b) => a - b);
         
-        // Check if answer is correct
+        // Check if answer is correct - both arrays must be identical
         const isCorrect = 
           userAnswerIds.length === correctAnswerIds.length &&
-          userAnswerIds.every(id => correctAnswerIds.includes(id));
+          userAnswerIds.every((id, index) => id === correctAnswerIds[index]);
         
         if (isCorrect) {
           earnedPoints += question.points;
         }
       });
 
-      const score = totalPoints > 0 ? Math.round((earnedPoints / totalPoints) * 100) : 0;
-
-      await api.post(`/exams/${id}/attempts/${attemptId}/submit`, {
+      const response = await api.post(`/exams/${id}/attempts/${attemptId}/submit`, {
         answers: Array.from(userAnswers.entries()).map(([questionId, answerIds]) => ({
           questionId,
           answerIds,
         })),
-        score,
+        score: 0, // Will be calculated on backend
         timeSpent,
       });
+      
+      console.log('Exam submission response:', response.data);
 
       navigate(`/exams/${id}/results`, {
         state: {
-          score,
-          totalPoints,
-          earnedPoints,
+          score: response.data.score,
+          totalPoints: response.data.totalPoints,
+          earnedPoints: response.data.earnedPoints,
           passingScore: exam.passingScore,
-          passed: score >= exam.passingScore,
+          passed: response.data.passed,
           timeSpent,
           totalQuestions: exam.questions.length,
           answeredQuestions: userAnswers.size,
@@ -396,11 +402,11 @@ const ExamTakePage = () => {
                           : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
                       }`}
                     >
-                      {isAnswered && !isCurrent && (
+                      {isAnswered && !isCurrent ? (
                         <CheckCircle className="w-4 h-4" />
+                      ) : (
+                        index + 1
                       )}
-                      {!isAnswered && (index + 1)}
-                      {isCurrent && (index + 1)}
                     </button>
                   );
                 })}

@@ -23,8 +23,8 @@ const QuizResultsPage = () => {
     );
   }
 
-  const { score, totalQuestions, correctAnswers, timeSpent, quiz } = resultData;
-  const isPassed = score >= 70; // Можно сделать настраиваемым
+  const { score, maxScore, percentage, totalQuestions, correctAnswers, timeSpent, quiz, passed } = resultData;
+  const isPassed = passed !== undefined ? passed : percentage >= 70; // Use passed from backend
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -71,9 +71,12 @@ const QuizResultsPage = () => {
               <div className="text-6xl font-bold mb-2" style={{ 
                 color: isPassed ? 'rgb(34, 197, 94)' : 'rgb(239, 68, 68)' 
               }}>
-                {score}%
+                {Math.round(percentage)}%
               </div>
               <p className="text-gray-600 dark:text-gray-400">Ваш результат</p>
+              <p className="text-sm text-gray-500 dark:text-gray-500 mt-1">
+                {score} из {maxScore} баллов
+              </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

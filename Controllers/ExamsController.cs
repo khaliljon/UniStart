@@ -37,10 +37,13 @@ public class ExamsController : ControllerBase
         [FromQuery] string? difficulty = null,
         [FromQuery] string? search = null)
     {
+        var userId = User.Identity?.IsAuthenticated == true ? await GetUserId() : null;
+        
         var query = _context.Exams
             .Include(t => t.User)
             .Include(t => t.Tags)
             .Include(t => t.Questions)
+            .Include(t => t.Attempts.Where(a => userId != null && a.UserId == userId && a.CompletedAt != null))
             .Where(t => t.IsPublished);
 
         if (!string.IsNullOrEmpty(subject))
@@ -55,34 +58,37 @@ public class ExamsController : ControllerBase
 
         var exams = await query
             .OrderByDescending(t => t.CreatedAt)
-            .Select(t => new ExamDto
-            {
-                Id = t.Id,
-                Title = t.Title,
-                Description = t.Description,
-                Subject = t.Subject,
-                Difficulty = t.Difficulty,
-                MaxAttempts = t.MaxAttempts,
-                PassingScore = t.PassingScore,
-                IsProctored = t.IsProctored,
-                ShuffleQuestions = t.ShuffleQuestions,
-                ShuffleAnswers = t.ShuffleAnswers,
-                ShowResultsAfter = t.ShowResultsAfter,
-                ShowCorrectAnswers = t.ShowCorrectAnswers,
-                ShowDetailedFeedback = t.ShowDetailedFeedback,
-                TimeLimit = t.TimeLimit,
-                IsPublished = t.IsPublished,
-                IsPublic = t.IsPublic,
-                TotalPoints = t.TotalPoints,
-                QuestionCount = t.Questions.Count,
-                CreatedAt = t.CreatedAt,
-                UserId = t.UserId,
-                UserName = t.User.UserName ?? "Unknown",
-                Tags = t.Tags.Select(tag => tag.Name).ToList()
-            })
             .ToListAsync();
+        
+        var examDtos = exams.Select(t => new ExamDto
+        {
+            Id = t.Id,
+            Title = t.Title,
+            Description = t.Description,
+            Subject = t.Subject,
+            Difficulty = t.Difficulty,
+            MaxAttempts = t.MaxAttempts,
+            RemainingAttempts = t.MaxAttempts - t.Attempts.Count,
+            PassingScore = t.PassingScore,
+            IsProctored = t.IsProctored,
+            ShuffleQuestions = t.ShuffleQuestions,
+            ShuffleAnswers = t.ShuffleAnswers,
+            ShowResultsAfter = t.ShowResultsAfter,
+            ShowCorrectAnswers = t.ShowCorrectAnswers,
+            ShowDetailedFeedback = t.ShowDetailedFeedback,
+            TimeLimit = t.TimeLimit,
+            StrictTiming = t.StrictTiming,
+            IsPublished = t.IsPublished,
+            IsPublic = t.IsPublic,
+            TotalPoints = t.TotalPoints,
+            QuestionCount = t.Questions.Count,
+            CreatedAt = t.CreatedAt,
+            UserId = t.UserId,
+            UserName = t.User.UserName ?? "Unknown",
+            Tags = t.Tags.Select(tag => tag.Name).ToList()
+        }).ToList();
 
-        return Ok(exams);
+        return Ok(examDtos);
     }
 
     /// <summary>
@@ -209,6 +215,7 @@ public class ExamsController : ControllerBase
     /// Получить экзамен для прохождения (без правильных ответов)
     /// </summary>
     [HttpGet("{id}/take")]
+    [Authorize]
     public async Task<ActionResult<ExamTakingDto>> GetExamForTaking(int id)
     {
         var userId = await GetUserId();
@@ -274,6 +281,7 @@ public class ExamsController : ControllerBase
     /// Начать попытку прохождения экзамена
     /// </summary>
     [HttpPost("{id}/attempts/start")]
+    [Authorize]
     public async Task<ActionResult<object>> StartExamAttempt(int id)
     {
         var userId = await GetUserId();
@@ -318,6 +326,7 @@ public class ExamsController : ControllerBase
     /// Отправить ответы на конкретную попытку экзамена
     /// </summary>
     [HttpPost("{id}/attempts/{attemptId}/submit")]
+    [Authorize]
     public async Task<ActionResult> SubmitExamAttempt(int id, int attemptId, [FromBody] SubmitExamAttemptDto submission)
     {
         var userId = await GetUserId();
@@ -339,6 +348,10 @@ public class ExamsController : ControllerBase
         // Проверяем ответы и подсчитываем баллы
         int earnedPoints = 0;
         var userAnswers = new List<UserExamAnswer>();
+        
+        Console.WriteLine($"=== Exam Submission Debug ===");
+        Console.WriteLine($"Exam ID: {exam.Id}, Total Points: {exam.TotalPoints}");
+        Console.WriteLine($"Received {submission.Answers.Count} answer submissions");
 
         foreach (var answerSubmission in submission.Answers)
         {
@@ -346,14 +359,21 @@ public class ExamsController : ControllerBase
             if (question == null) continue;
 
             // Для множественного выбора проверяем все выбранные ответы
-            var correctAnswerIds = question.Answers.Where(a => a.IsCorrect).Select(a => a.Id).ToList();
-            var selectedIds = answerSubmission.AnswerIds;
+            var correctAnswerIds = question.Answers.Where(a => a.IsCorrect).Select(a => a.Id).OrderBy(x => x).ToList();
+            var selectedIds = answerSubmission.AnswerIds.OrderBy(x => x).ToList();
+            
+            Console.WriteLine($"\nQuestion {question.Id}: {question.Text}");
+            Console.WriteLine($"  Correct answer IDs: [{string.Join(", ", correctAnswerIds)}]");
+            Console.WriteLine($"  User answer IDs: [{string.Join(", ", selectedIds)}]");
 
+            // Правильный ответ: все выбранные ответы правильные И все правильные ответы выбраны
             bool isCorrect = correctAnswerIds.Count == selectedIds.Count && 
-                            correctAnswerIds.All(id => selectedIds.Contains(id));
+                            correctAnswerIds.SequenceEqual(selectedIds);
 
             var pointsEarned = isCorrect ? question.Points : 0;
             earnedPoints += pointsEarned;
+            
+            Console.WriteLine(isCorrect ? $"  ✓ CORRECT! Earned {pointsEarned} points" : "  ✗ WRONG!");
 
             // Сохраняем все выбранные ответы
             foreach (var answerId in selectedIds)
@@ -369,6 +389,9 @@ public class ExamsController : ControllerBase
                 });
             }
         }
+        
+        Console.WriteLine($"\nFinal score: {earnedPoints}/{exam.TotalPoints}");
+        Console.WriteLine($"=== End Debug ===\n");
 
         // Обновляем попытку
         attempt.Score = earnedPoints;
@@ -381,7 +404,13 @@ public class ExamsController : ControllerBase
         _context.UserExamAnswers.AddRange(userAnswers);
         await _context.SaveChangesAsync();
 
-        return Ok(new { success = true, score = submission.Score });
+        return Ok(new { 
+            success = true, 
+            score = (int)attempt.Percentage,
+            earnedPoints = earnedPoints,
+            totalPoints = exam.TotalPoints,
+            passed = attempt.Passed
+        });
     }
 
     /// <summary>

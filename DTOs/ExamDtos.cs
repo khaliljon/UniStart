@@ -78,6 +78,7 @@ public class ExamDto
     public string Difficulty { get; set; } = string.Empty;
     
     public int MaxAttempts { get; set; }
+    public int RemainingAttempts { get; set; }
     public int PassingScore { get; set; }
     public bool IsProctored { get; set; }
     public bool ShuffleQuestions { get; set; }

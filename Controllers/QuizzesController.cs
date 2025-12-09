@@ -169,11 +169,12 @@ namespace UniStart.Controllers
                     Text = q.Text,
                     Points = q.Points,
                     ImageUrl = q.ImageUrl,
+                    Explanation = q.Explanation,
                     Answers = q.Answers.OrderBy(a => a.OrderIndex).Select(a => new QuizAnswerDto
                     {
                         Id = a.Id,
                         Text = a.Text,
-                        IsCorrect = isOwnerOrAdmin ? a.IsCorrect : null // Показываем правильные ответы только владельцу/админу
+                        IsCorrect = quiz.IsLearningMode || isOwnerOrAdmin ? a.IsCorrect : null // В режиме обучения показываем всем
                     }).ToList()
                 }).ToList()
             };
@@ -835,10 +836,17 @@ namespace UniStart.Controllers
             // Calculate score
             int totalScore = 0;
             int maxScore = 0;
+            int correctQuestions = 0;
+
+            Console.WriteLine($"=== Quiz Submission Debug ===");
+            Console.WriteLine($"User answers received: {JsonSerializer.Serialize(dto.UserAnswers)}");
+            Console.WriteLine($"Total questions in quiz: {attempt.Quiz.Questions.Count}");
 
             foreach (var question in attempt.Quiz.Questions)
             {
                 maxScore += question.Points;
+                
+                Console.WriteLine($"\nQuestion {question.Id}: {question.Text}");
 
                 if (dto.UserAnswers.TryGetValue(question.Id, out var userAnswerIds))
                 {
@@ -849,14 +857,30 @@ namespace UniStart.Controllers
                         .ToList();
 
                     var sortedUserAnswers = userAnswerIds.OrderBy(x => x).ToList();
+                    
+                    Console.WriteLine($"  Correct answer IDs: [{string.Join(", ", correctAnswerIds)}]");
+                    Console.WriteLine($"  User answer IDs: [{string.Join(", ", sortedUserAnswers)}]");
 
                     // Check if user answers match correct answers exactly
                     if (correctAnswerIds.SequenceEqual(sortedUserAnswers))
                     {
                         totalScore += question.Points;
+                        correctQuestions++;
+                        Console.WriteLine($"  ✓ CORRECT! Added {question.Points} points");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"  ✗ WRONG!");
                     }
                 }
+                else
+                {
+                    Console.WriteLine($"  - No answer provided");
+                }
             }
+            
+            Console.WriteLine($"\nFinal score: {totalScore}/{maxScore} ({correctQuestions}/{attempt.Quiz.Questions.Count} correct)");
+            Console.WriteLine($"=== End Debug ===\n");
 
             // Update attempt
             attempt.Score = totalScore;
@@ -874,7 +898,9 @@ namespace UniStart.Controllers
                 score = totalScore,
                 maxScore = maxScore,
                 percentage = attempt.Percentage,
-                passed = attempt.Percentage >= 70
+                passed = attempt.Percentage >= 70,
+                correctQuestions = correctQuestions,
+                totalQuestions = attempt.Quiz.Questions.Count
             });
         }
     }

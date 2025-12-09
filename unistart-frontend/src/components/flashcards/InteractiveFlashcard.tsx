@@ -86,7 +86,16 @@ const InteractiveFlashcard = ({ flashcard, onAnswer }: InteractiveFlashcardProps
                   key={index}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  onClick={() => !isAnswered && setSelectedOption(option)}
+                  onClick={() => {
+                    if (!isAnswered) {
+                      setSelectedOption(option);
+                      // Немедленно показываем результат
+                      const correct = option === flashcard.answer;
+                      setIsCorrect(correct);
+                      setIsAnswered(true);
+                      onAnswer(correct);
+                    }
+                  }}
                   disabled={isAnswered}
                   className={`w-full p-4 text-left rounded-lg border-2 transition-all ${
                     isAnswered
@@ -247,11 +256,10 @@ const InteractiveFlashcard = ({ flashcard, onAnswer }: InteractiveFlashcardProps
     <div className="space-y-6">
       {renderCardContent()}
 
-      {!isAnswered && (
+      {!isAnswered && flashcard.type !== FlashcardType.MultipleChoice && (
         <Button
           onClick={handleSubmit}
           disabled={
-            (flashcard.type === FlashcardType.MultipleChoice && !selectedOption) ||
             (flashcard.type === FlashcardType.FillInTheBlank && !userAnswer.trim()) ||
             (flashcard.type === FlashcardType.Matching && Object.keys(matchingSelections).length < matchingPairs.length)
           }

@@ -33,6 +33,7 @@ interface Exam {
   questionCount: number;
   totalPoints: number;
   maxAttempts: number;
+  remainingAttempts: number;
   passingScore: number;
   isProctored: boolean;
   isPublished?: boolean;
@@ -344,10 +345,16 @@ const ExamsPage = () => {
 
                   {/* Особенности экзамена */}
                   <div className="flex flex-wrap gap-2 mb-4">
-                    <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs flex items-center gap-1">
-                      <AlertCircle className="w-3 h-3" />
-                      {exam.maxAttempts} {exam.maxAttempts === 1 ? 'попытка' : 'попытки'}
-                    </span>
+                    {!(isTeacher || isAdmin) && (
+                      <span className={`px-2 py-1 rounded text-xs flex items-center gap-1 ${
+                        exam.remainingAttempts <= 0 
+                          ? 'bg-red-100 text-red-700' 
+                          : 'bg-blue-100 text-blue-700'
+                      }`}>
+                        <AlertCircle className="w-3 h-3" />
+                        {exam.remainingAttempts} из {exam.maxAttempts} {exam.maxAttempts === 1 ? 'попытки' : 'попыток'} осталось
+                      </span>
+                    )}
                     {exam.isProctored && (
                       <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs flex items-center gap-1">
                         <Lock className="w-3 h-3" />
@@ -420,9 +427,14 @@ const ExamsPage = () => {
                       onClick={() => navigate(`/exams/${exam.id}/take`)}
                       variant="primary"
                       className="w-full flex items-center justify-center gap-2"
-                      disabled={!available}
+                      disabled={!available || exam.remainingAttempts <= 0}
                     >
-                      {available ? (
+                      {exam.remainingAttempts <= 0 ? (
+                        <>
+                          <FileX className="w-5 h-5" />
+                          Попытки исчерпаны
+                        </>
+                      ) : available ? (
                         <>
                           <Play className="w-4 h-4" />
                           Начать экзамен

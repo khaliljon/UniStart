@@ -104,6 +104,7 @@ namespace UniStart.DTOs
         public string Text { get; set; } = string.Empty;
         public int Points { get; set; }
         public string? ImageUrl { get; set; }
+        public string? Explanation { get; set; }
         public List<QuizAnswerDto> Answers { get; set; } = new();
     }
 
