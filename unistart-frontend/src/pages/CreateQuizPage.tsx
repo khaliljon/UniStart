@@ -26,6 +26,7 @@ interface QuizForm {
   timeLimit: number;
   isPublic: boolean;
   isPublished: boolean;
+  isLearningMode: boolean;
   questions: Question[];
 }
 
@@ -41,6 +42,7 @@ const CreateQuizPage = () => {
     timeLimit: 30,
     isPublic: isAdmin, // Админ всегда создает публичные квизы
     isPublished: false,
+    isLearningMode: false,
     questions: [],
   });
 
@@ -148,6 +150,7 @@ const CreateQuizPage = () => {
         description: quiz.title,
         isPublic: quiz.isPublic,
         isPublished: false, // Всегда создаем как черновик, потом публикуем отдельно
+        isLearningMode: quiz.isLearningMode,
       });
 
       const quizId = quizResponse.data.id;
@@ -295,12 +298,30 @@ const CreateQuizPage = () => {
                     onChange={(e) => setQuiz({ ...quiz, isPublic: e.target.checked })}
                     className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500"
                   />
-                  <span className="text-sm text-gray-700">
+                  <span className="text-sm text-gray-700 dark:text-gray-300">
                     Публичный доступ (доступен всем студентам, а не только вашим)
                   </span>
                 </label>
               </div>
             )}
+
+            <div className="mt-6 space-y-3">
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={quiz.isLearningMode}
+                  onChange={(e) => setQuiz({ ...quiz, isLearningMode: e.target.checked })}
+                  className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500"
+                />
+                <span className="text-sm text-gray-700 dark:text-gray-300">
+                  Режим обучения (показывать объяснения сразу после каждого ответа)
+                </span>
+              </label>
+              <p className="text-xs text-gray-500 dark:text-gray-400 ml-6">
+                В режиме обучения студент увидит правильный ответ и объяснение сразу после выбора. 
+                В обычном режиме результаты показываются только в конце.
+              </p>
+            </div>
           </Card>
 
           {/* Вопросы */}

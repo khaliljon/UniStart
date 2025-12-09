@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, Trash2, Edit, Plus, ArrowLeft, Check, X } from 'lucide-react';
+import { BookOpen, Trash2, Edit, Plus, ArrowLeft, X } from 'lucide-react';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import api from '../services/api';

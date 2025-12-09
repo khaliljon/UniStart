@@ -209,8 +209,12 @@ namespace UniStart.Controllers
                 .Select(f => new FlashcardDto
                 {
                     Id = f.Id,
+                    Type = f.Type,
                     Question = f.Question,
                     Answer = f.Answer,
+                    OptionsJson = f.OptionsJson,
+                    MatchingPairsJson = f.MatchingPairsJson,
+                    SequenceJson = f.SequenceJson,
                     Explanation = f.Explanation,
                     OrderIndex = f.OrderIndex,
                     NextReviewDate = f.NextReviewDate,
@@ -246,8 +250,12 @@ namespace UniStart.Controllers
 
             var flashcard = new Flashcard
             {
+                Type = dto.Type,
                 Question = dto.Question,
                 Answer = dto.Answer,
+                OptionsJson = dto.OptionsJson,
+                MatchingPairsJson = dto.MatchingPairsJson,
+                SequenceJson = dto.SequenceJson,
                 Explanation = dto.Explanation,
                 FlashcardSetId = dto.FlashcardSetId,
                 OrderIndex = await _context.Flashcards
@@ -297,8 +305,12 @@ namespace UniStart.Controllers
             if (card == null)
                 return NotFound();
 
+            card.Type = dto.Type;
             card.Question = dto.Question;
             card.Answer = dto.Answer;
+            card.OptionsJson = dto.OptionsJson;
+            card.MatchingPairsJson = dto.MatchingPairsJson;
+            card.SequenceJson = dto.SequenceJson;
             card.Explanation = dto.Explanation;
 
             await _context.SaveChangesAsync();

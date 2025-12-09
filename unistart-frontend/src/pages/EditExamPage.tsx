@@ -57,6 +57,7 @@ const EditExamPage = () => {
   const [showDetailedFeedback, setShowDetailedFeedback] = useState(true);
   const [isPublished, setIsPublished] = useState(false);
   const [isPublic, setIsPublic] = useState(false);
+  const [strictTiming, setStrictTiming] = useState(false);
 
   // Вопросы
   const [questions, setQuestions] = useState<ExamQuestion[]>([
@@ -106,6 +107,7 @@ const EditExamPage = () => {
       setShowCorrectAnswers(exam.showCorrectAnswers);
       setShowDetailedFeedback(exam.showDetailedFeedback);
       setIsPublished(exam.isPublished);
+      setStrictTiming(exam.strictTiming || false);
 
       if (exam.questions && exam.questions.length > 0) {
         setQuestions(
@@ -256,6 +258,7 @@ const EditExamPage = () => {
         showDetailedFeedback,
         isPublished: isPublished,
         isPublic: isPublic,
+        strictTiming: strictTiming,
         tagIds: [],
         questions: questions.map((q, index) => ({
           text: q.text,
@@ -487,8 +490,21 @@ const EditExamPage = () => {
                     onChange={(e) => setShuffleAnswers(e.target.checked)}
                     className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
                   />
-                  <span className="text-sm text-gray-700">Перемешивать варианты ответов</span>
+                  <span className="text-sm text-gray-700 dark:text-gray-300">Перемешивать варианты ответов</span>
                 </label>
+
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={strictTiming}
+                    onChange={(e) => setStrictTiming(e.target.checked)}
+                    className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                  />
+                  <span className="text-sm text-gray-700 dark:text-gray-300">Строгий контроль времени</span>
+                </label>
+                <p className="text-xs text-gray-500 dark:text-gray-400 ml-6">
+                  Экзамен будет автоматически завершен при истечении времени
+                </p>
 
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
@@ -497,7 +513,7 @@ const EditExamPage = () => {
                     onChange={(e) => setShowCorrectAnswers(e.target.checked)}
                     className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
                   />
-                  <span className="text-sm text-gray-700">Показывать правильные ответы после сдачи</span>
+                  <span className="text-sm text-gray-700 dark:text-gray-300">Показывать правильные ответы после сдачи</span>
                 </label>
 
                 <label className="flex items-center gap-2 cursor-pointer">

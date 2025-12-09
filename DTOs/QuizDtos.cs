@@ -27,6 +27,7 @@ namespace UniStart.DTOs
         public string Difficulty { get; set; } = string.Empty;
         public bool IsPublic { get; set; }
         public bool IsPublished { get; set; }
+        public bool IsLearningMode { get; set; }
         public List<QuizQuestionDto> Questions { get; set; } = new();
     }
 

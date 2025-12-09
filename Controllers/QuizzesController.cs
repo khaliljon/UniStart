@@ -162,6 +162,7 @@ namespace UniStart.Controllers
                 Difficulty = quiz.Difficulty,
                 IsPublic = quiz.IsPublic,
                 IsPublished = quiz.IsPublished,
+                IsLearningMode = quiz.IsLearningMode,
                 Questions = quiz.Questions.OrderBy(q => q.OrderIndex).Select(q => new QuizQuestionDto
                 {
                     Id = q.Id,
@@ -772,6 +773,109 @@ namespace UniStart.Controllers
             _context.QuizAnswers.Remove(QuizAnswer);
             await _context.SaveChangesAsync();
             return NoContent();
+        }
+
+        // ============ QUIZ ATTEMPTS ============
+
+        /// <summary>
+        /// Начать попытку прохождения квиза (создать запись)
+        /// </summary>
+        [HttpPost("{id}/attempts/start")]
+        [Authorize]
+        public async Task<ActionResult<object>> StartQuizAttempt(int id)
+        {
+            var userId = GetUserId()!;
+            
+            var quiz = await _context.Quizzes.FindAsync(id);
+            if (quiz == null)
+                return NotFound("Quiz not found");
+
+            if (!quiz.IsPublished)
+                return BadRequest("Quiz is not published");
+
+            var attempt = new UserQuizAttempt
+            {
+                UserId = userId,
+                QuizId = id,
+                StartedAt = DateTime.UtcNow,
+                Score = 0,
+                MaxScore = 0,
+                Percentage = 0,
+                TimeSpentSeconds = 0,
+                UserAnswersJson = "{}"
+            };
+
+            _context.UserQuizAttempts.Add(attempt);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { id = attempt.Id });
+        }
+
+        /// <summary>
+        /// Отправить ответы и завершить попытку
+        /// </summary>
+        [HttpPost("{id}/attempts/{attemptId}/submit")]
+        [Authorize]
+        public async Task<ActionResult> SubmitQuizAttempt(int id, int attemptId, [FromBody] SubmitQuizDto dto)
+        {
+            var userId = GetUserId()!;
+            
+            var attempt = await _context.UserQuizAttempts
+                .Include(a => a.Quiz)
+                    .ThenInclude(q => q.Questions)
+                        .ThenInclude(qu => qu.Answers)
+                .FirstOrDefaultAsync(a => a.Id == attemptId && a.QuizId == id && a.UserId == userId);
+
+            if (attempt == null)
+                return NotFound("Attempt not found or access denied");
+
+            if (attempt.CompletedAt != null)
+                return BadRequest("Attempt already completed");
+
+            // Calculate score
+            int totalScore = 0;
+            int maxScore = 0;
+
+            foreach (var question in attempt.Quiz.Questions)
+            {
+                maxScore += question.Points;
+
+                if (dto.UserAnswers.TryGetValue(question.Id, out var userAnswerIds))
+                {
+                    var correctAnswerIds = question.Answers
+                        .Where(a => a.IsCorrect)
+                        .Select(a => a.Id)
+                        .OrderBy(x => x)
+                        .ToList();
+
+                    var sortedUserAnswers = userAnswerIds.OrderBy(x => x).ToList();
+
+                    // Check if user answers match correct answers exactly
+                    if (correctAnswerIds.SequenceEqual(sortedUserAnswers))
+                    {
+                        totalScore += question.Points;
+                    }
+                }
+            }
+
+            // Update attempt
+            attempt.Score = totalScore;
+            attempt.MaxScore = maxScore;
+            attempt.Percentage = maxScore > 0 ? (double)totalScore / maxScore * 100 : 0;
+            attempt.TimeSpentSeconds = dto.TimeSpentSeconds;
+            attempt.CompletedAt = DateTime.UtcNow;
+            attempt.UserAnswersJson = JsonSerializer.Serialize(dto.UserAnswers);
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                success = true,
+                score = totalScore,
+                maxScore = maxScore,
+                percentage = attempt.Percentage,
+                passed = attempt.Percentage >= 70
+            });
         }
     }
 }

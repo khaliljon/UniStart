@@ -27,6 +27,7 @@ interface QuizForm {
   timeLimit: number;
   isPublic: boolean;
   isPublished: boolean;
+  isLearningMode: boolean;
   questions: Question[];
 }
 
@@ -45,6 +46,7 @@ const EditQuizPage = () => {
     timeLimit: 30,
     isPublic: false,
     isPublished: false,
+    isLearningMode: false,
     questions: [],
   });
 
@@ -76,6 +78,7 @@ const EditQuizPage = () => {
         timeLimit: quizData.timeLimit,
         isPublic: isAdmin ? true : (quizData.isPublic || false),
         isPublished: quizData.isPublished || false,
+        isLearningMode: quizData.isLearningMode || false,
         questions: quizData.questions.map((q: any) => ({
           text: q.text,
           points: q.points,
@@ -215,6 +218,7 @@ const EditQuizPage = () => {
         timeLimit: quiz.timeLimit,
         isPublic: quiz.isPublic,
         isPublished: publish ? true : quiz.isPublished,
+        isLearningMode: quiz.isLearningMode,
         questions: quiz.questions.map((q, index) => ({
           text: q.text,
           points: q.points,
@@ -352,12 +356,30 @@ const EditQuizPage = () => {
                         onChange={(e) => setQuiz({ ...quiz, isPublic: e.target.checked })}
                         className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
                       />
-                      <span className="text-sm font-medium text-gray-700">
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                         Публичный квиз (доступен всем)
                       </span>
                     </label>
                   </div>
                 )}
+              </div>
+
+              <div className="mt-6 space-y-3">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={quiz.isLearningMode}
+                    onChange={(e) => setQuiz({ ...quiz, isLearningMode: e.target.checked })}
+                    className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500"
+                  />
+                  <span className="text-sm text-gray-700 dark:text-gray-300">
+                    Режим обучения (показывать объяснения сразу после каждого ответа)
+                  </span>
+                </label>
+                <p className="text-xs text-gray-500 dark:text-gray-400 ml-6">
+                  В режиме обучения студент увидит правильный ответ и объяснение сразу после выбора. 
+                  В обычном режиме результаты показываются только в конце.
+                </p>
               </div>
             </div>
           </Card>

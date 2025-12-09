@@ -34,6 +34,7 @@ public class CreateExamDto
     
     // Временные ограничения
     public int TimeLimit { get; set; } = 60;
+    public bool StrictTiming { get; set; } = false;
     
     public bool IsPublished { get; set; } = false;
     public bool IsPublic { get; set; } = false;
@@ -87,6 +88,7 @@ public class ExamDto
     public bool ShowDetailedFeedback { get; set; }
     
     public int TimeLimit { get; set; }
+    public bool StrictTiming { get; set; }
     
     public bool IsPublished { get; set; }
     public bool IsPublic { get; set; }
@@ -135,7 +137,10 @@ public class ExamTakingDto
     public string Title { get; set; } = string.Empty;
     public string? Description { get; set; }
     public string Subject { get; set; } = string.Empty;
+    public string Difficulty { get; set; } = string.Empty;
     public int TimeLimit { get; set; }
+    public bool StrictTiming { get; set; }
+    public int PassingScore { get; set; }
     public int TotalPoints { get; set; }
     public int MaxAttempts { get; set; }
     public int RemainingAttempts { get; set; }
@@ -151,6 +156,7 @@ public class ExamQuestionTakingDto
 {
     public int Id { get; set; }
     public string Text { get; set; } = string.Empty;
+    public string QuestionType { get; set; } = string.Empty;
     public int Points { get; set; }
     public int Order { get; set; }
     public List<ExamAnswerTakingDto> Answers { get; set; } = new();
@@ -174,6 +180,25 @@ public class SubmitExamDto
     public int ExamId { get; set; }
     public List<ExamAnswerSubmissionDto> Answers { get; set; } = new();
     public TimeSpan TimeSpent { get; set; }
+}
+
+/// <summary>
+/// DTO для отправки ответов на конкретную попытку экзамена
+/// </summary>
+public class SubmitExamAttemptDto
+{
+    public List<ExamAttemptAnswerDto> Answers { get; set; } = new();
+    public int Score { get; set; }
+    public int TimeSpent { get; set; } // в секундах
+}
+
+/// <summary>
+/// DTO для ответа на вопрос при отправке попытки
+/// </summary>
+public class ExamAttemptAnswerDto
+{
+    public int QuestionId { get; set; }
+    public List<int> AnswerIds { get; set; } = new(); // Поддержка множественного выбора
 }
 
 /// <summary>

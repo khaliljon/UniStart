@@ -5,11 +5,16 @@ import { Plus, Trash2, Save, ArrowLeft } from 'lucide-react';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import api from '../services/api';
+import { FlashcardType } from '../types';
 
 interface Flashcard {
   question: string;
   answer: string;
   explanation: string;
+  type: FlashcardType;
+  options?: string[];
+  matchingPairs?: Array<{ term: string; definition: string }>;
+  sequence?: string[];
 }
 
 interface FlashcardSetForm {
@@ -40,6 +45,8 @@ const CreateFlashcardSetPage = () => {
           question: '',
           answer: '',
           explanation: '',
+          type: FlashcardType.MultipleChoice,
+          options: ['', '', '', ''],
         },
       ],
     });
@@ -50,9 +57,81 @@ const CreateFlashcardSetPage = () => {
     setFlashcardSet({ ...flashcardSet, flashcards: newFlashcards });
   };
 
-  const updateFlashcard = (index: number, field: keyof Flashcard, value: string) => {
+  const updateFlashcard = (index: number, field: keyof Flashcard, value: any) => {
     const newFlashcards = [...flashcardSet.flashcards];
     newFlashcards[index] = { ...newFlashcards[index], [field]: value };
+    setFlashcardSet({ ...flashcardSet, flashcards: newFlashcards });
+  };
+
+  const updateFlashcardOption = (cardIndex: number, optionIndex: number, value: string) => {
+    const newFlashcards = [...flashcardSet.flashcards];
+    const options = [...(newFlashcards[cardIndex].options || [])];
+    options[optionIndex] = value;
+    newFlashcards[cardIndex] = { ...newFlashcards[cardIndex], options };
+    setFlashcardSet({ ...flashcardSet, flashcards: newFlashcards });
+  };
+
+  const updateMatchingPair = (cardIndex: number, pairIndex: number, field: 'term' | 'definition', value: string) => {
+    const newFlashcards = [...flashcardSet.flashcards];
+    const pairs = [...(newFlashcards[cardIndex].matchingPairs || [])];
+    pairs[pairIndex] = { ...pairs[pairIndex], [field]: value };
+    newFlashcards[cardIndex] = { ...newFlashcards[cardIndex], matchingPairs: pairs };
+    setFlashcardSet({ ...flashcardSet, flashcards: newFlashcards });
+  };
+
+  const updateSequenceItem = (cardIndex: number, itemIndex: number, value: string) => {
+    const newFlashcards = [...flashcardSet.flashcards];
+    const sequence = [...(newFlashcards[cardIndex].sequence || [])];
+    sequence[itemIndex] = value;
+    newFlashcards[cardIndex] = { ...newFlashcards[cardIndex], sequence };
+    setFlashcardSet({ ...flashcardSet, flashcards: newFlashcards });
+  };
+
+  const addOption = (cardIndex: number) => {
+    const newFlashcards = [...flashcardSet.flashcards];
+    const options = [...(newFlashcards[cardIndex].options || []), ''];
+    newFlashcards[cardIndex] = { ...newFlashcards[cardIndex], options };
+    setFlashcardSet({ ...flashcardSet, flashcards: newFlashcards });
+  };
+
+  const addMatchingPair = (cardIndex: number) => {
+    const newFlashcards = [...flashcardSet.flashcards];
+    const pairs = [...(newFlashcards[cardIndex].matchingPairs || []), { term: '', definition: '' }];
+    newFlashcards[cardIndex] = { ...newFlashcards[cardIndex], matchingPairs: pairs };
+    setFlashcardSet({ ...flashcardSet, flashcards: newFlashcards });
+  };
+
+  const addSequenceItem = (cardIndex: number) => {
+    const newFlashcards = [...flashcardSet.flashcards];
+    const sequence = [...(newFlashcards[cardIndex].sequence || []), ''];
+    newFlashcards[cardIndex] = { ...newFlashcards[cardIndex], sequence };
+    setFlashcardSet({ ...flashcardSet, flashcards: newFlashcards });
+  };
+
+  const handleTypeChange = (cardIndex: number, newType: FlashcardType) => {
+    const newFlashcards = [...flashcardSet.flashcards];
+    const card = { ...newFlashcards[cardIndex], type: newType };
+    
+    // Initialize type-specific fields
+    if (newType === FlashcardType.MultipleChoice) {
+      card.options = ['', '', '', ''];
+      card.matchingPairs = undefined;
+      card.sequence = undefined;
+    } else if (newType === FlashcardType.Matching) {
+      card.matchingPairs = [{ term: '', definition: '' }, { term: '', definition: '' }];
+      card.options = undefined;
+      card.sequence = undefined;
+    } else if (newType === FlashcardType.Sequencing) {
+      card.sequence = ['', '', ''];
+      card.options = undefined;
+      card.matchingPairs = undefined;
+    } else {
+      card.options = undefined;
+      card.matchingPairs = undefined;
+      card.sequence = undefined;
+    }
+    
+    newFlashcards[cardIndex] = card;
     setFlashcardSet({ ...flashcardSet, flashcards: newFlashcards });
   };
 
@@ -86,12 +165,24 @@ const CreateFlashcardSetPage = () => {
 
       // Шаг 2: Добавляем карточки к набору
       for (const card of flashcardSet.flashcards) {
-        await api.post('/flashcards/cards', {
+        const cardData: any = {
           flashcardSetId: setId,
           question: card.question,
           answer: card.answer,
           explanation: card.explanation || '',
-        });
+          type: card.type,
+        };
+
+        // Add type-specific data
+        if (card.type === FlashcardType.MultipleChoice && card.options) {
+          cardData.optionsJson = JSON.stringify(card.options.filter(o => o.trim()));
+        } else if (card.type === FlashcardType.Matching && card.matchingPairs) {
+          cardData.matchingPairsJson = JSON.stringify(card.matchingPairs.filter(p => p.term.trim() && p.definition.trim()));
+        } else if (card.type === FlashcardType.Sequencing && card.sequence) {
+          cardData.sequenceJson = JSON.stringify(card.sequence.filter(s => s.trim()));
+        }
+
+        await api.post('/flashcards/cards', cardData);
       }
 
       alert('Набор карточек успешно создан!');
@@ -286,7 +377,23 @@ const CreateFlashcardSetPage = () => {
                     <div className="space-y-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Вопрос (передняя сторона) *
+                          Тип карточки *
+                        </label>
+                        <select
+                          value={card.type}
+                          onChange={(e) => handleTypeChange(index, parseInt(e.target.value))}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                        >
+                          <option value={FlashcardType.MultipleChoice}>Выбор ответа</option>
+                          <option value={FlashcardType.FillInTheBlank}>Заполнить пропуск</option>
+                          <option value={FlashcardType.Matching}>Сопоставление</option>
+                          <option value={FlashcardType.Sequencing}>Упорядочивание</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Вопрос *
                         </label>
                         <textarea
                           required
@@ -295,14 +402,14 @@ const CreateFlashcardSetPage = () => {
                             updateFlashcard(index, 'question', e.target.value)
                           }
                           rows={2}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                          placeholder="Введите вопрос или термин"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                          placeholder="Введите вопрос"
                         />
                       </div>
 
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Ответ (задняя сторона) *
+                          Правильный ответ *
                         </label>
                         <textarea
                           required
@@ -310,11 +417,118 @@ const CreateFlashcardSetPage = () => {
                           onChange={(e) =>
                             updateFlashcard(index, 'answer', e.target.value)
                           }
-                          rows={3}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                          placeholder="Введите ответ или определение"
+                          rows={2}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                          placeholder={card.type === FlashcardType.MultipleChoice ? "Введите правильный ответ (должен совпадать с одним из вариантов)" : "Введите правильный ответ"}
                         />
                       </div>
+
+                      {/* Multiple Choice Options */}
+                      {card.type === FlashcardType.MultipleChoice && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Варианты ответов *
+                          </label>
+                          <div className="space-y-2">
+                            {card.options?.map((option, optIndex) => (
+                              <input
+                                key={optIndex}
+                                type="text"
+                                value={option}
+                                onChange={(e) => updateFlashcardOption(index, optIndex, e.target.value)}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                placeholder={`Вариант ${optIndex + 1}`}
+                                required
+                              />
+                            ))}
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => addOption(index)}
+                              className="flex items-center gap-1"
+                            >
+                              <Plus className="w-4 h-4" />
+                              Добавить вариант
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Matching Pairs */}
+                      {card.type === FlashcardType.Matching && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Пары для сопоставления *
+                          </label>
+                          <div className="space-y-3">
+                            {card.matchingPairs?.map((pair, pairIndex) => (
+                              <div key={pairIndex} className="grid grid-cols-2 gap-2">
+                                <input
+                                  type="text"
+                                  value={pair.term}
+                                  onChange={(e) => updateMatchingPair(index, pairIndex, 'term', e.target.value)}
+                                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                  placeholder="Термин"
+                                  required
+                                />
+                                <input
+                                  type="text"
+                                  value={pair.definition}
+                                  onChange={(e) => updateMatchingPair(index, pairIndex, 'definition', e.target.value)}
+                                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                  placeholder="Определение"
+                                  required
+                                />
+                              </div>
+                            ))}
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => addMatchingPair(index)}
+                              className="flex items-center gap-1"
+                            >
+                              <Plus className="w-4 h-4" />
+                              Добавить пару
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Sequence Items */}
+                      {card.type === FlashcardType.Sequencing && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Элементы для упорядочивания * (в правильном порядке)
+                          </label>
+                          <div className="space-y-2">
+                            {card.sequence?.map((item, itemIndex) => (
+                              <div key={itemIndex} className="flex items-center gap-2">
+                                <span className="text-sm text-gray-600 w-6">{itemIndex + 1}.</span>
+                                <input
+                                  type="text"
+                                  value={item}
+                                  onChange={(e) => updateSequenceItem(index, itemIndex, e.target.value)}
+                                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                  placeholder={`Шаг ${itemIndex + 1}`}
+                                  required
+                                />
+                              </div>
+                            ))}
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => addSequenceItem(index)}
+                              className="flex items-center gap-1"
+                            >
+                              <Plus className="w-4 h-4" />
+                              Добавить элемент
+                            </Button>
+                          </div>
+                        </div>
+                      )}
 
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -326,7 +540,7 @@ const CreateFlashcardSetPage = () => {
                             updateFlashcard(index, 'explanation', e.target.value)
                           }
                           rows={2}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                           placeholder="Дополнительные пояснения или примеры"
                         />
                       </div>

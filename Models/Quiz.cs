@@ -36,6 +36,9 @@ namespace UniStart.Models
         [Display(Name = "Публичный доступ")]
         public bool IsPublic { get; set; } = false; // true = доступен всем студентам, false = только автор
         
+        [Display(Name = "Режим обучения")]
+        public bool IsLearningMode { get; set; } = true; // true = показывать объяснения сразу, false = только в конце
+        
         [Display(Name = "Дата создания")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         

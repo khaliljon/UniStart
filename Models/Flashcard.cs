@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json;
 
 namespace UniStart.Models
 {
@@ -6,6 +7,9 @@ namespace UniStart.Models
     {
         [Display(Name = "Идентификатор")]
         public int Id { get; set; }
+        
+        [Display(Name = "Тип карточки")]
+        public FlashcardType Type { get; set; } = FlashcardType.MultipleChoice;
         
         [Display(Name = "Вопрос")]
         [Required(ErrorMessage = "Вопрос обязателен")]
@@ -16,6 +20,18 @@ namespace UniStart.Models
         [Required(ErrorMessage = "Ответ обязателен")]
         [StringLength(500, ErrorMessage = "Ответ не должен превышать 500 символов")]
         public string Answer { get; set; } = string.Empty;
+        
+        [Display(Name = "Варианты ответов (JSON)")]
+        [StringLength(2000)]
+        public string? OptionsJson { get; set; } // Для Multiple Choice: ["opt1", "opt2", "opt3", "correct"]
+        
+        [Display(Name = "Пары для сопоставления (JSON)")]
+        [StringLength(2000)]
+        public string? MatchingPairsJson { get; set; } // Для Matching: [{"left":"term1","right":"def1"}]
+        
+        [Display(Name = "Последовательность (JSON)")]
+        [StringLength(2000)]
+        public string? SequenceJson { get; set; } // Для Sequencing: ["step1", "step2", "step3"]
         
         [Display(Name = "Объяснение")]
         [StringLength(1000, ErrorMessage = "Объяснение не должно превышать 1000 символов")]

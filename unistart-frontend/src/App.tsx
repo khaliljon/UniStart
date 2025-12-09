@@ -12,10 +12,13 @@ import DashboardRouter from './pages/DashboardRouter'
 import FlashcardsPage from './pages/FlashcardsPage'
 import FlashcardStudyPage from './pages/FlashcardStudyPage'
 import QuizzesPage from './pages/QuizzesPage'
-import QuizTakingPage from './pages/QuizTakingPage'
+import QuizTakePage from './pages/QuizTakePage'
 import QuizResultPage from './pages/QuizResultPage'
+import QuizResultsPage from './pages/QuizResultsPage'
 import QuizStatsPage from './pages/QuizStatsPage'
 import ExamsPage from './pages/ExamsPage'
+import ExamTakePage from './pages/ExamTakePage'
+import ExamResultsPage from './pages/ExamResultsPage'
 import CreateExamPage from './pages/CreateExamPage'
 import EditExamPage from './pages/EditExamPage'
 import ExamStatsPage from './pages/ExamStatsPage'
@@ -89,10 +92,18 @@ function App() {
             }
           />
           <Route
-            path="/quizzes/:quizId/take"
+            path="/quizzes/:id/take"
             element={
               <PrivateRoute>
-                <QuizTakingPage />
+                <QuizTakePage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/quizzes/:id/results"
+            element={
+              <PrivateRoute>
+                <QuizResultsPage />
               </PrivateRoute>
             }
           />
@@ -145,10 +156,18 @@ function App() {
             }
           />
           <Route
-            path="/exams/:examId/take"
+            path="/exams/:id/take"
             element={
               <PrivateRoute>
-                <ExamsPage />
+                <ExamTakePage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/exams/:id/results"
+            element={
+              <PrivateRoute>
+                <ExamResultsPage />
               </PrivateRoute>
             }
           />

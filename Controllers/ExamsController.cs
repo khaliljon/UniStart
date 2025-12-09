@@ -170,6 +170,7 @@ public class ExamsController : ControllerBase
             ShowCorrectAnswers = exam.ShowCorrectAnswers,
             ShowDetailedFeedback = exam.ShowDetailedFeedback,
             TimeLimit = exam.TimeLimit,
+            StrictTiming = exam.StrictTiming,
             IsPublished = exam.IsPublished,
             IsPublic = exam.IsPublic,
             TotalPoints = exam.TotalPoints,
@@ -238,7 +239,10 @@ public class ExamsController : ControllerBase
             Title = exam.Title,
             Description = exam.Description,
             Subject = exam.Subject,
+            Difficulty = exam.Difficulty,
             TimeLimit = exam.TimeLimit,
+            StrictTiming = exam.StrictTiming,
+            PassingScore = exam.PassingScore,
             TotalPoints = exam.TotalPoints,
             MaxAttempts = exam.MaxAttempts,
             RemainingAttempts = exam.MaxAttempts - attemptsCount,
@@ -248,6 +252,7 @@ public class ExamsController : ControllerBase
             {
                 Id = q.Id,
                 Text = q.Text,
+                QuestionType = q.QuestionType,
                 Points = q.Points,
                 Order = q.Order,
                 Answers = (exam.ShuffleAnswers 
@@ -266,7 +271,121 @@ public class ExamsController : ControllerBase
     }
 
     /// <summary>
-    /// Отправить ответы на экзамен
+    /// Начать попытку прохождения экзамена
+    /// </summary>
+    [HttpPost("{id}/attempts/start")]
+    public async Task<ActionResult<object>> StartExamAttempt(int id)
+    {
+        var userId = await GetUserId();
+
+        var exam = await _context.Exams
+            .Include(e => e.Attempts.Where(a => a.UserId == userId))
+            .FirstOrDefaultAsync(e => e.Id == id && e.IsPublished);
+
+        if (exam == null)
+            return NotFound("Экзамен не найден или не опубликован");
+
+        // Проверка количества попыток
+        var completedAttempts = exam.Attempts.Count(a => a.CompletedAt != null);
+        if (completedAttempts >= exam.MaxAttempts)
+            return BadRequest($"Вы использовали все попытки ({exam.MaxAttempts})");
+
+        // Проверка, нет ли незавершенной попытки
+        var activeAttempt = exam.Attempts.FirstOrDefault(a => a.CompletedAt == null);
+        if (activeAttempt != null)
+        {
+            return Ok(new { id = activeAttempt.Id });
+        }
+
+        // Создаем новую попытку
+        var attempt = new UserExamAttempt
+        {
+            UserId = userId,
+            ExamId = id,
+            StartedAt = DateTime.UtcNow,
+            AttemptNumber = completedAttempts + 1,
+            IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+            UserAgent = HttpContext.Request.Headers.UserAgent.ToString()
+        };
+
+        _context.UserExamAttempts.Add(attempt);
+        await _context.SaveChangesAsync();
+
+        return Ok(new { id = attempt.Id });
+    }
+
+    /// <summary>
+    /// Отправить ответы на конкретную попытку экзамена
+    /// </summary>
+    [HttpPost("{id}/attempts/{attemptId}/submit")]
+    public async Task<ActionResult> SubmitExamAttempt(int id, int attemptId, [FromBody] SubmitExamAttemptDto submission)
+    {
+        var userId = await GetUserId();
+
+        var attempt = await _context.UserExamAttempts
+            .Include(a => a.Exam)
+                .ThenInclude(e => e.Questions)
+                .ThenInclude(q => q.Answers)
+            .FirstOrDefaultAsync(a => a.Id == attemptId && a.UserId == userId && a.ExamId == id);
+
+        if (attempt == null)
+            return NotFound("Попытка не найдена");
+
+        if (attempt.CompletedAt != null)
+            return BadRequest("Эта попытка уже завершена");
+
+        var exam = attempt.Exam;
+
+        // Проверяем ответы и подсчитываем баллы
+        int earnedPoints = 0;
+        var userAnswers = new List<UserExamAnswer>();
+
+        foreach (var answerSubmission in submission.Answers)
+        {
+            var question = exam.Questions.FirstOrDefault(q => q.Id == answerSubmission.QuestionId);
+            if (question == null) continue;
+
+            // Для множественного выбора проверяем все выбранные ответы
+            var correctAnswerIds = question.Answers.Where(a => a.IsCorrect).Select(a => a.Id).ToList();
+            var selectedIds = answerSubmission.AnswerIds;
+
+            bool isCorrect = correctAnswerIds.Count == selectedIds.Count && 
+                            correctAnswerIds.All(id => selectedIds.Contains(id));
+
+            var pointsEarned = isCorrect ? question.Points : 0;
+            earnedPoints += pointsEarned;
+
+            // Сохраняем все выбранные ответы
+            foreach (var answerId in selectedIds)
+            {
+                userAnswers.Add(new UserExamAnswer
+                {
+                    AttemptId = attemptId,
+                    QuestionId = answerSubmission.QuestionId,
+                    SelectedAnswerId = answerId,
+                    IsCorrect = isCorrect,
+                    PointsEarned = pointsEarned,
+                    AnsweredAt = DateTime.UtcNow
+                });
+            }
+        }
+
+        // Обновляем попытку
+        attempt.Score = earnedPoints;
+        attempt.TotalPoints = exam.TotalPoints;
+        attempt.Percentage = exam.TotalPoints > 0 ? (double)earnedPoints / exam.TotalPoints * 100 : 0;
+        attempt.Passed = attempt.Percentage >= exam.PassingScore;
+        attempt.TimeSpent = TimeSpan.FromSeconds(submission.TimeSpent);
+        attempt.CompletedAt = DateTime.UtcNow;
+
+        _context.UserExamAnswers.AddRange(userAnswers);
+        await _context.SaveChangesAsync();
+
+        return Ok(new { success = true, score = submission.Score });
+    }
+
+    /// <summary>
+    /// Отправить ответы на экзамен (старый метод, оставлен для обратной совместимости)
     /// </summary>
     [HttpPost("submit")]
     public async Task<ActionResult<ExamResultDto>> SubmitExam([FromBody] SubmitExamDto submission)

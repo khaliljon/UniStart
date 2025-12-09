@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using UniStart.Models;
 
 namespace UniStart.DTOs
 {
@@ -6,8 +7,12 @@ namespace UniStart.DTOs
     public class FlashcardDto
     {
         public int Id { get; set; }
+        public FlashcardType Type { get; set; }
         public string Question { get; set; } = string.Empty;
         public string Answer { get; set; } = string.Empty;
+        public string? OptionsJson { get; set; }
+        public string? MatchingPairsJson { get; set; }
+        public string? SequenceJson { get; set; }
         public string Explanation { get; set; } = string.Empty;
         public int OrderIndex { get; set; }
         public DateTime? NextReviewDate { get; set; }
@@ -17,6 +22,8 @@ namespace UniStart.DTOs
 
     public class CreateFlashcardDto
     {
+        public FlashcardType Type { get; set; } = FlashcardType.MultipleChoice;
+        
         [Required(ErrorMessage = "Вопрос обязателен")]
         [StringLength(500, ErrorMessage = "Вопрос не должен превышать 500 символов")]
         public string Question { get; set; } = string.Empty;
@@ -24,6 +31,15 @@ namespace UniStart.DTOs
         [Required(ErrorMessage = "Ответ обязателен")]
         [StringLength(500, ErrorMessage = "Ответ не должен превышать 500 символов")]
         public string Answer { get; set; } = string.Empty;
+        
+        [StringLength(2000)]
+        public string? OptionsJson { get; set; }
+        
+        [StringLength(2000)]
+        public string? MatchingPairsJson { get; set; }
+        
+        [StringLength(2000)]
+        public string? SequenceJson { get; set; }
         
         [StringLength(1000, ErrorMessage = "Объяснение не должно превышать 1000 символов")]
         public string Explanation { get; set; } = string.Empty;
@@ -35,6 +51,8 @@ namespace UniStart.DTOs
 
     public class UpdateFlashcardDto
     {
+        public FlashcardType Type { get; set; }
+        
         [Required(ErrorMessage = "Вопрос обязателен")]
         [StringLength(500, ErrorMessage = "Вопрос не должен превышать 500 символов")]
         public string Question { get; set; } = string.Empty;
@@ -42,6 +60,15 @@ namespace UniStart.DTOs
         [Required(ErrorMessage = "Ответ обязателен")]
         [StringLength(500, ErrorMessage = "Ответ не должен превышать 500 символов")]
         public string Answer { get; set; } = string.Empty;
+        
+        [StringLength(2000)]
+        public string? OptionsJson { get; set; }
+        
+        [StringLength(2000)]
+        public string? MatchingPairsJson { get; set; }
+        
+        [StringLength(2000)]
+        public string? SequenceJson { get; set; }
         
         [StringLength(1000, ErrorMessage = "Объяснение не должно превышать 1000 символов")]
         public string Explanation { get; set; } = string.Empty;

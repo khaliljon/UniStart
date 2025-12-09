@@ -33,6 +33,13 @@ export interface AuthResponse {
 }
 
 // ============ FLASHCARDS ============
+export enum FlashcardType {
+  MultipleChoice = 0,
+  FillInTheBlank = 1,
+  Matching = 2,
+  Sequencing = 3
+}
+
 export interface FlashcardSet {
   id: number;
   title: string;
@@ -48,8 +55,12 @@ export interface FlashcardSet {
 
 export interface Flashcard {
   id: number;
+  type: FlashcardType;
   question: string;
   answer: string;
+  optionsJson?: string;
+  matchingPairsJson?: string;
+  sequenceJson?: string;
   explanation: string;
   orderIndex: number;
   nextReviewDate?: string;
@@ -63,15 +74,23 @@ export interface CreateFlashcardSetDto {
 }
 
 export interface CreateFlashcardDto {
+  type: FlashcardType;
   question: string;
   answer: string;
+  optionsJson?: string;
+  matchingPairsJson?: string;
+  sequenceJson?: string;
   explanation: string;
   flashcardSetId: number;
 }
 
 export interface UpdateFlashcardDto {
+  type: FlashcardType;
   question: string;
   answer: string;
+  optionsJson?: string;
+  matchingPairsJson?: string;
+  sequenceJson?: string;
   explanation: string;
 }
 
@@ -95,6 +114,7 @@ export interface Quiz {
   timeLimit: number;
   subject: string;
   difficulty: string;
+  isLearningMode?: boolean;
   questionCount: number;
   totalPoints: number;
 }
@@ -106,6 +126,7 @@ export interface QuizDetail {
   timeLimit: number;
   subject: string;
   difficulty: string;
+  isLearningMode?: boolean;
   questions: Question[];
 }
 
@@ -158,6 +179,28 @@ export interface UserQuizAttempt {
   percentage: number;
   timeSpentSeconds: number;
   completedAt: string;
+}
+
+// ============ EXAMS ============
+export interface Exam {
+  id: number;
+  title: string;
+  description: string;
+  subject: string;
+  difficulty: string;
+  timeLimit: number;
+  strictTiming?: boolean;
+  questionCount: number;
+  totalPoints: number;
+  maxAttempts: number;
+  passingScore: number;
+  shuffleQuestions?: boolean;
+  shuffleAnswers?: boolean;
+  isProctored: boolean;
+  isPublished?: boolean;
+  startDate?: string;
+  endDate?: string;
+  createdAt: string;
 }
 
 // ============ UTILITY TYPES ============
