@@ -8,7 +8,7 @@ namespace UniStart.Models
         /// <summary>
         /// Выбор правильного ответа из нескольких вариантов
         /// </summary>
-        MultipleChoice = 0,
+        SingleChoice = 0,
         
         /// <summary>
         /// Заполнение пропуска в тексте

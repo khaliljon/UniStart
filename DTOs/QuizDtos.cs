@@ -51,6 +51,10 @@ namespace UniStart.DTOs
         [Required(ErrorMessage = "Уровень сложности обязателен")]
         [RegularExpression("^(Easy|Medium|Hard)$", ErrorMessage = "Сложность должна быть: Easy, Medium или Hard")]
         public string Difficulty { get; set; } = "Medium";
+        
+        public bool IsPublic { get; set; }
+        public bool IsPublished { get; set; }
+        public bool IsLearningMode { get; set; }
     }
 
     public class UpdateQuizDto

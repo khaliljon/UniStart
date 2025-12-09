@@ -198,6 +198,9 @@ namespace UniStart.Controllers
                 TimeLimit = dto.TimeLimit,
                 Subject = dto.Subject,
                 Difficulty = dto.Difficulty,
+                IsPublic = dto.IsPublic,
+                IsPublished = dto.IsPublished,
+                IsLearningMode = dto.IsLearningMode,
                 UserId = userId
             };
 

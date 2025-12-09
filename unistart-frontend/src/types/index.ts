@@ -34,7 +34,7 @@ export interface AuthResponse {
 
 // ============ FLASHCARDS ============
 export enum FlashcardType {
-  MultipleChoice = 0,
+  SingleChoice = 0,
   FillInTheBlank = 1,
   Matching = 2,
   Sequencing = 3

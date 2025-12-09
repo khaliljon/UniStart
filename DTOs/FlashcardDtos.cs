@@ -22,7 +22,7 @@ namespace UniStart.DTOs
 
     public class CreateFlashcardDto
     {
-        public FlashcardType Type { get; set; } = FlashcardType.MultipleChoice;
+        public FlashcardType Type { get; set; } = FlashcardType.SingleChoice;
         
         [Required(ErrorMessage = "Вопрос обязателен")]
         [StringLength(500, ErrorMessage = "Вопрос не должен превышать 500 символов")]

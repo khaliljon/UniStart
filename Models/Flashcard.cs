@@ -9,7 +9,7 @@ namespace UniStart.Models
         public int Id { get; set; }
         
         [Display(Name = "Тип карточки")]
-        public FlashcardType Type { get; set; } = FlashcardType.MultipleChoice;
+        public FlashcardType Type { get; set; } = FlashcardType.SingleChoice;
         
         [Display(Name = "Вопрос")]
         [Required(ErrorMessage = "Вопрос обязателен")]
@@ -23,7 +23,7 @@ namespace UniStart.Models
         
         [Display(Name = "Варианты ответов (JSON)")]
         [StringLength(2000)]
-        public string? OptionsJson { get; set; } // Для Multiple Choice: ["opt1", "opt2", "opt3", "correct"]
+        public string? OptionsJson { get; set; } // Для Single Choice: ["opt1", "opt2", "opt3", "correct"]
         
         [Display(Name = "Пары для сопоставления (JSON)")]
         [StringLength(2000)]

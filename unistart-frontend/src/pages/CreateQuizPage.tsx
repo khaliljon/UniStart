@@ -147,7 +147,7 @@ const CreateQuizPage = () => {
         subject: quiz.subject,
         difficulty: quiz.difficulty,
         timeLimit: quiz.timeLimit,
-        description: quiz.title,
+        description: quiz.title || 'Описание',
         isPublic: quiz.isPublic,
         isPublished: false, // Всегда создаем как черновик, потом публикуем отдельно
         isLearningMode: quiz.isLearningMode,
@@ -188,7 +188,11 @@ const CreateQuizPage = () => {
     } catch (error: any) {
       console.error('Ошибка создания квиза:', error);
       console.error('Response data:', error.response?.data);
-      alert(error.response?.data?.message || error.response?.data || 'Ошибка создания квиза');
+      const errorMessage = error.response?.data?.message || 
+                          error.response?.data?.title ||
+                          JSON.stringify(error.response?.data) || 
+                          'Ошибка создания квиза';
+      alert(errorMessage);
     } finally {
       setLoading(false);
     }

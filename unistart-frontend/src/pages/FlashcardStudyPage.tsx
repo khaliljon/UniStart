@@ -105,7 +105,7 @@ const FlashcardStudyPage = () => {
   }
 
   return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 py-8 px-4">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 py-8 px-4">
       <div className="max-w-4xl mx-auto">
         {/* Заголовок и навигация */}
         <div className="flex items-center justify-between mb-8">
@@ -117,7 +117,7 @@ const FlashcardStudyPage = () => {
             <ArrowLeft className="w-4 h-4" />
             Назад
           </Button>
-          <h1 className="text-2xl font-bold text-gray-900">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
             {flashcardSet.title}
           </h1>
           <div className="w-24" /> {/* Spacer для центрирования */}
@@ -126,14 +126,14 @@ const FlashcardStudyPage = () => {
         {/* Прогресс-бар */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-700">
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
               Прогресс изучения
             </span>
-            <span className="text-sm font-medium text-gray-700">
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
               {studiedCount} / {cards.length}
             </span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
             <motion.div
               className="h-full bg-gradient-to-r from-primary-500 to-primary-600"
               initial={{ width: 0 }}

@@ -62,7 +62,7 @@ const CreateFlashcardSetPage = () => {
           question: '',
           answer: '',
           explanation: '',
-          type: FlashcardType.MultipleChoice,
+          type: FlashcardType.SingleChoice,
           options: ['', '', '', ''],
         },
       ],
@@ -123,7 +123,7 @@ const CreateFlashcardSetPage = () => {
     const card = { ...newFlashcards[cardIndex], type: newType };
     
     // Initialize type-specific fields
-    if (newType === FlashcardType.MultipleChoice) {
+    if (newType === FlashcardType.SingleChoice) {
       card.options = ['', '', '', ''];
       card.matchingPairs = undefined;
       card.sequence = undefined;
@@ -145,7 +145,7 @@ const CreateFlashcardSetPage = () => {
     setFlashcardSet({ ...flashcardSet, flashcards: newFlashcards });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent, publish: boolean = false) => {
     e.preventDefault();
 
     if (flashcardSet.flashcards.length === 0) {
@@ -184,7 +184,7 @@ const CreateFlashcardSetPage = () => {
         };
 
         // Add type-specific data
-        if (card.type === FlashcardType.MultipleChoice && card.options) {
+        if (card.type === FlashcardType.SingleChoice && card.options) {
           cardData.optionsJson = JSON.stringify(card.options.filter(o => o.trim()));
         } else if (card.type === FlashcardType.Matching && card.matchingPairs) {
           cardData.matchingPairsJson = JSON.stringify(card.matchingPairs.filter(p => p.term.trim() && p.definition.trim()));
@@ -195,8 +195,13 @@ const CreateFlashcardSetPage = () => {
         await api.post('/flashcards/cards', cardData);
       }
 
-      alert('Набор карточек успешно создан!');
-      navigate('/dashboard');
+      // Шаг 3: Публикуем если нужно
+      if (publish) {
+        await api.patch(`/flashcards/sets/${setId}/publish`);
+      }
+
+      alert(`Набор карточек успешно ${publish ? 'создан и опубликован' : 'сохранен как черновик'}!`);
+      navigate('/flashcards');
     } catch (error: any) {
       console.error('Ошибка создания набора карточек:', error);
       console.error('Response:', error.response);
@@ -391,7 +396,7 @@ const CreateFlashcardSetPage = () => {
                           onChange={(e) => handleTypeChange(index, parseInt(e.target.value))}
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                         >
-                          <option value={FlashcardType.MultipleChoice}>Выбор ответа</option>
+                          <option value={FlashcardType.SingleChoice}>Выбор ответа</option>
                           <option value={FlashcardType.FillInTheBlank}>Заполнить пропуск</option>
                           <option value={FlashcardType.Matching}>Сопоставление</option>
                           <option value={FlashcardType.Sequencing}>Упорядочивание</option>
@@ -434,7 +439,7 @@ const CreateFlashcardSetPage = () => {
                       )}
 
                       {/* Multiple Choice Options */}
-                      {card.type === FlashcardType.MultipleChoice && (
+                      {card.type === FlashcardType.SingleChoice && (
                         <div>
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             Варианты ответов *
@@ -574,18 +579,29 @@ const CreateFlashcardSetPage = () => {
             <Button
               type="button"
               variant="secondary"
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate('/flashcards')}
             >
               Отмена
             </Button>
             <Button
-              type="submit"
-              variant="primary"
+              type="button"
+              variant="secondary"
+              onClick={(e: any) => handleSubmit(e, false)}
               disabled={loading || flashcardSet.flashcards.length === 0}
               className="flex items-center gap-2"
             >
               <Save className="w-5 h-5" />
-              {loading ? 'Сохранение...' : 'Создать набор'}
+              {loading ? 'Сохранение...' : 'Сохранить как черновик'}
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              onClick={(e: any) => handleSubmit(e, true)}
+              disabled={loading || flashcardSet.flashcards.length === 0}
+              className="flex items-center gap-2"
+            >
+              <Save className="w-5 h-5" />
+              {loading ? 'Публикация...' : 'Опубликовать'}
             </Button>
           </div>
         </form>

@@ -40,7 +40,7 @@ const InteractiveFlashcard = ({ flashcard, onAnswer }: InteractiveFlashcardProps
     let correct = false;
 
     switch (flashcard.type) {
-      case FlashcardType.MultipleChoice:
+      case FlashcardType.SingleChoice:
         correct = selectedOption === flashcard.answer;
         break;
       
@@ -74,7 +74,7 @@ const InteractiveFlashcard = ({ flashcard, onAnswer }: InteractiveFlashcardProps
 
   const renderCardContent = () => {
     switch (flashcard.type) {
-      case FlashcardType.MultipleChoice:
+      case FlashcardType.SingleChoice:
         return (
           <div className="space-y-3">
             <p className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
@@ -256,7 +256,7 @@ const InteractiveFlashcard = ({ flashcard, onAnswer }: InteractiveFlashcardProps
     <div className="space-y-6">
       {renderCardContent()}
 
-      {!isAnswered && flashcard.type !== FlashcardType.MultipleChoice && (
+      {!isAnswered && flashcard.type !== FlashcardType.SingleChoice && (
         <Button
           onClick={handleSubmit}
           disabled={
