@@ -43,7 +43,8 @@ const CreateExamPage = () => {
   // Основная информация
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [subject, setSubject] = useState('');
+  const [subject, setSubject] = useState(''); // Для обратной совместимости
+  const [selectedSubjectIds, setSelectedSubjectIds] = useState<number[]>([]);
   const [difficulty, setDifficulty] = useState('Medium');
   
   // Международная система
@@ -225,7 +226,7 @@ const CreateExamPage = () => {
 
   const validateExam = (): string | null => {
     if (!title.trim()) return 'Введите название экзамена';
-    if (!subject.trim()) return 'Введите предмет';
+    if (selectedSubjectIds.length === 0) return 'Выберите хотя бы один предмет';
     if (questions.length === 0) return 'Добавьте хотя бы один вопрос';
 
     for (let i = 0; i < questions.length; i++) {
@@ -259,7 +260,8 @@ const CreateExamPage = () => {
       const examData = {
         title,
         description,
-        subject,
+        subject: selectedSubjectIds.length > 0 ? subjects.find(s => s.id === selectedSubjectIds[0])?.name || '' : subject, // Для обратной совместимости
+        subjectIds: selectedSubjectIds.length > 0 ? selectedSubjectIds : [], // Новый способ
         difficulty,
         timeLimit,
         passingScore,
@@ -388,20 +390,49 @@ const CreateExamPage = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Предмет *
+                    Предметы *
                   </label>
                   <select
-                    value={subject}
-                    onChange={(e) => setSubject(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    multiple
+                    value={selectedSubjectIds.map(id => id.toString())}
+                    onChange={(e) => {
+                      const selected = Array.from(e.target.selectedOptions, option => parseInt(option.value));
+                      setSelectedSubjectIds(selected);
+                    }}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent min-h-[100px]"
+                    size={5}
                   >
-                    <option value="">Выберите предмет</option>
                     {subjects.map((subject) => (
-                      <option key={subject.id} value={subject.name}>
+                      <option key={subject.id} value={subject.id}>
                         {subject.name}
                       </option>
                     ))}
                   </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Удерживайте Ctrl (Cmd на Mac) для выбора нескольких предметов
+                  </p>
+                  {selectedSubjectIds.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {selectedSubjectIds.map((id) => {
+                        const subj = subjects.find(s => s.id === id);
+                        return subj ? (
+                          <span
+                            key={id}
+                            className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 rounded text-sm"
+                          >
+                            {subj.name}
+                            <button
+                              type="button"
+                              onClick={() => setSelectedSubjectIds(selectedSubjectIds.filter(sid => sid !== id))}
+                              className="text-blue-600 hover:text-blue-800"
+                            >
+                              ×
+                            </button>
+                          </span>
+                        ) : null;
+                      })}
+                    </div>
+                  )}
                 </div>
 
                 <div>

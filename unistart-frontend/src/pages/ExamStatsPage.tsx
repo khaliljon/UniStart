@@ -72,7 +72,7 @@ const ExamStatsPage = () => {
   const formatTime = (seconds: number) => {
     if (!seconds || isNaN(seconds)) return '0м 0с';
     const minutes = Math.floor(seconds / 60);
-    const secs = seconds % 60;
+    const secs = Math.round(seconds % 60);
     return `${minutes}м ${secs}с`;
   }
 

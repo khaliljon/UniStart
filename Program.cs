@@ -136,17 +136,8 @@ if (app.Environment.IsDevelopment())
         // Применяем миграции автоматически (создаёт БД если её нет)
         await context.Database.MigrateAsync();
         
-        // Инициализируем роли и создаём администратора (ПЕРВЫМ!)
-        await UniStart.Seeders.RoleSeeder.SeedRolesAndAdminAsync(roleManager, userManager);
-        
-        // Инициализируем достижения
-        await UniStart.Seeders.AchievementSeeder.SeedAchievementsAsync(context);
-        
-        // Инициализируем страны и типы экзаменов
-        await UniStart.Seeders.InternationalSeeder.SeedInternationalData(context);
-        
-        // Заполняем базу тестовыми данными (только если БД пустая)
-        await UniStart.Seeders.DatabaseSeeder.SeedAsync(context, userManager);
+        // Инициализируем все начальные данные (роли, предметы, достижения, международные данные)
+        await UniStart.Seeders.DatabaseSeeder.SeedAsync(context, userManager, roleManager);
     }
     catch (Exception ex)
     {

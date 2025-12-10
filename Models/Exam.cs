@@ -18,7 +18,8 @@ public class Exam
     
     [Required(ErrorMessage = "Предмет обязателен")]
     [StringLength(100)]
-    public string Subject { get; set; } = string.Empty;
+    [Obsolete("Используйте Subjects для множественного выбора")]
+    public string Subject { get; set; } = string.Empty; // Оставлено для обратной совместимости
     
     [Required]
     [StringLength(50)]
@@ -75,4 +76,5 @@ public class Exam
     public ICollection<ExamQuestion> Questions { get; set; } = new List<ExamQuestion>();
     public ICollection<UserExamAttempt> Attempts { get; set; } = new List<UserExamAttempt>();
     public ICollection<Tag> Tags { get; set; } = new List<Tag>();
+    public ICollection<Subject> Subjects { get; set; } = new List<Subject>(); // Множественный выбор предметов
 }

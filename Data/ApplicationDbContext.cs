@@ -125,6 +125,16 @@ namespace UniStart.Data
 
             modelBuilder.Entity<UserExamAttempt>()
                 .HasIndex(uea => uea.UserId);
+
+            // Many-to-many: Exam - Subject
+            modelBuilder.Entity<Exam>()
+                .HasMany(e => e.Subjects)
+                .WithMany()
+                .UsingEntity<Dictionary<string, object>>(
+                    "ExamSubject",
+                    j => j.HasOne<Subject>().WithMany().HasForeignKey("SubjectsId"),
+                    j => j.HasOne<Exam>().WithMany().HasForeignKey("ExamsId"),
+                    j => j.HasKey("ExamsId", "SubjectsId"));
         }
     }
 }

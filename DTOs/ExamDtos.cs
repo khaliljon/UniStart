@@ -16,7 +16,11 @@ public class CreateExamDto
     
     [Required(ErrorMessage = "Предмет обязателен")]
     [StringLength(100, ErrorMessage = "Название предмета не должно превышать 100 символов")]
-    public string Subject { get; set; } = string.Empty;
+    [Obsolete("Используйте SubjectIds для множественного выбора")]
+    public string Subject { get; set; } = string.Empty; // Оставлено для обратной совместимости
+    
+    [Required(ErrorMessage = "Необходимо выбрать хотя бы один предмет")]
+    public List<int> SubjectIds { get; set; } = new(); // Список ID предметов
     
     public string Difficulty { get; set; } = "Medium";
     
@@ -79,7 +83,10 @@ public class ExamDto
     public int Id { get; set; }
     public string Title { get; set; } = string.Empty;
     public string? Description { get; set; }
-    public string Subject { get; set; } = string.Empty;
+    [Obsolete("Используйте Subjects")]
+    public string Subject { get; set; } = string.Empty; // Оставлено для обратной совместимости
+    public List<string> Subjects { get; set; } = new(); // Список названий предметов
+    public List<int> SubjectIds { get; set; } = new(); // Список ID предметов
     public string Difficulty { get; set; } = string.Empty;
     
     // Международная система (опционально)
@@ -270,7 +277,7 @@ public class ExamStatsDto
     public int UniqueStudents { get; set; }
     public double AverageScore { get; set; }
     public double PassRate { get; set; }
-    public TimeSpan AverageTimeSpent { get; set; }
+    public double AverageTimeSpent { get; set; } // В секундах
     
     public List<ExamQuestionStatsDto> QuestionStats { get; set; } = new();
     public List<ExamAttemptSummaryDto> RecentAttempts { get; set; } = new();

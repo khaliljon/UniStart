@@ -42,12 +42,13 @@ public class ExamsController : ControllerBase
         var query = _context.Exams
             .Include(t => t.User)
             .Include(t => t.Tags)
+            .Include(t => t.Subjects)
             .Include(t => t.Questions)
             .Include(t => t.Attempts.Where(a => userId != null && a.UserId == userId && a.CompletedAt != null))
             .Where(t => t.IsPublished);
 
         if (!string.IsNullOrEmpty(subject))
-            query = query.Where(t => t.Subject == subject);
+            query = query.Where(t => t.Subjects.Any(s => s.Name == subject) || t.Subject == subject);
 
         if (!string.IsNullOrEmpty(difficulty))
             query = query.Where(t => t.Difficulty == difficulty);
@@ -66,6 +67,8 @@ public class ExamsController : ControllerBase
             Title = t.Title,
             Description = t.Description,
             Subject = t.Subject,
+            Subjects = t.Subjects.Any() ? t.Subjects.Select(s => s.Name).ToList() : (string.IsNullOrEmpty(t.Subject) ? new List<string>() : new List<string> { t.Subject }),
+            SubjectIds = t.Subjects.Select(s => s.Id).ToList(),
             Difficulty = t.Difficulty,
             MaxAttempts = t.MaxAttempts,
             RemainingAttempts = t.MaxAttempts - t.Attempts.Count,
@@ -85,7 +88,8 @@ public class ExamsController : ControllerBase
             CreatedAt = t.CreatedAt,
             UserId = t.UserId,
             UserName = t.User.UserName ?? "Unknown",
-            Tags = t.Tags.Select(tag => tag.Name).ToList()
+            Tags = t.Tags.Select(tag => tag.Name).ToList(),
+            UniversityId = t.UniversityId
         }).ToList();
 
         return Ok(examDtos);
@@ -103,37 +107,41 @@ public class ExamsController : ControllerBase
         var exams = await _context.Exams
             .Include(t => t.User)
             .Include(t => t.Tags)
+            .Include(t => t.Subjects)
             .Include(t => t.Questions)
             .Where(t => t.UserId == userId)
             .OrderByDescending(t => t.CreatedAt)
-            .Select(t => new ExamDto
-            {
-                Id = t.Id,
-                Title = t.Title,
-                Description = t.Description,
-                Subject = t.Subject,
-                Difficulty = t.Difficulty,
-                MaxAttempts = t.MaxAttempts,
-                PassingScore = t.PassingScore,
-                IsProctored = t.IsProctored,
-                ShuffleQuestions = t.ShuffleQuestions,
-                ShuffleAnswers = t.ShuffleAnswers,
-                ShowResultsAfter = t.ShowResultsAfter,
-                ShowCorrectAnswers = t.ShowCorrectAnswers,
-                ShowDetailedFeedback = t.ShowDetailedFeedback,
-                TimeLimit = t.TimeLimit,
-                IsPublished = t.IsPublished,
-                IsPublic = t.IsPublic,
-                TotalPoints = t.TotalPoints,
-                QuestionCount = t.Questions.Count,
-                CreatedAt = t.CreatedAt,
-                UserId = t.UserId,
-                UserName = t.User.UserName ?? "Unknown",
-                Tags = t.Tags.Select(tag => tag.Name).ToList()
-            })
             .ToListAsync();
 
-        return Ok(exams);
+        var examDtos = exams.Select(t => new ExamDto
+        {
+            Id = t.Id,
+            Title = t.Title,
+            Description = t.Description,
+            Subject = t.Subject,
+            Subjects = t.Subjects.Any() ? t.Subjects.Select(s => s.Name).ToList() : (string.IsNullOrEmpty(t.Subject) ? new List<string>() : new List<string> { t.Subject }),
+            SubjectIds = t.Subjects.Select(s => s.Id).ToList(),
+            Difficulty = t.Difficulty,
+            MaxAttempts = t.MaxAttempts,
+            PassingScore = t.PassingScore,
+            IsProctored = t.IsProctored,
+            ShuffleQuestions = t.ShuffleQuestions,
+            ShuffleAnswers = t.ShuffleAnswers,
+            ShowResultsAfter = t.ShowResultsAfter,
+            ShowCorrectAnswers = t.ShowCorrectAnswers,
+            ShowDetailedFeedback = t.ShowDetailedFeedback,
+            TimeLimit = t.TimeLimit,
+            IsPublished = t.IsPublished,
+            IsPublic = t.IsPublic,
+            TotalPoints = t.TotalPoints,
+            QuestionCount = t.Questions.Count,
+            CreatedAt = t.CreatedAt,
+            UserId = t.UserId,
+            UserName = t.User.UserName ?? "Unknown",
+            Tags = t.Tags.Select(tag => tag.Name).ToList()
+        }).ToList();
+
+        return Ok(examDtos);
     }
 
     /// <summary>
@@ -145,6 +153,7 @@ public class ExamsController : ControllerBase
         var exam = await _context.Exams
             .Include(t => t.User)
             .Include(t => t.Tags)
+            .Include(t => t.Subjects)
             .Include(t => t.Questions)
                 .ThenInclude(q => q.Answers)
             .FirstOrDefaultAsync(t => t.Id == id);
@@ -166,6 +175,8 @@ public class ExamsController : ControllerBase
             Title = exam.Title,
             Description = exam.Description,
             Subject = exam.Subject,
+            Subjects = exam.Subjects.Any() ? exam.Subjects.Select(s => s.Name).ToList() : (string.IsNullOrEmpty(exam.Subject) ? new List<string>() : new List<string> { exam.Subject }),
+            SubjectIds = exam.Subjects.Select(s => s.Id).ToList(),
             Difficulty = exam.Difficulty,
             CountryId = exam.CountryId,
             UniversityId = exam.UniversityId,
@@ -571,8 +582,8 @@ public class ExamsController : ControllerBase
                 ? (double)completedAttempts.Count(a => a.Passed) / completedAttempts.Count * 100 
                 : 0,
             AverageTimeSpent = completedAttempts.Any() 
-                ? TimeSpan.FromSeconds(completedAttempts.Average(a => a.TimeSpent.TotalSeconds))
-                : TimeSpan.Zero,
+                ? completedAttempts.Average(a => a.TimeSpent.TotalSeconds)
+                : 0,
             QuestionStats = exam.Questions.Select(q =>
             {
                 var allAnswers = completedAttempts
@@ -680,6 +691,25 @@ public class ExamsController : ControllerBase
             exam.Tags = tags;
         }
 
+        // Добавляем предметы (приоритет новому способу)
+        if (dto.SubjectIds.Any())
+        {
+            var subjects = await _context.Subjects.Where(s => dto.SubjectIds.Contains(s.Id)).ToListAsync();
+            exam.Subjects = subjects;
+            // Сохраняем первый предмет в старое поле для обратной совместимости
+            exam.Subject = subjects.FirstOrDefault()?.Name ?? dto.Subject;
+        }
+        else if (!string.IsNullOrEmpty(dto.Subject))
+        {
+            // Если используется старый способ (только строка), пытаемся найти или создать предмет
+            var subject = await _context.Subjects.FirstOrDefaultAsync(s => s.Name == dto.Subject);
+            if (subject != null)
+            {
+                exam.Subjects = new List<Subject> { subject };
+            }
+            exam.Subject = dto.Subject;
+        }
+
         _context.Exams.Add(exam);
         await _context.SaveChangesAsync();
 
@@ -689,6 +719,8 @@ public class ExamsController : ControllerBase
             Title = exam.Title,
             Description = exam.Description,
             Subject = exam.Subject,
+            Subjects = exam.Subjects.Any() ? exam.Subjects.Select(s => s.Name).ToList() : (string.IsNullOrEmpty(exam.Subject) ? new List<string>() : new List<string> { exam.Subject }),
+            SubjectIds = exam.Subjects.Select(s => s.Id).ToList(),
             Difficulty = exam.Difficulty,
             MaxAttempts = exam.MaxAttempts,
             PassingScore = exam.PassingScore,
@@ -716,6 +748,7 @@ public class ExamsController : ControllerBase
             .Include(t => t.Questions)
                 .ThenInclude(q => q.Answers)
             .Include(t => t.Tags)
+            .Include(t => t.Subjects)
             .FirstOrDefaultAsync(t => t.Id == id);
 
         if (exam == null)
@@ -728,8 +761,25 @@ public class ExamsController : ControllerBase
         // Обновляем поля
         exam.Title = dto.Title;
         exam.Description = dto.Description;
-        exam.Subject = dto.Subject;
         exam.Difficulty = dto.Difficulty;
+        
+        // Обновляем предметы (приоритет новому способу)
+        if (dto.SubjectIds.Any())
+        {
+            var subjects = await _context.Subjects.Where(s => dto.SubjectIds.Contains(s.Id)).ToListAsync();
+            exam.Subjects = subjects;
+            exam.Subject = subjects.FirstOrDefault()?.Name ?? dto.Subject;
+        }
+        else if (!string.IsNullOrEmpty(dto.Subject))
+        {
+            // Если используется старый способ, пытаемся найти предмет
+            var subject = await _context.Subjects.FirstOrDefaultAsync(s => s.Name == dto.Subject);
+            if (subject != null)
+            {
+                exam.Subjects = new List<Subject> { subject };
+            }
+            exam.Subject = dto.Subject;
+        }
         exam.CountryId = dto.CountryId;
         exam.UniversityId = dto.UniversityId;
         exam.ExamTypeId = dto.ExamTypeId;

@@ -40,6 +40,7 @@ interface Exam {
   startDate?: string;
   endDate?: string;
   createdAt: string;
+  universityId: number;
 }
 
 interface Subject {
@@ -52,15 +53,38 @@ const ExamsPage = () => {
   const { isTeacher, isAdmin } = useAuth();
   const [exams, setExams] = useState<Exam[]>([]);
   const [subjectsList, setSubjectsList] = useState<Subject[]>([]);
+  const [countriesList, setCountriesList] = useState<{ id: number; name: string }[]>([]);
+  const [universitiesList, setUniversitiesList] = useState<{ id: number; name: string; countryId: number }[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [subjectFilter, setSubjectFilter] = useState<string>('');
   const [difficultyFilter, setDifficultyFilter] = useState<string>('');
+  const [countryFilter, setCountryFilter] = useState<string>('');
+  const [universityFilter, setUniversityFilter] = useState<string>('');
 
   useEffect(() => {
     loadExams();
     loadSubjects();
-  }, [subjectFilter, difficultyFilter]);
+    loadCountries();
+    loadUniversities();
+  }, [subjectFilter, difficultyFilter, countryFilter, universityFilter]);
+  const loadCountries = async () => {
+    try {
+      const response = await api.get('/countries');
+      setCountriesList(response.data);
+    } catch (error) {
+      console.error('Ошибка загрузки стран:', error);
+    }
+  };
+
+  const loadUniversities = async () => {
+    try {
+      const response = await api.get('/universities');
+      setUniversitiesList(response.data);
+    } catch (error) {
+      console.error('Ошибка загрузки вузов:', error);
+    }
+  };
 
   const loadSubjects = async () => {
     try {
@@ -87,7 +111,8 @@ const ExamsPage = () => {
       const params = new URLSearchParams();
       if (subjectFilter) params.append('subject', subjectFilter);
       if (difficultyFilter) params.append('difficulty', difficultyFilter);
-      
+      if (countryFilter) params.append('country', countryFilter);
+      if (universityFilter) params.append('university', universityFilter);
       const response = await api.get(`${endpoint}?${params.toString()}`);
       setExams(response.data);
     } catch (error) {
@@ -97,10 +122,18 @@ const ExamsPage = () => {
     }
   };
 
-  const filteredExams = exams.filter(exam =>
-    exam.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    exam.description.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Фильтрация вузов по стране (по id)
+  const filteredUniversities = countryFilter
+    ? universitiesList.filter(u => u.countryId === Number(countryFilter))
+    : universitiesList;
+
+  // Фильтрация экзаменов по вузу (по id)
+  const filteredExams = exams.filter(exam => {
+    const matchesSearch = exam.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      exam.description.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesUniversity = universityFilter ? exam.universityId === Number(universityFilter) : true;
+    return matchesSearch && matchesUniversity;
+  });
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
@@ -219,16 +252,43 @@ const ExamsPage = () => {
       {/* Поиск и фильтры */}
       <Card className="mb-6">
         <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1 relative">
+          <div className="flex-[2] relative min-w-[300px]">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
               type="text"
               placeholder="Поиск экзаменов..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 text-base"
+              style={{ minWidth: '300px', fontSize: '1.1rem' }}
             />
           </div>
+          <select
+            value={countryFilter}
+            onChange={(e) => setCountryFilter(e.target.value)}
+            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+            style={{ minWidth: '180px' }}
+          >
+            <option value="">Все страны</option>
+            {countriesList.map((country) => (
+              <option key={country.id} value={country.id}>
+                {country.name}
+              </option>
+            ))}
+          </select>
+          <select
+            value={universityFilter}
+            onChange={(e) => setUniversityFilter(e.target.value)}
+            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+            style={{ minWidth: '140px', maxWidth: '220px' }}
+          >
+            <option value="">Все вузы</option>
+            {filteredUniversities.map((university) => (
+              <option key={university.id} value={university.id}>
+                {university.name}
+              </option>
+            ))}
+          </select>
           <select
             value={subjectFilter}
             onChange={(e) => setSubjectFilter(e.target.value)}
