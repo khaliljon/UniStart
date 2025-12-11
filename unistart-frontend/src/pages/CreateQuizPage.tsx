@@ -276,18 +276,18 @@ const CreateQuizPage = () => {
         >
           <Button
             variant="secondary"
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate('/quizzes')}
             className="mb-4 flex items-center gap-2"
           >
             <ArrowLeft className="w-4 h-4" />
-            Назад к панели
+            Назад
           </Button>
 
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
             📝 Создание квиза
           </h1>
-          <p className="text-gray-600">
-            Создайте новый тест для своих студентов
+          <p className="text-gray-600 dark:text-gray-400">
+            {isAdmin ? 'Создайте новый квиз' : 'Создайте новый квиз для своих студентов'}
           </p>
         </motion.div>
 

@@ -243,6 +243,39 @@ const QuizzesPage = () => {
     navigate(`/quizzes/${quizId}/take`);
   };
 
+  const handlePublish = async (quizId: number) => {
+    if (!confirm('Опубликовать квиз?')) return;
+    try {
+      await api.patch(`/quizzes/${quizId}/publish`);
+      await loadQuizzes();
+    } catch (error) {
+      console.error('Ошибка публикации квиза:', error);
+      alert('Не удалось опубликовать квиз');
+    }
+  };
+
+  const handleUnpublish = async (quizId: number) => {
+    if (!confirm('Снять квиз с публикации?')) return;
+    try {
+      await api.patch(`/quizzes/${quizId}/unpublish`);
+      await loadQuizzes();
+    } catch (error) {
+      console.error('Ошибка снятия с публикации:', error);
+      alert('Не удалось снять квиз с публикации');
+    }
+  };
+
+  const handleDelete = async (quizId: number) => {
+    if (!confirm('Вы уверены, что хотите удалить этот квиз?')) return;
+    try {
+      await api.delete(`/quizzes/${quizId}`);
+      await loadQuizzes();
+    } catch (error) {
+      console.error('Ошибка удаления квиза:', error);
+      alert('Не удалось удалить квиз');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -252,7 +285,7 @@ const QuizzesPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 py-8 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <motion.div
@@ -262,24 +295,24 @@ const QuizzesPage = () => {
         >
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-5xl font-bold text-white mb-3 flex items-center gap-3">
+              <h1 className="text-5xl font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-3">
                 <GraduationCap className="w-10 h-10 text-yellow-400" />
                 {isAdmin || isTeacher ? 'Управление обучением' : 'Обучение'}
               </h1>
-              <p className="text-white/70 text-lg">
+              <p className="text-gray-600 dark:text-gray-300 text-lg">
                 {isAdmin || isTeacher
                   ? 'Создавайте курсы, модули и квизы. Управляйте иерархией обучения'
                   : 'Изучайте по модулям, темам и компетенциям'}
               </p>
             </div>
             <div className="flex items-center gap-3">
-              <div className="flex bg-white/10 backdrop-blur-lg rounded-lg p-1 border border-white/20">
+              <div className="flex bg-white dark:bg-gray-800 rounded-lg p-1 border border-gray-200 dark:border-gray-700 shadow-sm">
                 <button
                   onClick={() => setViewMode('hierarchy')}
                   className={`px-4 py-2 rounded-md transition-all ${
                     viewMode === 'hierarchy'
-                      ? 'bg-purple-600 text-white'
-                      : 'text-white/70 hover:text-white'
+                      ? 'bg-primary-500 text-white'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                   }`}
                 >
                   Иерархия
@@ -288,8 +321,8 @@ const QuizzesPage = () => {
                   onClick={() => setViewMode('list')}
                   className={`px-4 py-2 rounded-md transition-all ${
                     viewMode === 'list'
-                      ? 'bg-purple-600 text-white'
-                      : 'text-white/70 hover:text-white'
+                      ? 'bg-primary-500 text-white'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                   }`}
                 >
                   Список
@@ -299,7 +332,7 @@ const QuizzesPage = () => {
                 <Button
                   variant="primary"
                   onClick={() => navigate('/quizzes/create')}
-                  className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700"
+                  className="flex items-center gap-2"
                 >
                   <Plus className="w-5 h-5" />
                   Создать квиз
@@ -359,12 +392,12 @@ const HierarchyView = ({
 }) => {
   if (courses.length === 0 && subjects.length === 0) {
     return (
-      <Card className="p-12 text-center bg-white/10 backdrop-blur-lg border-white/20">
-        <BookOpen className="w-16 h-16 text-white/40 mx-auto mb-4" />
-        <h3 className="text-xl font-semibold text-white mb-2">
+      <Card className="p-12 text-center">
+        <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
           Иерархия обучения пока не настроена
         </h3>
-        <p className="text-white/60">
+        <p className="text-gray-600 dark:text-gray-400">
           Курсы и модули будут доступны после их создания
         </p>
       </Card>
@@ -394,8 +427,8 @@ const HierarchyView = ({
       {/* Standalone предметы (без курса) */}
       {subjects.length > 0 && (
         <div className="mt-8">
-          <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-2">
-            <Layers className="w-6 h-6 text-purple-400" />
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+            <Layers className="w-6 h-6 text-primary-500" />
             Предметы
           </h2>
           <div className="space-y-4">
@@ -439,7 +472,7 @@ const CourseCard = ({
   const isExpanded = expandedItems.has(`course-${course.id}`);
 
   return (
-    <Card className="bg-gradient-to-r from-purple-600/20 to-blue-600/20 backdrop-blur-lg border-purple-500/30">
+    <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-700 border border-gray-200 dark:border-gray-600">
       <div
         className="cursor-pointer"
         onClick={() => onToggleExpand(`course-${course.id}`)}
@@ -448,18 +481,18 @@ const CourseCard = ({
           <div className="flex items-center gap-4">
             <div className="text-5xl">{course.icon || '🎓'}</div>
             <div>
-              <h3 className="text-2xl font-bold text-white mb-1">{course.title}</h3>
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">{course.title}</h3>
               {course.description && (
-                <p className="text-white/70">{course.description}</p>
+                <p className="text-gray-600 dark:text-gray-300">{course.description}</p>
               )}
-              <div className="flex items-center gap-4 mt-2 text-sm text-white/60">
+              <div className="flex items-center gap-4 mt-2 text-sm text-gray-500 dark:text-gray-400">
                 {course.year && <span>📅 {course.year}</span>}
                 {course.direction && <span>📍 {course.direction}</span>}
                 <span>📚 {course.subjectsCount} предметов</span>
               </div>
             </div>
           </div>
-          <div className="text-white/60">
+          <div className="text-gray-500 dark:text-gray-400">
             {isExpanded ? (
               <ChevronDown className="w-6 h-6" />
             ) : (
@@ -525,19 +558,19 @@ const SubjectCard = ({
           <div className="flex items-center gap-3">
             <BookOpen className="w-5 h-5 text-blue-400" />
             <div>
-              <h4 className="text-lg font-semibold text-white">{subject.name}</h4>
+              <h4 className="text-lg font-semibold text-gray-900 dark:text-white">{subject.name}</h4>
               {subject.description && (
-                <p className="text-white/60 text-sm">{subject.description}</p>
+                <p className="text-gray-600 dark:text-gray-400 text-sm">{subject.description}</p>
               )}
               {subject.modulesCount !== undefined && (
-                <span className="text-white/50 text-xs mt-1">
+                <span className="text-gray-500 dark:text-gray-400 text-xs mt-1">
                   {subject.modulesCount} модулей
                 </span>
               )}
             </div>
           </div>
           {subject.modules && subject.modules.length > 0 && (
-            <div className="text-white/60">
+            <div className="text-gray-500 dark:text-gray-400">
               {isExpanded ? (
                 <ChevronDown className="w-5 h-5" />
               ) : (
@@ -556,7 +589,7 @@ const SubjectCard = ({
             exit={{ height: 0, opacity: 0 }}
             className="overflow-hidden"
           >
-            <div className="px-4 pb-4 space-y-3 border-t border-white/10 pt-4">
+            <div className="px-4 pb-4 space-y-3 border-t border-gray-200 dark:border-gray-700 pt-4">
               {subject.modules.map((module) => (
                 <ModuleCard
                   key={module.id}
@@ -601,19 +634,19 @@ const ModuleCard = ({
           <div className="flex items-center gap-3">
             <div className="text-2xl">{module.icon || '📦'}</div>
             <div>
-              <h5 className="text-base font-semibold text-white">{module.title}</h5>
+              <h5 className="text-base font-semibold text-gray-900 dark:text-white">{module.title}</h5>
               {module.description && (
-                <p className="text-white/60 text-xs">{module.description}</p>
+                <p className="text-gray-600 dark:text-gray-400 text-xs">{module.description}</p>
               )}
               <div className="flex items-center gap-3 mt-1">
                 {module.entQuestionCount && (
-                  <span className="text-xs text-yellow-400 flex items-center gap-1">
+                  <span className="text-xs text-yellow-600 dark:text-yellow-400 flex items-center gap-1">
                     <Target className="w-3 h-3" />
                     ЕНТ: {module.entQuestionCount} вопросов
                   </span>
                 )}
                 {module.competencies && (
-                  <span className="text-xs text-white/50">
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
                     {module.competencies.length} компетенций
                   </span>
                 )}
@@ -621,7 +654,7 @@ const ModuleCard = ({
             </div>
           </div>
           {module.competencies && module.competencies.length > 0 && (
-            <div className="text-white/60">
+            <div className="text-gray-500 dark:text-gray-400">
               {isExpanded ? (
                 <ChevronDown className="w-4 h-4" />
               ) : (
@@ -640,7 +673,7 @@ const ModuleCard = ({
             exit={{ height: 0, opacity: 0 }}
             className="overflow-hidden"
           >
-            <div className="px-3 pb-3 space-y-2 border-t border-white/10 pt-3">
+            <div className="px-3 pb-3 space-y-2 border-t border-gray-200 dark:border-gray-700 pt-3">
               {module.competencies.map((competency) => (
                 <CompetencyCard
                   key={competency.id}
@@ -654,11 +687,11 @@ const ModuleCard = ({
               
               {/* Итоговый кейс модуля */}
               {module.hasCaseStudy && module.caseStudyQuizId && (
-                <div className="mt-3 p-3 bg-purple-600/20 rounded-lg border border-purple-500/30">
+                <div className="mt-3 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Puzzle className="w-4 h-4 text-purple-400" />
-                      <span className="text-sm font-semibold text-white">
+                      <Puzzle className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                      <span className="text-sm font-semibold text-gray-900 dark:text-white">
                         Итоговый кейс: {module.caseStudyQuizTitle}
                       </span>
                     </div>
@@ -666,7 +699,6 @@ const ModuleCard = ({
                       variant="primary"
                       size="sm"
                       onClick={() => onQuizClick(module.caseStudyQuizId!)}
-                      className="bg-purple-600 hover:bg-purple-700"
                     >
                       <Play className="w-3 h-3" />
                     </Button>
@@ -676,11 +708,11 @@ const ModuleCard = ({
               
               {/* Финальный квиз модуля */}
               {module.hasModuleFinalQuiz && module.moduleFinalQuizId && (
-                <div className="mt-2 p-3 bg-red-600/20 rounded-lg border border-red-500/30">
+                <div className="mt-2 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Trophy className="w-4 h-4 text-red-400" />
-                      <span className="text-sm font-semibold text-white">
+                      <Trophy className="w-4 h-4 text-red-600 dark:text-red-400" />
+                      <span className="text-sm font-semibold text-gray-900 dark:text-white">
                         Финальный тест модуля: {module.moduleFinalQuizTitle}
                       </span>
                     </div>
@@ -720,23 +752,23 @@ const CompetencyCard = ({
   const isExpanded = expandedItems.has(`competency-${competency.id}`);
 
   return (
-    <div className="bg-white/5 rounded-lg border border-white/10">
+    <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
       <div
         className="cursor-pointer"
         onClick={() => onToggleExpand(`competency-${competency.id}`)}
       >
         <div className="flex items-center justify-between p-2">
           <div className="flex items-center gap-2">
-            <Target className="w-4 h-4 text-green-400" />
-            <span className="text-sm font-medium text-white">{competency.title}</span>
+            <Target className="w-4 h-4 text-green-600 dark:text-green-400" />
+            <span className="text-sm font-medium text-gray-900 dark:text-white">{competency.title}</span>
             {competency.topics && (
-              <span className="text-xs text-white/50">
+              <span className="text-xs text-gray-500 dark:text-gray-400">
                 ({competency.topics.length} тем)
               </span>
             )}
           </div>
           {competency.topics && competency.topics.length > 0 && (
-            <div className="text-white/60">
+            <div className="text-gray-500 dark:text-gray-400">
               {isExpanded ? (
                 <ChevronDown className="w-3 h-3" />
               ) : (
@@ -755,7 +787,7 @@ const CompetencyCard = ({
             exit={{ height: 0, opacity: 0 }}
             className="overflow-hidden"
           >
-            <div className="px-2 pb-2 space-y-2 border-t border-white/10 pt-2">
+            <div className="px-2 pb-2 space-y-2 border-t border-gray-200 dark:border-gray-700 pt-2">
               {competency.topics.map((topic) => (
                 <TopicCard
                   key={topic.id}
@@ -783,11 +815,11 @@ const TopicCard = ({
   onQuizClick: (id: number) => void;
 }) => {
   return (
-    <div className="bg-white/5 rounded-lg border border-white/10 p-2">
+    <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 p-2">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
-          <BookMarked className="w-4 h-4 text-blue-400" />
-          <span className="text-sm text-white font-medium">{topic.title}</span>
+          <BookMarked className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+          <span className="text-sm text-gray-900 dark:text-white font-medium">{topic.title}</span>
         </div>
       </div>
       
@@ -797,7 +829,7 @@ const TopicCard = ({
             variant="secondary"
             size="sm"
             onClick={() => onTheoryClick(topic.theoryId!)}
-            className="bg-blue-600/20 hover:bg-blue-600/30 border-blue-500/30 text-blue-300 text-xs"
+            className="text-xs"
           >
             <FileText className="w-3 h-3" />
             Теория
@@ -808,7 +840,7 @@ const TopicCard = ({
             variant="secondary"
             size="sm"
             onClick={() => onQuizClick(topic.practiceQuizId!)}
-            className="bg-green-600/20 hover:bg-green-600/30 border-green-500/30 text-green-300 text-xs"
+            className="text-xs"
           >
             <Play className="w-3 h-3" />
             Практика
@@ -881,20 +913,20 @@ const ListView = ({
       >
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/60 w-5 h-5" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
               type="text"
               placeholder="Поиск по названию или описанию..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-white/10 backdrop-blur-lg border border-white/20 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white placeholder:text-white/50"
+              className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400"
             />
           </div>
 
           <select
             value={subjectFilter}
             onChange={(e) => setSubjectFilter(e.target.value)}
-            className="px-4 py-2 bg-white/10 backdrop-blur-lg border border-white/20 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white"
+            className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900 dark:text-white"
           >
             <option value="">Все предметы</option>
             {subjectsList.map((subject) => (
@@ -907,7 +939,7 @@ const ListView = ({
           <select
             value={difficultyFilter}
             onChange={(e) => setDifficultyFilter(e.target.value)}
-            className="px-4 py-2 bg-white/10 backdrop-blur-lg border border-white/20 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white"
+            className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-900 dark:text-white"
           >
             <option value="">Любая сложность</option>
             <option value="Easy">Легко</option>
@@ -919,12 +951,12 @@ const ListView = ({
 
       {/* Список квизов */}
       {quizzes.length === 0 ? (
-        <Card className="p-12 text-center bg-white/10 backdrop-blur-lg border-white/20">
-          <BookOpen className="w-16 h-16 text-white/40 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-white mb-2">
+        <Card className="p-12 text-center">
+          <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
             Квизы не найдены
           </h3>
-          <p className="text-white/60">
+          <p className="text-gray-600 dark:text-gray-400">
             {isTeacher || isAdmin
               ? 'Создайте свой первый квиз, чтобы начать'
               : 'Пока нет доступных квизов'}
@@ -939,9 +971,9 @@ const ListView = ({
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
             >
-              <Card className="h-full flex flex-col hover:shadow-xl transition-shadow bg-white/10 backdrop-blur-lg border-white/20">
+              <Card className="h-full flex flex-col hover:shadow-lg transition-shadow">
                 <div className="flex justify-between items-start mb-3">
-                  <h3 className="text-lg font-semibold text-white flex-1">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex-1">
                     {quiz.title}
                   </h3>
                   <span
@@ -953,43 +985,97 @@ const ListView = ({
                   </span>
                 </div>
 
-                <p className="text-white/70 text-sm mb-4 flex-1">
+                <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 flex-1">
                   {quiz.description}
                 </p>
 
                 <div className="flex items-center gap-2 mb-3">
-                  <BookOpen className="w-4 h-4 text-white/60" />
-                  <span className="text-sm text-white/70">{quiz.subject}</span>
+                  <BookOpen className="w-4 h-4 text-gray-400" />
+                  <span className="text-sm text-gray-700 dark:text-gray-300">{quiz.subject}</span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 mb-4">
                   <div className="flex items-center gap-2">
-                    <Target className="w-4 h-4 text-white/60" />
-                    <span className="text-sm text-white/70">
+                    <Target className="w-4 h-4 text-gray-400" />
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
                       {quiz.questionCount} вопросов
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-white/60" />
-                    <span className="text-sm text-white/70">{quiz.timeLimit} мин</span>
+                    <Clock className="w-4 h-4 text-gray-400" />
+                    <span className="text-sm text-gray-600 dark:text-gray-400">{quiz.timeLimit} мин</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Award className="w-4 h-4 text-white/60" />
-                    <span className="text-sm text-white/70">
+                    <Award className="w-4 h-4 text-gray-400" />
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
                       {quiz.totalPoints} баллов
                     </span>
                   </div>
                 </div>
 
-                <Button
-                  variant="primary"
-                  size="sm"
-                  className="w-full flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700"
-                  onClick={() => navigate(`/quizzes/${quiz.id}/take`)}
-                >
-                  <Play className="w-4 h-4" />
-                  Начать квиз
-                </Button>
+                {/* Кнопки действий */}
+                {(isTeacher || isAdmin) ? (
+                  <div className="flex flex-col gap-2">
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => navigate(`/quizzes/${quiz.id}/edit`)}
+                        variant="secondary"
+                        className="flex-1 flex items-center justify-center gap-2"
+                      >
+                        <Edit className="w-4 h-4" />
+                        Редактировать
+                      </Button>
+                      <Button
+                        onClick={() => navigate(`/quizzes/${quiz.id}/stats`)}
+                        variant="primary"
+                        className="flex-1 flex items-center justify-center gap-2"
+                      >
+                        <TrendingUp className="w-4 h-4" />
+                        Статистика
+                      </Button>
+                    </div>
+                    <div className="flex gap-2">
+                      {quiz.isPublished ? (
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          className="flex-1 flex items-center justify-center gap-2"
+                          onClick={() => handleUnpublish(quiz.id)}
+                        >
+                          <FileX className="w-4 h-4" />
+                          Снять с публикации
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700"
+                          onClick={() => handlePublish(quiz.id)}
+                        >
+                          <Upload className="w-4 h-4" />
+                          Опубликовать
+                        </Button>
+                      )}
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        className="px-4 flex items-center justify-center gap-2"
+                        onClick={() => handleDelete(quiz.id)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <Button
+                    onClick={() => navigate(`/quizzes/${quiz.id}/take`)}
+                    variant="primary"
+                    className="w-full flex items-center justify-center gap-2"
+                  >
+                    <Play className="w-4 h-4" />
+                    Начать квиз
+                  </Button>
+                )}
               </Card>
             </motion.div>
           ))}
