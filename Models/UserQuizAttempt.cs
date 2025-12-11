@@ -43,8 +43,14 @@ namespace UniStart.Models
         // Навигационное свойство к пользователю
         public ApplicationUser User { get; set; } = null!;
         
-        // JSON с ответами пользователя
-        [Display(Name = "Ответы пользователя (JSON)")]
-        public string UserAnswersJson { get; set; } = "{}"; // {"questionId": [answerId1, answerId2]}
+        // Связь с ответами пользователя (нормализованная структура, аналогично UserExamAnswer)
+        [Display(Name = "Ответы пользователя")]
+        public ICollection<UserQuizAnswer> UserAnswers { get; set; } = new List<UserQuizAnswer>();
+        
+        // JSON с ответами пользователя (устаревшее, используется для обратной совместимости)
+        // TODO: Удалить после полной миграции на UserAnswers
+        [Display(Name = "Ответы пользователя (JSON) - УСТАРЕВШЕЕ")]
+        [Obsolete("Используйте UserAnswers вместо UserAnswersJson")]
+        public string? UserAnswersJson { get; set; } // {"questionId": [answerId1, answerId2]}
     }
 }

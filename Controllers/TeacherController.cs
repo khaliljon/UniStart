@@ -123,9 +123,9 @@ public class TeacherController : ControllerBase
         if (quiz.UserId != userId)
             return Forbid();
 
-        // Получаем все попытки прохождения этого теста
+        // Получаем все попытки прохождения этого теста (только завершенные)
         var attempts = await _context.UserQuizAttempts
-            .Where(qa => qa.QuizId == quizId)
+            .Where(qa => qa.QuizId == quizId && qa.CompletedAt != null)
             .ToListAsync();
 
         if (attempts.Count == 0)
@@ -192,10 +192,22 @@ public class TeacherController : ControllerBase
         if (quizId.HasValue)
             query = query.Where(qa => qa.QuizId == quizId.Value);
 
+        // Получаем попытки без Include для избежания дублирования
         var attempts = await query
-            .Include(qa => qa.User)
-            .Include(qa => qa.Quiz)
+            .Where(qa => qa.CompletedAt != null) // Только завершенные попытки
             .ToListAsync();
+
+        // Получаем информацию о пользователях и квизах отдельными запросами
+        var userIds = attempts.Select(a => a.UserId).Distinct().ToList();
+        var quizIds = attempts.Select(a => a.QuizId).Distinct().ToList();
+        
+        var users = await _context.Users
+            .Where(u => userIds.Contains(u.Id))
+            .ToDictionaryAsync(u => u.Id);
+        
+        var quizzes = await _context.Quizzes
+            .Where(q => quizIds.Contains(q.Id))
+            .ToDictionaryAsync(q => q.Id);
 
         // Группируем по студентам
         var studentStats = attempts
@@ -203,14 +215,17 @@ public class TeacherController : ControllerBase
             .Select(g => new
             {
                 UserId = g.Key,
-                Email = g.First().User.Email,
-                UserName = g.First().User.UserName,
-                TotalAttempts = g.Count(),
-                AverageScore = Math.Round(g.Average(a => a.Percentage), 2), // Используем Percentage вместо Score
+                Email = users.TryGetValue(g.Key, out var user) ? user.Email : "Unknown",
+                UserName = users.TryGetValue(g.Key, out var u) ? u.UserName : "Unknown",
+                TotalAttempts = g.Count(), // Реальное количество попыток без дублирования
+                AverageScore = Math.Round(g.Average(a => a.Percentage), 2), // Используем Percentage
                 AveragePercentage = Math.Round(g.Average(a => a.Percentage), 2),
-                BestScore = g.Max(a => a.Score),
+                BestScore = g.Max(a => a.Percentage), // Используем Percentage для лучшего результата
                 LastAttemptDate = g.Max(a => a.CompletedAt),
-                QuizzesTaken = g.Select(a => a.QuizId).Distinct().Count()
+                QuizzesTaken = g.Select(a => a.QuizId).Distinct().Count(),
+                // Добавляем поля для экзаменов и карточек
+                ExamsTaken = 0, // Можно добавить позже, если нужно
+                CardsStudied = 0 // Можно добавить позже, если нужно
             })
             .OrderByDescending(s => s.AveragePercentage)
             .Skip((page - 1) * pageSize)
@@ -245,43 +260,43 @@ public class TeacherController : ControllerBase
             .Select(q => q.Id)
             .ToListAsync();
 
-        // Получаем попытки студента по квизам преподавателя
+        // Получаем попытки студента по квизам преподавателя (без Include для избежания дублирования)
         var quizAttempts = await _context.UserQuizAttempts
-            .Include(qa => qa.Quiz)
-            .Where(qa => qa.UserId == studentId && teacherQuizIds.Contains(qa.QuizId))
+            .Where(qa => qa.UserId == studentId && teacherQuizIds.Contains(qa.QuizId) && qa.CompletedAt != null)
             .OrderByDescending(qa => qa.CompletedAt)
             .ToListAsync();
 
-        // Получаем попытки студента по экзаменам
+        // Получаем попытки студента по экзаменам (без Include для избежания дублирования)
         var examAttempts = await _context.UserExamAttempts
-            .Include(ea => ea.Exam)
-            .Where(ea => ea.UserId == studentId)
+            .Where(ea => ea.UserId == studentId && ea.CompletedAt != null)
             .OrderByDescending(ea => ea.CompletedAt)
             .ToListAsync();
 
-        // Получаем количество полностью изученных наборов карточек (где все карточки изучены правильно)
-        // Пока используем упрощенную логику: считаем наборы, где все карточки изучены
-        // TODO: Нужно создать модель UserFlashcardProgress для правильного отслеживания прогресса каждого пользователя
-        var studiedSetsCount = await _context.FlashcardSets
-            .Where(fs => fs.IsPublic || fs.UserId == studentId)
-            .Select(fs => new
-            {
-                SetId = fs.Id,
-                TotalCards = fs.Flashcards.Count,
-                // Временная логика - считаем наборы, где все карточки изучены
-                // TODO: Заменить на проверку всех карточек с правильными ответами для пользователя
-                StudiedCards = fs.Flashcards.Count(f => f.LastReviewedAt != null)
-            })
-            .Where(x => x.TotalCards > 0 && x.StudiedCards == x.TotalCards) // Только полностью изученные наборы
+        // Получаем количество полностью изученных наборов карточек (где все карточки освоены пользователем)
+        // Используем новую модель UserFlashcardSetAccess для точного подсчета
+        var studiedSetsCount = await _context.UserFlashcardSetAccesses
+            .Where(a => a.UserId == studentId && a.IsCompleted)
             .CountAsync();
         
-        var studiedCards = studiedSetsCount; // Это количество наборов, а не карточек
+        var studiedCards = studiedSetsCount; // Это количество полностью изученных наборов
+
+        // Получаем информацию о квизах и экзаменах отдельно для отображения
+        var quizIds = quizAttempts.Select(a => a.QuizId).Distinct().ToList();
+        var examIds = examAttempts.Select(ea => ea.ExamId).Distinct().ToList();
+        
+        var quizzesDict = await _context.Quizzes
+            .Where(q => quizIds.Contains(q.Id))
+            .ToDictionaryAsync(q => q.Id);
+        
+        var examsDict = await _context.Exams
+            .Where(e => examIds.Contains(e.Id))
+            .ToDictionaryAsync(e => e.Id);
 
         var attemptDetails = quizAttempts.Select(a => new
         {
             AttemptId = a.Id,
             QuizId = a.QuizId,
-            QuizTitle = a.Quiz.Title,
+            QuizTitle = quizzesDict.TryGetValue(a.QuizId, out var quiz) ? quiz.Title : "Unknown",
             Type = "Quiz",
             Score = a.Score,
             MaxScore = a.MaxScore,
@@ -293,7 +308,7 @@ public class TeacherController : ControllerBase
         {
             AttemptId = ea.Id,
             ExamId = ea.ExamId,
-            ExamTitle = ea.Exam.Title,
+            ExamTitle = examsDict.TryGetValue(ea.ExamId, out var exam) ? exam.Title : "Unknown",
             Type = "Exam",
             Score = ea.Score,
             TotalPoints = ea.TotalPoints,

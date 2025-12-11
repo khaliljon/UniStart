@@ -556,10 +556,6 @@ public class ExamsController : ControllerBase
 
         var exam = await _context.Exams
             .Include(t => t.Questions)
-            .Include(t => t.Attempts)
-                .ThenInclude(a => a.User)
-            .Include(t => t.Attempts)
-                .ThenInclude(a => a.UserAnswers)
             .FirstOrDefaultAsync(t => t.Id == id);
 
         if (exam == null)
@@ -569,7 +565,69 @@ public class ExamsController : ControllerBase
         if (exam.UserId != userId && !userRoles.Contains("Admin"))
             return Forbid();
 
-        var completedAttempts = exam.Attempts.Where(a => a.CompletedAt != null).ToList();
+        // Получаем попытки без Include для избежания дублирования
+        var completedAttempts = await _context.UserExamAttempts
+            .Where(a => a.ExamId == id && a.CompletedAt != null)
+            .ToListAsync();
+
+        // Получаем все ответы пользователей для всех вопросов одним запросом
+        var attemptIds = completedAttempts.Select(a => a.Id).ToList();
+        var allQuestionAnswers = await _context.UserExamAnswers
+            .Where(ua => attemptIds.Contains(ua.AttemptId))
+            .ToListAsync();
+
+        // Группируем по попыткам и вопросам
+        var answerGroups = allQuestionAnswers
+            .GroupBy(ua => new { ua.AttemptId, ua.QuestionId })
+            .ToList();
+
+        // Получаем информацию о пользователях отдельно для RecentAttempts
+        var userIds = completedAttempts.Select(a => a.UserId).Distinct().ToList();
+        var usersDict = await _context.Users
+            .Where(u => userIds.Contains(u.Id))
+            .ToDictionaryAsync(u => u.Id);
+
+        var questionStats = exam.Questions.Select(q =>
+        {
+            // Получаем ответы для этого вопроса
+            var questionAnswerGroups = answerGroups
+                .Where(g => g.Key.QuestionId == q.Id)
+                .ToList();
+
+            // Количество уникальных попыток, которые отвечали на этот вопрос
+            var totalAnswers = questionAnswerGroups.Count;
+            
+            // Количество правильных ответов (попытки, где хотя бы один ответ правильный)
+            var correctAnswers = questionAnswerGroups.Count(g => 
+                g.Any(ua => ua.IsCorrect));
+
+            return new ExamQuestionStatsDto
+            {
+                QuestionId = q.Id,
+                QuestionText = q.Text,
+                TotalAnswers = totalAnswers,
+                CorrectAnswers = correctAnswers,
+                SuccessRate = totalAnswers > 0 
+                    ? (double)correctAnswers / totalAnswers * 100 
+                    : 0
+            };
+        }).ToList();
+
+        var recentAttempts = completedAttempts
+            .OrderByDescending(a => a.CompletedAt)
+            .Take(10)
+            .Select(a => new ExamAttemptSummaryDto
+            {
+                AttemptId = a.Id,
+                StudentName = usersDict.TryGetValue(a.UserId, out var user) ? (user.UserName ?? "Unknown") : "Unknown",
+                Score = a.Score,
+                TotalPoints = a.TotalPoints,
+                Percentage = a.Percentage,
+                Passed = a.Passed,
+                TimeSpent = a.TimeSpent,
+                CompletedAt = a.CompletedAt.Value
+            })
+            .ToList();
 
         var stats = new ExamStatsDto
         {
@@ -584,39 +642,8 @@ public class ExamsController : ControllerBase
             AverageTimeSpent = completedAttempts.Any() 
                 ? completedAttempts.Average(a => a.TimeSpent.TotalSeconds)
                 : 0,
-            QuestionStats = exam.Questions.Select(q =>
-            {
-                var allAnswers = completedAttempts
-                    .SelectMany(a => a.UserAnswers)
-                    .Where(ua => ua.QuestionId == q.Id)
-                    .ToList();
-
-                return new ExamQuestionStatsDto
-                {
-                    QuestionId = q.Id,
-                    QuestionText = q.Text,
-                    TotalAnswers = allAnswers.Count,
-                    CorrectAnswers = allAnswers.Count(ua => ua.IsCorrect),
-                    SuccessRate = allAnswers.Any() 
-                        ? (double)allAnswers.Count(ua => ua.IsCorrect) / allAnswers.Count * 100 
-                        : 0
-                };
-            }).ToList(),
-            RecentAttempts = completedAttempts
-                .OrderByDescending(a => a.CompletedAt)
-                .Take(10)
-                .Select(a => new ExamAttemptSummaryDto
-                {
-                    AttemptId = a.Id,
-                    StudentName = a.User.UserName ?? "Unknown",
-                    Score = a.Score,
-                    TotalPoints = a.TotalPoints,
-                    Percentage = a.Percentage,
-                    Passed = a.Passed,
-                    TimeSpent = a.TimeSpent,
-                    CompletedAt = a.CompletedAt.Value
-                })
-                .ToList()
+            QuestionStats = questionStats,
+            RecentAttempts = recentAttempts
         };
 
         return Ok(stats);

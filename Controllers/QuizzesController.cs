@@ -416,10 +416,63 @@ namespace UniStart.Controllers
                 Percentage = maxScore > 0 ? (double)totalScore / maxScore * 100 : 0,
                 TimeSpentSeconds = dto.TimeSpentSeconds,
                 CompletedAt = DateTime.UtcNow,
-                UserAnswersJson = JsonSerializer.Serialize(dto.UserAnswers)
+                UserAnswersJson = JsonSerializer.Serialize(dto.UserAnswers) // Для обратной совместимости
             };
 
             _context.UserQuizAttempts.Add(attempt);
+            await _context.SaveChangesAsync(); // Сохраняем, чтобы получить ID попытки
+
+            // Создаем записи UserQuizAnswer для каждого ответа
+            var userQuizAnswers = new List<UserQuizAnswer>();
+            foreach (var question in quiz.Questions)
+            {
+                if (dto.UserAnswers.TryGetValue(question.Id, out var userAnswerIds) && userAnswerIds.Any())
+                {
+                    var correctAnswerIds = question.Answers
+                        .Where(a => a.IsCorrect)
+                        .Select(a => a.Id)
+                        .OrderBy(id => id)
+                        .ToList();
+
+                    var sortedUserAnswerIds = userAnswerIds.OrderBy(id => id).ToList();
+                    bool isCorrect = correctAnswerIds.SequenceEqual(sortedUserAnswerIds);
+                    int pointsEarned = isCorrect ? question.Points : 0;
+
+                    // Для множественного выбора создаем несколько записей (по одной на каждый выбранный ответ)
+                    // Для единичного выбора - одну запись
+                    foreach (var answerId in userAnswerIds)
+                    {
+                        var selectedAnswer = question.Answers.FirstOrDefault(a => a.Id == answerId);
+                        if (selectedAnswer != null)
+                        {
+                            userQuizAnswers.Add(new UserQuizAnswer
+                            {
+                                AttemptId = attempt.Id,
+                                QuestionId = question.Id,
+                                SelectedAnswerId = answerId,
+                                IsCorrect = isCorrect && correctAnswerIds.Contains(answerId), // Правильность конкретного ответа
+                                PointsEarned = userAnswerIds.IndexOf(answerId) == 0 ? pointsEarned : 0, // Баллы только за первый ответ (чтобы не дублировать)
+                                AnsweredAt = DateTime.UtcNow
+                            });
+                        }
+                    }
+                }
+                else
+                {
+                    // Вопрос не был отвечен - создаем запись с IsCorrect = false
+                    userQuizAnswers.Add(new UserQuizAnswer
+                    {
+                        AttemptId = attempt.Id,
+                        QuestionId = question.Id,
+                        SelectedAnswerId = null,
+                        IsCorrect = false,
+                        PointsEarned = 0,
+                        AnsweredAt = DateTime.UtcNow
+                    });
+                }
+            }
+
+            _context.UserQuizAnswers.AddRange(userQuizAnswers);
             await _context.SaveChangesAsync();
 
             var result = new QuizResultDto
@@ -475,8 +528,8 @@ namespace UniStart.Controllers
             if (quiz.UserId != userId && !userRoles.Contains("Admin") && !userRoles.Contains("Teacher"))
                 return Forbid();
             
+            // Получаем попытки без Include для избежания дублирования при подсчете
             var attempts = await _context.UserQuizAttempts
-                .Include(a => a.User)
                 .Where(a => a.QuizId == id && a.CompletedAt != null)
                 .OrderByDescending(a => a.CompletedAt)
                 .ToListAsync();
@@ -497,40 +550,40 @@ namespace UniStart.Controllers
                 });
             }
 
-            // Подсчет статистики по вопросам
+            // Получаем все ответы пользователей для этого квиза
+            var attemptIds = attempts.Select(a => a.Id).ToList();
+            var userAnswers = await _context.UserQuizAnswers
+                .Where(a => attemptIds.Contains(a.AttemptId))
+                .GroupBy(a => new { a.AttemptId, a.QuestionId })
+                .ToListAsync();
+
+            // Подсчет статистики по вопросам (используем UserQuizAnswer вместо JSON)
             var questionStats = new List<object>();
             foreach (var QuizQuestion in quiz.Questions.OrderBy(q => q.OrderIndex))
             {
-                int totalAnswers = 0;
+                // Получаем все ответы на этот вопрос из всех попыток
+                // Группируем по AttemptId, чтобы получить уникальные попытки
+                var questionAttempts = userAnswers
+                    .Where(g => g.Key.QuestionId == QuizQuestion.Id)
+                    .Select(g => g.Key.AttemptId)
+                    .Distinct()
+                    .ToList();
+
+                int totalAnswers = questionAttempts.Count; // Количество уникальных попыток, которые отвечали на вопрос
                 int correctAnswers = 0;
 
-                foreach (var attempt in attempts)
+                // Для каждой попытки проверяем, был ли ответ правильным
+                foreach (var attemptId in questionAttempts)
                 {
-                    if (string.IsNullOrEmpty(attempt.UserAnswersJson))
-                        continue;
-
-                    try
+                    var answerGroup = userAnswers
+                        .FirstOrDefault(g => g.Key.QuestionId == QuizQuestion.Id && g.Key.AttemptId == attemptId);
+                    
+                    if (answerGroup != null)
                     {
-                        var userAnswers = JsonSerializer.Deserialize<Dictionary<int, List<int>>>(attempt.UserAnswersJson);
-                        if (userAnswers == null || !userAnswers.ContainsKey(QuizQuestion.Id))
-                            continue;
-
-                        totalAnswers++;
-
-                        var correctAnswerIds = QuizQuestion.Answers
-                            .Where(a => a.IsCorrect)
-                            .Select(a => a.Id)
-                            .OrderBy(id => id)
-                            .ToList();
-
-                        var userAnswerIds = userAnswers[QuizQuestion.Id].OrderBy(id => id).ToList();
-
-                        if (correctAnswerIds.SequenceEqual(userAnswerIds))
+                        // Проверяем правильность ответа - если есть хотя бы одна запись с IsCorrect=true и PointsEarned>0
+                        var isCorrect = answerGroup.Any(a => a.IsCorrect && a.PointsEarned > 0);
+                        if (isCorrect)
                             correctAnswers++;
-                    }
-                    catch
-                    {
-                        // Пропускаем невалидные данные
                     }
                 }
 
@@ -544,16 +597,26 @@ namespace UniStart.Controllers
                 });
             }
 
+            // Получаем информацию о пользователях отдельным запросом
+            var userIds = attempts.Select(a => a.UserId).Distinct().ToList();
+            var usersDict = await _context.Users
+                .Where(u => userIds.Contains(u.Id))
+                .ToDictionaryAsync(u => u.Id);
+
             // Последние попытки
-            var recentAttempts = attempts.Take(10).Select(a => new
+            var recentAttempts = attempts.Take(10).Select(a => 
             {
-                id = a.Id,
-                studentName = $"{a.User?.FirstName} {a.User?.LastName}".Trim(),
-                score = a.Score,
-                maxScore = a.MaxScore,
-                percentage = a.Percentage,
-                timeSpent = a.TimeSpentSeconds,
-                completedAt = a.CompletedAt
+                var user = usersDict.TryGetValue(a.UserId, out var u) ? u : null;
+                return new
+                {
+                    id = a.Id,
+                    studentName = user != null ? $"{user.FirstName} {user.LastName}".Trim() : "Unknown",
+                    score = a.Score,
+                    maxScore = a.MaxScore,
+                    percentage = a.Percentage,
+                    timeSpent = a.TimeSpentSeconds,
+                    completedAt = a.CompletedAt
+                };
             }).ToList();
 
             // Общая статистика
@@ -914,6 +977,59 @@ namespace UniStart.Controllers
             attempt.CompletedAt = DateTime.UtcNow;
             attempt.UserAnswersJson = JsonSerializer.Serialize(dto.UserAnswers);
 
+            await _context.SaveChangesAsync(); // Сохраняем, чтобы получить обновленный attempt
+
+            // Создаем записи UserQuizAnswer для каждого ответа
+            var userQuizAnswers = new List<UserQuizAnswer>();
+            foreach (var question in attempt.Quiz.Questions)
+            {
+                if (dto.UserAnswers.TryGetValue(question.Id, out var userAnswerIds) && userAnswerIds.Any())
+                {
+                    var correctAnswerIds = question.Answers
+                        .Where(a => a.IsCorrect)
+                        .Select(a => a.Id)
+                        .OrderBy(id => id)
+                        .ToList();
+
+                    var sortedUserAnswerIds = userAnswerIds.OrderBy(id => id).ToList();
+                    bool isCorrect = correctAnswerIds.SequenceEqual(sortedUserAnswerIds);
+                    int pointsEarned = isCorrect ? question.Points : 0;
+
+                    // Для множественного выбора создаем несколько записей (по одной на каждый выбранный ответ)
+                    // Для единичного выбора - одну запись
+                    foreach (var answerId in userAnswerIds)
+                    {
+                        var selectedAnswer = question.Answers.FirstOrDefault(a => a.Id == answerId);
+                        if (selectedAnswer != null)
+                        {
+                            userQuizAnswers.Add(new UserQuizAnswer
+                            {
+                                AttemptId = attempt.Id,
+                                QuestionId = question.Id,
+                                SelectedAnswerId = answerId,
+                                IsCorrect = isCorrect && correctAnswerIds.Contains(answerId), // Правильность конкретного ответа
+                                PointsEarned = userAnswerIds.IndexOf(answerId) == 0 ? pointsEarned : 0, // Баллы только за первый ответ (чтобы не дублировать)
+                                AnsweredAt = DateTime.UtcNow
+                            });
+                        }
+                    }
+                }
+                else
+                {
+                    // Вопрос не был отвечен - создаем запись с IsCorrect = false
+                    userQuizAnswers.Add(new UserQuizAnswer
+                    {
+                        AttemptId = attempt.Id,
+                        QuestionId = question.Id,
+                        SelectedAnswerId = null,
+                        IsCorrect = false,
+                        PointsEarned = 0,
+                        AnsweredAt = DateTime.UtcNow
+                    });
+                }
+            }
+
+            _context.UserQuizAnswers.AddRange(userQuizAnswers);
             await _context.SaveChangesAsync();
 
             return Ok(new

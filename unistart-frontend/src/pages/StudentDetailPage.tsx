@@ -143,7 +143,7 @@ const StudentDetailPage = () => {
           <Card className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Изучено карточек</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Наборов карточек изучено</p>
                 <p className="text-3xl font-bold text-gray-900 dark:text-white">
                   {student.totalCardsStudied || 0}
                 </p>

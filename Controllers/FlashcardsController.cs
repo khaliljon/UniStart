@@ -100,6 +100,7 @@ namespace UniStart.Controllers
 
         /// <summary>
         /// Получить набор по ID с карточками (свои или публичные)
+        /// При открытии набора создается/обновляется запись UserFlashcardSetAccess
         /// </summary>
         [HttpGet("sets/{id}")]
         public async Task<ActionResult<FlashcardSet>> GetFlashcardSet(int id)
@@ -114,6 +115,37 @@ namespace UniStart.Controllers
 
             if (set == null)
                 return NotFound($"FlashcardSet with ID {id} not found");
+
+            // Создаем или обновляем запись о доступе к набору
+            var access = await _context.UserFlashcardSetAccesses
+                .FirstOrDefaultAsync(a => a.UserId == userId && a.FlashcardSetId == id);
+
+            var now = DateTime.UtcNow;
+            if (access == null)
+            {
+                // Первое открытие набора
+                access = new UserFlashcardSetAccess
+                {
+                    UserId = userId,
+                    FlashcardSetId = id,
+                    FirstAccessedAt = now,
+                    LastAccessedAt = now,
+                    AccessCount = 1,
+                    TotalCardsCount = set.Flashcards.Count,
+                    CreatedAt = now
+                };
+                _context.UserFlashcardSetAccesses.Add(access);
+            }
+            else
+            {
+                // Обновляем информацию о доступе
+                access.LastAccessedAt = now;
+                access.AccessCount++;
+                access.TotalCardsCount = set.Flashcards.Count; // Обновляем количество карточек на случай изменения
+                access.UpdatedAt = now;
+            }
+
+            await _context.SaveChangesAsync();
 
             _logger.LogInformation("GetFlashcardSet: ID={Id}, UserId={UserId}, FlashcardsCount={Count}", 
                 id, userId, set.Flashcards.Count);
@@ -233,6 +265,7 @@ namespace UniStart.Controllers
 
         /// <summary>
         /// Получить карточки для повторения из набора (свои или публичные)
+        /// Использует UserFlashcardProgress для определения карточек к повторению
         /// </summary>
         [HttpGet("sets/{setId}/review")]
         public async Task<ActionResult<List<FlashcardDto>>> GetCardsForReview(int setId)
@@ -246,27 +279,57 @@ namespace UniStart.Controllers
             if (!setExists)
                 return NotFound("FlashcardSet not found or access denied");
             
-            var cards = await _context.Flashcards
+            // Получаем все карточки набора
+            var allCards = await _context.Flashcards
                 .Where(f => f.FlashcardSetId == setId)
-                .Where(f => f.NextReviewDate == null || f.NextReviewDate <= DateTime.UtcNow)
-                .Select(f => new FlashcardDto
-                {
-                    Id = f.Id,
-                    Type = f.Type,
-                    Question = f.Question,
-                    Answer = f.Answer,
-                    OptionsJson = f.OptionsJson,
-                    MatchingPairsJson = f.MatchingPairsJson,
-                    SequenceJson = f.SequenceJson,
-                    Explanation = f.Explanation,
-                    OrderIndex = f.OrderIndex,
-                    NextReviewDate = f.NextReviewDate,
-                    LastReviewedAt = f.LastReviewedAt,
-                    IsDueForReview = true
-                })
                 .ToListAsync();
 
-            return Ok(cards);
+            // Получаем прогресс пользователя по этим карточкам
+            var userProgress = await _context.UserFlashcardProgresses
+                .Where(p => p.UserId == userId && allCards.Select(c => c.Id).Contains(p.FlashcardId))
+                .ToDictionaryAsync(p => p.FlashcardId);
+
+            var cardsForReview = new List<FlashcardDto>();
+            var now = DateTime.UtcNow;
+
+            foreach (var card in allCards)
+            {
+                bool isDueForReview = false;
+                DateTime? nextReviewDate = null;
+
+                if (userProgress.TryGetValue(card.Id, out var progress))
+                {
+                    // Используем прогресс пользователя
+                    isDueForReview = _spacedRepetitionService.IsDueForReview(progress);
+                    nextReviewDate = progress.NextReviewDate;
+                }
+                else
+                {
+                    // Карточка еще не изучалась пользователем - нужно повторить
+                    isDueForReview = true;
+                }
+
+                if (isDueForReview)
+                {
+                    cardsForReview.Add(new FlashcardDto
+                    {
+                        Id = card.Id,
+                        Type = card.Type,
+                        Question = card.Question,
+                        Answer = card.Answer,
+                        OptionsJson = card.OptionsJson,
+                        MatchingPairsJson = card.MatchingPairsJson,
+                        SequenceJson = card.SequenceJson,
+                        Explanation = card.Explanation,
+                        OrderIndex = card.OrderIndex,
+                        NextReviewDate = nextReviewDate,
+                        LastReviewedAt = userProgress.TryGetValue(card.Id, out var p) ? p.LastReviewedAt : null,
+                        IsDueForReview = true
+                    });
+                }
+            }
+
+            return Ok(cardsForReview);
         }
 
         /// <summary>
@@ -381,7 +444,92 @@ namespace UniStart.Controllers
         }
 
         /// <summary>
+        /// Получить статистику по набору карточек
+        /// </summary>
+        [HttpGet("sets/{id}/stats")]
+        public async Task<ActionResult> GetFlashcardSetStats(int id)
+        {
+            var userId = GetUserId();
+
+            var set = await _context.FlashcardSets
+                .Include(fs => fs.Flashcards)
+                .FirstOrDefaultAsync(fs => fs.Id == id);
+
+            if (set == null)
+                return NotFound($"FlashcardSet with ID {id} not found");
+
+            // Проверка доступа: только владелец набора может видеть статистику
+            if (set.UserId != userId)
+                return Forbid("Access denied: you can only view stats for your own flashcard sets");
+
+            // Количество уникальных пользователей, изучающих этот набор (хотя бы раз открыли)
+            var uniqueStudentsCount = await _context.UserFlashcardSetAccesses
+                .Where(a => a.FlashcardSetId == id)
+                .Select(a => a.UserId)
+                .Distinct()
+                .CountAsync();
+
+            // Количество карточек к повторению для текущего пользователя (если владелец тоже изучает)
+            var cardsToReviewForUser = 0;
+            if (set.UserId == userId)
+            {
+                var userProgress = await _context.UserFlashcardProgresses
+                    .Where(p => p.UserId == userId && p.Flashcard.FlashcardSetId == id)
+                    .ToListAsync();
+
+                var allCards = await _context.Flashcards
+                    .Where(f => f.FlashcardSetId == id)
+                    .Select(f => f.Id)
+                    .ToListAsync();
+
+                cardsToReviewForUser = allCards.Count(cardId =>
+                {
+                    var progress = userProgress.FirstOrDefault(p => p.FlashcardId == cardId);
+                    if (progress == null) return true; // Карточка еще не изучалась
+                    return _spacedRepetitionService.IsDueForReview(progress);
+                });
+            }
+
+            // Общее количество карточек в наборе
+            var totalCards = set.Flashcards.Count;
+
+            // Средний прогресс по всем пользователям (процент полностью изученных наборов)
+            var completedSetsCount = await _context.UserFlashcardSetAccesses
+                .Where(a => a.FlashcardSetId == id && a.IsCompleted)
+                .CountAsync();
+
+            var averageProgress = uniqueStudentsCount > 0
+                ? Math.Round((double)completedSetsCount / uniqueStudentsCount * 100, 2)
+                : 0.0;
+
+            // Общее количество изученных карточек (карточки с IsMastered = true)
+            var totalMasteredCards = await _context.UserFlashcardProgresses
+                .Where(p => p.Flashcard.FlashcardSetId == id && p.IsMastered)
+                .Select(p => p.FlashcardId)
+                .Distinct()
+                .CountAsync();
+
+            return Ok(new
+            {
+                set.Id,
+                set.Title,
+                set.Description,
+                set.Subject,
+                set.IsPublic,
+                set.CreatedAt,
+                set.UpdatedAt,
+                TotalCards = totalCards,
+                UniqueStudents = uniqueStudentsCount, // Изучающих студентов (хотя бы раз открыли набор)
+                CardsToReview = cardsToReviewForUser,
+                AverageProgress = averageProgress, // Средний процент завершенных наборов
+                TotalMasteredCards = totalMasteredCards, // Уникальных карточек, которые освоили хотя бы один пользователь
+                CompletedSetsCount = completedSetsCount // Количество пользователей, которые полностью изучили набор
+            });
+        }
+
+        /// <summary>
         /// Отметить повторение карточки (Spaced Repetition) - свои или из публичных наборов
+        /// Создает/обновляет UserFlashcardProgress для индивидуального прогресса пользователя
         /// </summary>
         [HttpPost("cards/review")]
         public async Task<ActionResult<ReviewResultDto>> ReviewFlashcard(ReviewFlashcardDto dto)
@@ -398,17 +546,63 @@ namespace UniStart.Controllers
             if (dto.Quality < 0 || dto.Quality > 5)
                 return BadRequest("Quality must be between 0 and 5");
 
-            // Применяем алгоритм интервального повторения
-            _spacedRepetitionService.UpdateFlashcard(card, dto.Quality);
+            // Получаем или создаем прогресс пользователя по карточке
+            var progress = await _context.UserFlashcardProgresses
+                .FirstOrDefaultAsync(p => p.UserId == userId && p.FlashcardId == dto.FlashcardId);
+
+            if (progress == null)
+            {
+                // Создаем новую запись прогресса
+                progress = new UserFlashcardProgress
+                {
+                    UserId = userId,
+                    FlashcardId = dto.FlashcardId,
+                    EaseFactor = 2.5, // Начальное значение
+                    CreatedAt = DateTime.UtcNow
+                };
+                _context.UserFlashcardProgresses.Add(progress);
+            }
+
+            // Применяем алгоритм интервального повторения к прогрессу пользователя
+            _spacedRepetitionService.UpdateUserFlashcardProgress(progress, dto.Quality);
+
+            // Обновляем статистику набора
+            var setAccess = await _context.UserFlashcardSetAccesses
+                .FirstOrDefaultAsync(a => a.UserId == userId && a.FlashcardSetId == card.FlashcardSetId);
+
+            if (setAccess != null)
+            {
+                // Обновляем количество изученных карточек
+                var masteredCardsCount = await _context.UserFlashcardProgresses
+                    .Where(p => p.UserId == userId 
+                        && p.Flashcard.FlashcardSetId == card.FlashcardSetId 
+                        && p.IsMastered)
+                    .CountAsync();
+
+                setAccess.CardsStudiedCount = masteredCardsCount;
+                setAccess.UpdatedAt = DateTime.UtcNow;
+
+                // Проверяем, полностью ли изучен набор
+                var totalCardsInSet = await _context.Flashcards
+                    .Where(f => f.FlashcardSetId == card.FlashcardSetId)
+                    .CountAsync();
+
+                if (masteredCardsCount >= totalCardsInSet && totalCardsInSet > 0 && !setAccess.IsCompleted)
+                {
+                    setAccess.IsCompleted = true;
+                    setAccess.CompletedAt = DateTime.UtcNow;
+                }
+            }
+
             await _context.SaveChangesAsync();
 
             var result = new ReviewResultDto
             {
                 FlashcardId = card.Id,
-                NextReviewDate = card.NextReviewDate ?? DateTime.UtcNow,
-                IntervalDays = card.Interval,
+                NextReviewDate = progress.NextReviewDate ?? DateTime.UtcNow,
+                IntervalDays = progress.Interval,
                 Message = dto.Quality >= 3 
-                    ? $"Отлично! Следующее повторение через {card.Interval} дн." 
+                    ? $"Отлично! Следующее повторение через {progress.Interval} дн." 
                     : "Попробуй ещё раз!"
             };
 

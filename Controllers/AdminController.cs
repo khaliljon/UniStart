@@ -88,34 +88,22 @@ public class AdminController : ControllerBase
                 ? Math.Round(examAttempts.Average(ea => ea.Percentage), 2)
                 : 0.0;
 
-            // Получаем количество полностью изученных наборов карточек (где все карточки изучены правильно)
-            // Пока используем упрощенную логику: считаем наборы, где все карточки изучены
-            // TODO: Нужно создать модель UserFlashcardProgress для правильного отслеживания прогресса каждого пользователя
-            var studiedSetsCount = await _context.FlashcardSets
-                .Where(fs => fs.IsPublic || fs.UserId == user.Id)
-                .Select(fs => new
-                {
-                    SetId = fs.Id,
-                    TotalCards = fs.Flashcards.Count,
-                    // Временная логика - считаем наборы, где все карточки изучены
-                    // TODO: Заменить на проверку всех карточек с правильными ответами для пользователя
-                    StudiedCards = fs.Flashcards.Count(f => f.LastReviewedAt != null)
-                })
-                .Where(x => x.TotalCards > 0 && x.StudiedCards == x.TotalCards) // Только полностью изученные наборы
+            // Получаем количество полностью изученных наборов карточек (где все карточки освоены пользователем)
+            // Используем новую модель UserFlashcardSetAccess для точного подсчета
+            var studiedSetsCount = await _context.UserFlashcardSetAccesses
+                .Where(a => a.UserId == user.Id && a.IsCompleted)
                 .CountAsync();
             
-            var studiedCardsCount = studiedSetsCount; // Это количество наборов, а не карточек
+            var studiedCardsCount = studiedSetsCount; // Это количество полностью изученных наборов
 
             // Получаем дату последней активности (максимум из всех видов активности)
             var lastQuizDate = quizAttempts.Any() ? quizAttempts.Max(qa => qa.CompletedAt) : (DateTime?)null;
             var lastExamDate = examAttempts.Any() ? examAttempts.Max(ea => ea.CompletedAt) : (DateTime?)null;
             
-            // Для карточек ищем максимальную дату LastReviewedAt из всех доступных наборов
-            var lastCardDate = await _context.FlashcardSets
-                .Where(fs => fs.IsPublic || fs.UserId == user.Id)
-                .SelectMany(fs => fs.Flashcards)
-                .Where(f => f.LastReviewedAt != null)
-                .Select(f => (DateTime?)f.LastReviewedAt)
+            // Для карточек ищем максимальную дату LastReviewedAt из UserFlashcardProgress (индивидуальный прогресс)
+            var lastCardDate = await _context.UserFlashcardProgresses
+                .Where(p => p.UserId == user.Id && p.LastReviewedAt != null)
+                .Select(p => (DateTime?)p.LastReviewedAt)
                 .DefaultIfEmpty()
                 .MaxAsync();
 
@@ -436,8 +424,13 @@ public class AdminController : ControllerBase
             .Where(u => u.LastLoginAt != null && u.LastLoginAt.Value.Date >= monthAgo)
             .CountAsync();
         
-        var averageQuizScore = await _context.UserQuizAttempts.AnyAsync() 
-            ? await _context.UserQuizAttempts.AverageAsync(qa => (double?)qa.Percentage) ?? 0.0
+        // Получаем средний балл только по завершенным попыткам
+        var completedQuizAttempts = await _context.UserQuizAttempts
+            .Where(qa => qa.CompletedAt != null)
+            .ToListAsync();
+        
+        var averageQuizScore = completedQuizAttempts.Any() 
+            ? completedQuizAttempts.Average(qa => qa.Percentage)
             : 0.0;
             
         var totalAchievements = await _context.Achievements.CountAsync();
@@ -964,43 +957,43 @@ public class AdminController : ControllerBase
         if (student == null)
             return NotFound(new { Message = "Студент не найден" });
 
-        // Получаем попытки студента по всем квизам
+        // Получаем попытки студента по всем квизам (без Include для избежания дублирования)
         var quizAttempts = await _context.UserQuizAttempts
-            .Include(qa => qa.Quiz)
-            .Where(qa => qa.UserId == studentId)
+            .Where(qa => qa.UserId == studentId && qa.CompletedAt != null)
             .OrderByDescending(qa => qa.CompletedAt)
             .ToListAsync();
 
-        // Получаем попытки студента по всем экзаменам
+        // Получаем попытки студента по всем экзаменам (без Include для избежания дублирования)
         var examAttempts = await _context.UserExamAttempts
-            .Include(ea => ea.Exam)
-            .Where(ea => ea.UserId == studentId)
+            .Where(ea => ea.UserId == studentId && ea.CompletedAt != null)
             .OrderByDescending(ea => ea.CompletedAt)
             .ToListAsync();
 
-        // Получаем количество полностью изученных наборов карточек (где все карточки изучены правильно)
-        // Пока используем упрощенную логику: считаем наборы, где все карточки изучены
-        // TODO: Нужно создать модель UserFlashcardProgress для правильного отслеживания прогресса каждого пользователя
-        var studiedSetsCount = await _context.FlashcardSets
-            .Where(fs => fs.IsPublic || fs.UserId == studentId)
-            .Select(fs => new
-            {
-                SetId = fs.Id,
-                TotalCards = fs.Flashcards.Count,
-                // Временная логика - считаем наборы, где все карточки изучены
-                // TODO: Заменить на проверку всех карточек с правильными ответами для пользователя
-                StudiedCards = fs.Flashcards.Count(f => f.LastReviewedAt != null)
-            })
-            .Where(x => x.TotalCards > 0 && x.StudiedCards == x.TotalCards) // Только полностью изученные наборы
+        // Получаем количество полностью изученных наборов карточек (где все карточки освоены пользователем)
+        // Используем новую модель UserFlashcardSetAccess для точного подсчета
+        var studiedSetsCount = await _context.UserFlashcardSetAccesses
+            .Where(a => a.UserId == studentId && a.IsCompleted)
             .CountAsync();
         
-        var studiedCards = studiedSetsCount; // Это количество наборов, а не карточек
+        var studiedCards = studiedSetsCount; // Это количество полностью изученных наборов
+
+        // Получаем информацию о квизах и экзаменах отдельно для отображения
+        var quizIds = quizAttempts.Select(a => a.QuizId).Distinct().ToList();
+        var examIds = examAttempts.Select(ea => ea.ExamId).Distinct().ToList();
+        
+        var quizzesDict = await _context.Quizzes
+            .Where(q => quizIds.Contains(q.Id))
+            .ToDictionaryAsync(q => q.Id);
+        
+        var examsDict = await _context.Exams
+            .Where(e => examIds.Contains(e.Id))
+            .ToDictionaryAsync(e => e.Id);
 
         var attemptDetails = quizAttempts.Select(a => new
         {
             AttemptId = a.Id,
             QuizId = a.QuizId,
-            QuizTitle = a.Quiz.Title,
+            QuizTitle = quizzesDict.TryGetValue(a.QuizId, out var quiz) ? quiz.Title : "Unknown",
             Type = "Quiz",
             Score = a.Score,
             MaxScore = a.MaxScore,
@@ -1012,7 +1005,7 @@ public class AdminController : ControllerBase
         {
             AttemptId = ea.Id,
             ExamId = ea.ExamId,
-            ExamTitle = ea.Exam.Title,
+            ExamTitle = examsDict.TryGetValue(ea.ExamId, out var exam) ? exam.Title : "Unknown",
             Type = "Exam",
             Score = ea.Score,
             TotalPoints = ea.TotalPoints,

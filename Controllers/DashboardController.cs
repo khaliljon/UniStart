@@ -38,16 +38,14 @@ namespace UniStart.Controllers
                 .SelectMany(fs => fs.Flashcards)
                 .CountAsync();
 
-            var cardsToReview = await _context.FlashcardSets
-                .Where(fs => fs.UserId == userId)
-                .SelectMany(fs => fs.Flashcards)
-                .Where(f => f.NextReviewDate == null || f.NextReviewDate <= DateTime.UtcNow)
+            // Используем UserFlashcardProgress для подсчета карточек к повторению
+            var cardsToReview = await _context.UserFlashcardProgresses
+                .Where(p => p.UserId == userId && (p.NextReviewDate == null || p.NextReviewDate <= DateTime.UtcNow))
                 .CountAsync();
 
-            var studiedCards = await _context.FlashcardSets
-                .Where(fs => fs.UserId == userId)
-                .SelectMany(fs => fs.Flashcards)
-                .Where(f => f.LastReviewedAt != null)
+            // Используем UserFlashcardProgress для подсчета изученных карточек
+            var studiedCards = await _context.UserFlashcardProgresses
+                .Where(p => p.UserId == userId && p.LastReviewedAt != null)
                 .CountAsync();
 
             // Статистика по квизам
@@ -113,11 +111,10 @@ namespace UniStart.Controllers
             var userId = GetUserId();
             var startDate = DateTime.UtcNow.AddDays(-days);
 
-            var reviewedCards = await _context.FlashcardSets
-                .Where(fs => fs.UserId == userId)
-                .SelectMany(fs => fs.Flashcards)
-                .Where(f => f.LastReviewedAt >= startDate)
-                .GroupBy(f => f.LastReviewedAt!.Value.Date)
+            // Используем UserFlashcardProgress для подсчета прогресса
+            var reviewedCards = await _context.UserFlashcardProgresses
+                .Where(p => p.UserId == userId && p.LastReviewedAt != null && p.LastReviewedAt >= startDate)
+                .GroupBy(p => p.LastReviewedAt!.Value.Date)
                 .Select(g => new
                 {
                     Date = g.Key,

@@ -12,12 +12,15 @@ namespace UniStart.Data
         // Flashcards
         public DbSet<FlashcardSet> FlashcardSets { get; set; } = null!;
         public DbSet<Flashcard> Flashcards { get; set; } = null!;
+        public DbSet<UserFlashcardProgress> UserFlashcardProgresses { get; set; } = null!;
+        public DbSet<UserFlashcardSetAccess> UserFlashcardSetAccesses { get; set; } = null!;
 
         // Quizzes
         public DbSet<Quiz> Quizzes { get; set; } = null!;
         public DbSet<QuizQuestion> QuizQuestions { get; set; } = null!;
         public DbSet<QuizAnswer> QuizAnswers { get; set; } = null!;
         public DbSet<UserQuizAttempt> UserQuizAttempts { get; set; } = null!;
+        public DbSet<UserQuizAnswer> UserQuizAnswers { get; set; } = null!;
 
         // Exams
         public DbSet<Exam> Exams { get; set; } = null!;
@@ -69,6 +72,42 @@ namespace UniStart.Data
                 .HasForeignKey(f => f.FlashcardSetId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            // UserFlashcardProgress
+            modelBuilder.Entity<UserFlashcardProgress>()
+                .HasOne(p => p.User)
+                .WithMany()
+                .HasForeignKey(p => p.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<UserFlashcardProgress>()
+                .HasOne(p => p.Flashcard)
+                .WithMany()
+                .HasForeignKey(p => p.FlashcardId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Уникальность: один пользователь - одна запись прогресса по карточке
+            modelBuilder.Entity<UserFlashcardProgress>()
+                .HasIndex(p => new { p.UserId, p.FlashcardId })
+                .IsUnique();
+
+            // UserFlashcardSetAccess
+            modelBuilder.Entity<UserFlashcardSetAccess>()
+                .HasOne(a => a.User)
+                .WithMany()
+                .HasForeignKey(a => a.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<UserFlashcardSetAccess>()
+                .HasOne(a => a.FlashcardSet)
+                .WithMany()
+                .HasForeignKey(a => a.FlashcardSetId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Уникальность: один пользователь - одна запись доступа к набору
+            modelBuilder.Entity<UserFlashcardSetAccess>()
+                .HasIndex(a => new { a.UserId, a.FlashcardSetId })
+                .IsUnique();
+
             // Quizzes
             modelBuilder.Entity<QuizQuestion>()
                 .HasOne(q => q.Quiz)
@@ -87,6 +126,25 @@ namespace UniStart.Data
                 .WithMany(q => q.Attempts)
                 .HasForeignKey(ua => ua.QuizId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // UserQuizAnswer
+            modelBuilder.Entity<UserQuizAnswer>()
+                .HasOne(ua => ua.Attempt)
+                .WithMany(a => a.UserAnswers)
+                .HasForeignKey(ua => ua.AttemptId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<UserQuizAnswer>()
+                .HasOne(ua => ua.Question)
+                .WithMany()
+                .HasForeignKey(ua => ua.QuestionId)
+                .OnDelete(DeleteBehavior.Restrict); // Не удаляем вопрос, если есть ответы
+
+            modelBuilder.Entity<UserQuizAnswer>()
+                .HasOne(ua => ua.SelectedAnswer)
+                .WithMany()
+                .HasForeignKey(ua => ua.SelectedAnswerId)
+                .OnDelete(DeleteBehavior.Restrict); // Не удаляем ответ, если есть выбор пользователя
 
             // Exams
             modelBuilder.Entity<ExamQuestion>()
@@ -127,14 +185,45 @@ namespace UniStart.Data
                 .OnDelete(DeleteBehavior.Restrict);
 
             // Indexes
-            modelBuilder.Entity<Flashcard>()
-                .HasIndex(f => f.NextReviewDate);
+            // Flashcard.NextReviewDate больше не используется (перемещено в UserFlashcardProgress)
+            // Оставляем для обратной совместимости, но не индексируем
 
             modelBuilder.Entity<UserQuizAttempt>()
                 .HasIndex(ua => ua.UserId);
 
             modelBuilder.Entity<UserExamAttempt>()
                 .HasIndex(uea => uea.UserId);
+
+            // Индексы для новых таблиц
+            modelBuilder.Entity<UserFlashcardProgress>()
+                .HasIndex(p => p.UserId);
+
+            modelBuilder.Entity<UserFlashcardProgress>()
+                .HasIndex(p => p.NextReviewDate);
+
+            modelBuilder.Entity<UserFlashcardProgress>()
+                .HasIndex(p => p.LastReviewedAt);
+
+            modelBuilder.Entity<UserFlashcardProgress>()
+                .HasIndex(p => p.IsMastered);
+
+            modelBuilder.Entity<UserFlashcardSetAccess>()
+                .HasIndex(a => a.UserId);
+
+            modelBuilder.Entity<UserFlashcardSetAccess>()
+                .HasIndex(a => a.FlashcardSetId);
+
+            modelBuilder.Entity<UserFlashcardSetAccess>()
+                .HasIndex(a => a.IsCompleted);
+
+            modelBuilder.Entity<UserFlashcardSetAccess>()
+                .HasIndex(a => a.LastAccessedAt);
+
+            modelBuilder.Entity<UserQuizAnswer>()
+                .HasIndex(a => a.AttemptId);
+
+            modelBuilder.Entity<UserQuizAnswer>()
+                .HasIndex(a => a.QuestionId);
 
             // Many-to-many: Exam - Subject
             modelBuilder.Entity<Exam>()

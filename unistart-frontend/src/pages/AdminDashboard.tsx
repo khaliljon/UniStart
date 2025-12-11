@@ -120,7 +120,7 @@ const AdminDashboard = () => {
     },
     {
       icon: FileText,
-      label: 'Тестов создано',
+      label: 'Экзаменов создано',
       value: stats.totalTests,
       color: 'bg-indigo-500',
     },
