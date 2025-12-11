@@ -18,6 +18,7 @@ import QuizTakePage from './pages/QuizTakePage'
 import QuizResultPage from './pages/QuizResultPage'
 import QuizResultsPage from './pages/QuizResultsPage'
 import QuizStatsPage from './pages/QuizStatsPage'
+import TheoryPage from './pages/TheoryPage'
 import ExamsPage from './pages/ExamsPage'
 import ExamTakePage from './pages/ExamTakePage'
 import ExamResultsPage from './pages/ExamResultsPage'
@@ -121,6 +122,14 @@ function App() {
             element={
               <PrivateRoute>
                 <QuizTakePage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/learning/theory/:id"
+            element={
+              <PrivateRoute>
+                <TheoryPage />
               </PrivateRoute>
             }
           />

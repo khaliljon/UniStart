@@ -21,13 +21,19 @@ interface Question {
 
 interface QuizForm {
   title: string;
+  description?: string;
   subject: string;
   difficulty: string;
   timeLimit: number;
+  quizType: string; // Standalone, PracticeQuiz, ModuleFinalQuiz, CourseFinalQuiz, CaseStudyQuiz
   isPublic: boolean;
   isPublished: boolean;
   isLearningMode: boolean;
   questions: Question[];
+  // Связи с иерархией (опционально)
+  topicId?: number;
+  moduleId?: number;
+  competencyId?: number;
 }
 
 const CreateQuizPage = () => {
@@ -35,11 +41,20 @@ const CreateQuizPage = () => {
   const { isAdmin } = useAuth();
   const [loading, setLoading] = useState(false);
   const [subjects, setSubjects] = useState<any[]>([]);
+  const [courses, setCourses] = useState<any[]>([]);
+  const [selectedSubjectId, setSelectedSubjectId] = useState<number | null>(null);
+  const [selectedModuleId, setSelectedModuleId] = useState<number | null>(null);
+  const [selectedCompetencyId, setSelectedCompetencyId] = useState<number | null>(null);
+  const [selectedTopicId, setSelectedTopicId] = useState<number | null>(null);
+  const [subjectHierarchy, setSubjectHierarchy] = useState<any>(null);
+  
   const [quiz, setQuiz] = useState<QuizForm>({
     title: '',
+    description: '',
     subject: '',
     difficulty: 'Medium',
     timeLimit: 30,
+    quizType: 'Standalone',
     isPublic: isAdmin, // Админ всегда создает публичные квизы
     isPublished: false,
     isLearningMode: false,
@@ -48,7 +63,14 @@ const CreateQuizPage = () => {
 
   useEffect(() => {
     loadSubjects();
+    loadCourses();
   }, []);
+
+  useEffect(() => {
+    if (selectedSubjectId) {
+      loadSubjectHierarchy(selectedSubjectId);
+    }
+  }, [selectedSubjectId]);
 
   const loadSubjects = async () => {
     try {
@@ -56,6 +78,25 @@ const CreateQuizPage = () => {
       setSubjects(response.data);
     } catch (error) {
       console.error('Ошибка загрузки предметов:', error);
+    }
+  };
+
+  const loadCourses = async () => {
+    try {
+      const response = await api.get('/courses');
+      setCourses(response.data || []);
+    } catch (error) {
+      console.error('Ошибка загрузки курсов:', error);
+    }
+  };
+
+  const loadSubjectHierarchy = async (subjectId: number) => {
+    try {
+      const response = await api.get(`/subjects/${subjectId}/hierarchy`);
+      setSubjectHierarchy(response.data);
+    } catch (error) {
+      console.error('Ошибка загрузки иерархии предмета:', error);
+      setSubjectHierarchy(null);
     }
   };
 
@@ -139,19 +180,46 @@ const CreateQuizPage = () => {
       }
     }
 
+    // Валидация для связанных квизов
+    if (quiz.quizType !== 'Standalone') {
+      if (quiz.quizType === 'PracticeQuiz' && !selectedTopicId) {
+        alert('Для практического квиза выберите тему!');
+        setLoading(false);
+        return;
+      }
+      if ((quiz.quizType === 'ModuleFinalQuiz' || quiz.quizType === 'CaseStudyQuiz') && !selectedModuleId) {
+        alert('Для финального или кейс-квиза модуля выберите модуль!');
+        setLoading(false);
+        return;
+      }
+      if (quiz.quizType === 'CourseFinalQuiz' && (!selectedSubjectId || !selectedModuleId)) {
+        alert('Для финального квиза курса выберите предмет и модуль!');
+        setLoading(false);
+        return;
+      }
+    }
+
     setLoading(true);
     try {
       // Шаг 1: Создаем квиз
-      const quizResponse = await api.post('/quizzes', {
+      const quizData: any = {
         title: quiz.title,
         subject: quiz.subject,
         difficulty: quiz.difficulty,
         timeLimit: quiz.timeLimit,
-        description: quiz.title || 'Описание',
+        description: quiz.description || quiz.title || 'Описание',
         isPublic: quiz.isPublic,
         isPublished: false, // Всегда создаем как черновик, потом публикуем отдельно
         isLearningMode: quiz.isLearningMode,
-      });
+        type: quiz.quizType,
+      };
+
+      // Добавляем связи с иерархией
+      if (selectedTopicId) quizData.topicId = selectedTopicId;
+      if (selectedModuleId) quizData.moduleId = selectedModuleId;
+      if (selectedCompetencyId) quizData.competencyId = selectedCompetencyId;
+
+      const quizResponse = await api.post('/quizzes', quizData);
 
       const quizId = quizResponse.data.id;
       console.log('Quiz created with ID:', quizId);
@@ -252,7 +320,11 @@ const CreateQuizPage = () => {
                 <select
                   required
                   value={quiz.subject}
-                  onChange={(e) => setQuiz({ ...quiz, subject: e.target.value })}
+                  onChange={(e) => {
+                    setQuiz({ ...quiz, subject: e.target.value });
+                    const subject = subjects.find(s => s.name === e.target.value);
+                    setSelectedSubjectId(subject?.id || null);
+                  }}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 >
                   <option value="">Выберите предмет</option>
@@ -261,6 +333,30 @@ const CreateQuizPage = () => {
                       {subject.name}
                     </option>
                   ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Тип квиза *
+                </label>
+                <select
+                  required
+                  value={quiz.quizType}
+                  onChange={(e) => {
+                    setQuiz({ ...quiz, quizType: e.target.value });
+                    // Сбрасываем выбор иерархии при смене типа
+                    setSelectedModuleId(null);
+                    setSelectedCompetencyId(null);
+                    setSelectedTopicId(null);
+                  }}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                >
+                  <option value="Standalone">Обычный квиз (независимый)</option>
+                  <option value="PracticeQuiz">Практический квиз по теме (с объяснениями)</option>
+                  <option value="ModuleFinalQuiz">Итоговый квиз модуля (без объяснений)</option>
+                  <option value="CaseStudyQuiz">Кейс-квиз модуля (анализ данных)</option>
+                  <option value="CourseFinalQuiz">Пробный тест ЕНТ</option>
                 </select>
               </div>
 
@@ -292,6 +388,133 @@ const CreateQuizPage = () => {
                 />
               </div>
             </div>
+
+            {/* Описание */}
+            <div className="mt-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Описание
+              </label>
+              <textarea
+                value={quiz.description || ''}
+                onChange={(e) => setQuiz({ ...quiz, description: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                rows={3}
+                placeholder="Введите описание квиза (необязательно)"
+              />
+            </div>
+
+            {/* Связи с иерархией в зависимости от типа квиза */}
+            {quiz.quizType !== 'Standalone' && selectedSubjectId && subjectHierarchy && (
+              <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                  Связь с иерархией обучения
+                </h3>
+                
+                {/* Выбор модуля (для всех типов кроме PracticeQuiz) */}
+                {(quiz.quizType === 'ModuleFinalQuiz' || quiz.quizType === 'CaseStudyQuiz' || quiz.quizType === 'CourseFinalQuiz') && (
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Модуль *
+                    </label>
+                    <select
+                      required
+                      value={selectedModuleId || ''}
+                      onChange={(e) => {
+                        setSelectedModuleId(parseInt(e.target.value) || null);
+                        setSelectedCompetencyId(null);
+                        setSelectedTopicId(null);
+                      }}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    >
+                      <option value="">Выберите модуль</option>
+                      {subjectHierarchy.modules?.map((module: any) => (
+                        <option key={module.id} value={module.id}>
+                          {module.icon} {module.title}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* Выбор компетенции и темы (для PracticeQuiz) */}
+                {quiz.quizType === 'PracticeQuiz' && (
+                  <>
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Модуль
+                      </label>
+                      <select
+                        value={selectedModuleId || ''}
+                        onChange={(e) => {
+                          setSelectedModuleId(parseInt(e.target.value) || null);
+                          setSelectedCompetencyId(null);
+                          setSelectedTopicId(null);
+                        }}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      >
+                        <option value="">Выберите модуль (опционально)</option>
+                        {subjectHierarchy.modules?.map((module: any) => (
+                          <option key={module.id} value={module.id}>
+                            {module.icon} {module.title}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {selectedModuleId && (
+                      <>
+                        <div className="mb-4">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Компетенция
+                          </label>
+                          <select
+                            value={selectedCompetencyId || ''}
+                            onChange={(e) => {
+                              setSelectedCompetencyId(parseInt(e.target.value) || null);
+                              setSelectedTopicId(null);
+                            }}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                          >
+                            <option value="">Выберите компетенцию</option>
+                            {subjectHierarchy.modules
+                              ?.find((m: any) => m.id === selectedModuleId)
+                              ?.competencies?.map((comp: any) => (
+                                <option key={comp.id} value={comp.id}>
+                                  {comp.icon} {comp.title}
+                                </option>
+                              ))}
+                          </select>
+                        </div>
+
+                        {selectedCompetencyId && (
+                          <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Тема *
+                            </label>
+                            <select
+                              required
+                              value={selectedTopicId || ''}
+                              onChange={(e) => setSelectedTopicId(parseInt(e.target.value) || null)}
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                            >
+                              <option value="">Выберите тему</option>
+                              {subjectHierarchy.modules
+                                ?.find((m: any) => m.id === selectedModuleId)
+                                ?.competencies?.find((c: any) => c.id === selectedCompetencyId)
+                                ?.topics?.map((topic: any) => (
+                                  <option key={topic.id} value={topic.id}>
+                                    {topic.icon} {topic.title}
+                                  </option>
+                                ))}
+                            </select>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
 
             {!isAdmin && (
               <div className="mt-6 space-y-3">

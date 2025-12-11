@@ -104,14 +104,14 @@ namespace UniStart.Seeders
                     Email = teacherEmail,
                     FirstName = "Иван",
                     LastName = "Преподавателев",
-                    EmailConfirmed = true,
-                    CreatedAt = DateTime.UtcNow
-                };
+                EmailConfirmed = true,
+                CreatedAt = DateTime.UtcNow
+            };
 
                 var result = await userManager.CreateAsync(teacherUser, "Teacher123!");
-
-                if (result.Succeeded)
-                {
+            
+            if (result.Succeeded)
+            {
                     await userManager.AddToRoleAsync(teacherUser, UserRoles.Teacher);
                     Console.WriteLine($"✅ Преподаватель создан: {teacherEmail} / Teacher123!");
                 }
@@ -585,7 +585,7 @@ namespace UniStart.Seeders
                 };
 
                 await context.Countries.AddRangeAsync(countries);
-                await context.SaveChangesAsync();
+            await context.SaveChangesAsync();
                 Console.WriteLine($"✅ Создано {countries.Count} стран");
             }
 

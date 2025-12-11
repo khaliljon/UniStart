@@ -47,6 +47,13 @@ namespace UniStart.Data
         public DbSet<Country> Countries { get; set; } = null!;
         public DbSet<University> Universities { get; set; } = null!;
         public DbSet<ExamType> ExamTypes { get; set; } = null!;
+        
+        // Learning hierarchy
+        public DbSet<Course> Courses { get; set; } = null!;
+        public DbSet<LearningModule> LearningModules { get; set; } = null!;
+        public DbSet<LearningCompetency> LearningCompetencies { get; set; } = null!;
+        public DbSet<LearningTopic> LearningTopics { get; set; } = null!;
+        public DbSet<TheoryContent> TheoryContents { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -135,6 +142,60 @@ namespace UniStart.Data
                     j => j.HasOne<Subject>().WithMany().HasForeignKey("SubjectsId"),
                     j => j.HasOne<Exam>().WithMany().HasForeignKey("ExamsId"),
                     j => j.HasKey("ExamsId", "SubjectsId"));
+            
+            // Learning hierarchy configuration
+            // Course -> Subject
+            modelBuilder.Entity<Subject>()
+                .HasOne(s => s.Course)
+                .WithMany(c => c.Subjects)
+                .HasForeignKey(s => s.CourseId)
+                .OnDelete(DeleteBehavior.SetNull); // Subject может существовать без курса
+            
+            // Subject -> Module
+            modelBuilder.Entity<LearningModule>()
+                .HasOne(lm => lm.Subject)
+                .WithMany(s => s.LearningModules)
+                .HasForeignKey(lm => lm.SubjectId)
+                .OnDelete(DeleteBehavior.Cascade);
+            
+            modelBuilder.Entity<LearningModule>()
+                .HasOne(lm => lm.CaseStudyQuiz)
+                .WithMany()
+                .HasForeignKey(lm => lm.CaseStudyQuizId)
+                .OnDelete(DeleteBehavior.SetNull);
+            
+            modelBuilder.Entity<LearningModule>()
+                .HasOne(lm => lm.ModuleFinalQuiz)
+                .WithMany()
+                .HasForeignKey(lm => lm.ModuleFinalQuizId)
+                .OnDelete(DeleteBehavior.SetNull);
+            
+            // Module -> Competency
+            modelBuilder.Entity<LearningCompetency>()
+                .HasOne(lc => lc.LearningModule)
+                .WithMany(lm => lm.Competencies)
+                .HasForeignKey(lc => lc.LearningModuleId)
+                .OnDelete(DeleteBehavior.Cascade);
+            
+            // Competency -> Topic
+            modelBuilder.Entity<LearningTopic>()
+                .HasOne(lt => lt.LearningCompetency)
+                .WithMany(lc => lc.Topics)
+                .HasForeignKey(lt => lt.LearningCompetencyId)
+                .OnDelete(DeleteBehavior.Cascade);
+            
+            modelBuilder.Entity<LearningTopic>()
+                .HasOne(lt => lt.PracticeQuiz)
+                .WithMany()
+                .HasForeignKey(lt => lt.PracticeQuizId)
+                .OnDelete(DeleteBehavior.SetNull);
+            
+            // Topic -> Theory (один к одному)
+            modelBuilder.Entity<TheoryContent>()
+                .HasOne(tc => tc.LearningTopic)
+                .WithOne(lt => lt.Theory)
+                .HasForeignKey<TheoryContent>(tc => tc.LearningTopicId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

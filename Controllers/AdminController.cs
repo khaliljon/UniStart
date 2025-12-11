@@ -621,14 +621,25 @@ public class AdminController : ControllerBase
     }
 
     /// <summary>
-    /// Получить все квизы в системе (для админа)
+    /// Получить все квизы в системе (для админа) с фильтрацией
     /// </summary>
     [HttpGet("quizzes")]
-    public async Task<ActionResult> GetAllQuizzes()
+    public async Task<ActionResult> GetAllQuizzes(
+        [FromQuery] string? subject = null,
+        [FromQuery] string? difficulty = null)
     {
-        var quizzes = await _context.Quizzes
+        var query = _context.Quizzes
             .Include(q => q.Questions)
             .Include(q => q.User)
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(subject))
+            query = query.Where(q => q.Subject == subject);
+
+        if (!string.IsNullOrEmpty(difficulty))
+            query = query.Where(q => q.Difficulty == difficulty);
+
+        var quizzes = await query
             .Select(q => new
             {
                 q.Id,
@@ -636,6 +647,7 @@ public class AdminController : ControllerBase
                 q.Description,
                 q.Subject,
                 q.Difficulty,
+                q.TimeLimit,
                 q.IsPublished,
                 q.UserId,
                 UserName = q.User.UserName,

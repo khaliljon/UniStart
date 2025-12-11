@@ -39,6 +39,10 @@ namespace UniStart.Models
         [Display(Name = "Режим обучения")]
         public bool IsLearningMode { get; set; } = true; // true = показывать объяснения сразу, false = только в конце
         
+        // Тип квиза в контексте обучения
+        [Display(Name = "Тип квиза")]
+        public string QuizType { get; set; } = "Standalone"; // Standalone, Practice, CaseStudy, ModuleFinal, CourseFinal (пробный ЕНТ)
+        
         [Display(Name = "Дата создания")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         
