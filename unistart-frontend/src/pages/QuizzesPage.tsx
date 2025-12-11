@@ -269,10 +269,14 @@ const QuizzesPage = () => {
     if (!confirm('Вы уверены, что хотите удалить этот квиз?')) return;
     try {
       await api.delete(`/quizzes/${quizId}`);
+      // Перезагружаем список независимо от статуса ответа
       await loadQuizzes();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Ошибка удаления квиза:', error);
-      alert('Не удалось удалить квиз');
+      const errorMessage = error.response?.data?.message || error.response?.statusText || 'Не удалось удалить квиз';
+      alert(errorMessage);
+      // Все равно перезагружаем список на случай, если удаление прошло, но был ошибка ответа
+      await loadQuizzes();
     }
   };
 
@@ -295,9 +299,9 @@ const QuizzesPage = () => {
         >
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-5xl font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-3">
-                <GraduationCap className="w-10 h-10 text-yellow-400" />
-                {isAdmin || isTeacher ? 'Управление обучением' : 'Обучение'}
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-3">
+                <FileText className="w-8 h-8 text-primary-500" />
+                {isAdmin || isTeacher ? 'Квизы' : 'Квизы'}
               </h1>
               <p className="text-gray-600 dark:text-gray-300 text-lg">
                 {isAdmin || isTeacher
@@ -353,10 +357,15 @@ const QuizzesPage = () => {
           />
         ) : (
           <ListView
-            quizzes={quizzes.filter((quiz) =>
-              quiz.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-              quiz.description.toLowerCase().includes(searchQuery.toLowerCase())
-            )}
+            quizzes={quizzes.filter((quiz) => {
+              const matchesSearch = searchQuery 
+                ? (quiz.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                   quiz.description.toLowerCase().includes(searchQuery.toLowerCase()))
+                : true;
+              const matchesSubject = subjectFilter ? quiz.subject === subjectFilter : true;
+              const matchesDifficulty = difficultyFilter ? quiz.difficulty === difficultyFilter : true;
+              return matchesSearch && matchesSubject && matchesDifficulty;
+            })}
             subjectsList={subjectsList}
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
@@ -367,6 +376,9 @@ const QuizzesPage = () => {
             isTeacher={isTeacher || false}
             isAdmin={isAdmin || false}
             navigate={navigate}
+            onPublish={handlePublish}
+            onUnpublish={handleUnpublish}
+            onDelete={handleDelete}
           />
         )}
       </div>
@@ -864,6 +876,9 @@ const ListView = ({
   isTeacher,
   isAdmin,
   navigate,
+  onPublish,
+  onUnpublish,
+  onDelete,
 }: {
   quizzes: SimpleQuiz[];
   subjectsList: Subject[];
@@ -876,6 +891,9 @@ const ListView = ({
   isTeacher: boolean;
   isAdmin: boolean;
   navigate: (path: string) => void;
+  onPublish: (quizId: number) => Promise<void>;
+  onUnpublish: (quizId: number) => Promise<void>;
+  onDelete: (quizId: number) => Promise<void>;
 }) => {
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty.toLowerCase()) {
@@ -1040,7 +1058,7 @@ const ListView = ({
                           variant="secondary"
                           size="sm"
                           className="flex-1 flex items-center justify-center gap-2"
-                          onClick={() => handleUnpublish(quiz.id)}
+                          onClick={() => onUnpublish(quiz.id)}
                         >
                           <FileX className="w-4 h-4" />
                           Снять с публикации
@@ -1050,7 +1068,7 @@ const ListView = ({
                           variant="primary"
                           size="sm"
                           className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700"
-                          onClick={() => handlePublish(quiz.id)}
+                          onClick={() => onPublish(quiz.id)}
                         >
                           <Upload className="w-4 h-4" />
                           Опубликовать
@@ -1060,7 +1078,7 @@ const ListView = ({
                         variant="danger"
                         size="sm"
                         className="px-4 flex items-center justify-center gap-2"
-                        onClick={() => handleDelete(quiz.id)}
+                        onClick={() => onDelete(quiz.id)}
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>

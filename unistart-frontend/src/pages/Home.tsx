@@ -2,8 +2,10 @@ import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { GraduationCap, BookOpen, Brain, TrendingUp } from 'lucide-react'
 import Button from '../components/common/Button'
+import { useSiteSettings } from '../context/SiteSettingsContext'
 
 const Home = () => {
+  const { settings: siteSettings } = useSiteSettings();
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
       {/* Header */}
@@ -11,8 +13,10 @@ const Home = () => {
         <div className="flex items-center space-x-2">
           <GraduationCap className="w-8 h-8 text-primary-500" />
           <span className="text-2xl font-bold text-gray-900 dark:text-white">
-            <span className="inline-flex items-center justify-center w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-600 rounded text-white mr-0.5">U</span>
-            <span>niStart</span>
+            <span className="inline-flex items-center justify-center w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-600 rounded text-white mr-0.5">
+              {siteSettings.siteName.charAt(0).toUpperCase()}
+            </span>
+            <span>{siteSettings.siteName.substring(1)}</span>
           </span>
         </div>
         <div className="flex items-center space-x-4">

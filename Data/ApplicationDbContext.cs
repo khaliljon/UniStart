@@ -54,6 +54,9 @@ namespace UniStart.Data
         public DbSet<LearningCompetency> LearningCompetencies { get; set; } = null!;
         public DbSet<LearningTopic> LearningTopics { get; set; } = null!;
         public DbSet<TheoryContent> TheoryContents { get; set; } = null!;
+        
+        // System Settings
+        public DbSet<SystemSettings> SystemSettings { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -196,6 +199,24 @@ namespace UniStart.Data
                 .WithOne(lt => lt.Theory)
                 .HasForeignKey<TheoryContent>(tc => tc.LearningTopicId)
                 .OnDelete(DeleteBehavior.Cascade);
+            
+            // SystemSettings - всегда одна запись
+            modelBuilder.Entity<SystemSettings>()
+                .HasKey(s => s.Id);
+            
+            modelBuilder.Entity<SystemSettings>()
+                .HasData(new SystemSettings
+                {
+                    Id = 1,
+                    SiteName = "UniStart",
+                    SiteDescription = "Образовательная платформа для изучения с помощью карточек и тестов",
+                    AllowRegistration = true,
+                    RequireEmailVerification = false,
+                    MaxQuizAttempts = 3,
+                    SessionTimeout = 30,
+                    EnableNotifications = true,
+                    UpdatedAt = DateTime.UtcNow
+                });
         }
     }
 }

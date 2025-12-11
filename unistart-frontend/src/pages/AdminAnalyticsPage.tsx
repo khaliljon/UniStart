@@ -12,6 +12,7 @@ import {
   Calendar,
   BarChart3,
   Target,
+  Settings,
 } from 'lucide-react';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
@@ -44,8 +45,26 @@ const AdminAnalyticsPage = () => {
   const loadAnalytics = async () => {
     try {
       const response = await api.get('/admin/analytics');
-      // Правильно читаем данные из Stats (с большой буквы, как отправляет backend)
-      setStats(response.data.stats || response.data.Stats);
+      console.log('Analytics response:', response.data); // Debug
+      
+      // Данные возвращаются в объекте Stats
+      const statsData = response.data?.Stats || response.data;
+      console.log('Stats data:', statsData); // Debug
+      
+      setStats({
+        totalUsers: statsData?.TotalUsers ?? statsData?.totalUsers ?? 0,
+        totalQuizzes: statsData?.TotalQuizzes ?? statsData?.totalQuizzes ?? 0,
+        totalTests: statsData?.TotalExams ?? statsData?.totalExams ?? 0,
+        totalFlashcardSets: statsData?.TotalFlashcardSets ?? statsData?.totalFlashcardSets ?? 0,
+        totalQuestions: statsData?.TotalQuestions ?? statsData?.totalQuestions ?? 0,
+        totalFlashcards: statsData?.TotalFlashcards ?? statsData?.totalFlashcards ?? 0,
+        totalAttempts: statsData?.TotalAttempts ?? statsData?.totalAttempts ?? 0,
+        activeToday: statsData?.ActiveToday ?? statsData?.activeToday ?? 0,
+        activeThisWeek: statsData?.ActiveThisWeek ?? statsData?.activeThisWeek ?? 0,
+        activeThisMonth: statsData?.ActiveThisMonth ?? statsData?.activeThisMonth ?? 0,
+        averageQuizScore: statsData?.AverageQuizScore ?? statsData?.averageQuizScore ?? 0,
+        totalAchievements: statsData?.TotalAchievements ?? statsData?.totalAchievements ?? 0,
+      });
     } catch (error) {
       console.error('Ошибка загрузки аналитики:', error);
       // Используем данные из AdminDashboard если API не работает
@@ -139,7 +158,7 @@ const AdminAnalyticsPage = () => {
                 <p className="text-green-100 text-sm mb-1">Квизов</p>
                 <p className="text-3xl font-bold">{stats.totalQuizzes}</p>
                 <p className="text-green-100 text-xs mt-1">
-                  Тестов: {stats.totalTests}
+                  Экзаменов: {stats.totalTests}
                 </p>
               </div>
               <FileText className="w-12 h-12 text-green-200" />
@@ -165,7 +184,7 @@ const AdminAnalyticsPage = () => {
                 <p className="text-orange-100 text-sm mb-1">Достижений</p>
                 <p className="text-3xl font-bold">{stats.totalAchievements}</p>
                 <p className="text-orange-100 text-xs mt-1">
-                  Попыток тестов: {stats.totalAttempts}
+                  Попыток прохождения: {stats.totalAttempts}
                 </p>
               </div>
               <Award className="w-12 h-12 text-orange-200" />
@@ -182,12 +201,12 @@ const AdminAnalyticsPage = () => {
         >
           <Card className="p-6">
             <div className="flex items-center gap-4">
-              <div className="bg-blue-100 p-3 rounded-lg">
-                <Activity className="w-6 h-6 text-blue-600" />
+              <div className="bg-blue-100 dark:bg-blue-900/30 p-3 rounded-lg">
+                <Activity className="w-6 h-6 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
-                <p className="text-gray-600 text-sm">Активны сегодня</p>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-gray-600 dark:text-gray-400 text-sm">Активны сегодня</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">
                   {stats.activeToday}
                 </p>
               </div>
@@ -196,12 +215,12 @@ const AdminAnalyticsPage = () => {
 
           <Card className="p-6">
             <div className="flex items-center gap-4">
-              <div className="bg-green-100 p-3 rounded-lg">
-                <Calendar className="w-6 h-6 text-green-600" />
+              <div className="bg-green-100 dark:bg-green-900/30 p-3 rounded-lg">
+                <Calendar className="w-6 h-6 text-green-600 dark:text-green-400" />
               </div>
               <div>
-                <p className="text-gray-600 text-sm">Активны за неделю</p>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-gray-600 dark:text-gray-400 text-sm">Активны за неделю</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">
                   {stats.activeThisWeek}
                 </p>
               </div>
@@ -210,12 +229,12 @@ const AdminAnalyticsPage = () => {
 
           <Card className="p-6">
             <div className="flex items-center gap-4">
-              <div className="bg-purple-100 p-3 rounded-lg">
-                <TrendingUp className="w-6 h-6 text-purple-600" />
+              <div className="bg-purple-100 dark:bg-purple-900/30 p-3 rounded-lg">
+                <TrendingUp className="w-6 h-6 text-purple-600 dark:text-purple-400" />
               </div>
               <div>
-                <p className="text-gray-600 text-sm">Активны за месяц</p>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-gray-600 dark:text-gray-400 text-sm">Активны за месяц</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">
                   {stats.activeThisMonth}
                 </p>
               </div>
@@ -236,13 +255,22 @@ const AdminAnalyticsPage = () => {
               Статистика контента
             </h3>
             <div className="space-y-4">
-              <div className="flex items-center justify-between py-3 border-b">
+              <div className="flex items-center justify-between py-3 border-b border-gray-200 dark:border-gray-700">
                 <div className="flex items-center gap-3">
                   <FileText className="w-5 h-5 text-green-500" />
-                  <span className="text-gray-700">Всего тестов</span>
+                  <span className="text-gray-700 dark:text-gray-300">Всего квизов</span>
                 </div>
-                <span className="text-xl font-bold text-gray-900">
+                <span className="text-xl font-bold text-gray-900 dark:text-white">
                   {stats.totalQuizzes}
+                </span>
+              </div>
+              <div className="flex items-center justify-between py-3 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex items-center gap-3">
+                  <FileText className="w-5 h-5 text-blue-500" />
+                  <span className="text-gray-700 dark:text-gray-300">Всего экзаменов</span>
+                </div>
+                <span className="text-xl font-bold text-gray-900 dark:text-white">
+                  {stats.totalTests}
                 </span>
               </div>
               <div className="flex items-center justify-between py-3 border-b">
@@ -276,44 +304,44 @@ const AdminAnalyticsPage = () => {
           </Card>
 
           <Card className="p-6">
-            <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
               <TrendingUp className="w-6 h-6 text-primary-500" />
               Активность пользователей
             </h3>
             <div className="space-y-4">
-              <div className="flex items-center justify-between py-3 border-b">
+              <div className="flex items-center justify-between py-3 border-b border-gray-200 dark:border-gray-700">
                 <div className="flex items-center gap-3">
                   <Users className="w-5 h-5 text-blue-500" />
-                  <span className="text-gray-700">Всего пользователей</span>
+                  <span className="text-gray-700 dark:text-gray-300">Всего пользователей</span>
                 </div>
-                <span className="text-xl font-bold text-gray-900">
+                <span className="text-xl font-bold text-gray-900 dark:text-white">
                   {stats.totalUsers}
                 </span>
               </div>
-              <div className="flex items-center justify-between py-3 border-b">
+              <div className="flex items-center justify-between py-3 border-b border-gray-200 dark:border-gray-700">
                 <div className="flex items-center gap-3">
                   <Activity className="w-5 h-5 text-green-500" />
-                  <span className="text-gray-700">Попыток прохождения</span>
+                  <span className="text-gray-700 dark:text-gray-300">Попыток прохождения</span>
                 </div>
-                <span className="text-xl font-bold text-gray-900">
+                <span className="text-xl font-bold text-gray-900 dark:text-white">
                   {stats.totalAttempts}
                 </span>
               </div>
-              <div className="flex items-center justify-between py-3 border-b">
+              <div className="flex items-center justify-between py-3 border-b border-gray-200 dark:border-gray-700">
                 <div className="flex items-center gap-3">
                   <Award className="w-5 h-5 text-yellow-500" />
-                  <span className="text-gray-700">Средний балл</span>
+                  <span className="text-gray-700 dark:text-gray-300">Средний балл</span>
                 </div>
-                <span className="text-xl font-bold text-gray-900">
+                <span className="text-xl font-bold text-gray-900 dark:text-white">
                   {stats.averageQuizScore.toFixed(1)}%
                 </span>
               </div>
               <div className="flex items-center justify-between py-3">
                 <div className="flex items-center gap-3">
                   <Award className="w-5 h-5 text-orange-500" />
-                  <span className="text-gray-700">Достижений создано</span>
+                  <span className="text-gray-700 dark:text-gray-300">Достижений создано</span>
                 </div>
-                <span className="text-xl font-bold text-gray-900">
+                <span className="text-xl font-bold text-gray-900 dark:text-white">
                   {stats.totalAchievements}
                 </span>
               </div>
@@ -334,10 +362,10 @@ const AdminAnalyticsPage = () => {
               className="text-center"
             >
               <Users className="w-12 h-12 text-blue-500 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
                 Управление пользователями
               </h3>
-              <p className="text-gray-600 text-sm">
+              <p className="text-gray-600 dark:text-gray-400 text-sm">
                 Просмотр и управление всеми пользователями
               </p>
             </div>
@@ -349,10 +377,10 @@ const AdminAnalyticsPage = () => {
               className="text-center"
             >
               <FileText className="w-12 h-12 text-green-500 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
                 Экспорт данных
               </h3>
-              <p className="text-gray-600 text-sm">
+              <p className="text-gray-600 dark:text-gray-400 text-sm">
                 Скачать все данные платформы в CSV
               </p>
             </div>
@@ -363,11 +391,11 @@ const AdminAnalyticsPage = () => {
               onClick={() => navigate('/admin/settings')}
               className="text-center"
             >
-              <Award className="w-12 h-12 text-purple-500 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              <Settings className="w-12 h-12 text-purple-500 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
                 Настройки системы
               </h3>
-              <p className="text-gray-600 text-sm">
+              <p className="text-gray-600 dark:text-gray-400 text-sm">
                 Конфигурация и параметры платформы
               </p>
             </div>

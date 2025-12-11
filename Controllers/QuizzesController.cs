@@ -276,18 +276,39 @@ namespace UniStart.Controllers
         [Authorize]
         public async Task<IActionResult> DeleteQuiz(int id)
         {
-            var userId = GetUserId()!;
-            var isAdmin = User.IsInRole("Admin");
+            var userId = GetUserId();
+            var isAdmin = User.IsInRole("Admin") || User.IsInRole("Teacher");
             
             var quiz = await _context.Quizzes
-                .FirstOrDefaultAsync(q => q.Id == id && (q.UserId == userId || isAdmin));
+                .FirstOrDefaultAsync(q => q.Id == id);
                 
             if (quiz == null)
                 return NotFound();
 
-            _context.Quizzes.Remove(quiz);
-            await _context.SaveChangesAsync();
-            return NoContent();
+            // Проверяем права: владелец, админ или учитель
+            if (isAdmin || (userId != null && quiz.UserId == userId))
+            {
+                // Удаляем связанные вопросы и ответы
+                var questions = await _context.QuizQuestions.Where(q => q.QuizId == id).ToListAsync();
+                foreach (var question in questions)
+                {
+                    var answers = await _context.QuizAnswers.Where(a => a.QuestionId == question.Id).ToListAsync();
+                    _context.QuizAnswers.RemoveRange(answers);
+                }
+                _context.QuizQuestions.RemoveRange(questions);
+                
+                // Удаляем попытки прохождения
+                var attempts = await _context.UserQuizAttempts.Where(a => a.QuizId == id).ToListAsync();
+                _context.UserQuizAttempts.RemoveRange(attempts);
+                
+                // Удаляем сам квиз
+                _context.Quizzes.Remove(quiz);
+                await _context.SaveChangesAsync();
+                
+                return NoContent();
+            }
+
+            return StatusCode(403, new { message = "У вас нет прав для удаления этого квиза" });
         }
 
         /// <summary>

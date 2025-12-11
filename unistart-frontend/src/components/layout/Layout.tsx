@@ -1,6 +1,7 @@
 import { Link, useNavigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
+import { useSiteSettings } from '../../context/SiteSettingsContext';
 import { 
   BookOpen, 
   FileText, 
@@ -17,6 +18,7 @@ import Button from '../common/Button';
 const Layout = () => {
   const { user, isAdmin, isTeacher, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const { settings: siteSettings } = useSiteSettings();
   const navigate = useNavigate();
 
   console.log('🏗️ Layout рендерится. User:', user);
@@ -34,10 +36,12 @@ const Layout = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
-            <Link to="/" className="flex items-center">
+            <Link to="/" className="flex items-center" title={siteSettings.siteDescription}>
               <span className="text-2xl font-bold text-gray-900 dark:text-white">
-                <span className="inline-flex items-center justify-center w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-600 rounded text-white mr-0.5">U</span>
-                <span>niStart</span>
+                <span className="inline-flex items-center justify-center w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-600 rounded text-white mr-0.5">
+                  {siteSettings.siteName.charAt(0).toUpperCase()}
+                </span>
+                <span>{siteSettings.siteName.substring(1)}</span>
               </span>
             </Link>
 

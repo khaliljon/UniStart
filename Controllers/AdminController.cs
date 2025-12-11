@@ -689,14 +689,46 @@ public class AdminController : ControllerBase
     }
 
     /// <summary>
-    /// Получить все экзамены в системе (для админа)
+    /// Получить все экзамены в системе (для админа) с фильтрацией
     /// </summary>
     [HttpGet("exams")]
-    public async Task<ActionResult> GetAllExams()
+    public async Task<ActionResult> GetAllExams(
+        [FromQuery] string? subject = null,
+        [FromQuery] string? difficulty = null,
+        [FromQuery] string? country = null,
+        [FromQuery] string? university = null)
     {
-        var exams = await _context.Exams
+        var query = _context.Exams
             .Include(e => e.Questions)
             .Include(e => e.User)
+            .Include(e => e.Subjects)
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(subject))
+            query = query.Where(e => e.Subjects.Any(s => s.Name == subject) || e.Subject == subject);
+
+        if (!string.IsNullOrEmpty(difficulty))
+            query = query.Where(e => e.Difficulty == difficulty);
+
+        if (!string.IsNullOrEmpty(university))
+        {
+            var universityId = int.TryParse(university, out var uid) ? uid : (int?)null;
+            if (universityId.HasValue)
+                query = query.Where(e => e.UniversityId == universityId.Value);
+        }
+
+        if (!string.IsNullOrEmpty(country))
+        {
+            var countryId = int.TryParse(country, out var cid) ? cid : (int?)null;
+            if (countryId.HasValue)
+            {
+                // Фильтруем по стране через университеты
+                query = query.Where(e => e.UniversityId.HasValue && 
+                    _context.Universities.Any(u => u.Id == e.UniversityId.Value && u.CountryId == countryId.Value));
+            }
+        }
+
+        var exams = await query
             .Select(e => new
             {
                 e.Id,
@@ -711,16 +743,134 @@ public class AdminController : ControllerBase
                 e.TotalPoints,
                 e.MaxAttempts,
                 e.PassingScore,
-                e.CreatedAt
+                e.CreatedAt,
+                e.UniversityId
             })
             .OrderByDescending(e => e.CreatedAt)
             .ToListAsync();
 
         return Ok(exams);
     }
+
+    /// <summary>
+    /// Получить настройки системы
+    /// </summary>
+    [HttpGet("settings")]
+    public async Task<ActionResult<object>> GetSettings()
+    {
+        var settings = await _context.SystemSettings.FindAsync(1);
+        
+        if (settings == null)
+        {
+            // Создаем настройки по умолчанию, если их нет
+            settings = new SystemSettings
+            {
+                Id = 1,
+                SiteName = "UniStart",
+                SiteDescription = "Образовательная платформа для изучения с помощью карточек и тестов",
+                AllowRegistration = true,
+                RequireEmailVerification = false,
+                MaxQuizAttempts = 3,
+                SessionTimeout = 30,
+                EnableNotifications = true,
+                UpdatedAt = DateTime.UtcNow
+            };
+            _context.SystemSettings.Add(settings);
+            await _context.SaveChangesAsync();
+        }
+        
+        return Ok(new
+        {
+            SiteName = settings.SiteName,
+            SiteDescription = settings.SiteDescription,
+            AllowRegistration = settings.AllowRegistration,
+            RequireEmailVerification = settings.RequireEmailVerification,
+            MaxQuizAttempts = settings.MaxQuizAttempts,
+            SessionTimeout = settings.SessionTimeout,
+            EnableNotifications = settings.EnableNotifications
+        });
+    }
+
+    /// <summary>
+    /// Обновить настройки системы
+    /// </summary>
+    [HttpPut("settings")]
+    public async Task<ActionResult> UpdateSettings([FromBody] SystemSettingsDto dto)
+    {
+        try
+        {
+            // Валидация
+            if (dto.SiteName != null && string.IsNullOrWhiteSpace(dto.SiteName))
+                return BadRequest(new { message = "Название сайта не может быть пустым" });
+
+            if (dto.MaxQuizAttempts.HasValue && (dto.MaxQuizAttempts.Value < 1 || dto.MaxQuizAttempts.Value > 10))
+                return BadRequest(new { message = "Количество попыток должно быть от 1 до 10" });
+
+            if (dto.SessionTimeout.HasValue && (dto.SessionTimeout.Value < 5 || dto.SessionTimeout.Value > 120))
+                return BadRequest(new { message = "Таймаут сессии должен быть от 5 до 120 минут" });
+
+            // Получаем или создаем настройки
+            var settings = await _context.SystemSettings.FindAsync(1);
+            if (settings == null)
+            {
+                settings = new SystemSettings
+                {
+                    Id = 1,
+                    SiteName = "UniStart",
+                    SiteDescription = "Образовательная платформа для изучения с помощью карточек и тестов",
+                    AllowRegistration = true,
+                    RequireEmailVerification = false,
+                    MaxQuizAttempts = 3,
+                    SessionTimeout = 30,
+                    EnableNotifications = true,
+                    UpdatedAt = DateTime.UtcNow
+                };
+                _context.SystemSettings.Add(settings);
+            }
+            
+            // Обновляем только переданные значения
+            if (dto.SiteName != null) settings.SiteName = dto.SiteName;
+            if (dto.SiteDescription != null) settings.SiteDescription = dto.SiteDescription;
+            if (dto.AllowRegistration.HasValue) settings.AllowRegistration = dto.AllowRegistration.Value;
+            if (dto.RequireEmailVerification.HasValue) settings.RequireEmailVerification = dto.RequireEmailVerification.Value;
+            if (dto.MaxQuizAttempts.HasValue) settings.MaxQuizAttempts = dto.MaxQuizAttempts.Value;
+            if (dto.SessionTimeout.HasValue) settings.SessionTimeout = dto.SessionTimeout.Value;
+            if (dto.EnableNotifications.HasValue) settings.EnableNotifications = dto.EnableNotifications.Value;
+            
+            settings.UpdatedAt = DateTime.UtcNow;
+            
+            await _context.SaveChangesAsync();
+            
+            _logger.LogInformation("Настройки системы обновлены: SiteName={SiteName}, SiteDescription={SiteDescription}, AllowRegistration={AllowRegistration}, MaxQuizAttempts={MaxQuizAttempts}, SessionTimeout={SessionTimeout}, EnableNotifications={EnableNotifications}",
+                settings.SiteName,
+                settings.SiteDescription,
+                settings.AllowRegistration,
+                settings.MaxQuizAttempts,
+                settings.SessionTimeout,
+                settings.EnableNotifications);
+            
+            return Ok(new { message = "Настройки успешно сохранены" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Ошибка при сохранении настроек");
+            return StatusCode(500, new { message = "Внутренняя ошибка сервера при сохранении настроек" });
+        }
+    }
 }
 
 // DTOs для AdminController
+
+public class SystemSettingsDto
+{
+    public string? SiteName { get; set; }
+    public string? SiteDescription { get; set; }
+    public bool? AllowRegistration { get; set; }
+    public bool? RequireEmailVerification { get; set; }
+    public int? MaxQuizAttempts { get; set; }
+    public int? SessionTimeout { get; set; }
+    public bool? EnableNotifications { get; set; }
+}
 public class AssignRoleDto
 {
     public string RoleName { get; set; } = string.Empty;

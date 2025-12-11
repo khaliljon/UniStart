@@ -54,10 +54,18 @@ const FlashcardStatsPage = () => {
     );
   }
 
-  // Mock данные для демонстрации (в будущем будут из API)
-  const totalStudents = Math.floor(Math.random() * 50) + 10;
-  const averageProgress = Math.floor(Math.random() * 100);
-  const studyingSessions = Math.floor(Math.random() * 200) + 50;
+  // Реальные данные из flashcardSet
+  const totalCards = flashcardSet.flashcards?.length || 0;
+  const cardsToReview = flashcardSet.flashcards?.filter(
+    (card: any) => !card.nextReviewDate || new Date(card.nextReviewDate) <= new Date()
+  ).length || 0;
+  const studiedCards = flashcardSet.flashcards?.filter(
+    (card: any) => card.lastReviewedAt != null
+  ).length || 0;
+  const averageProgress = totalCards > 0 ? Math.round((studiedCards / totalCards) * 100) : 0;
+  // Пока нет данных о количестве изучающих (нужна отдельная таблица или endpoint)
+  const totalStudents = 0;
+  const studyingSessions = 0;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 py-8 px-4">
@@ -116,7 +124,7 @@ const FlashcardStatsPage = () => {
               <Users className="w-8 h-8 text-green-400" />
               <div>
                 <p className="text-white/60 text-sm">Изучающих</p>
-                <p className="text-3xl font-bold text-white">{totalStudents}</p>
+                <p className="text-3xl font-bold text-white">{totalStudents || 0}</p>
               </div>
             </div>
           </motion.div>
@@ -131,7 +139,7 @@ const FlashcardStatsPage = () => {
               <Target className="w-8 h-8 text-yellow-400" />
               <div>
                 <p className="text-white/60 text-sm">К повторению</p>
-                <p className="text-3xl font-bold text-white">{flashcardSet.cardsToReview || 0}</p>
+                <p className="text-3xl font-bold text-white">{cardsToReview}</p>
               </div>
             </div>
           </motion.div>
@@ -194,16 +202,16 @@ const FlashcardStatsPage = () => {
             <h3 className="text-xl font-bold text-white mb-4">Активность</h3>
             <div className="space-y-3">
               <div className="flex justify-between">
-                <span className="text-white/60">Всего сессий:</span>
-                <span className="text-white font-medium">{studyingSessions}</span>
+                <span className="text-white/60">Изучено карточек:</span>
+                <span className="text-white font-medium">{studiedCards} из {totalCards}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-white/60">Средняя длительность:</span>
-                <span className="text-white font-medium">{Math.floor(Math.random() * 20) + 5} мин</span>
+                <span className="text-white font-medium">—</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-white/60">Успешных повторений:</span>
-                <span className="text-white font-medium">{Math.floor(Math.random() * 80) + 10}%</span>
+                <span className="text-white font-medium">{averageProgress}%</span>
               </div>
             </div>
           </motion.div>

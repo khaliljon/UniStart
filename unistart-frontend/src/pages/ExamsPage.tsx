@@ -17,6 +17,7 @@ import {
   Upload,
   FileX,
   Edit,
+  ClipboardCheck,
 } from 'lucide-react';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
@@ -40,7 +41,7 @@ interface Exam {
   startDate?: string;
   endDate?: string;
   createdAt: string;
-  universityId: number;
+  universityId?: number;
 }
 
 interface Subject {
@@ -127,12 +128,18 @@ const ExamsPage = () => {
     ? universitiesList.filter(u => u.countryId === Number(countryFilter))
     : universitiesList;
 
-  // Фильтрация экзаменов по вузу (по id)
+  // Фильтрация экзаменов
   const filteredExams = exams.filter(exam => {
-    const matchesSearch = exam.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      exam.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesUniversity = universityFilter ? exam.universityId === Number(universityFilter) : true;
-    return matchesSearch && matchesUniversity;
+    const matchesSearch = searchQuery 
+      ? (exam.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+         exam.description.toLowerCase().includes(searchQuery.toLowerCase()))
+      : true;
+    const matchesSubject = subjectFilter ? exam.subject === subjectFilter : true;
+    const matchesDifficulty = difficultyFilter ? exam.difficulty === difficultyFilter : true;
+    const matchesUniversity = universityFilter 
+      ? (exam.universityId !== undefined && exam.universityId === Number(universityFilter))
+      : true;
+    return matchesSearch && matchesSubject && matchesDifficulty && matchesUniversity;
   });
 
   const getDifficultyColor = (difficulty: string) => {
@@ -226,7 +233,7 @@ const ExamsPage = () => {
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-            <FileText className="w-8 h-8 text-primary-500" />
+            <ClipboardCheck className="w-8 h-8 text-primary-500" />
             {isAdmin ? 'Экзамены' : (isTeacher ? 'Мои Экзамены' : 'Доступные Экзамены')}
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-2">
