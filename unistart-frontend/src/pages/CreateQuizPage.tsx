@@ -165,17 +165,32 @@ const CreateQuizPage = () => {
       return;
     }
 
-    for (const question of quiz.questions) {
+    // Валидация вопросов
+    for (let i = 0; i < quiz.questions.length; i++) {
+      const question = quiz.questions[i];
+      
       if (!question.text.trim()) {
-        alert('Все вопросы должны иметь текст!');
+        alert(`Вопрос ${i + 1}: введите текст вопроса!`);
         return;
       }
-      if (question.answers.length < 2) {
-        alert('У каждого вопроса должно быть минимум 2 ответа!');
+      
+      const validAnswers = question.answers.filter(a => a.text.trim());
+      if (validAnswers.length < 2) {
+        alert(`Вопрос ${i + 1}: добавьте минимум 2 варианта ответа!`);
         return;
       }
-      if (!question.answers.some(a => a.isCorrect)) {
-        alert('У каждого вопроса должен быть хотя бы один правильный ответ!');
+      
+      // Проверка дубликатов вариантов ответов
+      const answerTexts = validAnswers.map(a => a.text.trim().toLowerCase());
+      const uniqueAnswers = new Set(answerTexts);
+      if (uniqueAnswers.size !== answerTexts.length) {
+        alert(`Вопрос ${i + 1}: варианты ответов не должны повторяться!`);
+        return;
+      }
+      
+      // Проверка правильного ответа
+      if (!question.answers.some(a => a.isCorrect && a.text.trim())) {
+        alert(`Вопрос ${i + 1}: отметьте хотя бы один правильный ответ!`);
         return;
       }
     }

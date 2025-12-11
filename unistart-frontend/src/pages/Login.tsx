@@ -7,18 +7,18 @@ import Input from '../components/common/Input'
 
 const Login = () => {
   const navigate = useNavigate()
-  const { user, login } = useAuth()
+  const { user, login, loading } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
-  // Редирект когда user установлен
+  // Редирект когда user установлен (только если загрузка завершена)
   useEffect(() => {
-    if (user) {
-      navigate('/dashboard')
+    if (!loading && user) {
+      navigate('/dashboard', { replace: true })
     }
-  }, [user, navigate])
+  }, [user, loading, navigate])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

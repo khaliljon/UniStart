@@ -251,7 +251,17 @@ function App() {
             path="/teacher/students"
             element={
               <PrivateRoute>
-                <RoleRoute allowedRoles={['Teacher', 'Admin']}>
+                <RoleRoute allowedRoles={['Teacher']}>
+                  <TeacherStudentsPage />
+                </RoleRoute>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/admin/students"
+            element={
+              <PrivateRoute>
+                <RoleRoute allowedRoles={['Admin']}>
                   <TeacherStudentsPage />
                 </RoleRoute>
               </PrivateRoute>
@@ -261,7 +271,17 @@ function App() {
             path="/teacher/students/:studentId/stats"
             element={
               <PrivateRoute>
-                <RoleRoute allowedRoles={['Teacher', 'Admin']}>
+                <RoleRoute allowedRoles={['Teacher']}>
+                  <StudentDetailPage />
+                </RoleRoute>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/admin/students/:studentId/stats"
+            element={
+              <PrivateRoute>
+                <RoleRoute allowedRoles={['Admin']}>
                   <StudentDetailPage />
                 </RoleRoute>
               </PrivateRoute>

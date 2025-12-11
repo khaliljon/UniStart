@@ -55,46 +55,22 @@ const AdminAchievementsPage = () => {
 
   const loadAchievements = async () => {
     try {
+      setLoading(true);
       const response = await api.get('/admin/achievements');
       console.log('Achievements response:', response.data);
       
+      // API возвращает массив достижений
       const achievementsArray = Array.isArray(response.data)
         ? response.data
-        : (response.data.achievements || response.data.Achievements || []);
+        : (response.data?.achievements || response.data?.Achievements || []);
       
+      console.log('Loaded achievements:', achievementsArray.length);
       setAchievements(achievementsArray);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Ошибка загрузки достижений:', error);
-      // Моковые данные для демонстрации
-      setAchievements([
-        {
-          id: '1',
-          name: 'Первый шаг',
-          description: 'Пройдите первый тест',
-          iconName: '🎯',
-          category: 'Quiz',
-          requiredCount: 1,
-          createdAt: new Date().toISOString(),
-        },
-        {
-          id: '2',
-          name: 'Книжный червь',
-          description: 'Изучите 100 карточек',
-          iconName: '📚',
-          category: 'Flashcard',
-          requiredCount: 100,
-          createdAt: new Date().toISOString(),
-        },
-        {
-          id: '3',
-          name: 'Огненная серия',
-          description: 'Поддерживайте серию 7 дней',
-          iconName: '🔥',
-          category: 'Streak',
-          requiredCount: 7,
-          createdAt: new Date().toISOString(),
-        },
-      ]);
+      console.error('Error details:', error.response?.data);
+      alert(`Ошибка загрузки достижений: ${error.response?.data?.message || error.message}`);
+      setAchievements([]);
     } finally {
       setLoading(false);
     }

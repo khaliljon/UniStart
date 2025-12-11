@@ -67,18 +67,83 @@ public class AdminController : ControllerBase
             if (!string.IsNullOrWhiteSpace(role) && !userRoles.Contains(role))
                 continue;
 
+            // Получаем статистику по квизам для пользователя
+            var quizAttempts = await _context.UserQuizAttempts
+                .Where(qa => qa.UserId == user.Id && qa.CompletedAt != null)
+                .ToListAsync();
+
+            var totalQuizAttempts = quizAttempts.Count; // Реальное количество попыток
+            var uniqueQuizzesTaken = quizAttempts.Select(qa => qa.QuizId).Distinct().Count(); // Уникальные квизы
+            var averageScore = quizAttempts.Any() 
+                ? Math.Round(quizAttempts.Average(qa => qa.Percentage), 2) 
+                : 0.0;
+
+            // Получаем статистику по экзаменам
+            var examAttempts = await _context.UserExamAttempts
+                .Where(ea => ea.UserId == user.Id && ea.CompletedAt != null)
+                .ToListAsync();
+
+            var totalExamsTaken = examAttempts.Select(ea => ea.ExamId).Distinct().Count();
+            var averageExamScore = examAttempts.Any()
+                ? Math.Round(examAttempts.Average(ea => ea.Percentage), 2)
+                : 0.0;
+
+            // Получаем количество полностью изученных наборов карточек (где все карточки изучены правильно)
+            // Пока используем упрощенную логику: считаем наборы, где все карточки изучены
+            // TODO: Нужно создать модель UserFlashcardProgress для правильного отслеживания прогресса каждого пользователя
+            var studiedSetsCount = await _context.FlashcardSets
+                .Where(fs => fs.IsPublic || fs.UserId == user.Id)
+                .Select(fs => new
+                {
+                    SetId = fs.Id,
+                    TotalCards = fs.Flashcards.Count,
+                    // Временная логика - считаем наборы, где все карточки изучены
+                    // TODO: Заменить на проверку всех карточек с правильными ответами для пользователя
+                    StudiedCards = fs.Flashcards.Count(f => f.LastReviewedAt != null)
+                })
+                .Where(x => x.TotalCards > 0 && x.StudiedCards == x.TotalCards) // Только полностью изученные наборы
+                .CountAsync();
+            
+            var studiedCardsCount = studiedSetsCount; // Это количество наборов, а не карточек
+
+            // Получаем дату последней активности (максимум из всех видов активности)
+            var lastQuizDate = quizAttempts.Any() ? quizAttempts.Max(qa => qa.CompletedAt) : (DateTime?)null;
+            var lastExamDate = examAttempts.Any() ? examAttempts.Max(ea => ea.CompletedAt) : (DateTime?)null;
+            
+            // Для карточек ищем максимальную дату LastReviewedAt из всех доступных наборов
+            var lastCardDate = await _context.FlashcardSets
+                .Where(fs => fs.IsPublic || fs.UserId == user.Id)
+                .SelectMany(fs => fs.Flashcards)
+                .Where(f => f.LastReviewedAt != null)
+                .Select(f => (DateTime?)f.LastReviewedAt)
+                .DefaultIfEmpty()
+                .MaxAsync();
+
+            var lastActivityDate = new[] { lastQuizDate, lastExamDate, lastCardDate }
+                .Where(d => d.HasValue)
+                .DefaultIfEmpty()
+                .Max();
+
             userDtos.Add(new
             {
-                user.Id,
-                user.Email,
-                user.UserName,
-                user.CreatedAt,
-                user.TotalCardsStudied,
-                user.TotalQuizzesTaken,
+                Id = user.Id,
+                Email = user.Email,
+                UserName = user.UserName,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                CreatedAt = user.CreatedAt,
+                LastLoginAt = user.LastLoginAt,
+                LastActivityDate = lastActivityDate, // Дата последней активности (квизы, экзамены, карточки)
+                TotalCardsStudied = studiedCardsCount, // Количество полностью изученных наборов карточек
+                TotalQuizzesTaken = uniqueQuizzesTaken, // Уникальные квизы (не попытки!)
+                TotalQuizAttempts = totalQuizAttempts, // Реальное количество попыток по квизам
+                TotalExamsTaken = totalExamsTaken,
+                AverageScore = averageScore, // Средний процент по всем попыткам квизов
+                AverageExamScore = averageExamScore,
                 Roles = userRoles,
-                user.EmailConfirmed,
-                user.LockoutEnabled,
-                user.LockoutEnd
+                EmailConfirmed = user.EmailConfirmed,
+                LockoutEnabled = user.LockoutEnabled,
+                LockoutEnd = user.LockoutEnd
             });
         }
 
@@ -345,7 +410,8 @@ public class AdminController : ControllerBase
     [HttpGet("analytics")]
     public async Task<ActionResult<object>> GetAnalytics()
     {
-        var totalUsers = await _context.Users.CountAsync();
+        // Используем _userManager.Users для подсчета пользователей Identity
+        var totalUsers = await _userManager.Users.CountAsync();
         var totalQuizzes = await _context.Quizzes.CountAsync();
         var totalExams = await _context.Exams.CountAsync();
         var totalFlashcardSets = await _context.FlashcardSets.CountAsync();
@@ -357,25 +423,26 @@ public class AdminController : ControllerBase
         var weekAgo = DateTime.UtcNow.AddDays(-7);
         var monthAgo = DateTime.UtcNow.AddMonths(-1);
         
-        var activeToday = await _context.Users
-            .Where(u => u.LastLoginAt != null && u.LastLoginAt >= today)
+        // Используем _userManager.Users для активных пользователей
+        var activeToday = await _userManager.Users
+            .Where(u => u.LastLoginAt != null && u.LastLoginAt.Value.Date >= today)
             .CountAsync();
             
-        var activeThisWeek = await _context.Users
-            .Where(u => u.LastLoginAt != null && u.LastLoginAt >= weekAgo)
+        var activeThisWeek = await _userManager.Users
+            .Where(u => u.LastLoginAt != null && u.LastLoginAt.Value.Date >= weekAgo)
             .CountAsync();
             
-        var activeThisMonth = await _context.Users
-            .Where(u => u.LastLoginAt != null && u.LastLoginAt >= monthAgo)
+        var activeThisMonth = await _userManager.Users
+            .Where(u => u.LastLoginAt != null && u.LastLoginAt.Value.Date >= monthAgo)
             .CountAsync();
         
         var averageQuizScore = await _context.UserQuizAttempts.AnyAsync() 
-            ? await _context.UserQuizAttempts.AverageAsync(qa => qa.Percentage)
+            ? await _context.UserQuizAttempts.AverageAsync(qa => (double?)qa.Percentage) ?? 0.0
             : 0.0;
             
         var totalAchievements = await _context.Achievements.CountAsync();
         
-        return Ok(new
+        var result = new
         {
             Stats = new
             {
@@ -392,7 +459,12 @@ public class AdminController : ControllerBase
                 AverageQuizScore = Math.Round(averageQuizScore, 2),
                 TotalAchievements = totalAchievements
             }
-        });
+        };
+        
+        _logger.LogInformation("Analytics data: Users={TotalUsers}, Quizzes={TotalQuizzes}, Exams={TotalExams}", 
+            totalUsers, totalQuizzes, totalExams);
+        
+        return Ok(result);
     }
 
     /// <summary>
@@ -856,6 +928,127 @@ public class AdminController : ControllerBase
             _logger.LogError(ex, "Ошибка при сохранении настроек");
             return StatusCode(500, new { message = "Внутренняя ошибка сервера при сохранении настроек" });
         }
+    }
+
+    /// <summary>
+    /// Получить все достижения (для админа)
+    /// </summary>
+    [HttpGet("achievements")]
+    public async Task<ActionResult<object>> GetAllAchievements()
+    {
+        var achievements = await _context.Achievements
+            .OrderBy(a => a.Id)
+            .Select(a => new
+            {
+                id = a.Id.ToString(),
+                name = a.Title,
+                description = a.Description,
+                iconName = a.Icon,
+                category = a.Type,
+                requiredCount = a.TargetValue,
+                createdAt = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ") // Используем текущую дату, если нет CreatedAt
+            })
+            .ToListAsync();
+
+            return Ok(achievements);
+    }
+
+    /// <summary>
+    /// Получить детальную статистику по студенту (для админа)
+    /// </summary>
+    [HttpGet("students/{studentId}/stats")]
+    public async Task<ActionResult<object>> GetStudentStats(string studentId)
+    {
+        // Получаем информацию о студенте
+        var student = await _userManager.FindByIdAsync(studentId);
+        if (student == null)
+            return NotFound(new { Message = "Студент не найден" });
+
+        // Получаем попытки студента по всем квизам
+        var quizAttempts = await _context.UserQuizAttempts
+            .Include(qa => qa.Quiz)
+            .Where(qa => qa.UserId == studentId)
+            .OrderByDescending(qa => qa.CompletedAt)
+            .ToListAsync();
+
+        // Получаем попытки студента по всем экзаменам
+        var examAttempts = await _context.UserExamAttempts
+            .Include(ea => ea.Exam)
+            .Where(ea => ea.UserId == studentId)
+            .OrderByDescending(ea => ea.CompletedAt)
+            .ToListAsync();
+
+        // Получаем количество полностью изученных наборов карточек (где все карточки изучены правильно)
+        // Пока используем упрощенную логику: считаем наборы, где все карточки изучены
+        // TODO: Нужно создать модель UserFlashcardProgress для правильного отслеживания прогресса каждого пользователя
+        var studiedSetsCount = await _context.FlashcardSets
+            .Where(fs => fs.IsPublic || fs.UserId == studentId)
+            .Select(fs => new
+            {
+                SetId = fs.Id,
+                TotalCards = fs.Flashcards.Count,
+                // Временная логика - считаем наборы, где все карточки изучены
+                // TODO: Заменить на проверку всех карточек с правильными ответами для пользователя
+                StudiedCards = fs.Flashcards.Count(f => f.LastReviewedAt != null)
+            })
+            .Where(x => x.TotalCards > 0 && x.StudiedCards == x.TotalCards) // Только полностью изученные наборы
+            .CountAsync();
+        
+        var studiedCards = studiedSetsCount; // Это количество наборов, а не карточек
+
+        var attemptDetails = quizAttempts.Select(a => new
+        {
+            AttemptId = a.Id,
+            QuizId = a.QuizId,
+            QuizTitle = a.Quiz.Title,
+            Type = "Quiz",
+            Score = a.Score,
+            MaxScore = a.MaxScore,
+            Percentage = Math.Round(a.Percentage, 2),
+            CompletedAt = a.CompletedAt
+        }).ToList();
+
+        var examAttemptDetails = examAttempts.Select(ea => new
+        {
+            AttemptId = ea.Id,
+            ExamId = ea.ExamId,
+            ExamTitle = ea.Exam.Title,
+            Type = "Exam",
+            Score = ea.Score,
+            TotalPoints = ea.TotalPoints,
+            Percentage = Math.Round(ea.Percentage, 2),
+            Passed = ea.Passed,
+            CompletedAt = ea.CompletedAt
+        }).ToList();
+
+        // Правильно считаем средний балл - используем реальное количество попыток
+        var totalQuizPercentage = quizAttempts.Sum(a => a.Percentage);
+        var totalExamPercentage = examAttempts.Sum(ea => ea.Percentage);
+        var totalAttemptsCount = quizAttempts.Count + examAttempts.Count;
+        var overallAverage = totalAttemptsCount > 0 
+            ? Math.Round((totalQuizPercentage + totalExamPercentage) / totalAttemptsCount, 2) 
+            : 0.0;
+
+        return Ok(new
+        {
+            StudentId = studentId,
+            Email = student.Email,
+            UserName = student.UserName,
+            FirstName = student.FirstName,
+            LastName = student.LastName,
+            TotalQuizAttempts = quizAttempts.Count, // Реальное количество попыток
+            TotalExamAttempts = examAttempts.Count,
+            TotalCardsStudied = studiedCards, // Количество полностью изученных наборов карточек
+            QuizzesTaken = quizAttempts.Select(a => a.QuizId).Distinct().Count(), // Уникальные квизы
+            ExamsTaken = examAttempts.Select(ea => ea.ExamId).Distinct().Count(),
+            AverageQuizScore = quizAttempts.Any() ? Math.Round(quizAttempts.Average(a => a.Percentage), 2) : 0.0,
+            AverageExamScore = examAttempts.Any() ? Math.Round(examAttempts.Average(ea => ea.Percentage), 2) : 0.0,
+            AverageScore = overallAverage, // Правильно рассчитанный общий средний балл
+            BestQuizScore = quizAttempts.Any() ? quizAttempts.Max(a => a.Percentage) : 0.0,
+            BestExamScore = examAttempts.Any() ? examAttempts.Max(ea => ea.Percentage) : 0.0,
+            Attempts = attemptDetails,
+            ExamAttempts = examAttemptDetails
+        });
     }
 }
 

@@ -23,7 +23,6 @@ interface PlatformStats {
   totalQuizzes: number;
   totalTests: number;
   totalFlashcardSets: number;
-  totalQuestions: number;
   totalFlashcards: number;
   totalAttempts: number;
   activeToday: number;
@@ -44,44 +43,45 @@ const AdminAnalyticsPage = () => {
 
   const loadAnalytics = async () => {
     try {
+      setLoading(true);
       const response = await api.get('/admin/analytics');
-      console.log('Analytics response:', response.data); // Debug
+      console.log('=== Analytics API Response ===');
+      console.log('Full response:', JSON.stringify(response.data, null, 2));
       
-      // Данные возвращаются в объекте Stats
-      const statsData = response.data?.Stats || response.data;
-      console.log('Stats data:', statsData); // Debug
+      // Данные возвращаются в объекте stats (camelCase) - JSON сериализатор преобразует Stats -> stats
+      // response.data = { stats: { totalUsers: 4, ... } }
+      const statsData = response.data?.stats || response.data?.Stats || response.data;
+      console.log('Stats data object:', statsData);
+      console.log('TotalUsers:', statsData?.totalUsers, statsData?.TotalUsers);
       
-      setStats({
-        totalUsers: statsData?.TotalUsers ?? statsData?.totalUsers ?? 0,
-        totalQuizzes: statsData?.TotalQuizzes ?? statsData?.totalQuizzes ?? 0,
-        totalTests: statsData?.TotalExams ?? statsData?.totalExams ?? 0,
-        totalFlashcardSets: statsData?.TotalFlashcardSets ?? statsData?.totalFlashcardSets ?? 0,
-        totalQuestions: statsData?.TotalQuestions ?? statsData?.totalQuestions ?? 0,
-        totalFlashcards: statsData?.TotalFlashcards ?? statsData?.totalFlashcards ?? 0,
-        totalAttempts: statsData?.TotalAttempts ?? statsData?.totalAttempts ?? 0,
-        activeToday: statsData?.ActiveToday ?? statsData?.activeToday ?? 0,
-        activeThisWeek: statsData?.ActiveThisWeek ?? statsData?.activeThisWeek ?? 0,
-        activeThisMonth: statsData?.ActiveThisMonth ?? statsData?.activeThisMonth ?? 0,
-        averageQuizScore: statsData?.AverageQuizScore ?? statsData?.averageQuizScore ?? 0,
-        totalAchievements: statsData?.TotalAchievements ?? statsData?.totalAchievements ?? 0,
-      });
-    } catch (error) {
+      if (!statsData) {
+        console.error('Stats data is null or undefined!');
+        throw new Error('Stats data не найдены в ответе API');
+      }
+      
+      // Читаем данные в camelCase (как они приходят с бэкенда)
+      const newStats: PlatformStats = {
+        totalUsers: Number(statsData.totalUsers ?? statsData.TotalUsers ?? 0),
+        totalQuizzes: Number(statsData.totalQuizzes ?? statsData.TotalQuizzes ?? 0),
+        totalTests: Number(statsData.totalExams ?? statsData.TotalExams ?? 0),
+        totalFlashcardSets: Number(statsData.totalFlashcardSets ?? statsData.TotalFlashcardSets ?? 0),
+        totalFlashcards: Number(statsData.totalFlashcards ?? statsData.TotalFlashcards ?? 0),
+        totalAttempts: Number(statsData.totalAttempts ?? statsData.TotalAttempts ?? 0),
+        activeToday: Number(statsData.activeToday ?? statsData.ActiveToday ?? 0),
+        activeThisWeek: Number(statsData.activeThisWeek ?? statsData.ActiveThisWeek ?? 0),
+        activeThisMonth: Number(statsData.activeThisMonth ?? statsData.ActiveThisMonth ?? 0),
+        averageQuizScore: Number(statsData.averageQuizScore ?? statsData.AverageQuizScore ?? 0),
+        totalAchievements: Number(statsData.totalAchievements ?? statsData.TotalAchievements ?? 0),
+      };
+      
+      console.log('Final parsed stats:', newStats);
+      setStats(newStats);
+    } catch (error: any) {
       console.error('Ошибка загрузки аналитики:', error);
-      // Используем данные из AdminDashboard если API не работает
-      setStats({
-        totalUsers: 0,
-        totalQuizzes: 0,
-        totalTests: 0,
-        totalFlashcardSets: 0,
-        totalQuestions: 0,
-        totalFlashcards: 0,
-        totalAttempts: 0,
-        activeToday: 0,
-        activeThisWeek: 0,
-        activeThisMonth: 0,
-        averageQuizScore: 0,
-        totalAchievements: 0,
-      });
+      console.error('Error details:', error.response?.data);
+      console.error('Error status:', error.response?.status);
+      // Показываем сообщение об ошибке, но не обнуляем все данные
+      alert(`Ошибка загрузки аналитики: ${error.response?.data?.message || error.message}`);
     } finally {
       setLoading(false);
     }
@@ -273,30 +273,21 @@ const AdminAnalyticsPage = () => {
                   {stats.totalTests}
                 </span>
               </div>
-              <div className="flex items-center justify-between py-3 border-b">
-                <div className="flex items-center gap-3">
-                  <Target className="w-5 h-5 text-blue-500" />
-                  <span className="text-gray-700">Всего вопросов</span>
-                </div>
-                <span className="text-xl font-bold text-gray-900">
-                  {stats.totalQuestions}
-                </span>
-              </div>
-              <div className="flex items-center justify-between py-3 border-b">
+              <div className="flex items-center justify-between py-3 border-b border-gray-200 dark:border-gray-700">
                 <div className="flex items-center gap-3">
                   <BookOpen className="w-5 h-5 text-purple-500" />
-                  <span className="text-gray-700">Наборов карточек</span>
+                  <span className="text-gray-700 dark:text-gray-300">Наборов карточек</span>
                 </div>
-                <span className="text-xl font-bold text-gray-900">
+                <span className="text-xl font-bold text-gray-900 dark:text-white">
                   {stats.totalFlashcardSets}
                 </span>
               </div>
               <div className="flex items-center justify-between py-3">
                 <div className="flex items-center gap-3">
                   <BookOpen className="w-5 h-5 text-indigo-500" />
-                  <span className="text-gray-700">Всего карточек</span>
+                  <span className="text-gray-700 dark:text-gray-300">Всего карточек</span>
                 </div>
-                <span className="text-xl font-bold text-gray-900">
+                <span className="text-xl font-bold text-gray-900 dark:text-white">
                   {stats.totalFlashcards}
                 </span>
               </div>

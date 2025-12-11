@@ -206,7 +206,7 @@ public class TeacherController : ControllerBase
                 Email = g.First().User.Email,
                 UserName = g.First().User.UserName,
                 TotalAttempts = g.Count(),
-                AverageScore = Math.Round(g.Average(a => a.Score), 2),
+                AverageScore = Math.Round(g.Average(a => a.Percentage), 2), // Используем Percentage вместо Score
                 AveragePercentage = Math.Round(g.Average(a => a.Percentage), 2),
                 BestScore = g.Max(a => a.Score),
                 LastAttemptDate = g.Max(a => a.CompletedAt),
@@ -245,46 +245,90 @@ public class TeacherController : ControllerBase
             .Select(q => q.Id)
             .ToListAsync();
 
-        // Получаем попытки студента по тестам преподавателя
-        var attempts = await _context.UserQuizAttempts
+        // Получаем попытки студента по квизам преподавателя
+        var quizAttempts = await _context.UserQuizAttempts
             .Include(qa => qa.Quiz)
             .Where(qa => qa.UserId == studentId && teacherQuizIds.Contains(qa.QuizId))
             .OrderByDescending(qa => qa.CompletedAt)
             .ToListAsync();
 
-        if (attempts.Count == 0)
-        {
-            return Ok(new
-            {
-                StudentId = studentId,
-                Email = student.Email,
-                Message = "Студент ещё не проходил ваши тесты",
-                Attempts = new List<object>()
-            });
-        }
+        // Получаем попытки студента по экзаменам
+        var examAttempts = await _context.UserExamAttempts
+            .Include(ea => ea.Exam)
+            .Where(ea => ea.UserId == studentId)
+            .OrderByDescending(ea => ea.CompletedAt)
+            .ToListAsync();
 
-        var attemptDetails = attempts.Select(a => new
+        // Получаем количество полностью изученных наборов карточек (где все карточки изучены правильно)
+        // Пока используем упрощенную логику: считаем наборы, где все карточки изучены
+        // TODO: Нужно создать модель UserFlashcardProgress для правильного отслеживания прогресса каждого пользователя
+        var studiedSetsCount = await _context.FlashcardSets
+            .Where(fs => fs.IsPublic || fs.UserId == studentId)
+            .Select(fs => new
+            {
+                SetId = fs.Id,
+                TotalCards = fs.Flashcards.Count,
+                // Временная логика - считаем наборы, где все карточки изучены
+                // TODO: Заменить на проверку всех карточек с правильными ответами для пользователя
+                StudiedCards = fs.Flashcards.Count(f => f.LastReviewedAt != null)
+            })
+            .Where(x => x.TotalCards > 0 && x.StudiedCards == x.TotalCards) // Только полностью изученные наборы
+            .CountAsync();
+        
+        var studiedCards = studiedSetsCount; // Это количество наборов, а не карточек
+
+        var attemptDetails = quizAttempts.Select(a => new
         {
             AttemptId = a.Id,
             QuizId = a.QuizId,
             QuizTitle = a.Quiz.Title,
+            Type = "Quiz",
             Score = a.Score,
             MaxScore = a.MaxScore,
             Percentage = Math.Round(a.Percentage, 2),
             CompletedAt = a.CompletedAt
         }).ToList();
 
+        var examAttemptDetails = examAttempts.Select(ea => new
+        {
+            AttemptId = ea.Id,
+            ExamId = ea.ExamId,
+            ExamTitle = ea.Exam.Title,
+            Type = "Exam",
+            Score = ea.Score,
+            TotalPoints = ea.TotalPoints,
+            Percentage = Math.Round(ea.Percentage, 2),
+            Passed = ea.Passed,
+            CompletedAt = ea.CompletedAt
+        }).ToList();
+
+        // Правильно считаем средний балл - используем реальное количество попыток
+        var totalQuizPercentage = quizAttempts.Sum(a => a.Percentage);
+        var totalExamPercentage = examAttempts.Sum(ea => ea.Percentage);
+        var totalAttemptsCount = quizAttempts.Count + examAttempts.Count;
+        var overallAverage = totalAttemptsCount > 0 
+            ? Math.Round((totalQuizPercentage + totalExamPercentage) / totalAttemptsCount, 2) 
+            : 0.0;
+
         return Ok(new
         {
             StudentId = studentId,
             Email = student.Email,
             UserName = student.UserName,
-            TotalAttempts = attempts.Count,
-            AverageScore = Math.Round(attempts.Average(a => a.Score), 2),
-            AveragePercentage = Math.Round(attempts.Average(a => a.Percentage), 2),
-            BestScore = attempts.Max(a => a.Score),
-            QuizzesTaken = attempts.Select(a => a.QuizId).Distinct().Count(),
-            Attempts = attemptDetails
+            FirstName = student.FirstName,
+            LastName = student.LastName,
+            TotalQuizAttempts = quizAttempts.Count, // Реальное количество попыток
+            TotalExamAttempts = examAttempts.Count,
+            TotalCardsStudied = studiedCards, // Количество полностью изученных наборов карточек
+            QuizzesTaken = quizAttempts.Select(a => a.QuizId).Distinct().Count(), // Уникальные квизы
+            ExamsTaken = examAttempts.Select(ea => ea.ExamId).Distinct().Count(),
+            AverageQuizScore = quizAttempts.Any() ? Math.Round(quizAttempts.Average(a => a.Percentage), 2) : 0.0,
+            AverageExamScore = examAttempts.Any() ? Math.Round(examAttempts.Average(ea => ea.Percentage), 2) : 0.0,
+            AverageScore = overallAverage, // Правильно рассчитанный общий средний балл
+            BestQuizScore = quizAttempts.Any() ? quizAttempts.Max(a => a.Percentage) : 0.0,
+            BestExamScore = examAttempts.Any() ? examAttempts.Max(ea => ea.Percentage) : 0.0,
+            Attempts = attemptDetails,
+            ExamAttempts = examAttemptDetails
         });
     }
 

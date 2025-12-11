@@ -153,10 +153,79 @@ const CreateFlashcardSetPage = () => {
       return;
     }
 
-    for (const card of flashcardSet.flashcards) {
-      if (!card.question.trim() || !card.answer.trim()) {
-        alert('Все карточки должны иметь вопрос и ответ!');
+    // Валидация карточек
+    for (let i = 0; i < flashcardSet.flashcards.length; i++) {
+      const card = flashcardSet.flashcards[i];
+      
+      // Проверка вопроса
+      if (!card.question.trim()) {
+        alert(`Карточка ${i + 1}: заполните вопрос!`);
         return;
+      }
+      
+      // Валидация в зависимости от типа
+      if (card.type === FlashcardType.SingleChoice) {
+        // Проверка правильного ответа
+        if (!card.answer || !card.answer.trim()) {
+          alert(`Карточка ${i + 1}: отметьте правильный ответ!`);
+          return;
+        }
+        
+        // Проверка вариантов ответов
+        const validOptions = card.options?.filter(o => o.trim()) || [];
+        if (validOptions.length < 2) {
+          alert(`Карточка ${i + 1}: добавьте минимум 2 варианта ответа!`);
+          return;
+        }
+        
+        // Проверка дубликатов вариантов
+        const uniqueOptions = new Set(validOptions.map(o => o.trim().toLowerCase()));
+        if (uniqueOptions.size !== validOptions.length) {
+          alert(`Карточка ${i + 1}: варианты ответов не должны повторяться!`);
+          return;
+        }
+        
+        // Проверка, что правильный ответ есть среди вариантов
+        if (!validOptions.includes(card.answer)) {
+          alert(`Карточка ${i + 1}: правильный ответ должен быть одним из вариантов!`);
+          return;
+        }
+      } else if (card.type === FlashcardType.FillInTheBlank) {
+        if (!card.answer || !card.answer.trim()) {
+          alert(`Карточка ${i + 1}: введите правильный ответ!`);
+          return;
+        }
+      } else if (card.type === FlashcardType.Matching) {
+        const validPairs = card.matchingPairs?.filter(p => p.term.trim() && p.definition.trim()) || [];
+        if (validPairs.length < 2) {
+          alert(`Карточка ${i + 1}: добавьте минимум 2 пары для сопоставления!`);
+          return;
+        }
+        
+        // Проверка дубликатов терминов и определений
+        const terms = validPairs.map(p => p.term.trim().toLowerCase());
+        const definitions = validPairs.map(p => p.definition.trim().toLowerCase());
+        if (new Set(terms).size !== terms.length) {
+          alert(`Карточка ${i + 1}: термины не должны повторяться!`);
+          return;
+        }
+        if (new Set(definitions).size !== definitions.length) {
+          alert(`Карточка ${i + 1}: определения не должны повторяться!`);
+          return;
+        }
+      } else if (card.type === FlashcardType.Sequencing) {
+        const validSequence = card.sequence?.filter(s => s.trim()) || [];
+        if (validSequence.length < 2) {
+          alert(`Карточка ${i + 1}: добавьте минимум 2 элемента в последовательность!`);
+          return;
+        }
+        
+        // Проверка дубликатов в последовательности
+        const uniqueItems = new Set(validSequence.map(s => s.trim().toLowerCase()));
+        if (uniqueItems.size !== validSequence.length) {
+          alert(`Карточка ${i + 1}: элементы последовательности не должны повторяться!`);
+          return;
+        }
       }
     }
 

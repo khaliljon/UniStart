@@ -240,23 +240,28 @@ const EditQuizPage = () => {
     // Проверка вопросов
     for (let i = 0; i < quiz.questions.length; i++) {
       const q = quiz.questions[i];
-      if (!q.text) {
+      if (!q.text.trim()) {
         alert(`Вопрос ${i + 1}: введите текст вопроса`);
         return;
       }
-      if (q.answers.length < 2) {
+      
+      const validAnswers = q.answers.filter(a => a.text.trim());
+      if (validAnswers.length < 2) {
         alert(`Вопрос ${i + 1}: добавьте минимум 2 варианта ответа`);
         return;
       }
-      if (!q.answers.some((a) => a.isCorrect)) {
-        alert(`Вопрос ${i + 1}: отметьте правильный ответ`);
+      
+      // Проверка дубликатов вариантов ответов
+      const answerTexts = validAnswers.map(a => a.text.trim().toLowerCase());
+      const uniqueAnswers = new Set(answerTexts);
+      if (uniqueAnswers.size !== answerTexts.length) {
+        alert(`Вопрос ${i + 1}: варианты ответов не должны повторяться`);
         return;
       }
-      for (let j = 0; j < q.answers.length; j++) {
-        if (!q.answers[j].text) {
-          alert(`Вопрос ${i + 1}, ответ ${j + 1}: введите текст ответа`);
-          return;
-        }
+      
+      if (!validAnswers.some((a) => a.isCorrect)) {
+        alert(`Вопрос ${i + 1}: отметьте правильный ответ`);
+        return;
       }
     }
 

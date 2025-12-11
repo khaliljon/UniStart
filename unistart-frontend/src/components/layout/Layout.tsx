@@ -80,9 +80,18 @@ const Layout = () => {
                   <span>Экзамены</span>
                 </Link>
 
-                {(isTeacher || isAdmin) && (
+                {isTeacher && (
                   <Link
                     to="/teacher/students"
+                    className="flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                  >
+                    <Users className="w-5 h-5" />
+                    <span>Студенты</span>
+                  </Link>
+                )}
+                {isAdmin && (
+                  <Link
+                    to="/admin/students"
                     className="flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
                   >
                     <Users className="w-5 h-5" />

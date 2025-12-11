@@ -83,8 +83,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser({ ...userData, roles })
     } catch (error) {
       console.error('❌ Failed to load user:', error)
+      // При ошибке очищаем все данные аутентификации
       localStorage.removeItem('token')
       setToken(null)
+      setUser(null) // Явно устанавливаем user в null
     } finally {
       setLoading(false)
       console.log('✅ AuthContext загрузка завершена');

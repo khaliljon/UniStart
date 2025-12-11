@@ -233,15 +233,19 @@ const CreateExamPage = () => {
       const q = questions[i];
       if (!q.text.trim()) return `Вопрос ${i + 1}: введите текст вопроса`;
       if (q.points <= 0) return `Вопрос ${i + 1}: баллы должны быть больше 0`;
-      if (q.answers.length < 2) return `Вопрос ${i + 1}: добавьте минимум 2 варианта ответа`;
+      
+      const validAnswers = q.answers.filter(a => a.text.trim());
+      if (validAnswers.length < 2) return `Вопрос ${i + 1}: добавьте минимум 2 варианта ответа`;
 
-      const hasCorrect = q.answers.some((a) => a.isCorrect);
-      if (!hasCorrect) return `Вопрос ${i + 1}: отметьте правильный ответ`;
-
-      for (let j = 0; j < q.answers.length; j++) {
-        if (!q.answers[j].text.trim())
-          return `Вопрос ${i + 1}, ответ ${j + 1}: введите текст ответа`;
+      // Проверка дубликатов вариантов ответов
+      const answerTexts = validAnswers.map(a => a.text.trim().toLowerCase());
+      const uniqueAnswers = new Set(answerTexts);
+      if (uniqueAnswers.size !== answerTexts.length) {
+        return `Вопрос ${i + 1}: варианты ответов не должны повторяться`;
       }
+
+      const hasCorrect = validAnswers.some((a) => a.isCorrect);
+      if (!hasCorrect) return `Вопрос ${i + 1}: отметьте правильный ответ`;
     }
 
     return null;

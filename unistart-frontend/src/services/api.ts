@@ -21,9 +21,15 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Токен истек или невалиден - очищаем и редиректим на login
+      // Токен истек или невалиден - очищаем
       localStorage.removeItem('token');
-      window.location.href = '/login';
+      
+      // Редиректим на login только если мы не уже на странице логина/регистрации
+      const currentPath = window.location.pathname;
+      if (currentPath !== '/login' && currentPath !== '/register' && currentPath !== '/') {
+        // Используем replace вместо href чтобы избежать полной перезагрузки страницы
+        window.location.replace('/login');
+      }
     }
     return Promise.reject(error);
   }
