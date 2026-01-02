@@ -54,7 +54,7 @@ public class UserFlashcardProgress
     public DateTime? FirstReviewedAt { get; set; } // Первое изучение карточки
     
     [Display(Name = "Изучена полностью")]
-    public bool IsMastered { get; set; } = false; // Изучена ли полностью (Repetitions >= 3 и EaseFactor >= 2.5)
+    public bool IsMastered { get; set; } = false; // Изучена ли полностью (Repetitions >= 3 и EaseFactor >= 2.0)
     
     [Display(Name = "Дата создания записи")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

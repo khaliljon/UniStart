@@ -130,6 +130,13 @@ namespace UniStart.Services
                 progress.CorrectReviews++;
             }
 
+            // ИСПРАВЛЕНО: Обновляем EaseFactor ПЕРЕД проверкой IsMastered
+            // EF' = EF + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02))
+            double newEaseFactor = progress.EaseFactor + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
+            
+            // EaseFactor не должен быть меньше 1.3
+            progress.EaseFactor = Math.Max(1.3, newEaseFactor);
+
             // Если качество < 3, сбрасываем прогресс
             if (quality < 3)
             {
@@ -161,16 +168,13 @@ namespace UniStart.Services
                 // Устанавливаем дату следующего повторения
                 progress.NextReviewDate = now.AddDays(progress.Interval);
 
-                // Карточка считается освоенной, если Repetitions >= 3 и EaseFactor >= 2.5
-                progress.IsMastered = progress.Repetitions >= 3 && progress.EaseFactor >= 2.5;
+                // ОПТИМИЗИРОВАНО: Карточка считается освоенной, если Repetitions >= 3 и EaseFactor >= 1.8
+                // Порог снижен до 1.8 для более щадящей оценки освоения
+                // При трех ответах с качеством 3 EaseFactor = 2.08 (комфортно выше порога)
+                // При смешанных ответах (3,3,4) EaseFactor может быть около 2.2
+                // Это позволяет считать карточку освоенной даже при некоторых затруднениях
+                progress.IsMastered = progress.Repetitions >= 3 && progress.EaseFactor >= 1.8;
             }
-
-            // Обновляем EaseFactor на основе качества ответа
-            // EF' = EF + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02))
-            double newEaseFactor = progress.EaseFactor + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
-            
-            // EaseFactor не должен быть меньше 1.3
-            progress.EaseFactor = Math.Max(1.3, newEaseFactor);
         }
 
         /// <summary>

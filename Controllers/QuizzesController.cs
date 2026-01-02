@@ -562,29 +562,20 @@ namespace UniStart.Controllers
             foreach (var QuizQuestion in quiz.Questions.OrderBy(q => q.OrderIndex))
             {
                 // Получаем все ответы на этот вопрос из всех попыток
-                // Группируем по AttemptId, чтобы получить уникальные попытки
-                var questionAttempts = userAnswers
+                var questionAnswers = userAnswers
                     .Where(g => g.Key.QuestionId == QuizQuestion.Id)
-                    .Select(g => g.Key.AttemptId)
-                    .Distinct()
                     .ToList();
 
-                int totalAnswers = questionAttempts.Count; // Количество уникальных попыток, которые отвечали на вопрос
+                int totalAnswers = questionAnswers.Count;
                 int correctAnswers = 0;
 
-                // Для каждой попытки проверяем, был ли ответ правильным
-                foreach (var attemptId in questionAttempts)
+                foreach (var answerGroup in questionAnswers)
                 {
-                    var answerGroup = userAnswers
-                        .FirstOrDefault(g => g.Key.QuestionId == QuizQuestion.Id && g.Key.AttemptId == attemptId);
-                    
-                    if (answerGroup != null)
-                    {
-                        // Проверяем правильность ответа - если есть хотя бы одна запись с IsCorrect=true и PointsEarned>0
-                        var isCorrect = answerGroup.Any(a => a.IsCorrect && a.PointsEarned > 0);
-                        if (isCorrect)
-                            correctAnswers++;
-                    }
+                    // Проверяем правильность ответа (IsCorrect в UserQuizAnswer)
+                    // Если хотя бы один ответ в группе правильный, считаем вопрос правильным
+                    var isCorrect = answerGroup.Any(a => a.IsCorrect && a.PointsEarned > 0);
+                    if (isCorrect)
+                        correctAnswers++;
                 }
 
                 questionStats.Add(new

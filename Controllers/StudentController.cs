@@ -81,17 +81,53 @@ public class StudentController : ControllerBase
         // Достижения (пока 0, можно расширить)
         var totalAchievements = 0;
 
-        // Прогресс по предметам
-        var subjectProgress = quizAttempts
+        // Прогресс по предметам (квизы)
+        var quizSubjectProgress = quizAttempts
             .GroupBy(qa => qa.Quiz.Subject)
             .Select(g => new
             {
-                subject = g.Key,
-                quizzesTaken = g.Select(qa => qa.QuizId).Distinct().Count(),
-                averageScore = Math.Round(g.Average(qa => qa.Percentage), 1),
-                cardsStudied = 0 // TODO: добавить подсчет карточек по предметам
+                Subject = g.Key,
+                QuizzesTaken = g.Select(qa => qa.QuizId).Distinct().Count(),
+                AverageScore = Math.Round(g.Average(qa => qa.Percentage), 1)
             })
+            .ToDictionary(x => x.Subject);
+
+        // Прогресс по предметам (карточки)
+        var flashcardsBySubject = await _context.UserFlashcardProgresses
+            .Where(p => p.UserId == userId && p.LastReviewedAt != null)
+            .Include(p => p.Flashcard)
+                .ThenInclude(f => f.FlashcardSet)
+            .GroupBy(p => p.Flashcard.FlashcardSet.Subject)
+            .Select(g => new
+            {
+                Subject = g.Key,
+                CardsStudied = g.Count(),
+                MasteredCards = g.Count(p => p.IsMastered)
+            })
+            .ToListAsync();
+
+        var flashcardSubjectDict = flashcardsBySubject.ToDictionary(x => x.Subject);
+
+        // Объединяем статистику по предметам
+        var allSubjects = quizSubjectProgress.Keys
+            .Union(flashcardSubjectDict.Keys)
+            .Distinct()
             .ToList();
+
+        var subjectProgress = allSubjects.Select(subject =>
+        {
+            var hasQuizStats = quizSubjectProgress.TryGetValue(subject, out var quizStats);
+            var hasFlashcardStats = flashcardSubjectDict.TryGetValue(subject, out var flashcardStats);
+
+            return new
+            {
+                subject = subject,
+                quizzesTaken = hasQuizStats ? quizStats.QuizzesTaken : 0,
+                averageScore = hasQuizStats ? quizStats.AverageScore : 0.0,
+                cardsStudied = hasFlashcardStats ? flashcardStats.CardsStudied : 0,
+                masteredCards = hasFlashcardStats ? flashcardStats.MasteredCards : 0
+            };
+        }).ToList();
 
         // Недавняя активность
         var recentActivity = quizAttempts
@@ -107,11 +143,22 @@ public class StudentController : ControllerBase
             })
             .ToList();
 
+        // Статистика по карточкам (ДОПОЛНЕНО)
+        var reviewedCards = user.TotalCardsStudied; // Обновляется в FlashcardsController.ReviewFlashcard
+        var masteredCards = await _context.UserFlashcardProgresses
+            .Where(p => p.UserId == userId && p.IsMastered)
+            .CountAsync();
+        var completedFlashcardSets = await _context.UserFlashcardSetAccesses
+            .Where(a => a.UserId == userId && a.IsCompleted)
+            .CountAsync();
+
         return Ok(new
         {
             stats = new
             {
-                totalCardsStudied = user.TotalCardsStudied,
+                totalCardsStudied = reviewedCards, // Просмотрено карточек
+                masteredCards, // Освоено карточек
+                completedFlashcardSets, // Завершено наборов
                 totalQuizzesTaken,
                 averageQuizScore = Math.Round(averageQuizScore, 1),
                 totalTimeSpent,

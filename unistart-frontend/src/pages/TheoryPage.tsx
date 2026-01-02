@@ -108,7 +108,7 @@ const TheoryPage = () => {
           </Button>
           
           <div className="text-sm text-white/60 mb-4 flex items-center gap-2 flex-wrap">
-            <span>{theory.topic.subject.name}</span>
+            <span>{theory.topic.competency.module.subject.name}</span>
             <span>›</span>
             <span>{theory.topic.competency.module.title}</span>
             <span>›</span>

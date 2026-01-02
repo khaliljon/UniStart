@@ -37,7 +37,9 @@ const EditExamPage = () => {
   const { isAdmin } = useAuth();
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
-  const [subjects, setSubjects] = useState<any[]>([]);
+  interface SubjectOption { id: number; name: string }
+
+  const [subjects, setSubjects] = useState<SubjectOption[]>([]);
   const [countries, setCountries] = useState<any[]>([]);
   const [universities, setUniversities] = useState<any[]>([]);
   const [examTypes, setExamTypes] = useState<any[]>([]);
@@ -123,7 +125,7 @@ const EditExamPage = () => {
     }
   }, [universityId, universities, allExamTypes]);
 
-  const loadSubjects = async () => {
+  const loadSubjects = async (): Promise<SubjectOption[]> => {
     try {
       const response = await api.get('/subjects');
       setSubjects(response.data);
@@ -171,7 +173,9 @@ const EditExamPage = () => {
       if (exam.subjectIds && exam.subjectIds.length > 0) {
         setSelectedSubjectIds(exam.subjectIds);
       } else if (exam.subjects && exam.subjects.length > 0 && loadedSubjects.length > 0) {
-        const foundIds = loadedSubjects.filter(s => exam.subjects.includes(s.name)).map(s => s.id);
+        const foundIds = loadedSubjects
+          .filter((s: SubjectOption) => exam.subjects.includes(s.name))
+          .map((s: SubjectOption) => s.id);
         setSelectedSubjectIds(foundIds);
       } else {
         setSelectedSubjectIds([]);

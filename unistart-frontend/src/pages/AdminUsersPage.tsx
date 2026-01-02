@@ -6,20 +6,28 @@ import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import api from '../services/api';
 
-interface User {
+interface AdminUser {
   id: string;
   email: string;
   firstName: string;
   lastName: string;
   roles: string[];
   lockoutEnd: string | null;
-  totalCardsStudied: number;
-  totalQuizzesTaken: number;
+  
+  // Обновленные поля статистики
+  completedFlashcardSets?: number;
+  reviewedCards?: number;
+  masteredCards?: number;
+  totalQuizzesTaken?: number;
+  totalQuizAttempts?: number;
+  averageScore?: number;
+  totalExamsTaken?: number;
+  lastActivityDate?: string;
 }
 
 const AdminUsersPage = () => {
   const navigate = useNavigate();
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState<string>('');
@@ -265,10 +273,13 @@ const AdminUsersPage = () => {
 
                       <td className="px-6 py-4 text-center">
                         <div className="text-sm text-gray-900 dark:text-gray-100">
-                          Тесты: {user.totalQuizzesTaken}
+                          Квизы: {user.totalQuizzesTaken || 0}
                         </div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">
-                          Карточки: {user.totalCardsStudied}
+                        <div className="text-sm text-gray-900 dark:text-gray-100">
+                          Экзамены: {user.totalExamsTaken || 0}
+                        </div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400" title="Освоено / Просмотрено карточек">
+                          Карточки: {user.masteredCards || 0} / {user.reviewedCards || 0}
                         </div>
                       </td>
 

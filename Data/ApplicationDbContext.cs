@@ -171,6 +171,18 @@ namespace UniStart.Data
                 .HasForeignKey(uea => uea.AttemptId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            modelBuilder.Entity<UserExamAnswer>()
+                .HasOne(uea => uea.Question)
+                .WithMany()
+                .HasForeignKey(uea => uea.QuestionId)
+                .OnDelete(DeleteBehavior.Restrict); // Не удаляем вопрос, если есть ответы
+
+            modelBuilder.Entity<UserExamAnswer>()
+                .HasOne(uea => uea.SelectedAnswer)
+                .WithMany()
+                .HasForeignKey(uea => uea.SelectedAnswerId)
+                .OnDelete(DeleteBehavior.Restrict); // Не удаляем ответ, если есть выбор пользователя
+
             // New models configuration
             modelBuilder.Entity<University>()
                 .HasOne(u => u.Country)

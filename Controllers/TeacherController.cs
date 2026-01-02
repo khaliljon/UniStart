@@ -171,6 +171,10 @@ public class TeacherController : ControllerBase
     [HttpGet("students")]
     public async Task<ActionResult<object>> GetStudents(
         [FromQuery] int? quizId = null,
+        [FromQuery] string? search = null, // Поиск по имени или email
+        [FromQuery] string? sortBy = "averageScore", // averageScore, lastActivity, attempts, name
+        [FromQuery] bool desc = true, // Сортировка по убыванию
+        [FromQuery] double? minScore = null, // Минимальный средний балл
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20)
     {
@@ -209,34 +213,120 @@ public class TeacherController : ControllerBase
             .Where(q => quizIds.Contains(q.Id))
             .ToDictionaryAsync(q => q.Id);
 
+        // Получаем дополнительную активность студентов (экзамены и карточки)
+        var allExamAttempts = await _context.UserExamAttempts
+            .Where(ea => userIds.Contains(ea.UserId) && ea.CompletedAt != null)
+            .ToListAsync();
+
+        var examStatsDict = allExamAttempts
+            .GroupBy(ea => ea.UserId)
+            .ToDictionary(
+                g => g.Key,
+                g => new
+                {
+                    ExamsTaken = g.Select(ea => ea.ExamId).Distinct().Count(),
+                    LastExamDate = g.Max(ea => ea.CompletedAt)
+                });
+
+        var allFlashcardProgresses = await _context.UserFlashcardProgresses
+            .Where(p => userIds.Contains(p.UserId) && p.LastReviewedAt != null)
+            .ToListAsync();
+
+        var flashcardStatsDict = allFlashcardProgresses
+            .GroupBy(p => p.UserId)
+            .ToDictionary(
+                g => g.Key,
+                g => new
+                {
+                    CardsStudied = g.Count(),
+                    LastCardDate = g.Max(p => (DateTime?)p.LastReviewedAt)
+                });
+
         // Группируем по студентам
         var studentStats = attempts
             .GroupBy(qa => qa.UserId)
-            .Select(g => new
+            .Select(g =>
             {
-                UserId = g.Key,
-                Email = users.TryGetValue(g.Key, out var user) ? user.Email : "Unknown",
-                UserName = users.TryGetValue(g.Key, out var u) ? u.UserName : "Unknown",
-                TotalAttempts = g.Count(), // Реальное количество попыток без дублирования
-                AverageScore = Math.Round(g.Average(a => a.Percentage), 2), // Используем Percentage
-                AveragePercentage = Math.Round(g.Average(a => a.Percentage), 2),
-                BestScore = g.Max(a => a.Percentage), // Используем Percentage для лучшего результата
-                LastAttemptDate = g.Max(a => a.CompletedAt),
-                QuizzesTaken = g.Select(a => a.QuizId).Distinct().Count(),
-                // Добавляем поля для экзаменов и карточек
-                ExamsTaken = 0, // Можно добавить позже, если нужно
-                CardsStudied = 0 // Можно добавить позже, если нужно
+                var lastQuizDate = g.Max(a => a.CompletedAt);
+                var examStats = examStatsDict.TryGetValue(g.Key, out var es) 
+                    ? es 
+                    : new { ExamsTaken = 0, LastExamDate = (DateTime?)null };
+                var flashcardStats = flashcardStatsDict.TryGetValue(g.Key, out var fs) 
+                    ? fs 
+                    : new { CardsStudied = 0, LastCardDate = (DateTime?)null };
+
+                var lastActivityDate = new[] { lastQuizDate, examStats.LastExamDate, flashcardStats.LastCardDate }
+                    .Where(d => d.HasValue)
+                    .DefaultIfEmpty()
+                    .Max();
+
+                return new
+                {
+                    UserId = g.Key,
+                    Email = users.TryGetValue(g.Key, out var user) ? user.Email : "Unknown",
+                    UserName = users.TryGetValue(g.Key, out var u) ? u.UserName : "Unknown",
+                    FirstName = users.TryGetValue(g.Key, out var usr) ? usr.FirstName : "",
+                    LastName = users.TryGetValue(g.Key, out var us) ? us.LastName : "",
+                    TotalAttempts = g.Count(),
+                    AverageScore = Math.Round(g.Average(a => a.Percentage), 2),
+                    BestScore = g.Max(a => a.Percentage),
+                    LastAttemptDate = lastQuizDate,
+                    LastActivityDate = lastActivityDate, // Последняя активность (квизы, экзамены, карточки)
+                    QuizzesTaken = g.Select(a => a.QuizId).Distinct().Count(),
+                    ExamsTaken = examStats.ExamsTaken,
+                    CardsStudied = flashcardStats.CardsStudied
+                };
             })
-            .OrderByDescending(s => s.AveragePercentage)
+            .ToList();
+
+        // Применяем фильтры
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var searchLower = search.ToLower();
+            studentStats = studentStats
+                .Where(s => 
+                    s.Email.ToLower().Contains(searchLower) || 
+                    s.UserName.ToLower().Contains(searchLower) ||
+                    s.FirstName.ToLower().Contains(searchLower) ||
+                    s.LastName.ToLower().Contains(searchLower))
+                .ToList();
+        }
+
+        if (minScore.HasValue)
+        {
+            studentStats = studentStats.Where(s => s.AverageScore >= minScore.Value).ToList();
+        }
+
+        // Применяем сортировку
+        studentStats = sortBy?.ToLower() switch
+        {
+            "lastactivity" => desc 
+                ? studentStats.OrderByDescending(s => s.LastActivityDate).ToList()
+                : studentStats.OrderBy(s => s.LastActivityDate).ToList(),
+            "attempts" => desc 
+                ? studentStats.OrderByDescending(s => s.TotalAttempts).ToList()
+                : studentStats.OrderBy(s => s.TotalAttempts).ToList(),
+            "name" => desc 
+                ? studentStats.OrderByDescending(s => s.LastName).ThenByDescending(s => s.FirstName).ToList()
+                : studentStats.OrderBy(s => s.LastName).ThenBy(s => s.FirstName).ToList(),
+            _ => desc // По умолчанию сортируем по среднему баллу
+                ? studentStats.OrderByDescending(s => s.AverageScore).ToList()
+                : studentStats.OrderBy(s => s.AverageScore).ToList()
+        };
+
+        // Применяем пагинацию
+        var totalStudents = studentStats.Count;
+        studentStats = studentStats
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToList();
 
         return Ok(new
         {
-            TotalStudents = studentStats.Count,
+            TotalStudents = totalStudents,
             Page = page,
             PageSize = pageSize,
+            TotalPages = (int)Math.Ceiling(totalStudents / (double)pageSize),
             Students = studentStats
         });
     }
@@ -272,13 +362,18 @@ public class TeacherController : ControllerBase
             .OrderByDescending(ea => ea.CompletedAt)
             .ToListAsync();
 
-        // Получаем количество полностью изученных наборов карточек (где все карточки освоены пользователем)
-        // Используем новую модель UserFlashcardSetAccess для точного подсчета
-        var studiedSetsCount = await _context.UserFlashcardSetAccesses
+        // Статистика по карточкам
+        var completedSetsCount = await _context.UserFlashcardSetAccesses
             .Where(a => a.UserId == studentId && a.IsCompleted)
             .CountAsync();
         
-        var studiedCards = studiedSetsCount; // Это количество полностью изученных наборов
+        var reviewedCardsCount = await _context.UserFlashcardProgresses
+            .Where(p => p.UserId == studentId && p.LastReviewedAt != null)
+            .CountAsync();
+        
+        var masteredCardsCount = await _context.UserFlashcardProgresses
+            .Where(p => p.UserId == studentId && p.IsMastered)
+            .CountAsync();
 
         // Получаем информацию о квизах и экзаменах отдельно для отображения
         var quizIds = quizAttempts.Select(a => a.QuizId).Distinct().ToList();
@@ -291,6 +386,44 @@ public class TeacherController : ControllerBase
         var examsDict = await _context.Exams
             .Where(e => examIds.Contains(e.Id))
             .ToDictionaryAsync(e => e.Id);
+
+        // Получаем детальную информацию о наборах карточек
+        var flashcardSetsAccess = await _context.UserFlashcardSetAccesses
+            .Where(a => a.UserId == studentId)
+            .Include(a => a.FlashcardSet)
+            .OrderByDescending(a => a.LastAccessedAt)
+            .ToListAsync();
+
+        // Получаем прогресс по карточкам для каждого набора
+        var flashcardProgressBySet = await _context.UserFlashcardProgresses
+            .Where(p => p.UserId == studentId)
+            .Include(p => p.Flashcard)
+            .GroupBy(p => p.Flashcard.FlashcardSetId)
+            .Select(g => new
+            {
+                SetId = g.Key,
+                ReviewedCards = g.Count(p => p.LastReviewedAt != null),
+                MasteredCards = g.Count(p => p.IsMastered)
+            })
+            .ToDictionaryAsync(x => x.SetId);
+
+        var flashcardSetDetails = flashcardSetsAccess.Select(a =>
+        {
+            var hasProgress = flashcardProgressBySet.TryGetValue(a.FlashcardSetId, out var progressStats);
+            var reviewedCards = hasProgress ? progressStats.ReviewedCards : 0;
+            var masteredCards = hasProgress ? progressStats.MasteredCards : 0;
+            
+            return new
+            {
+                SetId = a.FlashcardSetId,
+                SetTitle = a.FlashcardSet.Title,
+                TotalCards = a.TotalCardsCount,
+                ReviewedCards = reviewedCards, // НОВОЕ: из UserFlashcardProgress
+                MasteredCards = masteredCards, // НОВОЕ: из UserFlashcardProgress
+                IsCompleted = a.IsCompleted,
+                LastAccessed = a.LastAccessedAt ?? a.FirstAccessedAt // ИСПРАВЛЕНО: поле переименовано
+            };
+        }).ToList();
 
         var attemptDetails = quizAttempts.Select(a => new
         {
@@ -332,18 +465,38 @@ public class TeacherController : ControllerBase
             UserName = student.UserName,
             FirstName = student.FirstName,
             LastName = student.LastName,
+            
+            // Статистика по карточкам (четкое разделение)
+            CompletedFlashcardSets = completedSetsCount, // Полностью завершенных наборов
+            ReviewedCards = reviewedCardsCount, // Карточек просмотрено хотя бы раз
+            MasteredCards = masteredCardsCount, // Карточек полностью освоено
+            
+            // Статистика по квизам
             TotalQuizAttempts = quizAttempts.Count, // Реальное количество попыток
-            TotalExamAttempts = examAttempts.Count,
-            TotalCardsStudied = studiedCards, // Количество полностью изученных наборов карточек
             QuizzesTaken = quizAttempts.Select(a => a.QuizId).Distinct().Count(), // Уникальные квизы
-            ExamsTaken = examAttempts.Select(ea => ea.ExamId).Distinct().Count(),
             AverageQuizScore = quizAttempts.Any() ? Math.Round(quizAttempts.Average(a => a.Percentage), 2) : 0.0,
-            AverageExamScore = examAttempts.Any() ? Math.Round(examAttempts.Average(ea => ea.Percentage), 2) : 0.0,
-            AverageScore = overallAverage, // Правильно рассчитанный общий средний балл
             BestQuizScore = quizAttempts.Any() ? quizAttempts.Max(a => a.Percentage) : 0.0,
+            
+            // Статистика по экзаменам
+            TotalExamAttempts = examAttempts.Count,
+            ExamsTaken = examAttempts.Select(ea => ea.ExamId).Distinct().Count(),
+            AverageExamScore = examAttempts.Any() ? Math.Round(examAttempts.Average(ea => ea.Percentage), 2) : 0.0,
             BestExamScore = examAttempts.Any() ? examAttempts.Max(ea => ea.Percentage) : 0.0,
+            
+            // Общая статистика
+            AverageScore = overallAverage, // Правильно рассчитанный общий средний балл
             Attempts = attemptDetails,
-            ExamAttempts = examAttemptDetails
+            ExamAttempts = examAttemptDetails,
+            
+            // Детальная статистика по карточкам
+            FlashcardProgress = new
+            {
+                SetsAccessed = flashcardSetsAccess.Count,
+                SetsCompleted = completedSetsCount,
+                TotalCardsReviewed = reviewedCardsCount,
+                MasteredCards = masteredCardsCount, // ИСПРАВЛЕНО: было TotalCardsMastered
+                SetDetails = flashcardSetDetails
+            }
         });
     }
 

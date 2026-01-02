@@ -43,7 +43,7 @@ const EditQuizPage = () => {
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [subjects, setSubjects] = useState<any[]>([]);
-  const [courses, setCourses] = useState<any[]>([]);
+  // const [courses, setCourses] = useState<any[]>([]); // Unused - commented out
   const [selectedSubjectId, setSelectedSubjectId] = useState<number | null>(null);
   const [selectedModuleId, setSelectedModuleId] = useState<number | null>(null);
   const [selectedCompetencyId, setSelectedCompetencyId] = useState<number | null>(null);
@@ -65,7 +65,7 @@ const EditQuizPage = () => {
 
   useEffect(() => {
     loadSubjects();
-    loadCourses();
+    // loadCourses(); // Commented out - courses not used
     loadQuiz();
   }, [id]);
 
@@ -84,14 +84,15 @@ const EditQuizPage = () => {
     }
   };
 
-  const loadCourses = async () => {
-    try {
-      const response = await api.get('/courses');
-      setCourses(response.data || []);
-    } catch (error) {
-      console.error('Ошибка загрузки курсов:', error);
-    }
-  };
+  // Unused function - courses variable commented out
+  // const loadCourses = async () => {
+  //   try {
+  //     const response = await api.get('/courses');
+  //     setCourses(response.data || []);
+  //   } catch (error) {
+  //     console.error('Ошибка загрузки курсов:', error);
+  //   }
+  // };
 
   const loadSubjectHierarchy = async (subjectId: number) => {
     try {

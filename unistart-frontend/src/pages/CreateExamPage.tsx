@@ -43,7 +43,7 @@ const CreateExamPage = () => {
   // Основная информация
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [subject, setSubject] = useState(''); // Для обратной совместимости
+  // const [subject, setSubject] = useState(''); // Для обратной совместимости - не используется
   const [selectedSubjectIds, setSelectedSubjectIds] = useState<number[]>([]);
   const [difficulty, setDifficulty] = useState('Medium');
   
@@ -264,7 +264,7 @@ const CreateExamPage = () => {
       const examData = {
         title,
         description,
-        subject: selectedSubjectIds.length > 0 ? subjects.find(s => s.id === selectedSubjectIds[0])?.name || '' : subject, // Для обратной совместимости
+        subject: selectedSubjectIds.length > 0 ? subjects.find(s => s.id === selectedSubjectIds[0])?.name || '' : '', // Для обратной совместимости
         subjectIds: selectedSubjectIds.length > 0 ? selectedSubjectIds : [], // Новый способ
         difficulty,
         timeLimit,

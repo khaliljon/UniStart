@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using UniStart.Data;
@@ -11,9 +12,11 @@ using UniStart.Data;
 namespace UniStart.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251212182255_FixUserAnswerDeleteBehavior")]
+    partial class FixUserAnswerDeleteBehavior
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1197,7 +1200,7 @@ namespace UniStart.Migrations
                             SessionTimeout = 30,
                             SiteDescription = "Образовательная платформа для изучения с помощью карточек и тестов",
                             SiteName = "UniStart",
-                            UpdatedAt = new DateTime(2026, 1, 2, 14, 57, 38, 263, DateTimeKind.Utc).AddTicks(257)
+                            UpdatedAt = new DateTime(2025, 12, 12, 18, 22, 54, 173, DateTimeKind.Utc).AddTicks(3790)
                         });
                 });
 

@@ -1,27 +1,14 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Users, TrendingUp, BookOpen, Award, ArrowLeft } from 'lucide-react';
+import { Users, TrendingUp, BookOpen, Award, ArrowLeft, CheckCircle } from 'lucide-react';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import { useAuth } from '../context/AuthContext';
+import { StudentStats } from '../types';
 import api from '../services/api';
 
-interface Student {
-  userId: string;
-  email: string;
-  userName: string;
-  totalAttempts: number;
-  averageScore: number;
-  averagePercentage: number;
-  bestScore: number;
-  lastAttemptDate: string;
-  quizzesTaken: number;
-  examsTaken?: number;
-  cardsStudied?: number;
-}
-
-interface StudentStats {
+interface DashboardStats {
   totalStudents: number;
   activeToday: number;
   averageProgress: number;
@@ -30,8 +17,8 @@ interface StudentStats {
 const TeacherStudentsPage = () => {
   const navigate = useNavigate();
   const { isAdmin } = useAuth();
-  const [students, setStudents] = useState<Student[]>([]);
-  const [stats, setStats] = useState<StudentStats>({
+  const [students, setStudents] = useState<StudentStats[]>([]);
+  const [stats, setStats] = useState<DashboardStats>({
     totalStudents: 0,
     activeToday: 0,
     averageProgress: 0,
@@ -61,14 +48,18 @@ const TeacherStudentsPage = () => {
         console.log('👥 Массив пользователей:', usersArray);
         
         // Преобразуем формат данных админа в формат студентов
-        studentsData = usersArray.map((user: any) => {
+        studentsData = usersArray.map((user: any): StudentStats => {
           // Обрабатываем данные с учетом camelCase и PascalCase
           const totalQuizAttempts = user.TotalQuizAttempts || user.totalQuizAttempts || 0;
           const totalQuizzesTaken = user.TotalQuizzesTaken || user.totalQuizzesTaken || 0;
           const averageScore = user.AverageScore || user.averageScore || 0;
           const totalExamsTaken = user.TotalExamsTaken || user.totalExamsTaken || 0;
-          const totalCardsStudied = user.TotalCardsStudied || user.totalCardsStudied || 0;
           const lastActivityDate = user.LastActivityDate || user.lastActivityDate || user.LastLoginAt || user.lastLoginAt || user.CreatedAt || user.createdAt || '';
+          
+          // НОВОЕ: используем обновленные поля для карточек
+          const completedFlashcardSets = user.CompletedFlashcardSets || user.completedFlashcardSets || 0;
+          const reviewedCards = user.ReviewedCards || user.reviewedCards || 0;
+          const masteredCards = user.MasteredCards || user.masteredCards || 0;
           
           console.log('📊 Обработка пользователя:', {
             email: user.Email || user.email,
@@ -76,7 +67,9 @@ const TeacherStudentsPage = () => {
             totalQuizzesTaken,
             averageScore,
             totalExamsTaken,
-            totalCardsStudied,
+            completedFlashcardSets,
+            reviewedCards,
+            masteredCards,
             lastActivityDate,
             rawUser: user
           });
@@ -85,31 +78,42 @@ const TeacherStudentsPage = () => {
             userId: user.Id || user.id,
             email: user.Email || user.email,
             userName: user.UserName || user.userName || `${user.FirstName || user.firstName || ''} ${user.LastName || user.lastName || ''}`.trim() || user.Email || user.email,
-            totalAttempts: totalQuizAttempts, // Реальное количество попыток
+            firstName: user.FirstName || user.firstName,
+            lastName: user.LastName || user.lastName,
+            totalAttempts: totalQuizAttempts,
             averageScore: averageScore,
-            averagePercentage: averageScore, // AverageScore уже в процентах
-            bestScore: 0, // Пока не рассчитываем
-            lastAttemptDate: lastActivityDate,
-            quizzesTaken: totalQuizzesTaken, // Уникальные квизы
+            quizzesTaken: totalQuizzesTaken,
             examsTaken: totalExamsTaken,
-            cardsStudied: totalCardsStudied,
+            lastAttemptDate: lastActivityDate,
+            lastActivityDate: lastActivityDate,
+            
+            // Новые поля для карточек
+            completedFlashcardSets,
+            reviewedCards,
+            masteredCards,
           };
         });
       } else {
         // Для учителя API возвращает объект с полем Students
         const studentsArray = response.data.Students || response.data.students || [];
-        studentsData = studentsArray.map((s: any) => ({
+        studentsData = studentsArray.map((s: any): StudentStats => ({
           userId: s.UserId || s.userId,
           email: s.Email || s.email,
           userName: s.UserName || s.userName || s.email,
+          firstName: s.FirstName || s.firstName,
+          lastName: s.LastName || s.lastName,
           totalAttempts: s.TotalAttempts || s.totalAttempts || 0,
           averageScore: s.AverageScore || s.averageScore || 0,
-          averagePercentage: s.AveragePercentage || s.averagePercentage || 0,
           bestScore: s.BestScore || s.bestScore || 0,
           lastAttemptDate: s.LastAttemptDate || s.lastAttemptDate || '',
+          lastActivityDate: s.LastActivityDate || s.lastActivityDate || s.LastAttemptDate || s.lastAttemptDate || '',
           quizzesTaken: s.QuizzesTaken || s.quizzesTaken || 0,
           examsTaken: s.ExamsTaken || s.examsTaken || 0,
-          cardsStudied: s.CardsStudied || s.cardsStudied || 0,
+          
+          // Новые поля для карточек
+          completedFlashcardSets: s.CompletedFlashcardSets || s.completedFlashcardSets || 0,
+          reviewedCards: s.ReviewedCards || s.reviewedCards || s.CardsStudied || s.cardsStudied || 0,
+          masteredCards: s.MasteredCards || s.masteredCards || 0,
         }));
       }
       
@@ -121,11 +125,11 @@ const TeacherStudentsPage = () => {
       const today = new Date();
       today.setUTCHours(0, 0, 0, 0); // Используем UTC для сравнения
       
-      const activeTodayCount = studentsData.filter((s: Student) => {
-        if (!s.lastAttemptDate) return false;
+      const activeTodayCount = studentsData.filter((s: StudentStats) => {
+        const dateToCheck = s.lastActivityDate || s.lastAttemptDate;
+        if (!dateToCheck) return false;
         try {
-          const lastDate = new Date(s.lastAttemptDate);
-          // Приводим к UTC для корректного сравнения
+          const lastDate = new Date(dateToCheck);
           const lastDateUTC = new Date(Date.UTC(
             lastDate.getUTCFullYear(),
             lastDate.getUTCMonth(),
@@ -136,47 +140,24 @@ const TeacherStudentsPage = () => {
             today.getUTCMonth(),
             today.getUTCDate()
           ));
-          // Проверяем, что дата последней активности сегодня или позже
-          console.log('Проверка активности:', s.email, 'LastDate:', lastDateUTC, 'Today:', todayUTC, 'Active:', lastDateUTC >= todayUTC);
           return lastDateUTC >= todayUTC;
         } catch (e) {
-          console.error('Ошибка парсинга даты:', s.lastAttemptDate, e);
+          console.error('Ошибка парсинга даты:', dateToCheck, e);
           return false;
         }
       }).length;
       
-      console.log('📊 Статистика:', {
-        totalStudents: studentsData.length,
-        activeToday: activeTodayCount,
-        studentsWithDates: studentsData.filter(s => s.lastAttemptDate).length
-      });
-      
       // Считаем средний прогресс только из студентов с активностью
-      const studentsWithActivity = studentsData.filter(s => 
-        (s.averagePercentage || 0) > 0 || 
+      const studentsWithActivity = studentsData.filter((s: StudentStats) => 
+        (s.averageScore || 0) > 0 || 
         (s.quizzesTaken || 0) > 0 || 
         (s.examsTaken || 0) > 0 || 
-        (s.cardsStudied || 0) > 0
+        (s.reviewedCards || 0) > 0
       );
       
       const avgProgress = studentsWithActivity.length > 0
-        ? studentsWithActivity.reduce((acc: number, s: Student) => acc + (s.averagePercentage || 0), 0) / studentsWithActivity.length
+        ? studentsWithActivity.reduce((acc: number, s: StudentStats) => acc + (s.averageScore || 0), 0) / studentsWithActivity.length
         : 0;
-      
-      console.log('📊 Детальная статистика:', {
-        totalStudents: studentsData.length,
-        activeToday: activeTodayCount,
-        studentsWithActivity: studentsWithActivity.length,
-        avgProgress: avgProgress,
-        allStudentsData: studentsData.map(s => ({
-          email: s.email,
-          averagePercentage: s.averagePercentage,
-          quizzesTaken: s.quizzesTaken,
-          examsTaken: s.examsTaken,
-          cardsStudied: s.cardsStudied,
-          lastAttemptDate: s.lastAttemptDate
-        }))
-      });
       
       setStats({
         totalStudents: studentsData.length,
@@ -362,7 +343,7 @@ const TeacherStudentsPage = () => {
                         <div className="flex items-center justify-center gap-1">
                           <TrendingUp className="w-4 h-4 text-green-500" />
                           <span className="text-sm font-medium text-gray-900">
-                            {student.averagePercentage.toFixed(1)}%
+                            {(student.averageScore || 0).toFixed(1)}%
                           </span>
                         </div>
                       </td>
@@ -383,11 +364,19 @@ const TeacherStudentsPage = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          <BookOpen className="w-4 h-4 text-green-500" />
-                          <span className="text-sm font-medium text-gray-900">
-                            {student.cardsStudied || 0}
+                        <div className="flex flex-col items-center gap-0.5">
+                          <div className="flex items-center gap-1">
+                            <CheckCircle className="w-4 h-4 text-green-600" />
+                            <span className="text-sm font-medium text-gray-900" title="Освоено карточек">
+                              {student.masteredCards || 0}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <BookOpen className="w-3 h-3 text-gray-400" />
+                            <span className="text-xs text-gray-500" title="Просмотрено карточек">
+                              {student.reviewedCards || 0}
                           </span>
+                          </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">

@@ -15,17 +15,17 @@ import {
   Trash2,
   Upload,
   FileX,
-  CheckCircle,
-  AlertCircle,
+  // CheckCircle, // Unused
+  // AlertCircle, // Unused
   TrendingUp,
-  GraduationCap,
+  // GraduationCap, // Unused
   Layers,
   BookMarked,
   FileText,
   Puzzle,
   Trophy,
-  Video,
-  Sparkles,
+  // Video, // Unused
+  // Sparkles, // Unused
 } from 'lucide-react';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';

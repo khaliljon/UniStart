@@ -15,7 +15,9 @@ import Button from '../components/common/Button';
 import api from '../services/api';
 
 interface ProgressStats {
-  totalCardsStudied: number;
+  totalCardsStudied: number; // ReviewedCards
+  masteredCards: number; // НОВОЕ: освоенные карточки
+  completedFlashcardSets: number; // НОВОЕ: завершенные наборы
   totalQuizzesTaken: number;
   averageQuizScore: number;
   totalTimeSpent: number;
@@ -37,6 +39,7 @@ interface SubjectProgress {
   quizzesTaken: number;
   averageScore: number;
   cardsStudied: number;
+  masteredCards?: number; // НОВОЕ: освоенные карточки
 }
 
 const StudentProgressPage = () => {
@@ -61,6 +64,8 @@ const StudentProgressPage = () => {
       // Моковые данные
       setStats({
         totalCardsStudied: 125,
+        masteredCards: 45,
+        completedFlashcardSets: 3,
         totalQuizzesTaken: 8,
         averageQuizScore: 78.5,
         totalTimeSpent: 3600,
@@ -182,15 +187,16 @@ const StudentProgressPage = () => {
           transition={{ delay: 0.1 }}
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
         >
-          <Card className="p-6 bg-gradient-to-br from-blue-500 to-blue-600 text-white">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-blue-100 text-sm mb-1">Изучено карточек</p>
-                <p className="text-3xl font-bold">{stats.totalCardsStudied}</p>
+            <Card className="p-6 bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-blue-100 text-sm mb-1">Просмотрено карточек</p>
+                  <p className="text-3xl font-bold">{stats.totalCardsStudied}</p>
+                  <p className="text-xs text-blue-200 mt-1">Освоено: {stats.masteredCards}</p>
+                </div>
+                <BookOpen className="w-12 h-12 text-blue-200" />
               </div>
-              <BookOpen className="w-12 h-12 text-blue-200" />
-            </div>
-          </Card>
+            </Card>
 
           <Card className="p-6 bg-gradient-to-br from-green-500 to-green-600 text-white">
             <div className="flex items-center justify-between">
@@ -262,6 +268,9 @@ const StudentProgressPage = () => {
                       <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
                         <span>📝 Тестов: {subject.quizzesTaken}</span>
                         <span>📚 Карточек: {subject.cardsStudied}</span>
+                        {subject.masteredCards !== undefined && (
+                          <span>✅ Освоено: {subject.masteredCards}</span>
+                        )}
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-3">
                         <motion.div

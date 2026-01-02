@@ -6,10 +6,28 @@ export interface User {
   email: string;
   firstName: string;
   lastName: string;
-  totalCardsStudied: number;
-  totalQuizzesTaken: number;
+  
+  // Статистика по карточкам (ОБНОВЛЕНО)
+  completedFlashcardSets?: number; // Полностью завершенных наборов
+  reviewedCards?: number; // Карточек просмотрено хотя бы раз
+  masteredCards?: number; // Карточек полностью освоено
+  
+  // Статистика по квизам
+  totalQuizzesTaken?: number; // Уникальные квизы
+  totalQuizAttempts?: number; // Все попытки
+  averageScore?: number; // Средний балл
+  
+  // Статистика по экзаменам
+  totalExamsTaken?: number;
+  averageExamScore?: number;
+  
+  // Метаданные
+  lastActivityDate?: string; // Последняя активность (квизы/экзамены/карточки)
   createdAt: string;
+  lastLoginAt?: string;
+  
   roles?: string[]; // Роли пользователя: Admin, Teacher, Student
+  lockoutEnd?: string | null;
 }
 
 export interface LoginDto {
@@ -202,6 +220,97 @@ export interface Exam {
   startDate?: string;
   endDate?: string;
   createdAt: string;
+}
+
+// ============ STUDENT STATISTICS ============
+export interface StudentStats {
+  userId: string;
+  email: string;
+  userName: string;
+  firstName?: string;
+  lastName?: string;
+  
+  // Статистика по карточкам
+  completedFlashcardSets?: number;
+  reviewedCards?: number;
+  masteredCards?: number;
+  
+  // Статистика по квизам
+  totalAttempts: number;
+  quizzesTaken: number;
+  averageScore: number;
+  bestScore?: number;
+  
+  // Статистика по экзаменам
+  examsTaken?: number;
+  
+  // Активность
+  lastAttemptDate?: string;
+  lastActivityDate?: string;
+}
+
+export interface FlashcardSetDetail {
+  setId: number;
+  setTitle: string;
+  setSubject: string;
+  totalCards: number;
+  studiedCards: number;
+  progressPercentage: number;
+  isCompleted: boolean;
+  completedAt?: string;
+  firstAccessedAt: string;
+  lastAccessedAt?: string;
+  accessCount: number;
+}
+
+// Детализированный прогресс по набору карточек (для админа/учителя)
+export interface FlashcardSetProgressDetail {
+  setId: number;
+  setTitle: string;
+  totalCards: number;
+  reviewedCards: number; // Просмотрено хотя бы раз
+  masteredCards: number; // Полностью освоено
+  isCompleted: boolean;
+  lastAccessed: string;
+}
+
+export interface FlashcardProgress {
+  setsAccessed: number;
+  setsCompleted: number;
+  totalCardsReviewed: number;
+  masteredCards: number; // ИСПРАВЛЕНО: было totalCardsMastered
+  setDetails: FlashcardSetProgressDetail[]; // ИСПРАВЛЕНО: было FlashcardSetDetail
+}
+
+export interface StudentDetailedStats extends StudentStats {
+  // Детальная статистика по квизам
+  totalQuizAttempts: number;
+  averageQuizScore: number;
+  bestQuizScore: number;
+  attempts?: any[];
+  
+  // Детальная статистика по экзаменам
+  totalExamAttempts: number;
+  averageExamScore: number;
+  bestExamScore: number;
+  examAttempts?: any[];
+  
+  // Детальная статистика по карточкам (ДОПОЛНЕНО)
+  completedFlashcardSets: number;
+  reviewedCards: number;
+  masteredCards: number;
+  flashcardProgress?: FlashcardProgress;
+  
+  // Общая статистика
+  averageScore: number;
+}
+
+export interface SubjectProgress {
+  subject: string;
+  quizzesTaken: number;
+  averageScore: number;
+  cardsStudied: number;
+  masteredCards: number;
 }
 
 // ============ UTILITY TYPES ============

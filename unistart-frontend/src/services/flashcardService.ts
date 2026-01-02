@@ -34,6 +34,11 @@ export const flashcardService = {
     await api.delete(`/flashcards/sets/${id}`);
   },
 
+  async getSetStats(id: number): Promise<any> {
+    const { data } = await api.get(`/flashcards/sets/${id}/stats`);
+    return data;
+  },
+
   // Flashcards
   async getCardsForReview(setId: number): Promise<Flashcard[]> {
     const { data } = await api.get<Flashcard[]>(`/flashcards/sets/${setId}/review`);
