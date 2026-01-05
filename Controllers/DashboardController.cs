@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using UniStart.Data;
+using UniStart.Services;
 
 namespace UniStart.Controllers
 {
@@ -12,10 +13,17 @@ namespace UniStart.Controllers
     public class DashboardController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
+        private readonly IStatisticsService _statisticsService;
+        private readonly ILogger<DashboardController> _logger;
 
-        public DashboardController(ApplicationDbContext context)
+        public DashboardController(
+            ApplicationDbContext context,
+            IStatisticsService statisticsService,
+            ILogger<DashboardController> logger)
         {
             _context = context;
+            _statisticsService = statisticsService;
+            _logger = logger;
         }
 
         private string GetUserId() => User.FindFirstValue(ClaimTypes.NameIdentifier)!;

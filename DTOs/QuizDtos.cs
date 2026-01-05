@@ -14,6 +14,7 @@ namespace UniStart.DTOs
         public int QuestionCount { get; set; }
         public int TotalPoints { get; set; }
         public bool IsPublic { get; set; }
+        public bool IsPublished { get; set; }
         public DateTime CreatedAt { get; set; }
     }
 

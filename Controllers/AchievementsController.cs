@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using UniStart.Data;
 using UniStart.Models;
+using UniStart.Services;
 
 namespace UniStart.Controllers;
 
@@ -13,15 +14,18 @@ namespace UniStart.Controllers;
 public class AchievementsController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
+    private readonly IAchievementService _achievementService;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly ILogger<AchievementsController> _logger;
 
     public AchievementsController(
         ApplicationDbContext context,
+        IAchievementService achievementService,
         UserManager<ApplicationUser> userManager,
         ILogger<AchievementsController> logger)
     {
         _context = context;
+        _achievementService = achievementService;
         _userManager = userManager;
         _logger = logger;
     }

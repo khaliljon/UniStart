@@ -309,3 +309,30 @@ public class ExamAttemptSummaryDto
     public TimeSpan TimeSpent { get; set; }
     public DateTime CompletedAt { get; set; }
 }
+
+/// <summary>
+/// DTO для обновления вопроса экзамена
+/// </summary>
+public class UpdateExamQuestionDto
+{
+    [Required(ErrorMessage = "Текст вопроса обязателен")]
+    public string QuestionText { get; set; } = string.Empty;
+    
+    public string? Explanation { get; set; }
+    
+    public string QuestionType { get; set; } = "MultipleChoice";
+    
+    [Range(1, 100, ErrorMessage = "Баллы должны быть от 1 до 100")]
+    public int Points { get; set; } = 1;
+}
+
+/// <summary>
+/// DTO для обновления ответа на вопрос экзамена
+/// </summary>
+public class UpdateExamAnswerDto
+{
+    [Required(ErrorMessage = "Текст ответа обязателен")]
+    public string AnswerText { get; set; } = string.Empty;
+    
+    public bool IsCorrect { get; set; }
+}

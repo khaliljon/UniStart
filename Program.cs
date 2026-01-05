@@ -68,6 +68,23 @@ builder.Services.AddAuthentication(options =>
 // Application Services
 builder.Services.AddScoped<ISpacedRepetitionService, SpacedRepetitionService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IStatisticsService, StatisticsService>();
+builder.Services.AddScoped<IQuizService, QuizService>();
+builder.Services.AddScoped<IExamService, ExamService>();
+builder.Services.AddScoped<IFlashcardService, FlashcardService>();
+builder.Services.AddScoped<IAchievementService, AchievementService>();
+
+// Repository Pattern
+builder.Services.AddScoped<UniStart.Repositories.IUnitOfWork, UniStart.Repositories.UnitOfWork>();
+builder.Services.AddScoped<UniStart.Repositories.IQuizRepository, UniStart.Repositories.QuizRepository>();
+builder.Services.AddScoped<UniStart.Repositories.IExamRepository, UniStart.Repositories.ExamRepository>();
+builder.Services.AddScoped<UniStart.Repositories.IFlashcardSetRepository, UniStart.Repositories.FlashcardSetRepository>();
+builder.Services.AddScoped<UniStart.Repositories.IUserQuizAttemptRepository, UniStart.Repositories.UserQuizAttemptRepository>();
+builder.Services.AddScoped<UniStart.Repositories.IUserExamAttemptRepository, UniStart.Repositories.UserExamAttemptRepository>();
+builder.Services.AddScoped<UniStart.Repositories.IUserFlashcardProgressRepository, UniStart.Repositories.UserFlashcardProgressRepository>();
+builder.Services.AddScoped<UniStart.Repositories.IAchievementRepository, UniStart.Repositories.AchievementRepository>();
+builder.Services.AddScoped(typeof(UniStart.Repositories.IRepository<>), typeof(UniStart.Repositories.Repository<>));
 
 // CORS для фронтенда
 builder.Services.AddCors(options =>
