@@ -1,7 +1,13 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using UniStart.Models;
+using UniStart.Models.Core;
+using UniStart.Models.Quizzes;
+using UniStart.Models.Exams;
+using UniStart.Models.Flashcards;
+using UniStart.Models.Reference;
+using UniStart.Models.Learning;
+using UniStart.Models.Social;
 using UniStart.Repositories;
 
 namespace UniStart.Controllers.Admin;

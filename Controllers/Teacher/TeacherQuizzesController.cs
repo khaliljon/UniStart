@@ -2,9 +2,17 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Text;
+using System.Text.Json;
 using UniStart.Data;
 using UniStart.DTOs;
-using UniStart.Models;
+using UniStart.Models.Core;
+using UniStart.Models.Quizzes;
+using UniStart.Models.Exams;
+using UniStart.Models.Flashcards;
+using UniStart.Models.Reference;
+using UniStart.Models.Learning;
+using UniStart.Models.Social;
 
 namespace UniStart.Controllers.Teacher;
 
@@ -31,7 +39,7 @@ public class TeacherQuizzesController : ControllerBase
         ?? throw new UnauthorizedAccessException("Пользователь не аутентифицирован");
 
     /// <summary>
-    /// Создать публичный тест (доступен всем студентам)
+    /// Создать публичный квиз (доступен всем студентам)
     /// </summary>
     [HttpPost("quizzes/public")]
     public async Task<ActionResult<QuizDto>> CreatePublicQuiz([FromBody] CreateQuizDto dto)
@@ -53,7 +61,7 @@ public class TeacherQuizzesController : ControllerBase
         _context.Quizzes.Add(quiz);
         await _context.SaveChangesAsync();
 
-        _logger.LogInformation("Преподаватель создал публичный тест: {Title}", quiz.Title);
+        _logger.LogInformation("Преподаватель создал публичный квиз: {Title}", quiz.Title);
 
         return CreatedAtAction("GetQuiz", "QuizzesQuery", new { id = quiz.Id }, new QuizDto
         {
@@ -68,7 +76,7 @@ public class TeacherQuizzesController : ControllerBase
     }
 
     /// <summary>
-    /// Получить все тесты, созданные преподавателем
+    /// Получить все квизы, созданные преподавателем
     /// </summary>
     [HttpGet("quizzes/my")]
     public async Task<ActionResult<IEnumerable<QuizDto>>> GetMyQuizzes(
@@ -105,7 +113,7 @@ public class TeacherQuizzesController : ControllerBase
     }
 
     /// <summary>
-    /// Получить статистику по конкретному тесту
+    /// Получить статистику по конкретному квизу
     /// </summary>
     [HttpGet("quizzes/{quizId}/stats")]
     public async Task<ActionResult<object>> GetQuizStats(int quizId)
@@ -117,7 +125,7 @@ public class TeacherQuizzesController : ControllerBase
             .FirstOrDefaultAsync(q => q.Id == quizId);
 
         if (quiz == null)
-            return NotFound(new { Message = "Тест не найден" });
+            return NotFound(new { Message = "Квиз не найден" });
 
         if (quiz.UserId != userId)
             return Forbid();
@@ -164,16 +172,16 @@ public class TeacherQuizzesController : ControllerBase
     }
 
     /// <summary>
-    /// Опубликовать/скрыть тест
+    /// Опубликовать/скрыть квиз
     /// </summary>
-    [HttpPatch("quizzes/{quizId}/toggle-public")]
+    [HttpPatch("quizzes/{quizId}/publish")]
     public async Task<ActionResult> ToggleQuizPublic(int quizId)
     {
         var userId = GetUserId();
 
         var quiz = await _context.Quizzes.FindAsync(quizId);
         if (quiz == null)
-            return NotFound(new { Message = "Тест не найден" });
+            return NotFound(new { Message = "Квиз не найден" });
 
         if (quiz.UserId != userId)
             return Forbid();
@@ -184,11 +192,11 @@ public class TeacherQuizzesController : ControllerBase
         await _context.SaveChangesAsync();
 
         var status = quiz.IsPublic ? "опубликован" : "скрыт";
-        _logger.LogInformation("Тест {Title} {Status}", quiz.Title, status);
+        _logger.LogInformation("Квиз {Title} {Status}", quiz.Title, status);
 
         return Ok(new
         {
-            Message = $"Тест успешно {status}",
+            Message = $"Квиз успешно {status}",
             QuizId = quiz.Id,
             IsPublic = quiz.IsPublic
         });
@@ -206,7 +214,7 @@ public class TeacherQuizzesController : ControllerBase
             .FirstOrDefaultAsync(q => q.Id == quizId && q.UserId == userId);
 
         if (quiz == null)
-            return NotFound(new { Message = "Тест не найден или у вас нет доступа" });
+            return NotFound(new { Message = "Квиз не найден или у вас нет доступа" });
 
         var attempts = await _context.UserQuizAttempts
             .Include(qa => qa.User)
@@ -214,7 +222,7 @@ public class TeacherQuizzesController : ControllerBase
             .OrderByDescending(qa => qa.CompletedAt)
             .ToListAsync();
 
-        var csv = new System.Text.StringBuilder();
+        var csv = new StringBuilder();
         csv.AppendLine("Email,UserName,Score,MaxScore,Percentage,TimeSpent(sec),CompletedAt");
 
         foreach (var attempt in attempts)
@@ -222,7 +230,7 @@ public class TeacherQuizzesController : ControllerBase
             csv.AppendLine($"{attempt.User.Email},{attempt.User.UserName},{attempt.Score},{attempt.MaxScore},{attempt.Percentage:F2},{attempt.TimeSpentSeconds},{attempt.CompletedAt:yyyy-MM-dd HH:mm:ss}");
         }
 
-        var bytes = System.Text.Encoding.UTF8.GetBytes(csv.ToString());
+        var bytes = Encoding.UTF8.GetBytes(csv.ToString());
         var fileName = $"Quiz_{quiz.Id}_{quiz.Title}_Results_{DateTime.UtcNow:yyyyMMdd}.csv";
 
         return File(bytes, "text/csv", fileName);
@@ -249,7 +257,7 @@ public class TeacherQuizzesController : ControllerBase
         if (attempt.Quiz.UserId != userId)
             return Forbid();
 
-        var userAnswers = System.Text.Json.JsonSerializer.Deserialize<Dictionary<int, List<int>>>(attempt.UserAnswersJson);
+        var userAnswers = JsonSerializer.Deserialize<Dictionary<int, List<int>>>(attempt.UserAnswersJson);
 
         var questionDetails = attempt.Quiz.Questions.Select(q =>
         {
@@ -295,9 +303,9 @@ public class TeacherQuizzesController : ControllerBase
     }
 
     /// <summary>
-    /// Получить общую статистику по всем тестам преподавателя
+    /// Получить общую статистику по всем квизам преподавателя
     /// </summary>
-    [HttpGet("stats/overview")]
+    [HttpGet("quizzes/stats/overview")]
     public async Task<ActionResult<object>> GetOverviewStats()
     {
         var userId = GetUserId();

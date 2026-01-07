@@ -5,7 +5,13 @@ using System.Security.Claims;
 using System.Text.Json;
 using UniStart.Data;
 using UniStart.DTOs;
-using UniStart.Models;
+using UniStart.Models.Core;
+using UniStart.Models.Quizzes;
+using UniStart.Models.Exams;
+using UniStart.Models.Flashcards;
+using UniStart.Models.Reference;
+using UniStart.Models.Learning;
+using UniStart.Models.Social;
 
 namespace UniStart.Controllers.Quizzes;
 
@@ -61,7 +67,7 @@ public class QuizzesAttemptController : ControllerBase
     }
 
     /// <summary>
-    /// Отправить ответы на тест и получить результаты
+    /// Отправить ответы на квиз и получить результаты
     /// </summary>
     [HttpPost("submit")]
     public async Task<ActionResult<QuizResultDto>> SubmitQuiz(SubmitQuizDto dto)
@@ -189,7 +195,7 @@ public class QuizzesAttemptController : ControllerBase
     }
 
     /// <summary>
-    /// Получить историю попыток текущего пользователя по тесту
+    /// Получить историю попыток текущего пользователя по квизу
     /// </summary>
     [HttpGet("{quizId}/attempts")]
     public async Task<ActionResult<List<UserQuizAttempt>>> GetQuizAttempts(int quizId)
@@ -206,7 +212,7 @@ public class QuizzesAttemptController : ControllerBase
     }
 
     /// <summary>
-    /// Получить подробную статистику по тесту для страницы статистики (только для владельца теста)
+    /// Получить подробную статистику по квизу для страницы статистики (только для владельца квиза)
     /// </summary>
     [HttpGet("{id}/stats")]
     public async Task<ActionResult> GetQuizStats(int id)
@@ -309,7 +315,7 @@ public class QuizzesAttemptController : ControllerBase
     }
 
     /// <summary>
-    /// Получить статистику по тесту (только для владельца теста)
+    /// Получить статистику по квизу (только для владельца квиза)
     /// </summary>
     [HttpGet("{quizId}/statistics")]
     public async Task<ActionResult> GetQuizStatistics(int quizId)

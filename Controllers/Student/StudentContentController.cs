@@ -4,7 +4,13 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using UniStart.Data;
 using UniStart.DTOs;
-using UniStart.Models;
+using UniStart.Models.Core;
+using UniStart.Models.Quizzes;
+using UniStart.Models.Exams;
+using UniStart.Models.Flashcards;
+using UniStart.Models.Reference;
+using UniStart.Models.Learning;
+using UniStart.Models.Social;
 
 namespace UniStart.Controllers.Student
 {
@@ -113,7 +119,7 @@ namespace UniStart.Controllers.Student
         {
             var query = _context.Quizzes
                 .Include(q => q.Questions)
-                .Where(q => q.IsPublic); // Только публичные тесты
+                .Where(q => q.IsPublic); // Только публичные квизы
 
             if (!string.IsNullOrWhiteSpace(subject))
                 query = query.Where(q => q.Subject.Contains(subject));

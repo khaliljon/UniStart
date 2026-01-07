@@ -27,7 +27,7 @@ public class QuizzesQueryController : ControllerBase
     private string? GetUserId() => User.FindFirstValue(ClaimTypes.NameIdentifier);
 
     /// <summary>
-    /// Получить все опубликованные тесты (публичный доступ) с поиском и фильтрацией
+    /// Получить все опубликованные квизы (публичный доступ) с поиском и фильтрацией
     /// </summary>
     [HttpGet]
     public async Task<ActionResult<PagedResult<QuizDto>>> GetQuizzes(
@@ -51,7 +51,7 @@ public class QuizzesQueryController : ControllerBase
     }
 
     /// <summary>
-    /// Получить только свои тесты (все, включая неопубликованные) с поиском и фильтрацией
+    /// Получить только свои квизы (все, включая неопубликованные) с поиском и фильтрацией
     /// </summary>
     [HttpGet("my")]
     [Authorize]
@@ -78,7 +78,7 @@ public class QuizzesQueryController : ControllerBase
     }
 
     /// <summary>
-    /// Получить тест по ID с вопросами (БЕЗ правильных ответов для прохождения)
+    /// Получить квиз по ID с вопросами (БЕЗ правильных ответов для прохождения)
     /// </summary>
     [HttpGet("{id}")]
     public async Task<ActionResult<QuizDetailDto>> GetQuiz(int id)

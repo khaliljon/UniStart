@@ -3,7 +3,13 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using UniStart.Data;
-using UniStart.Models;
+using UniStart.Models.Core;
+using UniStart.Models.Quizzes;
+using UniStart.Models.Exams;
+using UniStart.Models.Flashcards;
+using UniStart.Models.Reference;
+using UniStart.Models.Learning;
+using UniStart.Models.Social;
 
 namespace UniStart.Controllers.Teacher;
 
@@ -30,7 +36,7 @@ public class TeacherStudentsController : ControllerBase
         ?? throw new UnauthorizedAccessException("Пользователь не аутентифицирован");
 
     /// <summary>
-    /// Получить список студентов, которые проходили тесты преподавателя
+    /// Получить список студентов, которые проходили квизы преподавателя
     /// </summary>
     [HttpGet("students")]
     public async Task<ActionResult<object>> GetStudents(
@@ -50,7 +56,7 @@ public class TeacherStudentsController : ControllerBase
             .ToListAsync();
 
         if (teacherQuizIds.Count == 0)
-            return Ok(new { Message = "У вас ещё нет тестов", Students = new List<object>() });
+            return Ok(new { Message = "У вас ещё нет квизов", Students = new List<object>() });
 
         var query = _context.UserQuizAttempts
             .Where(qa => teacherQuizIds.Contains(qa.QuizId));

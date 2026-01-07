@@ -4,7 +4,13 @@ using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using UniStart.Data;
 using UniStart.DTOs;
-using UniStart.Models;
+using UniStart.Models.Core;
+using UniStart.Models.Quizzes;
+using UniStart.Models.Exams;
+using UniStart.Models.Flashcards;
+using UniStart.Models.Reference;
+using UniStart.Models.Learning;
+using UniStart.Models.Social;
 using UniStart.Services;
 
 namespace UniStart.Controllers.Quizzes;
@@ -34,7 +40,7 @@ public class QuizzesManagementController : ControllerBase
     private string? GetUserId() => User.FindFirstValue(ClaimTypes.NameIdentifier);
 
     /// <summary>
-    /// Создать новый тест
+    /// Создать новый квиз
     /// </summary>
     [HttpPost]
     public async Task<ActionResult<Quiz>> CreateQuiz(CreateQuizDto dto)
@@ -61,7 +67,7 @@ public class QuizzesManagementController : ControllerBase
     }
 
     /// <summary>
-    /// Обновить тест (только свои) включая вопросы и ответы
+    /// Обновить квиз (только свои) включая вопросы и ответы
     /// </summary>
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateQuiz(int id, UpdateQuizDto dto)
@@ -119,7 +125,7 @@ public class QuizzesManagementController : ControllerBase
     }
 
     /// <summary>
-    /// Удалить тест (свои или любые для админа)
+    /// Удалить квиз (свои или любые для админа)
     /// </summary>
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteQuiz(int id)

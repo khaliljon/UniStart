@@ -2,7 +2,14 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using UniStart.Models;
+using System.Text;
+using UniStart.Models.Core;
+using UniStart.Models.Quizzes;
+using UniStart.Models.Exams;
+using UniStart.Models.Flashcards;
+using UniStart.Models.Reference;
+using UniStart.Models.Learning;
+using UniStart.Models.Social;
 using UniStart.Repositories;
 
 namespace UniStart.Controllers.Admin;
@@ -91,7 +98,7 @@ public class AdminSystemController : ControllerBase
                 {
                     Id = 1,
                     SiteName = "UniStart",
-                    SiteDescription = "Образовательная платформа для изучения с помощью карточек и тестов",
+                    SiteDescription = "Образовательная платформа для изучения с помощью карточек и квизов",
                     AllowRegistration = true,
                     RequireEmailVerification = false,
                     MaxQuizAttempts = 3,
@@ -139,7 +146,7 @@ public class AdminSystemController : ControllerBase
     public async Task<ActionResult> ExportFullStats()
     {
         var users = await _userManager.Users.ToListAsync();
-        var csv = new System.Text.StringBuilder();
+        var csv = new StringBuilder();
         
         csv.AppendLine("UserId,Email,UserName,CreatedAt,TotalCardsStudied,TotalQuizzesTaken,Roles");
 
@@ -149,7 +156,7 @@ public class AdminSystemController : ControllerBase
             csv.AppendLine($"{user.Id},{user.Email},{user.UserName},{user.CreatedAt:yyyy-MM-dd},{user.TotalCardsStudied},{user.TotalQuizzesTaken},\"{string.Join(";", roles)}\"");
         }
 
-        var bytes = System.Text.Encoding.UTF8.GetBytes(csv.ToString());
+        var bytes = Encoding.UTF8.GetBytes(csv.ToString());
         var fileName = $"UniStart_Users_Export_{DateTime.UtcNow:yyyyMMdd}.csv";
 
         return File(bytes, "text/csv", fileName);
@@ -162,7 +169,7 @@ public class AdminSystemController : ControllerBase
     public async Task<ActionResult> ExportUsers()
     {
         var users = await _userManager.Users.ToListAsync();
-        var csv = new System.Text.StringBuilder();
+        var csv = new StringBuilder();
         
         csv.AppendLine("Email,UserName,FirstName,LastName,CreatedAt,LastLoginAt,TotalCardsStudied,TotalQuizzesTaken,Roles");
 
@@ -172,7 +179,7 @@ public class AdminSystemController : ControllerBase
             csv.AppendLine($"{user.Email},{user.UserName},{user.FirstName},{user.LastName},{user.CreatedAt:yyyy-MM-dd HH:mm},{user.LastLoginAt:yyyy-MM-dd HH:mm},{user.TotalCardsStudied},{user.TotalQuizzesTaken},\"{string.Join(";", roles)}\"");
         }
 
-        var bytes = System.Text.Encoding.UTF8.GetBytes(csv.ToString());
+        var bytes = Encoding.UTF8.GetBytes(csv.ToString());
         var fileName = $"UniStart_Users_{DateTime.UtcNow:yyyyMMdd}.csv";
         return File(bytes, "text/csv", fileName);
     }
@@ -188,7 +195,7 @@ public class AdminSystemController : ControllerBase
             .Include(q => q.User)
             .ToListAsync();
 
-        var csv = new System.Text.StringBuilder();
+        var csv = new StringBuilder();
         csv.AppendLine("QuizId,Title,Subject,Difficulty,CreatedBy,QuestionCount,TotalPoints,IsPublished,CreatedAt");
 
         foreach (var quiz in quizzes)
@@ -196,7 +203,7 @@ public class AdminSystemController : ControllerBase
             csv.AppendLine($"{quiz.Id},\"{quiz.Title}\",{quiz.Subject},{quiz.Difficulty},{quiz.User.UserName},{quiz.Questions.Count},{quiz.Questions.Sum(q => q.Points)},{quiz.IsPublished},{quiz.CreatedAt:yyyy-MM-dd}");
         }
 
-        var bytes = System.Text.Encoding.UTF8.GetBytes(csv.ToString());
+        var bytes = Encoding.UTF8.GetBytes(csv.ToString());
         var fileName = $"UniStart_Quizzes_{DateTime.UtcNow:yyyyMMdd}.csv";
         return File(bytes, "text/csv", fileName);
     }
@@ -212,7 +219,7 @@ public class AdminSystemController : ControllerBase
             .Include(fs => fs.User)
             .ToListAsync();
 
-        var csv = new System.Text.StringBuilder();
+        var csv = new StringBuilder();
         csv.AppendLine("SetId,Title,Subject,CreatedBy,CardCount,IsPublic,CreatedAt");
 
         foreach (var set in sets)
@@ -220,13 +227,13 @@ public class AdminSystemController : ControllerBase
             csv.AppendLine($"{set.Id},\"{set.Title}\",{set.Subject},{set.User.UserName},{set.Flashcards.Count},{set.IsPublic},{set.CreatedAt:yyyy-MM-dd}");
         }
 
-        var bytes = System.Text.Encoding.UTF8.GetBytes(csv.ToString());
+        var bytes = Encoding.UTF8.GetBytes(csv.ToString());
         var fileName = $"UniStart_Flashcards_{DateTime.UtcNow:yyyyMMdd}.csv";
         return File(bytes, "text/csv", fileName);
     }
 
     /// <summary>
-    /// Экспорт попыток тестов в CSV
+    /// Экспорт попыток квизов в CSV
     /// </summary>
     [HttpGet("export/attempts")]
     public async Task<ActionResult> ExportAttempts()
@@ -236,7 +243,7 @@ public class AdminSystemController : ControllerBase
             .Include(qa => qa.Quiz)
             .ToListAsync();
 
-        var csv = new System.Text.StringBuilder();
+        var csv = new StringBuilder();
         csv.AppendLine("AttemptId,User,Quiz,Score,MaxScore,Percentage,TimeSpent,CompletedAt");
 
         foreach (var attempt in attempts)
@@ -244,7 +251,7 @@ public class AdminSystemController : ControllerBase
             csv.AppendLine($"{attempt.Id},{attempt.User.Email},\"{attempt.Quiz.Title}\",{attempt.Score},{attempt.MaxScore},{attempt.Percentage:F2},{attempt.TimeSpentSeconds},{attempt.CompletedAt:yyyy-MM-dd HH:mm}");
         }
 
-        var bytes = System.Text.Encoding.UTF8.GetBytes(csv.ToString());
+        var bytes = Encoding.UTF8.GetBytes(csv.ToString());
         var fileName = $"UniStart_Attempts_{DateTime.UtcNow:yyyyMMdd}.csv";
         return File(bytes, "text/csv", fileName);
     }
