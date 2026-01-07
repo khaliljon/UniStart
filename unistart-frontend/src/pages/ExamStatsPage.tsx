@@ -154,7 +154,7 @@ const ExamStatsPage = () => {
               <Users className="w-8 h-8 text-blue-400" />
               <div>
                 <p className="text-white/60 text-sm">Всего попыток</p>
-                <p className="text-3xl font-bold text-white">{stats.totalAttempts}</p>
+                <p className="text-3xl font-bold text-white">{stats.totalAttempts || 0}</p>
               </div>
             </div>
           </motion.div>
@@ -169,7 +169,9 @@ const ExamStatsPage = () => {
               <TrendingUp className="w-8 h-8 text-green-400" />
               <div>
                 <p className="text-white/60 text-sm">Средний балл</p>
-                <p className="text-3xl font-bold text-white">{stats.averageScore.toFixed(1)}%</p>
+                <p className="text-3xl font-bold text-white">
+                  {(stats.averageScore || 0).toFixed(1)}%
+                </p>
               </div>
             </div>
           </motion.div>
@@ -184,7 +186,9 @@ const ExamStatsPage = () => {
               <Clock className="w-8 h-8 text-yellow-400" />
               <div>
                 <p className="text-white/60 text-sm">Среднее время</p>
-                <p className="text-3xl font-bold text-white">{formatTime(stats.averageTimeSpent)}</p>
+                <p className="text-3xl font-bold text-white">
+                  {stats.totalAttempts > 0 ? formatTime(stats.averageTimeSpent) : '0м 0с'}
+                </p>
               </div>
             </div>
           </motion.div>
@@ -199,7 +203,9 @@ const ExamStatsPage = () => {
               <Award className="w-8 h-8 text-purple-400" />
               <div>
                 <p className="text-white/60 text-sm">% сдавших</p>
-                <p className="text-3xl font-bold text-white">{stats.passRate.toFixed(1)}%</p>
+                <p className="text-3xl font-bold text-white">
+                  {(stats.passRate || 0).toFixed(1)}%
+                </p>
               </div>
             </div>
           </motion.div>
@@ -217,8 +223,9 @@ const ExamStatsPage = () => {
             <h2 className="text-2xl font-bold text-white">Статистика по вопросам</h2>
           </div>
           <div className="space-y-4">
-            {stats.questionStats.map((question, index) => (
-              <div key={question.questionId} className="bg-white/5 rounded-lg p-4">
+            {stats.questionStats && stats.questionStats.length > 0 ? (
+              stats.questionStats.map((question, index) => (
+                <div key={question.questionId} className="bg-white/5 rounded-lg p-4">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
                     <p className="text-white font-medium mb-1">
@@ -262,7 +269,12 @@ const ExamStatsPage = () => {
                   />
                 </div>
               </div>
-            ))}
+            ))
+            ) : (
+              <div className="text-center py-8 text-white/60">
+                Нет данных по вопросам
+              </div>
+            )}
           </div>
         </motion.div>
 
@@ -289,32 +301,35 @@ const ExamStatsPage = () => {
                 </tr>
               </thead>
               <tbody>
-                {stats.recentAttempts.map((attempt) => (
-                  <tr key={attempt.id} className="border-b border-white/10 hover:bg-white/5 transition-colors">
-                    <td className="py-3 px-4 text-white">{attempt.studentName}</td>
-                    <td className="py-3 px-4 text-white">{attempt.score}/{attempt.maxScore}</td>
-                    <td className="py-3 px-4">
-                      <span className={`px-2 py-1 rounded-full text-sm font-medium ${
-                        attempt.percentage >= 70
-                          ? 'bg-green-500/20 text-green-400'
-                          : attempt.percentage >= 40
-                          ? 'bg-yellow-500/20 text-yellow-400'
-                          : 'bg-red-500/20 text-red-400'
-                      }`}>
-                        {attempt.percentage.toFixed(1)}%
-                      </span>
+                {stats.recentAttempts && stats.recentAttempts.length > 0 ? (
+                  stats.recentAttempts.map((attempt) => (
+                    <tr key={attempt.id} className="border-b border-white/10 hover:bg-white/5 transition-colors">
+                      <td className="py-3 px-4 text-white">{attempt.studentName}</td>
+                      <td className="py-3 px-4 text-white">{attempt.score}/{attempt.maxScore}</td>
+                      <td className="py-3 px-4">
+                        <span className={`px-2 py-1 rounded-full text-sm font-medium ${
+                          attempt.percentage >= 70
+                            ? 'bg-green-500/20 text-green-400'
+                            : attempt.percentage >= 40
+                            ? 'bg-yellow-500/20 text-yellow-400'
+                            : 'bg-red-500/20 text-red-400'
+                        }`}>
+                          {attempt.percentage.toFixed(1)}%
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-white/70">{formatTime(attempt.timeSpent)}</td>
+                      <td className="py-3 px-4 text-white/70">{formatDate(attempt.completedAt)}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={5} className="text-center py-8 text-white/60">
+                      Пока нет попыток прохождения
                     </td>
-                    <td className="py-3 px-4 text-white/70">{formatTime(attempt.timeSpent)}</td>
-                    <td className="py-3 px-4 text-white/70">{formatDate(attempt.completedAt)}</td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
-            {stats.recentAttempts.length === 0 && (
-              <div className="text-center py-8 text-white/60">
-                Пока нет попыток прохождения
-              </div>
-            )}
           </div>
         </motion.div>
       </div>

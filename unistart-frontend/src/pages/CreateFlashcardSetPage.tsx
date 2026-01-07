@@ -148,6 +148,16 @@ const CreateFlashcardSetPage = () => {
   const handleSubmit = async (e: React.FormEvent, publish: boolean = false) => {
     e.preventDefault();
 
+    if (!flashcardSet.title.trim()) {
+      alert('Введите название набора!');
+      return;
+    }
+
+    if (!flashcardSet.subject || !flashcardSet.subject.trim()) {
+      alert('Выберите предмет!');
+      return;
+    }
+
     if (flashcardSet.flashcards.length === 0) {
       alert('Добавьте хотя бы одну карточку!');
       return;
@@ -529,12 +539,18 @@ const CreateFlashcardSetPage = () => {
                                   value={option}
                                   onChange={(e) => {
                                     const newValue = e.target.value;
+                                    const oldValue = option;
                                     updateFlashcardOption(index, optIndex, newValue);
-                                    if (card.answer === option) {
+                                    // Обновляем answer только если этот вариант был выбран как правильный
+                                    if (card.answer === oldValue && oldValue.trim()) {
                                       updateFlashcard(index, 'answer', newValue);
                                     }
                                   }}
-                                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                  className={`flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                                    card.answer === option && option.trim() && card.answer.trim()
+                                      ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
+                                      : 'border-gray-300 dark:border-gray-600'
+                                  } bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
                                   placeholder={`Вариант ${optIndex + 1}`}
                                   required
                                 />
@@ -639,6 +655,16 @@ const CreateFlashcardSetPage = () => {
                     </div>
                   </motion.div>
                 ))}
+
+                <Button
+                  type="button"
+                  variant="primary"
+                  onClick={addFlashcard}
+                  className="w-full flex items-center justify-center gap-2 py-3"
+                >
+                  <Plus className="w-5 h-5" />
+                  Добавить карточку
+                </Button>
               </div>
             )}
           </Card>

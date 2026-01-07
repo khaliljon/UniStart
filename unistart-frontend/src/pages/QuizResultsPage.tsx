@@ -24,9 +24,21 @@ const QuizResultsPage = () => {
   }
 
   const { score, maxScore, percentage, totalQuestions, correctAnswers, timeSpent, quiz, passed } = resultData;
-  const isPassed = passed !== undefined ? passed : percentage >= 70; // Use passed from backend
+  
+  // Ensure all values are valid numbers
+  const validScore = score || 0;
+  const validMaxScore = maxScore || 0;
+  const validPercentage = percentage || 0;
+  const validTotalQuestions = totalQuestions || 0;
+  const validCorrectAnswers = correctAnswers || resultData.correctQuestions || 0;
+  const validTimeSpent = timeSpent || 0;
+  
+  const isPassed = passed !== undefined ? passed : validPercentage >= 70; // Use passed from backend
 
   const formatTime = (seconds: number) => {
+    if (isNaN(seconds) || seconds === undefined || seconds === null) {
+      return '0:00';
+    }
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
@@ -71,11 +83,11 @@ const QuizResultsPage = () => {
               <div className="text-6xl font-bold mb-2" style={{ 
                 color: isPassed ? 'rgb(34, 197, 94)' : 'rgb(239, 68, 68)' 
               }}>
-                {Math.round(percentage)}%
+                {Math.round(validPercentage)}%
               </div>
               <p className="text-gray-600 dark:text-gray-400">Ваш результат</p>
               <p className="text-sm text-gray-500 dark:text-gray-500 mt-1">
-                {score} из {maxScore} баллов
+                {validScore} из {validMaxScore} баллов
               </p>
             </div>
 
@@ -84,7 +96,7 @@ const QuizResultsPage = () => {
                 <div className="flex items-center justify-center mb-2">
                   <CheckCircle className="w-5 h-5 text-green-600 mr-2" />
                   <span className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {correctAnswers}
+                    {validCorrectAnswers}
                   </span>
                 </div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Правильных ответов</p>
@@ -94,7 +106,7 @@ const QuizResultsPage = () => {
                 <div className="flex items-center justify-center mb-2">
                   <XCircle className="w-5 h-5 text-red-600 mr-2" />
                   <span className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {totalQuestions - correctAnswers}
+                    {validTotalQuestions - validCorrectAnswers}
                   </span>
                 </div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Неправильных ответов</p>
@@ -104,7 +116,7 @@ const QuizResultsPage = () => {
                 <div className="flex items-center justify-center mb-2">
                   <Clock className="w-5 h-5 text-blue-600 mr-2" />
                   <span className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {formatTime(timeSpent)}
+                    {formatTime(validTimeSpent)}
                   </span>
                 </div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Затраченное время</p>

@@ -270,11 +270,33 @@ const CreateQuizPage = () => {
       navigate('/quizzes');
     } catch (error: any) {
       console.error('Ошибка создания квиза:', error);
+      console.error('Response:', error.response);
       console.error('Response data:', error.response?.data);
-      const errorMessage = error.response?.data?.message || 
-                          error.response?.data?.title ||
-                          JSON.stringify(error.response?.data) || 
-                          'Ошибка создания квиза';
+      console.error('Response status:', error.response?.status);
+      
+      let errorMessage = 'Ошибка создания квиза';
+      
+      if (error.response?.data) {
+        const data = error.response.data;
+        
+        // Обработка ошибок валидации ModelState
+        if (data.errors) {
+          const errorMessages = Object.entries(data.errors)
+            .map(([field, messages]: [string, any]) => {
+              const msgs = Array.isArray(messages) ? messages : [messages];
+              return `${field}: ${msgs.join(', ')}`;
+            })
+            .join('\n');
+          errorMessage = `Ошибки валидации:\n${errorMessages}`;
+        } else if (data.message) {
+          errorMessage = data.message;
+        } else if (data.title) {
+          errorMessage = data.title;
+        } else if (typeof data === 'string') {
+          errorMessage = data;
+        }
+      }
+      
       alert(errorMessage);
     } finally {
       setLoading(false);
@@ -607,14 +629,28 @@ const CreateQuizPage = () => {
                       <h3 className="text-lg font-semibold text-gray-900">
                         Вопрос {qIndex + 1}
                       </h3>
-                      <Button
-                        type="button"
-                        variant="danger"
-                        size="sm"
-                        onClick={() => removeQuestion(qIndex)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          min="1"
+                          value={question.points}
+                          onChange={(e) =>
+                            updateQuestion(qIndex, 'points', parseInt(e.target.value))
+                          }
+                          className="w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                          placeholder="Баллы"
+                        />
+                        {quiz.questions.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeQuestion(qIndex)}
+                            className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
+                            title="Удалить вопрос"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
                     </div>
 
                     <div className="space-y-4">
@@ -630,23 +666,6 @@ const CreateQuizPage = () => {
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                           placeholder="Введите текст вопроса"
                         />
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Баллы
-                          </label>
-                          <input
-                            type="number"
-                            min="1"
-                            value={question.points}
-                            onChange={(e) =>
-                              updateQuestion(qIndex, 'points', parseInt(e.target.value))
-                            }
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                          />
-                        </div>
                       </div>
 
                       <div>
@@ -670,14 +689,16 @@ const CreateQuizPage = () => {
                           <label className="block text-sm font-medium text-gray-700">
                             Варианты ответов *
                           </label>
-                          <Button
-                            type="button"
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => addAnswer(qIndex)}
-                          >
-                            <Plus className="w-4 h-4" />
-                          </Button>
+                          {question.answers.length < 5 && (
+                            <button
+                              type="button"
+                              onClick={() => addAnswer(qIndex)}
+                              className="text-sm text-primary-600 hover:text-primary-700 flex items-center gap-1"
+                            >
+                              <Plus className="w-4 h-4" />
+                              Добавить вариант
+                            </button>
+                          )}
                         </div>
 
                         <div className="space-y-3">
@@ -696,34 +717,48 @@ const CreateQuizPage = () => {
                                   setQuiz({ ...quiz, questions: newQuestions });
                                 }}
                                 className="mt-2 w-4 h-4 text-primary-600 rounded focus:ring-primary-500"
-                              />
-                              <input
-                                type="text"
-                                required
-                                value={answer.text}
-                                onChange={(e) =>
-                                  updateAnswer(qIndex, aIndex, 'text', e.target.value)
-                                }
-                                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                                placeholder={`Вариант ${aIndex + 1}`}
-                              />
-                              {question.answers.length > 2 && (
-                                <Button
-                                  type="button"
-                                  variant="danger"
-                                  size="sm"
-                                  onClick={() => removeAnswer(qIndex, aIndex)}
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              )}
-                            </div>
+                                />
+                                <input
+                                  type="text"
+                                  required
+                                  value={answer.text}
+                                  onChange={(e) =>
+                                    updateAnswer(qIndex, aIndex, 'text', e.target.value)
+                                  }
+                                  className={`flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                                    answer.isCorrect && answer.text.trim()
+                                      ? 'border-green-500 bg-green-50'
+                                      : 'border-gray-300'
+                                  }`}
+                                  placeholder={`Вариант ${aIndex + 1}`}
+                                />
+                                {question.answers.length > 2 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => removeAnswer(qIndex, aIndex)}
+                                    className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
+                                    title="Удалить вариант"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                )}
+                              </div>
                           ))}
                         </div>
                       </div>
                     </div>
                   </div>
                 ))}
+
+                <Button
+                  type="button"
+                  variant="primary"
+                  onClick={addQuestion}
+                  className="w-full flex items-center justify-center gap-2 py-3"
+                >
+                  <Plus className="w-5 h-5" />
+                  Добавить вопрос
+                </Button>
               </div>
             )}
           </Card>

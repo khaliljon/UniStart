@@ -90,7 +90,20 @@ public class QuizzesManagementController : ControllerBase
         quiz.Difficulty = dto.Difficulty;
         quiz.IsPublic = dto.IsPublic;
         quiz.IsPublished = dto.IsPublished;
+        quiz.IsLearningMode = dto.IsLearningMode;
+        
+        // Обновляем тип квиза, если указан
+        if (!string.IsNullOrWhiteSpace(dto.QuizType))
+        {
+            quiz.QuizType = dto.QuizType;
+        }
         quiz.UpdatedAt = DateTime.UtcNow;
+
+        // Сначала удаляем все пользовательские ответы, связанные с этим квизом
+        var userAnswersToDelete = await _context.UserQuizAnswers
+            .Where(ua => ua.Attempt.QuizId == quiz.Id)
+            .ToListAsync();
+        _context.UserQuizAnswers.RemoveRange(userAnswersToDelete);
 
         // Удаляем старые вопросы и ответы
         _context.QuizQuestions.RemoveRange(quiz.Questions);
@@ -98,7 +111,7 @@ public class QuizzesManagementController : ControllerBase
         // Добавляем новые вопросы с ответами
         foreach (var questionDto in dto.Questions)
         {
-            var QuizQuestion = new QuizQuestion
+            var quizQuestion = new QuizQuestion
             {
                 Text = questionDto.Text,
                 Points = questionDto.Points,
@@ -109,7 +122,7 @@ public class QuizzesManagementController : ControllerBase
 
             foreach (var answerDto in questionDto.Answers)
             {
-                QuizQuestion.Answers.Add(new QuizAnswer
+                quizQuestion.Answers.Add(new QuizAnswer
                 {
                     Text = answerDto.Text,
                     IsCorrect = answerDto.IsCorrect,
@@ -117,7 +130,7 @@ public class QuizzesManagementController : ControllerBase
                 });
             }
 
-            quiz.Questions.Add(QuizQuestion);
+            quiz.Questions.Add(quizQuestion);
         }
 
         await _context.SaveChangesAsync();

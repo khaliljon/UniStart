@@ -119,7 +119,7 @@ namespace UniStart.Controllers.Student
         {
             var query = _context.Quizzes
                 .Include(q => q.Questions)
-                .Where(q => q.IsPublic); // Только публичные квизы
+                .Where(q => q.IsPublic && q.IsPublished); // Только публичные и опубликованные квизы
 
             if (!string.IsNullOrWhiteSpace(subject))
                 query = query.Where(q => q.Subject.Contains(subject));
@@ -149,6 +149,47 @@ namespace UniStart.Controllers.Student
         }
 
         /// <summary>
+        /// Получить доступные публичные экзамены
+        /// </summary>
+        [HttpGet("available-exams")]
+        public async Task<ActionResult<IEnumerable<object>>> GetAvailableExams(
+            [FromQuery] string? subject = null,
+            [FromQuery] string? difficulty = null,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 20)
+        {
+            var query = _context.Exams
+                .Include(e => e.Questions)
+                .Where(e => e.IsPublic && e.IsPublished); // Только публичные и опубликованные экзамены
+
+            if (!string.IsNullOrWhiteSpace(subject))
+                query = query.Where(e => e.Subject.Contains(subject));
+
+            if (!string.IsNullOrWhiteSpace(difficulty))
+                query = query.Where(e => e.Difficulty == difficulty);
+
+            var exams = await query
+                .OrderByDescending(e => e.CreatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(e => new
+                {
+                    e.Id,
+                    e.Title,
+                    e.Description,
+                    e.Subject,
+                    e.Difficulty,
+                    e.TimeLimit,
+                    QuestionCount = e.Questions.Count,
+                    e.IsPublic,
+                    e.CreatedAt
+                })
+                .ToListAsync();
+
+            return Ok(exams);
+        }
+
+        /// <summary>
         /// Получить доступные публичные наборы карточек
         /// </summary>
         [HttpGet("available-flashcard-sets")]
@@ -159,7 +200,7 @@ namespace UniStart.Controllers.Student
         {
             var query = _context.FlashcardSets
                 .Include(fs => fs.Flashcards)
-                .Where(fs => fs.IsPublic); // Только публичные наборы
+                .Where(fs => fs.IsPublic && fs.IsPublished); // Только публичные и опубликованные наборы
 
             if (!string.IsNullOrWhiteSpace(subject))
                 query = query.Where(fs => fs.Subject.Contains(subject));

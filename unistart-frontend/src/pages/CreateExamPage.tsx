@@ -665,9 +665,19 @@ const CreateExamPage = () => {
                 <FileText className="w-5 h-5" />
                 Вопросы ({questions.length})
               </h2>
-              <div className="text-sm text-gray-600 flex items-center gap-1">
-                <Award className="w-4 h-4" />
-                Всего баллов: {totalPoints}
+              <div className="flex items-center gap-4">
+                <div className="text-sm text-gray-600 flex items-center gap-1">
+                  <Award className="w-4 h-4" />
+                  Всего баллов: {totalPoints}
+                </div>
+                <Button
+                  onClick={addQuestion}
+                  variant="primary"
+                  className="flex items-center gap-2"
+                >
+                  <Plus className="w-5 h-5" />
+                  Добавить вопрос
+                </Button>
               </div>
             </div>
 
@@ -687,8 +697,9 @@ const CreateExamPage = () => {
                       />
                       {questions.length > 1 && (
                         <button
+                          type="button"
                           onClick={() => removeQuestion(qIndex)}
-                          className="p-1 text-red-600 hover:bg-red-50 rounded"
+                          className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
                           title="Удалить вопрос"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -750,13 +761,16 @@ const CreateExamPage = () => {
                         <label className="text-sm font-medium text-gray-700">
                           Варианты ответов *
                         </label>
-                        <button
-                          onClick={() => addAnswer(qIndex)}
-                          className="text-sm text-primary-600 hover:text-primary-700 flex items-center gap-1"
-                        >
-                          <Plus className="w-4 h-4" />
-                          Добавить вариант
-                        </button>
+                        {question.answers.length < 5 && (
+                          <button
+                            type="button"
+                            onClick={() => addAnswer(qIndex)}
+                            className="text-sm text-primary-600 hover:text-primary-700 flex items-center gap-1"
+                          >
+                            <Plus className="w-4 h-4" />
+                            Добавить вариант
+                          </button>
+                        )}
                       </div>
 
                       <div className="space-y-2">
@@ -776,7 +790,7 @@ const CreateExamPage = () => {
                               onChange={(e) => updateAnswer(qIndex, aIndex, 'text', e.target.value)}
                               placeholder={`Вариант ${aIndex + 1}`}
                               className={`flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
-                                answer.isCorrect
+                                answer.isCorrect && answer.text.trim()
                                   ? 'border-green-500 bg-green-50'
                                   : 'border-gray-300'
                               }`}
@@ -784,8 +798,9 @@ const CreateExamPage = () => {
                             />
                             {question.answers.length > 2 && (
                               <button
+                                type="button"
                                 onClick={() => removeAnswer(qIndex, aIndex)}
-                                className="p-1 text-red-600 hover:bg-red-50 rounded"
+                                className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
                                 title="Удалить вариант"
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -801,7 +816,7 @@ const CreateExamPage = () => {
 
               <Button
                 onClick={addQuestion}
-                variant="secondary"
+                variant="primary"
                 className="w-full flex items-center justify-center gap-2 py-3"
               >
                 <Plus className="w-5 h-5" />

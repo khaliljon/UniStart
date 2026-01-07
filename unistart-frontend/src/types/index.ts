@@ -90,6 +90,9 @@ export interface Flashcard {
 export interface CreateFlashcardSetDto {
   title: string;
   description: string;
+  subject?: string;
+  isPublic?: boolean;
+  isPublished?: boolean;
 }
 
 export interface CreateFlashcardDto {

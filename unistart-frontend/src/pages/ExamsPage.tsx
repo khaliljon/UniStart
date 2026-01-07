@@ -100,7 +100,7 @@ const ExamsPage = () => {
       setLoading(true);
       
       // Админы видят все экзамены, учителя - свои, студенты - опубликованные
-      let endpoint = '/exams'; // По умолчанию для студентов
+      let endpoint = '/student/available-exams'; // По умолчанию для студентов
       
       if (isAdmin) {
         endpoint = '/admin/exams'; // Админ видит все экзамены
@@ -114,7 +114,7 @@ const ExamsPage = () => {
       if (countryFilter) params.append('country', countryFilter);
       if (universityFilter) params.append('university', universityFilter);
       const response = await api.get(`${endpoint}?${params.toString()}`);
-      setExams(response.data);
+      setExams(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('Ошибка загрузки экзаменов:', error);
     } finally {

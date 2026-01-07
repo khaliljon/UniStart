@@ -196,7 +196,7 @@ const QuizzesPage = () => {
 
   const loadQuizzes = async () => {
     try {
-      let endpoint = '/quizzes';
+      let endpoint = '/student/available-quizzes';
       if (isAdmin) {
         endpoint = '/admin/quizzes';
       } else if (isTeacher) {
@@ -208,7 +208,7 @@ const QuizzesPage = () => {
       if (difficultyFilter) params.append('difficulty', difficultyFilter);
       
       const response = await api.get(`${endpoint}?${params.toString()}`);
-      setQuizzes(response.data);
+      setQuizzes(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('Ошибка загрузки квизов:', error);
       setQuizzes([]);

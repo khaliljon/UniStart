@@ -80,6 +80,9 @@ namespace UniStart.DTOs
 
         public bool IsPublic { get; set; }
         public bool IsPublished { get; set; }
+        public bool IsLearningMode { get; set; } = true;
+        
+        public string? QuizType { get; set; }
         
         public List<UpdateQuestionWithAnswersDto> Questions { get; set; } = new();
     }
@@ -201,6 +204,9 @@ namespace UniStart.DTOs
         public int MaxScore { get; set; }
         public double Percentage { get; set; }
         public int TimeSpentSeconds { get; set; }
+        public int TotalQuestions { get; set; }
+        public int CorrectQuestions { get; set; }
+        public bool Passed { get; set; }
         public List<QuizQuestionResultDto> QuestionResults { get; set; } = new();
     }
 

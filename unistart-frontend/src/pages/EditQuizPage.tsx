@@ -287,7 +287,7 @@ const EditQuizPage = () => {
         subject: quiz.subject,
         difficulty: quiz.difficulty,
         timeLimit: quiz.timeLimit,
-        type: quiz.quizType,
+        quizType: quiz.quizType,
         isPublic: quiz.isPublic,
         isPublished: publish ? true : quiz.isPublished,
         isLearningMode: quiz.isLearningMode,
@@ -304,11 +304,6 @@ const EditQuizPage = () => {
         })),
       };
 
-      // Добавляем связи с иерархией
-      if (selectedTopicId) quizData.topicId = selectedTopicId;
-      if (selectedModuleId) quizData.moduleId = selectedModuleId;
-      if (selectedCompetencyId) quizData.competencyId = selectedCompetencyId;
-
       await api.put(`/quizzes/${id}`, quizData);
       
       // Публикуем если нужно
@@ -320,7 +315,34 @@ const EditQuizPage = () => {
       navigate('/quizzes');
     } catch (error: any) {
       console.error('Ошибка обновления квиза:', error);
-      alert(error.response?.data?.message || 'Не удалось обновить квиз');
+      console.error('Response:', error.response);
+      console.error('Response data:', error.response?.data);
+      console.error('Response status:', error.response?.status);
+      
+      let errorMessage = 'Не удалось обновить квиз';
+      
+      if (error.response?.data) {
+        const data = error.response.data;
+        
+        // Обработка ошибок валидации ModelState
+        if (data.errors) {
+          const errorMessages = Object.entries(data.errors)
+            .map(([field, messages]: [string, any]) => {
+              const msgs = Array.isArray(messages) ? messages : [messages];
+              return `${field}: ${msgs.join(', ')}`;
+            })
+            .join('\n');
+          errorMessage = `Ошибки валидации:\n${errorMessages}`;
+        } else if (data.message) {
+          errorMessage = data.message;
+        } else if (data.title) {
+          errorMessage = data.title;
+        } else if (typeof data === 'string') {
+          errorMessage = data;
+        }
+      }
+      
+      alert(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -633,13 +655,28 @@ const EditQuizPage = () => {
                   >
                     <div className="flex items-start justify-between mb-4">
                       <h3 className="font-semibold text-gray-900">Вопрос {qIndex + 1}</h3>
-                      <button
-                        type="button"
-                        onClick={() => removeQuestion(qIndex)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          min="1"
+                          value={question.points}
+                          onChange={(e) =>
+                            updateQuestion(qIndex, 'points', parseInt(e.target.value))
+                          }
+                          className="w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                          placeholder="Баллы"
+                        />
+                        {quiz.questions.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeQuestion(qIndex)}
+                            className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
+                            title="Удалить вопрос"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
                     </div>
 
                     <div className="space-y-4">
@@ -654,19 +691,6 @@ const EditQuizPage = () => {
                           rows={2}
                           placeholder="Введите вопрос..."
                           required
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Баллы
-                        </label>
-                        <input
-                          type="number"
-                          value={question.points}
-                          onChange={(e) => updateQuestion(qIndex, 'points', Number(e.target.value))}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                          min="1"
                         />
                       </div>
 
@@ -689,14 +713,16 @@ const EditQuizPage = () => {
                           <label className="text-sm font-medium text-gray-700">
                             Варианты ответов *
                           </label>
-                          <button
-                            type="button"
-                            onClick={() => addAnswer(qIndex)}
-                            className="text-sm text-primary-600 hover:text-primary-700 flex items-center gap-1"
-                          >
-                            <Plus className="w-4 h-4" />
-                            Добавить вариант
-                          </button>
+                          {question.answers.length < 5 && (
+                            <button
+                              type="button"
+                              onClick={() => addAnswer(qIndex)}
+                              className="text-sm text-primary-600 hover:text-primary-700 flex items-center gap-1"
+                            >
+                              <Plus className="w-4 h-4" />
+                              Добавить вариант
+                            </button>
+                          )}
                         </div>
 
                         <div className="space-y-2">
@@ -717,7 +743,7 @@ const EditQuizPage = () => {
                                   updateAnswer(qIndex, aIndex, 'text', e.target.value)
                                 }
                                 className={`flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
-                                  answer.isCorrect
+                                  answer.isCorrect && answer.text.trim()
                                     ? 'border-green-500 bg-green-50'
                                     : 'border-gray-300'
                                 }`}
@@ -728,7 +754,7 @@ const EditQuizPage = () => {
                                 <button
                                   type="button"
                                   onClick={() => removeAnswer(qIndex, aIndex)}
-                                  className="p-1 text-red-600 hover:bg-red-50 rounded"
+                                  className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
                                   title="Удалить вариант"
                                 >
                                   <Trash2 className="w-4 h-4" />
@@ -744,6 +770,16 @@ const EditQuizPage = () => {
                     </div>
                   </motion.div>
                 ))}
+
+                <Button
+                  type="button"
+                  variant="primary"
+                  onClick={addQuestion}
+                  className="w-full flex items-center justify-center gap-2 py-3"
+                >
+                  <Plus className="w-5 h-5" />
+                  Добавить вопрос
+                </Button>
               </div>
             )}
           </Card>

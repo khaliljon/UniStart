@@ -166,8 +166,13 @@ const FlashcardEditPage = () => {
   const handleSubmit = async (e: React.FormEvent, publish: boolean = false) => {
     e.preventDefault();
 
-    if (!formData.title || !formData.subject) {
-      alert('Заполните название и предмет');
+    if (!formData.title || !formData.title.trim()) {
+      alert('Заполните название');
+      return;
+    }
+
+    if (!formData.subject || !formData.subject.trim()) {
+      alert('Выберите предмет');
       return;
     }
 
@@ -492,13 +497,15 @@ const FlashcardEditPage = () => {
                                   value={option}
                                   onChange={(e) => {
                                     const newValue = e.target.value;
+                                    const oldValue = option;
                                     updateOption(index, optIndex, newValue);
-                                    if (card.answer === option) {
+                                    // Обновляем answer только если этот вариант был выбран как правильный
+                                    if (card.answer === oldValue && oldValue.trim()) {
                                       updateFlashcard(index, 'answer', newValue);
                                     }
                                   }}
                                   className={`flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 ${
-                                    card.answer === option && option.trim()
+                                    card.answer === option && option.trim() && card.answer.trim()
                                       ? 'border-green-500 dark:border-green-600 bg-green-50 dark:bg-green-900/20'
                                       : 'border-gray-300 dark:border-gray-600'
                                   }`}
@@ -648,6 +655,16 @@ const FlashcardEditPage = () => {
                     </div>
                   </motion.div>
                 ))}
+
+                <Button
+                  type="button"
+                  onClick={addFlashcard}
+                  variant="primary"
+                  className="w-full flex items-center justify-center gap-2 py-3"
+                >
+                  <Plus className="w-5 h-5" />
+                  Добавить карточку
+                </Button>
               </div>
             )}
           </Card>

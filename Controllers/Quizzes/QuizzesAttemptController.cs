@@ -69,15 +69,22 @@ public class QuizzesAttemptController : ControllerBase
     /// <summary>
     /// Отправить ответы на квиз и получить результаты
     /// </summary>
-    [HttpPost("submit")]
-    public async Task<ActionResult<QuizResultDto>> SubmitQuiz(SubmitQuizDto dto)
+    [HttpPost("{quizId}/attempts/{attemptId}/submit")]
+    public async Task<ActionResult<QuizResultDto>> SubmitQuiz(int quizId, int attemptId, SubmitQuizDto dto)
     {
         var userId = GetUserId()!;
+        
+        // Verify the attempt exists and belongs to the user
+        var attempt = await _context.UserQuizAttempts
+            .FirstOrDefaultAsync(a => a.Id == attemptId && a.UserId == userId && a.QuizId == quizId);
+        
+        if (attempt == null)
+            return NotFound("Quiz attempt not found");
         
         var quiz = await _context.Quizzes
             .Include(q => q.Questions)
                 .ThenInclude(qu => qu.Answers)
-            .FirstOrDefaultAsync(q => q.Id == dto.QuizId);
+            .FirstOrDefaultAsync(q => q.Id == quizId);
 
         if (quiz == null)
             return NotFound("Quiz not found");
@@ -116,20 +123,14 @@ public class QuizzesAttemptController : ControllerBase
             });
         }
 
-        // Сохраняем попытку пользователя
-        var attempt = new UserQuizAttempt
-        {
-            UserId = userId,
-            QuizId = dto.QuizId,
-            Score = totalScore,
-            MaxScore = maxScore,
-            Percentage = maxScore > 0 ? (double)totalScore / maxScore * 100 : 0,
-            TimeSpentSeconds = dto.TimeSpentSeconds,
-            CompletedAt = DateTime.UtcNow,
-            UserAnswersJson = JsonSerializer.Serialize(dto.UserAnswers)
-        };
+        // Обновляем существующую попытку
+        attempt.Score = totalScore;
+        attempt.MaxScore = maxScore;
+        attempt.Percentage = maxScore > 0 ? (double)totalScore / maxScore * 100 : 0;
+        attempt.TimeSpentSeconds = dto.TimeSpentSeconds;
+        attempt.CompletedAt = DateTime.UtcNow;
+        attempt.UserAnswersJson = JsonSerializer.Serialize(dto.UserAnswers);
 
-        _context.UserQuizAttempts.Add(attempt);
         await _context.SaveChangesAsync();
 
         // Создаем записи UserQuizAnswer для каждого ответа
@@ -182,12 +183,18 @@ public class QuizzesAttemptController : ControllerBase
         _context.UserQuizAnswers.AddRange(userQuizAnswers);
         await _context.SaveChangesAsync();
 
+        var correctQuestions = questionResults.Count(qr => qr.IsCorrect);
+        var passed = attempt.Percentage >= 70; // 70% passing threshold
+
         var result = new QuizResultDto
         {
             Score = totalScore,
             MaxScore = maxScore,
             Percentage = attempt.Percentage,
             TimeSpentSeconds = dto.TimeSpentSeconds,
+            TotalQuestions = quiz.Questions.Count,
+            CorrectQuestions = correctQuestions,
+            Passed = passed,
             QuestionResults = questionResults
         };
 

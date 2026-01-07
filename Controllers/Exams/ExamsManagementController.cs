@@ -268,6 +268,7 @@ public class ExamsManagementController : ControllerBase
 
         var exam = await _context.Exams
             .Include(t => t.Questions)
+                .ThenInclude(q => q.Answers)
             .Include(t => t.Attempts)
             .FirstOrDefaultAsync(t => t.Id == id);
 
@@ -276,6 +277,12 @@ public class ExamsManagementController : ControllerBase
 
         if (exam.UserId != userId && !userRoles.Contains("Admin"))
             return Forbid();
+
+        // Удаляем все пользовательские ответы, связанные с этим экзаменом
+        var userAnswersToDelete = await _context.UserExamAnswers
+            .Where(ua => ua.Attempt.ExamId == exam.Id)
+            .ToListAsync();
+        _context.UserExamAnswers.RemoveRange(userAnswersToDelete);
 
         _context.Exams.Remove(exam);
         await _context.SaveChangesAsync();

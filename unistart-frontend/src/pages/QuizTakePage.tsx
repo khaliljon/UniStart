@@ -45,13 +45,28 @@ const QuizTakePage = () => {
   const [quizStartTime] = useState(Date.now());
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [attemptId, setAttemptId] = useState<number | null>(null);
+  const [quizCompleted, setQuizCompleted] = useState(false);
 
   useEffect(() => {
     loadQuiz();
   }, [id]);
 
+  // Restore selected answers when changing question
   useEffect(() => {
-    if (quiz && timeRemaining > 0) {
+    if (quiz && quiz.questions[currentQuestionIndex]) {
+      const currentQuestion = quiz.questions[currentQuestionIndex];
+      const savedAnswers = userAnswers.get(currentQuestion.id);
+      if (savedAnswers) {
+        setSelectedAnswerIds(savedAnswers);
+      } else {
+        setSelectedAnswerIds([]);
+      }
+      setShowFeedback(false);
+    }
+  }, [currentQuestionIndex, quiz]);
+
+  useEffect(() => {
+    if (quiz && timeRemaining > 0 && !quizCompleted) {
       const timer = setInterval(() => {
         setTimeRemaining((prev) => {
           if (prev <= 1) {
@@ -64,22 +79,29 @@ const QuizTakePage = () => {
 
       return () => clearInterval(timer);
     }
-  }, [quiz, timeRemaining]);
+  }, [quiz, timeRemaining, quizCompleted]);
 
   const loadQuiz = async () => {
     try {
       setLoading(true);
+      console.log('Loading quiz:', id);
       const response = await api.get(`/quizzes/${id}`);
       const quizData = response.data;
+      console.log('Quiz data loaded:', quizData);
       
       setQuiz(quizData);
       setTimeRemaining(quizData.timeLimit * 60); // Convert minutes to seconds
       
       // Start quiz attempt
+      console.log('Starting quiz attempt...');
       const attemptResponse = await api.post(`/quizzes/${id}/attempts/start`);
-      setAttemptId(attemptResponse.data.id);
+      console.log('Attempt response:', attemptResponse.data);
+      console.log('Attempt ID:', attemptResponse.data.attemptId);
+      setAttemptId(attemptResponse.data.attemptId);
+      console.log('Attempt ID set to:', attemptResponse.data.attemptId);
     } catch (error: any) {
       console.error('Ошибка загрузки квиза:', error);
+      console.error('Error response:', error.response);
       alert(error.response?.data?.message || 'Не удалось загрузить квиз');
       navigate('/quizzes');
     } finally {
@@ -124,32 +146,71 @@ const QuizTakePage = () => {
   };
 
   const handleNextQuestion = () => {
-    if (!quiz || selectedAnswerIds.length === 0) return;
+    console.log('handleNextQuestion called');
+    console.log('Quiz:', quiz);
+    console.log('Current question index:', currentQuestionIndex);
+    
+    if (!quiz) {
+      console.log('No quiz, returning');
+      return;
+    }
 
     const currentQuestion = quiz.questions[currentQuestionIndex];
-    const isMultipleChoice = currentQuestion.answers.filter(a => a.isCorrect).length > 1;
+    console.log('Current question:', currentQuestion);
     
-    // For multiple choice, show feedback when clicking Next if not already shown
+    // Check if current question has been answered
+    const hasAnswered = userAnswers.has(currentQuestion.id) && 
+                       userAnswers.get(currentQuestion.id)!.length > 0;
+    
+    console.log('Has answered:', hasAnswered);
+    console.log('User answers:', userAnswers);
+    
+    if (!hasAnswered) {
+      console.log('Not answered, returning');
+      return;
+    }
+
+    const isMultipleChoice = currentQuestion.answers.filter(a => a.isCorrect).length > 1;
+    const isLastQuestion = currentQuestionIndex >= quiz.questions.length - 1;
+    
+    console.log('Is multiple choice:', isMultipleChoice);
+    console.log('Is last question:', isLastQuestion);
+    console.log('Show feedback:', showFeedback);
+    
+    // On last question, submit immediately (ignore feedback state)
+    if (isLastQuestion) {
+      console.log('Last question - calling handleSubmitQuiz');
+      handleSubmitQuiz();
+      return;
+    }
+    
+    // For multiple choice (not last question), show feedback when clicking Next if not already shown
     if (isMultipleChoice && !showFeedback) {
+      console.log('Showing feedback for multiple choice');
       setShowFeedback(true);
       return;
     }
 
     // Reset for next question
+    console.log('Moving to next question');
     setShowFeedback(false);
     setSelectedAnswerIds([]);
-    
-    if (currentQuestionIndex < quiz.questions.length - 1) {
-      setCurrentQuestionIndex(currentQuestionIndex + 1);
-    } else {
-      handleSubmitQuiz();
-    }
+    setCurrentQuestionIndex(currentQuestionIndex + 1);
   };
 
   const handleSubmitQuiz = async () => {
-    if (isSubmitting || !quiz || !attemptId) return;
+    console.log('handleSubmitQuiz called');
+    console.log('isSubmitting:', isSubmitting);
+    console.log('attemptId:', attemptId);
     
+    if (isSubmitting || !quiz || !attemptId) {
+      console.log('Blocked - isSubmitting:', isSubmitting, 'quiz:', !!quiz, 'attemptId:', attemptId);
+      return;
+    }
+    
+    console.log('Starting quiz submission...');
     setIsSubmitting(true);
+    setQuizCompleted(true); // Останавливаем таймер
     
     try {
       const timeSpent = Math.floor((Date.now() - quizStartTime) / 1000);
@@ -410,7 +471,11 @@ const QuizTakePage = () => {
           <Button
             variant="primary"
             onClick={handleNextQuestion}
-            disabled={selectedAnswerIds.length === 0 || isSubmitting}
+            disabled={
+              !userAnswers.has(quiz.questions[currentQuestionIndex].id) || 
+              userAnswers.get(quiz.questions[currentQuestionIndex].id)!.length === 0 || 
+              isSubmitting
+            }
             className="flex items-center gap-2"
           >
             {currentQuestionIndex < quiz.questions.length - 1 ? (
