@@ -310,32 +310,12 @@ namespace UniStart.Controllers.Flashcards
                 return Forbid("Access denied: you can only view stats for your own flashcard sets");
 
             // Количество уникальных пользователей, изучающих этот набор (хотя бы раз открыли)
+            // Исключаем владельца набора из подсчета студентов
             var uniqueStudentsCount = await _context.UserFlashcardSetAccesses
-                .Where(a => a.FlashcardSetId == id)
+                .Where(a => a.FlashcardSetId == id && a.UserId != set.UserId)
                 .Select(a => a.UserId)
                 .Distinct()
                 .CountAsync();
-
-            // Количество карточек к повторению для текущего пользователя (если владелец тоже изучает)
-            var cardsToReviewForUser = 0;
-            if (set.UserId == userId)
-            {
-                var userProgress = await _context.UserFlashcardProgresses
-                    .Where(p => p.UserId == userId && p.Flashcard.FlashcardSetId == id)
-                    .ToListAsync();
-
-                var allCards = await _context.Flashcards
-                    .Where(f => f.FlashcardSetId == id)
-                    .Select(f => f.Id)
-                    .ToListAsync();
-
-                cardsToReviewForUser = allCards.Count(cardId =>
-                {
-                    var progress = userProgress.FirstOrDefault(p => p.FlashcardId == cardId);
-                    if (progress == null) return true; // Карточка еще не изучалась
-                    return _spacedRepetitionService.IsDueForReview(progress);
-                });
-            }
 
             // Общее количество карточек в наборе
             var totalCards = set.Flashcards.Count;
@@ -349,13 +329,6 @@ namespace UniStart.Controllers.Flashcards
                 ? Math.Round((double)completedSetsCount / uniqueStudentsCount * 100, 2)
                 : 0.0;
 
-            // Общее количество изученных карточек (карточки с IsMastered = true)
-            var totalMasteredCards = await _context.UserFlashcardProgresses
-                .Where(p => p.Flashcard.FlashcardSetId == id && p.IsMastered)
-                .Select(p => p.FlashcardId)
-                .Distinct()
-                .CountAsync();
-
             return Ok(new
             {
                 set.Id,
@@ -367,9 +340,7 @@ namespace UniStart.Controllers.Flashcards
                 set.UpdatedAt,
                 TotalCards = totalCards,
                 UniqueStudents = uniqueStudentsCount, // Изучающих студентов (хотя бы раз открыли набор)
-                CardsToReview = cardsToReviewForUser,
                 AverageProgress = averageProgress, // Средний процент завершенных наборов
-                TotalMasteredCards = totalMasteredCards, // Уникальных карточек, которые освоили хотя бы один пользователь
                 CompletedSetsCount = completedSetsCount // Количество пользователей, которые полностью изучили набор
             });
         }

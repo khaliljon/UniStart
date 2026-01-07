@@ -1,0 +1,11 @@
+export { default as AdminUsersPage } from './AdminUsersPage';
+export { default as AdminSubjectsPage } from './AdminSubjectsPage';
+export { default as AdminAnalyticsPage } from './AdminAnalyticsPage';
+export { default as AdminExportPage } from './AdminExportPage';
+export { default as AdminAchievementsPage } from './AdminAchievementsPage';
+export { default as AdminQuizzesPage } from './AdminQuizzesPage';
+export { default as AdminExamsPage } from './AdminExamsPage';
+export { default as AdminSettingsPage } from './AdminSettingsPage';
+export { default as AdminCountriesPage } from './AdminCountriesPage';
+export { default as AdminUniversitiesPage } from './AdminUniversitiesPage';
+export { default as AdminExamTypesPage } from './AdminExamTypesPage';
