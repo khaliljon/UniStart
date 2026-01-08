@@ -393,7 +393,7 @@ const CreateQuizPage = () => {
                   <option value="PracticeQuiz">Практический квиз по теме (с объяснениями)</option>
                   <option value="ModuleFinalQuiz">Итоговый квиз модуля (без объяснений)</option>
                   <option value="CaseStudyQuiz">Кейс-квиз модуля (анализ данных)</option>
-                  <option value="CourseFinalQuiz">Пробный тест ЕНТ</option>
+                  <option value="CourseFinalQuiz">Пробный квиз ЕНТ</option>
                 </select>
               </div>
 

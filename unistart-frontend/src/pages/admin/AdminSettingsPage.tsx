@@ -28,7 +28,7 @@ const AdminSettingsPage = () => {
   const { refreshSettings } = useSiteSettings();
   const [settings, setSettings] = useState<SystemSettings>({
     siteName: 'UniStart',
-    siteDescription: 'Образовательная платформа для изучения с помощью карточек и тестов',
+    siteDescription: 'Образовательная платформа для изучения с помощью карточек, квизов и экзаменов',
     allowRegistration: true,
     requireEmailVerification: false,
     maxQuizAttempts: 3,
@@ -51,7 +51,7 @@ const AdminSettingsPage = () => {
       // Преобразуем данные из бэкенда (может быть camelCase или PascalCase)
       setSettings({
         siteName: data.siteName || data.SiteName || 'UniStart',
-        siteDescription: data.siteDescription || data.SiteDescription || 'Образовательная платформа для изучения с помощью карточек и тестов',
+        siteDescription: data.siteDescription || data.SiteDescription || 'Образовательная платформа для изучения с помощью карточек, квизов и экзаменов',
         allowRegistration: data.allowRegistration !== undefined ? data.allowRegistration : (data.AllowRegistration !== undefined ? data.AllowRegistration : true),
         requireEmailVerification: data.requireEmailVerification !== undefined ? data.requireEmailVerification : (data.RequireEmailVerification !== undefined ? data.RequireEmailVerification : false),
         maxQuizAttempts: data.maxQuizAttempts || data.MaxQuizAttempts || 3,
@@ -194,7 +194,7 @@ const AdminSettingsPage = () => {
               {/* Max Quiz Attempts */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Максимальное количество попыток для тестов (по умолчанию)
+                  Максимальное количество попыток для квизов (по умолчанию)
                 </label>
                 <input
                   type="number"

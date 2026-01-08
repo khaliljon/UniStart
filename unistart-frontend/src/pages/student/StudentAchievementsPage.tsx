@@ -73,10 +73,10 @@ const StudentAchievementsPage = () => {
         {
           id: 2,
           name: 'Новичок',
-          description: 'Пройдите первый тест',
+          description: 'Пройдите первый квиз',
           icon: '🌟',
           requiredValue: 1,
-          category: 'Тесты',
+          category: 'Квизы',
           isUnlocked: false,
           progress: 0,
         },
@@ -93,10 +93,10 @@ const StudentAchievementsPage = () => {
         {
           id: 4,
           name: 'Эксперт',
-          description: 'Наберите 90%+ в 5 тестах',
+          description: 'Наберите 90%+ в 5 квизах',
           icon: '🏆',
           requiredValue: 5,
-          category: 'Тесты',
+          category: 'Квизы',
           isUnlocked: false,
           progress: 40,
         },
@@ -113,10 +113,10 @@ const StudentAchievementsPage = () => {
         {
           id: 6,
           name: 'Перфекционист',
-          description: 'Получите 100% в тесте',
+          description: 'Получите 100% в квизе',
           icon: '💎',
           requiredValue: 1,
-          category: 'Тесты',
+          category: 'Квизы',
           isUnlocked: false,
           progress: 0,
         },
@@ -129,7 +129,7 @@ const StudentAchievementsPage = () => {
   const getCategoryIcon = (category: string) => {
     const icons: Record<string, any> = {
       'Начало': Target,
-      'Тесты': Trophy,
+      'Квизы': Trophy,
       'Карточки': Star,
       'Активность': Zap,
     };
@@ -139,7 +139,7 @@ const StudentAchievementsPage = () => {
   const getCategoryColor = (category: string) => {
     const colors: Record<string, string> = {
       'Начало': 'bg-blue-500',
-      'Тесты': 'bg-yellow-500',
+      'Квизы': 'bg-yellow-500',
       'Карточки': 'bg-purple-500',
       'Активность': 'bg-red-500',
     };

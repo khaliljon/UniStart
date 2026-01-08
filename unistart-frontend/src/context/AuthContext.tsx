@@ -40,56 +40,153 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [token, setToken] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    console.log('🔐 AuthContext: Проверяем токен при загрузке...');
-    // Проверяем токен при загрузке приложения
-    const storedToken = localStorage.getItem('token')
-    if (storedToken) {
-      console.log('✅ Токен найден в localStorage');
-      setToken(storedToken)
-      loadUser(storedToken)
-    } else {
-      console.log('❌ Токен не найден');
-      setLoading(false)
-    }
-  }, [])
+  console.log('🚀 AuthProvider: Компонент рендерится, loading:', loading, 'user:', user?.email);
 
-  const loadUser = async (authToken: string = token || '') => {
-    console.log('👤 Загружаем профиль пользователя...');
-    try {
-      // Загружаем профиль пользователя
-      const userData = await authService.getProfile()
-      console.log('✅ Профиль загружен:', userData);
-      
-      // Получаем роли из API
-      const rolesData = await authService.getRoles()
-      console.log('🎭 Роли получены:', rolesData);
-      
-      // Парсим JWT чтобы получить роли из токена (fallback)
-      const jwtPayload = parseJwt(authToken);
-      let roles: string[] = rolesData.roles || [];
-      
-      // Если в API нет ролей, пытаемся извлечь из JWT
-      if (roles.length === 0 && jwtPayload) {
-        const roleClaimKey = 'http://schemas.microsoft.com/ws/2008/06/identity/claims/role';
-        const roleClaim = jwtPayload[roleClaimKey];
+  // Функция для извлечения ролей из разных источников
+  const getUserRoles = (profileData: any, jwtToken: string): string[] => {
+    console.log('🔍 getUserRoles вызвана с profileData:', profileData);
+    
+    // 1. Пытаемся получить из ответа профиля
+    let roles: string[] = [];
+    
+    if (Array.isArray(profileData.roles)) {
+      roles = profileData.roles;
+      console.log('✅ Роли найдены в profileData.roles:', roles);
+    } else if (Array.isArray(profileData.Roles)) {
+      roles = profileData.Roles;
+      console.log('✅ Роли найдены в profileData.Roles:', roles);
+    }
+    
+    if (roles.length > 0) {
+      console.log('🎭 Роли найдены в профиле:', roles);
+      return roles;
+    }
+
+    // 2. Извлекаем из JWT токена
+    console.log('🔍 Роли не найдены в профиле, пытаемся извлечь из JWT...');
+    const jwtPayload = parseJwt(jwtToken);
+    console.log('🔍 JWT payload:', jwtPayload);
+    
+    if (jwtPayload) {
+      // Проверяем разные варианты ключей для ролей
+      const possibleRoleKeys = [
+        'http://schemas.microsoft.com/ws/2008/06/identity/claims/role',
+        'role',
+        'roles',
+        'Role',
+        'Roles'
+      ];
+
+      for (const key of possibleRoleKeys) {
+        const roleClaim = jwtPayload[key];
         if (roleClaim) {
           roles = Array.isArray(roleClaim) ? roleClaim : [roleClaim];
+          if (roles.length > 0) {
+            console.log(`🎭 Роли найдены в JWT (ключ: ${key}):`, roles);
+            return roles;
+          }
         }
-        console.log('🎭 Роли из JWT:', roles);
       }
+    }
+
+    // 3. Дефолтная роль Student
+    console.log('⚠️ Роли не найдены, используем дефолтную: Student');
+    return ['Student'];
+  };
+
+  useEffect(() => {
+    console.log('⚡ useEffect запущен!');
+    
+    const initializeAuth = async () => {
+      console.log('🔐 AuthContext: Инициализация...');
       
-      console.log('✅ Пользователь установлен:', { ...userData, roles });
-      setUser({ ...userData, roles })
-    } catch (error) {
-      console.error('❌ Failed to load user:', error)
-      // При ошибке очищаем все данные аутентификации
-      localStorage.removeItem('token')
-      setToken(null)
-      setUser(null) // Явно устанавливаем user в null
+      try {
+        const storedToken = localStorage.getItem('token');
+        console.log('🔍 Проверка localStorage.token:', storedToken ? 'НАЙДЕН' : 'НЕ НАЙДЕН');
+        
+        if (storedToken) {
+          console.log('✅ Токен найден в localStorage, длина:', storedToken.length);
+          console.log('📝 Первые 30 символов токена:', storedToken.substring(0, 30) + '...');
+          
+          setToken(storedToken);
+          console.log('📝 setToken вызван');
+          
+          console.log('📞 Вызываем loadUser...');
+          await loadUser(storedToken);
+          console.log('✅ loadUser завершен');
+        } else {
+          console.log('❌ Токен не найден в localStorage');
+          setLoading(false);
+          console.log('📝 setLoading(false) вызван');
+        }
+      } catch (error) {
+        console.error('💥 Ошибка в initializeAuth:', error);
+        setLoading(false);
+      }
+    };
+
+    initializeAuth();
+    
+    return () => {
+      console.log('🧹 useEffect cleanup');
+    };
+  }, [])
+
+  const loadUser = async (authToken: string) => {
+    console.log('👤 === loadUser НАЧАЛО ===');
+    console.log('👤 Параметр authToken:', authToken ? `ЕСТЬ (длина: ${authToken.length})` : 'ОТСУТСТВУЕТ');
+    
+    if (!authToken) {
+      console.error('❌ loadUser: токен не передан!');
+      setLoading(false);
+      return;
+    }
+
+    console.log('👤 Загружаем профиль пользователя...');
+    console.log('🔑 Токен для загрузки:', authToken.substring(0, 20) + '...');
+    
+    try {
+      console.log('📡 Отправляем запрос authService.getProfile()...');
+      
+      // Загружаем профиль пользователя
+      const userData = await authService.getProfile()
+      
+      console.log('✅ Профиль загружен успешно!');
+      console.log('📦 userData:', userData);
+      console.log('📦 userData.Roles:', (userData as any).Roles);
+      console.log('📦 userData.roles:', (userData as any).roles);
+      
+      // Извлекаем роли из профиля и JWT
+      console.log('🔍 Вызываем getUserRoles...');
+      const roles = getUserRoles(userData, authToken);
+      console.log('✅ getUserRoles вернул:', roles);
+      
+      const userWithRoles = { ...userData, roles };
+      console.log('✅ Пользователь с ролями:', userWithRoles);
+      console.log('📝 Вызываем setUser...');
+      setUser(userWithRoles);
+      console.log('✅ setUser вызван');
+      
+    } catch (error: any) {
+      console.error('❌ === loadUser ОШИБКА ===');
+      console.error('💥 Ошибка:', error);
+      console.error('💥 Статус:', error.response?.status);
+      console.error('💥 Данные:', error.response?.data);
+      console.error('💥 Сообщение:', error.message);
+      
+      // Очищаем токен ТОЛЬКО при ошибке 401 (Unauthorized)
+      if (error.response?.status === 401) {
+        console.log('🧹 Ошибка 401: Очищаем токен из localStorage...');
+        localStorage.removeItem('token')
+        setToken(null)
+        setUser(null)
+      } else {
+        console.log('⚠️ Ошибка не 401, токен не удаляем');
+      }
     } finally {
+      console.log('📝 setLoading(false)...');
       setLoading(false)
-      console.log('✅ AuthContext загрузка завершена');
+      console.log('✅ === loadUser КОНЕЦ ===');
     }
   }
 

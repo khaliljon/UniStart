@@ -120,7 +120,7 @@ const TeacherAnalyticsPage = () => {
                 📊 Аналитика и статистика
               </h1>
               <p className="text-gray-600">
-                Детальная информация о ваших тестах и успеваемости студентов
+                Детальная информация о ваших квизах и успеваемости студентов
               </p>
             </div>
           </div>
@@ -137,7 +137,7 @@ const TeacherAnalyticsPage = () => {
             <Card className="p-6 bg-gradient-to-br from-blue-500 to-blue-600 text-white">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-blue-100 text-sm mb-1">Всего тестов</p>
+                  <p className="text-blue-100 text-sm mb-1">Всего квизов</p>
                   <p className="text-3xl font-bold">{overviewStats.totalQuizzes}</p>
                   <p className="text-blue-100 text-xs mt-1">
                     Публичных: {overviewStats.publicQuizzes}
@@ -194,7 +194,7 @@ const TeacherAnalyticsPage = () => {
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
                 <BarChart3 className="w-6 h-6 text-primary-500" />
-                Статистика по тестам
+                Статистика по квизам
               </h2>
             </div>
 
@@ -202,13 +202,13 @@ const TeacherAnalyticsPage = () => {
               <div className="text-center py-12">
                 <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                 <p className="text-gray-500 text-lg mb-2">
-                  У вас пока нет статистики по тестам
+                  У вас пока нет статистики по квизам
                 </p>
                 <p className="text-gray-400 mb-6">
-                  Создайте тесты и дождитесь, пока студенты начнут их проходить
+                  Создайте квизы и дождитесь, пока студенты начнут их проходить
                 </p>
                 <Button onClick={() => navigate('/quizzes/create')}>
-                  Создать тест
+                  Создать квиз
                 </Button>
               </div>
             ) : (
@@ -217,7 +217,7 @@ const TeacherAnalyticsPage = () => {
                   <thead className="bg-gray-50 dark:bg-gray-700">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        Тест
+                        Квиз
                       </th>
                       <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                         Попытки
@@ -343,10 +343,10 @@ const TeacherAnalyticsPage = () => {
             >
               <Target className="w-12 h-12 text-blue-500 mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Создать тест
+                Создать квиз
               </h3>
               <p className="text-gray-600 text-sm">
-                Добавить новый тест для студентов
+                Добавить новый квиз для студентов
               </p>
             </div>
           </Card>

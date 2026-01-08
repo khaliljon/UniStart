@@ -320,7 +320,7 @@ const StudentLeaderboardPage = () => {
                       >
                         <span className="flex items-center gap-1">
                           <Target className="w-4 h-4" />
-                          {entry.quizzesTaken} тестов
+                          {entry.quizzesTaken} квизов
                         </span>
                         <span className="flex items-center gap-1">
                           <Award className="w-4 h-4" />
@@ -382,7 +382,7 @@ const StudentLeaderboardPage = () => {
                   Продолжайте учиться!
                 </h3>
                 <p className="text-green-100">
-                  Чем больше тестов вы проходите и чем выше ваши баллы, тем выше
+                  Чем больше квизов и экзаменов вы проходите и чем выше ваши баллы, тем выше
                   ваша позиция в рейтинге. Удачи!
                 </p>
               </div>

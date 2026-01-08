@@ -1,7 +1,7 @@
 import { motion, HTMLMotionProps } from 'framer-motion'
 
 interface ButtonProps extends Omit<HTMLMotionProps<"button">, 'variant'> {
-  variant?: 'primary' | 'secondary' | 'success' | 'danger'
+  variant?: 'primary' | 'secondary' | 'success' | 'danger' | 'ghost' | 'outline'
   size?: 'sm' | 'md' | 'lg'
   isLoading?: boolean
 }
@@ -22,6 +22,8 @@ const Button = ({
     secondary: 'bg-white text-primary-600 border-2 border-primary-500 hover:bg-primary-50 dark:bg-gray-800 dark:text-primary-400 dark:border-primary-400 dark:hover:bg-gray-700',
     success: 'bg-green-500 text-white hover:bg-green-600 focus:ring-green-500',
     danger: 'bg-red-500 text-white hover:bg-red-600 focus:ring-red-500',
+    ghost: 'bg-transparent text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800',
+    outline: 'bg-transparent text-primary-600 border-2 border-primary-500 hover:bg-primary-50 dark:text-primary-400 dark:border-primary-400 dark:hover:bg-gray-800',
   }
 
   const sizeClasses = {

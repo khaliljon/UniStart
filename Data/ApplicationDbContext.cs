@@ -1,4 +1,4 @@
-п»їusing Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using UniStart.Models;
 
@@ -60,7 +60,10 @@ namespace UniStart.Data
         
         // System Settings
         public DbSet<SystemSettings> SystemSettings { get; set; } = null!;
+        public DbSet<UserLearningPattern> UserLearningPatterns { get; set; } = null!;
+        public DbSet<UniversityRecommendation> UniversityRecommendations { get; set; } = null!;
 
+        // AI & Machine Learning
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -85,7 +88,7 @@ namespace UniStart.Data
                 .HasForeignKey(p => p.FlashcardId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // РЈРЅРёРєР°Р»СЊРЅРѕСЃС‚СЊ: РѕРґРёРЅ РїРѕР»СЊР·РѕРІР°С‚РµР»СЊ - РѕРґРЅР° Р·Р°РїРёСЃСЊ РїСЂРѕРіСЂРµСЃСЃР° РїРѕ РєР°СЂС‚РѕС‡РєРµ
+            // Уникальность: один пользователь - одна запись прогресса по карточке
             modelBuilder.Entity<UserFlashcardProgress>()
                 .HasIndex(p => new { p.UserId, p.FlashcardId })
                 .IsUnique();
@@ -103,7 +106,7 @@ namespace UniStart.Data
                 .HasForeignKey(a => a.FlashcardSetId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // РЈРЅРёРєР°Р»СЊРЅРѕСЃС‚СЊ: РѕРґРёРЅ РїРѕР»СЊР·РѕРІР°С‚РµР»СЊ - РѕРґРЅР° Р·Р°РїРёСЃСЊ РґРѕСЃС‚СѓРїР° Рє РЅР°Р±РѕСЂСѓ
+            // Уникальность: один пользователь - одна запись доступа к набору
             modelBuilder.Entity<UserFlashcardSetAccess>()
                 .HasIndex(a => new { a.UserId, a.FlashcardSetId })
                 .IsUnique();
@@ -138,13 +141,13 @@ namespace UniStart.Data
                 .HasOne(ua => ua.Question)
                 .WithMany()
                 .HasForeignKey(ua => ua.QuestionId)
-                .OnDelete(DeleteBehavior.Restrict); // РќРµ СѓРґР°Р»СЏРµРј РІРѕРїСЂРѕСЃ, РµСЃР»Рё РµСЃС‚СЊ РѕС‚РІРµС‚С‹
+                .OnDelete(DeleteBehavior.Restrict); // Не удаляем вопрос, если есть ответы
 
             modelBuilder.Entity<UserQuizAnswer>()
                 .HasOne(ua => ua.SelectedAnswer)
                 .WithMany()
                 .HasForeignKey(ua => ua.SelectedAnswerId)
-                .OnDelete(DeleteBehavior.Restrict); // РќРµ СѓРґР°Р»СЏРµРј РѕС‚РІРµС‚, РµСЃР»Рё РµСЃС‚СЊ РІС‹Р±РѕСЂ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
+                .OnDelete(DeleteBehavior.Restrict); // Не удаляем ответ, если есть выбор пользователя
 
             // Exams
             modelBuilder.Entity<ExamQuestion>()
@@ -175,13 +178,13 @@ namespace UniStart.Data
                 .HasOne(uea => uea.Question)
                 .WithMany()
                 .HasForeignKey(uea => uea.QuestionId)
-                .OnDelete(DeleteBehavior.Restrict); // РќРµ СѓРґР°Р»СЏРµРј РІРѕРїСЂРѕСЃ, РµСЃР»Рё РµСЃС‚СЊ РѕС‚РІРµС‚С‹
+                .OnDelete(DeleteBehavior.Restrict); // Не удаляем вопрос, если есть ответы
 
             modelBuilder.Entity<UserExamAnswer>()
                 .HasOne(uea => uea.SelectedAnswer)
                 .WithMany()
                 .HasForeignKey(uea => uea.SelectedAnswerId)
-                .OnDelete(DeleteBehavior.Restrict); // РќРµ СѓРґР°Р»СЏРµРј РѕС‚РІРµС‚, РµСЃР»Рё РµСЃС‚СЊ РІС‹Р±РѕСЂ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
+                .OnDelete(DeleteBehavior.Restrict); // Не удаляем ответ, если есть выбор пользователя
 
             // New models configuration
             modelBuilder.Entity<University>()
@@ -197,8 +200,8 @@ namespace UniStart.Data
                 .OnDelete(DeleteBehavior.Restrict);
 
             // Indexes
-            // Flashcard.NextReviewDate Р±РѕР»СЊС€Рµ РЅРµ РёСЃРїРѕР»СЊР·СѓРµС‚СЃСЏ (РїРµСЂРµРјРµС‰РµРЅРѕ РІ UserFlashcardProgress)
-            // РћСЃС‚Р°РІР»СЏРµРј РґР»СЏ РѕР±СЂР°С‚РЅРѕР№ СЃРѕРІРјРµСЃС‚РёРјРѕСЃС‚Рё, РЅРѕ РЅРµ РёРЅРґРµРєСЃРёСЂСѓРµРј
+            // Flashcard.NextReviewDate больше не используется (перемещено в UserFlashcardProgress)
+            // Оставляем для обратной совместимости, но не индексируем
 
             modelBuilder.Entity<UserQuizAttempt>()
                 .HasIndex(ua => ua.UserId);
@@ -206,7 +209,7 @@ namespace UniStart.Data
             modelBuilder.Entity<UserExamAttempt>()
                 .HasIndex(uea => uea.UserId);
 
-            // РРЅРґРµРєСЃС‹ РґР»СЏ РЅРѕРІС‹С… С‚Р°Р±Р»РёС†
+            // Индексы для новых таблиц
             modelBuilder.Entity<UserFlashcardProgress>()
                 .HasIndex(p => p.UserId);
 
@@ -253,7 +256,7 @@ namespace UniStart.Data
                 .HasOne(s => s.Course)
                 .WithMany(c => c.Subjects)
                 .HasForeignKey(s => s.CourseId)
-                .OnDelete(DeleteBehavior.SetNull); // Subject РјРѕР¶РµС‚ СЃСѓС‰РµСЃС‚РІРѕРІР°С‚СЊ Р±РµР· РєСѓСЂСЃР°
+                .OnDelete(DeleteBehavior.SetNull); // Subject может существовать без курса
             
             // Subject -> Module
             modelBuilder.Entity<LearningModule>()
@@ -294,14 +297,14 @@ namespace UniStart.Data
                 .HasForeignKey(lt => lt.PracticeQuizId)
                 .OnDelete(DeleteBehavior.SetNull);
             
-            // Topic -> Theory (РѕРґРёРЅ Рє РѕРґРЅРѕРјСѓ)
+            // Topic -> Theory (один к одному)
             modelBuilder.Entity<TheoryContent>()
                 .HasOne(tc => tc.LearningTopic)
                 .WithOne(lt => lt.Theory)
                 .HasForeignKey<TheoryContent>(tc => tc.LearningTopicId)
                 .OnDelete(DeleteBehavior.Cascade);
             
-            // SystemSettings - РІСЃРµРіРґР° РѕРґРЅР° Р·Р°РїРёСЃСЊ
+            // SystemSettings - всегда одна запись
             modelBuilder.Entity<SystemSettings>()
                 .HasKey(s => s.Id);
             
@@ -310,7 +313,7 @@ namespace UniStart.Data
                 {
                     Id = 1,
                     SiteName = "UniStart",
-                    SiteDescription = "РћР±СЂР°Р·РѕРІР°С‚РµР»СЊРЅР°СЏ РїР»Р°С‚С„РѕСЂРјР° РґР»СЏ РёР·СѓС‡РµРЅРёСЏ СЃ РїРѕРјРѕС‰СЊСЋ РєР°СЂС‚РѕС‡РµРє Рё С‚РµСЃС‚РѕРІ",
+                    SiteDescription = "Образовательная платформа для изучения с помощью карточек и тестов",
                     AllowRegistration = true,
                     RequireEmailVerification = false,
                     MaxQuizAttempts = 3,

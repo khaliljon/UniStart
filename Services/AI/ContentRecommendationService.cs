@@ -1,0 +1,321 @@
+using Microsoft.EntityFrameworkCore;
+using UniStart.Data;
+using UniStart.Models.Learning;
+
+namespace UniStart.Services.AI;
+
+/// <summary>
+/// AI сервис для интеллектуальных рекомендаций контента
+/// Анализирует паттерны обучения и предлагает персонализированный контент
+/// </summary>
+public class ContentRecommendationService : IContentRecommendationService
+{
+    private readonly ApplicationDbContext _context;
+    private readonly IUniversityRecommendationService _universityService;
+    private readonly ILogger<ContentRecommendationService> _logger;
+
+    public ContentRecommendationService(
+        ApplicationDbContext context,
+        IUniversityRecommendationService universityService,
+        ILogger<ContentRecommendationService> logger)
+    {
+        _context = context;
+        _universityService = universityService;
+        _logger = logger;
+    }
+
+    public async Task<List<int>> RecommendQuizzesForWeaknesses(string userId, int count = 5)
+    {
+        try
+        {
+            // Получаем профиль пользователя для анализа слабостей
+            var profile = await _universityService.BuildUserProfile(userId);
+            if (profile == null || !profile.Weaknesses.Any())
+            {
+                _logger.LogWarning("Не удалось определить слабости для User={UserId}", userId);
+                return await GetPopularQuizzes(count);
+            }
+
+            // Ищем квизы по слабым предметам
+            var weakSubjects = profile.Weaknesses;
+            var recommendedQuizzes = await _context.Quizzes
+                .Where(q => q.IsPublished && 
+                           weakSubjects.Any(ws => q.Subject.Contains(ws)))
+                .OrderByDescending(q => q.Attempts.Count) // Популярные квизы
+                .Select(q => q.Id)
+                .Take(count)
+                .ToListAsync();
+
+            if (!recommendedQuizzes.Any())
+            {
+                return await GetPopularQuizzes(count);
+            }
+
+            _logger.LogInformation("Рекомендовано {Count} квизов для улучшения слабых сторон User={UserId}", 
+                recommendedQuizzes.Count, userId);
+
+            return recommendedQuizzes;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Ошибка при рекомендации квизов для User={UserId}", userId);
+            return new List<int>();
+        }
+    }
+
+    public async Task<List<int>> RecommendExamsForGoals(string userId, int count = 3)
+    {
+        try
+        {
+            var profile = await _universityService.BuildUserProfile(userId);
+            if (profile == null)
+            {
+                return await GetPopularExams(count);
+            }
+
+            // Если есть карьерная цель, ищем релевантные экзамены
+            var recommendedExams = await _context.Exams
+                .Where(e => e.IsPublic && 
+                           (!string.IsNullOrEmpty(profile.CareerGoal) && 
+                            !string.IsNullOrEmpty(e.Description) &&
+                            e.Description.Contains(profile.CareerGoal)))
+                .OrderByDescending(e => e.Attempts.Count)
+                .Select(e => e.Id)
+                .Take(count)
+                .ToListAsync();
+
+            if (!recommendedExams.Any())
+            {
+                // Fallback на экзамены по сильным предметам
+                recommendedExams = await _context.Exams
+                    .Where(e => e.IsPublic)
+                    .OrderByDescending(e => e.Attempts.Count)
+                    .Select(e => e.Id)
+                    .Take(count)
+                    .ToListAsync();
+            }
+
+            _logger.LogInformation("Рекомендовано {Count} экзаменов для User={UserId}", 
+                recommendedExams.Count, userId);
+
+            return recommendedExams;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Ошибка при рекомендации экзаменов для User={UserId}", userId);
+            return new List<int>();
+        }
+    }
+
+    public async Task<List<int>> RecommendFlashcardSets(string userId, int count = 5)
+    {
+        try
+        {
+            var profile = await _universityService.BuildUserProfile(userId);
+            if (profile == null || !profile.Weaknesses.Any())
+            {
+                return await GetPopularFlashcardSets(count);
+            }
+
+            // Ищем наборы карточек по слабым темам
+            var weakSubjects = profile.Weaknesses;
+            var recommendedSets = await _context.FlashcardSets
+                .Where(fs => fs.IsPublished && 
+                            weakSubjects.Any(ws => fs.Title.Contains(ws) || 
+                                                  fs.Description.Contains(ws)))
+                .OrderByDescending(fs => fs.Flashcards.Count)
+                .Select(fs => fs.Id)
+                .Take(count)
+                .ToListAsync();
+
+            if (!recommendedSets.Any())
+            {
+                return await GetPopularFlashcardSets(count);
+            }
+
+            _logger.LogInformation("Рекомендовано {Count} наборов карточек для User={UserId}", 
+                recommendedSets.Count, userId);
+
+            return recommendedSets;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Ошибка при рекомендации наборов карточек для User={UserId}", userId);
+            return new List<int>();
+        }
+    }
+
+    public async Task<string?> GetNextTopicToStudy(string userId)
+    {
+        try
+        {
+            var profile = await _universityService.BuildUserProfile(userId);
+            if (profile == null)
+                return null;
+
+            // Анализируем паттерны обучения
+            var learningPattern = await _context.UserLearningPatterns
+                .FirstOrDefaultAsync(p => p.UserId == userId);
+
+            // Если есть слабые стороны, начинаем с них
+            if (profile.Weaknesses.Any())
+            {
+                var weakestSubject = profile.Weaknesses.First();
+                
+                // Проверяем, есть ли доступный контент
+                var hasContent = await _context.Quizzes
+                    .AnyAsync(q => q.IsPublished && q.Subject.Contains(weakestSubject));
+
+                if (hasContent)
+                {
+                    _logger.LogInformation("Рекомендована тема '{Topic}' для User={UserId}", weakestSubject, userId);
+                    return weakestSubject;
+                }
+            }
+
+            // Если нет слабостей, выбираем новую тему для расширения знаний
+            var studiedSubjects = profile.SubjectScores.Keys.ToList();
+            var allSubjects = await _context.Quizzes
+                .Where(q => q.IsPublished)
+                .Select(q => q.Subject)
+                .Distinct()
+                .ToListAsync();
+
+            var newSubjects = allSubjects.Except(studiedSubjects).ToList();
+            if (newSubjects.Any())
+            {
+                var newTopic = newSubjects.First();
+                _logger.LogInformation("Рекомендована новая тема '{Topic}' для User={UserId}", newTopic, userId);
+                return newTopic;
+            }
+
+            return null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Ошибка при определении следующей темы для User={UserId}", userId);
+            return null;
+        }
+    }
+
+    public async Task<List<string>> GetPersonalizedTips(string userId)
+    {
+        try
+        {
+            var tips = new List<string>();
+            var profile = await _universityService.BuildUserProfile(userId);
+            
+            if (profile == null)
+            {
+                return new List<string> { "Начните с прохождения нескольких квизов для анализа вашего уровня" };
+            }
+
+            var learningPattern = await _context.UserLearningPatterns
+                .FirstOrDefaultAsync(p => p.UserId == userId);
+
+            // Анализ успеваемости
+            if (profile.AverageExamScore < 60)
+            {
+                tips.Add("💡 Ваши результаты ниже среднего. Рекомендуем уделить больше времени базовым темам");
+                tips.Add("📚 Используйте flashcards для закрепления основных концепций");
+            }
+            else if (profile.AverageExamScore >= 80)
+            {
+                tips.Add("🌟 Отличные результаты! Продолжайте практиковаться и изучайте более сложные темы");
+            }
+
+            // Анализ слабостей
+            if (profile.Weaknesses.Any())
+            {
+                tips.Add($"⚠️ Требуется улучшение по предметам: {string.Join(", ", profile.Weaknesses)}");
+            }
+
+            // Анализ прогресса
+            if (profile.LearningProgress < 30)
+            {
+                tips.Add("🎯 Вы только начали обучение. Установите ежедневную цель - 10-15 карточек");
+            }
+            else if (profile.LearningProgress >= 70)
+            {
+                tips.Add("🏆 Отличный прогресс в изучении материала! Вы освоили большую часть контента");
+            }
+
+            // Анализ паттернов запоминания
+            if (learningPattern != null)
+            {
+                if (learningPattern.ForgettingSpeed > 1.5)
+                {
+                    tips.Add("🔄 Вы быстро забываете материал. Попробуйте увеличить частоту повторений");
+                }
+                
+                if (learningPattern.AverageRetentionRate > 85)
+                {
+                    tips.Add("🧠 Высокая скорость запоминания! Вы можете увеличить интервалы между повторениями");
+                }
+            }
+
+            // Рекомендации по учебному плану
+            if (profile.TotalQuizzesTaken + profile.TotalExamsTaken < 5)
+            {
+                tips.Add("📝 Пройдите больше квизов и экзаменов для более точной оценки ваших знаний");
+            }
+
+            // Мотивационные советы
+            var user = await _context.Users.FindAsync(userId);
+            if (user != null)
+            {
+                var daysSinceStart = (DateTime.UtcNow - user.CreatedAt).Days;
+                if (daysSinceStart > 7 && profile.TotalQuizzesTaken == 0 && profile.TotalExamsTaken == 0)
+                {
+                    tips.Add("⏰ Вы давно не проходили квизы и экзамены. Регулярная практика - ключ к успеху!");
+                }
+            }
+
+            if (!tips.Any())
+            {
+                tips.Add("✅ Продолжайте в том же духе! Ваш прогресс стабилен");
+            }
+
+            _logger.LogInformation("Сгенерировано {Count} персонализированных советов для User={UserId}", 
+                tips.Count, userId);
+
+            return tips;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Ошибка при генерации советов для User={UserId}", userId);
+            return new List<string> { "Продолжайте учиться и практиковаться регулярно" };
+        }
+    }
+
+    // Helper методы
+    private async Task<List<int>> GetPopularQuizzes(int count)
+    {
+        return await _context.Quizzes
+            .Where(q => q.IsPublished)
+            .OrderByDescending(q => q.Attempts.Count)
+            .Select(q => q.Id)
+            .Take(count)
+            .ToListAsync();
+    }
+
+    private async Task<List<int>> GetPopularExams(int count)
+    {
+        return await _context.Exams
+            .Where(e => e.IsPublic)
+            .OrderByDescending(e => e.Attempts.Count)
+            .Select(e => e.Id)
+            .Take(count)
+            .ToListAsync();
+    }
+
+    private async Task<List<int>> GetPopularFlashcardSets(int count)
+    {
+        return await _context.FlashcardSets
+            .Where(fs => fs.IsPublished)
+            .OrderByDescending(fs => fs.Flashcards.Count)
+            .Select(fs => fs.Id)
+            .Take(count)
+            .ToListAsync();
+    }
+}

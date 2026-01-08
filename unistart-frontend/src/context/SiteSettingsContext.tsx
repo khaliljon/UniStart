@@ -25,17 +25,25 @@ export const useSiteSettings = () => {
 export const SiteSettingsProvider = ({ children }: { children: ReactNode }) => {
   const [settings, setSettings] = useState<SiteSettings>({
     siteName: 'UniStart',
-    siteDescription: 'Образовательная платформа для изучения с помощью карточек и тестов',
+    siteDescription: 'Образовательная платформа для изучения с помощью карточек, квизов и экзаменов',
   });
   const [loading, setLoading] = useState(true);
 
   const loadSettings = async () => {
     try {
+      // Проверяем наличие токена перед запросом
+      const token = localStorage.getItem('token');
+      if (!token) {
+        // Если нет токена, используем дефолтные настройки
+        setLoading(false);
+        return;
+      }
+
       const response = await api.get('/admin/settings');
       const data = response.data;
       const loadedSettings: SiteSettings = {
         siteName: data?.SiteName || data?.siteName || 'UniStart',
-        siteDescription: data?.SiteDescription || data?.siteDescription || 'Образовательная платформа для изучения с помощью карточек и тестов',
+        siteDescription: data?.SiteDescription || data?.siteDescription || 'Образовательная платформа для изучения с помощью карточек, квизов и экзаменов',
       };
       setSettings(loadedSettings);
       
@@ -51,7 +59,9 @@ export const SiteSettingsProvider = ({ children }: { children: ReactNode }) => {
       }
       metaDescription.setAttribute('content', loadedSettings.siteDescription);
     } catch (error) {
-      console.error('Ошибка загрузки настроек сайта:', error);
+      // Игнорируем ошибку при загрузке настроек (например, если пользователь не администратор)
+      // Используем дефолтные значения из state
+      console.debug('Не удалось загрузить настройки сайта, используются значения по умолчанию');
     } finally {
       setLoading(false);
     }

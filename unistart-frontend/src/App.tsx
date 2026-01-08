@@ -53,6 +53,10 @@ import StudentProgressPage from './pages/student/StudentProgressPage'
 import StudentAchievementsPage from './pages/student/StudentAchievementsPage'
 import StudentLeaderboardPage from './pages/student/StudentLeaderboardPage'
 
+// AI Pages
+import AIDashboardPage from './pages/ai/AIDashboardPage'
+import UniversityRecommendationsPage from './pages/ai/UniversityRecommendationsPage'
+
 function App() {
   return (
     <AuthProvider>
@@ -307,6 +311,24 @@ function App() {
             </PrivateRoute>
           }
         />
+
+          {/* AI Страницы */}
+          <Route
+            path="/ai/dashboard"
+            element={
+              <PrivateRoute>
+                <AIDashboardPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/ai/universities"
+            element={
+              <PrivateRoute>
+                <UniversityRecommendationsPage />
+              </PrivateRoute>
+            }
+          />
           
           {/* Страницы для администраторов */}
           <Route

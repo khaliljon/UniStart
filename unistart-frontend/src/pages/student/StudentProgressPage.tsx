@@ -201,7 +201,7 @@ const StudentProgressPage = () => {
           <Card className="p-6 bg-gradient-to-br from-green-500 to-green-600 text-white">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-green-100 text-sm mb-1">Пройдено тестов</p>
+                <p className="text-green-100 text-sm mb-1">Пройдено квизов</p>
                 <p className="text-3xl font-bold">{stats.totalQuizzesTaken}</p>
               </div>
               <Target className="w-12 h-12 text-green-200" />
@@ -266,7 +266,7 @@ const StudentProgressPage = () => {
                         </span>
                       </div>
                       <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
-                        <span>📝 Тестов: {subject.quizzesTaken}</span>
+                        <span>📝 Квизов: {subject.quizzesTaken}</span>
                         <span>📚 Карточек: {subject.cardsStudied}</span>
                         {subject.masteredCards !== undefined && (
                           <span>✅ Освоено: {subject.masteredCards}</span>
@@ -403,7 +403,7 @@ const StudentProgressPage = () => {
                     className="w-full"
                     onClick={() => navigate('/quizzes')}
                   >
-                    Пройти тест
+                    Пройти квиз
                   </Button>
                   <Button
                     variant="secondary"

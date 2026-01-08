@@ -43,8 +43,8 @@ const AdminExportPage = () => {
     },
     {
       id: 'quizzes',
-      title: 'Тесты',
-      description: 'Экспорт всех тестов с вопросами и ответами',
+      title: 'Квизы',
+      description: 'Экспорт всех квизов с вопросами и ответами',
       icon: FileText,
       endpoint: '/admin/export/quizzes',
       filename: 'UniStart_Quizzes',
@@ -61,8 +61,8 @@ const AdminExportPage = () => {
     },
     {
       id: 'attempts',
-      title: 'Попытки тестов',
-      description: 'Экспорт всех результатов прохождения тестов',
+      title: 'Попытки квизов',
+      description: 'Экспорт всех результатов прохождения квизов',
       icon: Award,
       endpoint: '/admin/export/attempts',
       filename: 'UniStart_Quiz_Attempts',
@@ -253,7 +253,7 @@ const AdminExportPage = () => {
                 </h4>
                 <ul className="space-y-1 text-sm text-gray-600">
                   <li>• Используйте CSV файлы в Excel или Google Sheets</li>
-                  <li>• Экспортируйте попытки тестов для анализа успеваемости</li>
+                  <li>• Экспортируйте попытки квизов для анализа успеваемости</li>
                   <li>• Данные пользователей помогут понять аудиторию</li>
                 </ul>
               </div>

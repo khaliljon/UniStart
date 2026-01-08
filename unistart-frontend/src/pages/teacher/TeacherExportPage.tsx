@@ -38,7 +38,7 @@ const TeacherExportPage = () => {
       const response = await api.get('/teacher/quizzes/my');
       setQuizzes(response.data);
     } catch (error) {
-      console.error('Ошибка загрузки тестов:', error);
+      console.error('Ошибка загрузки квизов:', error);
     } finally {
       setLoading(false);
     }
@@ -73,7 +73,7 @@ const TeacherExportPage = () => {
     } catch (error: any) {
       console.error('Ошибка экспорта результатов:', error);
       if (error.response?.status === 404) {
-        alert('Тест не найден или у вас нет доступа');
+        alert('Квиз не найден или у вас нет доступа');
       } else {
         alert('Не удалось экспортировать результаты. Попробуйте позже.');
       }
@@ -121,7 +121,7 @@ const TeacherExportPage = () => {
                 📥 Экспорт результатов
               </h1>
               <p className="text-gray-600">
-                Скачайте результаты тестов в формате CSV для анализа
+                Скачайте результаты квизов в формате CSV для анализа
               </p>
             </div>
           </div>
@@ -166,20 +166,20 @@ const TeacherExportPage = () => {
         >
           <Card className="p-6">
             <h2 className="text-2xl font-bold text-gray-900 mb-6">
-              Ваши тесты
+              Ваши квизы
             </h2>
 
             {quizzes.length === 0 ? (
               <div className="text-center py-12">
                 <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                 <p className="text-gray-500 text-lg mb-2">
-                  У вас пока нет тестов
+                  У вас пока нет квизов
                 </p>
                 <p className="text-gray-400 mb-6">
-                  Создайте тест, чтобы начать собирать результаты
+                  Создайте квиз, чтобы начать собирать результаты
                 </p>
                 <Button onClick={() => navigate('/quizzes/create')}>
-                  Создать тест
+                  Создать квиз
                 </Button>
               </div>
             ) : (

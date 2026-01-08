@@ -13,12 +13,12 @@ export const authService = {
   },
 
   async getProfile(): Promise<User> {
-    const { data } = await api.get<User>('/auth/profile');
+    const { data } = await api.get<User>('/profile');
     return data;
   },
 
   async getRoles(): Promise<{ id: string; email: string; roles: string[] }> {
-    const { data } = await api.get('/profile/roles');
+    const { data } = await api.get('/profile');
     return data;
   },
 

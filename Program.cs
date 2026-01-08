@@ -75,6 +75,12 @@ builder.Services.AddScoped<IExamService, ExamService>();
 builder.Services.AddScoped<IFlashcardService, FlashcardService>();
 builder.Services.AddScoped<IAchievementService, AchievementService>();
 
+// AI Services
+builder.Services.AddScoped<UniStart.Services.AI.IMLPredictionService, UniStart.Services.AI.MLPredictionService>();
+builder.Services.AddScoped<UniStart.Services.AI.IUniversityRecommendationService, UniStart.Services.AI.UniversityRecommendationService>();
+builder.Services.AddScoped<UniStart.Services.AI.IContentRecommendationService, UniStart.Services.AI.ContentRecommendationService>();
+builder.Services.AddScoped<UniStart.Services.AI.IAIContentGeneratorService, UniStart.Services.AI.AIContentGeneratorService>();
+
 // Repository Pattern
 builder.Services.AddScoped<UniStart.Repositories.IUnitOfWork, UniStart.Repositories.UnitOfWork>();
 builder.Services.AddScoped<UniStart.Repositories.IQuizRepository, UniStart.Repositories.QuizRepository>();

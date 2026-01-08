@@ -8,6 +8,7 @@ import { flashcardService } from '../../services/flashcardService';
 import { FlashcardSet } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
+import AIRecommendedFlashcards from '../../components/ai/AIRecommendedFlashcards';
 
 const FlashcardsPage = () => {
   const navigate = useNavigate();
@@ -134,6 +135,9 @@ const FlashcardsPage = () => {
           </motion.div>
         )}
 
+        {/* AI Рекомендации */}
+        <AIRecommendedFlashcards />
+
         {/* Список наборов */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {sets.length === 0 ? (
@@ -248,15 +252,26 @@ const FlashcardsPage = () => {
                         </div>
                       </>
                     ) : (
-                      <Button
-                        onClick={() => navigate(`/flashcards/${set.id}/study`)}
-                        variant="primary"
-                        size="sm"
-                        className="w-full flex items-center justify-center gap-2"
-                      >
-                        <Play className="w-4 h-4" />
-                        Начать изучение
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={() => navigate(`/flashcards/${set.id}/study`)}
+                          variant="outline"
+                          size="sm"
+                          className="flex-1 flex items-center justify-center gap-2"
+                        >
+                          <Play className="w-4 h-4" />
+                          Обычное
+                        </Button>
+                        <Button
+                          onClick={() => navigate(`/flashcards/${set.id}/ai-study`)}
+                          variant="primary"
+                          size="sm"
+                          className="flex-1 flex items-center justify-center gap-2"
+                        >
+                          <span className="text-lg">🧠</span>
+                          AI обучение
+                        </Button>
+                      </div>
                     )}
                   </div>
 

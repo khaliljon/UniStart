@@ -81,9 +81,9 @@ const Home = () => {
             <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
               <Brain className="w-6 h-6 text-purple-500" />
             </div>
-            <h3 className="text-xl font-bold mb-3 text-gray-900 dark:text-white">Тесты и симуляции</h3>
+            <h3 className="text-xl font-bold mb-3 text-gray-900 dark:text-white">Квизы и экзамены</h3>
             <p className="text-gray-600 dark:text-gray-300">
-              Проходи тесты в формате ЕНТ. Получай детальную аналитику и 
+              Проходи квизы в формате ЕНТ. Получай детальную аналитику и 
               рекомендации по улучшению результатов.
             </p>
           </motion.div>
@@ -121,7 +121,7 @@ const Home = () => {
             </div>
             <div>
               <div className="text-4xl font-bold mb-2">50+</div>
-              <div className="text-primary-100">Тестов</div>
+              <div className="text-primary-100">Квизов</div>
             </div>
           </div>
         </div>

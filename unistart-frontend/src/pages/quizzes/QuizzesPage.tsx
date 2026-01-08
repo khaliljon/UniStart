@@ -31,6 +31,7 @@ import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import AIRecommendedQuizzes from '../../components/ai/AIRecommendedQuizzes';
 
 interface Course {
   id: number;
@@ -309,6 +310,7 @@ const QuizzesPage = () => {
                   : 'Изучайте по модулям, темам и компетенциям'}
               </p>
             </div>
+
             <div className="flex items-center gap-3">
               <div className="flex bg-white dark:bg-gray-800 rounded-lg p-1 border border-gray-200 dark:border-gray-700 shadow-sm">
                 <button
@@ -345,6 +347,9 @@ const QuizzesPage = () => {
             </div>
           </div>
         </motion.div>
+
+        {/* AI Рекомендации */}
+        <AIRecommendedQuizzes />
 
         {viewMode === 'hierarchy' ? (
           <HierarchyView
@@ -725,7 +730,7 @@ const ModuleCard = ({
                     <div className="flex items-center gap-2">
                       <Trophy className="w-4 h-4 text-red-600 dark:text-red-400" />
                       <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                        Финальный тест модуля: {module.moduleFinalQuizTitle}
+                        Финальный квиз модуля: {module.moduleFinalQuizTitle}
                       </span>
                     </div>
                     <Button

@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { BookOpen, TrendingUp, Award, Calendar, Clock, Target } from 'lucide-react';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
+import AIStatsWidget from '../../components/AIStatsWidget';
 import { flashcardService } from '../../services/flashcardService';
 import { quizService } from '../../services/quizService';
 import { FlashcardSet, Quiz } from '../../types';
@@ -38,14 +39,13 @@ const StudentDashboard = () => {
         quizService.getQuizzes(),
       ]);
 
-      setFlashcardSets(setsData.slice(0, 3));
-      setQuizzes(quizzesData.slice(0, 3));
+      setFlashcardSets(Array.isArray(setsData) ? setsData.slice(0, 3) : []);
+      setQuizzes(Array.isArray(quizzesData) ? quizzesData.slice(0, 3) : []);
 
       // Подсчитываем карточки для повторения
-      const cardsToReview = setsData.reduce(
-        (sum: number, set: FlashcardSet) => sum + (set.cardsToReview || 0),
-        0
-      );
+      const cardsToReview = Array.isArray(setsData) 
+        ? setsData.reduce((sum: number, set: FlashcardSet) => sum + (set.cardsToReview || 0), 0)
+        : 0;
 
       setStats((prev) => ({
         ...prev,
@@ -67,7 +67,7 @@ const StudentDashboard = () => {
     },
     {
       icon: Award,
-      label: 'Тестов пройдено',
+      label: 'Квизов пройдено',
       value: stats.totalQuizzesTaken,
       color: 'bg-green-500',
     },
@@ -168,12 +168,13 @@ const StudentDashboard = () => {
           </motion.div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Наборы карточек */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2 }}
+            className="lg:col-span-2"
           >
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
@@ -239,29 +240,36 @@ const StudentDashboard = () => {
             </div>
           </motion.div>
 
-          {/* Рекомендованные тесты */}
+          {/* AI виджет и рекомендованные квизы */}
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2 }}
+            className="space-y-6"
           >
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                <Award className="w-6 h-6 text-primary-500" />
-                Рекомендованные тесты
-              </h2>
-              <Button
-                variant="secondary"
-                onClick={() => navigate('/quizzes')}
-              >
-                Все тесты
-              </Button>
-            </div>
+            {/* AI статистика */}
+            <AIStatsWidget />
 
-            <div className="space-y-4">
+            {/* Рекомендованные квизы */}
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                  <Award className="w-5 h-5 text-primary-500" />
+                  Квизы
+                </h2>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => navigate('/quizzes')}
+                >
+                  Все
+                </Button>
+              </div>
+
+              <div className="space-y-3">
               {quizzes.length === 0 ? (
                 <Card className="p-8 text-center">
-                  <p className="text-gray-600">Пока нет доступных тестов</p>
+                  <p className="text-gray-600">Пока нет доступных квизов</p>
                 </Card>
               ) : (
                 quizzes.map((quiz, index) => (
@@ -321,6 +329,7 @@ const StudentDashboard = () => {
                   </motion.div>
                 ))
               )}
+              </div>
             </div>
           </motion.div>
         </div>

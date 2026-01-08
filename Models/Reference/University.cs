@@ -53,9 +53,25 @@ namespace UniStart.Models.Reference
         [Display(Name = "Дата создания")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         
+        // ИИ Рекомендации - Дополнительные данные
+        [Display(Name = "Стоимость обучения (год)")]
+        [Range(0, double.MaxValue)]
+        public decimal? TuitionFee { get; set; }
+        
+        [Display(Name = "Минимальный балл для поступления")]
+        [Range(0, 100)]
+        public int? MinScore { get; set; }
+        
+        [Display(Name = "Программы обучения (JSON)")]
+        public string? ProgramsJson { get; set; } // ["IT", "Engineering", "Medicine"]
+        
+        [Display(Name = "Сильные предметы (JSON)")]
+        public string? StrongSubjectsJson { get; set; } // ["Math", "Physics"]
+        
         // Навигационные свойства
         public List<Exam> Exams { get; set; } = new();
         public List<ExamType> ExamTypes { get; set; } = new();
+        public List<UniversityRecommendation> Recommendations { get; set; } = new();
     }
     
     public enum UniversityType

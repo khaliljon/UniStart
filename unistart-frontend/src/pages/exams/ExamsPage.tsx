@@ -22,6 +22,7 @@ import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import AIRecommendedExams from '../../components/ai/AIRecommendedExams';
 
 interface Exam {
   id: number;
@@ -237,6 +238,9 @@ const ExamsPage = () => {
                 : 'Проверьте свои знания с помощью экзаменов')}
           </p>
         </div>
+
+      {/* AI Рекомендации */}
+      <AIRecommendedExams />
         {(isTeacher || isAdmin) && (
           <Button
             onClick={() => navigate('/exams/create')}
