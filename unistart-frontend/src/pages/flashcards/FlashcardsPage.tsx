@@ -252,26 +252,15 @@ const FlashcardsPage = () => {
                         </div>
                       </>
                     ) : (
-                      <div className="flex gap-2">
-                        <Button
-                          onClick={() => navigate(`/flashcards/${set.id}/study`)}
-                          variant="outline"
-                          size="sm"
-                          className="flex-1 flex items-center justify-center gap-2"
-                        >
-                          <Play className="w-4 h-4" />
-                          Обычное
-                        </Button>
-                        <Button
-                          onClick={() => navigate(`/flashcards/${set.id}/ai-study`)}
-                          variant="primary"
-                          size="sm"
-                          className="flex-1 flex items-center justify-center gap-2"
-                        >
-                          <span className="text-lg">🧠</span>
-                          AI обучение
-                        </Button>
-                      </div>
+                      <Button
+                        onClick={() => navigate(`/flashcards/${set.id}/ai-study`)}
+                        variant="primary"
+                        size="sm"
+                        className="w-full flex items-center justify-center gap-2"
+                      >
+                        <span className="text-lg">🧠</span>
+                        Начать изучение
+                      </Button>
                     )}
                   </div>
 
@@ -309,10 +298,10 @@ const FlashcardsPage = () => {
           className="mt-12 bg-gradient-to-r from-primary-50 to-blue-50 dark:from-gray-800 dark:to-gray-850 border border-primary-200 dark:border-gray-700 rounded-lg p-6"
         >
           <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
-            💡 Как работает интервальное повторение?
+            🧠 Как работает AI обучение?
           </h3>
           <p className="text-gray-700 dark:text-gray-300 mb-4">
-            Мы используем алгоритм SM-2 (SuperMemo 2), который автоматически определяет оптимальное время для повторения каждой карточки на основе вашей оценки.
+            AI подстраивается под ваш темп обучения и автоматически определяет оптимальное время для повторения каждой карточки. Чем больше вы учитесь, тем точнее становятся рекомендации.
           </p>
           <ul className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
             <li className="flex items-start gap-2">

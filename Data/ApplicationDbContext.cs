@@ -313,7 +313,7 @@ namespace UniStart.Data
                 {
                     Id = 1,
                     SiteName = "UniStart",
-                    SiteDescription = "Образовательная платформа для изучения с помощью карточек и тестов",
+                    SiteDescription = "Образовательная платформа для изучения с помощью карточек и квизов",
                     AllowRegistration = true,
                     RequireEmailVerification = false,
                     MaxQuizAttempts = 3,

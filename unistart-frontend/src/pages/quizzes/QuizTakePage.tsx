@@ -82,6 +82,13 @@ const QuizTakePage = () => {
   }, [quiz, timeRemaining, quizCompleted]);
 
   const loadQuiz = async () => {
+    if (!id) {
+      console.error('Quiz ID is undefined');
+      alert('Неверный ID квиза');
+      navigate('/quizzes');
+      return;
+    }
+    
     try {
       setLoading(true);
       console.log('Loading quiz:', id);
@@ -318,7 +325,7 @@ const QuizTakePage = () => {
           {quiz.isLearningMode && (
             <div className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-3 py-2 rounded-lg">
               <AlertCircle className="w-4 h-4" />
-              <span>Режим обучения: вы увидите объяснение после каждого ответа</span>
+              <span>💡 Вы увидите объяснение после каждого ответа</span>
             </div>
           )}
 

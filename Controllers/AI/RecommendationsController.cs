@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using UniStart.Services.AI;
 using System.Security.Claims;
 using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
+using UniStart.Data;
 
 namespace UniStart.Controllers.AI;
 
@@ -16,23 +18,26 @@ public class RecommendationsController : ControllerBase
 {
     private readonly IUniversityRecommendationService _recommendationService;
     private readonly ILogger<RecommendationsController> _logger;
+    private readonly ApplicationDbContext _context;
 
     public RecommendationsController(
         IUniversityRecommendationService recommendationService,
-        ILogger<RecommendationsController> logger)
+        ILogger<RecommendationsController> logger,
+        ApplicationDbContext context)
     {
         _recommendationService = recommendationService;
         _logger = logger;
+        _context = context;
     }
 
     /// <summary>
     /// Получить персональные рекомендации университетов
     /// </summary>
-    /// <param name="topN">Количество рекомендаций (по умолчанию 10)</param>
+    /// <param name="limit">Количество рекомендаций (по умолчанию 10)</param>
     /// <param name="forceRefresh">Принудительно пересчитать рекомендации</param>
-    [HttpGet("universities")]
+    [HttpGet]
     public async Task<IActionResult> GetUniversityRecommendations(
-        [FromQuery] int topN = 10,
+        [FromQuery] int limit = 10,
         [FromQuery] bool forceRefresh = false)
     {
         try
@@ -41,10 +46,10 @@ public class RecommendationsController : ControllerBase
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized();
 
-            if (topN < 1 || topN > 50)
-                return BadRequest(new { message = "topN должно быть от 1 до 50" });
+            if (limit < 1 || limit > 50)
+                return BadRequest(new { message = "limit должен быть от 1 до 50" });
 
-            var recommendations = await _recommendationService.GetRecommendations(userId, topN, forceRefresh);
+            var recommendations = await _recommendationService.GetRecommendations(userId, limit, forceRefresh);
 
             var result = recommendations.Select(r => new
             {
@@ -180,6 +185,70 @@ public class RecommendationsController : ControllerBase
         {
             _logger.LogError(ex, "Ошибка при оценке рекомендации {Id}", recommendationId);
             return StatusCode(500, new { message = "Ошибка при сохранении оценки" });
+        }
+    }
+
+    /// <summary>
+    /// Получить детальное объяснение рекомендации
+    /// </summary>
+    [HttpGet("{universityId}/explanation")]
+    public async Task<IActionResult> GetRecommendationExplanation(int universityId)
+    {
+        try
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized();
+
+            var recommendation = await _context.UniversityRecommendations
+                .Include(r => r.University)
+                    .ThenInclude(u => u.Country)
+                .FirstOrDefaultAsync(r => r.University.Id == universityId && r.UserId == userId);
+
+            if (recommendation == null)
+                return NotFound(new { message = "Рекомендация не найдена" });
+
+            var reasons = JsonSerializer.Deserialize<List<string>>(recommendation.ReasonsJson) ?? new List<string>();
+            
+            var explanation = $"Университет {recommendation.University.Name} рекомендован вам на основе следующих факторов:\n\n";
+            explanation += $"🎯 Совпадение: {recommendation.MatchScore}%\n\n";
+            
+            if (recommendation.AdmissionProbability > 0)
+            {
+                explanation += $"📊 Вероятность поступления: {recommendation.AdmissionProbability}%\n\n";
+            }
+
+            explanation += "Причины рекомендации:\n";
+            foreach (var reason in reasons)
+            {
+                explanation += $"• {reason}\n";
+            }
+
+            explanation += $"\n📍 Расположение: {recommendation.University.City}, {recommendation.University.Country?.Name}\n";
+            
+            if (recommendation.University.TuitionFee.HasValue)
+            {
+                explanation += $"💰 Стоимость обучения: ${recommendation.University.TuitionFee:N0} в год\n";
+            }
+
+            if (recommendation.University.MinScore.HasValue)
+            {
+                explanation += $"📝 Минимальный балл: {recommendation.University.MinScore}\n";
+            }
+
+            explanation += $"\n🏛️ Тип учреждения: {recommendation.University.Type}\n";
+            
+            if (!string.IsNullOrEmpty(recommendation.University.Description))
+            {
+                explanation += $"\nО университете:\n{recommendation.University.Description}";
+            }
+
+            return Ok(new { explanation });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Ошибка при получении объяснения рекомендации университета {Id}", universityId);
+            return StatusCode(500, new { message = "Ошибка при получении объяснения" });
         }
     }
 }

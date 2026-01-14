@@ -77,13 +77,26 @@ export interface ModelStatus {
 
 // University Recommendation Types
 export interface UniversityRecommendation {
-  universityId: number;
-  universityName: string;
-  score: number;
-  matchReasons: string[];
-  country: string;
-  tuitionFee: number;
-  admissionRequirements: string;
+  id: number;
+  university: {
+    id: number;
+    name: string;
+    nameEn: string;
+    city: string;
+    country: string;
+    description: string;
+    website: string;
+    type: string;
+    tuitionFee?: number;
+    minScore?: number;
+  };
+  matchScore: number;
+  admissionProbability?: number;
+  reasons: string[];
+  rank: number;
+  isViewed: boolean;
+  userRating?: number;
+  createdAt: string;
 }
 
 // AI Content Generation Types

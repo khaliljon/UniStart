@@ -24,6 +24,7 @@ const UniversityRecommendationsPage = () => {
   const [recommendations, setRecommendations] = useState<UniversityRecommendation[]>([]);
   const [selectedUniversity, setSelectedUniversity] = useState<number | null>(null);
   const [explanation, setExplanation] = useState<string>('');
+  const [loadingExplanation, setLoadingExplanation] = useState(false);
 
   useEffect(() => {
     loadRecommendations();
@@ -32,10 +33,13 @@ const UniversityRecommendationsPage = () => {
   const loadRecommendations = async () => {
     try {
       setLoading(true);
-      const data = await aiService.getUniversityRecommendations(10);
-      setRecommendations(data);
+      const data: any = await aiService.getUniversityRecommendations(10);
+      // API returns { total, recommendations }
+      const recs = Array.isArray(data) ? data : (data?.recommendations || []);
+      setRecommendations(recs);
     } catch (error) {
       console.error('Ошибка загрузки рекомендаций:', error);
+      setRecommendations([]);
     } finally {
       setLoading(false);
     }
@@ -43,12 +47,32 @@ const UniversityRecommendationsPage = () => {
 
   const handleShowExplanation = async (universityId: number) => {
     try {
+      if (selectedUniversity === universityId && explanation) {
+        // Скрыть объяснение если уже открыто
+        setSelectedUniversity(null);
+        setExplanation('');
+        return;
+      }
+      
+      setLoadingExplanation(true);
       setSelectedUniversity(universityId);
       const exp = await aiService.getRecommendationExplanation(universityId);
       setExplanation(exp);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Ошибка загрузки объяснения:', error);
+      const errorMessage = error?.response?.data?.message || 'Не удалось загрузить объяснение';
+      alert(errorMessage);
+      setSelectedUniversity(null);
+    } finally {
+      setLoadingExplanation(false);
     }
+  };
+
+  const handleOpenUniversityPage = (universityId: number, universityName: string) => {
+    // Поскольку страница университета еще не реализована, показываем уведомление
+    alert(`Страница университета "${universityName}" находится в разработке. ID: ${universityId}`);
+    // TODO: Когда страница будет готова, раскомментировать:
+    // navigate(`/universities/${universityId}`);
   };
 
   const getScoreColor = (score: number) => {
@@ -152,7 +176,7 @@ const UniversityRecommendationsPage = () => {
           <div className="space-y-4">
             {recommendations.map((rec, index) => (
               <motion.div
-                key={rec.universityId}
+                key={rec.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
@@ -169,78 +193,95 @@ const UniversityRecommendationsPage = () => {
                           <div className="flex items-start justify-between mb-2">
                             <div>
                               <h3 className="text-2xl font-bold text-gray-900 mb-1">
-                                {rec.universityName}
+                                {rec.university.name}
                               </h3>
                               <div className="flex items-center gap-2 text-gray-600">
                                 <MapPin className="w-4 h-4" />
-                                <span>{rec.country}</span>
+                                <span>{rec.university.city}, {rec.university.country}</span>
                               </div>
                             </div>
-                            <div className={`px-4 py-2 rounded-lg font-bold text-lg ${getScoreColor(rec.score)}`}>
-                              {rec.score}%
+                            <div className={`px-4 py-2 rounded-lg font-bold text-lg ${getScoreColor(rec.matchScore)}`}>
+                              {rec.matchScore}%
                             </div>
                           </div>
 
                           {/* Звездный рейтинг */}
                           <div className="flex items-center gap-1 mb-3">
-                            {getScoreStars(rec.score)}
+                            {getScoreStars(rec.matchScore)}
                             <span className="ml-2 text-sm text-gray-600">
-                              Совпадение: {rec.score}%
+                              Совпадение: {rec.matchScore}%
                             </span>
                           </div>
 
                           {/* Стоимость обучения */}
-                          <div className="flex items-center gap-2 mb-4">
-                            <DollarSign className="w-5 h-5 text-green-600" />
-                            <span className="text-gray-900 font-semibold">
-                              ${rec.tuitionFee.toLocaleString()} / год
-                            </span>
-                          </div>
+                          {rec.university.tuitionFee && (
+                            <div className="flex items-center gap-2 mb-4">
+                              <DollarSign className="w-5 h-5 text-green-600" />
+                              <span className="text-gray-900 font-semibold">
+                                ${rec.university.tuitionFee.toLocaleString()} / год
+                              </span>
+                            </div>
+                          )}
 
                           {/* Причины рекомендации */}
-                          <div className="mb-4">
-                            <p className="text-sm font-semibold text-gray-700 mb-2">
-                              Почему мы рекомендуем:
-                            </p>
-                            <div className="space-y-1">
-                              {rec.matchReasons.map((reason, idx) => (
-                                <div key={idx} className="flex items-start gap-2">
-                                  <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
-                                  <span className="text-sm text-gray-700">{reason}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-
-                          {/* Требования к поступлению */}
-                          <div className="p-3 bg-blue-50 rounded-lg mb-4">
-                            <div className="flex items-start gap-2">
-                              <Award className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                              <div>
-                                <p className="text-sm font-semibold text-gray-900 mb-1">
-                                  Требования к поступлению:
-                                </p>
-                                <p className="text-sm text-gray-700">
-                                  {rec.admissionRequirements}
-                                </p>
+                          {rec.reasons && rec.reasons.length > 0 && (
+                            <div className="mb-4">
+                              <p className="text-sm font-semibold text-gray-700 mb-2">
+                                Почему мы рекомендуем:
+                              </p>
+                              <div className="space-y-1">
+                                {rec.reasons.map((reason, idx) => (
+                                  <div key={idx} className="flex items-start gap-2">
+                                    <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                                    <span className="text-sm text-gray-700">{reason}</span>
+                                  </div>
+                                ))}
                               </div>
                             </div>
-                          </div>
+                          )}
+
+                          {/* Требования к поступлению */}
+                          {(rec.university.minScore || rec.admissionProbability) && (
+                            <div className="p-3 bg-blue-50 rounded-lg mb-4">
+                              <div className="flex items-start gap-2">
+                                <Award className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                                <div>
+                                  <p className="text-sm font-semibold text-gray-900 mb-1">
+                                    Требования к поступлению:
+                                  </p>
+                                  <p className="text-sm text-gray-700">
+                                    {rec.university.minScore && `Минимальный балл: ${rec.university.minScore}`}
+                                    {rec.admissionProbability && ` • Вероятность поступления: ${rec.admissionProbability}%`}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
 
                           {/* Кнопки действий */}
                           <div className="flex items-center gap-3">
                             <Button
-                              variant="primary"
+                              variant={selectedUniversity === rec.university.id ? "secondary" : "primary"}
                               size="sm"
-                              onClick={() => handleShowExplanation(rec.universityId)}
+                              onClick={() => handleShowExplanation(rec.university.id)}
+                              disabled={loadingExplanation}
                             >
-                              <Sparkles className="w-4 h-4 mr-2" />
-                              Подробное объяснение
+                              {loadingExplanation && selectedUniversity === rec.university.id ? (
+                                <>
+                                  <div className="w-4 h-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                  Загрузка...
+                                </>
+                              ) : (
+                                <>
+                                  <Sparkles className="w-4 h-4 mr-2" />
+                                  {selectedUniversity === rec.university.id ? 'Скрыть объяснение' : 'Подробное объяснение'}
+                                </>
+                              )}
                             </Button>
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => window.open(`/universities/${rec.universityId}`, '_blank')}
+                              onClick={() => handleOpenUniversityPage(rec.university.id, rec.university.name)}
                             >
                               <ExternalLink className="w-4 h-4 mr-2" />
                               Страница вуза
@@ -252,7 +293,7 @@ const UniversityRecommendationsPage = () => {
                   </div>
 
                   {/* Развернутое объяснение */}
-                  {selectedUniversity === rec.universityId && explanation && (
+                  {selectedUniversity === rec.university.id && explanation && (
                     <motion.div
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}

@@ -55,8 +55,12 @@ const AIDashboardPage = () => {
     try {
       await aiService.retrainModel();
       await loadDashboardData();
-    } catch (error) {
+      alert('Модель успешно переобучена!');
+    } catch (error: any) {
       console.error('Ошибка переобучения модели:', error);
+      const errorMessage = error?.response?.data?.message || 
+        'Ошибка при переобучении модели. Возможно, недостаточно данных (требуется минимум 100 примеров).';
+      alert(errorMessage);
     }
   };
 
@@ -73,7 +77,9 @@ const AIDashboardPage = () => {
     }
   };
 
-  const getDifficultyColor = (difficulty: string) => {
+  const getDifficultyColor = (difficulty: string | undefined) => {
+    if (!difficulty) return 'text-gray-600';
+    
     switch (difficulty.toLowerCase()) {
       case 'hard':
         return 'text-purple-600';
@@ -121,7 +127,7 @@ const AIDashboardPage = () => {
           </div>
         </motion.div>
 
-        {/* Статус ML модели */}
+        {/* Прогресс адаптации AI */}
         {modelStatus && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -130,22 +136,50 @@ const AIDashboardPage = () => {
           >
             <Card>
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <Activity className={`w-6 h-6 ${modelStatus.isModelTrained ? 'text-green-600' : 'text-yellow-600'}`} />
-                  <div>
+                <div className="flex items-center gap-4 flex-1">
+                  {modelStatus.isModelTrained ? (
+                    <div className="text-2xl">🌳</div>
+                  ) : modelStatus.totalDataPoints >= 50 ? (
+                    <div className="text-2xl">🌿</div>
+                  ) : (
+                    <div className="text-2xl">🌱</div>
+                  )}
+                  <div className="flex-1">
                     <p className="font-semibold text-gray-900">
-                      {modelStatus.isModelTrained ? 'ML модель обучена' : 'ML модель не обучена'}
+                      {modelStatus.isModelTrained 
+                        ? '🎉 AI полностью настроен под вас' 
+                        : modelStatus.totalDataPoints >= 50
+                        ? 'AI адаптируется под ваш темп'
+                        : 'AI начинает узнавать вас'}
                     </p>
                     <p className="text-sm text-gray-600">
-                      Данных: {modelStatus.totalDataPoints} 
-                      {modelStatus.modelAccuracy && ` • Точность: ${(modelStatus.modelAccuracy * 100).toFixed(1)}%`}
+                      AI изучил {Math.min(100, Math.round((modelStatus.totalDataPoints / 100) * 100))}% вашего стиля обучения
+                      {!modelStatus.isModelTrained && modelStatus.totalDataPoints < 100 && 
+                        ` • Еще ${100 - modelStatus.totalDataPoints} сессий для полной персонализации`}
                     </p>
+                    {modelStatus.isModelTrained && (
+                      <div className="mt-2">
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div className="bg-green-600 h-2 rounded-full" style={{ width: '100%' }}></div>
+                        </div>
+                      </div>
+                    )}
+                    {!modelStatus.isModelTrained && (
+                      <div className="mt-2">
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div 
+                            className="bg-blue-600 h-2 rounded-full transition-all duration-500" 
+                            style={{ width: `${Math.min(100, (modelStatus.totalDataPoints / 100) * 100)}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
-                {!modelStatus.isModelTrained && (
+                {modelStatus.totalDataPoints >= 100 && !modelStatus.isModelTrained && (
                   <Button onClick={handleRetrainModel} variant="primary">
                     <Sparkles className="w-4 h-4 mr-2" />
-                    Обучить модель
+                    Активировать персонализацию
                   </Button>
                 )}
               </div>
@@ -201,11 +235,15 @@ const AIDashboardPage = () => {
                     </Button>
                   </div>
                   <div className="space-y-3">
-                    {dashboardData.recommendedQuizzes.map((quiz) => (
+                    {dashboardData.recommendedQuizzes.map((quiz, index) => (
                       <div
-                        key={quiz.id}
+                        key={quiz.id || `quiz-${index}`}
                         className="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
-                        onClick={() => navigate(`/quizzes/${quiz.id}/take`)}
+                        onClick={() => {
+                          if (quiz.id) {
+                            navigate(`/quizzes/${quiz.id}/take`);
+                          }
+                        }}
                       >
                         <div className="flex items-start justify-between mb-2">
                           <div className="flex-1">
@@ -246,11 +284,15 @@ const AIDashboardPage = () => {
                     </Button>
                   </div>
                   <div className="space-y-3">
-                    {dashboardData.recommendedFlashcards.map((flashcard) => (
+                    {dashboardData.recommendedFlashcards.map((flashcard, index) => (
                       <div
-                        key={flashcard.id}
+                        key={flashcard.id || `flashcard-${index}`}
                         className="p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors cursor-pointer"
-                        onClick={() => navigate(`/flashcards/${flashcard.id}/study`)}
+                        onClick={() => {
+                          if (flashcard.id) {
+                            navigate(`/flashcards/${flashcard.id}/study`);
+                          }
+                        }}
                       >
                         <p className="font-semibold text-gray-900 mb-1">{flashcard.title}</p>
                         <p className="text-sm text-gray-600 mb-2">{flashcard.subject}</p>
@@ -282,7 +324,7 @@ const AIDashboardPage = () => {
                   </div>
                   <div className="space-y-3">
                     {studyPlan.map((item, index) => (
-                      <div key={index} className="p-3 bg-green-50 rounded-lg">
+                      <div key={`study-${item.topic}-${index}`} className="p-3 bg-green-50 rounded-lg">
                         <div className="flex items-start justify-between mb-2">
                           <div className="flex-1">
                             <p className="font-semibold text-gray-900 text-sm">{item.topic}</p>
@@ -321,7 +363,7 @@ const AIDashboardPage = () => {
                   </div>
                   <div className="space-y-4">
                     {dashboardData.tips.map((tip, index) => (
-                      <div key={index} className="p-3 bg-yellow-50 rounded-lg">
+                      <div key={`tip-${tip.topic}-${index}`} className="p-3 bg-yellow-50 rounded-lg">
                         <div className="flex items-start justify-between mb-2">
                           <p className="font-semibold text-gray-900 text-sm">{tip.topic}</p>
                           <span className={`px-2 py-1 text-xs font-semibold rounded ${getPriorityColor(tip.priority)}`}>
@@ -332,7 +374,7 @@ const AIDashboardPage = () => {
                         {tip.actionableSteps.length > 0 && (
                           <ul className="space-y-1">
                             {tip.actionableSteps.map((step, stepIndex) => (
-                              <li key={stepIndex} className="text-xs text-gray-600 flex items-start gap-2">
+                              <li key={`step-${index}-${stepIndex}`} className="text-xs text-gray-600 flex items-start gap-2">
                                 <TrendingUp className="w-3 h-3 flex-shrink-0 mt-0.5 text-yellow-600" />
                                 <span>{step}</span>
                               </li>

@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UniStart.Services.AI;
 using System.Security.Claims;
+using UniStart.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace UniStart.Controllers.AI;
 
@@ -15,13 +17,16 @@ public class ContentRecommendationController : ControllerBase
 {
     private readonly IContentRecommendationService _contentService;
     private readonly ILogger<ContentRecommendationController> _logger;
+    private readonly ApplicationDbContext _context;
 
     public ContentRecommendationController(
         IContentRecommendationService contentService,
-        ILogger<ContentRecommendationController> logger)
+        ILogger<ContentRecommendationController> logger,
+        ApplicationDbContext context)
     {
         _contentService = contentService;
         _logger = logger;
+        _context = context;
     }
 
     /// <summary>
@@ -37,13 +42,23 @@ public class ContentRecommendationController : ControllerBase
                 return Unauthorized();
 
             var quizIds = await _contentService.RecommendQuizzesForWeaknesses(userId, count);
+            
+            // Загружаем полные данные о квизах
+            var quizzes = await _context.Quizzes
+                .Where(q => quizIds.Contains(q.Id))
+                .Select(q => new
+                {
+                    id = q.Id,
+                    title = q.Title,
+                    subject = q.Subject,
+                    difficulty = q.Difficulty,
+                    recommendationReason = "Рекомендовано для улучшения знаний по слабым темам",
+                    estimatedDuration = q.TimeLimit,
+                    questionsCount = q.Questions.Count
+                })
+                .ToListAsync();
 
-            return Ok(new
-            {
-                total = quizIds.Count,
-                quizIds,
-                message = "Квизы подобраны на основе анализа ваших слабых сторон"
-            });
+            return Ok(quizzes);
         }
         catch (Exception ex)
         {
@@ -65,13 +80,23 @@ public class ContentRecommendationController : ControllerBase
                 return Unauthorized();
 
             var examIds = await _contentService.RecommendExamsForGoals(userId, count);
+            
+            // Загружаем полные данные об экзаменах
+            var exams = await _context.Exams
+                .Where(e => examIds.Contains(e.Id))
+                .Select(e => new
+                {
+                    id = e.Id,
+                    title = e.Title,
+                    subject = e.Subjects.FirstOrDefault() != null ? e.Subjects.First().Name : "Общий",
+                    difficulty = e.Difficulty,
+                    recommendationReason = "Рекомендовано на основе ваших целей",
+                    duration = e.TimeLimit,
+                    questionsCount = e.Questions.Count
+                })
+                .ToListAsync();
 
-            return Ok(new
-            {
-                total = examIds.Count,
-                examIds,
-                message = "Экзамены подобраны на основе ваших целей"
-            });
+            return Ok(exams);
         }
         catch (Exception ex)
         {
@@ -93,13 +118,22 @@ public class ContentRecommendationController : ControllerBase
                 return Unauthorized();
 
             var setIds = await _contentService.RecommendFlashcardSets(userId, count);
+            
+            // Загружаем полные данные о наборах карточек
+            var flashcardSets = await _context.FlashcardSets
+                .Where(f => setIds.Contains(f.Id))
+                .Select(f => new
+                {
+                    id = f.Id,
+                    title = f.Title,
+                    subject = f.Subject,
+                    cardsCount = f.Flashcards.Count,
+                    recommendationReason = "Рекомендовано для улучшения знаний",
+                    estimatedStudyTime = f.Flashcards.Count * 2 // примерно 2 минуты на карточку
+                })
+                .ToListAsync();
 
-            return Ok(new
-            {
-                total = setIds.Count,
-                flashcardSetIds = setIds,
-                message = "Наборы карточек подобраны для улучшения слабых тем"
-            });
+            return Ok(flashcardSets);
         }
         catch (Exception ex)
         {

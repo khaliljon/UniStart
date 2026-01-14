@@ -99,16 +99,16 @@ public class AdaptiveLearningController : ControllerBase
     }
 
     /// <summary>
-    /// Переобучить ML модель (только для администраторов)
+    /// Переобучить ML модель
     /// </summary>
     /// <returns>Результат переобучения</returns>
     [HttpPost("retrain")]
-    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> RetrainModel()
     {
         try
         {
-            _logger.LogInformation("Запущено переобучение ML модели администратором");
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            _logger.LogInformation("Запущено переобучение ML модели пользователем {UserId}", userId);
             
             var success = await _mlService.RetrainModel();
             
