@@ -245,11 +245,20 @@ public class ExamService : IExamService
         {
             Title = dto.Title,
             Description = dto.Description,
-            Subject = dto.Subject,
             Difficulty = dto.Difficulty,
+            CountryId = dto.CountryId,
+            UniversityId = dto.UniversityId,
+            ExamTypeId = dto.ExamTypeId,
             TimeLimit = dto.TimeLimit,
             PassingScore = dto.PassingScore,
             MaxAttempts = dto.MaxAttempts,
+            IsProctored = dto.IsProctored,
+            ShuffleQuestions = dto.ShuffleQuestions,
+            ShuffleAnswers = dto.ShuffleAnswers,
+            ShowResultsAfter = dto.ShowResultsAfter,
+            ShowCorrectAnswers = dto.ShowCorrectAnswers,
+            ShowDetailedFeedback = dto.ShowDetailedFeedback,
+            StrictTiming = dto.StrictTiming,
             UserId = userId,
             IsPublished = false,
             IsPublic = false,
@@ -259,7 +268,109 @@ public class ExamService : IExamService
         await _unitOfWork.Repository<Exam>().AddAsync(exam);
         await _unitOfWork.SaveChangesAsync();
 
+        // Добавляем предметы после создания экзамена
+        if (dto.SubjectIds.Any())
+        {
+            var subjects = await _unitOfWork.Repository<Subject>()
+                .Query()
+                .Where(s => dto.SubjectIds.Contains(s.Id))
+                .ToListAsync();
+            
+            foreach (var subject in subjects)
+            {
+                exam.Subjects.Add(subject);
+            }
+        }
+
+        // Добавляем теги
+        if (dto.TagIds.Any())
+        {
+            var tags = await _unitOfWork.Repository<Tag>()
+                .Query()
+                .Where(t => dto.TagIds.Contains(t.Id))
+                .ToListAsync();
+            
+            foreach (var tag in tags)
+            {
+                exam.Tags.Add(tag);
+            }
+        }
+
+        await _unitOfWork.SaveChangesAsync();
+
         _logger.LogInformation("Exam created with ID {ExamId} by user {UserId}", exam.Id, userId);
+        return exam;
+    }
+
+    public async Task<Exam> UpdateExamAsync(int id, string userId, UpdateExamDto dto)
+    {
+        var exam = await _unitOfWork.Repository<Exam>()
+            .Query()
+            .Include(e => e.Subjects)
+            .Include(e => e.Tags)
+            .FirstOrDefaultAsync(e => e.Id == id);
+
+        if (exam == null)
+            throw new InvalidOperationException($"Экзамен с ID {id} не найден");
+
+        if (exam.UserId != userId)
+            throw new UnauthorizedAccessException("Только владелец экзамена может его редактировать");
+
+        // Обновляем основные поля
+        exam.Title = dto.Title;
+        exam.Description = dto.Description;
+        exam.Difficulty = dto.Difficulty;
+        exam.CountryId = dto.CountryId;
+        exam.UniversityId = dto.UniversityId;
+        exam.ExamTypeId = dto.ExamTypeId;
+        exam.MaxAttempts = dto.MaxAttempts;
+        exam.PassingScore = dto.PassingScore;
+        exam.IsProctored = dto.IsProctored;
+        exam.ShuffleQuestions = dto.ShuffleQuestions;
+        exam.ShuffleAnswers = dto.ShuffleAnswers;
+        exam.ShowResultsAfter = dto.ShowResultsAfter;
+        exam.ShowCorrectAnswers = dto.ShowCorrectAnswers;
+        exam.ShowDetailedFeedback = dto.ShowDetailedFeedback;
+        exam.TimeLimit = dto.TimeLimit;
+        exam.StrictTiming = dto.StrictTiming;
+        exam.IsPublished = dto.IsPublished;
+        exam.IsPublic = dto.IsPublic;
+        exam.UpdatedAt = DateTime.UtcNow;
+
+        // Обновляем предметы (many-to-many)
+        exam.Subjects.Clear();
+        if (dto.SubjectIds.Any())
+        {
+            var subjects = await _unitOfWork.Repository<Subject>()
+                .Query()
+                .Where(s => dto.SubjectIds.Contains(s.Id))
+                .ToListAsync();
+            
+            foreach (var subject in subjects)
+            {
+                exam.Subjects.Add(subject);
+            }
+        }
+
+        // Обновляем теги
+        if (dto.TagIds.Any())
+        {
+            exam.Tags.Clear();
+            var tags = await _unitOfWork.Repository<Tag>()
+                .Query()
+                .Where(t => dto.TagIds.Contains(t.Id))
+                .ToListAsync();
+            
+            foreach (var tag in tags)
+            {
+                exam.Tags.Add(tag);
+            }
+        }
+
+        _unitOfWork.Repository<Exam>().Update(exam);
+        await _unitOfWork.SaveChangesAsync();
+
+        _logger.LogInformation("Exam {ExamId} updated by user {UserId}", id, userId);
         return exam;
     }
 

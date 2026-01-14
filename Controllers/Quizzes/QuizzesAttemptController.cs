@@ -129,7 +129,7 @@ public class QuizzesAttemptController : ControllerBase
         attempt.Percentage = maxScore > 0 ? (double)totalScore / maxScore * 100 : 0;
         attempt.TimeSpentSeconds = dto.TimeSpentSeconds;
         attempt.CompletedAt = DateTime.UtcNow;
-        attempt.UserAnswersJson = JsonSerializer.Serialize(dto.UserAnswers);
+        // UserAnswers теперь заполняется через нормализованную коллекцию ниже
 
         await _context.SaveChangesAsync();
 

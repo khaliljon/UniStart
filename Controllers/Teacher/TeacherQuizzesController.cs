@@ -257,7 +257,13 @@ public class TeacherQuizzesController : ControllerBase
         if (attempt.Quiz.UserId != userId)
             return Forbid();
 
-        var userAnswers = JsonSerializer.Deserialize<Dictionary<int, List<int>>>(attempt.UserAnswersJson);
+        // Используем нормализованную коллекцию UserAnswers
+        var userAnswers = attempt.UserAnswers
+            .GroupBy(ua => ua.QuestionId)
+            .ToDictionary(
+                g => g.Key,
+                g => g.Select(ua => ua.SelectedAnswerId ?? 0).Where(id => id != 0).ToList()
+            );
 
         var questionDetails = attempt.Quiz.Questions.Select(q =>
         {

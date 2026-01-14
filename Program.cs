@@ -1,4 +1,6 @@
 using System.Text;
+using FluentValidation;
+using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -20,6 +22,11 @@ builder.Services.AddControllers()
         // Для более читаемого JSON (опционально в production можно убрать)
         options.JsonSerializerOptions.WriteIndented = true;
     });
+
+// FluentValidation
+builder.Services.AddFluentValidationAutoValidation();
+builder.Services.AddFluentValidationClientsideAdapters();
+builder.Services.AddValidatorsFromAssemblyContaining<Program>(); // Автоматически находит все validators
 
 // Database
 builder.Services.AddDbContext<ApplicationDbContext>(options =>

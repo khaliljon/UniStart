@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using UniStart.Data;
 using UniStart.Models.Learning;
+using UniStart.Repositories;
 
 namespace UniStart.Services.AI;
 
@@ -10,16 +11,16 @@ namespace UniStart.Services.AI;
 /// </summary>
 public class ContentRecommendationService : IContentRecommendationService
 {
-    private readonly ApplicationDbContext _context;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly IUniversityRecommendationService _universityService;
     private readonly ILogger<ContentRecommendationService> _logger;
 
     public ContentRecommendationService(
-        ApplicationDbContext context,
+        IUnitOfWork unitOfWork,
         IUniversityRecommendationService universityService,
         ILogger<ContentRecommendationService> logger)
     {
-        _context = context;
+        _unitOfWork = unitOfWork;
         _universityService = universityService;
         _logger = logger;
     }
@@ -38,7 +39,8 @@ public class ContentRecommendationService : IContentRecommendationService
 
             // Ищем квизы по слабым предметам
             var weakSubjects = profile.Weaknesses;
-            var recommendedQuizzes = await _context.Quizzes
+            var recommendedQuizzes = await _unitOfWork.Repository<Quiz>()
+                .Query()
                 .Where(q => q.IsPublished && 
                            weakSubjects.Any(ws => q.Subject.Contains(ws)))
                 .OrderByDescending(q => q.Attempts.Count) // Популярные квизы
@@ -56,9 +58,19 @@ public class ContentRecommendationService : IContentRecommendationService
 
             return recommendedQuizzes;
         }
+        catch (ArgumentNullException ex)
+        {
+            _logger.LogError(ex, "Некорректный userId для рекомендации квизов");
+            return new List<int>();
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogError(ex, "Ошибка выполнения запроса при рекомендации квизов для User={UserId}", userId);
+            return new List<int>();
+        }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Ошибка при рекомендации квизов для User={UserId}", userId);
+            _logger.LogError(ex, "Непредвиденная ошибка при рекомендации квизов для User={UserId}", userId);
             return new List<int>();
         }
     }
@@ -74,7 +86,8 @@ public class ContentRecommendationService : IContentRecommendationService
             }
 
             // Если есть карьерная цель, ищем релевантные экзамены
-            var recommendedExams = await _context.Exams
+            var recommendedExams = await _unitOfWork.Repository<Exam>()
+                .Query()
                 .Where(e => e.IsPublic && 
                            (!string.IsNullOrEmpty(profile.CareerGoal) && 
                             !string.IsNullOrEmpty(e.Description) &&
@@ -87,7 +100,8 @@ public class ContentRecommendationService : IContentRecommendationService
             if (!recommendedExams.Any())
             {
                 // Fallback на экзамены по сильным предметам
-                recommendedExams = await _context.Exams
+                recommendedExams = await _unitOfWork.Repository<Exam>()
+                    .Query()
                     .Where(e => e.IsPublic)
                     .OrderByDescending(e => e.Attempts.Count)
                     .Select(e => e.Id)
@@ -100,9 +114,19 @@ public class ContentRecommendationService : IContentRecommendationService
 
             return recommendedExams;
         }
+        catch (ArgumentNullException ex)
+        {
+            _logger.LogError(ex, "Некорректный userId для рекомендации экзаменов");
+            return new List<int>();
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogError(ex, "Ошибка выполнения запроса при рекомендации экзаменов для User={UserId}", userId);
+            return new List<int>();
+        }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Ошибка при рекомендации экзаменов для User={UserId}", userId);
+            _logger.LogError(ex, "Непредвиденная ошибка при рекомендации экзаменов для User={UserId}", userId);
             return new List<int>();
         }
     }
@@ -119,7 +143,8 @@ public class ContentRecommendationService : IContentRecommendationService
 
             // Ищем наборы карточек по слабым темам
             var weakSubjects = profile.Weaknesses;
-            var recommendedSets = await _context.FlashcardSets
+            var recommendedSets = await _unitOfWork.Repository<FlashcardSet>()
+                .Query()
                 .Where(fs => fs.IsPublished && 
                             weakSubjects.Any(ws => fs.Title.Contains(ws) || 
                                                   fs.Description.Contains(ws)))
@@ -138,9 +163,19 @@ public class ContentRecommendationService : IContentRecommendationService
 
             return recommendedSets;
         }
+        catch (ArgumentNullException ex)
+        {
+            _logger.LogError(ex, "Некорректный userId для рекомендации наборов карточек");
+            return new List<int>();
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogError(ex, "Ошибка выполнения запроса при рекомендации карточек для User={UserId}", userId);
+            return new List<int>();
+        }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Ошибка при рекомендации наборов карточек для User={UserId}", userId);
+            _logger.LogError(ex, "Непредвиденная ошибка при рекомендации карточек для User={UserId}", userId);
             return new List<int>();
         }
     }
@@ -154,7 +189,8 @@ public class ContentRecommendationService : IContentRecommendationService
                 return null;
 
             // Анализируем паттерны обучения
-            var learningPattern = await _context.UserLearningPatterns
+            var learningPattern = await _unitOfWork.Repository<UserLearningPattern>()
+                .Query()
                 .FirstOrDefaultAsync(p => p.UserId == userId);
 
             // Если есть слабые стороны, начинаем с них
@@ -163,7 +199,8 @@ public class ContentRecommendationService : IContentRecommendationService
                 var weakestSubject = profile.Weaknesses.First();
                 
                 // Проверяем, есть ли доступный контент
-                var hasContent = await _context.Quizzes
+                var hasContent = await _unitOfWork.Repository<Quiz>()
+                    .Query()
                     .AnyAsync(q => q.IsPublished && q.Subject.Contains(weakestSubject));
 
                 if (hasContent)
@@ -175,7 +212,8 @@ public class ContentRecommendationService : IContentRecommendationService
 
             // Если нет слабостей, выбираем новую тему для расширения знаний
             var studiedSubjects = profile.SubjectScores.Keys.ToList();
-            var allSubjects = await _context.Quizzes
+            var allSubjects = await _unitOfWork.Repository<Quiz>()
+                .Query()
                 .Where(q => q.IsPublished)
                 .Select(q => q.Subject)
                 .Distinct()
@@ -191,9 +229,19 @@ public class ContentRecommendationService : IContentRecommendationService
 
             return null;
         }
+        catch (ArgumentNullException ex)
+        {
+            _logger.LogError(ex, "Некорректный userId для определения следующей темы");
+            return null;
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogError(ex, "Ошибка выполнения запроса при определении следующей темы для User={UserId}", userId);
+            return null;
+        }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Ошибка при определении следующей темы для User={UserId}", userId);
+            _logger.LogError(ex, "Непредвиденная ошибка при определении следующей темы для User={UserId}", userId);
             return null;
         }
     }
@@ -210,7 +258,8 @@ public class ContentRecommendationService : IContentRecommendationService
                 return new List<string> { "Начните с прохождения нескольких квизов для анализа вашего уровня" };
             }
 
-            var learningPattern = await _context.UserLearningPatterns
+            var learningPattern = await _unitOfWork.Repository<UserLearningPattern>()
+                .Query()
                 .FirstOrDefaultAsync(p => p.UserId == userId);
 
             // Анализ успеваемости
@@ -261,7 +310,9 @@ public class ContentRecommendationService : IContentRecommendationService
             }
 
             // Мотивационные советы
-            var user = await _context.Users.FindAsync(userId);
+            var user = await _unitOfWork.Repository<ApplicationUser>()
+                .Query()
+                .FirstOrDefaultAsync(u => u.Id == userId);
             if (user != null)
             {
                 var daysSinceStart = (DateTime.UtcNow - user.CreatedAt).Days;
@@ -281,9 +332,19 @@ public class ContentRecommendationService : IContentRecommendationService
 
             return tips;
         }
+        catch (ArgumentNullException ex)
+        {
+            _logger.LogError(ex, "Некорректный userId для генерации советов");
+            return new List<string> { "Продолжайте учиться и практиковаться регулярно" };
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogError(ex, "Ошибка выполнения запроса при генерации советов для User={UserId}", userId);
+            return new List<string> { "Продолжайте учиться и практиковаться регулярно" };
+        }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Ошибка при генерации советов для User={UserId}", userId);
+            _logger.LogError(ex, "Непредвиденная ошибка при генерации советов для User={UserId}", userId);
             return new List<string> { "Продолжайте учиться и практиковаться регулярно" };
         }
     }
@@ -291,7 +352,8 @@ public class ContentRecommendationService : IContentRecommendationService
     // Helper методы
     private async Task<List<int>> GetPopularQuizzes(int count)
     {
-        return await _context.Quizzes
+        return await _unitOfWork.Repository<Quiz>()
+            .Query()
             .Where(q => q.IsPublished)
             .OrderByDescending(q => q.Attempts.Count)
             .Select(q => q.Id)
@@ -301,7 +363,8 @@ public class ContentRecommendationService : IContentRecommendationService
 
     private async Task<List<int>> GetPopularExams(int count)
     {
-        return await _context.Exams
+        return await _unitOfWork.Repository<Exam>()
+            .Query()
             .Where(e => e.IsPublic)
             .OrderByDescending(e => e.Attempts.Count)
             .Select(e => e.Id)
@@ -311,7 +374,8 @@ public class ContentRecommendationService : IContentRecommendationService
 
     private async Task<List<int>> GetPopularFlashcardSets(int count)
     {
-        return await _context.FlashcardSets
+        return await _unitOfWork.Repository<FlashcardSet>()
+            .Query()
             .Where(fs => fs.IsPublished)
             .OrderByDescending(fs => fs.Flashcards.Count)
             .Select(fs => fs.Id)

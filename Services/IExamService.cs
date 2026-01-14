@@ -23,7 +23,7 @@ public interface IExamService
     Task<IEnumerable<Exam>> GetExamsByUserAsync(string userId);
     Task<IEnumerable<Exam>> GetExamsBySubjectAsync(string subject);
     Task<Exam> CreateExamAsync(string userId, CreateExamDto dto);
-    // TODO: Add UpdateExamDto and uncomment: Task<Exam> UpdateExamAsync(int id, UpdateExamDto dto);
+    Task<Exam> UpdateExamAsync(int id, string userId, UpdateExamDto dto);
     Task<bool> DeleteExamAsync(int id, string userId);
     Task<bool> PublishExamAsync(int id, string userId);
     Task<bool> CanUserAccessExamAsync(int examId, string userId);

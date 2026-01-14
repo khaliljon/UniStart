@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
-using UniStart.Data;
+using UniStart.Repositories;
 using UniStart.Models.Core;
 using UniStart.Models.Learning;
 using UniStart.Models.Reference;
@@ -13,14 +13,14 @@ namespace UniStart.Services.AI;
 /// </summary>
 public class UniversityRecommendationService : IUniversityRecommendationService
 {
-    private readonly ApplicationDbContext _context;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<UniversityRecommendationService> _logger;
 
     public UniversityRecommendationService(
-        ApplicationDbContext context,
+        IUnitOfWork unitOfWork,
         ILogger<UniversityRecommendationService> logger)
     {
-        _context = context;
+        _unitOfWork = unitOfWork;
         _logger = logger;
     }
 
@@ -34,7 +34,8 @@ public class UniversityRecommendationService : IUniversityRecommendationService
             // Проверяем, есть ли сохраненные рекомендации (не старше 7 дней)
             if (!forceRefresh)
             {
-                var cachedRecommendations = await _context.UniversityRecommendations
+                var cachedRecommendations = await _unitOfWork.Repository<UniversityRecommendation>()
+                    .Query()
                     .Where(r => r.UserId == userId && r.CreatedAt > DateTime.UtcNow.AddDays(-7))
                     .Include(r => r.University)
                         .ThenInclude(u => u.Country)
@@ -58,7 +59,8 @@ public class UniversityRecommendationService : IUniversityRecommendationService
             }
 
             // Получаем все активные университеты
-            var universities = await _context.Universities
+            var universities = await _unitOfWork.Repository<University>()
+                .Query()
                 .Where(u => u.IsActive)
                 .Include(u => u.Country)
                 .ToListAsync();
@@ -79,10 +81,11 @@ public class UniversityRecommendationService : IUniversityRecommendationService
                 .ToList();
 
             // Удаляем старые рекомендации
-            var oldRecommendations = await _context.UniversityRecommendations
+            var oldRecommendations = await _unitOfWork.Repository<UniversityRecommendation>()
+                .Query()
                 .Where(r => r.UserId == userId)
                 .ToListAsync();
-            _context.UniversityRecommendations.RemoveRange(oldRecommendations);
+            _unitOfWork.Repository<UniversityRecommendation>().RemoveRange(oldRecommendations);
 
             // Создаем новые рекомендации
             var recommendations = new List<UniversityRecommendation>();
@@ -104,17 +107,27 @@ public class UniversityRecommendationService : IUniversityRecommendationService
                 };
 
                 recommendations.Add(recommendation);
-                _context.UniversityRecommendations.Add(recommendation);
+                await _unitOfWork.Repository<UniversityRecommendation>().AddAsync(recommendation);
             }
 
-            await _context.SaveChangesAsync();
+            await _unitOfWork.SaveChangesAsync();
 
             _logger.LogInformation("Создано {Count} рекомендаций для User={UserId}", recommendations.Count, userId);
             return recommendations;
         }
+        catch (ArgumentNullException ex)
+        {
+            _logger.LogError(ex, "Некорректный userId для создания рекомендаций");
+            return new List<UniversityRecommendation>();
+        }
+        catch (DbUpdateException ex)
+        {
+            _logger.LogError(ex, "Ошибка БД при сохранении рекомендаций для User={UserId}", userId);
+            return new List<UniversityRecommendation>();
+        }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Ошибка при создании рекомендаций для User={UserId}", userId);
+            _logger.LogError(ex, "Непредвиденная ошибка при создании рекомендаций для User={UserId}", userId);
             return new List<UniversityRecommendation>();
         }
     }
@@ -123,7 +136,9 @@ public class UniversityRecommendationService : IUniversityRecommendationService
     {
         try
         {
-            var user = await _context.Users.FindAsync(userId);
+            var user = await _unitOfWork.Repository<ApplicationUser>()
+                .Query()
+                .FirstOrDefaultAsync(u => u.Id == userId);
             if (user == null) return null;
 
             var profile = new UserProfile
@@ -135,7 +150,7 @@ public class UniversityRecommendationService : IUniversityRecommendationService
             };
 
             // Собираем баллы по предметам из квизов
-            var quizScores = await _context.UserQuizAttempts
+            var quizScores = await _unitOfWork.QuizAttempts.Query()
                 .Where(a => a.UserId == userId)
                 .Include(a => a.Quiz)
                 .Where(a => !string.IsNullOrEmpty(a.Quiz.Subject))
@@ -149,7 +164,7 @@ public class UniversityRecommendationService : IUniversityRecommendationService
                 .ToListAsync();
 
             // Собираем баллы из экзаменов  
-            var examScores = await _context.UserExamAttempts
+            var examScores = await _unitOfWork.ExamAttempts.Query()
                 .Where(a => a.UserId == userId)
                 .Include(a => a.Exam)
                     .ThenInclude(e => e.Subjects)
@@ -182,9 +197,9 @@ public class UniversityRecommendationService : IUniversityRecommendationService
             }
 
             // Общая статистика
-            profile.TotalQuizzesTaken = await _context.UserQuizAttempts.CountAsync(a => a.UserId == userId);
-            profile.TotalExamsTaken = await _context.UserExamAttempts.CountAsync(a => a.UserId == userId);
-            profile.TotalExamsTaken = await _context.UserExamAttempts.CountAsync(a => a.UserId == userId);
+            profile.TotalQuizzesTaken = await _unitOfWork.QuizAttempts.Query().CountAsync(a => a.UserId == userId);
+            profile.TotalExamsTaken = await _unitOfWork.ExamAttempts.Query().CountAsync(a => a.UserId == userId);
+            profile.TotalExamsTaken = await _unitOfWork.ExamAttempts.Query().CountAsync(a => a.UserId == userId);
             profile.AverageExamScore = allScores.Any() ? Math.Round(allScores.Average(s => s.AverageScore), 2) : 0;
 
             // Сильные и слабые стороны
@@ -193,15 +208,25 @@ public class UniversityRecommendationService : IUniversityRecommendationService
             profile.Weaknesses = orderedScores.TakeLast(3).Select(s => s.Subject).ToList();
 
             // Прогресс обучения
-            var totalCards = await _context.UserFlashcardProgresses.CountAsync(p => p.UserId == userId);
-            var masteredCards = await _context.UserFlashcardProgresses.CountAsync(p => p.UserId == userId && p.IsMastered);
+            var totalCards = await _unitOfWork.FlashcardProgress.Query().CountAsync(p => p.UserId == userId);
+            var masteredCards = await _unitOfWork.FlashcardProgress.Query().CountAsync(p => p.UserId == userId && p.IsMastered);
             profile.LearningProgress = totalCards > 0 ? Math.Round((double)masteredCards / totalCards * 100, 2) : 0;
 
             return profile;
         }
+        catch (ArgumentNullException ex)
+        {
+            _logger.LogError(ex, "Некорректный userId для построения профиля");
+            return null;
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogError(ex, "Ошибка выполнения запроса при построении профиля User={UserId}", userId);
+            return null;
+        }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Ошибка при построении профиля User={UserId}", userId);
+            _logger.LogError(ex, "Непредвиденная ошибка при построении профиля User={UserId}", userId);
             return null;
         }
     }
@@ -210,21 +235,34 @@ public class UniversityRecommendationService : IUniversityRecommendationService
     {
         try
         {
-            var user = await _context.Users.FindAsync(userId);
+            var user = await _unitOfWork.Repository<ApplicationUser>()
+                .Query()
+                .FirstOrDefaultAsync(u => u.Id == userId);
             if (user == null) return false;
 
             user.PreferredCity = preferredCity;
             user.MaxBudget = maxBudget;
             user.CareerGoal = careerGoal;
 
-            await _context.SaveChangesAsync();
+            _unitOfWork.Repository<ApplicationUser>().Update(user);
+            await _unitOfWork.SaveChangesAsync();
             _logger.LogInformation("Обновлены предпочтения User={UserId}", userId);
 
             return true;
         }
+        catch (ArgumentNullException ex)
+        {
+            _logger.LogError(ex, "Некорректный userId для обновления предпочтений");
+            return false;
+        }
+        catch (DbUpdateException ex)
+        {
+            _logger.LogError(ex, "Ошибка БД при обновлении предпочтений User={UserId}", userId);
+            return false;
+        }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Ошибка при обновлении предпочтений User={UserId}", userId);
+            _logger.LogError(ex, "Непредвиденная ошибка при обновлении предпочтений User={UserId}", userId);
             return false;
         }
     }
@@ -233,17 +271,24 @@ public class UniversityRecommendationService : IUniversityRecommendationService
     {
         try
         {
-            var recommendation = await _context.UniversityRecommendations.FindAsync(recommendationId);
+            var recommendation = await _unitOfWork.Repository<UniversityRecommendation>()
+                .Query()
+                .FirstOrDefaultAsync(r => r.Id == recommendationId);
             if (recommendation != null && !recommendation.IsViewed)
             {
                 recommendation.IsViewed = true;
                 recommendation.ViewedAt = DateTime.UtcNow;
-                await _context.SaveChangesAsync();
+                _unitOfWork.Repository<UniversityRecommendation>().Update(recommendation);
+                await _unitOfWork.SaveChangesAsync();
             }
+        }
+        catch (DbUpdateException ex)
+        {
+            _logger.LogError(ex, "Ошибка БД при отметке рекомендации {Id} как просмотренной", recommendationId);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Ошибка при отметке рекомендации {Id} как просмотренной", recommendationId);
+            _logger.LogError(ex, "Непредвиденная ошибка при отметке рекомендации {Id} как просмотренной", recommendationId);
         }
     }
 
@@ -257,17 +302,24 @@ public class UniversityRecommendationService : IUniversityRecommendationService
                 return;
             }
 
-            var recommendation = await _context.UniversityRecommendations.FindAsync(recommendationId);
+            var recommendation = await _unitOfWork.Repository<UniversityRecommendation>()
+                .Query()
+                .FirstOrDefaultAsync(r => r.Id == recommendationId);
             if (recommendation != null)
             {
                 recommendation.UserRating = rating;
-                await _context.SaveChangesAsync();
+                _unitOfWork.Repository<UniversityRecommendation>().Update(recommendation);
+                await _unitOfWork.SaveChangesAsync();
                 _logger.LogInformation("Рекомендация {Id} оценена на {Rating} звезд", recommendationId, rating);
             }
         }
+        catch (DbUpdateException ex)
+        {
+            _logger.LogError(ex, "Ошибка БД при оценке рекомендации {Id}", recommendationId);
+        }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Ошибка при оценке рекомендации {Id}", recommendationId);
+            _logger.LogError(ex, "Непредвиденная ошибка при оценке рекомендации {Id}", recommendationId);
         }
     }
 

@@ -60,9 +60,19 @@ public class ContentRecommendationController : ControllerBase
 
             return Ok(quizzes);
         }
+        catch (ArgumentNullException ex)
+        {
+            _logger.LogError(ex, "UserId не указан для рекомендаций квизов");
+            return Unauthorized();
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogError(ex, "Ошибка выполнения операции получения рекомендаций квизов");
+            return StatusCode(500, new { message = "Не удалось подобрать квизы" });
+        }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Ошибка при получении рекомендаций квизов");
+            _logger.LogError(ex, "Непредвиденная ошибка при получении рекомендаций квизов");
             return StatusCode(500, new { message = "Ошибка при получении рекомендаций" });
         }
     }
@@ -98,9 +108,19 @@ public class ContentRecommendationController : ControllerBase
 
             return Ok(exams);
         }
+        catch (ArgumentNullException ex)
+        {
+            _logger.LogError(ex, "UserId не указан для рекомендаций экзаменов");
+            return Unauthorized();
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogError(ex, "Ошибка выполнения операции получения рекомендаций экзаменов");
+            return StatusCode(500, new { message = "Не удалось подобрать экзамены" });
+        }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Ошибка при получении рекомендаций экзаменов");
+            _logger.LogError(ex, "Непредвиденная ошибка при получении рекомендаций экзаменов");
             return StatusCode(500, new { message = "Ошибка при получении рекомендаций" });
         }
     }
@@ -135,9 +155,19 @@ public class ContentRecommendationController : ControllerBase
 
             return Ok(flashcardSets);
         }
+        catch (ArgumentNullException ex)
+        {
+            _logger.LogError(ex, "UserId не указан для рекомендаций flashcards");
+            return Unauthorized();
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogError(ex, "Ошибка выполнения операции получения рекомендаций flashcards");
+            return StatusCode(500, new { message = "Не удалось подобрать наборы карточек" });
+        }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Ошибка при получении рекомендаций наборов карточек");
+            _logger.LogError(ex, "Непредвиденная ошибка при получении рекомендаций наборов карточек");
             return StatusCode(500, new { message = "Ошибка при получении рекомендаций" });
         }
     }
@@ -171,9 +201,19 @@ public class ContentRecommendationController : ControllerBase
                 message = $"Рекомендуем начать изучение темы: {nextTopic}"
             });
         }
+        catch (ArgumentNullException ex)
+        {
+            _logger.LogError(ex, "UserId не указан для определения следующей темы");
+            return Unauthorized();
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogError(ex, "Ошибка выполнения операции определения следующей темы");
+            return StatusCode(500, new { message = "Не удалось определить следующую тему" });
+        }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Ошибка при определении следующей темы");
+            _logger.LogError(ex, "Непредвиденная ошибка при определении следующей темы");
             return StatusCode(500, new { message = "Ошибка при определении темы" });
         }
     }
@@ -199,9 +239,19 @@ public class ContentRecommendationController : ControllerBase
                 generatedAt = DateTime.UtcNow
             });
         }
+        catch (ArgumentNullException ex)
+        {
+            _logger.LogError(ex, "UserId не указан для получения персональных советов");
+            return Unauthorized();
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogError(ex, "Ошибка выполнения операции получения персональных советов");
+            return StatusCode(500, new { message = "Не удалось сгенерировать советы" });
+        }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Ошибка при получении персональных советов");
+            _logger.LogError(ex, "Непредвиденная ошибка при получении персональных советов");
             return StatusCode(500, new { message = "Ошибка при получении советов" });
         }
     }

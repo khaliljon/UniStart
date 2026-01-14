@@ -82,9 +82,19 @@ public class RecommendationsController : ControllerBase
                 recommendations = result
             });
         }
+        catch (ArgumentException ex)
+        {
+            _logger.LogWarning(ex, "Некорректные параметры запроса рекомендаций");
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogError(ex, "Ошибка выполнения операции получения рекомендаций");
+            return StatusCode(500, new { message = "Не удалось получить рекомендации" });
+        }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Ошибка при получении рекомендаций университетов");
+            _logger.LogError(ex, "Непредвиденная ошибка при получении рекомендаций университетов");
             return StatusCode(500, new { message = "Ошибка при получении рекомендаций" });
         }
     }
@@ -108,9 +118,19 @@ public class RecommendationsController : ControllerBase
 
             return Ok(profile);
         }
+        catch (ArgumentNullException ex)
+        {
+            _logger.LogError(ex, "UserId не указан");
+            return Unauthorized();
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogError(ex, "Ошибка выполнения операции получения профиля");
+            return StatusCode(500, new { message = "Не удалось построить профиль" });
+        }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Ошибка при получении профиля пользователя");
+            _logger.LogError(ex, "Непредвиденная ошибка при получении профиля пользователя");
             return StatusCode(500, new { message = "Ошибка при получении профиля" });
         }
     }
@@ -142,9 +162,19 @@ public class RecommendationsController : ControllerBase
                 return NotFound(new { message = "Пользователь не найден" });
             }
         }
+        catch (ArgumentNullException ex)
+        {
+            _logger.LogError(ex, "UserId не указан при обновлении предпочтений");
+            return Unauthorized();
+        }
+        catch (DbUpdateException ex)
+        {
+            _logger.LogError(ex, "Ошибка БД при обновлении предпочтений");
+            return StatusCode(500, new { message = "Не удалось сохранить предпочтения" });
+        }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Ошибка при обновлении предпочтений");
+            _logger.LogError(ex, "Непредвиденная ошибка при обновлении предпочтений");
             return StatusCode(500, new { message = "Ошибка при обновлении предпочтений" });
         }
     }
@@ -160,9 +190,14 @@ public class RecommendationsController : ControllerBase
             await _recommendationService.MarkAsViewed(recommendationId);
             return Ok(new { message = "Рекомендация отмечена как просмотренная" });
         }
+        catch (DbUpdateException ex)
+        {
+            _logger.LogError(ex, "Ошибка БД при отметке рекомендации {Id}", recommendationId);
+            return StatusCode(500, new { message = "Не удалось обновить статус" });
+        }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Ошибка при отметке рекомендации {Id}", recommendationId);
+            _logger.LogError(ex, "Непредвиденная ошибка при отметке рекомендации {Id} как просмотренной", recommendationId);
             return StatusCode(500, new { message = "Ошибка при обновлении статуса" });
         }
     }
@@ -181,9 +216,19 @@ public class RecommendationsController : ControllerBase
             await _recommendationService.RateRecommendation(recommendationId, dto.Rating);
             return Ok(new { message = "Спасибо за оценку!" });
         }
+        catch (ArgumentException ex)
+        {
+            _logger.LogWarning(ex, "Некорректная оценка для рекомендации {Id}", recommendationId);
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (DbUpdateException ex)
+        {
+            _logger.LogError(ex, "Ошибка БД при сохранении оценки рекомендации {Id}", recommendationId);
+            return StatusCode(500, new { message = "Не удалось сохранить оценку" });
+        }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Ошибка при оценке рекомендации {Id}", recommendationId);
+            _logger.LogError(ex, "Непредвиденная ошибка при оценке рекомендации {Id}", recommendationId);
             return StatusCode(500, new { message = "Ошибка при сохранении оценки" });
         }
     }

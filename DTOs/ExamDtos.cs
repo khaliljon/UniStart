@@ -3,6 +3,50 @@ using System.ComponentModel.DataAnnotations;
 namespace UniStart.DTOs;
 
 /// <summary>
+/// DTO для обновления экзамена
+/// </summary>
+public class UpdateExamDto
+{
+    [Required(ErrorMessage = "Название экзамена обязательно")]
+    [StringLength(200, ErrorMessage = "Название не должно превышать 200 символов")]
+    public string Title { get; set; } = string.Empty;
+    
+    [StringLength(1000, ErrorMessage = "Описание не должно превышать 1000 символов")]
+    public string? Description { get; set; }
+    
+    [Required(ErrorMessage = "Необходимо выбрать хотя бы один предмет")]
+    public List<int> SubjectIds { get; set; } = new();
+    
+    public string Difficulty { get; set; } = "Medium";
+    
+    // Международная система (опционально)
+    public int? CountryId { get; set; }
+    public int? UniversityId { get; set; }
+    public int? ExamTypeId { get; set; }
+    
+    // Ограничения экзамена
+    public int MaxAttempts { get; set; } = 3;
+    public int PassingScore { get; set; } = 70;
+    public bool IsProctored { get; set; } = false;
+    public bool ShuffleQuestions { get; set; } = true;
+    public bool ShuffleAnswers { get; set; } = true;
+    
+    // Настройки показа результатов
+    public string ShowResultsAfter { get; set; } = "Immediate";
+    public bool ShowCorrectAnswers { get; set; } = true;
+    public bool ShowDetailedFeedback { get; set; } = true;
+    
+    // Временные ограничения
+    public int TimeLimit { get; set; } = 60;
+    public bool StrictTiming { get; set; } = false;
+    
+    public bool IsPublished { get; set; } = false;
+    public bool IsPublic { get; set; } = false;
+    
+    public List<int> TagIds { get; set; } = new();
+}
+
+/// <summary>
 /// DTO для создания нового экзамена
 /// </summary>
 public class CreateExamDto

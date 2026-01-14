@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.ML;
-using UniStart.Data;
+using UniStart.Repositories;
 using UniStart.Models.Core;
 using UniStart.Models.Learning;
 
@@ -12,7 +12,7 @@ namespace UniStart.Services.AI;
 /// </summary>
 public class MLPredictionService : IMLPredictionService
 {
-    private readonly ApplicationDbContext _context;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<MLPredictionService> _logger;
     private readonly MLContext _mlContext;
     private ITransformer? _model;
@@ -20,11 +20,11 @@ public class MLPredictionService : IMLPredictionService
     private readonly object _modelLock = new();
 
     public MLPredictionService(
-        ApplicationDbContext context,
+        IUnitOfWork unitOfWork,
         ILogger<MLPredictionService> logger,
         IWebHostEnvironment env)
     {
-        _context = context;
+        _unitOfWork = unitOfWork;
         _logger = logger;
         _mlContext = new MLContext(seed: 42);
         _modelPath = Path.Combine(env.ContentRootPath, "Models", "flashcard_review_model.zip");
@@ -49,7 +49,7 @@ public class MLPredictionService : IMLPredictionService
             }
 
             // Получаем текущий прогресс пользователя по карточке
-            var progress = await _context.UserFlashcardProgresses
+            var progress = await _unitOfWork.FlashcardProgress.Query()
                 .Include(p => p.Flashcard)
                 .FirstOrDefaultAsync(p => p.UserId == userId && p.FlashcardId == flashcardId);
 
@@ -60,7 +60,7 @@ public class MLPredictionService : IMLPredictionService
             }
 
             // Получаем паттерны обучения пользователя
-            var learningPattern = await _context.UserLearningPatterns
+            var learningPattern = await _unitOfWork.Repository<UserLearningPattern>()
                 .FirstOrDefaultAsync(p => p.UserId == userId);
 
             if (learningPattern == null)
@@ -117,9 +117,19 @@ public class MLPredictionService : IMLPredictionService
 
             return result;
         }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "ML модель не готова для User={UserId}, Flashcard={FlashcardId}. Переход на статический алгоритм", userId, flashcardId);
+            return await FallbackToStaticAlgorithm(userId, flashcardId);
+        }
+        catch (ArgumentException ex)
+        {
+            _logger.LogError(ex, "Некорректные входные данные для ML предсказания User={UserId}, Flashcard={FlashcardId}", userId, flashcardId);
+            return await FallbackToStaticAlgorithm(userId, flashcardId);
+        }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Ошибка при ML предсказании для User={UserId}, Flashcard={FlashcardId}", userId, flashcardId);
+            _logger.LogError(ex, "Непредвиденная ошибка при ML предсказании User={UserId}, Flashcard={FlashcardId}", userId, flashcardId);
             return await FallbackToStaticAlgorithm(userId, flashcardId);
         }
     }
@@ -132,7 +142,7 @@ public class MLPredictionService : IMLPredictionService
 
             // Получаем все карточки пользователя, которые нужно повторить
             var now = DateTime.UtcNow;
-            var dueTodayProgresses = await _context.UserFlashcardProgresses
+            var dueTodayProgresses = await _unitOfWork.FlashcardProgress.Query()
                 .Where(p => p.UserId == userId && p.NextReviewDate <= now.AddHours(24))
                 .OrderBy(p => p.NextReviewDate)
                 .Take(50) // Ограничиваем максимум 50 карточками в день
@@ -159,9 +169,19 @@ public class MLPredictionService : IMLPredictionService
 
             return studyPlan;
         }
+        catch (ArgumentNullException ex)
+        {
+            _logger.LogError(ex, "Некорректный userId для генерации плана обучения");
+            return new List<FlashcardReviewPrediction>();
+        }
+        catch (DbUpdateException ex)
+        {
+            _logger.LogError(ex, "Ошибка БД при генерации плана обучения для User={UserId}", userId);
+            return new List<FlashcardReviewPrediction>();
+        }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Ошибка при генерации плана обучения для User={UserId}", userId);
+            _logger.LogError(ex, "Непредвиденная ошибка при генерации плана обучения для User={UserId}", userId);
             return new List<FlashcardReviewPrediction>();
         }
     }
@@ -214,9 +234,24 @@ public class MLPredictionService : IMLPredictionService
             _logger.LogInformation("ML модель успешно переобучена и сохранена в {Path}", _modelPath);
             return true;
         }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogError(ex, "Ошибка конфигурации ML pipeline при переобучении модели");
+            return false;
+        }
+        catch (ArgumentException ex)
+        {
+            _logger.LogError(ex, "Некорректные данные для обучения ML модели");
+            return false;
+        }
+        catch (IOException ex)
+        {
+            _logger.LogError(ex, "Ошибка ввода-вывода при сохранении ML модели в {Path}", _modelPath);
+            return false;
+        }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Ошибка при переобучении ML модели");
+            _logger.LogError(ex, "Непредвиденная ошибка при переобучении ML модели");
             return false;
         }
     }
@@ -238,9 +273,17 @@ public class MLPredictionService : IMLPredictionService
                 _logger.LogWarning("ML модель не найдена по пути {Path}. Требуется первичное обучение.", _modelPath);
             }
         }
+        catch (FileNotFoundException ex)
+        {
+            _logger.LogWarning(ex, "Файл ML модели не найден: {Path}", _modelPath);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogError(ex, "Некорректный формат ML модели в {Path}", _modelPath);
+        }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Ошибка при загрузке ML модели");
+            _logger.LogError(ex, "Непредвиденная ошибка при загрузке ML модели из {Path}", _modelPath);
         }
     }
 
@@ -249,12 +292,13 @@ public class MLPredictionService : IMLPredictionService
         // Берем историю за последние 90 дней для актуальности
         var cutoffDate = DateTime.UtcNow.AddDays(-90);
 
-        var progresses = await _context.UserFlashcardProgresses
+        var progresses = await _unitOfWork.FlashcardProgress.Query()
             .Where(p => p.LastReviewedAt >= cutoffDate && p.Repetitions > 0)
             .Include(p => p.User)
             .ToListAsync();
 
-        var userPatterns = await _context.UserLearningPatterns
+        var userPatterns = await _unitOfWork.Repository<UserLearningPattern>()
+            .Query()
             .ToDictionaryAsync(p => p.UserId);
 
         var trainingData = new List<FlashcardReviewData>();
@@ -289,7 +333,7 @@ public class MLPredictionService : IMLPredictionService
     private float CalculateCorrectAfterBreak(string userId, int flashcardId)
     {
         // Упрощенная метрика: количество успешных повторений после пропусков
-        var progress = _context.UserFlashcardProgresses
+        var progress = _unitOfWork.FlashcardProgress.Query()
             .FirstOrDefault(p => p.UserId == userId && p.FlashcardId == flashcardId);
 
         return progress?.Repetitions ?? 0;
@@ -315,7 +359,7 @@ public class MLPredictionService : IMLPredictionService
     private async Task<FlashcardReviewPrediction?> FallbackToStaticAlgorithm(string userId, int flashcardId)
     {
         // Fallback на старый SM-2 алгоритм
-        var progress = await _context.UserFlashcardProgresses
+        var progress = await _unitOfWork.FlashcardProgress.Query()
             .FirstOrDefaultAsync(p => p.UserId == userId && p.FlashcardId == flashcardId);
 
         if (progress == null) return null;

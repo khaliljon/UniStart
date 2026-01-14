@@ -53,9 +53,19 @@ public class AdaptiveLearningController : ControllerBase
                 isMLPrediction = _mlService.IsModelTrained()
             });
         }
+        catch (ArgumentException ex)
+        {
+            _logger.LogWarning(ex, "Некорректные параметры для предсказания flashcard {FlashcardId}", flashcardId);
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogError(ex, "Ошибка ML модели при предсказании для карточки {FlashcardId}", flashcardId);
+            return StatusCode(500, new { message = "Модель не готова" });
+        }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Ошибка при получении предсказания для карточки {FlashcardId}", flashcardId);
+            _logger.LogError(ex, "Непредвиденная ошибка при получении предсказания для карточки {FlashcardId}", flashcardId);
             return StatusCode(500, new { message = "Ошибка при получении предсказания" });
         }
     }
@@ -91,9 +101,19 @@ public class AdaptiveLearningController : ControllerBase
                 })
             });
         }
+        catch (ArgumentNullException ex)
+        {
+            _logger.LogError(ex, "UserId не указан для генерации плана обучения");
+            return Unauthorized();
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogError(ex, "Ошибка ML модели при генерации плана");
+            return StatusCode(500, new { message = "Модель не готова для генерации плана" });
+        }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Ошибка при генерации плана обучения");
+            _logger.LogError(ex, "Непредвиденная ошибка при генерации плана обучения");
             return StatusCode(500, new { message = "Ошибка при генерации плана" });
         }
     }
@@ -121,9 +141,19 @@ public class AdaptiveLearningController : ControllerBase
                 return BadRequest(new { message = "Недостаточно данных для переобучения модели (требуется минимум 100 примеров)" });
             }
         }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogError(ex, "Ошибка конфигурации ML модели при переобучении");
+            return StatusCode(500, new { message = "Ошибка конфигурации модели" });
+        }
+        catch (IOException ex)
+        {
+            _logger.LogError(ex, "Ошибка ввода-вывода при сохранении ML модели");
+            return StatusCode(500, new { message = "Не удалось сохранить модель" });
+        }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Ошибка при переобучении ML модели");
+            _logger.LogError(ex, "Непредвиденная ошибка при переобучении ML модели");
             return StatusCode(500, new { message = "Ошибка при переобучении модели" });
         }
     }

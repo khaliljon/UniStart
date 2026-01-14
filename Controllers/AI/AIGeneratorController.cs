@@ -65,9 +65,19 @@ public class AIGeneratorController : ControllerBase
                 isAIGenerated = _aiGenerator.IsAvailable()
             });
         }
+        catch (ArgumentException ex)
+        {
+            _logger.LogWarning(ex, "Некорректные параметры для генерации вопросов");
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogError(ex, "AI сервис недоступен для генерации вопросов");
+            return StatusCode(503, new { message = "AI генератор временно недоступен" });
+        }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Ошибка при генерации вопросов");
+            _logger.LogError(ex, "Непредвиденная ошибка при генерации вопросов");
             return StatusCode(500, new { message = "Ошибка при генерации вопросов" });
         }
     }
@@ -95,9 +105,19 @@ public class AIGeneratorController : ControllerBase
                 isAIGenerated = _aiGenerator.IsAvailable()
             });
         }
+        catch (ArgumentException ex)
+        {
+            _logger.LogWarning(ex, "Некорректные параметры для генерации объяснения");
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogError(ex, "AI сервис недоступен для генерации объяснения");
+            return StatusCode(503, new { message = "AI генератор временно недоступен" });
+        }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Ошибка при генерации объяснения");
+            _logger.LogError(ex, "Непредвиденная ошибка при генерации объяснения");
             return StatusCode(500, new { message = "Ошибка при генерации объяснения" });
         }
     }
@@ -123,9 +143,19 @@ public class AIGeneratorController : ControllerBase
                 isAIGenerated = _aiGenerator.IsAvailable()
             });
         }
+        catch (ArgumentException ex)
+        {
+            _logger.LogWarning(ex, "Некорректные параметры для генерации подсказки");
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogError(ex, "AI сервис недоступен для генерации подсказки");
+            return StatusCode(503, new { message = "AI генератор временно недоступен" });
+        }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Ошибка при генерации подсказки");
+            _logger.LogError(ex, "Непредвиденная ошибка при генерации подсказки");
             return StatusCode(500, new { message = "Ошибка при генерации подсказки" });
         }
     }
@@ -150,9 +180,19 @@ public class AIGeneratorController : ControllerBase
                 isAIGenerated = _aiGenerator.IsAvailable()
             });
         }
+        catch (ArgumentException ex)
+        {
+            _logger.LogWarning(ex, "Некорректные параметры для генерации резюме");
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogError(ex, "AI сервис недоступен для генерации резюме");
+            return StatusCode(503, new { message = "AI генератор временно недоступен" });
+        }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Ошибка при генерации резюме");
+            _logger.LogError(ex, "Непредвиденная ошибка при генерации резюме");
             return StatusCode(500, new { message = "Ошибка при генерации резюме" });
         }
     }
