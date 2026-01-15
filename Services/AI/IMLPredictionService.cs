@@ -29,6 +29,12 @@ public interface IMLPredictionService
     Task<bool> RetrainModel();
     
     /// <summary>
+    /// Переобучить ML модель на свежих данных (асинхронная версия)
+    /// </summary>
+    /// <returns>True если переобучение прошло успешно</returns>
+    Task<bool> RetrainModelAsync();
+    
+    /// <summary>
     /// Проверить, обучена ли модель и готова к использованию
     /// </summary>
     bool IsModelTrained();

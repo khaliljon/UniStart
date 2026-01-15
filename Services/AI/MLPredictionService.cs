@@ -186,6 +186,11 @@ public class MLPredictionService : IMLPredictionService
         }
     }
 
+    public async Task<bool> RetrainModelAsync()
+    {
+        return await RetrainModel();
+    }
+
     public async Task<bool> RetrainModel()
     {
         try

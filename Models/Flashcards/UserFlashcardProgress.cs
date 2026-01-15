@@ -63,6 +63,9 @@ public class UserFlashcardProgress
     [Display(Name = "Изучена полностью")]
     public bool IsMastered { get; set; } = false; // Изучена ли полностью (Repetitions >= 3 и EaseFactor >= 2.0)
     
+    [Display(Name = "Синтетические данные")]
+    public bool IsSyntheticData { get; set; } = false; // Помечает синтетические данные для тестирования (можно удалить перед продакшеном)
+    
     [Display(Name = "Дата создания записи")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     

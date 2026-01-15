@@ -67,26 +67,26 @@ const AIRecommendedQuizzes = () => {
           {recommendations.map((rec) => (
             <div
               key={rec.id}
-              className="p-4 bg-white/10 backdrop-blur-sm rounded-lg hover:bg-white/20 transition-colors cursor-pointer"
+              className="p-4 bg-white/20 backdrop-blur-sm rounded-lg hover:bg-white/30 transition-colors cursor-pointer border border-white/30"
               onClick={() => navigate(`/quizzes/${rec.id}/take`)}
             >
               <div className="flex items-start justify-between mb-2">
                 <div className="flex-1">
-                  <p className="font-semibold text-lg">{rec.title}</p>
-                  <p className="text-sm opacity-90">{rec.subject}</p>
+                  <p className="font-semibold text-lg text-white">{rec.title}</p>
+                  <p className="text-sm text-white/95">{rec.subject}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className={`px-2 py-1 text-xs font-semibold rounded ${getDifficultyColor(rec.difficulty)}`}>
                     {rec.difficulty}
                   </span>
-                  <ArrowRight className="w-5 h-5 flex-shrink-0" />
+                  <ArrowRight className="w-5 h-5 flex-shrink-0 text-white" />
                 </div>
               </div>
               <div className="flex items-start gap-2 mb-2">
-                <Sparkles className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                <p className="text-sm opacity-90">{rec.recommendationReason}</p>
+                <Sparkles className="w-4 h-4 flex-shrink-0 mt-0.5 text-white" />
+                <p className="text-sm text-white/95">{rec.recommendationReason}</p>
               </div>
-              <div className="flex items-center gap-4 text-xs opacity-75">
+              <div className="flex items-center gap-4 text-xs text-white/90">
                 <span>{rec.questionsCount} вопросов</span>
                 <div className="flex items-center gap-1">
                   <Clock className="w-3 h-3" />

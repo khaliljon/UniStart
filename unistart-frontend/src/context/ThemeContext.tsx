@@ -1,9 +1,10 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
-type Theme = 'light' | 'dark';
+type Theme = 'light' | 'dark' | 'ocean' | 'synthwave' | 'high-contrast';
 
 interface ThemeContextType {
   theme: Theme;
+  setTheme: (theme: Theme) => void;
   toggleTheme: () => void;
 }
 
@@ -14,7 +15,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     try {
       const savedTheme = localStorage.getItem('theme');
       // Проверяем валидность сохраненной темы
-      if (savedTheme === 'dark' || savedTheme === 'light') {
+      if (savedTheme === 'dark' || savedTheme === 'light' || savedTheme === 'ocean' || savedTheme === 'synthwave' || savedTheme === 'high-contrast') {
         return savedTheme;
       }
     } catch (e) {
@@ -31,8 +32,8 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     const root = window.document.documentElement;
     
-    // Удаляем обе темы
-    root.classList.remove('light', 'dark');
+    // Удаляем все темы
+    root.classList.remove('light', 'dark', 'ocean', 'synthwave', 'high-contrast');
     
     // Добавляем текущую тему
     root.classList.add(theme);
@@ -55,7 +56,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+    <ThemeContext.Provider value={{ theme, setTheme, toggleTheme }}>
       {children}
     </ThemeContext.Provider>
   );

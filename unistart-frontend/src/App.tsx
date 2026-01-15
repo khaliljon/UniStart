@@ -47,6 +47,7 @@ import AdminSettingsPage from './pages/admin/AdminSettingsPage'
 import AdminCountriesPage from './pages/admin/AdminCountriesPage'
 import AdminUniversitiesPage from './pages/admin/AdminUniversitiesPage'
 import AdminExamTypesPage from './pages/admin/AdminExamTypesPage'
+import AdminMLTrainingPage from './pages/admin/AdminMLTrainingPage'
 
 // Student Pages
 import StudentProgressPage from './pages/student/StudentProgressPage'
@@ -437,6 +438,16 @@ function App() {
               <PrivateRoute>
                 <RoleRoute allowedRoles={['Admin']}>
                   <AdminExamTypesPage />
+                </RoleRoute>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/admin/ml-training"
+            element={
+              <PrivateRoute>
+                <RoleRoute allowedRoles={['Admin']}>
+                  <AdminMLTrainingPage />
                 </RoleRoute>
               </PrivateRoute>
             }

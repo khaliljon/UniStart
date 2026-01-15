@@ -11,15 +11,42 @@ import {
   LayoutDashboard,
   ClipboardCheck,
   Sun,
-  Moon
+  Moon,
+  Palette,
+  Check
 } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
 import Button from '../common/Button';
 
 const Layout = () => {
   const { user, isAdmin, isTeacher, logout } = useAuth();
-  const { theme, toggleTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
   const { settings: siteSettings } = useSiteSettings();
   const navigate = useNavigate();
+  const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
+  const themeMenuRef = useRef<HTMLDivElement>(null);
+
+  const themes = [
+    { id: 'light' as const, name: 'Светлая', icon: Sun, emoji: '☀️' },
+    { id: 'dark' as const, name: 'Тёмная', icon: Moon, emoji: '🌙' },
+    { id: 'ocean' as const, name: 'Океан', icon: Palette, emoji: '🌊' },
+    { id: 'synthwave' as const, name: 'Synthwave', icon: Palette, emoji: '🎮' },
+    { id: 'high-contrast' as const, name: 'Контраст', icon: Palette, emoji: '♿' },
+  ];
+
+  const currentTheme = themes.find(t => t.id === theme) || themes[0];
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (themeMenuRef.current && !themeMenuRef.current.contains(event.target as Node)) {
+        setIsThemeMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   console.log('🏗️ Layout рендерится. User:', user);
   console.log('🎨 Текущая тема:', theme);
@@ -100,32 +127,75 @@ const Layout = () => {
                 )}
 
                 {isAdmin && (
-                  <Link
-                    to="/admin/users"
-                    className="flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
-                  >
-                    <Settings className="w-5 h-5" />
-                    <span>Админ</span>
-                  </Link>
+                  <>
+                    <Link
+                      to="/admin/ml-training"
+                      className="flex items-center gap-2 text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 transition-colors font-medium"
+                      title="ML Model Training - Управление обучением модели"
+                    >
+                      🤖
+                      <span>ML Training</span>
+                    </Link>
+                    <Link
+                      to="/admin/users"
+                      className="flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                    >
+                      <Settings className="w-5 h-5" />
+                      <span>Админ</span>
+                    </Link>
+                  </>
                 )}
               </nav>
             )}
 
             {/* User Menu */}
             <div className="flex items-center gap-4">
-              <button
-                type="button"
-                onClick={toggleTheme}
-                className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 hover:scale-105 active:scale-95"
-                title={theme === 'light' ? 'Переключить на темную тему' : 'Переключить на светлую тему'}
-                aria-label={theme === 'light' ? 'Переключить на темную тему' : 'Переключить на светлую тему'}
-              >
-                {theme === 'light' ? (
-                  <Moon className="w-5 h-5 transition-transform duration-200" />
-                ) : (
-                  <Sun className="w-5 h-5 transition-transform duration-200" />
+              {/* Theme Selector Dropdown */}
+              <div className="relative" ref={themeMenuRef}>
+                <button
+                  type="button"
+                  onClick={() => setIsThemeMenuOpen(!isThemeMenuOpen)}
+                  className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 hover:scale-105 active:scale-95"
+                  title="Выбрать тему"
+                  aria-label="Выбрать тему"
+                >
+                  <currentTheme.icon className="w-5 h-5 transition-transform duration-200" />
+                </button>
+
+                {/* Dropdown Menu */}
+                {isThemeMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-56 rounded-lg shadow-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 z-50 overflow-hidden">
+                    <div className="p-2">
+                      <div className="px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">
+                        Выбор темы
+                      </div>
+                      {themes.map((t) => {
+                        const Icon = t.icon;
+                        return (
+                          <button
+                            key={t.id}
+                            onClick={() => {
+                              setTheme(t.id);
+                              setIsThemeMenuOpen(false);
+                            }}
+                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${
+                              theme === t.id
+                                ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'
+                                : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
+                            }`}
+                          >
+                            <span className="text-lg">{t.emoji}</span>
+                            <span className="flex-1 text-left text-sm font-medium">{t.name}</span>
+                            {theme === t.id && (
+                              <Check className="w-4 h-4" />
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
                 )}
-              </button>
+              </div>
 
               {user ? (
                 <>

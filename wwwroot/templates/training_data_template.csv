@@ -1,0 +1,6 @@
+UserId,FlashcardId,EaseFactor,Interval,Repetitions,DaysSinceLastReview,UserRetentionRate,UserForgettingSpeed,CorrectAfterBreak,IsMastered,OptimalReviewHours
+user123,1,2.5,1,1,0.5,75.0,1.0,70.0,false,24
+user123,2,2.4,2,2,1.0,75.0,1.0,65.0,false,48
+user123,3,2.6,4,3,2.0,75.0,1.0,80.0,false,96
+user456,1,2.3,1,1,0.3,65.0,1.2,55.0,false,20
+user456,4,2.7,8,5,3.0,65.0,1.2,70.0,true,192

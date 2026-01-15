@@ -1,41 +1,50 @@
 import { motion, HTMLMotionProps } from 'framer-motion'
+import { cva, type VariantProps } from 'class-variance-authority'
+import { cn } from '../../utils/cn'
 
-interface ButtonProps extends Omit<HTMLMotionProps<"button">, 'variant'> {
-  variant?: 'primary' | 'secondary' | 'success' | 'danger' | 'ghost' | 'outline'
-  size?: 'sm' | 'md' | 'lg'
+const buttonVariants = cva(
+  // Base styles
+  'inline-flex items-center justify-center font-medium rounded-lg transition-all duration-normal focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed',
+  {
+    variants: {
+      variant: {
+        primary: 'bg-primary-500 text-white hover:bg-primary-600 focus:ring-primary-500 dark:bg-primary-600 dark:hover:bg-primary-700',
+        secondary: 'bg-[rgb(var(--bg-card))] text-primary-600 border-2 border-primary-500 hover:bg-primary-50 dark:text-primary-400 dark:border-primary-400 dark:hover:bg-gray-700',
+        success: 'bg-success-500 text-white hover:bg-success-600 focus:ring-success-500',
+        danger: 'bg-error-500 text-white hover:bg-error-600 focus:ring-error-500',
+        ghost: 'bg-transparent text-[rgb(var(--text-primary))] hover:bg-[rgb(var(--bg-secondary))]',
+        outline: 'bg-transparent text-primary-600 border-2 border-primary-500 hover:bg-primary-50 dark:text-primary-400 dark:border-primary-400 dark:hover:bg-gray-800',
+      },
+      size: {
+        sm: 'h-8 px-3 text-sm',
+        md: 'h-10 px-6',
+        lg: 'h-12 px-8 text-lg',
+      },
+    },
+    defaultVariants: {
+      variant: 'primary',
+      size: 'md',
+    },
+  }
+)
+
+interface ButtonProps extends Omit<HTMLMotionProps<"button">, 'variant'>, VariantProps<typeof buttonVariants> {
   isLoading?: boolean
 }
 
 const Button = ({
   children,
-  variant = 'primary',
-  size = 'md',
+  variant,
+  size,
   isLoading = false,
-  className = '',
+  className,
   disabled,
   ...props
 }: ButtonProps) => {
-  const baseClasses = 'font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed'
-  
-  const variantClasses = {
-    primary: 'bg-primary-500 text-white hover:bg-primary-600 focus:ring-primary-500 dark:bg-primary-600 dark:hover:bg-primary-700',
-    secondary: 'bg-white text-primary-600 border-2 border-primary-500 hover:bg-primary-50 dark:bg-gray-800 dark:text-primary-400 dark:border-primary-400 dark:hover:bg-gray-700',
-    success: 'bg-green-500 text-white hover:bg-green-600 focus:ring-green-500',
-    danger: 'bg-red-500 text-white hover:bg-red-600 focus:ring-red-500',
-    ghost: 'bg-transparent text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800',
-    outline: 'bg-transparent text-primary-600 border-2 border-primary-500 hover:bg-primary-50 dark:text-primary-400 dark:border-primary-400 dark:hover:bg-gray-800',
-  }
-
-  const sizeClasses = {
-    sm: 'px-3 py-1.5 text-sm',
-    md: 'px-6 py-2.5',
-    lg: 'px-8 py-3 text-lg',
-  }
-
   return (
     <motion.button
       whileTap={{ scale: disabled || isLoading ? 1 : 0.95 }}
-      className={`${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
+      className={cn(buttonVariants({ variant, size }), className)}
       disabled={disabled || isLoading}
       {...props}
     >
