@@ -52,7 +52,9 @@ public class ExamsQuestionsController : ControllerBase
     public async Task<ActionResult<ExamQuestion>> CreateQuestion(int examId, CreateExamQuestionDto dto)
     {
         var userId = await GetUserId();
-        var userRoles = await _userManager.GetRolesAsync(await _userManager.GetUserAsync(User));
+        var user = await _userManager.GetUserAsync(User);
+        if (user == null) return Unauthorized();
+        var userRoles = await _userManager.GetRolesAsync(user);
         
         var exam = await _context.Exams
             .FirstOrDefaultAsync(e => e.Id == examId);
@@ -111,7 +113,9 @@ public class ExamsQuestionsController : ControllerBase
     public async Task<IActionResult> UpdateQuestion(int id, UpdateExamQuestionDto dto)
     {
         var userId = await GetUserId();
-        var userRoles = await _userManager.GetRolesAsync(await _userManager.GetUserAsync(User));
+        var user = await _userManager.GetUserAsync(User);
+        if (user == null) return Unauthorized();
+        var userRoles = await _userManager.GetRolesAsync(user);
         
         var question = await _context.ExamQuestions
             .Include(q => q.Exam)
@@ -155,7 +159,9 @@ public class ExamsQuestionsController : ControllerBase
     public async Task<IActionResult> DeleteQuestion(int id)
     {
         var userId = await GetUserId();
-        var userRoles = await _userManager.GetRolesAsync(await _userManager.GetUserAsync(User));
+        var user = await _userManager.GetUserAsync(User);
+        if (user == null) return Unauthorized();
+        var userRoles = await _userManager.GetRolesAsync(user);
         
         var question = await _context.ExamQuestions
             .Include(q => q.Exam)
@@ -193,7 +199,9 @@ public class ExamsQuestionsController : ControllerBase
     public async Task<ActionResult<ExamAnswer>> CreateAnswer(int questionId, CreateExamAnswerDto dto)
     {
         var userId = await GetUserId();
-        var userRoles = await _userManager.GetRolesAsync(await _userManager.GetUserAsync(User));
+        var user = await _userManager.GetUserAsync(User);
+        if (user == null) return Unauthorized();
+        var userRoles = await _userManager.GetRolesAsync(user);
         
         var question = await _context.ExamQuestions
             .Include(q => q.Exam)
@@ -243,7 +251,9 @@ public class ExamsQuestionsController : ControllerBase
     public async Task<IActionResult> UpdateAnswer(int id, UpdateExamAnswerDto dto)
     {
         var userId = await GetUserId();
-        var userRoles = await _userManager.GetRolesAsync(await _userManager.GetUserAsync(User));
+        var user = await _userManager.GetUserAsync(User);
+        if (user == null) return Unauthorized();
+        var userRoles = await _userManager.GetRolesAsync(user);
         
         var answer = await _context.ExamAnswers
             .Include(a => a.Question)
@@ -270,7 +280,9 @@ public class ExamsQuestionsController : ControllerBase
     public async Task<IActionResult> DeleteAnswer(int id)
     {
         var userId = await GetUserId();
-        var userRoles = await _userManager.GetRolesAsync(await _userManager.GetUserAsync(User));
+        var user = await _userManager.GetUserAsync(User);
+        if (user == null) return Unauthorized();
+        var userRoles = await _userManager.GetRolesAsync(user);
         
         var answer = await _context.ExamAnswers
             .Include(a => a.Question)

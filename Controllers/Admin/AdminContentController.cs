@@ -58,7 +58,7 @@ public class AdminContentController : ControllerBase
                 q.TimeLimit,
                 q.IsPublished,
                 q.UserId,
-                UserName = q.User.UserName,
+                UserName = q.User != null ? q.User.UserName : "Unknown",
                 QuestionCount = q.Questions.Count,
                 TotalPoints = q.Questions.Sum(qu => qu.Points),
                 q.CreatedAt
@@ -86,7 +86,7 @@ public class AdminContentController : ControllerBase
                 fs.Subject,
                 fs.IsPublic,
                 fs.UserId,
-                UserName = fs.User.UserName,
+                UserName = fs.User != null ? fs.User.UserName : "Unknown",
                 CardCount = fs.Flashcards.Count,
                 fs.CreatedAt
             })
@@ -146,7 +146,7 @@ public class AdminContentController : ControllerBase
                 e.Difficulty,
                 e.IsPublished,
                 e.UserId,
-                UserName = e.User.UserName,
+                UserName = e.User != null ? e.User.UserName : "Unknown",
                 QuestionCount = e.Questions.Count,
                 e.TotalPoints,
                 e.MaxAttempts,

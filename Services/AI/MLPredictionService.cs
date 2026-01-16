@@ -16,6 +16,7 @@ public class MLPredictionService : IMLPredictionService
     private readonly ILogger<MLPredictionService> _logger;
     private readonly MLContext _mlContext;
     private ITransformer? _model;
+    private PredictionEngine<FlashcardReviewData, FlashcardReviewPredictionResult>? _predictionEngine;
     private readonly string _modelPath;
     private readonly object _modelLock = new();
 
@@ -88,12 +89,26 @@ public class MLPredictionService : IMLPredictionService
                 UserForgettingSpeed = (float)learningPattern.ForgettingSpeed,
                 CorrectAfterBreak = CalculateCorrectAfterBreak(userId, flashcardId),
                 IsMastered = progress.IsMastered,
-                OptimalReviewHours = 0 // Это предсказываемое значение
+                OptimalReviewHours = 0
             };
 
-            // Делаем предсказание
-            var predictionEngine = _mlContext.Model.CreatePredictionEngine<FlashcardReviewData, FlashcardReviewPredictionResult>(_model);
-            var prediction = predictionEngine.Predict(inputData);
+            // Валидируем входные данные
+            if (!ValidateMLInput(inputData))
+            {
+                _logger.LogWarning(
+                    "ML входные данные некорректны для User={UserId}, Card={CardId}. Fallback на SM-2",
+                    userId, flashcardId);
+                return await FallbackToStaticAlgorithm(userId, flashcardId);
+            }
+
+            // Делаем предсказание с кэшированным PredictionEngine
+            if (_predictionEngine == null)
+            {
+                _logger.LogError("PredictionEngine не инициализирован");
+                return await FallbackToStaticAlgorithm(userId, flashcardId);
+            }
+
+            var prediction = _predictionEngine.Predict(inputData);
 
             // Ограничиваем предсказание разумными пределами (1 час - 1 год)
             var optimalHours = Math.Max(1, Math.Min(8760, (int)prediction.Score));
@@ -208,6 +223,17 @@ public class MLPredictionService : IMLPredictionService
 
             var dataView = _mlContext.Data.LoadFromEnumerable(trainingData);
 
+            // Разделяем данные на train (80%) и validation (20%)
+            var trainTestSplit = _mlContext.Data.TrainTestSplit(dataView, testFraction: 0.2, seed: 42);
+            var trainSet = trainTestSplit.TrainSet;
+            var validationSet = trainTestSplit.TestSet;
+
+            _logger.LogInformation(
+                "Данные разделены: {Train} train, {Val} validation", 
+                trainingData.Count * 0.8, 
+                trainingData.Count * 0.2
+            );
+
             // Определяем pipeline обучения
             var pipeline = _mlContext.Transforms.Concatenate("Features",
                     nameof(FlashcardReviewData.EaseFactor),
@@ -224,19 +250,40 @@ public class MLPredictionService : IMLPredictionService
                     numberOfTrees: 100,
                     minimumExampleCountPerLeaf: 10));
 
-            // Обучаем модель
-            _logger.LogInformation("Обучение модели на {Count} примерах...", trainingData.Count);
-            var trainedModel = pipeline.Fit(dataView);
+            // Обучаем модель на train set
+            _logger.LogInformation("Обучение модели на {Count} примерах...", (int)(trainingData.Count * 0.8));
+            var trainedModel = pipeline.Fit(trainSet);
 
-            // Сохраняем модель
+            // Оценка модели на validation set
+            var predictions = trainedModel.Transform(validationSet);
+            var metrics = _mlContext.Regression.Evaluate(predictions, labelColumnName: nameof(FlashcardReviewData.OptimalReviewHours));
+
+            _logger.LogInformation(
+                "Метрики модели на validation set: MAE={MAE:F2}, RMSE={RMSE:F2}, R²={R2:F3}",
+                metrics.MeanAbsoluteError,
+                metrics.RootMeanSquaredError,
+                metrics.RSquared
+            );
+
+            // Проверяем качество модели (R² должен быть > 0.5 для production)
+            if (metrics.RSquared < 0.5)
+            {
+                _logger.LogWarning(
+                    "Модель имеет низкое качество (R²={R2:F3} < 0.5). Рекомендуется больше данных для обучения.",
+                    metrics.RSquared
+                );
+            }
+
+            // Сохраняем модель и пересоздаём PredictionEngine
             lock (_modelLock)
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(_modelPath)!);
                 _mlContext.Model.Save(trainedModel, dataView.Schema, _modelPath);
                 _model = trainedModel;
+                _predictionEngine = _mlContext.Model.CreatePredictionEngine<FlashcardReviewData, FlashcardReviewPredictionResult>(_model);
             }
 
-            _logger.LogInformation("ML модель успешно переобучена и сохранена в {Path}", _modelPath);
+            _logger.LogInformation("ML модель и PredictionEngine успешно переобучены и сохранены в {Path}", _modelPath);
             return true;
         }
         catch (InvalidOperationException ex)
@@ -269,9 +316,10 @@ public class MLPredictionService : IMLPredictionService
             {
                 lock (_modelLock)
                 {
-                    _model = _mlContext.Model.Load(_modelPath, out _);
+                    _model = _mlContext.Model.Load(_modelPath, out var schema);
+                    _predictionEngine = _mlContext.Model.CreatePredictionEngine<FlashcardReviewData, FlashcardReviewPredictionResult>(_model);
                 }
-                _logger.LogInformation("ML модель загружена из {Path}", _modelPath);
+                _logger.LogInformation("ML модель и PredictionEngine загружены из {Path}", _modelPath);
             }
             else
             {
@@ -294,8 +342,8 @@ public class MLPredictionService : IMLPredictionService
 
     private async Task<List<FlashcardReviewData>> PrepareTrainingData()
     {
-        // Берем историю за последние 90 дней для актуальности
-        var cutoffDate = DateTime.UtcNow.AddDays(-90);
+        // Берем историю за последний год для достаточного количества данных
+        var cutoffDate = DateTime.UtcNow.AddDays(-365);
 
         var progresses = await _unitOfWork.FlashcardProgress.Query()
             .Where(p => p.LastReviewedAt >= cutoffDate && p.Repetitions > 0)
@@ -381,5 +429,62 @@ public class MLPredictionService : IMLPredictionService
             Reason = "Стандартный алгоритм повторения (SM-2)",
             CreatedAt = DateTime.UtcNow
         };
+    }
+
+    /// <summary>
+    /// Валидация ML входных данных на наличие NaN/Infinity/негативных значений
+    /// </summary>
+    private bool ValidateMLInput(FlashcardReviewData input)
+    {
+        // Проверка EaseFactor (1.3 - 5.0)
+        if (float.IsNaN(input.EaseFactor) || float.IsInfinity(input.EaseFactor) || input.EaseFactor < 1.3f || input.EaseFactor > 5.0f)
+        {
+            _logger.LogWarning("Некорректное значение EaseFactor: {Value}", input.EaseFactor);
+            return false;
+        }
+
+        // Проверка Interval (не может быть отрицательным)
+        if (input.Interval < 0)
+        {
+            _logger.LogWarning("Негативный Interval: {Value}", input.Interval);
+            return false;
+        }
+
+        // Проверка Repetitions (не может быть отрицательным)
+        if (input.Repetitions < 0)
+        {
+            _logger.LogWarning("Негативный Repetitions: {Value}", input.Repetitions);
+            return false;
+        }
+
+        // Проверка DaysSinceLastReview
+        if (float.IsNaN(input.DaysSinceLastReview) || float.IsInfinity(input.DaysSinceLastReview) || input.DaysSinceLastReview < 0)
+        {
+            _logger.LogWarning("Некорректное значение DaysSinceLastReview: {Value}", input.DaysSinceLastReview);
+            return false;
+        }
+
+        // Проверка UserRetentionRate (0.0 - 1.0)
+        if (float.IsNaN(input.UserRetentionRate) || float.IsInfinity(input.UserRetentionRate) || input.UserRetentionRate < 0 || input.UserRetentionRate > 1.0f)
+        {
+            _logger.LogWarning("Некорректное значение UserRetentionRate: {Value}", input.UserRetentionRate);
+            return false;
+        }
+
+        // Проверка UserForgettingSpeed (0.0 - 1.0)
+        if (float.IsNaN(input.UserForgettingSpeed) || float.IsInfinity(input.UserForgettingSpeed) || input.UserForgettingSpeed < 0 || input.UserForgettingSpeed > 1.0f)
+        {
+            _logger.LogWarning("Некорректное значение UserForgettingSpeed: {Value}", input.UserForgettingSpeed);
+            return false;
+        }
+
+        // Проверка CorrectAfterBreak (0.0 - 1.0)
+        if (float.IsNaN(input.CorrectAfterBreak) || float.IsInfinity(input.CorrectAfterBreak) || input.CorrectAfterBreak < 0 || input.CorrectAfterBreak > 1.0f)
+        {
+            _logger.LogWarning("Некорректное значение CorrectAfterBreak: {Value}", input.CorrectAfterBreak);
+            return false;
+        }
+
+        return true;
     }
 }

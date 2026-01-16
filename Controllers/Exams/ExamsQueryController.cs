@@ -103,9 +103,13 @@ public class ExamsQueryController : ControllerBase
     public async Task<ActionResult<ExamDto>> GetExamById(int id)
     {
         var userId = User.Identity?.IsAuthenticated == true ? await GetUserId() : null;
-        var userRoles = User.Identity?.IsAuthenticated == true 
-            ? await _userManager.GetRolesAsync(await _userManager.GetUserAsync(User))
-            : new List<string>();
+        List<string> userRoles = new List<string>();
+        if (User.Identity?.IsAuthenticated == true) 
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user != null)
+                userRoles = (await _userManager.GetRolesAsync(user)).ToList();
+        }
         var isAdmin = userRoles.Contains("Admin") || userRoles.Contains("Teacher");
 
         var examDto = await _examService.GetExamDetailAsync(id, userId, isAdmin);

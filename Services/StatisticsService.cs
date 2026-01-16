@@ -191,7 +191,7 @@ public class StatisticsService : IStatisticsService
                 q.Id,
                 q.Title,
                 q.Subject,
-                CreatedBy = q.User.UserName,
+                CreatedBy = q.User != null ? q.User.UserName : "Unknown",
                 AttemptsCount = q.Attempts.Count,
                 AverageScore = q.Attempts.Any() ? q.Attempts.Average(a => a.Percentage) : 0
             })

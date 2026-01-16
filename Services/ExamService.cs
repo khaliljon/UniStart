@@ -138,6 +138,7 @@ public class ExamService : IExamService
 
         // Пагинация
         var exams = await query
+            .AsNoTracking()
             .Include(e => e.Questions)
             .Include(e => e.User)
             .OrderByDescending(e => e.CreatedAt)

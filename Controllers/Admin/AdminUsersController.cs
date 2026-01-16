@@ -455,7 +455,7 @@ public class AdminUsersController : ControllerBase
             return new
             {
                 SetId = a.FlashcardSetId,
-                SetTitle = a.FlashcardSet.Title,
+                SetTitle = a.FlashcardSet?.Title ?? "Unknown",
                 TotalCards = a.TotalCardsCount,
                 ReviewedCards = reviewedCards,
                 MasteredCards = masteredCards,
@@ -502,8 +502,8 @@ public class AdminUsersController : ControllerBase
             StudentId = studentId,
             Email = student.Email,
             UserName = student.UserName,
-            FirstName = student.FirstName,
-            LastName = student.LastName,
+            FirstName = student.FirstName ?? "",
+            LastName = student.LastName ?? "",
             
             // Статистика по карточкам
             CompletedFlashcardSets = completedSetsCount,

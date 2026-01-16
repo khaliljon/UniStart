@@ -189,6 +189,7 @@ public class FlashcardService : IFlashcardService
         var now = DateTime.UtcNow;
         
         var progressList = await _unitOfWork.FlashcardProgress.Query()
+            .AsNoTracking()
             .Where(p => p.UserId == userId && p.Flashcard.FlashcardSetId == setId && p.NextReviewDate <= now)
             .Include(p => p.Flashcard)
             .ToListAsync();
@@ -243,7 +244,7 @@ public class FlashcardService : IFlashcardService
         
         var reviewedCards = progressList.Count(p => p.LastReviewedAt != null);
         var masteredCards = progressList.Count(p => p.IsMastered);
-        var cardsDueForReview = progressList.Count(p => p.NextReviewDate <= DateTime.UtcNow);
+        var cardsDueForReview = progressList.Count(p => p.NextReviewDate.HasValue && p.NextReviewDate.Value <= DateTime.UtcNow);
 
         var access = await _unitOfWork.Repository<UserFlashcardSetAccess>()
             .FirstOrDefaultAsync(a => a.UserId == userId && a.FlashcardSetId == setId);

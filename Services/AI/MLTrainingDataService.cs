@@ -35,6 +35,9 @@ public class MLTrainingDataService : IMLTrainingDataService
 
         try
         {
+            // Кэш для UserLearningPattern, чтобы избежать дубликатов при массовой вставке
+            var patternCache = new Dictionary<string, UserLearningPattern>();
+            
             foreach (var item in data)
             {
                 // Проверяем существование пользователя и флешкарты
@@ -48,23 +51,38 @@ public class MLTrainingDataService : IMLTrainingDataService
                 }
 
                 // Создаем или обновляем паттерн обучения пользователя
-                var pattern = await _unitOfWork.Repository<UserLearningPattern>()
-                    .FirstOrDefaultAsync(p => p.UserId == item.UserId);
-
-                if (pattern == null)
+                UserLearningPattern? pattern;
+                
+                // Сначала проверяем кэш
+                if (!patternCache.TryGetValue(item.UserId, out pattern))
                 {
-                    pattern = new UserLearningPattern
+                    // Если нет в кэше, проверяем БД
+                    pattern = await _unitOfWork.Repository<UserLearningPattern>()
+                        .FirstOrDefaultAsync(p => p.UserId == item.UserId);
+
+                    if (pattern == null)
                     {
-                        UserId = item.UserId,
-                        AverageRetentionRate = item.UserRetentionRate,
-                        ForgettingSpeed = item.UserForgettingSpeed,
-                        SessionsProcessed = 1,
-                        UpdatedAt = DateTime.UtcNow,
-                        CreatedAt = DateTime.UtcNow
-                    };
-                    await _unitOfWork.Repository<UserLearningPattern>().AddAsync(pattern);
+                        pattern = new UserLearningPattern
+                        {
+                            UserId = item.UserId,
+                            AverageRetentionRate = item.UserRetentionRate,
+                            ForgettingSpeed = item.UserForgettingSpeed,
+                            SessionsProcessed = 1,
+                            UpdatedAt = DateTime.UtcNow,
+                            CreatedAt = DateTime.UtcNow
+                        };
+                        await _unitOfWork.Repository<UserLearningPattern>().AddAsync(pattern);
+                        patternCache[item.UserId] = pattern; // Добавляем в кэш
+                    }
+                    else
+                    {
+                        // Паттерн существует в БД, добавляем в кэш
+                        patternCache[item.UserId] = pattern;
+                    }
                 }
-                else
+                
+                // Обновляем паттерн (либо из БД, либо только что созданный)
+                if (pattern.Id > 0) // Если уже существует в БД
                 {
                     // Обновляем средние значения
                     pattern.AverageRetentionRate = (pattern.AverageRetentionRate + item.UserRetentionRate) / 2;
@@ -102,6 +120,7 @@ public class MLTrainingDataService : IMLTrainingDataService
                     progress.Repetitions = item.Repetitions;
                     progress.IsMastered = item.IsMastered;
                     progress.LastReviewedAt = DateTime.UtcNow.AddDays(-item.DaysSinceLastReview);
+                    progress.IsSyntheticData = true; // Помечаем обновленные данные тоже как синтетические
                     // Не увеличиваем RecordsAdded для обновленных записей
                 }
             }
@@ -114,9 +133,15 @@ public class MLTrainingDataService : IMLTrainingDataService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Ошибка при добавлении тренировочных данных");
+            _logger.LogError(ex, "Ошибка при добавлении тренировочных данных. Inner: {InnerMessage}", 
+                ex.InnerException?.Message ?? ex.Message);
             result.Success = false;
-            result.ErrorMessage = ex.Message;
+            result.ErrorMessage = ex.InnerException?.Message ?? ex.Message;
+            result.Errors.Add($"Exception: {ex.GetType().Name} - {ex.Message}");
+            if (ex.InnerException != null)
+            {
+                result.Errors.Add($"Inner Exception: {ex.InnerException.GetType().Name} - {ex.InnerException.Message}");
+            }
         }
 
         return result;

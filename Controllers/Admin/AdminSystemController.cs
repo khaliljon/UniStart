@@ -200,7 +200,8 @@ public class AdminSystemController : ControllerBase
 
         foreach (var quiz in quizzes)
         {
-            csv.AppendLine($"{quiz.Id},\"{quiz.Title}\",{quiz.Subject},{quiz.Difficulty},{quiz.User.UserName},{quiz.Questions.Count},{quiz.Questions.Sum(q => q.Points)},{quiz.IsPublished},{quiz.CreatedAt:yyyy-MM-dd}");
+            var userName = quiz.User?.UserName ?? "Unknown";
+            csv.AppendLine($"{quiz.Id},\"{quiz.Title}\",{quiz.Subject},{quiz.Difficulty},{userName},{quiz.Questions.Count},{quiz.Questions.Sum(q => q.Points)},{quiz.IsPublished},{quiz.CreatedAt:yyyy-MM-dd}");
         }
 
         var bytes = Encoding.UTF8.GetBytes(csv.ToString());
@@ -224,7 +225,8 @@ public class AdminSystemController : ControllerBase
 
         foreach (var set in sets)
         {
-            csv.AppendLine($"{set.Id},\"{set.Title}\",{set.Subject},{set.User.UserName},{set.Flashcards.Count},{set.IsPublic},{set.CreatedAt:yyyy-MM-dd}");
+            var userName = set.User?.UserName ?? "Unknown";
+            csv.AppendLine($"{set.Id},\"{set.Title}\",{set.Subject},{userName},{set.Flashcards.Count},{set.IsPublic},{set.CreatedAt:yyyy-MM-dd}");
         }
 
         var bytes = Encoding.UTF8.GetBytes(csv.ToString());

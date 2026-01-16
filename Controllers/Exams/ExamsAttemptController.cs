@@ -273,7 +273,9 @@ public class ExamsAttemptController : ControllerBase
     public async Task<ActionResult> GetExamStats(int id)
     {
         var userId = await GetUserId();
-        var userRoles = await _userManager.GetRolesAsync(await _userManager.GetUserAsync(User));
+        var user = await _userManager.GetUserAsync(User);
+        if (user == null) return Unauthorized();
+        var userRoles = await _userManager.GetRolesAsync(user);
 
         var exam = await _context.Exams
             .Include(e => e.Attempts)
