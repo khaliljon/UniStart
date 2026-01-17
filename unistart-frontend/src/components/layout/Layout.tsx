@@ -137,6 +137,14 @@ const Layout = () => {
                       <span>ML Training</span>
                     </Link>
                     <Link
+                      to="/admin/ai-flashcards"
+                      className="flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors font-medium"
+                      title="AI Flashcard Generator - Генерация карточек с помощью ИИ"
+                    >
+                      ✨
+                      <span>AI Генератор</span>
+                    </Link>
+                    <Link
                       to="/admin/users"
                       className="flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
                     >

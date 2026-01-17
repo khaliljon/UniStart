@@ -136,14 +136,30 @@ namespace UniStart.Controllers.Flashcards
         {
             var userId = GetUserId();
             
-            // Можно просматривать свои наборы или публичные наборы других пользователей
+            // Сначала проверяем существование набора вообще
+            var setExists = await _context.FlashcardSets
+                .FirstOrDefaultAsync(fs => fs.Id == id);
+            
+            if (setExists == null)
+            {
+                _logger.LogWarning("GetFlashcardSet: Set {Id} does not exist in database", id);
+                return NotFound($"FlashcardSet with ID {id} not found");
+            }
+            
+            _logger.LogInformation("GetFlashcardSet: Set {Id} exists. UserId={SetUserId}, CurrentUserId={CurrentUserId}, IsPublic={IsPublic}, IsPublished={IsPublished}", 
+                id, setExists.UserId, userId, setExists.IsPublic, setExists.IsPublished);
+            
+            // Можно просматривать свои наборы (включая черновики) или публичные наборы других пользователей
             var set = await _context.FlashcardSets
-                .Where(fs => fs.UserId == userId || fs.IsPublic)
+                .Where(fs => fs.UserId == userId || (fs.IsPublic && fs.IsPublished))
                 .Include(fs => fs.Flashcards)
                 .FirstOrDefaultAsync(fs => fs.Id == id);
 
             if (set == null)
+            {
+                _logger.LogWarning("GetFlashcardSet: Access denied. Set {Id} found but user {UserId} has no access", id, userId);
                 return NotFound($"FlashcardSet with ID {id} not found");
+            }
 
             // Создаем или обновляем запись о доступе к набору
             var access = await _context.UserFlashcardSetAccesses

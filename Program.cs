@@ -89,6 +89,11 @@ builder.Services.AddScoped<UniStart.Services.AI.IMLTrainingDataService, UniStart
 builder.Services.AddScoped<UniStart.Services.AI.IUniversityRecommendationService, UniStart.Services.AI.UniversityRecommendationService>();
 builder.Services.AddScoped<UniStart.Services.AI.IContentRecommendationService, UniStart.Services.AI.ContentRecommendationService>();
 builder.Services.AddScoped<UniStart.Services.AI.IAIContentGeneratorService, UniStart.Services.AI.AIContentGeneratorService>();
+builder.Services.AddScoped<UniStart.Services.AI.IAIFlashcardGeneratorService, UniStart.Services.AI.AIFlashcardGeneratorService>();
+
+// AI Settings
+builder.Services.Configure<UniStart.DTOs.AIServiceSettings>(
+    builder.Configuration.GetSection("AI:Flashcards"));
 
 // Background Services
 builder.Services.AddHostedService<UniStart.Services.BackgroundServices.MLRetrainingBackgroundService>();

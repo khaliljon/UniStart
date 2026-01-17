@@ -48,6 +48,7 @@ import AdminCountriesPage from './pages/admin/AdminCountriesPage'
 import AdminUniversitiesPage from './pages/admin/AdminUniversitiesPage'
 import AdminExamTypesPage from './pages/admin/AdminExamTypesPage'
 import AdminMLTrainingPage from './pages/admin/AdminMLTrainingPage'
+import AdminAIFlashcardsPage from './pages/admin/AdminAIFlashcardsPage'
 
 // Student Pages
 import StudentProgressPage from './pages/student/StudentProgressPage'
@@ -448,6 +449,16 @@ function App() {
               <PrivateRoute>
                 <RoleRoute allowedRoles={['Admin']}>
                   <AdminMLTrainingPage />
+                </RoleRoute>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/admin/ai-flashcards"
+            element={
+              <PrivateRoute>
+                <RoleRoute allowedRoles={['Admin', 'Teacher']}>
+                  <AdminAIFlashcardsPage />
                 </RoleRoute>
               </PrivateRoute>
             }
