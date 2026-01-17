@@ -11,9 +11,7 @@ public interface IMLTrainingDataService
 {
     Task<TrainingDataImportResult> AddManualTrainingDataAsync(List<ManualTrainingDataDto> data);
     Task<TrainingDataImportResult> ImportFromCsvAsync(IFormFile file);
-    Task<TrainingDataImportResult> GenerateSyntheticDataAsync(int count);
     Task<TrainingStatsDto> GetTrainingStatsAsync();
-    Task<int> DeleteSyntheticDataAsync(); // Метод для удаления всех синтетических данных
 }
 
 public class MLTrainingDataService : IMLTrainingDataService
@@ -107,8 +105,7 @@ public class MLTrainingDataService : IMLTrainingDataService
                         Interval = item.Interval,
                         Repetitions = item.Repetitions,
                         IsMastered = item.IsMastered,
-                        LastReviewedAt = DateTime.UtcNow.AddDays(-item.DaysSinceLastReview),
-                        IsSyntheticData = true // Помечаем синтетические данные
+                        LastReviewedAt = DateTime.UtcNow.AddDays(-item.DaysSinceLastReview)
                     };
                     await _unitOfWork.FlashcardProgress.AddAsync(progress);
                     result.RecordsAdded++; // Увеличиваем только для новых записей
@@ -120,7 +117,6 @@ public class MLTrainingDataService : IMLTrainingDataService
                     progress.Repetitions = item.Repetitions;
                     progress.IsMastered = item.IsMastered;
                     progress.LastReviewedAt = DateTime.UtcNow.AddDays(-item.DaysSinceLastReview);
-                    progress.IsSyntheticData = true; // Помечаем обновленные данные тоже как синтетические
                     // Не увеличиваем RecordsAdded для обновленных записей
                 }
             }
@@ -367,36 +363,5 @@ public class MLTrainingDataService : IMLTrainingDataService
             AverageInterval = allProgresses.Any() ? allProgresses.Average(p => p.Interval) : 0,
             AverageRetentionRate = patterns.Any() ? patterns.Average(p => p.AverageRetentionRate) : 0
         };
-    }
-
-    public async Task<int> DeleteSyntheticDataAsync()
-    {
-        try
-        {
-            var syntheticData = await _unitOfWork.FlashcardProgress.Query()
-                .Where(p => p.IsSyntheticData)
-                .ToListAsync();
-
-            var count = syntheticData.Count;
-
-            if (count > 0)
-            {
-                _unitOfWork.FlashcardProgress.RemoveRange(syntheticData);
-                await _unitOfWork.SaveChangesAsync();
-                
-                _logger.LogInformation("Удалено {Count} синтетических записей UserFlashcardProgress", count);
-            }
-            else
-            {
-                _logger.LogInformation("Синтетические данные не найдены");
-            }
-
-            return count;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Ошибка при удалении синтетических данных");
-            throw;
-        }
     }
 }

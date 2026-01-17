@@ -21,7 +21,6 @@ export const MLTrainingPanel: React.FC = () => {
   const [stats, setStats] = useState<TrainingStats | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error' | 'info', text: string } | null>(null);
-  const [syntheticCount, setSyntheticCount] = useState(100);
 
   useEffect(() => {
     loadStats();
@@ -34,26 +33,6 @@ export const MLTrainingPanel: React.FC = () => {
     } catch (error) {
       console.error('Failed to load stats:', error);
       setMessage({ type: 'error', text: 'Не удалось загрузить статистику' });
-    }
-  };
-
-  const generateSyntheticData = async () => {
-    setLoading(true);
-    setMessage(null);
-    try {
-      const { data } = await api.post(`/mltraining/generate-synthetic-data?count=${syntheticCount}`);
-      setMessage({ 
-        type: 'success', 
-        text: `Сгенерировано ${data.recordsGenerated} записей. Всего: ${data.totalRecords}` 
-      });
-      await loadStats();
-    } catch (error: any) {
-      setMessage({ 
-        type: 'error', 
-        text: error.response?.data?.message || 'Ошибка генерации данных' 
-      });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -71,6 +50,30 @@ export const MLTrainingPanel: React.FC = () => {
       setMessage({ 
         type: 'error', 
         text: error.response?.data?.message || 'Ошибка при обучении модели' 
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deleteTestData = async () => {
+    if (!window.confirm('Удалить все тестовые данные (30 ml_test_student пользователей + ML Test Dataset)? Это действие необратимо!')) {
+      return;
+    }
+    
+    setLoading(true);
+    setMessage(null);
+    try {
+      const { data } = await api.delete('/mltraining/test-data');
+      setMessage({ 
+        type: 'success', 
+        text: `Удалено: ${data.deletedUsers} пользователей, ${data.deletedFlashcardSets} наборов, ${data.deletedFlashcards} карточек` 
+      });
+      await loadStats();
+    } catch (error: any) {
+      setMessage({ 
+        type: 'error', 
+        text: error.response?.data?.message || 'Ошибка при удалении тестовых данных' 
       });
     } finally {
       setLoading(false);
@@ -183,29 +186,7 @@ export const MLTrainingPanel: React.FC = () => {
         <h3>🔧 Действия</h3>
         
         <div className="action-group">
-          <h4>1. Генерация тестовых данных</h4>
-          <p>Создать синтетические данные для быстрого запуска</p>
-          <div className="input-group">
-            <input
-              type="number"
-              min="10"
-              max="10000"
-              value={syntheticCount}
-              onChange={(e) => setSyntheticCount(parseInt(e.target.value))}
-              disabled={loading}
-            />
-            <button
-              onClick={generateSyntheticData}
-              disabled={loading}
-              className="btn btn-primary"
-            >
-              {loading ? 'Генерация...' : 'Сгенерировать данные'}
-            </button>
-          </div>
-        </div>
-
-        <div className="action-group">
-          <h4>2. Импорт из CSV</h4>
+          <h4>1. Импорт из CSV</h4>
           <p>
             Загрузите CSV файл с тренировочными данными.{' '}
             <a href="/templates/training_data_template.csv" download>
@@ -222,7 +203,7 @@ export const MLTrainingPanel: React.FC = () => {
         </div>
 
         <div className="action-group">
-          <h4>3. Переобучить модель</h4>
+          <h4>2. Переобучить модель</h4>
           <p>
             {stats.canTrain 
               ? 'Модель будет переобучена на всех доступных данных' 
@@ -235,6 +216,20 @@ export const MLTrainingPanel: React.FC = () => {
             className="btn btn-success"
           >
             {loading ? 'Обучение...' : 'Переобучить модель'}
+          </button>
+        </div>
+
+        <div className="action-group">
+          <h4>3. Удалить тестовые данные</h4>
+          <p className="text-red-600">
+            ⚠️ Удалит всех ml_test_student пользователей и набор "ML Test Dataset"
+          </p>
+          <button
+            onClick={deleteTestData}
+            disabled={loading}
+            className="btn btn-danger"
+          >
+            {loading ? 'Удаление...' : '🗑️ Удалить тестовые данные'}
           </button>
         </div>
       </div>

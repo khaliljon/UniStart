@@ -173,20 +173,6 @@ if (app.Environment.IsDevelopment())
         
         // Инициализируем все начальные данные (роли, предметы, достижения, международные данные)
         await UniStart.Seeders.DatabaseSeeder.SeedAsync(context, userManager, roleManager);
-        
-        // В Development окружении создаем тестовые данные для ML
-        if (app.Environment.IsDevelopment())
-        {
-            var logger = services.GetRequiredService<ILogger<Program>>();
-            logger.LogInformation("🔧 Development окружение - запуск ML Data Seeder...");
-            
-            var mlSeeder = new UniStart.Seeders.MLDataSeeder(
-                context, 
-                userManager, 
-                services.GetRequiredService<ILogger<UniStart.Seeders.MLDataSeeder>>());
-            
-            await mlSeeder.SeedAsync();
-        }
     }
     catch (Exception ex)
     {

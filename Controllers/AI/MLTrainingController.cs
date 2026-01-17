@@ -1,6 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using UniStart.Data;
 using UniStart.DTOs;
+using UniStart.Models.Core;
 using UniStart.Services.AI;
 
 namespace UniStart.Controllers.AI;
@@ -15,15 +19,21 @@ public class MLTrainingController : BaseApiController
     private readonly IMLPredictionService _mlService;
     private readonly IMLTrainingDataService _trainingDataService;
     private readonly ILogger<MLTrainingController> _logger;
+    private readonly ApplicationDbContext _context;
+    private readonly UserManager<ApplicationUser> _userManager;
 
     public MLTrainingController(
         IMLPredictionService mlService,
         IMLTrainingDataService trainingDataService,
-        ILogger<MLTrainingController> logger)
+        ILogger<MLTrainingController> logger,
+        ApplicationDbContext context,
+        UserManager<ApplicationUser> userManager)
     {
         _mlService = mlService;
         _trainingDataService = trainingDataService;
         _logger = logger;
+        _context = context;
+        _userManager = userManager;
     }
 
     /// <summary>
@@ -135,65 +145,61 @@ public class MLTrainingController : BaseApiController
     }
 
     /// <summary>
-    /// Генерировать синтетические тестовые данные
+    /// Удаляет все тестовые данные из ML сидера (пользователи, карточки)
     /// </summary>
-    [HttpPost("generate-synthetic-data")]
-    public async Task<IActionResult> GenerateSyntheticData([FromQuery] int count = 100)
+    [HttpDelete("test-data")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> DeleteTestData()
     {
         try
         {
-            if (count < 10 || count > 10000)
-                return BadRequest(new { message = "Количество должно быть от 10 до 10000" });
+            var deletedUsers = 0;
+            var deletedFlashcardSets = 0;
+            var deletedFlashcards = 0;
 
-            var result = await _trainingDataService.GenerateSyntheticDataAsync(count);
-            
-            if (!result.Success)
+            // 1. Удаляем тестовых пользователей
+            var testUsers = await _userManager.Users
+                .Where(u => u.Email!.StartsWith("ml_test_student"))
+                .ToListAsync();
+
+            foreach (var user in testUsers)
             {
-                return BadRequest(new 
-                { 
-                    message = result.ErrorMessage,
-                    errors = result.Errors
-                });
+                var result = await _userManager.DeleteAsync(user);
+                if (result.Succeeded)
+                    deletedUsers++;
             }
-            
-            return Ok(new
-            {
-                message = $"Сгенерировано {result.RecordsAdded} записей. Всего: {result.TotalRecords}",
-                recordsGenerated = result.RecordsAdded,
-                totalRecords = result.TotalRecords,
-                canTrain = result.TotalRecords >= 100,
-                errors = result.Errors
-            });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Ошибка генерации синтетических данных");
-            return StatusCode(500, new { message = "Ошибка генерации: " + ex.Message });
-        }
-    }
 
-    /// <summary>
-    /// Удаляет все синтетические тестовые данные
-    /// </summary>
-    [HttpDelete("synthetic-data")]
-    public async Task<IActionResult> DeleteSyntheticData()
-    {
-        try
-        {
-            var deletedCount = await _trainingDataService.DeleteSyntheticDataAsync();
-            
+            // 2. Удаляем тестовые flashcard sets
+            var testSets = await _context.FlashcardSets
+                .Include(fs => fs.Flashcards)
+                .Where(fs => fs.Title == "ML Test Dataset")
+                .ToListAsync();
+
+            foreach (var set in testSets)
+            {
+                deletedFlashcards += set.Flashcards?.Count ?? 0;
+                _context.FlashcardSets.Remove(set);
+                deletedFlashcardSets++;
+            }
+
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation(
+                "Удалены тестовые данные: {Users} пользователей, {Sets} наборов, {Cards} карточек",
+                deletedUsers, deletedFlashcardSets, deletedFlashcards);
+
             return Ok(new
             {
-                message = deletedCount > 0 
-                    ? $"Удалено {deletedCount} синтетических записей" 
-                    : "Синтетические данные не найдены",
-                deletedCount,
+                message = "Тестовые данные успешно удалены",
+                deletedUsers,
+                deletedFlashcardSets,
+                deletedFlashcards,
                 success = true
             });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Ошибка при удалении синтетических данных");
+            _logger.LogError(ex, "Ошибка при удалении тестовых данных");
             return StatusCode(500, new { message = "Ошибка удаления: " + ex.Message });
         }
     }
