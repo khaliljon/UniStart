@@ -9,7 +9,7 @@ import api from '../../services/api';
 interface AdminStats {
   totalUsers: number;
   totalQuizzes: number;
-  totalTests: number;
+  totalExams: number;
   totalFlashcardSets: number;
   activeToday: number;
   activeThisWeek: number;
@@ -21,7 +21,7 @@ const AdminDashboard = () => {
   const [stats, setStats] = useState<AdminStats>({
     totalUsers: 0,
     totalQuizzes: 0,
-    totalTests: 0,
+    totalExams: 0,
     totalFlashcardSets: 0,
     activeToday: 0,
     activeThisWeek: 0,
@@ -79,7 +79,7 @@ const AdminDashboard = () => {
       setStats({
         totalUsers: analyticsData.totalUsers || 0,
         totalQuizzes: analyticsData.totalQuizzes || 0,
-        totalTests: analyticsData.totalTests || 0,
+        totalExams: analyticsData.totalExams || analyticsData.totalTests || 0,
         totalFlashcardSets: analyticsData.totalFlashcardSets || 0,
         activeToday: analyticsData.activeToday || 0,
         activeThisWeek: analyticsData.activeThisWeek || 0,
@@ -93,7 +93,7 @@ const AdminDashboard = () => {
       setStats({
         totalUsers: 0,
         totalQuizzes: 0,
-        totalTests: 0,
+        totalExams: 0,
         totalFlashcardSets: 0,
         activeToday: 0,
         activeThisWeek: 0,
@@ -121,7 +121,7 @@ const AdminDashboard = () => {
     {
       icon: FileText,
       label: 'Экзаменов создано',
-      value: stats.totalTests,
+      value: stats.totalExams,
       color: 'bg-indigo-500',
     },
     {

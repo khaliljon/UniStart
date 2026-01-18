@@ -160,10 +160,11 @@ namespace UniStart.Controllers.Student
         {
             var query = _context.Exams
                 .Include(e => e.Questions)
+                .Include(e => e.Subjects)
                 .Where(e => e.IsPublic && e.IsPublished); // Только публичные и опубликованные экзамены
 
             if (!string.IsNullOrWhiteSpace(subject))
-                query = query.Where(e => e.Subject.Contains(subject));
+                query = query.Where(e => e.Subjects.Any(s => s.Name.Contains(subject)));
 
             if (!string.IsNullOrWhiteSpace(difficulty))
                 query = query.Where(e => e.Difficulty == difficulty);
@@ -177,7 +178,6 @@ namespace UniStart.Controllers.Student
                     e.Id,
                     e.Title,
                     e.Description,
-                    e.Subject,
                     e.Difficulty,
                     e.TimeLimit,
                     QuestionCount = e.Questions.Count,

@@ -29,7 +29,7 @@ public class ExamQuestion
     [Range(1, 100, ErrorMessage = "Баллы должны быть от 1 до 100")]
     public int Points { get; set; } = 1;
     
-    public int Order { get; set; }
+    public int OrderIndex { get; set; }
     
     // Связи
     public int ExamId { get; set; }

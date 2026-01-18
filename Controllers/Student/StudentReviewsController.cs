@@ -48,11 +48,19 @@ namespace UniStart.Controllers.Student
 
             var recommendations = new List<object>();
 
+            // Получаем прогресс пользователя для всех карточек
+            var now = DateTime.UtcNow;
+            var setIds = flashcardSets.Select(fs => fs.Id).ToList();
+            var cardsDue = await _context.UserFlashcardProgresses
+                .Where(p => p.UserId == userId && setIds.Contains(p.Flashcard.FlashcardSetId))
+                .Where(p => p.NextReviewDate == null || p.NextReviewDate <= now)
+                .GroupBy(p => p.Flashcard.FlashcardSetId)
+                .Select(g => new { SetId = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(x => x.SetId, x => x.Count);
+
             foreach (var set in flashcardSets)
             {
-                var cardsNeedingReview = set.Flashcards
-                    .Where(c => c.NextReviewDate <= DateTime.UtcNow)
-                    .Count();
+                var cardsNeedingReview = cardsDue.GetValueOrDefault(set.Id, 0);
 
                 if (cardsNeedingReview > 0)
                 {

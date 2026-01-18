@@ -295,11 +295,11 @@ const EditQuizPage = () => {
           text: q.text,
           points: q.points,
           explanation: q.explanation || '',
-          order: index,
+          orderIndex: index,
           answers: q.answers.map((a, aIndex) => ({
             text: a.text,
             isCorrect: a.isCorrect,
-            order: aIndex,
+            orderIndex: aIndex,
           })),
         })),
       };

@@ -143,7 +143,7 @@ public class ExamsQueryController : ControllerBase
         if (attemptsCount >= exam.MaxAttempts)
             return BadRequest($"Вы использовали все попытки ({exam.MaxAttempts})");
 
-        var questions = exam.Questions.OrderBy(q => q.Order).ToList();
+        var questions = exam.Questions.OrderBy(q => q.OrderIndex).ToList();
 
         if (exam.ShuffleQuestions)
             questions = questions.OrderBy(_ => Guid.NewGuid()).ToList();
@@ -154,7 +154,7 @@ public class ExamsQueryController : ControllerBase
             Title = exam.Title,
             Description = exam.Description,
             TimeLimit = exam.TimeLimit,
-            TotalPoints = exam.TotalPoints,
+            MaxScore = exam.MaxScore,
             PassingScore = exam.PassingScore,
             RemainingAttempts = exam.MaxAttempts - attemptsCount,
             Questions = questions.Select(q => new ExamQuestionTakingDto
@@ -163,15 +163,15 @@ public class ExamsQueryController : ControllerBase
                 Text = q.Text,
                 QuestionType = q.QuestionType,
                 Points = q.Points,
-                Order = q.Order,
+                OrderIndex = q.OrderIndex,
                 Answers = (exam.ShuffleAnswers
                     ? q.Answers.OrderBy(_ => Guid.NewGuid())
-                    : q.Answers.OrderBy(a => a.Order)
+                    : q.Answers.OrderBy(a => a.OrderIndex)
                 ).Select(a => new ExamAnswerTakingDto
                 {
                     Id = a.Id,
                     Text = a.Text,
-                    Order = a.Order
+                    OrderIndex = a.OrderIndex
                 }).ToList()
             }).ToList()
         };

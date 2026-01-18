@@ -141,7 +141,7 @@ export interface Quiz {
   difficulty: string;
   isLearningMode?: boolean;
   questionCount: number;
-  totalPoints: number;
+  maxScore: number;
 }
 
 export interface QuizDetail {
@@ -216,7 +216,7 @@ export interface Exam {
   timeLimit: number;
   strictTiming?: boolean;
   questionCount: number;
-  totalPoints: number;
+  maxScore: number;
   maxAttempts: number;
   passingScore: number;
   shuffleQuestions?: boolean;

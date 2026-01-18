@@ -1031,7 +1031,7 @@ const ListView = ({
                   <div className="flex items-center gap-2">
                     <Award className="w-4 h-4 text-gray-400" />
                     <span className="text-sm text-gray-600 dark:text-gray-400">
-                      {quiz.totalPoints} баллов
+                      {quiz.maxScore} баллов
                     </span>
                   </div>
                 </div>

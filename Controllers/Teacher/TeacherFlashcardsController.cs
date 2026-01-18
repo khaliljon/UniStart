@@ -97,21 +97,32 @@ public class TeacherFlashcardsController : ControllerBase
             .OrderByDescending(fs => fs.UpdatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(fs => new FlashcardSetDto
-            {
-                Id = fs.Id,
-                Title = fs.Title,
-                Description = fs.Description,
-                Subject = fs.Subject,
-                IsPublic = fs.IsPublic,
-                CreatedAt = fs.CreatedAt,
-                UpdatedAt = fs.UpdatedAt,
-                CardCount = fs.Flashcards.Count,
-                TotalCards = fs.Flashcards.Count,
-                CardsToReview = fs.Flashcards.Count(f => f.NextReviewDate == null || f.NextReviewDate <= DateTime.UtcNow)
-            })
             .ToListAsync();
 
-        return Ok(flashcardSets);
+        // Получаем прогресс пользователя для подсчёта карточек к повторению
+        var now = DateTime.UtcNow;
+        var setIds = flashcardSets.Select(fs => fs.Id).ToList();
+        var cardsDueBySet = await _context.UserFlashcardProgresses
+            .Where(p => p.UserId == userId && setIds.Contains(p.Flashcard.FlashcardSetId))
+            .Where(p => p.NextReviewDate == null || p.NextReviewDate <= now)
+            .GroupBy(p => p.Flashcard.FlashcardSetId)
+            .Select(g => new { SetId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.SetId, x => x.Count);
+
+        var result = flashcardSets.Select(fs => new FlashcardSetDto
+        {
+            Id = fs.Id,
+            Title = fs.Title,
+            Description = fs.Description,
+            Subject = fs.Subject,
+            IsPublic = fs.IsPublic,
+            CreatedAt = fs.CreatedAt,
+            UpdatedAt = fs.UpdatedAt,
+            CardCount = fs.Flashcards.Count,
+            TotalCards = fs.Flashcards.Count,
+            CardsToReview = cardsDueBySet.GetValueOrDefault(fs.Id, 0)
+        }).ToList();
+
+        return Ok(result);
     }
 }

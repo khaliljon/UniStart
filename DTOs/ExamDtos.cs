@@ -58,11 +58,6 @@ public class CreateExamDto
     [StringLength(1000, ErrorMessage = "Описание не должно превышать 1000 символов")]
     public string? Description { get; set; }
     
-    [Required(ErrorMessage = "Предмет обязателен")]
-    [StringLength(100, ErrorMessage = "Название предмета не должно превышать 100 символов")]
-    [Obsolete("Используйте SubjectIds для множественного выбора")]
-    public string Subject { get; set; } = string.Empty; // Оставлено для обратной совместимости
-    
     [Required(ErrorMessage = "Необходимо выбрать хотя бы один предмет")]
     public List<int> SubjectIds { get; set; } = new(); // Список ID предметов
     
@@ -105,7 +100,7 @@ public class CreateExamQuestionDto
     public string? Explanation { get; set; }
     public string QuestionType { get; set; } = "SingleChoice";
     public int Points { get; set; } = 1;
-    public int Order { get; set; }
+    public int OrderIndex { get; set; }
     public List<CreateExamAnswerDto> Answers { get; set; } = new();
 }
 
@@ -116,7 +111,7 @@ public class CreateExamAnswerDto
 {
     public string Text { get; set; } = string.Empty;
     public bool IsCorrect { get; set; }
-    public int Order { get; set; }
+    public int OrderIndex { get; set; }
 }
 
 /// <summary>
@@ -127,8 +122,7 @@ public class ExamDto
     public int Id { get; set; }
     public string Title { get; set; } = string.Empty;
     public string? Description { get; set; }
-    [Obsolete("Используйте Subjects")]
-    public string Subject { get; set; } = string.Empty; // Оставлено для обратной совместимости
+
     public List<string> Subjects { get; set; } = new(); // Список названий предметов
     public List<int> SubjectIds { get; set; } = new(); // Список ID предметов
     public string Difficulty { get; set; } = string.Empty;
@@ -154,7 +148,7 @@ public class ExamDto
     
     public bool IsPublished { get; set; }
     public bool IsPublic { get; set; }
-    public int TotalPoints { get; set; }
+    public int MaxScore { get; set; }
     public int QuestionCount { get; set; }
     public DateTime CreatedAt { get; set; }
     
@@ -175,7 +169,7 @@ public class ExamQuestionDto
     public string? Explanation { get; set; }
     public string QuestionType { get; set; } = string.Empty;
     public int Points { get; set; }
-    public int Order { get; set; }
+    public int OrderIndex { get; set; }
     public List<ExamAnswerDto> Answers { get; set; } = new();
 }
 
@@ -187,7 +181,7 @@ public class ExamAnswerDto
     public int Id { get; set; }
     public string Text { get; set; } = string.Empty;
     public bool IsCorrect { get; set; }
-    public int Order { get; set; }
+    public int OrderIndex { get; set; }
 }
 
 /// <summary>
@@ -203,7 +197,7 @@ public class ExamTakingDto
     public int TimeLimit { get; set; }
     public bool StrictTiming { get; set; }
     public int PassingScore { get; set; }
-    public int TotalPoints { get; set; }
+    public int MaxScore { get; set; }
     public int MaxAttempts { get; set; }
     public int RemainingAttempts { get; set; }
     public bool ShuffleQuestions { get; set; }
@@ -220,7 +214,7 @@ public class ExamQuestionTakingDto
     public string Text { get; set; } = string.Empty;
     public string QuestionType { get; set; } = string.Empty;
     public int Points { get; set; }
-    public int Order { get; set; }
+    public int OrderIndex { get; set; }
     public List<ExamAnswerTakingDto> Answers { get; set; } = new();
 }
 
@@ -231,7 +225,7 @@ public class ExamAnswerTakingDto
 {
     public int Id { get; set; }
     public string Text { get; set; } = string.Empty;
-    public int Order { get; set; }
+    public int OrderIndex { get; set; }
 }
 
 /// <summary>
@@ -241,7 +235,7 @@ public class SubmitExamDto
 {
     public int ExamId { get; set; }
     public List<ExamAnswerSubmissionDto> Answers { get; set; } = new();
-    public TimeSpan TimeSpent { get; set; }
+    public int TimeSpent { get; set; } // в секундах
 }
 
 /// <summary>
@@ -279,10 +273,10 @@ public class ExamResultDto
 {
     public int AttemptId { get; set; }
     public int Score { get; set; }
-    public int TotalPoints { get; set; }
+    public int MaxScore { get; set; }
     public double Percentage { get; set; }
     public bool Passed { get; set; }
-    public TimeSpan TimeSpent { get; set; }
+    public int TimeSpentSeconds { get; set; }
     public DateTime CompletedAt { get; set; }
     public int AttemptNumber { get; set; }
     public int RemainingAttempts { get; set; }
@@ -347,10 +341,10 @@ public class ExamAttemptSummaryDto
     public int AttemptId { get; set; }
     public string StudentName { get; set; } = string.Empty;
     public int Score { get; set; }
-    public int TotalPoints { get; set; }
+    public int MaxScore { get; set; }
     public double Percentage { get; set; }
     public bool Passed { get; set; }
-    public TimeSpan TimeSpent { get; set; }
+    public int TimeSpentSeconds { get; set; }
     public DateTime CompletedAt { get; set; }
 }
 

@@ -215,7 +215,7 @@ const AdminQuizzesPage = () => {
                       </div>
                       <div className="flex items-center gap-1">
                         <Award className="w-4 h-4" />
-                        <span>{quiz.totalPoints} баллов</span>
+                        <span>{quiz.maxScore} баллов</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <Clock className="w-4 h-4" />

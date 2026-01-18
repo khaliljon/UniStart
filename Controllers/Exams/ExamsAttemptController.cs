@@ -136,10 +136,10 @@ public class ExamsAttemptController : ControllerBase
         }
 
         attempt.Score = earnedPoints;
-        attempt.TotalPoints = exam.TotalPoints;
-        attempt.Percentage = exam.TotalPoints > 0 ? (double)earnedPoints / exam.TotalPoints * 100 : 0;
+        attempt.MaxScore = exam.MaxScore;
+        attempt.Percentage = exam.MaxScore > 0 ? (double)earnedPoints / exam.MaxScore * 100 : 0;
         attempt.Passed = attempt.Percentage >= exam.PassingScore;
-        attempt.TimeSpent = TimeSpan.FromSeconds(submission.TimeSpent);
+        attempt.TimeSpentSeconds = submission.TimeSpent;
         attempt.CompletedAt = DateTime.UtcNow;
 
         _context.UserExamAnswers.AddRange(userAnswers);
@@ -149,7 +149,7 @@ public class ExamsAttemptController : ControllerBase
             success = true, 
             score = (int)attempt.Percentage,
             earnedPoints = earnedPoints,
-            totalPoints = exam.TotalPoints,
+            maxScore = exam.MaxScore,
             passed = attempt.Passed
         });
     }
@@ -179,16 +179,16 @@ public class ExamsAttemptController : ControllerBase
         {
             UserId = userId,
             ExamId = exam.Id,
-            StartedAt = DateTime.UtcNow.Subtract(submission.TimeSpent),
+            StartedAt = DateTime.UtcNow.AddSeconds(-submission.TimeSpent),
             CompletedAt = DateTime.UtcNow,
-            TimeSpent = submission.TimeSpent,
+            TimeSpentSeconds = submission.TimeSpent,
             AttemptNumber = completedAttempts + 1,
             IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
             UserAgent = HttpContext.Request.Headers["User-Agent"].ToString()
         };
 
         int totalScore = 0;
-        int totalPoints = exam.TotalPoints;
+        int maxScore = exam.MaxScore;
         var userAnswers = new List<UserExamAnswer>();
 
         foreach (var answer in submission.Answers)
@@ -215,8 +215,8 @@ public class ExamsAttemptController : ControllerBase
         }
 
         attempt.Score = totalScore;
-        attempt.TotalPoints = totalPoints;
-        attempt.Percentage = totalPoints > 0 ? (double)totalScore / totalPoints * 100 : 0;
+        attempt.MaxScore = maxScore;
+        attempt.Percentage = maxScore > 0 ? (double)totalScore / maxScore * 100 : 0;
         attempt.Passed = attempt.Percentage >= exam.PassingScore;
         attempt.UserAnswers = userAnswers;
 
@@ -227,10 +227,10 @@ public class ExamsAttemptController : ControllerBase
         {
             AttemptId = attempt.Id,
             Score = attempt.Score,
-            TotalPoints = attempt.TotalPoints,
+            MaxScore = attempt.MaxScore,
             Percentage = attempt.Percentage,
             Passed = attempt.Passed,
-            TimeSpent = attempt.TimeSpent,
+            TimeSpentSeconds = attempt.TimeSpentSeconds,
             CompletedAt = attempt.CompletedAt.Value,
             AttemptNumber = attempt.AttemptNumber,
             RemainingAttempts = exam.MaxAttempts - attempt.AttemptNumber,
@@ -279,6 +279,7 @@ public class ExamsAttemptController : ControllerBase
 
         var exam = await _context.Exams
             .Include(e => e.Attempts)
+            .Include(e => e.Questions)
             .FirstOrDefaultAsync(e => e.Id == id);
 
         if (exam == null)
@@ -297,9 +298,64 @@ public class ExamsAttemptController : ControllerBase
                 examTitle = exam.Title,
                 totalAttempts = 0,
                 averageScore = 0.0,
-                passRate = 0.0
+                averageTimeSpent = 0,
+                passRate = 0.0,
+                questionStats = new List<object>(),
+                recentAttempts = new List<object>()
             });
         }
+
+        // Статистика по вопросам
+        var attemptIds = attempts.Select(a => a.Id).ToList();
+        var userAnswers = await _context.UserExamAnswers
+            .Where(a => attemptIds.Contains(a.AttemptId))
+            .GroupBy(a => new { a.AttemptId, a.QuestionId })
+            .ToListAsync();
+
+        var questionStats = new List<object>();
+        foreach (var examQuestion in exam.Questions.OrderBy(q => q.OrderIndex))
+        {
+            var questionAnswers = userAnswers
+                .Where(g => g.Key.QuestionId == examQuestion.Id)
+                .ToList();
+
+            int totalAnswers = questionAnswers.Count;
+            int correctAnswers = questionAnswers.Count(answerGroup => 
+                answerGroup.Any(a => a.IsCorrect && a.PointsEarned > 0));
+
+            questionStats.Add(new
+            {
+                questionId = examQuestion.Id,
+                questionText = examQuestion.Text,
+                correctAnswers,
+                totalAnswers,
+                successRate = totalAnswers > 0 ? (double)correctAnswers / totalAnswers * 100 : 0
+            });
+        }
+
+        // Последние попытки
+        var userIds = attempts.Select(a => a.UserId).Distinct().ToList();
+        var usersDict = await _context.Users
+            .Where(u => userIds.Contains(u.Id))
+            .ToDictionaryAsync(u => u.Id);
+
+        var recentAttempts = attempts
+            .OrderByDescending(a => a.CompletedAt)
+            .Take(10)
+            .Select(a => 
+            {
+                var attemptUser = usersDict.TryGetValue(a.UserId, out var u) ? u : null;
+                return new
+                {
+                    id = a.Id,
+                    studentName = attemptUser != null ? $"{attemptUser.FirstName} {attemptUser.LastName}".Trim() : "Unknown",
+                    score = a.Score,
+                    maxScore = a.MaxScore,
+                    percentage = a.Percentage,
+                    timeSpent = a.TimeSpentSeconds,
+                    completedAt = a.CompletedAt
+                };
+            }).ToList();
 
         var stats = new
         {
@@ -307,10 +363,10 @@ public class ExamsAttemptController : ControllerBase
             examTitle = exam.Title,
             totalAttempts = attempts.Count,
             averageScore = attempts.Average(a => a.Percentage),
-            highestScore = attempts.Max(a => a.Percentage),
-            lowestScore = attempts.Min(a => a.Percentage),
+            averageTimeSpent = (int)attempts.Average(a => a.TimeSpentSeconds),
             passRate = attempts.Count(a => a.Passed) * 100.0 / attempts.Count,
-            averageTimeSpent = (int)attempts.Average(a => a.TimeSpent.TotalSeconds)
+            questionStats,
+            recentAttempts
         };
 
         return Ok(stats);

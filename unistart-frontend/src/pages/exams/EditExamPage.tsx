@@ -360,11 +360,11 @@ const EditExamPage = () => {
           explanation: q.explanation,
           questionType: q.questionType,
           points: q.points,
-          order: index,
+          orderIndex: index,
           answers: q.answers.map((a, aIndex) => ({
             text: a.text,
             isCorrect: a.isCorrect,
-            order: aIndex,
+            orderIndex: aIndex,
           })),
         })),
       };

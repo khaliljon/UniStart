@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { BookOpen, Play, Target, Clock, Plus, Trash2, Edit, TrendingUp, Upload, FileX, CheckCircle, AlertCircle } from 'lucide-react';
+import { BookOpen, Play, Target, Clock, Plus, Trash2, Edit, TrendingUp, Upload, FileX, CheckCircle, AlertCircle, FileText } from 'lucide-react';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import { flashcardService } from '../../services/flashcardService';
@@ -154,42 +154,55 @@ const FlashcardsPage = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
               >
-                <Card className="h-full flex flex-col hover:shadow-lg transition-shadow">
+                <Card className="h-full flex flex-col hover:shadow-lg transition-shadow dark:bg-gray-800 dark:border-gray-700">
                   {/* Заголовок набора */}
-                  <div className="flex justify-between items-start mb-3">
-                    <h3 className="text-lg font-semibold text-gray-900 flex-1">
+                  <div className="mb-3">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">
                       {set.title}
                     </h3>
+                    
+                    {/* Сетка: предмет и количество карточек */}
+                    <div className="grid grid-cols-2 gap-3 mb-3">
+                      {/* Предмет - слева сверху */}
+                      <div className="flex items-center gap-2">
+                        <BookOpen className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                          {set.subject || 'Не указан'}
+                        </span>
+                      </div>
+                      
+                      {/* Количество карточек - справа сверху */}
+                      <div className="flex items-center gap-2">
+                        <FileText className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                          {set.totalCards || 0} карточек
+                        </span>
+                      </div>
+                      
+                      {/* Дата - слева снизу */}
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                          {new Date(set.updatedAt).toLocaleDateString('ru-RU')}
+                        </span>
+                      </div>
+                      
+                      {/* К повторению - справа снизу */}
+                      {(set.cardsToReview || 0) > 0 && (
+                        <div className="flex items-center gap-2">
+                          <Target className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+                          <span className="text-sm text-gray-600 dark:text-gray-400">
+                            {set.cardsToReview} к повторению
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                   
                   {/* Описание */}
-                  <p className="text-gray-600 text-sm mb-4 flex-1 line-clamp-2">
+                  <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 flex-1 line-clamp-2">
                     {set.description}
                   </p>
-
-                  {/* Статистика */}
-                  <div className="grid grid-cols-2 gap-3 mb-4">
-                    <div className="flex items-center gap-2">
-                      <BookOpen className="w-4 h-4 text-gray-400" />
-                      <span className="text-sm text-gray-600">
-                        {set.totalCards || 0} карточек
-                      </span>
-                    </div>
-                    {(set.cardsToReview || 0) > 0 && (
-                      <div className="flex items-center gap-2">
-                        <Target className="w-4 h-4 text-gray-400" />
-                        <span className="text-sm text-gray-600">
-                          {set.cardsToReview} к повторению
-                        </span>
-                      </div>
-                    )}
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-gray-400" />
-                      <span className="text-sm text-gray-600">
-                        {new Date(set.updatedAt).toLocaleDateString('ru-RU')}
-                      </span>
-                    </div>
-                  </div>
 
                   {/* Кнопки действий */}
                   <div className="flex flex-col gap-2">

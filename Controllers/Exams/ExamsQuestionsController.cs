@@ -72,16 +72,16 @@ public class ExamsQuestionsController : ControllerBase
             QuestionType = dto.QuestionType,
             Points = dto.Points,
             ExamId = examId,
-            Order = await _context.ExamQuestions
+            OrderIndex = await _context.ExamQuestions
                 .Where(q => q.ExamId == examId)
-                .MaxAsync(q => (int?)q.Order) ?? 0 + 1
+                .MaxAsync(q => (int?)q.OrderIndex) ?? 0 + 1
         };
 
         _context.ExamQuestions.Add(question);
         await _context.SaveChangesAsync();
 
-        // Обновляем TotalPoints экзамена
-        exam.TotalPoints = await _context.ExamQuestions
+        // Обновляем MaxScore экзамена
+        exam.MaxScore = await _context.ExamQuestions
             .Where(q => q.ExamId == exam.Id)
             .SumAsync(q => q.Points);
         await _context.SaveChangesAsync();
@@ -136,13 +136,13 @@ public class ExamsQuestionsController : ControllerBase
 
         await _context.SaveChangesAsync();
 
-        // Обновляем TotalPoints если изменились баллы
+        // Обновляем MaxScore если изменились баллы
         if (oldPoints != dto.Points)
         {
             var exam = await _context.Exams.FindAsync(question.ExamId);
             if (exam != null)
             {
-                exam.TotalPoints = await _context.ExamQuestions
+                exam.MaxScore = await _context.ExamQuestions
                     .Where(q => q.ExamId == exam.Id)
                     .SumAsync(q => q.Points);
                 await _context.SaveChangesAsync();
@@ -177,11 +177,11 @@ public class ExamsQuestionsController : ControllerBase
         _context.ExamQuestions.Remove(question);
         await _context.SaveChangesAsync();
 
-        // Обновляем TotalPoints экзамена
-        var exam = await _context.Exams.FindAsync(examId);
+        // Обновляем MaxScore экзамена
+        var exam = await _context.Exams.FindAsync(question.ExamId);
         if (exam != null)
         {
-            exam.TotalPoints = await _context.ExamQuestions
+            exam.MaxScore = await _context.ExamQuestions
                 .Where(q => q.ExamId == exam.Id)
                 .SumAsync(q => q.Points);
             await _context.SaveChangesAsync();
@@ -218,9 +218,9 @@ public class ExamsQuestionsController : ControllerBase
             Text = dto.Text,
             IsCorrect = dto.IsCorrect,
             QuestionId = questionId,
-            Order = await _context.ExamAnswers
+            OrderIndex = await _context.ExamAnswers
                 .Where(a => a.QuestionId == questionId)
-                .MaxAsync(a => (int?)a.Order) ?? 0 + 1
+                .MaxAsync(a => (int?)a.OrderIndex) ?? 0 + 1
         };
 
         _context.ExamAnswers.Add(answer);

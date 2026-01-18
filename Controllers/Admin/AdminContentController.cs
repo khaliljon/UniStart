@@ -60,7 +60,7 @@ public class AdminContentController : ControllerBase
                 q.UserId,
                 UserName = q.User != null ? q.User.UserName : "Unknown",
                 QuestionCount = q.Questions.Count,
-                TotalPoints = q.Questions.Sum(qu => qu.Points),
+                MaxScore = q.Questions.Sum(qu => qu.Points),
                 q.CreatedAt
             })
             .OrderByDescending(q => q.CreatedAt)
@@ -113,7 +113,7 @@ public class AdminContentController : ControllerBase
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(subject))
-            query = query.Where(e => e.Subjects.Any(s => s.Name == subject) || e.Subject == subject);
+            query = query.Where(e => e.Subjects.Any(s => s.Name == subject));
 
         if (!string.IsNullOrEmpty(difficulty))
             query = query.Where(e => e.Difficulty == difficulty);
@@ -142,13 +142,12 @@ public class AdminContentController : ControllerBase
                 e.Id,
                 e.Title,
                 e.Description,
-                e.Subject,
                 e.Difficulty,
                 e.IsPublished,
                 e.UserId,
                 UserName = e.User != null ? e.User.UserName : "Unknown",
                 QuestionCount = e.Questions.Count,
-                e.TotalPoints,
+                MaxScore = e.MaxScore,
                 e.MaxAttempts,
                 e.PassingScore,
                 e.CreatedAt,

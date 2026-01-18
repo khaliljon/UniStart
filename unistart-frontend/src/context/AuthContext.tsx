@@ -8,6 +8,7 @@ interface AuthContextType {
   login: (credentials: LoginDto) => Promise<void>
   register: (data: RegisterDto) => Promise<void>
   logout: () => void
+  refreshUser: () => Promise<void>
   isAuthenticated: boolean
   loading: boolean
   hasRole: (role: string) => boolean
@@ -215,6 +216,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(null)
   }
 
+  const refreshUser = async () => {
+    const currentToken = token || localStorage.getItem('token')
+    if (currentToken) {
+      await loadUser(currentToken)
+    }
+  }
+
   const hasRole = (role: string): boolean => {
     return user?.roles?.includes(role) || false
   }
@@ -231,6 +239,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         login,
         register,
         logout,
+        refreshUser,
         isAuthenticated: !!token,
         loading,
         hasRole,

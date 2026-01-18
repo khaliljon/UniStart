@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using UniStart.Data;
@@ -11,9 +12,11 @@ using UniStart.Data;
 namespace UniStart.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260118133723_RefactorExamFields_MaxScore_OrderIndex_TimeSpentSeconds")]
+    partial class RefactorExamFields_MaxScore_OrderIndex_TimeSpentSeconds
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -403,7 +406,7 @@ namespace UniStart.Migrations
                             SessionTimeout = 30,
                             SiteDescription = "Образовательная платформа для изучения с помощью карточек и квизов",
                             SiteName = "UniStart",
-                            UpdatedAt = new DateTime(2026, 1, 18, 14, 19, 44, 484, DateTimeKind.Utc).AddTicks(1005)
+                            UpdatedAt = new DateTime(2026, 1, 18, 13, 37, 21, 993, DateTimeKind.Utc).AddTicks(7704)
                         });
                 });
 
@@ -537,6 +540,11 @@ namespace UniStart.Migrations
 
                     b.Property<bool>("StrictTiming")
                         .HasColumnType("boolean");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<int>("TimeLimit")
                         .HasColumnType("integer");
@@ -741,6 +749,9 @@ namespace UniStart.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
+                    b.Property<double>("EaseFactor")
+                        .HasColumnType("double precision");
+
                     b.Property<string>("Explanation")
                         .IsRequired()
                         .HasMaxLength(1000)
@@ -749,9 +760,18 @@ namespace UniStart.Migrations
                     b.Property<int>("FlashcardSetId")
                         .HasColumnType("integer");
 
+                    b.Property<int>("Interval")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("LastReviewedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("MatchingPairsJson")
                         .HasMaxLength(2000)
                         .HasColumnType("character varying(2000)");
+
+                    b.Property<DateTime?>("NextReviewDate")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("OptionsJson")
                         .HasMaxLength(2000)
@@ -764,6 +784,9 @@ namespace UniStart.Migrations
                         .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
+
+                    b.Property<int>("Repetitions")
+                        .HasColumnType("integer");
 
                     b.Property<string>("SequenceJson")
                         .HasMaxLength(2000)

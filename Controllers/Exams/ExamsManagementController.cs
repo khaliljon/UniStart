@@ -62,7 +62,7 @@ public class ExamsManagementController : ControllerBase
                 PassingScore = exam.PassingScore,
                 IsPublished = exam.IsPublished,
                 IsPublic = exam.IsPublic,
-                TotalPoints = exam.TotalPoints,
+                MaxScore = exam.MaxScore,
                 QuestionCount = exam.Questions?.Count ?? 0,
                 CreatedAt = exam.CreatedAt,
                 UserId = exam.UserId

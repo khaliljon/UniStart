@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import { authService } from '../../services/authService';
 import { User } from '../../types';
 import { User as UserIcon, Mail, Calendar, Award, Edit2, Lock, Check, X } from 'lucide-react';
 
 export default function ProfilePage() {
+  const { refreshUser } = useAuth();
   const [profile, setProfile] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
@@ -55,6 +57,7 @@ export default function ProfilePage() {
       setSuccess('Профиль успешно обновлён');
       setIsEditing(false);
       await loadProfile();
+      await refreshUser(); // Обновляем данные пользователя в header
     } catch (err: any) {
       setError(err.response?.data?.message || 'Не удалось обновить профиль');
     }

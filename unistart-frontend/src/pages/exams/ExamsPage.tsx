@@ -402,7 +402,7 @@ const ExamsPage = () => {
                     <div className="flex items-center gap-2">
                       <Award className="w-4 h-4 text-gray-400" />
                       <span className="text-sm text-gray-600">
-                        {exam.totalPoints} баллов
+                        {exam.maxScore} баллов
                       </span>
                     </div>
                     <div className="flex items-center gap-2">

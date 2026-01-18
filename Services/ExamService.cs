@@ -56,7 +56,6 @@ public class ExamService : IExamService
             Id = exam.Id,
             Title = exam.Title,
             Description = exam.Description,
-            Subject = exam.Subject,
             Difficulty = exam.Difficulty,
             CountryId = exam.CountryId,
             UniversityId = exam.UniversityId,
@@ -73,7 +72,7 @@ public class ExamService : IExamService
             StrictTiming = exam.StrictTiming,
             IsPublished = exam.IsPublished,
             IsPublic = exam.IsPublic,
-            TotalPoints = exam.TotalPoints,
+            MaxScore = exam.MaxScore,
             QuestionCount = exam.Questions.Count,
             CreatedAt = exam.CreatedAt,
             UserId = exam.UserId,
@@ -84,20 +83,20 @@ public class ExamService : IExamService
         // Только владелец или админ видят вопросы с правильными ответами
         if (isOwnerOrAdmin)
         {
-            examDto.Questions = exam.Questions.OrderBy(q => q.Order).Select(q => new ExamQuestionDto
+            examDto.Questions = exam.Questions.OrderBy(q => q.OrderIndex).Select(q => new ExamQuestionDto
             {
                 Id = q.Id,
                 Text = q.Text,
                 Explanation = q.Explanation,
                 QuestionType = q.QuestionType,
                 Points = q.Points,
-                Order = q.Order,
-                Answers = q.Answers.OrderBy(a => a.Order).Select(a => new ExamAnswerDto
+                OrderIndex = q.OrderIndex,
+                Answers = q.Answers.OrderBy(a => a.OrderIndex).Select(a => new ExamAnswerDto
                 {
                     Id = a.Id,
                     Text = a.Text,
                     IsCorrect = a.IsCorrect,
-                    Order = a.Order
+                    OrderIndex = a.OrderIndex
                 }).ToList()
             }).ToList();
         }
@@ -128,7 +127,7 @@ public class ExamService : IExamService
 
         // Фильтры
         if (!string.IsNullOrEmpty(filter.Subject))
-            query = query.Where(e => e.Subject == filter.Subject);
+            query = query.Where(e => e.Subjects.Any(s => s.Name == filter.Subject));
 
         if (!string.IsNullOrEmpty(filter.Difficulty))
             query = query.Where(e => e.Difficulty == filter.Difficulty);
@@ -149,13 +148,12 @@ public class ExamService : IExamService
                 Id = e.Id,
                 Title = e.Title,
                 Description = e.Description,
-                Subject = e.Subject,
                 Difficulty = e.Difficulty,
                 TimeLimit = e.TimeLimit,
                 PassingScore = e.PassingScore,
                 MaxAttempts = e.MaxAttempts,
                 QuestionCount = e.Questions.Count,
-                TotalPoints = e.Questions.Sum(q => q.Points),
+                MaxScore = e.Questions.Sum(q => q.Points),
                 UserId = e.UserId,
                 UserName = e.User.UserName ?? "",
                 CreatedAt = e.CreatedAt
@@ -188,7 +186,7 @@ public class ExamService : IExamService
 
         // Фильтры
         if (!string.IsNullOrEmpty(filter.Subject))
-            query = query.Where(e => e.Subject == filter.Subject);
+            query = query.Where(e => e.Subjects.Any(s => s.Name == filter.Subject));
 
         if (!string.IsNullOrEmpty(filter.Difficulty))
             query = query.Where(e => e.Difficulty == filter.Difficulty);
@@ -207,14 +205,13 @@ public class ExamService : IExamService
                 Id = e.Id,
                 Title = e.Title,
                 Description = e.Description,
-                Subject = e.Subject,
                 Difficulty = e.Difficulty,
                 TimeLimit = e.TimeLimit,
                 PassingScore = e.PassingScore,
                 MaxAttempts = e.MaxAttempts,
                 IsPublished = e.IsPublished,
                 QuestionCount = e.Questions.Count,
-                TotalPoints = e.Questions.Sum(q => q.Points),
+                MaxScore = e.Questions.Sum(q => q.Points),
                 CreatedAt = e.CreatedAt
             })
             .ToListAsync();
@@ -236,8 +233,11 @@ public class ExamService : IExamService
 
     public async Task<IEnumerable<Exam>> GetExamsBySubjectAsync(string subject)
     {
-        return await _unitOfWork.Repository<Exam>()
-            .FindAsync(e => e.Subject == subject && e.IsPublic);
+        return (await _unitOfWork.Repository<Exam>()
+            .Query()
+            .Include(e => e.Subjects)
+            .Where(e => e.Subjects.Any(s => s.Name == subject) && e.IsPublic)
+            .ToListAsync());
     }
 
     public async Task<Exam> CreateExamAsync(string userId, CreateExamDto dto)
@@ -437,7 +437,7 @@ public class ExamService : IExamService
             StartedAt = DateTime.UtcNow,
             AttemptNumber = attemptCount + 1,
             Score = 0,
-            TotalPoints = exam.Questions.Sum(q => q.Points)
+            MaxScore = exam.Questions.Sum(q => q.Points)
         };
 
         await _unitOfWork.ExamAttempts.AddAsync(attempt);
@@ -492,17 +492,17 @@ public class ExamService : IExamService
 
         attempt.CompletedAt = DateTime.UtcNow;
         attempt.Score = totalScore;
-        attempt.TotalPoints = maxScore;
+        attempt.MaxScore = maxScore;
         attempt.Percentage = maxScore > 0 
             ? (totalScore / (double)maxScore) * 100 
             : 0;
         attempt.Passed = attempt.Percentage >= exam.PassingScore;
-        attempt.TimeSpent = dto.TimeSpent;
+        attempt.TimeSpentSeconds = dto.TimeSpent;
 
         _unitOfWork.ExamAttempts.Update(attempt);
         await _unitOfWork.SaveChangesAsync();
 
-        _logger.LogInformation("Exam attempt {AttemptId} completed with score {Score}/{TotalPoints}, passed: {Passed}", 
+        _logger.LogInformation("Exam attempt {AttemptId} completed with score {Score}/{MaxScore}, passed: {Passed}", 
             attemptId, totalScore, maxScore, attempt.Passed);
         return attempt;
     }

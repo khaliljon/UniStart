@@ -218,7 +218,7 @@ const AdminExamsPage = () => {
                       </div>
                       <div className="flex items-center gap-1">
                         <Award className="w-4 h-4" />
-                        <span>{exam.totalPoints} баллов</span>
+                        <span>{exam.maxScore} баллов</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <AlertCircle className="w-4 h-4" />

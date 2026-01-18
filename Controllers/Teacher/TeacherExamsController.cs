@@ -49,7 +49,6 @@ public class TeacherExamsController : ControllerBase
         {
             Title = dto.Title,
             Description = dto.Description,
-            Subject = dto.Subject,
             Difficulty = dto.Difficulty,
             CountryId = dto.CountryId,
             UniversityId = dto.UniversityId,
@@ -68,7 +67,7 @@ public class TeacherExamsController : ControllerBase
             UserId = userId,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
-            TotalPoints = dto.Questions.Sum(q => q.Points)
+            MaxScore = dto.Questions.Sum(q => q.Points)
         };
 
         foreach (var questionDto in dto.Questions)
@@ -78,7 +77,7 @@ public class TeacherExamsController : ControllerBase
                 Text = questionDto.Text,
                 Explanation = questionDto.Explanation,
                 Points = questionDto.Points,
-                Order = questionDto.Order,
+                OrderIndex = questionDto.OrderIndex,
                 Exam = exam
             };
 
@@ -88,7 +87,7 @@ public class TeacherExamsController : ControllerBase
                 {
                     Text = answerDto.Text,
                     IsCorrect = answerDto.IsCorrect,
-                    Order = answerDto.Order,
+                    OrderIndex = answerDto.OrderIndex,
                     Question = question
                 });
             }
@@ -110,13 +109,12 @@ public class TeacherExamsController : ControllerBase
             Id = exam.Id,
             Title = exam.Title,
             Description = exam.Description,
-            Subject = exam.Subject,
             Difficulty = exam.Difficulty,
             MaxAttempts = exam.MaxAttempts,
             PassingScore = exam.PassingScore,
             IsPublished = exam.IsPublished,
             IsPublic = exam.IsPublic,
-            TotalPoints = exam.TotalPoints,
+            MaxScore = exam.MaxScore,
             QuestionCount = exam.Questions.Count,
             CreatedAt = exam.CreatedAt,
             UserId = exam.UserId,
@@ -151,13 +149,12 @@ public class TeacherExamsController : ControllerBase
                 Id = e.Id,
                 Title = e.Title,
                 Description = e.Description,
-                Subject = e.Subject,
                 Difficulty = e.Difficulty,
                 MaxAttempts = e.MaxAttempts,
                 PassingScore = e.PassingScore,
                 IsPublished = e.IsPublished,
                 IsPublic = e.IsPublic,
-                TotalPoints = e.TotalPoints,
+                MaxScore = e.MaxScore,
                 QuestionCount = e.Questions.Count,
                 CreatedAt = e.CreatedAt,
                 UserId = e.UserId
@@ -199,7 +196,7 @@ public class TeacherExamsController : ControllerBase
             ExamId = exam.Id,
             ExamTitle = exam.Title,
             TotalQuestions = exam.Questions.Count,
-            TotalPoints = exam.TotalPoints,
+            MaxScore = exam.MaxScore,
             PassingScore = exam.PassingScore,
             TotalAttempts = totalAttempts,
             UniqueStudents = uniqueStudents,
@@ -297,7 +294,7 @@ public class TeacherExamsController : ControllerBase
         foreach (var attempt in attempts)
         {
             var passed = attempt.Percentage >= exam.PassingScore ? "Yes" : "No";
-            csv.AppendLine($"{attempt.User.FirstName} {attempt.User.LastName},{attempt.User.Email},{attempt.Score},{attempt.TotalPoints},{attempt.Percentage:F2},{passed},{attempt.CompletedAt:yyyy-MM-dd HH:mm:ss},{attempt.TimeSpent}");
+            csv.AppendLine($"{attempt.User.FirstName} {attempt.User.LastName},{attempt.User.Email},{attempt.Score},{attempt.MaxScore},{attempt.Percentage:F2},{passed},{attempt.CompletedAt:yyyy-MM-dd HH:mm:ss},{attempt.TimeSpentSeconds}");
         }
 
         var bytes = Encoding.UTF8.GetBytes(csv.ToString());

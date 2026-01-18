@@ -32,7 +32,7 @@ public class ExamRepository : Repository<Exam>, IExamRepository
     public async Task<IEnumerable<Exam>> GetExamsBySubjectAsync(string subject)
     {
         return await _dbSet
-            .Where(e => e.Subject == subject || e.Subjects.Any(s => s.Name == subject))
+            .Where(e => e.Subjects.Any(s => s.Name == subject))
             .Include(e => e.User)
             .Include(e => e.Subjects)
             .OrderByDescending(e => e.CreatedAt)

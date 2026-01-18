@@ -483,7 +483,7 @@ public class AdminUsersController : ControllerBase
             ExamTitle = examsDict.TryGetValue(ea.ExamId, out var exam) ? exam.Title : "Unknown",
             Type = "Exam",
             Score = ea.Score,
-            TotalPoints = ea.TotalPoints,
+            MaxScore = ea.MaxScore,
             Percentage = Math.Round(ea.Percentage, 2),
             Passed = ea.Passed,
             CompletedAt = ea.CompletedAt

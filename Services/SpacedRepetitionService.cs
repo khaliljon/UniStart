@@ -14,28 +14,14 @@ namespace UniStart.Services
     public interface ISpacedRepetitionService
     {
         /// <summary>
-        /// Обновляет параметры карточки после повторения (устаревший метод для обратной совместимости)
-        /// </summary>
-        /// <param name="flashcard">Карточка для обновления</param>
-        /// <param name="quality">Качество ответа (0-5)</param>
-        [Obsolete("Используйте UpdateUserFlashcardProgress вместо UpdateFlashcard")]
-        void UpdateFlashcard(Flashcard flashcard, int quality);
-        
-        /// <summary>
-        /// Обновляет прогресс пользователя по карточке после повторения (новый метод)
+        /// Обновляет прогресс пользователя по карточке после повторения
         /// </summary>
         /// <param name="progress">Прогресс пользователя по карточке</param>
         /// <param name="quality">Качество ответа (0-5)</param>
         void UpdateUserFlashcardProgress(UserFlashcardProgress progress, int quality);
         
         /// <summary>
-        /// Проверяет, нужно ли повторять карточку (устаревший метод)
-        /// </summary>
-        [Obsolete("Используйте IsDueForReview для UserFlashcardProgress")]
-        bool IsDueForReview(Flashcard flashcard);
-        
-        /// <summary>
-        /// Проверяет, нужно ли повторять карточку пользователю (новый метод)
+        /// Проверяет, нужно ли повторять карточку пользователю
         /// </summary>
         bool IsDueForReview(UserFlashcardProgress progress);
     }
@@ -51,64 +37,6 @@ namespace UniStart.Services
         /// 2 - неправильный ответ, но вспомнилось при показе
         /// 1 - неправильный ответ, показалось знакомым
         /// 0 - полное незнание
-        /// </summary>
-        /// <summary>
-        /// Устаревший метод - используется для обратной совместимости
-        /// </summary>
-        [Obsolete("Используйте UpdateUserFlashcardProgress")]
-        public void UpdateFlashcard(Flashcard flashcard, int quality)
-        {
-            // Валидация качества ответа
-            if (quality < 0 || quality > 5)
-            {
-                throw new ArgumentException("Quality must be between 0 and 5", nameof(quality));
-            }
-
-            #pragma warning disable CS0618 // Type or member is obsolete
-            flashcard.LastReviewedAt = DateTime.UtcNow;
-
-            // Если качество < 3, сбрасываем прогресс
-            if (quality < 3)
-            {
-                flashcard.Repetitions = 0;
-                flashcard.Interval = 0;
-                flashcard.NextReviewDate = DateTime.UtcNow; // Повторить сразу
-            }
-            else
-            {
-                // Увеличиваем счетчик успешных повторений
-                flashcard.Repetitions++;
-
-                // Вычисляем новый интервал
-                if (flashcard.Repetitions == 1)
-                {
-                    flashcard.Interval = 1; // 1 день
-                }
-                else if (flashcard.Repetitions == 2)
-                {
-                    flashcard.Interval = 6; // 6 дней
-                }
-                else
-                {
-                    // Для последующих повторений умножаем на EaseFactor
-                    flashcard.Interval = (int)Math.Ceiling(flashcard.Interval * flashcard.EaseFactor);
-                }
-
-                // Устанавливаем дату следующего повторения
-                flashcard.NextReviewDate = DateTime.UtcNow.AddDays(flashcard.Interval);
-            }
-
-            // Обновляем EaseFactor на основе качества ответа
-            // EF' = EF + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02))
-            double newEaseFactor = flashcard.EaseFactor + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
-            
-            // EaseFactor не должен быть меньше 1.3
-            flashcard.EaseFactor = Math.Max(1.3, newEaseFactor);
-            #pragma warning restore CS0618
-        }
-
-        /// <summary>
-        /// Новый метод - обновляет прогресс пользователя по карточке
         /// </summary>
         public void UpdateUserFlashcardProgress(UserFlashcardProgress progress, int quality)
         {
@@ -184,25 +112,7 @@ namespace UniStart.Services
         }
 
         /// <summary>
-        /// Устаревший метод - проверяет, нужно ли повторять карточку
-        /// </summary>
-        [Obsolete("Используйте IsDueForReview для UserFlashcardProgress")]
-        public bool IsDueForReview(Flashcard flashcard)
-        {
-            #pragma warning disable CS0618 // Type or member is obsolete
-            // Если карточка никогда не повторялась
-            if (flashcard.NextReviewDate == null)
-            {
-                return true;
-            }
-
-            // Если дата повторения наступила или прошла
-            return flashcard.NextReviewDate <= DateTime.UtcNow;
-            #pragma warning restore CS0618
-        }
-
-        /// <summary>
-        /// Новый метод - проверяет, нужно ли повторять карточку пользователю
+        /// Проверяет, нужно ли повторять карточку пользователю
         /// </summary>
         public bool IsDueForReview(UserFlashcardProgress progress)
         {

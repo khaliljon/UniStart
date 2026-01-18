@@ -38,35 +38,35 @@
     --bg-primary: 15 23 42;         /* slate-900 */
     --bg-secondary: 30 41 59;       /* slate-800 */
     --bg-card: 51 65 85;            /* slate-700 */
-    --text-primary: 226 232 240;    /* slate-200 */
-    --text-secondary: 148 163 184;  /* slate-400 */
-    --text-muted: 100 116 139;      /* slate-500 */
+    --text-primary: 241 245 249;    /* slate-100 - увеличен контраст */
+    --text-secondary: 203 213 225;  /* slate-300 - ярче */
+    --text-muted: 148 163 184;      /* slate-400 */
     --border: 71 85 105;            /* slate-600 */
     --border-hover: 100 116 139;    /* slate-500 */
-    --accent: 6 182 212;            /* cyan-500 */
+    --accent: 34 211 238;           /* cyan-400 - ярче */
   }
 
   /* 🎮 Synthwave тема */
   .synthwave {
-    --bg-primary: 30 15 50;         /* deep purple */
-    --bg-secondary: 50 20 70;       /* purple */
-    --bg-card: 70 30 90;            /* lighter purple */
+    --bg-primary: 20 10 40;         /* deep purple - темнее */
+    --bg-secondary: 40 15 60;       /* purple */
+    --bg-card: 60 25 80;            /* lighter purple */
     --text-primary: 255 255 255;    /* white */
-    --text-secondary: 255 182 255;  /* pink */
-    --text-muted: 200 150 220;      /* light purple */
-    --border: 138 58 185;           /* violet */
+    --text-secondary: 255 200 255;  /* light pink - ярче */
+    --text-muted: 220 170 240;      /* light purple - ярче */
+    --border: 120 60 160;           /* violet - ярче */
     --border-hover: 168 85 247;     /* bright violet */
-    --accent: 255 0 255;            /* magenta */
+    --accent: 255 105 180;          /* hot pink - мягче */
   }
 
   /* ♿ High Contrast тема */
   .high-contrast {
     --bg-primary: 0 0 0;            /* black */
-    --bg-secondary: 0 0 0;          /* black */
-    --bg-card: 0 0 0;               /* black */
+    --bg-secondary: 17 17 17;       /* dark gray - для карточек */
+    --bg-card: 34 34 34;            /* gray - для карточек */
     --text-primary: 255 255 255;    /* white */
-    --text-secondary: 255 255 255;  /* white */
-    --text-muted: 255 255 255;      /* white */
+    --text-secondary: 212 212 212;  /* light gray */
+    --text-muted: 163 163 163;      /* gray */
     --border: 255 255 255;          /* white */
     --border-hover: 255 255 255;    /* white */
     --accent: 255 255 0;            /* yellow */
@@ -147,9 +147,22 @@
   .high-contrast .text-gray-900,
   .high-contrast .text-gray-800,
   .high-contrast .text-gray-700,
-  .high-contrast .text-gray-600,
-  .high-contrast .text-gray-500 {
+  .high-contrast .text-gray-600 {
     @apply !text-white;
+  }
+
+  .high-contrast .text-gray-500,
+  .high-contrast .text-gray-400 {
+    @apply !text-gray-300;
+  }
+
+  /* Добавляем серый фон для карточек в high-contrast */
+  .high-contrast .bg-white {
+    @apply !bg-gray-900;
+  }
+
+  .high-contrast .bg-gray-50 {
+    @apply !bg-gray-800;
   }
 }
 

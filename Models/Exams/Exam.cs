@@ -23,11 +23,6 @@ public class Exam
     [StringLength(1000, ErrorMessage = "Описание не должно превышать 1000 символов")]
     public string? Description { get; set; }
     
-    [Required(ErrorMessage = "Предмет обязателен")]
-    [StringLength(100)]
-    [Obsolete("Используйте Subjects для множественного выбора")]
-    public string Subject { get; set; } = string.Empty; // Оставлено для обратной совместимости
-    
     [Required]
     [StringLength(50)]
     public string Difficulty { get; set; } = "Medium"; // Easy, Medium, Hard
@@ -60,7 +55,7 @@ public class Exam
     // Метаданные
     public bool IsPublished { get; set; } = false;
     public bool IsPublic { get; set; } = false; // true = доступен всем студентам, false = только студентам автора
-    public int TotalPoints { get; set; }
+    public int MaxScore { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
     

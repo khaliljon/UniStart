@@ -195,11 +195,9 @@ namespace UniStart.Controllers.System
             var userId = GetUserId();
             var today = DateTime.UtcNow.Date;
 
-            var upcomingReviews = await _context.FlashcardSets
-                .Where(fs => fs.UserId == userId)
-                .SelectMany(fs => fs.Flashcards)
-                .Where(f => f.NextReviewDate != null && f.NextReviewDate >= today)
-                .GroupBy(f => f.NextReviewDate!.Value.Date)
+            var upcomingReviews = await _context.UserFlashcardProgresses
+                .Where(p => p.UserId == userId && p.NextReviewDate != null && p.NextReviewDate >= today)
+                .GroupBy(p => p.NextReviewDate!.Value.Date)
                 .Select(g => new
                 {
                     Date = g.Key,
@@ -214,11 +212,9 @@ namespace UniStart.Controllers.System
 
         private async Task<DateTime?> GetLastActivityDate(string userId)
         {
-            var lastFlashcardReview = await _context.FlashcardSets
-                .Where(fs => fs.UserId == userId)
-                .SelectMany(fs => fs.Flashcards)
-                .Where(f => f.LastReviewedAt != null)
-                .MaxAsync(f => (DateTime?)f.LastReviewedAt);
+            var lastFlashcardReview = await _context.UserFlashcardProgresses
+                .Where(p => p.UserId == userId && p.LastReviewedAt != null)
+                .MaxAsync(p => (DateTime?)p.LastReviewedAt);
 
             var lastQuizAttempt = await _context.UserQuizAttempts
                 .Where(a => a.UserId == userId)

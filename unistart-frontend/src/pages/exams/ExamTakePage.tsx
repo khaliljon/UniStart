@@ -170,7 +170,7 @@ const ExamTakePage = () => {
       navigate(`/exams/${id}/results`, {
         state: {
           score: response.data.score,
-          totalPoints: response.data.totalPoints,
+          maxScore: response.data.maxScore,
           earnedPoints: response.data.earnedPoints,
           passingScore: exam.passingScore,
           passed: response.data.passed,

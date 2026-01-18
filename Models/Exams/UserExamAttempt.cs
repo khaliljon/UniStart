@@ -17,13 +17,13 @@ public class UserExamAttempt
     public int Id { get; set; }
     
     public int Score { get; set; } // Набранные баллы
-    public int TotalPoints { get; set; } // Максимальные баллы
+    public int MaxScore { get; set; } // Максимальные баллы
     
     [Range(0, 100)]
     public double Percentage { get; set; } // Процент правильных ответов
     
     public bool Passed { get; set; } // Сдан ли экзамен (Score >= PassingScore)
-    public TimeSpan TimeSpent { get; set; }
+    public int TimeSpentSeconds { get; set; }
     public DateTime StartedAt { get; set; } = DateTime.UtcNow;
     public DateTime? CompletedAt { get; set; }
     

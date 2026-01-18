@@ -47,34 +47,6 @@ namespace UniStart.Models.Flashcards
         [Display(Name = "Порядковый номер")]
         public int OrderIndex { get; set; }
         
-        // Spaced Repetition Algorithm (SM-2) параметры
-        // ВНИМАНИЕ: Эти поля устарели и используются только для обратной совместимости.
-        // Новый код должен использовать UserFlashcardProgress для хранения индивидуального прогресса пользователя.
-        // Эти поля будут удалены в будущей версии после полной миграции данных.
-        
-        [Display(Name = "Коэффициент легкости - УСТАРЕВШЕЕ")]
-        [Range(1.3, 5.0, ErrorMessage = "Коэффициент легкости должен быть от 1.3 до 5.0")]
-        [Obsolete("Используйте UserFlashcardProgress.EaseFactor")]
-        public double EaseFactor { get; set; } = 2.5; // Используется только для обратной совместимости
-        
-        [Display(Name = "Интервал повторения (дни) - УСТАРЕВШЕЕ")]
-        [Range(0, int.MaxValue, ErrorMessage = "Интервал должен быть положительным")]
-        [Obsolete("Используйте UserFlashcardProgress.Interval")]
-        public int Interval { get; set; } = 0; // Используется только для обратной совместимости
-        
-        [Display(Name = "Количество повторений - УСТАРЕВШЕЕ")]
-        [Range(0, int.MaxValue, ErrorMessage = "Количество повторений должно быть положительным")]
-        [Obsolete("Используйте UserFlashcardProgress.Repetitions")]
-        public int Repetitions { get; set; } = 0; // Используется только для обратной совместимости
-        
-        [Display(Name = "Дата следующего повторения - УСТАРЕВШЕЕ")]
-        [Obsolete("Используйте UserFlashcardProgress.NextReviewDate")]
-        public DateTime? NextReviewDate { get; set; } // Используется только для обратной совместимости
-        
-        [Display(Name = "Последняя проверка - УСТАРЕВШЕЕ")]
-        [Obsolete("Используйте UserFlashcardProgress.LastReviewedAt")]
-        public DateTime? LastReviewedAt { get; set; } // Используется только для обратной совместимости
-        
         // Внешний ключ
         [Display(Name = "ID набора")]
         public int FlashcardSetId { get; set; }

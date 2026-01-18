@@ -115,9 +115,10 @@ public class AIFlashcardController : ControllerBase
                 {
                     Title = request.NewSetTitle,
                     Description = $"Сгенерировано AI из текста ({response.Flashcards.Count} карточек)",
+                    Subject = request.Subject ?? "Не указан",  // Сохраняем предмет
                     UserId = userId,
                     IsPublic = true,  // Доступно всем студентам
-                    IsPublished = true,  // Опубликовано, видно всем
+                    IsPublished = false,  // Черновик - можно отредактировать перед публикацией
                     CreatedAt = DateTime.UtcNow
                 };
                 
