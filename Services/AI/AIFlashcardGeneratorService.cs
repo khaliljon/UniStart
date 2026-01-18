@@ -209,7 +209,7 @@ public class AIFlashcardGeneratorService : IAIFlashcardGeneratorService
             return new GenerateFlashcardsResponse
             {
                 Flashcards = flashcards,
-                ModelUsed = "gemini-2.5-flash (FREE - 1500 запросов/день)",
+                ModelUsed = "gemini-2.5-flash",
                 TokensUsed = 0, // Gemini не возвращает точный подсчёт в бесплатной версии
                 Success = true
             };
@@ -231,13 +231,13 @@ public class AIFlashcardGeneratorService : IAIFlashcardGeneratorService
         var models = new List<string>();
         
         if (_anthropicClient != null)
-            models.Add("claude-3.5-sonnet ($3/$15 per 1M tokens)");
+            models.Add("claude-3.5-sonnet");
         
         if (_geminiClient != null)
-            models.Add("gemini-2.5-flash (FREE - 1500 запросов/день) ⭐");
+            models.Add("gemini-2.5-flash");
         
         if (!string.IsNullOrEmpty(_settings.OpenAIApiKey))
-            models.Add("gpt-4o ($2.50/$10 per 1M tokens)");
+            models.Add("gpt-4o");
 
         return Task.FromResult(models);
     }

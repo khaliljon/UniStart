@@ -8,6 +8,7 @@ import Layout from './components/layout/Layout'
 import Home from './pages/Home'
 import Login from './pages/auth/Login'
 import Register from './pages/auth/Register'
+import ProfilePage from './pages/profile/ProfilePage'
 import DashboardRouter from './pages/dashboard/DashboardRouter'
 import FlashcardsPage from './pages/flashcards/FlashcardsPage'
 import FlashcardStudyPage from './pages/flashcards/FlashcardStudyPage'
@@ -71,6 +72,14 @@ function App() {
         {/* Защищенные страницы с Layout */}
         <Route element={<Layout />}>
           {/* Защищенные страницы */}
+          <Route
+            path="/profile"
+            element={
+              <PrivateRoute>
+                <ProfilePage />
+              </PrivateRoute>
+            }
+          />
           <Route
             path="/dashboard"
             element={

@@ -238,9 +238,15 @@ const ExamsPage = () => {
                 : 'Проверьте свои знания с помощью экзаменов')}
           </p>
         </div>
+      </div>
 
       {/* AI Рекомендации */}
-      <AIRecommendedExams />
+      <div className="mb-6">
+        <AIRecommendedExams />
+      </div>
+
+      {/* Кнопка создания */}
+      <div className="mb-6">
         {(isTeacher || isAdmin) && (
           <Button
             onClick={() => navigate('/exams/create')}

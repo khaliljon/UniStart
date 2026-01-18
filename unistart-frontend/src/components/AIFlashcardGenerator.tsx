@@ -35,6 +35,18 @@ interface StatusResponse {
   message: string;
 }
 
+interface Subject {
+  id: number;
+  name: string;
+  description?: string;
+  isActive: boolean;
+}
+
+interface FlashcardSet {
+  id: number;
+  title: string;
+}
+
 const AIFlashcardGenerator: React.FC = () => {
   const [sourceText, setSourceText] = useState('');
   const [count, setCount] = useState(10);
@@ -47,9 +59,13 @@ const AIFlashcardGenerator: React.FC = () => {
   const [status, setStatus] = useState<StatusResponse | null>(null);
   const [result, setResult] = useState<GenerateResponse | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error' | 'info', text: string } | null>(null);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [existingSets, setExistingSets] = useState<FlashcardSet[]>([]);
 
   useEffect(() => {
     checkStatus();
+    loadSubjects();
+    loadExistingSets();
   }, []);
 
   const checkStatus = async () => {
@@ -65,6 +81,24 @@ const AIFlashcardGenerator: React.FC = () => {
     }
   };
 
+  const loadSubjects = async () => {
+    try {
+      const response = await api.get<Subject[]>('/subjects');
+      setSubjects(response.data);
+    } catch (error) {
+      console.error('Failed to load subjects:', error);
+    }
+  };
+
+  const loadExistingSets = async () => {
+    try {
+      const response = await api.get<FlashcardSet[]>('/flashcard-sets');
+      setExistingSets(response.data);
+    } catch (error) {
+      console.error('Failed to load existing sets:', error);
+    }
+  };
+
   const handleGenerate = async () => {
     if (!sourceText.trim()) {
       setMessage({ type: 'error', text: 'Введите текст для генерации' });
@@ -73,6 +107,23 @@ const AIFlashcardGenerator: React.FC = () => {
 
     if (!newSetTitle.trim()) {
       setMessage({ type: 'error', text: 'Введите название набора' });
+      return;
+    }
+
+    if (!subject.trim()) {
+      setMessage({ type: 'error', text: 'Выберите предмет' });
+      return;
+    }
+
+    // Проверка на дубликаты названия
+    const duplicateSet = existingSets.find(
+      set => set.title.toLowerCase().trim() === newSetTitle.toLowerCase().trim()
+    );
+    if (duplicateSet) {
+      setMessage({ 
+        type: 'error', 
+        text: `Набор с таким названием уже существует (ID: ${duplicateSet.id}). Выберите другое название.` 
+      });
       return;
     }
 
@@ -169,10 +220,7 @@ const AIFlashcardGenerator: React.FC = () => {
   return (
     <div className="ai-flashcard-generator">
       <div className="header">
-        <h2>🤖 AI Генератор Flashcards</h2>
-        <div className="status-badge success">
-          ✅ {status.availableModels.join(', ')}
-        </div>
+        <h2>AI Генератор Flashcards</h2>
       </div>
 
       {message && (
@@ -215,15 +263,20 @@ const AIFlashcardGenerator: React.FC = () => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="subject">Предмет (опционально)</label>
-            <input
-              type="text"
+            <label htmlFor="subject">Предмет *</label>
+            <select
               id="subject"
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
-              placeholder="Физика, Математика, История..."
               disabled={loading}
-            />
+            >
+              <option value="">Выберите предмет</option>
+              {subjects.map((subj) => (
+                <option key={subj.id} value={subj.name}>
+                  {subj.name}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 
@@ -271,16 +324,17 @@ const AIFlashcardGenerator: React.FC = () => {
         </div>
 
         <div className="cost-estimate">
-          <h4>📊 Оценка стоимости</h4>
+          <h4>� Оценка стоимости</h4>
           <div className="estimate-details">
             <span>Токенов: ~{estimate.totalTokens.toLocaleString()}</span>
-            <span>Стоимость: ~${estimate.cost.toFixed(4)}</span>
+            <span>Теоретическая стоимость (Claude): ~${estimate.cost.toFixed(4)}</span>
           </div>
+          <small style={{marginTop: '4px', display: 'block', opacity: 0.7}}>✨ Gemini 2.5 Flash: БЕСПЛАТНО (1500 запросов/день)</small>
         </div>
 
         <button
           onClick={handleGenerate}
-          disabled={loading || !sourceText.trim() || !newSetTitle.trim()}
+          disabled={loading || !sourceText.trim() || !newSetTitle.trim() || !subject.trim()}
           className="btn btn-primary btn-generate"
         >
           {loading ? (

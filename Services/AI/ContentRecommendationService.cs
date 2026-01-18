@@ -29,12 +29,26 @@ public class ContentRecommendationService : IContentRecommendationService
     {
         try
         {
+            // Проверяем, что у пользователя достаточно данных для анализа
+            var totalAttempts = await _unitOfWork.QuizAttempts.Query()
+                .CountAsync(a => a.UserId == userId) +
+                await _unitOfWork.ExamAttempts.Query()
+                .CountAsync(a => a.UserId == userId);
+            
+            // Минимум 5 попыток для рекомендаций
+            if (totalAttempts < 5)
+            {
+                _logger.LogInformation("Недостаточно данных для AI рекомендаций User={UserId}. Попыток: {Attempts}, требуется: 5", 
+                    userId, totalAttempts);
+                return new List<int>(); // Пустой список - рекомендации не показываем
+            }
+
             // Получаем профиль пользователя для анализа слабостей
             var profile = await _universityService.BuildUserProfile(userId);
-            if (profile == null || !profile.Weaknesses.Any())
+            if (profile == null || !profile.Weaknesses.Any() || !profile.SubjectScores.Any())
             {
                 _logger.LogWarning("Не удалось определить слабости для User={UserId}", userId);
-                return await GetPopularQuizzes(count);
+                return new List<int>(); // Нет данных - не показываем рекомендации
             }
 
             // Ищем квизы по слабым предметам
@@ -50,7 +64,8 @@ public class ContentRecommendationService : IContentRecommendationService
 
             if (!recommendedQuizzes.Any())
             {
-                return await GetPopularQuizzes(count);
+                _logger.LogInformation("Не найдено квизов по слабым предметам User={UserId}", userId);
+                return new List<int>(); // Пустой список - не показываем рекомендации
             }
 
             _logger.LogInformation("Рекомендовано {Count} квизов для улучшения слабых сторон User={UserId}", 
@@ -79,10 +94,22 @@ public class ContentRecommendationService : IContentRecommendationService
     {
         try
         {
-            var profile = await _universityService.BuildUserProfile(userId);
-            if (profile == null)
+            // Проверяем, что у пользователя достаточно данных
+            var totalAttempts = await _unitOfWork.QuizAttempts.Query()
+                .CountAsync(a => a.UserId == userId) +
+                await _unitOfWork.ExamAttempts.Query()
+                .CountAsync(a => a.UserId == userId);
+            
+            if (totalAttempts < 5)
             {
-                return await GetPopularExams(count);
+                _logger.LogInformation("Недостаточно данных для AI рекомендаций экзаменов User={UserId}", userId);
+                return new List<int>();
+            }
+
+            var profile = await _universityService.BuildUserProfile(userId);
+            if (profile == null || !profile.SubjectScores.Any())
+            {
+                return new List<int>();
             }
 
             // Если есть карьерная цель, ищем релевантные экзамены
@@ -99,14 +126,8 @@ public class ContentRecommendationService : IContentRecommendationService
 
             if (!recommendedExams.Any())
             {
-                // Fallback на экзамены по сильным предметам
-                recommendedExams = await _unitOfWork.Repository<Exam>()
-                    .Query()
-                    .Where(e => e.IsPublic)
-                    .OrderByDescending(e => e.Attempts.Count)
-                    .Select(e => e.Id)
-                    .Take(count)
-                    .ToListAsync();
+                _logger.LogInformation("Не найдено экзаменов по целям User={UserId}", userId);
+                return new List<int>();
             }
 
             _logger.LogInformation("Рекомендовано {Count} экзаменов для User={UserId}", 
@@ -135,10 +156,22 @@ public class ContentRecommendationService : IContentRecommendationService
     {
         try
         {
-            var profile = await _universityService.BuildUserProfile(userId);
-            if (profile == null || !profile.Weaknesses.Any())
+            // Проверяем, что у пользователя достаточно данных
+            var totalAttempts = await _unitOfWork.QuizAttempts.Query()
+                .CountAsync(a => a.UserId == userId) +
+                await _unitOfWork.ExamAttempts.Query()
+                .CountAsync(a => a.UserId == userId);
+            
+            if (totalAttempts < 5)
             {
-                return await GetPopularFlashcardSets(count);
+                _logger.LogInformation("Недостаточно данных для AI рекомендаций карточек User={UserId}", userId);
+                return new List<int>();
+            }
+
+            var profile = await _universityService.BuildUserProfile(userId);
+            if (profile == null || !profile.Weaknesses.Any() || !profile.SubjectScores.Any())
+            {
+                return new List<int>();
             }
 
             // Ищем наборы карточек по слабым темам
@@ -155,7 +188,8 @@ public class ContentRecommendationService : IContentRecommendationService
 
             if (!recommendedSets.Any())
             {
-                return await GetPopularFlashcardSets(count);
+                _logger.LogInformation("Не найдено наборов карточек по слабым темам User={UserId}", userId);
+                return new List<int>();
             }
 
             _logger.LogInformation("Рекомендовано {Count} наборов карточек для User={UserId}", 

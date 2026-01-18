@@ -333,11 +333,20 @@ const AdminDashboard = () => {
                   Типы экзаменов
                 </Button>
                 <Button 
-                  variant="primary" 
-                  className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                  variant="secondary" 
+                  className="w-full flex items-center justify-center gap-2"
                   onClick={() => navigate('/admin/ml-training')}
                 >
-                  🤖 ML Model Training
+                  <TrendingUp className="w-4 h-4" />
+                  ML Model Training
+                </Button>
+                <Button 
+                  variant="secondary" 
+                  className="w-full flex items-center justify-center gap-2"
+                  onClick={() => navigate('/admin/ai-flashcards')}
+                >
+                  <FileText className="w-4 h-4" />
+                  AI Генератор карточек
                 </Button>
               </div>
             </Card>

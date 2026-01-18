@@ -23,6 +23,10 @@ export const authService = {
   },
 
   async updateProfile(updates: Partial<User>): Promise<void> {
-    await api.put('/auth/profile', updates);
+    await api.put('/profile', updates);
+  },
+
+  async changePassword(data: { currentPassword: string; newPassword: string }): Promise<void> {
+    await api.post('/profile/change-password', data);
   },
 };

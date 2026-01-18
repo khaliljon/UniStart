@@ -4,10 +4,13 @@
 export interface User {
   id: string;
   email: string;
+  emailConfirmed?: boolean;
+  userName?: string;
   firstName: string;
   lastName: string;
   
   // Статистика по карточкам (ОБНОВЛЕНО)
+  totalCardsStudied?: number; // Всего изучено карточек
   completedFlashcardSets?: number; // Полностью завершенных наборов
   reviewedCards?: number; // Карточек просмотрено хотя бы раз
   masteredCards?: number; // Карточек полностью освоено

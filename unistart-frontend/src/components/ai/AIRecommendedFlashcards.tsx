@@ -18,12 +18,14 @@ const AIRecommendedFlashcards = () => {
   const loadRecommendations = async () => {
     try {
       const data = await aiService.getRecommendedFlashcards(3);
-      setRecommendations(Array.isArray(data) ? data : []);
+      // Показываем только если есть реальные рекомендации
+      setRecommendations(Array.isArray(data) && data.length > 0 ? data : []);
     } catch (error: any) {
       // Игнорируем 404 - backend может быть не запущен
       if (error?.response?.status !== 404) {
         console.error('Ошибка загрузки AI рекомендаций:', error);
       }
+      setRecommendations([]);
     } finally {
       setLoading(false);
     }
@@ -39,7 +41,7 @@ const AIRecommendedFlashcards = () => {
       animate={{ opacity: 1, y: 0 }}
       className="mb-8"
     >
-      <Card className="bg-gradient-to-br from-purple-500 to-pink-600 text-white">
+      <Card className="bg-gradient-to-br from-gray-700 to-gray-800 dark:from-gray-800 dark:to-gray-900 text-white">
         <div className="mb-4">
           <div className="flex items-center gap-2 mb-2">
             <Brain className="w-6 h-6" />
