@@ -28,20 +28,22 @@ interface Exam {
   id: number;
   title: string;
   description: string;
-  subject: string;
+  subjects?: Subject[];
+  subjectIds?: number[];
   difficulty: string;
   timeLimit: number;
   questionCount: number;
-  totalPoints: number;
+  totalPoints?: number;
+  maxScore?: number;
   maxAttempts: number;
-  remainingAttempts: number;
+  remainingAttempts?: number;
   passingScore: number;
   isProctored: boolean;
   isPublished?: boolean;
   startDate?: string;
   endDate?: string;
   createdAt: string;
-  universityId: number;
+  universityId?: number;
 }
 
 interface Subject {
@@ -384,7 +386,9 @@ const ExamsPage = () => {
                   {/* Предмет */}
                   <div className="flex items-center gap-2 mb-3">
                     <BookOpen className="w-4 h-4 text-gray-400" />
-                    <span className="text-sm text-gray-700">{exam.subject}</span>
+                    <span className="text-sm text-gray-700">
+                      {exam.subjects && exam.subjects.length > 0 ? exam.subjects.map(s => s.name).join(', ') : 'Не указан'}
+                    </span>
                   </div>
 
                   {/* Статистика */}

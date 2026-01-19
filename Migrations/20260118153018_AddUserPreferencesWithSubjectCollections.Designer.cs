@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using UniStart.Data;
@@ -11,9 +12,11 @@ using UniStart.Data;
 namespace UniStart.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260118153018_AddUserPreferencesWithSubjectCollections")]
+    partial class AddUserPreferencesWithSubjectCollections
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -433,7 +436,7 @@ namespace UniStart.Migrations
                             SessionTimeout = 30,
                             SiteDescription = "��������������� ��������� ��� �������� � ������� �������� � ������",
                             SiteName = "UniStart",
-                            UpdatedAt = new DateTime(2026, 1, 18, 15, 59, 11, 842, DateTimeKind.Utc).AddTicks(7781)
+                            UpdatedAt = new DateTime(2026, 1, 18, 15, 30, 17, 387, DateTimeKind.Utc).AddTicks(4462)
                         });
                 });
 
@@ -830,6 +833,11 @@ namespace UniStart.Migrations
 
                     b.Property<bool>("IsPublished")
                         .HasColumnType("boolean");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -1413,6 +1421,11 @@ namespace UniStart.Migrations
                     b.Property<string>("QuizType")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<int>("TimeLimit")
                         .HasColumnType("integer");

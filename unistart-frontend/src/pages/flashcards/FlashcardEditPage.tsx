@@ -24,7 +24,7 @@ interface FlashcardForm {
 interface SetForm {
   title: string;
   description: string;
-  subject: string;
+  subjectIds: number[];
   isPublic: boolean;
   isPublished: boolean;
 }
@@ -39,7 +39,7 @@ const FlashcardEditPage = () => {
   const [formData, setFormData] = useState<SetForm>({
     title: '',
     description: '',
-    subject: '',
+    subjectIds: [],
     isPublic: false,
     isPublished: false,
   });
@@ -57,10 +57,14 @@ const FlashcardEditPage = () => {
       ]);
       
       setSubjects(subjectsData);
+      
+      // Преобразуем subjects в subjectIds
+      const subjectIds = flashcardData.subjects?.map((s: any) => s.id) || [];
+      
       setFormData({
         title: flashcardData.title,
         description: flashcardData.description,
-        subject: flashcardData.subject || '',
+        subjectIds: subjectIds,
         isPublic: isAdmin ? true : (flashcardData.isPublic || false),
         isPublished: flashcardData.isPublished || false,
       });
@@ -171,8 +175,8 @@ const FlashcardEditPage = () => {
       return;
     }
 
-    if (!formData.subject || !formData.subject.trim()) {
-      alert('Выберите предмет');
+    if (!formData.subjectIds || formData.subjectIds.length === 0) {
+      alert('Выберите хотя бы один предмет');
       return;
     }
 
@@ -237,7 +241,7 @@ const FlashcardEditPage = () => {
       const setData = {
         title: formData.title,
         description: formData.description,
-        subject: formData.subject,
+        subjectIds: formData.subjectIds,
         isPublic: formData.isPublic,
       };
 
@@ -369,14 +373,14 @@ const FlashcardEditPage = () => {
                   Предмет *
                 </label>
                 <select
-                  value={formData.subject}
-                  onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                  value={formData.subjectIds[0] || ''}
+                  onChange={(e) => setFormData({ ...formData, subjectIds: e.target.value ? [parseInt(e.target.value)] : [] })}
                   required
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                 >
                   <option value="">Выберите предмет</option>
                   {subjects.map((subject) => (
-                    <option key={subject.id} value={subject.name}>
+                    <option key={subject.id} value={subject.id}>
                       {subject.name}
                     </option>
                   ))}

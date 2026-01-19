@@ -28,11 +28,12 @@ public class QuizRepository : Repository<Quiz>, IQuizRepository
             .ToListAsync();
     }
 
-    public async Task<IEnumerable<Quiz>> GetQuizzesBySubjectAsync(string subject)
+    public async Task<IEnumerable<Quiz>> GetQuizzesBySubjectsAsync(List<int> subjectIds)
     {
         return await _dbSet
-            .Where(q => q.Subject == subject)
+            .Include(q => q.Subjects)
             .Include(q => q.User)
+            .Where(q => q.Subjects.Any(s => subjectIds.Contains(s.Id)))
             .OrderByDescending(q => q.CreatedAt)
             .ToListAsync();
     }

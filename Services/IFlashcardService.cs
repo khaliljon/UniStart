@@ -18,7 +18,7 @@ public interface IFlashcardService
     Task<FlashcardSet?> GetSetWithCardsAsync(int id);
     Task<IEnumerable<FlashcardSet>> GetPublicSetsAsync();
     Task<IEnumerable<FlashcardSet>> GetUserSetsAsync(string userId);
-    Task<IEnumerable<FlashcardSet>> GetSetsBySubjectAsync(string subject);
+    Task<IEnumerable<FlashcardSet>> GetSetsBySubjectsAsync(List<int> subjectIds);
     Task<FlashcardSet> CreateSetAsync(string userId, CreateFlashcardSetDto dto);
     Task<FlashcardSet> UpdateSetAsync(int id, UpdateFlashcardSetDto dto);
     Task<bool> DeleteSetAsync(int id, string userId);

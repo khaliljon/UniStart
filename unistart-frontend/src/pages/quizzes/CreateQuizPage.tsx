@@ -22,7 +22,7 @@ interface Question {
 interface QuizForm {
   title: string;
   description?: string;
-  subject: string;
+  subjectIds: number[];
   difficulty: string;
   timeLimit: number;
   quizType: string; // Standalone, PracticeQuiz, ModuleFinalQuiz, CourseFinalQuiz, CaseStudyQuiz
@@ -51,7 +51,7 @@ const CreateQuizPage = () => {
   const [quiz, setQuiz] = useState<QuizForm>({
     title: '',
     description: '',
-    subject: '',
+    subjectIds: [],
     difficulty: 'Medium',
     timeLimit: 30,
     quizType: 'Standalone',
@@ -160,6 +160,16 @@ const CreateQuizPage = () => {
   const handleSubmit = async (e: React.FormEvent, publish: boolean = false) => {
     e.preventDefault();
     
+    if (!quiz.title || !quiz.title.trim()) {
+      alert('Введите название квиза!');
+      return;
+    }
+    
+    if (!quiz.subjectIds || quiz.subjectIds.length === 0) {
+      alert('Выберите хотя бы один предмет!');
+      return;
+    }
+    
     if (quiz.questions.length === 0) {
       alert('Добавьте хотя бы один вопрос!');
       return;
@@ -219,7 +229,7 @@ const CreateQuizPage = () => {
       // Шаг 1: Создаем квиз
       const quizData: any = {
         title: quiz.title,
-        subject: quiz.subject,
+        subjectIds: quiz.subjectIds,
         difficulty: quiz.difficulty,
         timeLimit: quiz.timeLimit,
         description: quiz.description || quiz.title || 'Описание',
@@ -356,17 +366,17 @@ const CreateQuizPage = () => {
                 </label>
                 <select
                   required
-                  value={quiz.subject}
+                  value={quiz.subjectIds[0] || ''}
                   onChange={(e) => {
-                    setQuiz({ ...quiz, subject: e.target.value });
-                    const subject = subjects.find(s => s.name === e.target.value);
-                    setSelectedSubjectId(subject?.id || null);
+                    const subjectId = e.target.value ? parseInt(e.target.value) : null;
+                    setQuiz({ ...quiz, subjectIds: subjectId ? [subjectId] : [] });
+                    setSelectedSubjectId(subjectId);
                   }}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 >
                   <option value="">Выберите предмет</option>
                   {subjects.map((subject) => (
-                    <option key={subject.id} value={subject.name}>
+                    <option key={subject.id} value={subject.id}>
                       {subject.name}
                     </option>
                   ))}

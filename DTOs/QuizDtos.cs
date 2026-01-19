@@ -8,8 +8,8 @@ namespace UniStart.DTOs
         public int Id { get; set; }
         public string Title { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
+        public List<SubjectDto> Subjects { get; set; } = new();
         public int TimeLimit { get; set; }
-        public string Subject { get; set; } = string.Empty;
         public string Difficulty { get; set; } = string.Empty;
         public int QuestionCount { get; set; }
         public int TotalPoints { get; set; }
@@ -23,8 +23,8 @@ namespace UniStart.DTOs
         public int Id { get; set; }
         public string Title { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
+        public List<SubjectDto> Subjects { get; set; } = new();
         public int TimeLimit { get; set; }
-        public string Subject { get; set; } = string.Empty;
         public string Difficulty { get; set; } = string.Empty;
         public bool IsPublic { get; set; }
         public bool IsPublished { get; set; }
@@ -45,13 +45,11 @@ namespace UniStart.DTOs
         [Range(0, 300, ErrorMessage = "Время должно быть от 0 до 300 минут")]
         public int TimeLimit { get; set; }
         
-        [Required(ErrorMessage = "Предмет обязателен")]
-        [StringLength(100, ErrorMessage = "Название предмета не должно превышать 100 символов")]
-        public string Subject { get; set; } = string.Empty;
-        
         [Required(ErrorMessage = "Уровень сложности обязателен")]
         [RegularExpression("^(Easy|Medium|Hard)$", ErrorMessage = "Сложность должна быть: Easy, Medium или Hard")]
         public string Difficulty { get; set; } = "Medium";
+        
+        public List<int> SubjectIds { get; set; } = new();
         
         public bool IsPublic { get; set; }
         public bool IsPublished { get; set; }
@@ -70,13 +68,11 @@ namespace UniStart.DTOs
         [Range(0, 300, ErrorMessage = "Время должно быть от 0 до 300 минут")]
         public int TimeLimit { get; set; }
         
-        [Required(ErrorMessage = "Предмет обязателен")]
-        [StringLength(100, ErrorMessage = "Название предмета не должно превышать 100 символов")]
-        public string Subject { get; set; } = string.Empty;
-        
         [Required(ErrorMessage = "Уровень сложности обязателен")]
         [RegularExpression("^(Easy|Medium|Hard)$", ErrorMessage = "Сложность должна быть: Easy, Medium или Hard")]
         public string Difficulty { get; set; } = "Medium";
+        
+        public List<int> SubjectIds { get; set; } = new();
 
         public bool IsPublic { get; set; }
         public bool IsPublished { get; set; }

@@ -8,7 +8,7 @@ namespace UniStart.DTOs
         public int Id { get; set; }
         public string Title { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
-        public string Subject { get; set; } = string.Empty;
+        public List<SubjectDto> Subjects { get; set; } = new();
         public bool IsPublic { get; set; }
         public bool IsPublished { get; set; }
         public DateTime CreatedAt { get; set; }
@@ -27,8 +27,7 @@ namespace UniStart.DTOs
         [StringLength(1000, ErrorMessage = "Описание не должно превышать 1000 символов")]
         public string Description { get; set; } = string.Empty;
         
-        [StringLength(100, ErrorMessage = "Название предмета не должно превышать 100 символов")]
-        public string Subject { get; set; } = string.Empty;
+        public List<int> SubjectIds { get; set; } = new();
         
         public bool IsPublic { get; set; } = false;
     }
@@ -42,8 +41,7 @@ namespace UniStart.DTOs
         [StringLength(1000, ErrorMessage = "Описание не должно превышать 1000 символов")]
         public string Description { get; set; } = string.Empty;
         
-        [StringLength(100, ErrorMessage = "Название предмета не должно превышать 100 символов")]
-        public string Subject { get; set; } = string.Empty;
+        public List<int> SubjectIds { get; set; } = new();
         
         public bool IsPublic { get; set; } = false;
     }

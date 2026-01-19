@@ -14,7 +14,7 @@ namespace UniStart.Repositories;
 public interface IQuizRepository : IRepository<Quiz>
 {
     Task<IEnumerable<Quiz>> GetPublishedQuizzesAsync();
-    Task<IEnumerable<Quiz>> GetQuizzesBySubjectAsync(string subject);
+    Task<IEnumerable<Quiz>> GetQuizzesBySubjectsAsync(List<int> subjectIds);
     Task<IEnumerable<Quiz>> GetQuizzesByUserAsync(string userId);
     Task<Quiz?> GetQuizWithQuestionsAsync(int quizId);
     Task<Quiz?> GetQuizWithAttemptsAsync(int quizId);

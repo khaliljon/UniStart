@@ -13,9 +13,6 @@ public class CreateFlashcardSetDtoValidator : AbstractValidator<CreateFlashcardS
             
         RuleFor(x => x.Description)
             .MaximumLength(1000).WithMessage("Описание не должно превышать 1000 символов");
-            
-        RuleFor(x => x.Subject)
-            .MaximumLength(100).WithMessage("Название предмета не должно превышать 100 символов");
     }
 }
 
@@ -61,9 +58,6 @@ public class UpdateFlashcardSetDtoValidator : AbstractValidator<UpdateFlashcardS
             
         RuleFor(x => x.Description)
             .MaximumLength(1000).WithMessage("Описание не должно превышать 1000 символов");
-            
-        RuleFor(x => x.Subject)
-            .MaximumLength(100).WithMessage("Название предмета не должно превышать 100 символов");
     }
 }
 

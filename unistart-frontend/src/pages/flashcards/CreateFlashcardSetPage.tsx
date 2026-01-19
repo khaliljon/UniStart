@@ -22,7 +22,7 @@ interface Flashcard {
 interface FlashcardSetForm {
   title: string;
   description: string;
-  subject: string;
+  subjectIds: number[];
   isPublic: boolean;
   flashcards: Flashcard[];
 }
@@ -35,7 +35,7 @@ const CreateFlashcardSetPage = () => {
   const [flashcardSet, setFlashcardSet] = useState<FlashcardSetForm>({
     title: '',
     description: '',
-    subject: '',
+    subjectIds: [],
     isPublic: isAdmin ? true : false,
     flashcards: [],
   });
@@ -153,8 +153,8 @@ const CreateFlashcardSetPage = () => {
       return;
     }
 
-    if (!flashcardSet.subject || !flashcardSet.subject.trim()) {
-      alert('Выберите предмет!');
+    if (!flashcardSet.subjectIds || flashcardSet.subjectIds.length === 0) {
+      alert('Выберите хотя бы один предмет!');
       return;
     }
 
@@ -245,7 +245,7 @@ const CreateFlashcardSetPage = () => {
       const setResponse = await api.post('/flashcards/sets', {
         title: flashcardSet.title,
         description: flashcardSet.description,
-        subject: flashcardSet.subject,
+        subjectIds: flashcardSet.subjectIds,
         isPublic: flashcardSet.isPublic,
       });
 
@@ -376,15 +376,15 @@ const CreateFlashcardSetPage = () => {
                   Предмет
                 </label>
                 <select
-                  value={flashcardSet.subject}
+                  value={flashcardSet.subjectIds[0] || ''}
                   onChange={(e) =>
-                    setFlashcardSet({ ...flashcardSet, subject: e.target.value })
+                    setFlashcardSet({ ...flashcardSet, subjectIds: e.target.value ? [parseInt(e.target.value)] : [] })
                   }
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                 >
                   <option value="">Выберите предмет</option>
                   {subjects.map((subject) => (
-                    <option key={subject.id} value={subject.name}>
+                    <option key={subject.id} value={subject.id}>
                       {subject.name}
                     </option>
                   ))}

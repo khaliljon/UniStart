@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using UniStart.Data;
@@ -11,9 +12,11 @@ using UniStart.Data;
 namespace UniStart.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260118152200_AddSubjectsManyToManyForQuizAndFlashcardSet")]
+    partial class AddSubjectsManyToManyForQuizAndFlashcardSet
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -433,7 +436,7 @@ namespace UniStart.Migrations
                             SessionTimeout = 30,
                             SiteDescription = "��������������� ��������� ��� �������� � ������� �������� � ������",
                             SiteName = "UniStart",
-                            UpdatedAt = new DateTime(2026, 1, 18, 15, 59, 11, 842, DateTimeKind.Utc).AddTicks(7781)
+                            UpdatedAt = new DateTime(2026, 1, 18, 15, 21, 59, 665, DateTimeKind.Utc).AddTicks(1114)
                         });
                 });
 
@@ -830,6 +833,11 @@ namespace UniStart.Migrations
 
                     b.Property<bool>("IsPublished")
                         .HasColumnType("boolean");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -1305,82 +1313,6 @@ namespace UniStart.Migrations
                     b.ToTable("UserLearningPatterns");
                 });
 
-            modelBuilder.Entity("UniStart.Models.Learning.UserPreferences", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("CareerGoal")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("DailyStudyTimeMinutes")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("LearningGoal")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<int>("MotivationLevel")
-                        .HasColumnType("integer");
-
-                    b.Property<bool>("NeedsReminders")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("OnboardingCompleted")
-                        .HasColumnType("boolean");
-
-                    b.Property<int>("PreferredDifficulty")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("PreferredStudyTime")
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
-
-                    b.Property<bool>("PrefersExams")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("PrefersFlashcards")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("PrefersQuizzes")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("StudyDaysJson")
-                        .IsRequired()
-                        .HasColumnType("jsonb");
-
-                    b.Property<string>("TargetExamType")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<int?>("TargetUniversityId")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TargetUniversityId");
-
-                    b.HasIndex("UserId")
-                        .IsUnique();
-
-                    b.ToTable("UserPreferences");
-                });
-
             modelBuilder.Entity("UniStart.Models.Quizzes.Quiz", b =>
                 {
                     b.Property<int>("Id")
@@ -1413,6 +1345,11 @@ namespace UniStart.Migrations
                     b.Property<string>("QuizType")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<int>("TimeLimit")
                         .HasColumnType("integer");
@@ -1917,51 +1854,6 @@ namespace UniStart.Migrations
                     b.ToTable("UserFollows");
                 });
 
-            modelBuilder.Entity("UserPreferencesInterestedSubject", b =>
-                {
-                    b.Property<int>("UserPreferencesId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("SubjectsId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("UserPreferencesId", "SubjectsId");
-
-                    b.HasIndex("SubjectsId");
-
-                    b.ToTable("UserPreferencesInterestedSubject");
-                });
-
-            modelBuilder.Entity("UserPreferencesStrongSubject", b =>
-                {
-                    b.Property<int>("UserPreferencesId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("SubjectsId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("UserPreferencesId", "SubjectsId");
-
-                    b.HasIndex("SubjectsId");
-
-                    b.ToTable("UserPreferencesStrongSubject");
-                });
-
-            modelBuilder.Entity("UserPreferencesWeakSubject", b =>
-                {
-                    b.Property<int>("UserPreferencesId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("SubjectsId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("UserPreferencesId", "SubjectsId");
-
-                    b.HasIndex("SubjectsId");
-
-                    b.ToTable("UserPreferencesWeakSubject");
-                });
-
             modelBuilder.Entity("ExamSubject", b =>
                 {
                     b.HasOne("UniStart.Models.Exams.Exam", null)
@@ -2385,24 +2277,6 @@ namespace UniStart.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("UniStart.Models.Learning.UserPreferences", b =>
-                {
-                    b.HasOne("UniStart.Models.Reference.University", "TargetUniversity")
-                        .WithMany()
-                        .HasForeignKey("TargetUniversityId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.HasOne("UniStart.Models.Core.ApplicationUser", "User")
-                        .WithOne()
-                        .HasForeignKey("UniStart.Models.Learning.UserPreferences", "UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("TargetUniversity");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("UniStart.Models.Quizzes.Quiz", b =>
                 {
                     b.HasOne("UniStart.Models.Core.ApplicationUser", "User")
@@ -2585,51 +2459,6 @@ namespace UniStart.Migrations
                     b.Navigation("Follower");
 
                     b.Navigation("Following");
-                });
-
-            modelBuilder.Entity("UserPreferencesInterestedSubject", b =>
-                {
-                    b.HasOne("UniStart.Models.Reference.Subject", null)
-                        .WithMany()
-                        .HasForeignKey("SubjectsId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("UniStart.Models.Learning.UserPreferences", null)
-                        .WithMany()
-                        .HasForeignKey("UserPreferencesId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("UserPreferencesStrongSubject", b =>
-                {
-                    b.HasOne("UniStart.Models.Reference.Subject", null)
-                        .WithMany()
-                        .HasForeignKey("SubjectsId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("UniStart.Models.Learning.UserPreferences", null)
-                        .WithMany()
-                        .HasForeignKey("UserPreferencesId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("UserPreferencesWeakSubject", b =>
-                {
-                    b.HasOne("UniStart.Models.Reference.Subject", null)
-                        .WithMany()
-                        .HasForeignKey("SubjectsId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("UniStart.Models.Learning.UserPreferences", null)
-                        .WithMany()
-                        .HasForeignKey("UserPreferencesId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("UniStart.Models.Core.Achievement", b =>

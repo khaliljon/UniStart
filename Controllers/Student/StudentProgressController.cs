@@ -83,53 +83,9 @@ namespace UniStart.Controllers.Student
             // Достижения (пока 0, можно расширить)
             var totalAchievements = 0;
 
-            // Прогресс по предметам (квизы)
-            var quizSubjectProgress = quizAttempts
-                .GroupBy(qa => qa.Quiz.Subject)
-                .Select(g => new
-                {
-                    Subject = g.Key,
-                    QuizzesTaken = g.Select(qa => qa.QuizId).Distinct().Count(),
-                    AverageScore = Math.Round(g.Average(qa => qa.Percentage), 1)
-                })
-                .ToDictionary(x => x.Subject);
-
-            // Прогресс по предметам (карточки)
-            var flashcardsBySubject = await _context.UserFlashcardProgresses
-                .Where(p => p.UserId == userId && p.LastReviewedAt != null)
-                .Include(p => p.Flashcard)
-                    .ThenInclude(f => f.FlashcardSet)
-                .GroupBy(p => p.Flashcard.FlashcardSet.Subject)
-                .Select(g => new
-                {
-                    Subject = g.Key,
-                    CardsStudied = g.Count(),
-                    MasteredCards = g.Count(p => p.IsMastered)
-                })
-                .ToListAsync();
-
-            var flashcardSubjectDict = flashcardsBySubject.ToDictionary(x => x.Subject);
-
-            // Объединяем статистику по предметам
-            var allSubjects = quizSubjectProgress.Keys
-                .Union(flashcardSubjectDict.Keys)
-                .Distinct()
-                .ToList();
-
-            var subjectProgress = allSubjects.Select(subject =>
-            {
-                var hasQuizStats = quizSubjectProgress.TryGetValue(subject, out var quizStats);
-                var hasFlashcardStats = flashcardSubjectDict.TryGetValue(subject, out var flashcardStats);
-
-                return new
-                {
-                    subject = subject,
-                    quizzesTaken = hasQuizStats ? quizStats.QuizzesTaken : 0,
-                    averageScore = hasQuizStats ? quizStats.AverageScore : 0.0,
-                    cardsStudied = hasFlashcardStats ? flashcardStats.CardsStudied : 0,
-                    masteredCards = hasFlashcardStats ? flashcardStats.MasteredCards : 0
-                };
-            }).ToList();
+            // Прогресс по предметам (будет использовать Subjects коллекцию)
+            // TODO: Реализовать после обновления фронтенда на новую систему Subjects
+            var subjectProgress = new List<object>();
 
             // Недавняя активность
             var recentActivity = quizAttempts
@@ -266,23 +222,8 @@ namespace UniStart.Controllers.Student
         {
             var userId = GetUserId();
 
-            var quizAttempts = await _context.UserQuizAttempts
-                .Where(qa => qa.UserId == userId)
-                .Include(qa => qa.Quiz)
-                .ToListAsync();
-
-            var progressBySubject = quizAttempts
-                .GroupBy(qa => qa.Quiz.Subject)
-                .Select(g => new
-                {
-                    Subject = g.Key,
-                    TotalAttempts = g.Count(),
-                    AverageScore = Math.Round(g.Average(qa => qa.Percentage), 2),
-                    BestScore = g.Max(qa => qa.Percentage),
-                    LastAttempt = g.Max(qa => qa.CompletedAt)
-                })
-                .OrderByDescending(s => s.TotalAttempts)
-                .ToList();
+            // Subject field removed from Quiz model
+            var progressBySubject = new List<object>();
 
             return Ok(progressBySubject);
         }

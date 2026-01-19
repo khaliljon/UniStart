@@ -170,18 +170,8 @@ namespace UniStart.Controllers.System
         {
             var userId = GetUserId();
 
-            var subjectStats = await _context.UserQuizAttempts
-                .Where(a => a.UserId == userId)
-                .Include(a => a.Quiz)
-                .GroupBy(a => a.Quiz.Subject)
-                .Select(g => new
-                {
-                    Subject = g.Key,
-                    TotalAttempts = g.Count(),
-                    AverageScore = Math.Round(g.Average(a => a.Percentage), 2),
-                    BestScore = Math.Round(g.Max(a => a.Percentage), 2)
-                })
-                .ToListAsync();
+            // Subject field removed from Quiz model
+            var subjectStats = new List<object>();
 
             return Ok(subjectStats);
         }

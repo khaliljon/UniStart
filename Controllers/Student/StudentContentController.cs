@@ -46,6 +46,7 @@ namespace UniStart.Controllers.Student
             var flashcardSets = await _context.FlashcardSets
                 .Where(fs => fs.UserId == userId)
                 .Include(fs => fs.Flashcards)
+                .Include(fs => fs.Subjects)
                 .OrderByDescending(fs => fs.UpdatedAt)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
@@ -54,7 +55,7 @@ namespace UniStart.Controllers.Student
                     Id = fs.Id,
                     Title = fs.Title,
                     Description = fs.Description,
-                    Subject = fs.Subject,
+                    Subjects = fs.Subjects.Select(s => new SubjectDto { Id = s.Id, Name = s.Name }).ToList(),
                     CardCount = fs.Flashcards.Count,
                     CreatedAt = fs.CreatedAt,
                     UpdatedAt = fs.UpdatedAt
@@ -119,10 +120,8 @@ namespace UniStart.Controllers.Student
         {
             var query = _context.Quizzes
                 .Include(q => q.Questions)
+                .Include(q => q.Subjects)
                 .Where(q => q.IsPublic && q.IsPublished); // Только публичные и опубликованные квизы
-
-            if (!string.IsNullOrWhiteSpace(subject))
-                query = query.Where(q => q.Subject.Contains(subject));
 
             if (!string.IsNullOrWhiteSpace(difficulty))
                 query = query.Where(q => q.Difficulty == difficulty);
@@ -136,7 +135,7 @@ namespace UniStart.Controllers.Student
                     Id = q.Id,
                     Title = q.Title,
                     Description = q.Description,
-                    Subject = q.Subject,
+                    Subjects = q.Subjects.Select(s => new SubjectDto { Id = s.Id, Name = s.Name }).ToList(),
                     Difficulty = q.Difficulty,
                     TimeLimit = q.TimeLimit,
                     QuestionCount = q.Questions.Count,
@@ -200,10 +199,8 @@ namespace UniStart.Controllers.Student
         {
             var query = _context.FlashcardSets
                 .Include(fs => fs.Flashcards)
+                .Include(fs => fs.Subjects)
                 .Where(fs => fs.IsPublic && fs.IsPublished); // Только публичные и опубликованные наборы
-
-            if (!string.IsNullOrWhiteSpace(subject))
-                query = query.Where(fs => fs.Subject.Contains(subject));
 
             var flashcardSets = await query
                 .OrderByDescending(fs => fs.CreatedAt)
@@ -214,7 +211,7 @@ namespace UniStart.Controllers.Student
                     Id = fs.Id,
                     Title = fs.Title,
                     Description = fs.Description,
-                    Subject = fs.Subject,
+                    Subjects = fs.Subjects.Select(s => new SubjectDto { Id = s.Id, Name = s.Name }).ToList(),
                     CardCount = fs.Flashcards.Count,
                     CreatedAt = fs.CreatedAt,
                     UpdatedAt = fs.UpdatedAt

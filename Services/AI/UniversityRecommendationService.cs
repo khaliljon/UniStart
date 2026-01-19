@@ -149,20 +149,6 @@ public class UniversityRecommendationService : IUniversityRecommendationService
                 CareerGoal = user.CareerGoal
             };
 
-            // Собираем баллы по предметам из квизов
-            var quizScores = await _unitOfWork.QuizAttempts.Query()
-                .Where(a => a.UserId == userId)
-                .Include(a => a.Quiz)
-                .Where(a => !string.IsNullOrEmpty(a.Quiz.Subject))
-                .Select(a => new { SubjectName = a.Quiz.Subject, Score = a.Score })
-                .GroupBy(x => x.SubjectName)
-                .Select(g => new
-                {
-                    Subject = g.Key,
-                    AverageScore = g.Average(x => x.Score)
-                })
-                .ToListAsync();
-
             // Собираем баллы из экзаменов  
             var examScores = await _unitOfWork.ExamAttempts.Query()
                 .Where(a => a.UserId == userId)
@@ -182,7 +168,7 @@ public class UniversityRecommendationService : IUniversityRecommendationService
                 .ToListAsync();
 
             // Объединяем оценки по предметам
-            var allScores = quizScores.Concat(examScores)
+            var allScores = examScores
                 .GroupBy(s => s.Subject)
                 .Select(g => new
                 {

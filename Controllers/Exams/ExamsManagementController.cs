@@ -58,14 +58,44 @@ public class ExamsManagementController : ControllerBase
                 Title = exam.Title,
                 Description = exam.Description,
                 Difficulty = exam.Difficulty,
+                Subjects = exam.Subjects?.Select(s => s.Name).ToList() ?? new List<string>(),
+                SubjectIds = exam.Subjects?.Select(s => s.Id).ToList() ?? new List<int>(),
+                CountryId = exam.CountryId,
+                UniversityId = exam.UniversityId,
+                ExamTypeId = exam.ExamTypeId,
                 MaxAttempts = exam.MaxAttempts,
                 PassingScore = exam.PassingScore,
+                IsProctored = exam.IsProctored,
+                ShuffleQuestions = exam.ShuffleQuestions,
+                ShuffleAnswers = exam.ShuffleAnswers,
+                ShowResultsAfter = exam.ShowResultsAfter,
+                ShowCorrectAnswers = exam.ShowCorrectAnswers,
+                ShowDetailedFeedback = exam.ShowDetailedFeedback,
+                TimeLimit = exam.TimeLimit,
+                StrictTiming = exam.StrictTiming,
                 IsPublished = exam.IsPublished,
                 IsPublic = exam.IsPublic,
                 MaxScore = exam.MaxScore,
                 QuestionCount = exam.Questions?.Count ?? 0,
                 CreatedAt = exam.CreatedAt,
-                UserId = exam.UserId
+                UserId = exam.UserId,
+                UserName = exam.User?.UserName ?? "Unknown",
+                Questions = exam.Questions?.OrderBy(q => q.OrderIndex).Select(q => new ExamQuestionDto
+                {
+                    Id = q.Id,
+                    Text = q.Text,
+                    Explanation = q.Explanation,
+                    QuestionType = q.QuestionType,
+                    Points = q.Points,
+                    OrderIndex = q.OrderIndex,
+                    Answers = q.Answers.OrderBy(a => a.OrderIndex).Select(a => new ExamAnswerDto
+                    {
+                        Id = a.Id,
+                        Text = a.Text,
+                        IsCorrect = a.IsCorrect,
+                        OrderIndex = a.OrderIndex
+                    }).ToList()
+                }).ToList() ?? new List<ExamQuestionDto>()
             });
         }
         catch (Exception ex)
@@ -86,7 +116,51 @@ public class ExamsManagementController : ControllerBase
             var userId = await GetUserId();
             var exam = await _examService.UpdateExamAsync(id, userId, dto);
             
-            return Ok(new { Message = "Экзамен успешно обновлен", ExamId = exam.Id });
+            return Ok(new ExamDto
+            {
+                Id = exam.Id,
+                Title = exam.Title,
+                Description = exam.Description,
+                Difficulty = exam.Difficulty,
+                Subjects = exam.Subjects?.Select(s => s.Name).ToList() ?? new List<string>(),
+                SubjectIds = exam.Subjects?.Select(s => s.Id).ToList() ?? new List<int>(),
+                CountryId = exam.CountryId,
+                UniversityId = exam.UniversityId,
+                ExamTypeId = exam.ExamTypeId,
+                MaxAttempts = exam.MaxAttempts,
+                PassingScore = exam.PassingScore,
+                IsProctored = exam.IsProctored,
+                ShuffleQuestions = exam.ShuffleQuestions,
+                ShuffleAnswers = exam.ShuffleAnswers,
+                ShowResultsAfter = exam.ShowResultsAfter,
+                ShowCorrectAnswers = exam.ShowCorrectAnswers,
+                ShowDetailedFeedback = exam.ShowDetailedFeedback,
+                TimeLimit = exam.TimeLimit,
+                StrictTiming = exam.StrictTiming,
+                IsPublished = exam.IsPublished,
+                IsPublic = exam.IsPublic,
+                MaxScore = exam.MaxScore,
+                QuestionCount = exam.Questions?.Count ?? 0,
+                CreatedAt = exam.CreatedAt,
+                UserId = exam.UserId,
+                UserName = exam.User?.UserName ?? "Unknown",
+                Questions = exam.Questions?.OrderBy(q => q.OrderIndex).Select(q => new ExamQuestionDto
+                {
+                    Id = q.Id,
+                    Text = q.Text,
+                    Explanation = q.Explanation,
+                    QuestionType = q.QuestionType,
+                    Points = q.Points,
+                    OrderIndex = q.OrderIndex,
+                    Answers = q.Answers.OrderBy(a => a.OrderIndex).Select(a => new ExamAnswerDto
+                    {
+                        Id = a.Id,
+                        Text = a.Text,
+                        IsCorrect = a.IsCorrect,
+                        OrderIndex = a.OrderIndex
+                    }).ToList()
+                }).ToList() ?? new List<ExamQuestionDto>()
+            });
         }
         catch (InvalidOperationException ex)
         {

@@ -96,11 +96,12 @@ interface SimpleQuiz {
   id: number;
   title: string;
   description: string;
-  subject: string;
+  subjects?: { id: number; name: string; }[];
   difficulty: string;
   timeLimit: number;
   questionCount: number;
   totalPoints: number;
+  maxScore?: number;
   isPublished?: boolean;
   createdAt: string;
 }
@@ -367,7 +368,7 @@ const QuizzesPage = () => {
                 ? (quiz.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                    quiz.description.toLowerCase().includes(searchQuery.toLowerCase()))
                 : true;
-              const matchesSubject = subjectFilter ? quiz.subject === subjectFilter : true;
+              const matchesSubject = subjectFilter ? quiz.subjects?.some(s => s.name === subjectFilter) : true;
               const matchesDifficulty = difficultyFilter ? quiz.difficulty === difficultyFilter : true;
               return matchesSearch && matchesSubject && matchesDifficulty;
             })}
@@ -1008,13 +1009,17 @@ const ListView = ({
                   </span>
                 </div>
 
-                <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 flex-1">
-                  {quiz.description}
-                </p>
+                {quiz.description && quiz.description !== quiz.title && (
+                  <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 flex-1">
+                    {quiz.description}
+                  </p>
+                )}
 
                 <div className="flex items-center gap-2 mb-3">
                   <BookOpen className="w-4 h-4 text-gray-400" />
-                  <span className="text-sm text-gray-700 dark:text-gray-300">{quiz.subject}</span>
+                  <span className="text-sm text-gray-700 dark:text-gray-300">
+                    {quiz.subjects && quiz.subjects.length > 0 ? quiz.subjects.map(s => s.name).join(', ') : 'Не указан'}
+                  </span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 mb-4">

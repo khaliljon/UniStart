@@ -42,18 +42,32 @@ public class TeacherFlashcardsController : ControllerBase
     [HttpPost("flashcard-sets/private")]
     public async Task<ActionResult<FlashcardSetDto>> CreatePrivateFlashcardSet([FromBody] CreateFlashcardSetDto dto)
     {
+        if (dto.SubjectIds == null || !dto.SubjectIds.Any())
+        {
+            return BadRequest("Хотя бы один предмет должен быть выбран");
+        }
+
         var userId = GetUserId();
 
         var flashcardSet = new FlashcardSet
         {
             Title = dto.Title,
             Description = dto.Description,
-            Subject = dto.Subject,
             IsPublic = false,
             UserId = userId,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
+
+        // Добавляем предметы
+        List<Subject>? subjects = null;
+        if (dto.SubjectIds != null && dto.SubjectIds.Any())
+        {
+            subjects = await _context.Subjects
+                .Where(s => dto.SubjectIds.Contains(s.Id))
+                .ToListAsync();
+            flashcardSet.Subjects = subjects;
+        }
 
         _context.FlashcardSets.Add(flashcardSet);
         await _context.SaveChangesAsync();
@@ -65,7 +79,7 @@ public class TeacherFlashcardsController : ControllerBase
             Id = flashcardSet.Id,
             Title = flashcardSet.Title,
             Description = flashcardSet.Description,
-            Subject = flashcardSet.Subject,
+            Subjects = subjects?.Select(s => new SubjectDto { Id = s.Id, Name = s.Name }).ToList() ?? new List<SubjectDto>(),
             IsPublic = flashcardSet.IsPublic,
             CreatedAt = flashcardSet.CreatedAt,
             UpdatedAt = flashcardSet.UpdatedAt,
@@ -88,6 +102,7 @@ public class TeacherFlashcardsController : ControllerBase
 
         var query = _context.FlashcardSets
             .Include(fs => fs.Flashcards)
+            .Include(fs => fs.Subjects)
             .Where(fs => fs.UserId == userId);
 
         if (isPublic.HasValue)
@@ -114,7 +129,7 @@ public class TeacherFlashcardsController : ControllerBase
             Id = fs.Id,
             Title = fs.Title,
             Description = fs.Description,
-            Subject = fs.Subject,
+            Subjects = fs.Subjects.Select(s => new SubjectDto { Id = s.Id, Name = s.Name }).ToList(),
             IsPublic = fs.IsPublic,
             CreatedAt = fs.CreatedAt,
             UpdatedAt = fs.UpdatedAt,

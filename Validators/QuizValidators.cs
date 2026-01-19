@@ -19,10 +19,6 @@ public class CreateQuizDtoValidator : AbstractValidator<CreateQuizDto>
             .GreaterThanOrEqualTo(0).WithMessage("Время не может быть отрицательным")
             .LessThanOrEqualTo(300).WithMessage("Время не должно превышать 300 минут");
             
-        RuleFor(x => x.Subject)
-            .NotEmpty().WithMessage("Предмет обязателен")
-            .MaximumLength(100).WithMessage("Название предмета не должно превышать 100 символов");
-            
         RuleFor(x => x.Difficulty)
             .NotEmpty().WithMessage("Уровень сложности обязателен")
             .Must(x => x == "Easy" || x == "Medium" || x == "Hard")

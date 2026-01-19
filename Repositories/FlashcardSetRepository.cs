@@ -37,11 +37,12 @@ public class FlashcardSetRepository : Repository<FlashcardSet>, IFlashcardSetRep
             .ToListAsync();
     }
 
-    public async Task<IEnumerable<FlashcardSet>> GetSetsBySubjectAsync(string subject)
+    public async Task<IEnumerable<FlashcardSet>> GetSetsBySubjectsAsync(List<int> subjectIds)
     {
         return await _dbSet
-            .Where(fs => fs.Subject == subject && fs.IsPublic)
+            .Include(fs => fs.Subjects)
             .Include(fs => fs.User)
+            .Where(fs => fs.IsPublic && fs.Subjects.Any(s => subjectIds.Contains(s.Id)))
             .OrderByDescending(fs => fs.CreatedAt)
             .ToListAsync();
     }

@@ -38,6 +38,7 @@ public class QuizService : IQuizService
             .Query()
             .Include(q => q.Questions)
                 .ThenInclude(qu => qu.Answers)
+            .Include(q => q.Subjects)
             .FirstOrDefaultAsync(q => q.Id == id);
 
         if (quiz == null)
@@ -50,8 +51,8 @@ public class QuizService : IQuizService
             Id = quiz.Id,
             Title = quiz.Title,
             Description = quiz.Description,
+            Subjects = quiz.Subjects.Select(s => new SubjectDto { Id = s.Id, Name = s.Name }).ToList(),
             TimeLimit = quiz.TimeLimit,
-            Subject = quiz.Subject,
             Difficulty = quiz.Difficulty,
             IsPublic = quiz.IsPublic,
             IsPublished = quiz.IsPublished,
@@ -95,9 +96,6 @@ public class QuizService : IQuizService
         }
 
         // Фильтры
-        if (!string.IsNullOrEmpty(filter.Subject))
-            query = query.Where(q => q.Subject == filter.Subject);
-
         if (!string.IsNullOrEmpty(filter.Difficulty))
             query = query.Where(q => q.Difficulty == filter.Difficulty);
 
@@ -107,6 +105,7 @@ public class QuizService : IQuizService
         // Пагинация
         var quizzes = await query
             .Include(q => q.Questions)
+            .Include(q => q.Subjects)
             .OrderByDescending(q => q.CreatedAt)
             .Skip((filter.Page - 1) * filter.PageSize)
             .Take(filter.PageSize)
@@ -115,8 +114,8 @@ public class QuizService : IQuizService
                 Id = q.Id,
                 Title = q.Title,
                 Description = q.Description,
+                Subjects = q.Subjects.Select(s => new SubjectDto { Id = s.Id, Name = s.Name }).ToList(),
                 TimeLimit = q.TimeLimit,
-                Subject = q.Subject,
                 Difficulty = q.Difficulty,
                 QuestionCount = q.Questions.Count,
                 TotalPoints = q.Questions.Sum(qu => qu.Points)
@@ -148,9 +147,6 @@ public class QuizService : IQuizService
         }
 
         // Фильтры
-        if (!string.IsNullOrEmpty(filter.Subject))
-            query = query.Where(q => q.Subject == filter.Subject);
-
         if (!string.IsNullOrEmpty(filter.Difficulty))
             query = query.Where(q => q.Difficulty == filter.Difficulty);
 
@@ -160,6 +156,7 @@ public class QuizService : IQuizService
         // Пагинация
         var quizzes = await query
             .Include(q => q.Questions)
+            .Include(q => q.Subjects)
             .OrderByDescending(q => q.CreatedAt)
             .Skip((filter.Page - 1) * filter.PageSize)
             .Take(filter.PageSize)
@@ -168,8 +165,8 @@ public class QuizService : IQuizService
                 Id = q.Id,
                 Title = q.Title,
                 Description = q.Description,
+                Subjects = q.Subjects.Select(s => new SubjectDto { Id = s.Id, Name = s.Name }).ToList(),
                 TimeLimit = q.TimeLimit,
-                Subject = q.Subject,
                 Difficulty = q.Difficulty,
                 IsPublished = q.IsPublished,
                 QuestionCount = q.Questions.Count,
@@ -192,10 +189,9 @@ public class QuizService : IQuizService
             .FindAsync(q => q.UserId == userId);
     }
 
-    public async Task<IEnumerable<Quiz>> GetQuizzesBySubjectAsync(string subject)
+    public async Task<IEnumerable<Quiz>> GetQuizzesBySubjectsAsync(List<int> subjectIds)
     {
-        return await _unitOfWork.Repository<Quiz>()
-            .FindAsync(q => q.Subject == subject && q.IsPublic);
+        return await _unitOfWork.Quizzes.GetQuizzesBySubjectsAsync(subjectIds);
     }
 
     public async Task<Quiz> CreateQuizAsync(string userId, CreateQuizDto dto)
@@ -204,7 +200,6 @@ public class QuizService : IQuizService
         {
             Title = dto.Title,
             Description = dto.Description,
-            Subject = dto.Subject,
             Difficulty = dto.Difficulty,
             TimeLimit = dto.TimeLimit,
             IsPublished = false,
@@ -214,25 +209,52 @@ public class QuizService : IQuizService
             UpdatedAt = DateTime.UtcNow
         };
 
+        // Добавляем предметы
+        if (dto.SubjectIds != null && dto.SubjectIds.Any())
+        {
+            var subjects = await _unitOfWork.Repository<Subject>()
+                .FindAsync(s => dto.SubjectIds.Contains(s.Id));
+            quiz.Subjects = subjects.ToList();
+        }
+
         await _unitOfWork.Repository<Quiz>().AddAsync(quiz);
         await _unitOfWork.SaveChangesAsync();
 
+        // Перезагружаем с Subjects
+        var createdQuiz = await _unitOfWork.Quizzes.Query()
+            .Include(q => q.Subjects)
+            .FirstOrDefaultAsync(q => q.Id == quiz.Id);
+
         _logger.LogInformation("Quiz created with ID {QuizId} by user {UserId}", quiz.Id, userId);
-        return quiz;
+        return createdQuiz ?? quiz;
     }
 
     public async Task<Quiz> UpdateQuizAsync(int id, UpdateQuizDto dto)
     {
-        var quiz = await _unitOfWork.Quizzes.GetByIdAsync(id);
+        var quiz = await _unitOfWork.Quizzes.Query()
+            .Include(q => q.Subjects)
+            .FirstOrDefaultAsync(q => q.Id == id);
+            
         if (quiz == null)
             throw new KeyNotFoundException($"Quiz with ID {id} not found");
 
         quiz.Title = dto.Title;
         quiz.Description = dto.Description;
-        quiz.Subject = dto.Subject;
         quiz.Difficulty = dto.Difficulty;
         quiz.TimeLimit = dto.TimeLimit;
         quiz.UpdatedAt = DateTime.UtcNow;
+
+        // Обновляем предметы
+        if (dto.SubjectIds != null)
+        {
+            quiz.Subjects.Clear();
+            if (dto.SubjectIds.Any())
+            {
+                var subjects = await _unitOfWork.Repository<Subject>()
+                    .FindAsync(s => dto.SubjectIds.Contains(s.Id));
+                quiz.Subjects = subjects.ToList();
+            }
+        }
 
         _unitOfWork.Repository<Quiz>().Update(quiz);
         await _unitOfWork.SaveChangesAsync();

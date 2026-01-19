@@ -22,10 +22,12 @@ interface Exam {
   id: number;
   title: string;
   description: string;
-  subject: string;
+  subjects?: { id: number; name: string; }[];
+  subjectIds?: number[];
   difficulty: string;
   questionCount: number;
-  totalPoints: number;
+  totalPoints?: number;
+  maxScore?: number;
   maxAttempts: number;
   passingScore: number;
   isPublished: boolean;

@@ -22,7 +22,7 @@ interface Question {
 interface QuizForm {
   title: string;
   description?: string;
-  subject: string;
+  subjectIds: number[];
   difficulty: string;
   timeLimit: number;
   quizType: string; // Standalone, PracticeQuiz, ModuleFinalQuiz, CourseFinalQuiz, CaseStudyQuiz
@@ -53,7 +53,7 @@ const EditQuizPage = () => {
   const [quiz, setQuiz] = useState<QuizForm>({
     title: '',
     description: '',
-    subject: '',
+    subjectIds: [],
     difficulty: 'Medium',
     timeLimit: 30,
     quizType: 'Standalone',
@@ -120,10 +120,16 @@ const EditQuizPage = () => {
       if (quizData.moduleId) setSelectedModuleId(quizData.moduleId);
       if (quizData.competencyId) setSelectedCompetencyId(quizData.competencyId);
 
+      // Преобразуем subjects в subjectIds
+      const subjectIds = quizData.subjects?.map((s: any) => s.id) || [];
+      if (subjectIds.length > 0) {
+        setSelectedSubjectId(subjectIds[0]);
+      }
+
       setQuiz({
         title: quizData.title,
         description: quizData.description || '',
-        subject: quizData.subject,
+        subjectIds: subjectIds,
         difficulty: quizData.difficulty,
         timeLimit: quizData.timeLimit,
         quizType: quizData.type || 'Standalone',
@@ -228,8 +234,8 @@ const EditQuizPage = () => {
   const handleSubmit = async (e: React.FormEvent, publish: boolean = false) => {
     e.preventDefault();
 
-    if (!quiz.title || !quiz.subject) {
-      alert('Заполните название и предмет квиза');
+    if (!quiz.title || !quiz.subjectIds || quiz.subjectIds.length === 0) {
+      alert('Заполните название и выберите хотя бы один предмет');
       return;
     }
 
@@ -284,7 +290,7 @@ const EditQuizPage = () => {
       const quizData: any = {
         title: quiz.title,
         description: quiz.description || '',
-        subject: quiz.subject,
+        subjectIds: quiz.subjectIds,
         difficulty: quiz.difficulty,
         timeLimit: quiz.timeLimit,
         quizType: quiz.quizType,
@@ -402,18 +408,18 @@ const EditQuizPage = () => {
                     Предмет *
                   </label>
                   <select
-                    value={quiz.subject}
+                    value={quiz.subjectIds[0] || ''}
                     onChange={(e) => {
-                      setQuiz({ ...quiz, subject: e.target.value });
-                      const subject = subjects.find((s: any) => s.name === e.target.value);
-                      setSelectedSubjectId(subject?.id || null);
+                      const subjectId = e.target.value ? parseInt(e.target.value) : null;
+                      setQuiz({ ...quiz, subjectIds: subjectId ? [subjectId] : [] });
+                      setSelectedSubjectId(subjectId);
                     }}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     required
                   >
                     <option value="">Выберите предмет</option>
                     {subjects.map((subject) => (
-                      <option key={subject.id} value={subject.name}>
+                      <option key={subject.id} value={subject.id}>
                         {subject.name}
                       </option>
                     ))}

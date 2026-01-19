@@ -264,8 +264,7 @@ const CreateExamPage = () => {
       const examData = {
         title,
         description,
-        subject: selectedSubjectIds.length > 0 ? subjects.find(s => s.id === selectedSubjectIds[0])?.name || '' : '', // Для обратной совместимости
-        subjectIds: selectedSubjectIds.length > 0 ? selectedSubjectIds : [], // Новый способ
+        subjectIds: selectedSubjectIds,
         difficulty,
         timeLimit,
         passingScore,

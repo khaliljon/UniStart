@@ -308,7 +308,7 @@ const StudentDashboard = () => {
                           <div className="flex items-center gap-4 text-sm text-gray-600">
                             <div className="flex items-center gap-1">
                               <BookOpen className="w-4 h-4" />
-                              <span>{quiz.subject}</span>
+                              <span>{quiz.subjects && quiz.subjects.length > 0 ? quiz.subjects.map(s => s.name).join(', ') : 'Не указан'}</span>
                             </div>
                             {quiz.timeLimit && (
                               <div className="flex items-center gap-1">

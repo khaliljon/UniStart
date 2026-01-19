@@ -33,16 +33,13 @@ public class AdminContentController : ControllerBase
     /// </summary>
     [HttpGet("quizzes")]
     public async Task<ActionResult> GetAllQuizzes(
-        [FromQuery] string? subject = null,
         [FromQuery] string? difficulty = null)
     {
         var query = _unitOfWork.Quizzes.Query()
             .Include(q => q.Questions)
             .Include(q => q.User)
+            .Include(q => q.Subjects)
             .AsQueryable();
-
-        if (!string.IsNullOrEmpty(subject))
-            query = query.Where(q => q.Subject == subject);
 
         if (!string.IsNullOrEmpty(difficulty))
             query = query.Where(q => q.Difficulty == difficulty);
@@ -53,7 +50,6 @@ public class AdminContentController : ControllerBase
                 q.Id,
                 q.Title,
                 q.Description,
-                q.Subject,
                 q.Difficulty,
                 q.TimeLimit,
                 q.IsPublished,
@@ -61,6 +57,7 @@ public class AdminContentController : ControllerBase
                 UserName = q.User != null ? q.User.UserName : "Unknown",
                 QuestionCount = q.Questions.Count,
                 MaxScore = q.Questions.Sum(qu => qu.Points),
+                Subjects = q.Subjects.Select(s => new { s.Id, s.Name }).ToList(),
                 q.CreatedAt
             })
             .OrderByDescending(q => q.CreatedAt)
@@ -78,16 +75,17 @@ public class AdminContentController : ControllerBase
         var flashcardSets = await _unitOfWork.FlashcardSets.Query()
             .Include(fs => fs.Flashcards)
             .Include(fs => fs.User)
+            .Include(fs => fs.Subjects)
             .Select(fs => new
             {
                 fs.Id,
                 fs.Title,
                 fs.Description,
-                fs.Subject,
                 fs.IsPublic,
                 fs.UserId,
                 UserName = fs.User != null ? fs.User.UserName : "Unknown",
                 CardCount = fs.Flashcards.Count,
+                Subjects = fs.Subjects.Select(s => new { s.Id, s.Name }).ToList(),
                 fs.CreatedAt
             })
             .OrderByDescending(fs => fs.CreatedAt)
@@ -142,7 +140,10 @@ public class AdminContentController : ControllerBase
                 e.Id,
                 e.Title,
                 e.Description,
+                Subjects = e.Subjects.Select(s => new { s.Id, s.Name }).ToList(),
+                SubjectIds = e.Subjects.Select(s => s.Id).ToList(),
                 e.Difficulty,
+                e.TimeLimit,
                 e.IsPublished,
                 e.UserId,
                 UserName = e.User != null ? e.User.UserName : "Unknown",

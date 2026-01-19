@@ -62,6 +62,7 @@ namespace UniStart.Data
         public DbSet<SystemSettings> SystemSettings { get; set; } = null!;
         public DbSet<UserLearningPattern> UserLearningPatterns { get; set; } = null!;
         public DbSet<UniversityRecommendation> UniversityRecommendations { get; set; } = null!;
+        public DbSet<UserPreferences> UserPreferences { get; set; } = null!;
 
         // AI & Machine Learning
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -88,7 +89,7 @@ namespace UniStart.Data
                 .HasForeignKey(p => p.FlashcardId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // Уникальность: один пользователь - одна запись прогресса по карточке
+            // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ: пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ - пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
             modelBuilder.Entity<UserFlashcardProgress>()
                 .HasIndex(p => new { p.UserId, p.FlashcardId })
                 .IsUnique();
@@ -106,7 +107,7 @@ namespace UniStart.Data
                 .HasForeignKey(a => a.FlashcardSetId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // Уникальность: один пользователь - одна запись доступа к набору
+            // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ: пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ - пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
             modelBuilder.Entity<UserFlashcardSetAccess>()
                 .HasIndex(a => new { a.UserId, a.FlashcardSetId })
                 .IsUnique();
@@ -141,13 +142,13 @@ namespace UniStart.Data
                 .HasOne(ua => ua.Question)
                 .WithMany()
                 .HasForeignKey(ua => ua.QuestionId)
-                .OnDelete(DeleteBehavior.Restrict); // Не удаляем вопрос, если есть ответы
+                .OnDelete(DeleteBehavior.Restrict); // пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 
             modelBuilder.Entity<UserQuizAnswer>()
                 .HasOne(ua => ua.SelectedAnswer)
                 .WithMany()
                 .HasForeignKey(ua => ua.SelectedAnswerId)
-                .OnDelete(DeleteBehavior.Restrict); // Не удаляем ответ, если есть выбор пользователя
+                .OnDelete(DeleteBehavior.Restrict); // пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 
             // Exams
             modelBuilder.Entity<ExamQuestion>()
@@ -178,13 +179,13 @@ namespace UniStart.Data
                 .HasOne(uea => uea.Question)
                 .WithMany()
                 .HasForeignKey(uea => uea.QuestionId)
-                .OnDelete(DeleteBehavior.Restrict); // Не удаляем вопрос, если есть ответы
+                .OnDelete(DeleteBehavior.Restrict); // пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 
             modelBuilder.Entity<UserExamAnswer>()
                 .HasOne(uea => uea.SelectedAnswer)
                 .WithMany()
                 .HasForeignKey(uea => uea.SelectedAnswerId)
-                .OnDelete(DeleteBehavior.Restrict); // Не удаляем ответ, если есть выбор пользователя
+                .OnDelete(DeleteBehavior.Restrict); // пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 
             // New models configuration
             modelBuilder.Entity<University>()
@@ -200,8 +201,8 @@ namespace UniStart.Data
                 .OnDelete(DeleteBehavior.Restrict);
 
             // Indexes
-            // Flashcard.NextReviewDate больше не используется (перемещено в UserFlashcardProgress)
-            // Оставляем для обратной совместимости, но не индексируем
+            // Flashcard.NextReviewDate пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ UserFlashcardProgress)
+            // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 
             modelBuilder.Entity<UserQuizAttempt>()
                 .HasIndex(ua => ua.UserId);
@@ -209,7 +210,7 @@ namespace UniStart.Data
             modelBuilder.Entity<UserExamAttempt>()
                 .HasIndex(uea => uea.UserId);
 
-            // Индексы для новых таблиц
+            // пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
             modelBuilder.Entity<UserFlashcardProgress>()
                 .HasIndex(p => p.UserId);
 
@@ -250,13 +251,77 @@ namespace UniStart.Data
                     j => j.HasOne<Exam>().WithMany().HasForeignKey("ExamsId"),
                     j => j.HasKey("ExamsId", "SubjectsId"));
             
+            // Many-to-many: Quiz - Subject
+            modelBuilder.Entity<Quiz>()
+                .HasMany(q => q.Subjects)
+                .WithMany()
+                .UsingEntity<Dictionary<string, object>>(
+                    "QuizSubject",
+                    j => j.HasOne<Subject>().WithMany().HasForeignKey("SubjectsId"),
+                    j => j.HasOne<Quiz>().WithMany().HasForeignKey("QuizzesId"),
+                    j => j.HasKey("QuizzesId", "SubjectsId"));
+            
+            // Many-to-many: FlashcardSet - Subject
+            modelBuilder.Entity<FlashcardSet>()
+                .HasMany(fs => fs.Subjects)
+                .WithMany()
+                .UsingEntity<Dictionary<string, object>>(
+                    "FlashcardSetSubject",
+                    j => j.HasOne<Subject>().WithMany().HasForeignKey("SubjectsId"),
+                    j => j.HasOne<FlashcardSet>().WithMany().HasForeignKey("FlashcardSetsId"),
+                    j => j.HasKey("FlashcardSetsId", "SubjectsId"));
+            
+            // UserPreferences - User (One-to-One)
+            modelBuilder.Entity<UserPreferences>()
+                .HasOne(up => up.User)
+                .WithOne()
+                .HasForeignKey<UserPreferences>(up => up.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            
+            // UserPreferences - TargetUniversity (Many-to-One)
+            modelBuilder.Entity<UserPreferences>()
+                .HasOne(up => up.TargetUniversity)
+                .WithMany()
+                .HasForeignKey(up => up.TargetUniversityId)
+                .OnDelete(DeleteBehavior.SetNull);
+            
+            // Many-to-many: UserPreferences - InterestedSubjects
+            modelBuilder.Entity<UserPreferences>()
+                .HasMany(up => up.InterestedSubjects)
+                .WithMany()
+                .UsingEntity<Dictionary<string, object>>(
+                    "UserPreferencesInterestedSubject",
+                    j => j.HasOne<Subject>().WithMany().HasForeignKey("SubjectsId"),
+                    j => j.HasOne<UserPreferences>().WithMany().HasForeignKey("UserPreferencesId"),
+                    j => j.HasKey("UserPreferencesId", "SubjectsId"));
+            
+            // Many-to-many: UserPreferences - StrongSubjects
+            modelBuilder.Entity<UserPreferences>()
+                .HasMany(up => up.StrongSubjects)
+                .WithMany()
+                .UsingEntity<Dictionary<string, object>>(
+                    "UserPreferencesStrongSubject",
+                    j => j.HasOne<Subject>().WithMany().HasForeignKey("SubjectsId"),
+                    j => j.HasOne<UserPreferences>().WithMany().HasForeignKey("UserPreferencesId"),
+                    j => j.HasKey("UserPreferencesId", "SubjectsId"));
+            
+            // Many-to-many: UserPreferences - WeakSubjects
+            modelBuilder.Entity<UserPreferences>()
+                .HasMany(up => up.WeakSubjects)
+                .WithMany()
+                .UsingEntity<Dictionary<string, object>>(
+                    "UserPreferencesWeakSubject",
+                    j => j.HasOne<Subject>().WithMany().HasForeignKey("SubjectsId"),
+                    j => j.HasOne<UserPreferences>().WithMany().HasForeignKey("UserPreferencesId"),
+                    j => j.HasKey("UserPreferencesId", "SubjectsId"));
+            
             // Learning hierarchy configuration
             // Course -> Subject
             modelBuilder.Entity<Subject>()
                 .HasOne(s => s.Course)
                 .WithMany(c => c.Subjects)
                 .HasForeignKey(s => s.CourseId)
-                .OnDelete(DeleteBehavior.SetNull); // Subject может существовать без курса
+                .OnDelete(DeleteBehavior.SetNull); // Subject пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
             
             // Subject -> Module
             modelBuilder.Entity<LearningModule>()
@@ -297,14 +362,14 @@ namespace UniStart.Data
                 .HasForeignKey(lt => lt.PracticeQuizId)
                 .OnDelete(DeleteBehavior.SetNull);
             
-            // Topic -> Theory (один к одному)
+            // Topic -> Theory (пїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ)
             modelBuilder.Entity<TheoryContent>()
                 .HasOne(tc => tc.LearningTopic)
                 .WithOne(lt => lt.Theory)
                 .HasForeignKey<TheoryContent>(tc => tc.LearningTopicId)
                 .OnDelete(DeleteBehavior.Cascade);
             
-            // SystemSettings - всегда одна запись
+            // SystemSettings - пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
             modelBuilder.Entity<SystemSettings>()
                 .HasKey(s => s.Id);
             
@@ -313,7 +378,7 @@ namespace UniStart.Data
                 {
                     Id = 1,
                     SiteName = "UniStart",
-                    SiteDescription = "Образовательная платформа для изучения с помощью карточек и квизов",
+                    SiteDescription = "пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ",
                     AllowRegistration = true,
                     RequireEmailVerification = false,
                     MaxQuizAttempts = 3,

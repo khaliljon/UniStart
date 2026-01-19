@@ -50,7 +50,6 @@ public class ContentRecommendationController : ControllerBase
                 {
                     id = q.Id,
                     title = q.Title,
-                    subject = q.Subject,
                     difficulty = q.Difficulty,
                     recommendationReason = "Рекомендовано для улучшения знаний по слабым темам",
                     estimatedDuration = q.TimeLimit,
@@ -146,7 +145,6 @@ public class ContentRecommendationController : ControllerBase
                 {
                     id = f.Id,
                     title = f.Title,
-                    subject = f.Subject,
                     cardsCount = f.Flashcards.Count,
                     recommendationReason = "Рекомендовано для улучшения знаний",
                     estimatedStudyTime = f.Flashcards.Count * 2 // примерно 2 минуты на карточку

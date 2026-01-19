@@ -118,4 +118,34 @@ public class SubjectsController : ControllerBase
 
         return NoContent();
     }
+
+    // GET: api/subjects/10/hierarchy
+    [HttpGet("{id}/hierarchy")]
+    public async Task<ActionResult<Subject>> GetSubjectHierarchy(int id)
+    {
+        var subject = await _context.Subjects
+            .Include(s => s.Course)
+            .Include(s => s.LearningModules)
+                .ThenInclude(m => m.Competencies)
+                    .ThenInclude(c => c.Topics)
+            .FirstOrDefaultAsync(s => s.Id == id);
+
+        if (subject == null)
+        {
+            return NotFound();
+        }
+
+        // Упорядочиваем по OrderIndex
+        subject.LearningModules = subject.LearningModules.OrderBy(m => m.OrderIndex).ToList();
+        foreach (var module in subject.LearningModules)
+        {
+            module.Competencies = module.Competencies.OrderBy(c => c.OrderIndex).ToList();
+            foreach (var competency in module.Competencies)
+            {
+                competency.Topics = competency.Topics.OrderBy(t => t.OrderIndex).ToList();
+            }
+        }
+
+        return Ok(subject);
+    }
 }

@@ -130,7 +130,6 @@ public class TagsController : ControllerBase
                 q.Id,
                 q.Title,
                 q.Description,
-                q.Subject,
                 q.Difficulty,
                 QuestionCount = q.Questions.Count
             })
@@ -166,7 +165,6 @@ public class TagsController : ControllerBase
                 fs.Id,
                 fs.Title,
                 fs.Description,
-                fs.Subject,
                 CardCount = fs.Flashcards.Count
             })
             .ToList();

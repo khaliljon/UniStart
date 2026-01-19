@@ -43,6 +43,11 @@ public class TeacherExamsController : ControllerBase
     [HttpPost("exams")]
     public async Task<ActionResult<ExamDto>> CreateExam([FromBody] CreateExamDto dto)
     {
+        if (dto.SubjectIds == null || !dto.SubjectIds.Any())
+        {
+            return BadRequest("Хотя бы один предмет должен быть выбран");
+        }
+
         var userId = GetUserId();
 
         var exam = new Exam
@@ -95,6 +100,16 @@ public class TeacherExamsController : ControllerBase
             exam.Questions.Add(question);
         }
 
+        // Добавляем предметы
+        List<Subject>? subjects = null;
+        if (dto.SubjectIds != null && dto.SubjectIds.Any())
+        {
+            subjects = await _context.Subjects
+                .Where(s => dto.SubjectIds.Contains(s.Id))
+                .ToListAsync();
+            exam.Subjects = subjects;
+        }
+
         if (dto.TagIds != null && dto.TagIds.Any())
         {
             var tags = await _context.Tags.Where(t => dto.TagIds.Contains(t.Id)).ToListAsync();
@@ -110,6 +125,8 @@ public class TeacherExamsController : ControllerBase
             Title = exam.Title,
             Description = exam.Description,
             Difficulty = exam.Difficulty,
+            Subjects = subjects?.Select(s => s.Name).ToList() ?? new List<string>(),
+            SubjectIds = subjects?.Select(s => s.Id).ToList() ?? new List<int>(),
             MaxAttempts = exam.MaxAttempts,
             PassingScore = exam.PassingScore,
             IsPublished = exam.IsPublished,

@@ -201,7 +201,9 @@ const AdminQuizzesPage = () => {
                     </div>
 
                     {/* Описание */}
-                    <p className="text-gray-600 text-sm mb-3">{quiz.description}</p>
+                    {quiz.description && quiz.description !== quiz.title && (
+                      <p className="text-gray-600 text-sm mb-3">{quiz.description}</p>
+                    )}
 
                     {/* Метаданные */}
                     <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">

@@ -37,6 +37,7 @@ public class ExamService : IExamService
         var exam = await _unitOfWork.Repository<Exam>()
             .Query()
             .Include(t => t.User)
+            .Include(t => t.Subjects)
             .Include(t => t.Tags)
             .Include(t => t.Questions)
                 .ThenInclude(q => q.Answers)
@@ -56,6 +57,8 @@ public class ExamService : IExamService
             Id = exam.Id,
             Title = exam.Title,
             Description = exam.Description,
+            Subjects = exam.Subjects.Select(s => s.Name).ToList(),
+            SubjectIds = exam.Subjects.Select(s => s.Id).ToList(),
             Difficulty = exam.Difficulty,
             CountryId = exam.CountryId,
             UniversityId = exam.UniversityId,
@@ -138,6 +141,7 @@ public class ExamService : IExamService
         // Пагинация
         var exams = await query
             .AsNoTracking()
+            .Include(e => e.Subjects)
             .Include(e => e.Questions)
             .Include(e => e.User)
             .OrderByDescending(e => e.CreatedAt)
@@ -148,6 +152,8 @@ public class ExamService : IExamService
                 Id = e.Id,
                 Title = e.Title,
                 Description = e.Description,
+                Subjects = e.Subjects.Select(s => s.Name).ToList(),
+                SubjectIds = e.Subjects.Select(s => s.Id).ToList(),
                 Difficulty = e.Difficulty,
                 TimeLimit = e.TimeLimit,
                 PassingScore = e.PassingScore,
@@ -196,6 +202,7 @@ public class ExamService : IExamService
 
         // Пагинация
         var exams = await query
+            .Include(e => e.Subjects)
             .Include(e => e.Questions)
             .OrderByDescending(e => e.CreatedAt)
             .Skip((filter.Page - 1) * filter.PageSize)
@@ -205,6 +212,8 @@ public class ExamService : IExamService
                 Id = e.Id,
                 Title = e.Title,
                 Description = e.Description,
+                Subjects = e.Subjects.Select(s => s.Name).ToList(),
+                SubjectIds = e.Subjects.Select(s => s.Id).ToList(),
                 Difficulty = e.Difficulty,
                 TimeLimit = e.TimeLimit,
                 PassingScore = e.PassingScore,
@@ -297,10 +306,59 @@ public class ExamService : IExamService
             }
         }
 
+        // Добавляем вопросы
+        if (dto.Questions != null && dto.Questions.Any())
+        {
+            foreach (var questionDto in dto.Questions)
+            {
+                var question = new ExamQuestion
+                {
+                    ExamId = exam.Id,
+                    Text = questionDto.Text,
+                    Explanation = questionDto.Explanation,
+                    QuestionType = questionDto.QuestionType,
+                    Points = questionDto.Points,
+                    OrderIndex = questionDto.OrderIndex
+                };
+
+                await _unitOfWork.Repository<ExamQuestion>().AddAsync(question);
+                await _unitOfWork.SaveChangesAsync(); // Сохраняем вопрос, чтобы получить ID
+
+                // Добавляем ответы к вопросу
+                if (questionDto.Answers != null && questionDto.Answers.Any())
+                {
+                    foreach (var answerDto in questionDto.Answers)
+                    {
+                        var answer = new ExamAnswer
+                        {
+                            QuestionId = question.Id,
+                            Text = answerDto.Text,
+                            IsCorrect = answerDto.IsCorrect,
+                            OrderIndex = answerDto.OrderIndex
+                        };
+
+                        await _unitOfWork.Repository<ExamAnswer>().AddAsync(answer);
+                    }
+                }
+            }
+            
+            // Вычисляем максимальный балл
+            exam.MaxScore = dto.Questions.Sum(q => q.Points);
+        }
+
         await _unitOfWork.SaveChangesAsync();
 
+        // Перезагружаем экзамен с Subjects, Questions, Answers и User
+        var createdExam = await _unitOfWork.Repository<Exam>()
+            .Query()
+            .Include(e => e.User)
+            .Include(e => e.Subjects)
+            .Include(e => e.Questions)
+                .ThenInclude(q => q.Answers)
+            .FirstOrDefaultAsync(e => e.Id == exam.Id);
+
         _logger.LogInformation("Exam created with ID {ExamId} by user {UserId}", exam.Id, userId);
-        return exam;
+        return createdExam ?? exam;
     }
 
     public async Task<Exam> UpdateExamAsync(int id, string userId, UpdateExamDto dto)
@@ -368,11 +426,80 @@ public class ExamService : IExamService
             }
         }
 
+        // Обновляем вопросы
+        if (dto.Questions != null && dto.Questions.Any())
+        {
+            // Удаляем все старые вопросы и ответы
+            var existingQuestions = await _unitOfWork.Repository<ExamQuestion>()
+                .Query()
+                .Include(q => q.Answers)
+                .Where(q => q.ExamId == exam.Id)
+                .ToListAsync();
+            
+            foreach (var q in existingQuestions)
+            {
+                _unitOfWork.Repository<ExamQuestion>().Remove(q);
+            }
+            await _unitOfWork.SaveChangesAsync();
+
+            // Добавляем новые вопросы
+            foreach (var questionDto in dto.Questions)
+            {
+                var question = new ExamQuestion
+                {
+                    ExamId = exam.Id,
+                    Text = questionDto.Text,
+                    Explanation = questionDto.Explanation,
+                    QuestionType = questionDto.QuestionType,
+                    Points = questionDto.Points,
+                    OrderIndex = questionDto.OrderIndex
+                };
+
+                await _unitOfWork.Repository<ExamQuestion>().AddAsync(question);
+                await _unitOfWork.SaveChangesAsync(); // Сохраняем вопрос, чтобы получить ID
+
+                // Добавляем ответы к вопросу
+                if (questionDto.Answers != null && questionDto.Answers.Any())
+                {
+                    foreach (var answerDto in questionDto.Answers)
+                    {
+                        var answer = new ExamAnswer
+                        {
+                            QuestionId = question.Id,
+                            Text = answerDto.Text,
+                            IsCorrect = answerDto.IsCorrect,
+                            OrderIndex = answerDto.OrderIndex
+                        };
+
+                        await _unitOfWork.Repository<ExamAnswer>().AddAsync(answer);
+                    }
+                }
+            }
+        }
+
         _unitOfWork.Repository<Exam>().Update(exam);
         await _unitOfWork.SaveChangesAsync();
 
+        // Перезагружаем экзамен с полными данными
+        var updatedExam = await _unitOfWork.Repository<Exam>()
+            .Query()
+            .Include(e => e.User)
+            .Include(e => e.Subjects)
+            .Include(e => e.Tags)
+            .Include(e => e.Questions)
+                .ThenInclude(q => q.Answers)
+            .FirstOrDefaultAsync(e => e.Id == id);
+
+        // Пересчитываем MaxScore из вопросов
+        if (updatedExam != null && updatedExam.Questions.Any())
+        {
+            updatedExam.MaxScore = updatedExam.Questions.Sum(q => q.Points);
+            _unitOfWork.Repository<Exam>().Update(updatedExam);
+            await _unitOfWork.SaveChangesAsync();
+        }
+
         _logger.LogInformation("Exam {ExamId} updated by user {UserId}", id, userId);
-        return exam;
+        return updatedExam ?? exam;
     }
 
     public async Task<bool> DeleteExamAsync(int id, string userId)

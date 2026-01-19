@@ -44,19 +44,33 @@ public class TeacherQuizzesController : ControllerBase
     [HttpPost("quizzes/public")]
     public async Task<ActionResult<QuizDto>> CreatePublicQuiz([FromBody] CreateQuizDto dto)
     {
+        if (dto.SubjectIds == null || !dto.SubjectIds.Any())
+        {
+            return BadRequest("Хотя бы один предмет должен быть выбран");
+        }
+
         var userId = GetUserId();
 
         var quiz = new Quiz
         {
             Title = dto.Title,
             Description = dto.Description,
-            Subject = dto.Subject,
             TimeLimit = dto.TimeLimit,
             UserId = userId,
             IsPublic = true,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
+
+        // Добавляем предметы
+        List<Subject>? subjects = null;
+        if (dto.SubjectIds != null && dto.SubjectIds.Any())
+        {
+            subjects = await _context.Subjects
+                .Where(s => dto.SubjectIds.Contains(s.Id))
+                .ToListAsync();
+            quiz.Subjects = subjects;
+        }
 
         _context.Quizzes.Add(quiz);
         await _context.SaveChangesAsync();
@@ -68,7 +82,7 @@ public class TeacherQuizzesController : ControllerBase
             Id = quiz.Id,
             Title = quiz.Title,
             Description = quiz.Description,
-            Subject = quiz.Subject,
+            Subjects = subjects?.Select(s => new SubjectDto { Id = s.Id, Name = s.Name }).ToList() ?? new List<SubjectDto>(),
             TimeLimit = quiz.TimeLimit,
             IsPublic = quiz.IsPublic,
             CreatedAt = quiz.CreatedAt
@@ -87,6 +101,7 @@ public class TeacherQuizzesController : ControllerBase
         var userId = GetUserId();
 
         var query = _context.Quizzes
+            .Include(q => q.Subjects)
             .Where(q => q.UserId == userId);
 
         if (isPublic.HasValue)
@@ -101,7 +116,7 @@ public class TeacherQuizzesController : ControllerBase
                 Id = q.Id,
                 Title = q.Title,
                 Description = q.Description,
-                Subject = q.Subject,
+                Subjects = q.Subjects.Select(s => new SubjectDto { Id = s.Id, Name = s.Name }).ToList(),
                 TimeLimit = q.TimeLimit,
                 IsPublic = q.IsPublic,
                 CreatedAt = q.CreatedAt,
@@ -296,8 +311,7 @@ public class TeacherQuizzesController : ControllerBase
             Quiz = new
             {
                 attempt.Quiz.Id,
-                attempt.Quiz.Title,
-                attempt.Quiz.Subject
+                attempt.Quiz.Title
             },
             Score = attempt.Score,
             MaxScore = attempt.MaxScore,

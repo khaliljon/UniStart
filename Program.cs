@@ -82,6 +82,8 @@ builder.Services.AddScoped<IExamService, ExamService>();
 builder.Services.AddScoped<IFlashcardService, FlashcardService>();
 builder.Services.AddScoped<IAchievementService, AchievementService>();
 builder.Services.AddScoped<ITeacherStatisticsService, TeacherStatisticsService>();
+builder.Services.AddScoped<IUserPreferencesService, UserPreferencesService>();
+builder.Services.AddScoped<IRecommendationService, RecommendationService>();
 
 // AI Services
 builder.Services.AddScoped<UniStart.Services.AI.IMLPredictionService, UniStart.Services.AI.MLPredictionService>();

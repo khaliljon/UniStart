@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { BookOpen, Play, Target, Clock, Plus, Trash2, Edit, TrendingUp, Upload, FileX, CheckCircle, AlertCircle, FileText } from 'lucide-react';
+import { BookOpen, Target, Clock, Plus, Trash2, Edit, TrendingUp, Upload, FileX, CheckCircle, AlertCircle, FileText } from 'lucide-react';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import { flashcardService } from '../../services/flashcardService';
@@ -167,7 +167,7 @@ const FlashcardsPage = () => {
                       <div className="flex items-center gap-2">
                         <BookOpen className="w-4 h-4 text-gray-400 dark:text-gray-500" />
                         <span className="text-sm text-gray-600 dark:text-gray-400">
-                          {set.subject || 'Не указан'}
+                          {set.subjects && set.subjects.length > 0 ? set.subjects.map(s => s.name).join(', ') : 'Не указан'}
                         </span>
                       </div>
                       

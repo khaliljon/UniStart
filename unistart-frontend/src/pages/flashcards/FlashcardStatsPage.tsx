@@ -144,7 +144,7 @@ const FlashcardStatsPage = () => {
             <div className="space-y-3">
               <div className="flex justify-between">
                 <span className="text-white/60">Предмет:</span>
-                <span className="text-white font-medium">{stats.subject || 'Не указан'}</span>
+                <span className="text-white font-medium">{stats.subjects && stats.subjects.length > 0 ? stats.subjects.map(s => s.name).join(', ') : 'Не указан'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-white/60">Доступ:</span>

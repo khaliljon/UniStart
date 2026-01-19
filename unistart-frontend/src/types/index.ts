@@ -1,5 +1,8 @@
 // Синхронизировано с Backend DTOs!
 
+// Import Subject from services
+import { Subject } from '../services/subjectService';
+
 // ============ AUTH ============
 export interface User {
   id: string;
@@ -65,7 +68,7 @@ export interface FlashcardSet {
   id: number;
   title: string;
   description: string;
-  subject?: string;
+  subjects?: Subject[];
   isPublic?: boolean;
   isPublished?: boolean;
   createdAt: string;
@@ -93,7 +96,7 @@ export interface Flashcard {
 export interface CreateFlashcardSetDto {
   title: string;
   description: string;
-  subject?: string;
+  subjectIds?: number[];
   isPublic?: boolean;
   isPublished?: boolean;
 }
@@ -137,7 +140,7 @@ export interface Quiz {
   title: string;
   description: string;
   timeLimit: number;
-  subject: string;
+  subjects?: Subject[];
   difficulty: string;
   isLearningMode?: boolean;
   questionCount: number;
@@ -149,7 +152,7 @@ export interface QuizDetail {
   title: string;
   description: string;
   timeLimit: number;
-  subject: string;
+  subjects?: Subject[];
   difficulty: string;
   isLearningMode?: boolean;
   questions: Question[];
@@ -211,7 +214,8 @@ export interface Exam {
   id: number;
   title: string;
   description: string;
-  subject: string;
+  subjects?: Subject[];
+  subjectIds?: number[];
   difficulty: string;
   timeLimit: number;
   strictTiming?: boolean;

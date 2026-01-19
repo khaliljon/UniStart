@@ -196,12 +196,12 @@ public class AdminSystemController : ControllerBase
             .ToListAsync();
 
         var csv = new StringBuilder();
-        csv.AppendLine("QuizId,Title,Subject,Difficulty,CreatedBy,QuestionCount,TotalPoints,IsPublished,CreatedAt");
+        csv.AppendLine("QuizId,Title,Difficulty,CreatedBy,QuestionCount,TotalPoints,IsPublished,CreatedAt");
 
         foreach (var quiz in quizzes)
         {
             var userName = quiz.User?.UserName ?? "Unknown";
-            csv.AppendLine($"{quiz.Id},\"{quiz.Title}\",{quiz.Subject},{quiz.Difficulty},{userName},{quiz.Questions.Count},{quiz.Questions.Sum(q => q.Points)},{quiz.IsPublished},{quiz.CreatedAt:yyyy-MM-dd}");
+            csv.AppendLine($"{quiz.Id},\"{quiz.Title}\",{quiz.Difficulty},{userName},{quiz.Questions.Count},{quiz.Questions.Sum(q => q.Points)},{quiz.IsPublished},{quiz.CreatedAt:yyyy-MM-dd}");
         }
 
         var bytes = Encoding.UTF8.GetBytes(csv.ToString());
@@ -221,12 +221,12 @@ public class AdminSystemController : ControllerBase
             .ToListAsync();
 
         var csv = new StringBuilder();
-        csv.AppendLine("SetId,Title,Subject,CreatedBy,CardCount,IsPublic,CreatedAt");
+        csv.AppendLine("SetId,Title,CreatedBy,CardCount,IsPublic,CreatedAt");
 
         foreach (var set in sets)
         {
             var userName = set.User?.UserName ?? "Unknown";
-            csv.AppendLine($"{set.Id},\"{set.Title}\",{set.Subject},{userName},{set.Flashcards.Count},{set.IsPublic},{set.CreatedAt:yyyy-MM-dd}");
+            csv.AppendLine($"{set.Id},\"{set.Title}\",{userName},{set.Flashcards.Count},{set.IsPublic},{set.CreatedAt:yyyy-MM-dd}");
         }
 
         var bytes = Encoding.UTF8.GetBytes(csv.ToString());

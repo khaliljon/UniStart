@@ -45,6 +45,11 @@ public class QuizzesManagementController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<Quiz>> CreateQuiz(CreateQuizDto dto)
     {
+        if (dto.SubjectIds == null || !dto.SubjectIds.Any())
+        {
+            return BadRequest("Хотя бы один предмет должен быть выбран");
+        }
+
         var userId = GetUserId()!;
         
         var quiz = new Quiz
@@ -52,7 +57,6 @@ public class QuizzesManagementController : ControllerBase
             Title = dto.Title,
             Description = dto.Description,
             TimeLimit = dto.TimeLimit,
-            Subject = dto.Subject,
             Difficulty = dto.Difficulty,
             IsPublic = dto.IsPublic,
             IsPublished = dto.IsPublished,
@@ -60,10 +64,24 @@ public class QuizzesManagementController : ControllerBase
             UserId = userId
         };
 
+        // Добавляем предметы
+        if (dto.SubjectIds != null && dto.SubjectIds.Any())
+        {
+            var subjects = await _context.Subjects
+                .Where(s => dto.SubjectIds.Contains(s.Id))
+                .ToListAsync();
+            quiz.Subjects = subjects;
+        }
+
         _context.Quizzes.Add(quiz);
         await _context.SaveChangesAsync();
 
-        return CreatedAtAction("GetQuiz", "QuizzesQuery", new { id = quiz.Id }, quiz);
+        // Перезагружаем с Subjects для ответа
+        var createdQuiz = await _context.Quizzes
+            .Include(q => q.Subjects)
+            .FirstOrDefaultAsync(q => q.Id == quiz.Id);
+
+        return CreatedAtAction("GetQuiz", "QuizzesQuery", new { id = quiz.Id }, createdQuiz ?? quiz);
     }
 
     /// <summary>
@@ -77,6 +95,7 @@ public class QuizzesManagementController : ControllerBase
         var quiz = await _context.Quizzes
             .Include(q => q.Questions)
                 .ThenInclude(qu => qu.Answers)
+            .Include(q => q.Subjects)
             .FirstOrDefaultAsync(q => q.Id == id && q.UserId == userId);
             
         if (quiz == null)
@@ -86,11 +105,23 @@ public class QuizzesManagementController : ControllerBase
         quiz.Title = dto.Title;
         quiz.Description = dto.Description;
         quiz.TimeLimit = dto.TimeLimit;
-        quiz.Subject = dto.Subject;
         quiz.Difficulty = dto.Difficulty;
         quiz.IsPublic = dto.IsPublic;
         quiz.IsPublished = dto.IsPublished;
         quiz.IsLearningMode = dto.IsLearningMode;
+        
+        // Обновляем предметы
+        if (dto.SubjectIds != null)
+        {
+            quiz.Subjects.Clear();
+            if (dto.SubjectIds.Any())
+            {
+                var subjects = await _context.Subjects
+                    .Where(s => dto.SubjectIds.Contains(s.Id))
+                    .ToListAsync();
+                quiz.Subjects = subjects;
+            }
+        }
         
         // Обновляем тип квиза, если указан
         if (!string.IsNullOrWhiteSpace(dto.QuizType))

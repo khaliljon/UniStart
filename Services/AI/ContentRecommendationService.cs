@@ -51,12 +51,10 @@ public class ContentRecommendationService : IContentRecommendationService
                 return new List<int>(); // Нет данных - не показываем рекомендации
             }
 
-            // Ищем квизы по слабым предметам
-            var weakSubjects = profile.Weaknesses;
+            // Ищем квизы - Subject field removed, используем популярные
             var recommendedQuizzes = await _unitOfWork.Repository<Quiz>()
                 .Query()
-                .Where(q => q.IsPublished && 
-                           weakSubjects.Any(ws => q.Subject.Contains(ws)))
+                .Where(q => q.IsPublished)
                 .OrderByDescending(q => q.Attempts.Count) // Популярные квизы
                 .Select(q => q.Id)
                 .Take(count)
@@ -227,40 +225,8 @@ public class ContentRecommendationService : IContentRecommendationService
                 .Query()
                 .FirstOrDefaultAsync(p => p.UserId == userId);
 
-            // Если есть слабые стороны, начинаем с них
-            if (profile.Weaknesses.Any())
-            {
-                var weakestSubject = profile.Weaknesses.First();
-                
-                // Проверяем, есть ли доступный контент
-                var hasContent = await _unitOfWork.Repository<Quiz>()
-                    .Query()
-                    .AnyAsync(q => q.IsPublished && q.Subject.Contains(weakestSubject));
-
-                if (hasContent)
-                {
-                    _logger.LogInformation("Рекомендована тема '{Topic}' для User={UserId}", weakestSubject, userId);
-                    return weakestSubject;
-                }
-            }
-
-            // Если нет слабостей, выбираем новую тему для расширения знаний
-            var studiedSubjects = profile.SubjectScores.Keys.ToList();
-            var allSubjects = await _unitOfWork.Repository<Quiz>()
-                .Query()
-                .Where(q => q.IsPublished)
-                .Select(q => q.Subject)
-                .Distinct()
-                .ToListAsync();
-
-            var newSubjects = allSubjects.Except(studiedSubjects).ToList();
-            if (newSubjects.Any())
-            {
-                var newTopic = newSubjects.First();
-                _logger.LogInformation("Рекомендована новая тема '{Topic}' для User={UserId}", newTopic, userId);
-                return newTopic;
-            }
-
+            // Subject field removed - нельзя рекомендовать темы
+            _logger.LogInformation("Рекомендации тем недоступны - Subject field removed");
             return null;
         }
         catch (ArgumentNullException ex)

@@ -21,7 +21,7 @@ public interface IQuizService
     Task<PagedResult<QuizDto>> SearchQuizzesAsync(QuizFilterDto filter, bool onlyPublished = true);
     Task<PagedResult<QuizDto>> GetMyQuizzesAsync(string userId, QuizFilterDto filter);
     Task<IEnumerable<Quiz>> GetQuizzesByUserAsync(string userId);
-    Task<IEnumerable<Quiz>> GetQuizzesBySubjectAsync(string subject);
+    Task<IEnumerable<Quiz>> GetQuizzesBySubjectsAsync(List<int> subjectIds);
     Task<Quiz> CreateQuizAsync(string userId, CreateQuizDto dto);
     Task<Quiz> UpdateQuizAsync(int id, UpdateQuizDto dto);
     Task<bool> DeleteQuizAsync(int id, string? userId, bool isAdmin);

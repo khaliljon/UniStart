@@ -50,9 +50,10 @@ public class FlashcardService : IFlashcardService
         return await _unitOfWork.FlashcardSets.GetSetsByUserAsync(userId);
     }
 
-    public async Task<IEnumerable<FlashcardSet>> GetSetsBySubjectAsync(string subject)
+
+    public async Task<IEnumerable<FlashcardSet>> GetSetsBySubjectsAsync(List<int> subjectIds)
     {
-        return await _unitOfWork.FlashcardSets.GetSetsBySubjectAsync(subject);
+        return await _unitOfWork.FlashcardSets.GetSetsBySubjectsAsync(subjectIds);
     }
 
     public async Task<FlashcardSet> CreateSetAsync(string userId, CreateFlashcardSetDto dto)
@@ -61,32 +62,58 @@ public class FlashcardService : IFlashcardService
         {
             Title = dto.Title,
             Description = dto.Description,
-            Subject = dto.Subject,
             IsPublic = dto.IsPublic,
             UserId = userId,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
 
+        // Добавляем предметы
+        if (dto.SubjectIds != null && dto.SubjectIds.Any())
+        {
+            var subjects = await _unitOfWork.Repository<Subject>()
+                .FindAsync(s => dto.SubjectIds.Contains(s.Id));
+            set.Subjects = subjects.ToList();
+        }
+
         await _unitOfWork.FlashcardSets.AddAsync(set);
         await _unitOfWork.SaveChangesAsync();
 
+        // Перезагружаем с Subjects
+        var createdSet = await _unitOfWork.FlashcardSets.Query()
+            .Include(fs => fs.Subjects)
+            .FirstOrDefaultAsync(fs => fs.Id == set.Id);
+
         _logger.LogInformation("Flashcard set created: {Title} by user {UserId}", set.Title, userId);
 
-        return set;
+        return createdSet ?? set;
     }
 
     public async Task<FlashcardSet> UpdateSetAsync(int id, UpdateFlashcardSetDto dto)
     {
-        var set = await _unitOfWork.FlashcardSets.GetByIdAsync(id);
+        var set = await _unitOfWork.FlashcardSets.Query()
+            .Include(fs => fs.Subjects)
+            .FirstOrDefaultAsync(fs => fs.Id == id);
+            
         if (set == null)
             throw new InvalidOperationException($"Flashcard set {id} not found");
 
         set.Title = dto.Title;
         set.Description = dto.Description;
-        set.Subject = dto.Subject;
         set.IsPublic = dto.IsPublic;
         set.UpdatedAt = DateTime.UtcNow;
+
+        // Обновляем предметы
+        if (dto.SubjectIds != null)
+        {
+            set.Subjects.Clear();
+            if (dto.SubjectIds.Any())
+            {
+                var subjects = await _unitOfWork.Repository<Subject>()
+                    .FindAsync(s => dto.SubjectIds.Contains(s.Id));
+                set.Subjects = subjects.ToList();
+            }
+        }
 
         _unitOfWork.FlashcardSets.Update(set);
         await _unitOfWork.SaveChangesAsync();

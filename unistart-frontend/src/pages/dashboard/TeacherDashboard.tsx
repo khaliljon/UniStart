@@ -222,7 +222,7 @@ const TeacherDashboard = () => {
                       <div className="flex-1">
                         <p className="font-medium text-gray-900">{quiz.title}</p>
                         <p className="text-sm text-gray-600">
-                          {quiz.subject} · {quiz.difficulty}
+                          {quiz.subjects && quiz.subjects.length > 0 ? quiz.subjects.map(s => s.name).join(', ') : 'Не указан'} · {quiz.difficulty}
                         </p>
                       </div>
                       <div className="flex gap-2">

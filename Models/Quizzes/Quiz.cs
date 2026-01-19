@@ -28,11 +28,6 @@ namespace UniStart.Models.Quizzes
         [Range(0, 300, ErrorMessage = "Время должно быть от 0 до 300 минут")]
         public int TimeLimit { get; set; } // В минутах (0 = без ограничения)
         
-        [Display(Name = "Предмет")]
-        [Required(ErrorMessage = "Предмет обязателен")]
-        [StringLength(100, ErrorMessage = "Название предмета не должно превышать 100 символов")]
-        public string Subject { get; set; } = string.Empty; // Математика, Физика, и т.д.
-        
         [Display(Name = "Уровень сложности")]
         [Required(ErrorMessage = "Уровень сложности обязателен")]
         public string Difficulty { get; set; } = "Medium"; // Easy, Medium, Hard
@@ -73,5 +68,8 @@ namespace UniStart.Models.Quizzes
         
         [Display(Name = "Теги")]
         public List<Tag> Tags { get; set; } = new();
+        
+        [Display(Name = "Предметы")]
+        public ICollection<Subject> Subjects { get; set; } = new List<Subject>();
     }
 }

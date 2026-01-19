@@ -168,14 +168,11 @@ const EditExamPage = () => {
 
       setTitle(exam.title);
       setDescription(exam.description || '');
-      setSubject(exam.subject || '');
-      // Используем subjectIds если есть, иначе пытаемся найти по названиям
+      // Используем subjectIds если есть, иначе пытаемся найти по subjects array
       if (exam.subjectIds && exam.subjectIds.length > 0) {
         setSelectedSubjectIds(exam.subjectIds);
-      } else if (exam.subjects && exam.subjects.length > 0 && loadedSubjects.length > 0) {
-        const foundIds = loadedSubjects
-          .filter((s: SubjectOption) => exam.subjects.includes(s.name))
-          .map((s: SubjectOption) => s.id);
+      } else if (exam.subjects && exam.subjects.length > 0) {
+        const foundIds = exam.subjects.map((s: any) => s.id);
         setSelectedSubjectIds(foundIds);
       } else {
         setSelectedSubjectIds([]);
@@ -336,8 +333,7 @@ const EditExamPage = () => {
       const examData = {
         title,
         description,
-        subject: selectedSubjectIds.length > 0 ? subjects.find(s => s.id === selectedSubjectIds[0])?.name || '' : subject, // Для обратной совместимости
-        subjectIds: selectedSubjectIds.length > 0 ? selectedSubjectIds : [], // Новый способ
+        subjectIds: selectedSubjectIds,
         difficulty,
         timeLimit,
         passingScore,

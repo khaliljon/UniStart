@@ -43,6 +43,7 @@ public class UpdateExamDto
     public bool IsPublished { get; set; } = false;
     public bool IsPublic { get; set; } = false;
     
+    public List<CreateExamQuestionDto> Questions { get; set; } = new();
     public List<int> TagIds { get; set; } = new();
 }
 

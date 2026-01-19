@@ -24,10 +24,6 @@ namespace UniStart.Models.Flashcards
         [StringLength(1000, ErrorMessage = "Описание не должно превышать 1000 символов")]
         public string Description { get; set; } = string.Empty;
         
-        [Display(Name = "Предмет")]
-        [StringLength(100, ErrorMessage = "Название предмета не должно превышать 100 символов")]
-        public string Subject { get; set; } = string.Empty; // Математика, Физика, и т.д.
-        
         [Display(Name = "Публичный доступ")]
         public bool IsPublic { get; set; } = false; // true = доступен всем студентам, false = только автор
         
@@ -54,5 +50,8 @@ namespace UniStart.Models.Flashcards
         
         [Display(Name = "Теги")]
         public List<Tag> Tags { get; set; } = new();
+        
+        [Display(Name = "Предметы")]
+        public ICollection<Subject> Subjects { get; set; } = new List<Subject>();
     }
 }

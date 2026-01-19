@@ -140,7 +140,7 @@ const QuizResultsPage = () => {
               
               <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
                 <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full">
-                  {quiz.subject}
+                  {quiz.subjects && quiz.subjects.length > 0 ? quiz.subjects.map(s => s.name).join(', ') : 'Не указан'}
                 </span>
                 <span className="px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full">
                   {quiz.difficulty}

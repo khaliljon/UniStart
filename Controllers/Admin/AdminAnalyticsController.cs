@@ -174,18 +174,8 @@ public class AdminAnalyticsController : ControllerBase
             .OrderBy(x => x.Date)
             .ToListAsync();
 
-        // Популярные предметы
-        var popularSubjects = await _unitOfWork.Quizzes.Query()
-            .GroupBy(q => q.Subject)
-            .Select(g => new
-            {
-                Subject = g.Key,
-                QuizCount = g.Count(),
-                TotalAttempts = g.SelectMany(q => q.Attempts).Count()
-            })
-            .OrderByDescending(x => x.TotalAttempts)
-            .Take(10)
-            .ToListAsync();
+        // Популярные предметы - Subject field removed
+        var popularSubjects = new List<object>();
 
         // Топ активных пользователей
         var topUsers = await _unitOfWork.QuizAttempts.Query()

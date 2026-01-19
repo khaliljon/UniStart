@@ -52,6 +52,7 @@ namespace UniStart.Controllers.Flashcards
             
             // Получаем свои наборы + публичные наборы других пользователей
             var query = _context.FlashcardSets
+                .Include(fs => fs.Subjects)
                 .Where(fs => fs.UserId == userId || fs.IsPublic)
                 .AsQueryable();
 
@@ -113,7 +114,7 @@ namespace UniStart.Controllers.Flashcards
                     Id = fs.Id,
                     Title = fs.Title,
                     Description = fs.Description,
-                    Subject = fs.Subject,
+                    Subjects = fs.Subjects.Select(s => new SubjectDto { Id = s.Id, Name = s.Name }).ToList(),
                     IsPublic = fs.IsPublic,
                     IsPublished = fs.IsPublished,
                     CreatedAt = fs.CreatedAt,
@@ -153,6 +154,7 @@ namespace UniStart.Controllers.Flashcards
             var set = await _context.FlashcardSets
                 .Where(fs => fs.UserId == userId || (fs.IsPublic && fs.IsPublished))
                 .Include(fs => fs.Flashcards)
+                .Include(fs => fs.Subjects)
                 .FirstOrDefaultAsync(fs => fs.Id == id);
 
             if (set == null)
@@ -204,21 +206,39 @@ namespace UniStart.Controllers.Flashcards
         [HttpPost("sets")]
         public async Task<ActionResult<FlashcardSet>> CreateFlashcardSet(CreateFlashcardSetDto dto)
         {
+            if (dto.SubjectIds == null || !dto.SubjectIds.Any())
+            {
+                return BadRequest("Хотя бы один предмет должен быть выбран");
+            }
+
             var userId = GetUserId();
             
             var set = new FlashcardSet
             {
                 Title = dto.Title,
                 Description = dto.Description,
-                Subject = dto.Subject,
                 IsPublic = dto.IsPublic,
                 UserId = userId
             };
 
+            // Добавляем предметы
+            if (dto.SubjectIds != null && dto.SubjectIds.Any())
+            {
+                var subjects = await _context.Subjects
+                    .Where(s => dto.SubjectIds.Contains(s.Id))
+                    .ToListAsync();
+                set.Subjects = subjects;
+            }
+
             _context.FlashcardSets.Add(set);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetFlashcardSet), new { id = set.Id }, set);
+            // Перезагружаем с Subjects для ответа
+            var createdSet = await _context.FlashcardSets
+                .Include(fs => fs.Subjects)
+                .FirstOrDefaultAsync(fs => fs.Id == set.Id);
+
+            return CreatedAtAction(nameof(GetFlashcardSet), new { id = set.Id }, createdSet ?? set);
         }
 
         /// <summary>
@@ -230,6 +250,7 @@ namespace UniStart.Controllers.Flashcards
             var userId = GetUserId();
             
             var set = await _context.FlashcardSets
+                .Include(fs => fs.Subjects)
                 .FirstOrDefaultAsync(fs => fs.Id == id && fs.UserId == userId);
                 
             if (set == null)
@@ -237,9 +258,21 @@ namespace UniStart.Controllers.Flashcards
 
             set.Title = dto.Title;
             set.Description = dto.Description;
-            set.Subject = dto.Subject;
             set.IsPublic = dto.IsPublic;
             set.UpdatedAt = DateTime.UtcNow;
+
+            // Обновляем предметы
+            if (dto.SubjectIds != null)
+            {
+                set.Subjects.Clear();
+                if (dto.SubjectIds.Any())
+                {
+                    var subjects = await _context.Subjects
+                        .Where(s => dto.SubjectIds.Contains(s.Id))
+                        .ToListAsync();
+                    set.Subjects = subjects;
+                }
+            }
 
             await _context.SaveChangesAsync();
             return NoContent();
@@ -350,7 +383,6 @@ namespace UniStart.Controllers.Flashcards
                 set.Id,
                 set.Title,
                 set.Description,
-                set.Subject,
                 set.IsPublic,
                 set.CreatedAt,
                 set.UpdatedAt,

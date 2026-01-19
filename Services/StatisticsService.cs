@@ -166,19 +166,8 @@ public class StatisticsService : IStatisticsService
 
     public async Task<IEnumerable<object>> GetPopularSubjectsAsync(int count)
     {
-        var popularSubjects = await _unitOfWork.Quizzes.Query()
-            .GroupBy(q => q.Subject)
-            .Select(g => new
-            {
-                Subject = g.Key,
-                QuizCount = g.Count(),
-                TotalAttempts = g.SelectMany(q => q.Attempts).Count()
-            })
-            .OrderByDescending(x => x.TotalAttempts)
-            .Take(count)
-            .ToListAsync();
-
-        return popularSubjects;
+        // Subject field removed from Quiz model
+        return new List<object>();
     }
 
     public async Task<IEnumerable<object>> GetPopularQuizzesAsync(int count)
@@ -190,7 +179,6 @@ public class StatisticsService : IStatisticsService
             {
                 q.Id,
                 q.Title,
-                q.Subject,
                 CreatedBy = q.User != null ? q.User.UserName : "Unknown",
                 AttemptsCount = q.Attempts.Count,
                 AverageScore = q.Attempts.Any() ? q.Attempts.Average(a => a.Percentage) : 0

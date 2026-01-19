@@ -206,7 +206,7 @@ const TeacherExportPage = () => {
                         <div className="flex items-center gap-6 text-sm text-gray-600">
                           <div className="flex items-center gap-1">
                             <FileText className="w-4 h-4" />
-                            <span>Предмет: {quiz.subject}</span>
+                            <span>Предмет: {quiz.subjects && quiz.subjects.length > 0 ? quiz.subjects.map(s => s.name).join(', ') : 'Не указан'}</span>
                           </div>
                           <div className="flex items-center gap-1">
                             <FileText className="w-4 h-4" />
