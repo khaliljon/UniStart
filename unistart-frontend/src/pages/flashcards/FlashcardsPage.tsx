@@ -266,12 +266,11 @@ const FlashcardsPage = () => {
                       </>
                     ) : (
                       <Button
-                        onClick={() => navigate(`/flashcards/${set.id}/ai-study`)}
+                        onClick={() => navigate(`/flashcards/${set.id}/study`)}
                         variant="primary"
                         size="sm"
                         className="w-full flex items-center justify-center gap-2"
                       >
-                        <span className="text-lg">🧠</span>
                         Начать изучение
                       </Button>
                     )}

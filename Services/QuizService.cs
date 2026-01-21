@@ -79,12 +79,25 @@ public class QuizService : IQuizService
         return await _unitOfWork.Quizzes.GetPublishedQuizzesAsync();
     }
 
-    public async Task<PagedResult<QuizDto>> SearchQuizzesAsync(QuizFilterDto filter, bool onlyPublished = true)
+    public async Task<PagedResult<QuizDto>> SearchQuizzesAsync(QuizFilterDto filter, string? userId = null, bool onlyPublished = true, bool isAdmin = false, bool isTeacher = false)
     {
         var query = _unitOfWork.Repository<Quiz>().Query();
 
-        if (onlyPublished)
+        // Админ видит все, учитель только свои, студенты только опубликованные
+        if (isAdmin)
+        {
+            // Админ видит все квизы без фильтрации
+        }
+        else if (isTeacher && !string.IsNullOrEmpty(userId))
+        {
+            // Учитель видит только свои квизы
+            query = query.Where(q => q.UserId == userId);
+        }
+        else if (onlyPublished)
+        {
+            // Студенты и неавторизованные видят только опубликованные
             query = query.Where(q => q.IsPublished);
+        }
 
         // Поиск
         if (!string.IsNullOrEmpty(filter.Search))
@@ -280,10 +293,14 @@ public class QuizService : IQuizService
         return true;
     }
 
-    public async Task<bool> PublishQuizAsync(int id, string userId)
+    public async Task<bool> PublishQuizAsync(int id, string userId, bool isAdmin = false)
     {
         var quiz = await _unitOfWork.Quizzes.GetByIdAsync(id);
-        if (quiz == null || quiz.UserId != userId)
+        if (quiz == null)
+            return false;
+
+        // Админ может публиковать любой квиз, остальные - только свои
+        if (!isAdmin && quiz.UserId != userId)
             return false;
 
         quiz.IsPublished = true;

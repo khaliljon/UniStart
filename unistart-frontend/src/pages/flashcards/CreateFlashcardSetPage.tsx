@@ -247,6 +247,7 @@ const CreateFlashcardSetPage = () => {
         description: flashcardSet.description,
         subjectIds: flashcardSet.subjectIds,
         isPublic: flashcardSet.isPublic,
+        isPublished: publish,
       });
 
       const setId = setResponse.data.id;
@@ -272,11 +273,6 @@ const CreateFlashcardSetPage = () => {
         }
 
         await api.post('/flashcards/cards', cardData);
-      }
-
-      // Шаг 3: Публикуем если нужно
-      if (publish) {
-        await api.patch(`/flashcards/sets/${setId}/publish`);
       }
 
       alert(`Набор карточек успешно ${publish ? 'создан и опубликован' : 'сохранен как черновик'}!`);

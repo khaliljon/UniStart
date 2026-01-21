@@ -50,11 +50,28 @@ namespace UniStart.Controllers.Flashcards
         {
             var userId = GetUserId();
             
-            // Получаем свои наборы + публичные наборы других пользователей
+            // Админ видит все, учитель только свои, студенты только опубликованные
+            var isAdmin = User.IsInRole("Admin");
+            var isTeacher = User.IsInRole("Teacher");
+            
             var query = _context.FlashcardSets
                 .Include(fs => fs.Subjects)
-                .Where(fs => fs.UserId == userId || fs.IsPublic)
                 .AsQueryable();
+
+            if (isAdmin)
+            {
+                // Админ видит все наборы
+            }
+            else if (isTeacher)
+            {
+                // Учитель видит только свои
+                query = query.Where(fs => fs.UserId == userId);
+            }
+            else
+            {
+                // Студенты видят только опубликованные
+                query = query.Where(fs => fs.IsPublished);
+            }
 
             // Поиск по названию и описанию
             if (!string.IsNullOrEmpty(search))
@@ -136,6 +153,7 @@ namespace UniStart.Controllers.Flashcards
         public async Task<ActionResult<FlashcardSet>> GetFlashcardSet(int id)
         {
             var userId = GetUserId();
+            var isAdmin = User.IsInRole("Admin");
             
             // Сначала проверяем существование набора вообще
             var setExists = await _context.FlashcardSets
@@ -150,12 +168,16 @@ namespace UniStart.Controllers.Flashcards
             _logger.LogInformation("GetFlashcardSet: Set {Id} exists. UserId={SetUserId}, CurrentUserId={CurrentUserId}, IsPublic={IsPublic}, IsPublished={IsPublished}", 
                 id, setExists.UserId, userId, setExists.IsPublic, setExists.IsPublished);
             
-            // Можно просматривать свои наборы (включая черновики) или публичные наборы других пользователей
-            var set = await _context.FlashcardSets
-                .Where(fs => fs.UserId == userId || (fs.IsPublic && fs.IsPublished))
+            // Админ может просматривать любые наборы, остальные - свои или опубликованные
+            var query = _context.FlashcardSets
                 .Include(fs => fs.Flashcards)
                 .Include(fs => fs.Subjects)
-                .FirstOrDefaultAsync(fs => fs.Id == id);
+                .Where(fs => fs.Id == id);
+            
+            if (!isAdmin)
+                query = query.Where(fs => fs.UserId == userId || fs.IsPublished);
+            
+            var set = await query.FirstOrDefaultAsync();
 
             if (set == null)
             {
@@ -218,6 +240,7 @@ namespace UniStart.Controllers.Flashcards
                 Title = dto.Title,
                 Description = dto.Description,
                 IsPublic = dto.IsPublic,
+                IsPublished = dto.IsPublished,
                 UserId = userId
             };
 
@@ -248,10 +271,17 @@ namespace UniStart.Controllers.Flashcards
         public async Task<IActionResult> UpdateFlashcardSet(int id, UpdateFlashcardSetDto dto)
         {
             var userId = GetUserId();
+            var isAdmin = User.IsInRole("Admin");
             
-            var set = await _context.FlashcardSets
+            var query = _context.FlashcardSets
                 .Include(fs => fs.Subjects)
-                .FirstOrDefaultAsync(fs => fs.Id == id && fs.UserId == userId);
+                .Where(fs => fs.Id == id);
+            
+            // Админ может редактировать любой набор, остальные - только свои
+            if (!isAdmin)
+                query = query.Where(fs => fs.UserId == userId);
+                
+            var set = await query.FirstOrDefaultAsync();
                 
             if (set == null)
                 return NotFound();
@@ -259,6 +289,7 @@ namespace UniStart.Controllers.Flashcards
             set.Title = dto.Title;
             set.Description = dto.Description;
             set.IsPublic = dto.IsPublic;
+            set.IsPublished = dto.IsPublished;
             set.UpdatedAt = DateTime.UtcNow;
 
             // Обновляем предметы
@@ -285,9 +316,15 @@ namespace UniStart.Controllers.Flashcards
         public async Task<IActionResult> DeleteFlashcardSet(int id)
         {
             var userId = GetUserId();
+            var isAdmin = User.IsInRole("Admin");
             
-            var set = await _context.FlashcardSets
-                .FirstOrDefaultAsync(fs => fs.Id == id && fs.UserId == userId);
+            var query = _context.FlashcardSets.Where(fs => fs.Id == id);
+            
+            // Админ может удалять любой набор, остальные - только свои
+            if (!isAdmin)
+                query = query.Where(fs => fs.UserId == userId);
+                
+            var set = await query.FirstOrDefaultAsync();
                 
             if (set == null)
                 return NotFound();
@@ -304,9 +341,15 @@ namespace UniStart.Controllers.Flashcards
         public async Task<IActionResult> PublishFlashcardSet(int id)
         {
             var userId = GetUserId();
+            var isAdmin = User.IsInRole("Admin");
             
-            var set = await _context.FlashcardSets
-                .FirstOrDefaultAsync(fs => fs.Id == id && fs.UserId == userId);
+            var query = _context.FlashcardSets.Where(fs => fs.Id == id);
+            
+            // Админ может публиковать любой набор, остальные - только свои
+            if (!isAdmin)
+                query = query.Where(fs => fs.UserId == userId);
+                
+            var set = await query.FirstOrDefaultAsync();
                 
             if (set == null)
                 return NotFound();
@@ -325,9 +368,15 @@ namespace UniStart.Controllers.Flashcards
         public async Task<IActionResult> UnpublishFlashcardSet(int id)
         {
             var userId = GetUserId();
+            var isAdmin = User.IsInRole("Admin");
             
-            var set = await _context.FlashcardSets
-                .FirstOrDefaultAsync(fs => fs.Id == id && fs.UserId == userId);
+            var query = _context.FlashcardSets.Where(fs => fs.Id == id);
+            
+            // Админ может снимать с публикации любой набор, остальные - только свои
+            if (!isAdmin)
+                query = query.Where(fs => fs.UserId == userId);
+                
+            var set = await query.FirstOrDefaultAsync();
                 
             if (set == null)
                 return NotFound();
@@ -346,16 +395,18 @@ namespace UniStart.Controllers.Flashcards
         public async Task<ActionResult> GetFlashcardSetStats(int id)
         {
             var userId = GetUserId();
+            var isAdmin = User.IsInRole("Admin");
 
             var set = await _context.FlashcardSets
                 .Include(fs => fs.Flashcards)
+                .Include(fs => fs.Subjects)
                 .FirstOrDefaultAsync(fs => fs.Id == id);
 
             if (set == null)
                 return NotFound($"FlashcardSet with ID {id} not found");
 
-            // Проверка доступа: только владелец набора может видеть статистику
-            if (set.UserId != userId)
+            // Проверка доступа: владелец набора или админ могут видеть статистику
+            if (set.UserId != userId && !isAdmin)
                 return Forbid("Access denied: you can only view stats for your own flashcard sets");
 
             // Количество уникальных пользователей, изучающих этот набор (хотя бы раз открыли)
@@ -383,6 +434,7 @@ namespace UniStart.Controllers.Flashcards
                 set.Id,
                 set.Title,
                 set.Description,
+                Subjects = set.Subjects.Select(s => new { s.Id, s.Name }).ToList(),
                 set.IsPublic,
                 set.CreatedAt,
                 set.UpdatedAt,

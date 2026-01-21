@@ -9,6 +9,7 @@ import api from '../../services/api';
 interface TeacherStats {
   myQuizzes: number;
   myFlashcardSets: number;
+  myExams: number;
   totalStudents: number;
   averageScore: number;
 }
@@ -18,6 +19,7 @@ const TeacherDashboard = () => {
   const [stats, setStats] = useState<TeacherStats>({
     myQuizzes: 0,
     myFlashcardSets: 0,
+    myExams: 0,
     totalStudents: 0,
     averageScore: 0,
   });
@@ -43,9 +45,10 @@ const TeacherDashboard = () => {
 
   const loadTeacherData = async () => {
     try {
-      const [quizzesData, flashcardsData] = await Promise.allSettled([
+      const [quizzesData, flashcardsData, examsData] = await Promise.allSettled([
         api.get('/quizzes/my'),         // Получаем свои квизы
         api.get('/flashcards/sets'),    // Получаем свои наборы карточек
+        api.get('/exams/my'),           // Получаем свои экзамены
       ]);
 
       console.log('Teacher quizzes:', quizzesData);
@@ -55,7 +58,8 @@ const TeacherDashboard = () => {
       let quizzes: any[] = [];
       if (quizzesData.status === 'fulfilled') {
         const data = quizzesData.value.data;
-        quizzes = Array.isArray(data) ? data : (data.quizzes || data.Quizzes || []);
+        // API возвращает PagedResult с полем items
+        quizzes = Array.isArray(data) ? data : (data.items || []);
       }
 
       // Обработка карточек
@@ -65,9 +69,17 @@ const TeacherDashboard = () => {
         flashcardSets = Array.isArray(data) ? data : (data.flashcardSets || data.FlashcardSets || []);
       }
 
+      // Обработка экзаменов
+      let exams: any[] = [];
+      if (examsData.status === 'fulfilled') {
+        const data = examsData.value.data;
+        exams = Array.isArray(data) ? data : (data.items || []);
+      }
+
       setStats({
         myQuizzes: quizzes.length,
         myFlashcardSets: flashcardSets.length,
+        myExams: exams.length,
         totalStudents: 0,  // TODO: добавить подсчет студентов
         averageScore: 0,   // TODO: добавить подсчет среднего балла
       });
@@ -78,6 +90,7 @@ const TeacherDashboard = () => {
       setStats({
         myQuizzes: 0,
         myFlashcardSets: 0,
+        myExams: 0,
         totalStudents: 0,
         averageScore: 0,
       });
@@ -93,12 +106,21 @@ const TeacherDashboard = () => {
       label: 'Мои квизы',
       value: stats.myQuizzes,
       color: 'bg-blue-500',
+      onClick: () => navigate('/quizzes'),
     },
     {
       icon: BookOpen,
       label: 'Мои наборы карточек',
       value: stats.myFlashcardSets,
       color: 'bg-green-500',
+      onClick: () => navigate('/flashcards'),
+    },
+    {
+      icon: FileText,
+      label: 'Мои экзамены',
+      value: stats.myExams,
+      color: 'bg-red-500',
+      onClick: () => navigate('/exams'),
     },
     {
       icon: Users,
@@ -162,7 +184,7 @@ const TeacherDashboard = () => {
         </motion.div>
 
         {/* Статистика */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-12">
           {statCards.map((stat, index) => (
             <motion.div
               key={stat.label}
@@ -170,7 +192,10 @@ const TeacherDashboard = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
             >
-              <Card className="p-6">
+              <Card 
+                className={`p-6 ${stat.onClick ? 'cursor-pointer hover:shadow-lg transition-shadow' : ''}`}
+                onClick={stat.onClick}
+              >
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-gray-600 mb-1">{stat.label}</p>
@@ -222,7 +247,7 @@ const TeacherDashboard = () => {
                       <div className="flex-1">
                         <p className="font-medium text-gray-900">{quiz.title}</p>
                         <p className="text-sm text-gray-600">
-                          {quiz.subjects && quiz.subjects.length > 0 ? quiz.subjects.map(s => s.name).join(', ') : 'Не указан'} · {quiz.difficulty}
+                          {quiz.subjects && quiz.subjects.length > 0 ? quiz.subjects.map((s: any) => s.name).join(', ') : 'Не указан'} · {quiz.difficulty}
                         </p>
                       </div>
                       <div className="flex gap-2">

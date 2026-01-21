@@ -58,7 +58,7 @@ public class ExamsManagementController : ControllerBase
                 Title = exam.Title,
                 Description = exam.Description,
                 Difficulty = exam.Difficulty,
-                Subjects = exam.Subjects?.Select(s => s.Name).ToList() ?? new List<string>(),
+                Subjects = exam.Subjects?.Select(s => new SubjectDto { Id = s.Id, Name = s.Name }).ToList() ?? new List<SubjectDto>(),
                 SubjectIds = exam.Subjects?.Select(s => s.Id).ToList() ?? new List<int>(),
                 CountryId = exam.CountryId,
                 UniversityId = exam.UniversityId,
@@ -114,7 +114,8 @@ public class ExamsManagementController : ControllerBase
         try
         {
             var userId = await GetUserId();
-            var exam = await _examService.UpdateExamAsync(id, userId, dto);
+            var isAdmin = User.IsInRole("Admin");
+            var exam = await _examService.UpdateExamAsync(id, userId, dto, isAdmin);
             
             return Ok(new ExamDto
             {
@@ -122,7 +123,7 @@ public class ExamsManagementController : ControllerBase
                 Title = exam.Title,
                 Description = exam.Description,
                 Difficulty = exam.Difficulty,
-                Subjects = exam.Subjects?.Select(s => s.Name).ToList() ?? new List<string>(),
+                Subjects = exam.Subjects?.Select(s => new SubjectDto { Id = s.Id, Name = s.Name }).ToList() ?? new List<SubjectDto>(),
                 SubjectIds = exam.Subjects?.Select(s => s.Id).ToList() ?? new List<int>(),
                 CountryId = exam.CountryId,
                 UniversityId = exam.UniversityId,
@@ -186,7 +187,8 @@ public class ExamsManagementController : ControllerBase
         try
         {
             var userId = await GetUserId();
-            var result = await _examService.PublishExamAsync(id, userId);
+            var isAdmin = User.IsInRole("Admin");
+            var result = await _examService.PublishExamAsync(id, userId, isAdmin);
             
             if (!result)
                 return NotFound(new { Message = "Экзамен не найден или у вас нет прав" });
@@ -241,7 +243,8 @@ public class ExamsManagementController : ControllerBase
         try
         {
             var userId = await GetUserId();
-            var result = await _examService.DeleteExamAsync(id, userId);
+            var isAdmin = User.IsInRole("Admin");
+            var result = await _examService.DeleteExamAsync(id, userId, isAdmin);
             
             if (!result)
                 return NotFound(new { Message = "Экзамен не найден или у вас нет прав" });

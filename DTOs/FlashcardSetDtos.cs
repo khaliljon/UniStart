@@ -30,6 +30,8 @@ namespace UniStart.DTOs
         public List<int> SubjectIds { get; set; } = new();
         
         public bool IsPublic { get; set; } = false;
+        
+        public bool IsPublished { get; set; } = false;
     }
 
     public class UpdateFlashcardSetDto
@@ -44,5 +46,7 @@ namespace UniStart.DTOs
         public List<int> SubjectIds { get; set; } = new();
         
         public bool IsPublic { get; set; } = false;
+        
+        public bool IsPublished { get; set; } = false;
     }
 }

@@ -109,7 +109,7 @@ interface SimpleQuiz {
 const QuizzesPage = () => {
   const navigate = useNavigate();
   const { isTeacher, isAdmin } = useAuth();
-  const [viewMode, setViewMode] = useState<'hierarchy' | 'list'>('hierarchy'); // 'hierarchy' или 'list'
+  const [viewMode, setViewMode] = useState<'hierarchy' | 'list'>('list'); // 'hierarchy' или 'list'
   
   // Данные для иерархии
   const [courses, setCourses] = useState<Course[]>([]);
@@ -210,7 +210,9 @@ const QuizzesPage = () => {
       if (difficultyFilter) params.append('difficulty', difficultyFilter);
       
       const response = await api.get(`${endpoint}?${params.toString()}`);
-      setQuizzes(Array.isArray(response.data) ? response.data : []);
+      // Для /quizzes/my и /exams/my приходит PagedResult с items
+      const data = response.data.items || response.data;
+      setQuizzes(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Ошибка загрузки квизов:', error);
       setQuizzes([]);
@@ -315,16 +317,6 @@ const QuizzesPage = () => {
             <div className="flex items-center gap-3">
               <div className="flex bg-white dark:bg-gray-800 rounded-lg p-1 border border-gray-200 dark:border-gray-700 shadow-sm">
                 <button
-                  onClick={() => setViewMode('hierarchy')}
-                  className={`px-4 py-2 rounded-md transition-all ${
-                    viewMode === 'hierarchy'
-                      ? 'bg-primary-500 text-white'
-                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                  }`}
-                >
-                  Иерархия
-                </button>
-                <button
                   onClick={() => setViewMode('list')}
                   className={`px-4 py-2 rounded-md transition-all ${
                     viewMode === 'list'
@@ -333,6 +325,16 @@ const QuizzesPage = () => {
                   }`}
                 >
                   Список
+                </button>
+                <button
+                  onClick={() => setViewMode('hierarchy')}
+                  className={`px-4 py-2 rounded-md transition-all ${
+                    viewMode === 'hierarchy'
+                      ? 'bg-primary-500 text-white'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  Иерархия
                 </button>
               </div>
               {(isTeacher || isAdmin) && (

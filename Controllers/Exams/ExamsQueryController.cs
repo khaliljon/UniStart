@@ -65,7 +65,10 @@ public class ExamsQueryController : ControllerBase
             PageSize = pageSize
         };
 
-        var result = await _examService.SearchExamsAsync(filter, onlyPublished: true);
+        var userId = User.Identity?.IsAuthenticated == true ? await GetUserId() : null;
+        var isAdmin = User.IsInRole("Admin");
+        var isTeacher = User.IsInRole("Teacher");
+        var result = await _examService.SearchExamsAsync(filter, userId, onlyPublished: true, isAdmin, isTeacher);
         return Ok(result);
     }
 

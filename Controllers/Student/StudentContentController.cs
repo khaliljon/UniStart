@@ -160,7 +160,7 @@ namespace UniStart.Controllers.Student
             var query = _context.Exams
                 .Include(e => e.Questions)
                 .Include(e => e.Subjects)
-                .Where(e => e.IsPublic && e.IsPublished); // Только публичные и опубликованные экзамены
+                .Where(e => e.IsPublished); // Только опубликованные экзамены
 
             if (!string.IsNullOrWhiteSpace(subject))
                 query = query.Where(e => e.Subjects.Any(s => s.Name.Contains(subject)));
@@ -200,7 +200,7 @@ namespace UniStart.Controllers.Student
             var query = _context.FlashcardSets
                 .Include(fs => fs.Flashcards)
                 .Include(fs => fs.Subjects)
-                .Where(fs => fs.IsPublic && fs.IsPublished); // Только публичные и опубликованные наборы
+                .Where(fs => fs.IsPublished); // Только опубликованные наборы
 
             var flashcardSets = await query
                 .OrderByDescending(fs => fs.CreatedAt)

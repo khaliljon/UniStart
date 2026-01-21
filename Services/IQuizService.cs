@@ -18,14 +18,14 @@ public interface IQuizService
     Task<Quiz?> GetQuizWithQuestionsAsync(int id);
     Task<QuizDetailDto?> GetQuizDetailAsync(int id, string? userId, bool isAdmin);
     Task<IEnumerable<Quiz>> GetPublishedQuizzesAsync();
-    Task<PagedResult<QuizDto>> SearchQuizzesAsync(QuizFilterDto filter, bool onlyPublished = true);
+    Task<PagedResult<QuizDto>> SearchQuizzesAsync(QuizFilterDto filter, string? userId = null, bool onlyPublished = true, bool isAdmin = false, bool isTeacher = false);
     Task<PagedResult<QuizDto>> GetMyQuizzesAsync(string userId, QuizFilterDto filter);
     Task<IEnumerable<Quiz>> GetQuizzesByUserAsync(string userId);
     Task<IEnumerable<Quiz>> GetQuizzesBySubjectsAsync(List<int> subjectIds);
     Task<Quiz> CreateQuizAsync(string userId, CreateQuizDto dto);
     Task<Quiz> UpdateQuizAsync(int id, UpdateQuizDto dto);
     Task<bool> DeleteQuizAsync(int id, string? userId, bool isAdmin);
-    Task<bool> PublishQuizAsync(int id, string userId);
+    Task<bool> PublishQuizAsync(int id, string userId, bool isAdmin = false);
     Task<bool> UnpublishQuizAsync(int id, string userId, bool isAdmin);
     Task<bool> CanUserAccessQuizAsync(int quizId, string userId);
     Task<UserQuizAttempt> StartQuizAttemptAsync(int quizId, string userId);

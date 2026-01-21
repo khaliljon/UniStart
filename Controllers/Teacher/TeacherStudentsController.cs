@@ -86,4 +86,29 @@ public class TeacherStudentsController : ControllerBase
             Stats = stats
         });
     }
+
+    /// <summary>
+    /// Получить аналитику: список всех студентов учителя с их статистикой
+    /// </summary>
+    [HttpGet("analytics/students")]
+    public async Task<ActionResult> GetAnalyticsStudents(
+        [FromQuery] int page = 1, 
+        [FromQuery] int pageSize = 20,
+        [FromQuery] string? search = null)
+    {
+        var userId = GetUserId();
+        
+        // Получаем всех студентов, которые хотя бы раз взаимодействовали с контентом учителя
+        var result = await _teacherStatsService.GetStudentsAsync(new TeacherStudentsFilter
+        {
+            TeacherId = userId,
+            Search = search,
+            Page = page,
+            PageSize = pageSize,
+            SortBy = "lastActivityDate",
+            Desc = true
+        });
+
+        return Ok(result);
+    }
 }

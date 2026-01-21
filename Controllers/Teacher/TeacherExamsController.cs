@@ -125,7 +125,7 @@ public class TeacherExamsController : ControllerBase
             Title = exam.Title,
             Description = exam.Description,
             Difficulty = exam.Difficulty,
-            Subjects = subjects?.Select(s => s.Name).ToList() ?? new List<string>(),
+            Subjects = subjects?.Select(s => new SubjectDto { Id = s.Id, Name = s.Name }).ToList() ?? new List<SubjectDto>(),
             SubjectIds = subjects?.Select(s => s.Id).ToList() ?? new List<int>(),
             MaxAttempts = exam.MaxAttempts,
             PassingScore = exam.PassingScore,

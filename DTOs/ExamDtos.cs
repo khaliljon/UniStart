@@ -124,7 +124,7 @@ public class ExamDto
     public string Title { get; set; } = string.Empty;
     public string? Description { get; set; }
 
-    public List<string> Subjects { get; set; } = new(); // Список названий предметов
+    public List<SubjectDto> Subjects { get; set; } = new(); // Список объектов предметов
     public List<int> SubjectIds { get; set; } = new(); // Список ID предметов
     public string Difficulty { get; set; } = string.Empty;
     

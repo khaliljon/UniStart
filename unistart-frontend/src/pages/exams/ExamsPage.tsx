@@ -117,7 +117,9 @@ const ExamsPage = () => {
       if (countryFilter) params.append('country', countryFilter);
       if (universityFilter) params.append('university', universityFilter);
       const response = await api.get(`${endpoint}?${params.toString()}`);
-      setExams(Array.isArray(response.data) ? response.data : []);
+      // Для /exams/my приходит PagedResult с items
+      const data = response.data.items || response.data;
+      setExams(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Ошибка загрузки экзаменов:', error);
     } finally {
@@ -419,7 +421,7 @@ const ExamsPage = () => {
 
                   {/* Особенности экзамена */}
                   <div className="flex flex-wrap gap-2 mb-4">
-                    {!(isTeacher || isAdmin) && (
+                    {!(isTeacher || isAdmin) && exam.remainingAttempts !== undefined && (
                       <span className={`px-2 py-1 rounded text-xs flex items-center gap-1 ${
                         exam.remainingAttempts <= 0 
                           ? 'bg-red-100 text-red-700' 
@@ -501,9 +503,9 @@ const ExamsPage = () => {
                       onClick={() => navigate(`/exams/${exam.id}/take`)}
                       variant="primary"
                       className="w-full flex items-center justify-center gap-2"
-                      disabled={!available || exam.remainingAttempts <= 0}
+                      disabled={!available || (exam.remainingAttempts !== undefined && exam.remainingAttempts <= 0)}
                     >
-                      {exam.remainingAttempts <= 0 ? (
+                      {exam.remainingAttempts !== undefined && exam.remainingAttempts <= 0 ? (
                         <>
                           <FileX className="w-5 h-5" />
                           Попытки исчерпаны

@@ -9,7 +9,7 @@ interface FlashcardSetStats {
   id: number;
   title: string;
   description: string;
-  subject: string;
+  subjects: { id: number; name: string }[];
   isPublic: boolean;
   createdAt: string;
   updatedAt: string;

@@ -103,10 +103,17 @@ namespace UniStart.Controllers.Flashcards
         public async Task<IActionResult> UpdateFlashcard(int id, UpdateFlashcardDto dto)
         {
             var userId = GetUserId();
+            var isAdmin = User.IsInRole("Admin");
             
-            var card = await _context.Flashcards
+            var query = _context.Flashcards
                 .Include(f => f.FlashcardSet)
-                .FirstOrDefaultAsync(f => f.Id == id && f.FlashcardSet.UserId == userId);
+                .Where(f => f.Id == id);
+            
+            // Админ может редактировать любые карточки, остальные - только свои
+            if (!isAdmin)
+                query = query.Where(f => f.FlashcardSet.UserId == userId);
+            
+            var card = await query.FirstOrDefaultAsync();
                 
             if (card == null)
                 return NotFound();
@@ -130,10 +137,17 @@ namespace UniStart.Controllers.Flashcards
         public async Task<IActionResult> DeleteFlashcard(int id)
         {
             var userId = GetUserId();
+            var isAdmin = User.IsInRole("Admin");
             
-            var card = await _context.Flashcards
+            var query = _context.Flashcards
                 .Include(f => f.FlashcardSet)
-                .FirstOrDefaultAsync(f => f.Id == id && f.FlashcardSet.UserId == userId);
+                .Where(f => f.Id == id);
+            
+            // Админ может удалять любые карточки, остальные - только свои
+            if (!isAdmin)
+                query = query.Where(f => f.FlashcardSet.UserId == userId);
+            
+            var card = await query.FirstOrDefaultAsync();
                 
             if (card == null)
                 return NotFound();

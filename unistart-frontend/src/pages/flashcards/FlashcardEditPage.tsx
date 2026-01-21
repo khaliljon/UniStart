@@ -243,6 +243,7 @@ const FlashcardEditPage = () => {
         description: formData.description,
         subjectIds: formData.subjectIds,
         isPublic: formData.isPublic,
+        isPublished: publish ? true : formData.isPublished,
       };
 
       await flashcardService.updateSet(Number(id), setData);
@@ -278,11 +279,6 @@ const FlashcardEditPage = () => {
         } else {
           await api.post('/flashcards/cards', cardData);
         }
-      }
-
-      // Публикуем если нужно
-      if (publish && !formData.isPublished) {
-        await api.patch(`/flashcards/sets/${id}/publish`);
       }
 
       alert('Набор карточек успешно обновлен!');

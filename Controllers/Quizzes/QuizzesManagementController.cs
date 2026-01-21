@@ -91,12 +91,19 @@ public class QuizzesManagementController : ControllerBase
     public async Task<IActionResult> UpdateQuiz(int id, UpdateQuizDto dto)
     {
         var userId = GetUserId()!;
+        var isAdmin = User.IsInRole("Admin");
         
-        var quiz = await _context.Quizzes
+        var query = _context.Quizzes
             .Include(q => q.Questions)
                 .ThenInclude(qu => qu.Answers)
             .Include(q => q.Subjects)
-            .FirstOrDefaultAsync(q => q.Id == id && q.UserId == userId);
+            .Where(q => q.Id == id);
+        
+        // Админ может редактировать любой квиз, остальные - только свои
+        if (!isAdmin)
+            query = query.Where(q => q.UserId == userId);
+            
+        var quiz = await query.FirstOrDefaultAsync();
             
         if (quiz == null)
             return NotFound();
@@ -193,8 +200,9 @@ public class QuizzesManagementController : ControllerBase
     public async Task<IActionResult> PublishQuiz(int id)
     {
         var userId = GetUserId()!;
+        var isAdmin = User.IsInRole("Admin");
         
-        var result = await _quizService.PublishQuizAsync(id, userId);
+        var result = await _quizService.PublishQuizAsync(id, userId, isAdmin);
         
         if (!result)
             return NotFound();

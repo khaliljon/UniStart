@@ -57,7 +57,7 @@ public class ExamService : IExamService
             Id = exam.Id,
             Title = exam.Title,
             Description = exam.Description,
-            Subjects = exam.Subjects.Select(s => s.Name).ToList(),
+            Subjects = exam.Subjects.Select(s => new SubjectDto { Id = s.Id, Name = s.Name }).ToList(),
             SubjectIds = exam.Subjects.Select(s => s.Id).ToList(),
             Difficulty = exam.Difficulty,
             CountryId = exam.CountryId,
@@ -112,12 +112,25 @@ public class ExamService : IExamService
         return await _unitOfWork.Exams.GetPublishedExamsAsync();
     }
 
-    public async Task<PagedResult<ExamDto>> SearchExamsAsync(ExamFilterDto filter, bool onlyPublished = true)
+    public async Task<PagedResult<ExamDto>> SearchExamsAsync(ExamFilterDto filter, string? userId = null, bool onlyPublished = true, bool isAdmin = false, bool isTeacher = false)
     {
         var query = _unitOfWork.Repository<Exam>().Query();
 
-        if (onlyPublished)
+        // Админ видит все, учитель только свои, студенты только опубликованные
+        if (isAdmin)
+        {
+            // Админ видит все экзамены без фильтрации
+        }
+        else if (isTeacher && !string.IsNullOrEmpty(userId))
+        {
+            // Учитель видит только свои экзамены
+            query = query.Where(e => e.UserId == userId);
+        }
+        else if (onlyPublished)
+        {
+            // Студенты и неавторизованные видят только опубликованные
             query = query.Where(e => e.IsPublished);
+        }
 
         // Поиск
         if (!string.IsNullOrEmpty(filter.Search))
@@ -152,7 +165,7 @@ public class ExamService : IExamService
                 Id = e.Id,
                 Title = e.Title,
                 Description = e.Description,
-                Subjects = e.Subjects.Select(s => s.Name).ToList(),
+                Subjects = e.Subjects.Select(s => new SubjectDto { Id = s.Id, Name = s.Name }).ToList(),
                 SubjectIds = e.Subjects.Select(s => s.Id).ToList(),
                 Difficulty = e.Difficulty,
                 TimeLimit = e.TimeLimit,
@@ -212,7 +225,7 @@ public class ExamService : IExamService
                 Id = e.Id,
                 Title = e.Title,
                 Description = e.Description,
-                Subjects = e.Subjects.Select(s => s.Name).ToList(),
+                Subjects = e.Subjects.Select(s => new SubjectDto { Id = s.Id, Name = s.Name }).ToList(),
                 SubjectIds = e.Subjects.Select(s => s.Id).ToList(),
                 Difficulty = e.Difficulty,
                 TimeLimit = e.TimeLimit,
@@ -290,6 +303,8 @@ public class ExamService : IExamService
             {
                 exam.Subjects.Add(subject);
             }
+            
+            await _unitOfWork.SaveChangesAsync(); // ИСПРАВЛЕНО: сохраняем предметы
         }
 
         // Добавляем теги
@@ -304,6 +319,8 @@ public class ExamService : IExamService
             {
                 exam.Tags.Add(tag);
             }
+            
+            await _unitOfWork.SaveChangesAsync(); // ИСПРАВЛЕНО: сохраняем теги
         }
 
         // Добавляем вопросы
@@ -361,7 +378,7 @@ public class ExamService : IExamService
         return createdExam ?? exam;
     }
 
-    public async Task<Exam> UpdateExamAsync(int id, string userId, UpdateExamDto dto)
+    public async Task<Exam> UpdateExamAsync(int id, string userId, UpdateExamDto dto, bool isAdmin = false)
     {
         var exam = await _unitOfWork.Repository<Exam>()
             .Query()
@@ -372,7 +389,8 @@ public class ExamService : IExamService
         if (exam == null)
             throw new InvalidOperationException($"Экзамен с ID {id} не найден");
 
-        if (exam.UserId != userId)
+        // Админ может редактировать любой экзамен, остальные - только свои
+        if (!isAdmin && exam.UserId != userId)
             throw new UnauthorizedAccessException("Только владелец экзамена может его редактировать");
 
         // Обновляем основные поля
@@ -502,10 +520,11 @@ public class ExamService : IExamService
         return updatedExam ?? exam;
     }
 
-    public async Task<bool> DeleteExamAsync(int id, string userId)
+    public async Task<bool> DeleteExamAsync(int id, string userId, bool isAdmin = false)
     {
         var exam = await _unitOfWork.Exams.GetByIdAsync(id);
-        if (exam == null || exam.UserId != userId)
+        // Админ может удалять любой экзамен, остальные - только свои
+        if (exam == null || (!isAdmin && exam.UserId != userId))
             return false;
 
         _unitOfWork.Repository<Exam>().Remove(exam);
@@ -515,10 +534,14 @@ public class ExamService : IExamService
         return true;
     }
 
-    public async Task<bool> PublishExamAsync(int id, string userId)
+    public async Task<bool> PublishExamAsync(int id, string userId, bool isAdmin = false)
     {
         var exam = await _unitOfWork.Exams.GetByIdAsync(id);
-        if (exam == null || exam.UserId != userId)
+        if (exam == null)
+            return false;
+
+        // Админ может публиковать любой экзамен, остальные - только свои
+        if (!isAdmin && exam.UserId != userId)
             return false;
 
         exam.IsPublished = true;

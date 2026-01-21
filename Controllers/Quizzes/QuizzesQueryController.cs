@@ -46,7 +46,10 @@ public class QuizzesQueryController : ControllerBase
             PageSize = pageSize
         };
 
-        var result = await _quizService.SearchQuizzesAsync(filter, onlyPublished: true);
+        var userId = User.Identity?.IsAuthenticated == true ? GetUserId() : null;
+        var isAdmin = User.IsInRole("Admin");
+        var isTeacher = User.IsInRole("Teacher");
+        var result = await _quizService.SearchQuizzesAsync(filter, userId, onlyPublished: true, isAdmin, isTeacher);
         return Ok(result);
     }
 
