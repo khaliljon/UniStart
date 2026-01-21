@@ -54,7 +54,7 @@ public class ContentRecommendationService : IContentRecommendationService
             // Ищем квизы - Subject field removed, используем популярные
             var recommendedQuizzes = await _unitOfWork.Repository<Quiz>()
                 .Query()
-                .Where(q => q.IsPublished)
+                .Where(q => q.IsPublished && q.IsPublic)
                 .OrderByDescending(q => q.Attempts.Count) // Популярные квизы
                 .Select(q => q.Id)
                 .Take(count)
@@ -113,7 +113,7 @@ public class ContentRecommendationService : IContentRecommendationService
             // Если есть карьерная цель, ищем релевантные экзамены
             var recommendedExams = await _unitOfWork.Repository<Exam>()
                 .Query()
-                .Where(e => e.IsPublic && 
+                .Where(e => e.IsPublished && e.IsPublic && 
                            (!string.IsNullOrEmpty(profile.CareerGoal) && 
                             !string.IsNullOrEmpty(e.Description) &&
                             e.Description.Contains(profile.CareerGoal)))
@@ -176,7 +176,7 @@ public class ContentRecommendationService : IContentRecommendationService
             var weakSubjects = profile.Weaknesses;
             var recommendedSets = await _unitOfWork.Repository<FlashcardSet>()
                 .Query()
-                .Where(fs => fs.IsPublished && 
+                .Where(fs => fs.IsPublished && fs.IsPublic && 
                             weakSubjects.Any(ws => fs.Title.Contains(ws) || 
                                                   fs.Description.Contains(ws)))
                 .OrderByDescending(fs => fs.Flashcards.Count)
@@ -354,7 +354,7 @@ public class ContentRecommendationService : IContentRecommendationService
     {
         return await _unitOfWork.Repository<Quiz>()
             .Query()
-            .Where(q => q.IsPublished)
+            .Where(q => q.IsPublished && q.IsPublic)
             .OrderByDescending(q => q.Attempts.Count)
             .Select(q => q.Id)
             .Take(count)
@@ -365,7 +365,7 @@ public class ContentRecommendationService : IContentRecommendationService
     {
         return await _unitOfWork.Repository<Exam>()
             .Query()
-            .Where(e => e.IsPublic)
+            .Where(e => e.IsPublished && e.IsPublic)
             .OrderByDescending(e => e.Attempts.Count)
             .Select(e => e.Id)
             .Take(count)
@@ -376,7 +376,7 @@ public class ContentRecommendationService : IContentRecommendationService
     {
         return await _unitOfWork.Repository<FlashcardSet>()
             .Query()
-            .Where(fs => fs.IsPublished)
+            .Where(fs => fs.IsPublished && fs.IsPublic)
             .OrderByDescending(fs => fs.Flashcards.Count)
             .Select(fs => fs.Id)
             .Take(count)
