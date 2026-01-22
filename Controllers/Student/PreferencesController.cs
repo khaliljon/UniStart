@@ -128,6 +128,34 @@ public class PreferencesController : ControllerBase
     }
 
     /// <summary>
+    /// Пропустить Onboarding (создаст предпочтения по умолчанию)
+    /// </summary>
+    [HttpPost("onboarding/skip")]
+    public async Task<ActionResult<object>> SkipOnboarding()
+    {
+        try
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized();
+
+            var preferences = await _preferencesService.SkipOnboardingAsync(userId);
+            
+            return Ok(new 
+            { 
+                message = "Onboarding пропущен. Вы можете настроить предпочтения позже в профиле.",
+                onboardingCompleted = true,
+                preferences
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Ошибка при пропуске Onboarding");
+            return StatusCode(500, new { message = "Внутренняя ошибка сервера" });
+        }
+    }
+
+    /// <summary>
     /// Получить рекомендуемые предметы на основе предпочтений
     /// </summary>
     [HttpGet("recommended-subjects")]

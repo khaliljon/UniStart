@@ -42,6 +42,7 @@ namespace UniStart.Models.Reference
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         
         // Навигационные свойства
+        public List<City> Cities { get; set; } = new();
         public List<University> Universities { get; set; } = new();
         public List<Exam> Exams { get; set; } = new();
     }

@@ -46,7 +46,7 @@ namespace UniStart.Controllers.Reference
                     Id = u.Id,
                     Name = u.Name,
                     NameEn = u.NameEn,
-                    City = u.City,
+                    City = u.City != null ? u.City.Name : null,
                     Description = u.Description,
                     Website = u.Website,
                     Type = u.Type.ToString(),
@@ -71,6 +71,7 @@ namespace UniStart.Controllers.Reference
         {
             var university = await _context.Universities
                 .Include(u => u.Country)
+                .Include(u => u.City)
                 .Include(u => u.Exams)
                 .Include(u => u.ExamTypes)
                 .Where(u => u.Id == id)
@@ -79,7 +80,7 @@ namespace UniStart.Controllers.Reference
                     Id = u.Id,
                     Name = u.Name,
                     NameEn = u.NameEn,
-                    City = u.City,
+                    City = u.City != null ? u.City.Name : null,
                     Description = u.Description,
                     Website = u.Website,
                     Type = u.Type.ToString(),
@@ -110,11 +111,20 @@ namespace UniStart.Controllers.Reference
             if (country == null)
                 return BadRequest(new { message = "Страна не найдена" });
 
+            City? city = null;
+            if (!string.IsNullOrWhiteSpace(dto.City))
+            {
+                city = await _context.Cities
+                    .FirstOrDefaultAsync(c => c.CountryId == dto.CountryId && c.Name == dto.City);
+                // Если город не найден, можно либо игнорировать, либо вернуть ошибку
+                // Для обратной совместимости будем игнорировать
+            }
+
             var university = new University
             {
                 Name = dto.Name,
                 NameEn = dto.NameEn,
-                City = dto.City,
+                CityId = city?.Id,
                 Description = dto.Description,
                 Website = dto.Website,
                 Type = (UniversityType)dto.Type,
@@ -156,9 +166,16 @@ namespace UniStart.Controllers.Reference
             if (country == null)
                 return BadRequest(new { message = "Страна не найдена" });
 
+            City? city = null;
+            if (!string.IsNullOrWhiteSpace(dto.City))
+            {
+                city = await _context.Cities
+                    .FirstOrDefaultAsync(c => c.CountryId == dto.CountryId && c.Name == dto.City);
+            }
+
             university.Name = dto.Name;
             university.NameEn = dto.NameEn;
-            university.City = dto.City;
+            university.CityId = city?.Id;
             university.Description = dto.Description;
             university.Website = dto.Website;
             university.Type = (UniversityType)dto.Type;

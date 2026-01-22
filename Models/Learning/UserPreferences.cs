@@ -56,6 +56,59 @@ public class UserPreferences
     [StringLength(200)]
     public string? CareerGoal { get; set; } // "IT", "Medicine", "Engineering", etc.
     
+    // ========== ГЕОГРАФИЧЕСКИЕ ПРЕДПОЧТЕНИЯ ==========
+    
+    /// <summary>
+    /// Предпочитаемая страна для обучения
+    /// </summary>
+    [Display(Name = "Предпочитаемая страна")]
+    [StringLength(100)]
+    public string? PreferredCountry { get; set; } // "Kazakhstan", "USA", "UK", "Russia", etc.
+    
+    /// <summary>
+    /// Предпочитаемый город для обучения
+    /// </summary>
+    [Display(Name = "Предпочитаемый город")]
+    [StringLength(100)]
+    public string? PreferredCity { get; set; } // "Almaty", "Astana", "Moscow", etc.
+    
+    /// <summary>
+    /// Готовность к переезду
+    /// </summary>
+    [Display(Name = "Готовность к переезду")]
+    public bool WillingToRelocate { get; set; } = false;
+    
+    // ========== ФИНАНСОВЫЕ ПРЕДПОЧТЕНИЯ ==========
+    
+    /// <summary>
+    /// Максимальный бюджет на обучение (год)
+    /// </summary>
+    [Display(Name = "Максимальный бюджет (год)")]
+    [Range(0, double.MaxValue)]
+    public decimal? MaxBudgetPerYear { get; set; }
+    
+    /// <summary>
+    /// Интересуют ли гранты/стипендии
+    /// </summary>
+    [Display(Name = "Интересуют гранты")]
+    public bool InterestedInScholarships { get; set; } = true;
+    
+    // ========== ЯЗЫКОВЫЕ ПРЕДПОЧТЕНИЯ ==========
+    
+    /// <summary>
+    /// Предпочитаемый язык обучения (JSON: ["Russian", "English", "Kazakh"])
+    /// </summary>
+    [Display(Name = "Языки обучения")]
+    [Column(TypeName = "jsonb")]
+    public string PreferredLanguagesJson { get; set; } = "[\"Russian\"]";
+    
+    /// <summary>
+    /// Уровень английского (A1, A2, B1, B2, C1, C2)
+    /// </summary>
+    [Display(Name = "Уровень английского")]
+    [StringLength(10)]
+    public string? EnglishLevel { get; set; }
+    
     // ========== ПРЕДМЕТЫ ==========
     
     /// <summary>

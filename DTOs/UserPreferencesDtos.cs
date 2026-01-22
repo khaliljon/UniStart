@@ -7,6 +7,8 @@ namespace UniStart.DTOs;
 /// </summary>
 public class UserPreferencesDto
 {
+    // ========== ЦЕЛИ ОБУЧЕНИЯ ==========
+    
     /// <summary>
     /// Основная цель обучения
     /// </summary>
@@ -28,6 +30,53 @@ public class UserPreferencesDto
     /// </summary>
     [StringLength(200)]
     public string? CareerGoal { get; set; }
+    
+    // ========== ГЕОГРАФИЧЕСКИЕ ПРЕДПОЧТЕНИЯ ==========
+    
+    /// <summary>
+    /// Предпочитаемая страна для обучения
+    /// </summary>
+    [StringLength(100)]
+    public string? PreferredCountry { get; set; }
+    
+    /// <summary>
+    /// Предпочитаемый город для обучения
+    /// </summary>
+    [StringLength(100)]
+    public string? PreferredCity { get; set; }
+    
+    /// <summary>
+    /// Готовность к переезду
+    /// </summary>
+    public bool WillingToRelocate { get; set; } = false;
+    
+    // ========== ФИНАНСОВЫЕ ПРЕДПОЧТЕНИЯ ==========
+    
+    /// <summary>
+    /// Максимальный бюджет на обучение в год
+    /// </summary>
+    [Range(0, double.MaxValue)]
+    public decimal? MaxBudgetPerYear { get; set; }
+    
+    /// <summary>
+    /// Интересуют ли гранты/стипендии
+    /// </summary>
+    public bool InterestedInScholarships { get; set; } = true;
+    
+    // ========== ЯЗЫКОВЫЕ ПРЕДПОЧТЕНИЯ ==========
+    
+    /// <summary>
+    /// Предпочитаемые языки обучения
+    /// </summary>
+    public List<string> PreferredLanguages { get; set; } = new() { "Russian" };
+    
+    /// <summary>
+    /// Уровень английского (A1, A2, B1, B2, C1, C2)
+    /// </summary>
+    [StringLength(10)]
+    public string? EnglishLevel { get; set; }
+    
+    // ========== ПРЕДМЕТЫ ==========
     
     /// <summary>
     /// Список ID интересующих предметов
@@ -107,6 +156,21 @@ public class UserPreferencesResponseDto
     public int? TargetUniversityId { get; set; }
     public string? TargetUniversityName { get; set; }
     public string? CareerGoal { get; set; }
+    
+    // ========== ГЕОГРАФИЧЕСКИЕ ПРЕДПОЧТЕНИЯ ==========
+    public string? PreferredCountry { get; set; }
+    public string? PreferredCity { get; set; }
+    public bool WillingToRelocate { get; set; }
+    
+    // ========== ФИНАНСОВЫЕ ПРЕДПОЧТЕНИЯ ==========
+    public decimal? MaxBudgetPerYear { get; set; }
+    public bool InterestedInScholarships { get; set; }
+    
+    // ========== ЯЗЫКОВЫЕ ПРЕДПОЧТЕНИЯ ==========
+    public List<string> PreferredLanguages { get; set; } = new();
+    public string? EnglishLevel { get; set; }
+    
+    // ========== ПРЕДМЕТЫ ==========
     
     public List<SubjectDto> InterestedSubjects { get; set; } = new();
     public List<SubjectDto> StrongSubjects { get; set; } = new();

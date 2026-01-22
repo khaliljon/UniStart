@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using UniStart.Data;
@@ -11,9 +12,11 @@ using UniStart.Data;
 namespace UniStart.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260121160009_AddExtendedUserPreferences")]
+    partial class AddExtendedUserPreferences
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -433,7 +436,7 @@ namespace UniStart.Migrations
                             SessionTimeout = 30,
                             SiteDescription = "��������������� ��������� ��� �������� � ������� �������� � ������",
                             SiteName = "UniStart",
-                            UpdatedAt = new DateTime(2026, 1, 21, 18, 22, 42, 939, DateTimeKind.Utc).AddTicks(7103)
+                            UpdatedAt = new DateTime(2026, 1, 21, 16, 0, 7, 861, DateTimeKind.Utc).AddTicks(4531)
                         });
                 });
 
@@ -1609,46 +1612,6 @@ namespace UniStart.Migrations
                     b.ToTable("UserQuizAttempts");
                 });
 
-            modelBuilder.Entity("UniStart.Models.Reference.City", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("CountryId")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<string>("NameEn")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<int?>("Population")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Region")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CountryId");
-
-                    b.ToTable("Cities");
-                });
-
             modelBuilder.Entity("UniStart.Models.Reference.Country", b =>
                 {
                     b.Property<int>("Id")
@@ -1800,8 +1763,9 @@ namespace UniStart.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<int?>("CityId")
-                        .HasColumnType("integer");
+                    b.Property<string>("City")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<int>("CountryId")
                         .HasColumnType("integer");
@@ -1845,8 +1809,6 @@ namespace UniStart.Migrations
                         .HasColumnType("character varying(200)");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("CityId");
 
                     b.HasIndex("CountryId");
 
@@ -2547,17 +2509,6 @@ namespace UniStart.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("UniStart.Models.Reference.City", b =>
-                {
-                    b.HasOne("UniStart.Models.Reference.Country", "Country")
-                        .WithMany("Cities")
-                        .HasForeignKey("CountryId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Country");
-                });
-
             modelBuilder.Entity("UniStart.Models.Reference.ExamType", b =>
                 {
                     b.HasOne("UniStart.Models.Reference.Country", "DefaultCountry")
@@ -2587,17 +2538,11 @@ namespace UniStart.Migrations
 
             modelBuilder.Entity("UniStart.Models.Reference.University", b =>
                 {
-                    b.HasOne("UniStart.Models.Reference.City", "City")
-                        .WithMany("Universities")
-                        .HasForeignKey("CityId");
-
                     b.HasOne("UniStart.Models.Reference.Country", "Country")
                         .WithMany("Universities")
                         .HasForeignKey("CountryId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.Navigation("City");
 
                     b.Navigation("Country");
                 });
@@ -2788,15 +2733,8 @@ namespace UniStart.Migrations
                     b.Navigation("UserAnswers");
                 });
 
-            modelBuilder.Entity("UniStart.Models.Reference.City", b =>
-                {
-                    b.Navigation("Universities");
-                });
-
             modelBuilder.Entity("UniStart.Models.Reference.Country", b =>
                 {
-                    b.Navigation("Cities");
-
                     b.Navigation("Exams");
 
                     b.Navigation("Universities");

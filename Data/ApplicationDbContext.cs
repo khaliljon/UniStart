@@ -48,6 +48,7 @@ namespace UniStart.Data
         // Subjects and new models
         public DbSet<Subject> Subjects { get; set; } = null!;
         public DbSet<Country> Countries { get; set; } = null!;
+        public DbSet<City> Cities { get; set; } = null!;
         public DbSet<University> Universities { get; set; } = null!;
         public DbSet<ExamType> ExamTypes { get; set; } = null!;
         

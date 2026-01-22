@@ -185,4 +185,57 @@ namespace UniStart.DTOs
         
         public bool IsActive { get; set; }
     }
+
+    // ============ City DTOs ============
+    public class CityDto
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string? NameEn { get; set; }
+        public int CountryId { get; set; }
+        public string CountryName { get; set; } = string.Empty;
+        public string? CountryCode { get; set; }
+        public string? Region { get; set; }
+        public int? Population { get; set; }
+        public bool IsActive { get; set; }
+        public DateTime CreatedAt { get; set; }
+    }
+
+    public class CreateCityDto
+    {
+        [Required(ErrorMessage = "Название города обязательно")]
+        [StringLength(100)]
+        public string Name { get; set; } = string.Empty;
+        
+        [StringLength(100)]
+        public string? NameEn { get; set; }
+        
+        [Required(ErrorMessage = "Страна обязательна")]
+        public int CountryId { get; set; }
+        
+        [StringLength(100)]
+        public string? Region { get; set; }
+        
+        public int? Population { get; set; }
+    }
+
+    public class UpdateCityDto
+    {
+        [Required]
+        [StringLength(100)]
+        public string Name { get; set; } = string.Empty;
+        
+        [StringLength(100)]
+        public string? NameEn { get; set; }
+        
+        [Required]
+        public int CountryId { get; set; }
+        
+        [StringLength(100)]
+        public string? Region { get; set; }
+        
+        public int? Population { get; set; }
+        
+        public bool IsActive { get; set; }
+    }
 }

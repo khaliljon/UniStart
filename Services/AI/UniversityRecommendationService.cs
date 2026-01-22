@@ -377,10 +377,10 @@ public class UniversityRecommendationService : IUniversityRecommendationService
         // 4. Локация (10% веса)
         if (!string.IsNullOrEmpty(profile.PreferredCity))
         {
-            if (university.City?.Contains(profile.PreferredCity, StringComparison.OrdinalIgnoreCase) == true)
+            if (university.City?.Name?.Contains(profile.PreferredCity, StringComparison.OrdinalIgnoreCase) == true)
             {
                 matchScore += 10;
-                reasons.Add($"Университет находится в желаемом городе ({university.City})");
+                reasons.Add($"Университет находится в желаемом городе ({university.City.Name})");
             }
         }
 

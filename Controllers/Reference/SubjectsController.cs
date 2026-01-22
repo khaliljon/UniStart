@@ -25,6 +25,7 @@ public class SubjectsController : ControllerBase
 
     // GET: api/subjects - Получить активные предметы
     [HttpGet]
+    [AllowAnonymous] // Разрешаем всем для onboarding
     public async Task<ActionResult<IEnumerable<Subject>>> GetSubjects()
     {
         var subjects = await _context.Subjects
@@ -35,7 +36,7 @@ public class SubjectsController : ControllerBase
         return Ok(subjects);
     }
 
-    // GET: api/subjects/all - Получить все предметы (включая неактивные)
+    // GET: api/subjects/all - Получить все предметы (включая неактивные) - только для админа
     [HttpGet("all")]
     [Authorize(Roles = "Admin")]
     public async Task<ActionResult<IEnumerable<Subject>>> GetAllSubjects()

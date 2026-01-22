@@ -179,14 +179,6 @@ const FlashcardsPage = () => {
                         </span>
                       </div>
                       
-                      {/* Дата - слева снизу */}
-                      <div className="flex items-center gap-2">
-                        <Clock className="w-4 h-4 text-gray-400 dark:text-gray-500" />
-                        <span className="text-sm text-gray-600 dark:text-gray-400">
-                          {new Date(set.updatedAt).toLocaleDateString('ru-RU')}
-                        </span>
-                      </div>
-                      
                       {/* К повторению - справа снизу */}
                       {(set.cardsToReview || 0) > 0 && (
                         <div className="flex items-center gap-2">
@@ -277,8 +269,8 @@ const FlashcardsPage = () => {
                   </div>
 
                   {/* Дата и статус публикации */}
-                  <div className="mt-4 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700 pt-3">
-                    {(isTeacher || isAdmin) && (
+                  {(isTeacher || isAdmin) && (
+                    <div className="mt-4 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700 pt-3">
                       <span className="flex items-center gap-1">
                         {set.isPublished ? (
                           <span className="flex items-center gap-1 text-green-600 dark:text-green-500">
@@ -292,10 +284,9 @@ const FlashcardsPage = () => {
                           </span>
                         )}
                       </span>
-                    )}
-                    {!(isTeacher || isAdmin) && <div />}
-                    <span>{new Date(set.updatedAt).toLocaleDateString('ru-RU')}</span>
-                  </div>
+                      <span>{new Date(set.updatedAt).toLocaleDateString('ru-RU')}</span>
+                    </div>
+                  )}
                 </Card>
               </motion.div>
             ))

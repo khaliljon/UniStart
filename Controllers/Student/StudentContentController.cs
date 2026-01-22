@@ -177,10 +177,15 @@ namespace UniStart.Controllers.Student
                     e.Id,
                     e.Title,
                     e.Description,
+                    Subjects = e.Subjects.Select(s => new { s.Id, s.Name }).ToList(),
                     e.Difficulty,
                     e.TimeLimit,
                     QuestionCount = e.Questions.Count,
+                    MaxScore = e.Questions.Sum(q => q.Points),
+                    e.PassingScore,
+                    e.MaxAttempts,
                     e.IsPublic,
+                    e.IsProctored,
                     e.CreatedAt
                 })
                 .ToListAsync();

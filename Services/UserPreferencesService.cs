@@ -44,6 +44,10 @@ public class UserPreferencesService : IUserPreferencesService
                 ? new List<string>()
                 : JsonSerializer.Deserialize<List<string>>(preferences.StudyDaysJson) ?? new List<string>();
 
+            var preferredLanguages = string.IsNullOrEmpty(preferences.PreferredLanguagesJson)
+                ? new List<string>()
+                : JsonSerializer.Deserialize<List<string>>(preferences.PreferredLanguagesJson) ?? new List<string>();
+
             return new UserPreferencesResponseDto
             {
                 Id = preferences.Id,
@@ -53,6 +57,13 @@ public class UserPreferencesService : IUserPreferencesService
                 TargetUniversityId = preferences.TargetUniversityId,
                 TargetUniversityName = preferences.TargetUniversity?.Name,
                 CareerGoal = preferences.CareerGoal,
+                PreferredCountry = preferences.PreferredCountry,
+                PreferredCity = preferences.PreferredCity,
+                WillingToRelocate = preferences.WillingToRelocate,
+                MaxBudgetPerYear = preferences.MaxBudgetPerYear,
+                InterestedInScholarships = preferences.InterestedInScholarships,
+                PreferredLanguages = preferredLanguages,
+                EnglishLevel = preferences.EnglishLevel,
                 InterestedSubjects = preferences.InterestedSubjects.Select(s => new SubjectDto
                 {
                     Id = s.Id,
@@ -119,6 +130,13 @@ public class UserPreferencesService : IUserPreferencesService
             preferences.TargetExamType = dto.TargetExamType;
             preferences.TargetUniversityId = dto.TargetUniversityId;
             preferences.CareerGoal = dto.CareerGoal;
+            preferences.PreferredCountry = dto.PreferredCountry;
+            preferences.PreferredCity = dto.PreferredCity;
+            preferences.WillingToRelocate = dto.WillingToRelocate;
+            preferences.MaxBudgetPerYear = dto.MaxBudgetPerYear;
+            preferences.InterestedInScholarships = dto.InterestedInScholarships;
+            preferences.PreferredLanguagesJson = JsonSerializer.Serialize(dto.PreferredLanguages);
+            preferences.EnglishLevel = dto.EnglishLevel;
             preferences.PrefersFlashcards = dto.PrefersFlashcards;
             preferences.PrefersQuizzes = dto.PrefersQuizzes;
             preferences.PrefersExams = dto.PrefersExams;
@@ -222,6 +240,59 @@ public class UserPreferencesService : IUserPreferencesService
         {
             _logger.LogError(ex, "Ошибка при завершении Onboarding для User={UserId}", userId);
             return false;
+        }
+    }
+
+    public async Task<UserPreferencesResponseDto> SkipOnboardingAsync(string userId)
+    {
+        try
+        {
+            // Проверяем, есть ли уже предпочтения
+            var existing = await _context.UserPreferences
+                .FirstOrDefaultAsync(up => up.UserId == userId);
+
+            if (existing != null)
+            {
+                // Если есть, просто помечаем onboarding как завершенный
+                existing.OnboardingCompleted = true;
+                existing.UpdatedAt = DateTime.UtcNow;
+                await _context.SaveChangesAsync();
+                
+                return (await GetUserPreferencesAsync(userId))!;
+            }
+
+            // Создаем предпочтения по умолчанию
+            var defaultPreferences = new UserPreferences
+            {
+                UserId = userId,
+                LearningGoal = "SelfStudy",
+                PreferredDifficulty = 2,
+                DailyStudyTimeMinutes = 30,
+                PrefersFlashcards = true,
+                PrefersQuizzes = true,
+                PrefersExams = false,
+                MotivationLevel = 3,
+                NeedsReminders = true,
+                InterestedInScholarships = true,
+                WillingToRelocate = false,
+                StudyDaysJson = "[\"Mon\",\"Tue\",\"Wed\",\"Thu\",\"Fri\"]",
+                PreferredLanguagesJson = "[\"Russian\"]",
+                OnboardingCompleted = true,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            _context.UserPreferences.Add(defaultPreferences);
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Onboarding пропущен для User={UserId}, созданы предпочтения по умолчанию", userId);
+            
+            return (await GetUserPreferencesAsync(userId))!;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Ошибка при пропуске Onboarding для User={UserId}", userId);
+            throw;
         }
     }
 

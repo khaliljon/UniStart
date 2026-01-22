@@ -29,6 +29,11 @@ public interface IUserPreferencesService
     Task<bool> CompleteOnboardingAsync(string userId);
     
     /// <summary>
+    /// Пропустить Onboarding (создает предпочтения по умолчанию)
+    /// </summary>
+    Task<UserPreferencesResponseDto> SkipOnboardingAsync(string userId);
+    
+    /// <summary>
     /// Получить рекомендуемые предметы на основе целей пользователя
     /// </summary>
     Task<List<SubjectDto>> GetRecommendedSubjectsAsync(string userId);

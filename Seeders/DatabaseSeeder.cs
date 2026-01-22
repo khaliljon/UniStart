@@ -591,17 +591,166 @@ namespace UniStart.Seeders
                 };
 
                 await context.Countries.AddRangeAsync(countries);
-            await context.SaveChangesAsync();
+                await context.SaveChangesAsync();
                 Console.WriteLine($"✅ Создано {countries.Count} стран");
             }
+
+            // Загружаем страны для дальнейшего использования
+            var kazakhstan = await context.Countries.FirstOrDefaultAsync(c => c.Code == "KZ");
+            var russia = await context.Countries.FirstOrDefaultAsync(c => c.Code == "RU");
+            var china = await context.Countries.FirstOrDefaultAsync(c => c.Code == "CN");
+            var usa = await context.Countries.FirstOrDefaultAsync(c => c.Code == "US");
+            var uk = await context.Countries.FirstOrDefaultAsync(c => c.Code == "GB");
+            var germany = await context.Countries.FirstOrDefaultAsync(c => c.Code == "DE");
+            var france = await context.Countries.FirstOrDefaultAsync(c => c.Code == "FR");
+            var canada = await context.Countries.FirstOrDefaultAsync(c => c.Code == "CA");
+            var australia = await context.Countries.FirstOrDefaultAsync(c => c.Code == "AU");
+            var korea = await context.Countries.FirstOrDefaultAsync(c => c.Code == "KR");
+
+            // Города
+            if (!context.Cities.Any())
+            {
+
+                var cities = new List<City>();
+
+                // Казахстан
+                if (kazakhstan != null)
+                {
+                    cities.AddRange(new[]
+                    {
+                        new City { Name = "Алматы", NameEn = "Almaty", CountryId = kazakhstan.Id, Population = 2000000, IsActive = true },
+                        new City { Name = "Астана", NameEn = "Astana", CountryId = kazakhstan.Id, Population = 1200000, IsActive = true },
+                        new City { Name = "Шымкент", NameEn = "Shymkent", CountryId = kazakhstan.Id, Population = 1000000, IsActive = true },
+                        new City { Name = "Караганда", NameEn = "Karaganda", CountryId = kazakhstan.Id, Population = 500000, IsActive = true },
+                        new City { Name = "Актобе", NameEn = "Aktobe", CountryId = kazakhstan.Id, Population = 400000, IsActive = true },
+                        new City { Name = "Тараз", NameEn = "Taraz", CountryId = kazakhstan.Id, Population = 350000, IsActive = true },
+                    });
+                }
+
+                // Россия
+                if (russia != null)
+                {
+                    cities.AddRange(new[]
+                    {
+                        new City { Name = "Москва", NameEn = "Moscow", CountryId = russia.Id, Population = 12000000, IsActive = true },
+                        new City { Name = "Санкт-Петербург", NameEn = "Saint Petersburg", CountryId = russia.Id, Population = 5000000, IsActive = true },
+                        new City { Name = "Новосибирск", NameEn = "Novosibirsk", CountryId = russia.Id, Population = 1600000, IsActive = true },
+                        new City { Name = "Екатеринбург", NameEn = "Yekaterinburg", CountryId = russia.Id, Population = 1500000, IsActive = true },
+                        new City { Name = "Казань", NameEn = "Kazan", CountryId = russia.Id, Population = 1200000, IsActive = true },
+                    });
+                }
+
+                // Китай
+                if (china != null)
+                {
+                    cities.AddRange(new[]
+                    {
+                        new City { Name = "Пекин", NameEn = "Beijing", CountryId = china.Id, Population = 21000000, IsActive = true },
+                        new City { Name = "Шанхай", NameEn = "Shanghai", CountryId = china.Id, Population = 24000000, IsActive = true },
+                        new City { Name = "Гуанчжоу", NameEn = "Guangzhou", CountryId = china.Id, Population = 15000000, IsActive = true },
+                        new City { Name = "Шэньчжэнь", NameEn = "Shenzhen", CountryId = china.Id, Population = 12000000, IsActive = true },
+                    });
+                }
+
+                // США
+                if (usa != null)
+                {
+                    cities.AddRange(new[]
+                    {
+                        new City { Name = "Нью-Йорк", NameEn = "New York", CountryId = usa.Id, Population = 8000000, IsActive = true },
+                        new City { Name = "Лос-Анджелес", NameEn = "Los Angeles", CountryId = usa.Id, Population = 4000000, IsActive = true },
+                        new City { Name = "Чикаго", NameEn = "Chicago", CountryId = usa.Id, Population = 2700000, IsActive = true },
+                        new City { Name = "Бостон", NameEn = "Boston", CountryId = usa.Id, Population = 700000, IsActive = true },
+                        new City { Name = "Сан-Франциско", NameEn = "San Francisco", CountryId = usa.Id, Population = 900000, IsActive = true },
+                    });
+                }
+
+                // Великобритания
+                if (uk != null)
+                {
+                    cities.AddRange(new[]
+                    {
+                        new City { Name = "Лондон", NameEn = "London", CountryId = uk.Id, Population = 9000000, IsActive = true },
+                        new City { Name = "Манчестер", NameEn = "Manchester", CountryId = uk.Id, Population = 550000, IsActive = true },
+                        new City { Name = "Бирмингем", NameEn = "Birmingham", CountryId = uk.Id, Population = 1100000, IsActive = true },
+                        new City { Name = "Эдинбург", NameEn = "Edinburgh", CountryId = uk.Id, Population = 500000, IsActive = true },
+                    });
+                }
+
+                // Германия
+                if (germany != null)
+                {
+                    cities.AddRange(new[]
+                    {
+                        new City { Name = "Берлин", NameEn = "Berlin", CountryId = germany.Id, Population = 3600000, IsActive = true },
+                        new City { Name = "Мюнхен", NameEn = "Munich", CountryId = germany.Id, Population = 1500000, IsActive = true },
+                        new City { Name = "Франкфурт", NameEn = "Frankfurt", CountryId = germany.Id, Population = 750000, IsActive = true },
+                        new City { Name = "Гамбург", NameEn = "Hamburg", CountryId = germany.Id, Population = 1800000, IsActive = true },
+                    });
+                }
+
+                // Франция
+                if (france != null)
+                {
+                    cities.AddRange(new[]
+                    {
+                        new City { Name = "Париж", NameEn = "Paris", CountryId = france.Id, Population = 2200000, IsActive = true },
+                        new City { Name = "Марсель", NameEn = "Marseille", CountryId = france.Id, Population = 870000, IsActive = true },
+                        new City { Name = "Лион", NameEn = "Lyon", CountryId = france.Id, Population = 520000, IsActive = true },
+                    });
+                }
+
+                // Канада
+                if (canada != null)
+                {
+                    cities.AddRange(new[]
+                    {
+                        new City { Name = "Торонто", NameEn = "Toronto", CountryId = canada.Id, Population = 2900000, IsActive = true },
+                        new City { Name = "Ванкувер", NameEn = "Vancouver", CountryId = canada.Id, Population = 675000, IsActive = true },
+                        new City { Name = "Монреаль", NameEn = "Montreal", CountryId = canada.Id, Population = 1700000, IsActive = true },
+                    });
+                }
+
+                // Австралия
+                if (australia != null)
+                {
+                    cities.AddRange(new[]
+                    {
+                        new City { Name = "Сидней", NameEn = "Sydney", CountryId = australia.Id, Population = 5300000, IsActive = true },
+                        new City { Name = "Мельбурн", NameEn = "Melbourne", CountryId = australia.Id, Population = 5000000, IsActive = true },
+                        new City { Name = "Брисбен", NameEn = "Brisbane", CountryId = australia.Id, Population = 2500000, IsActive = true },
+                    });
+                }
+
+                // Южная Корея
+                if (korea != null)
+                {
+                    cities.AddRange(new[]
+                    {
+                        new City { Name = "Сеул", NameEn = "Seoul", CountryId = korea.Id, Population = 10000000, IsActive = true },
+                        new City { Name = "Пусан", NameEn = "Busan", CountryId = korea.Id, Population = 3400000, IsActive = true },
+                        new City { Name = "Инчхон", NameEn = "Incheon", CountryId = korea.Id, Population = 3000000, IsActive = true },
+                    });
+                }
+
+                await context.Cities.AddRangeAsync(cities);
+                await context.SaveChangesAsync();
+                Console.WriteLine($"✅ Создано {cities.Count} городов");
+            }
+
+            // Загружаем города для использования в университетах
+            var almaty = kazakhstan != null ? await context.Cities.FirstOrDefaultAsync(c => c.CountryId == kazakhstan.Id && c.Name == "Алматы") : null;
+            var astana = kazakhstan != null ? await context.Cities.FirstOrDefaultAsync(c => c.CountryId == kazakhstan.Id && c.Name == "Астана") : null;
+            var moscow = russia != null ? await context.Cities.FirstOrDefaultAsync(c => c.CountryId == russia.Id && c.Name == "Москва") : null;
+            var stPetersburg = russia != null ? await context.Cities.FirstOrDefaultAsync(c => c.CountryId == russia.Id && c.Name == "Санкт-Петербург") : null;
+            var cambridgeUS = usa != null ? await context.Cities.FirstOrDefaultAsync(c => c.CountryId == usa.Id && c.NameEn == "Cambridge") : null;
+            var oxford = uk != null ? await context.Cities.FirstOrDefaultAsync(c => c.CountryId == uk.Id && c.NameEn == "Oxford") : null;
+            var cambridgeUK = uk != null ? await context.Cities.FirstOrDefaultAsync(c => c.CountryId == uk.Id && c.NameEn == "Cambridge") : null;
+            var beijing = china != null ? await context.Cities.FirstOrDefaultAsync(c => c.CountryId == china.Id && c.Name == "Пекин") : null;
 
             // Типы экзаменов
             if (!context.ExamTypes.Any())
             {
-                var kazakhstan = await context.Countries.FirstOrDefaultAsync(c => c.Code == "KZ");
-                var russia = await context.Countries.FirstOrDefaultAsync(c => c.Code == "RU");
-                var china = await context.Countries.FirstOrDefaultAsync(c => c.Code == "CN");
-                var usa = await context.Countries.FirstOrDefaultAsync(c => c.Code == "US");
 
                 var examTypes = new List<ExamType>
                 {
@@ -705,12 +854,6 @@ namespace UniStart.Seeders
             // Университеты
             if (!context.Universities.Any())
             {
-                var kazakhstan = await context.Countries.FirstOrDefaultAsync(c => c.Code == "KZ");
-                var russia = await context.Countries.FirstOrDefaultAsync(c => c.Code == "RU");
-                var usa = await context.Countries.FirstOrDefaultAsync(c => c.Code == "US");
-                var uk = await context.Countries.FirstOrDefaultAsync(c => c.Code == "GB");
-                var china = await context.Countries.FirstOrDefaultAsync(c => c.Code == "CN");
-
                 var universities = new List<University>();
 
                 // Казахстанские университеты
@@ -722,7 +865,7 @@ namespace UniStart.Seeders
                         {
                             Name = "Назарбаев Университет",
                             NameEn = "Nazarbayev University",
-                            City = "Астана",
+                            CityId = astana?.Id,
                             Description = "Первый автономный исследовательский университет Казахстана",
                             Website = "https://nu.edu.kz",
                             Type = UniversityType.International,
@@ -734,7 +877,7 @@ namespace UniStart.Seeders
                         {
                             Name = "Казахский Национальный Университет имени аль-Фараби",
                             NameEn = "Al-Farabi Kazakh National University",
-                            City = "Алматы",
+                            CityId = almaty?.Id,
                             Description = "Крупнейший классический университет Казахстана",
                             Website = "https://www.kaznu.kz",
                             Type = UniversityType.Public,
@@ -746,7 +889,7 @@ namespace UniStart.Seeders
                         {
                             Name = "Казахстанско-Британский Технический Университет",
                             NameEn = "Kazakh-British Technical University",
-                            City = "Алматы",
+                            CityId = almaty?.Id,
                             Description = "Технический университет с британскими образовательными стандартами",
                             Website = "https://kbtu.edu.kz",
                             Type = UniversityType.Private,
@@ -758,7 +901,7 @@ namespace UniStart.Seeders
                         {
                             Name = "Евразийский Национальный Университет имени Л.Н. Гумилева",
                             NameEn = "L.N. Gumilyov Eurasian National University",
-                            City = "Астана",
+                            CityId = astana?.Id,
                             Description = "Один из ведущих университетов Казахстана",
                             Website = "https://www.enu.kz",
                             Type = UniversityType.Public,
@@ -770,7 +913,7 @@ namespace UniStart.Seeders
                         {
                             Name = "Международный Университет Информационных Технологий",
                             NameEn = "International IT University",
-                            City = "Алматы",
+                            CityId = almaty?.Id,
                             Description = "Специализированный IT-университет",
                             Website = "https://iitu.edu.kz",
                             Type = UniversityType.Private,
@@ -790,7 +933,7 @@ namespace UniStart.Seeders
                         {
                             Name = "Московский Государственный Университет имени М.В. Ломоносова",
                             NameEn = "Lomonosov Moscow State University",
-                            City = "Москва",
+                            CityId = moscow?.Id,
                             Description = "Старейший и крупнейший классический университет России",
                             Website = "https://www.msu.ru",
                             Type = UniversityType.Public,
@@ -802,7 +945,7 @@ namespace UniStart.Seeders
                         {
                             Name = "Санкт-Петербургский Государственный Университет",
                             NameEn = "Saint Petersburg State University",
-                            City = "Санкт-Петербург",
+                            CityId = stPetersburg?.Id,
                             Description = "Один из старейших университетов России",
                             Website = "https://spbu.ru",
                             Type = UniversityType.Public,
@@ -822,7 +965,7 @@ namespace UniStart.Seeders
                         {
                             Name = "Гарвардский Университет",
                             NameEn = "Harvard University",
-                            City = "Cambridge, MA",
+                            CityId = cambridgeUS?.Id,
                             Description = "Старейший университет США, входит в Лигу Плюща",
                             Website = "https://www.harvard.edu",
                             Type = UniversityType.Private,
@@ -834,7 +977,7 @@ namespace UniStart.Seeders
                         {
                             Name = "Массачусетский Технологический Институт",
                             NameEn = "Massachusetts Institute of Technology",
-                            City = "Cambridge, MA",
+                            CityId = cambridgeUS?.Id,
                             Description = "Ведущий технический университет мира",
                             Website = "https://www.mit.edu",
                             Type = UniversityType.Private,
@@ -854,7 +997,7 @@ namespace UniStart.Seeders
                         {
                             Name = "Оксфордский Университет",
                             NameEn = "University of Oxford",
-                            City = "Oxford",
+                            CityId = oxford?.Id,
                             Description = "Старейший университет англоязычного мира",
                             Website = "https://www.ox.ac.uk",
                             Type = UniversityType.Public,
@@ -866,7 +1009,7 @@ namespace UniStart.Seeders
                         {
                             Name = "Кембриджский Университет",
                             NameEn = "University of Cambridge",
-                            City = "Cambridge",
+                            CityId = cambridgeUK?.Id,
                             Description = "Один из старейших и престижнейших университетов мира",
                             Website = "https://www.cam.ac.uk",
                             Type = UniversityType.Public,
@@ -886,7 +1029,7 @@ namespace UniStart.Seeders
                         {
                             Name = "Университет Цинхуа",
                             NameEn = "Tsinghua University",
-                            City = "Пекин",
+                            CityId = beijing?.Id,
                             Description = "Ведущий технический университет Китая",
                             Website = "https://www.tsinghua.edu.cn",
                             Type = UniversityType.Public,

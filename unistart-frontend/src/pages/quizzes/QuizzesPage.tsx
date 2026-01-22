@@ -15,8 +15,8 @@ import {
   Trash2,
   Upload,
   FileX,
-  // CheckCircle, // Unused
-  // AlertCircle, // Unused
+  CheckCircle,
+  AlertCircle,
   TrendingUp,
   // GraduationCap, // Unused
   Layers,
@@ -1094,6 +1094,23 @@ const ListView = ({
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
+                    </div>
+                    {/* Статус публикации */}
+                    <div className="mt-2 pt-2 border-t border-gray-200 flex items-center justify-between text-xs text-gray-500">
+                      <span className="flex items-center gap-1">
+                        {quiz.isPublished ? (
+                          <span className="flex items-center gap-1 text-green-600">
+                            <CheckCircle className="w-3 h-3" />
+                            Опубликован
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1 text-gray-600">
+                            <AlertCircle className="w-3 h-3" />
+                            Черновик
+                          </span>
+                        )}
+                      </span>
+                      <span>{new Date(quiz.createdAt).toLocaleDateString('ru-RU')}</span>
                     </div>
                   </div>
                 ) : (

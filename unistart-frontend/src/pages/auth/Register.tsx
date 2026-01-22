@@ -31,7 +31,8 @@ const Register = () => {
 
     try {
       await register(formData)
-      navigate('/dashboard')
+      // Перенаправляем на onboarding после регистрации
+      navigate('/onboarding')
     } catch (err: any) {
       setError(err.response?.data?.message || 'Ошибка при регистрации')
     } finally {

@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { authService } from '../../services/authService';
 import { User } from '../../types';
-import { User as UserIcon, Mail, Calendar, Award, Edit2, Lock, Check, X } from 'lucide-react';
+import { User as UserIcon, Mail, Calendar, Award, Edit2, Lock, Check, X, Settings } from 'lucide-react';
 
 export default function ProfilePage() {
   const { refreshUser } = useAuth();
@@ -114,6 +115,20 @@ export default function ProfilePage() {
         <p className="mt-2 text-gray-600 dark:text-gray-400">
           Управляйте своей учетной записью и персональными настройками
         </p>
+      </div>
+
+      {/* Быстрые ссылки */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <Link
+          to="/profile/preferences"
+          className="flex items-center gap-3 p-4 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-lg shadow-md hover:shadow-lg transition-all"
+        >
+          <Settings className="w-6 h-6" />
+          <div>
+            <h3 className="font-semibold">Настройки предпочтений</h3>
+            <p className="text-sm opacity-90">Управление рекомендациями</p>
+          </div>
+        </Link>
       </div>
 
       {/* Сообщения об ошибках и успехе */}

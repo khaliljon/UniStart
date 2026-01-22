@@ -9,6 +9,7 @@ using UniStart.Models.Flashcards;
 using UniStart.Models.Reference;
 using UniStart.Models.Learning;
 using UniStart.Models.Social;
+using UniStart.Services;
 
 namespace UniStart.Controllers;
 
@@ -18,13 +19,16 @@ namespace UniStart.Controllers;
 public class ProfileController : ControllerBase
 {
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly IUserPreferencesService _preferencesService;
     private readonly ILogger<ProfileController> _logger;
 
     public ProfileController(
         UserManager<ApplicationUser> userManager,
+        IUserPreferencesService preferencesService,
         ILogger<ProfileController> logger)
     {
         _userManager = userManager;
+        _preferencesService = preferencesService;
         _logger = logger;
     }
 
@@ -44,6 +48,7 @@ public class ProfileController : ControllerBase
             return NotFound(new { Message = "Пользователь не найден" });
 
         var roles = await _userManager.GetRolesAsync(user);
+        var preferences = await _preferencesService.GetUserPreferencesAsync(userId);
 
         return Ok(new
         {
@@ -56,7 +61,8 @@ public class ProfileController : ControllerBase
             user.TotalCardsStudied,
             user.TotalQuizzesTaken,
             user.EmailConfirmed,
-            Roles = roles
+            Roles = roles,
+            Preferences = preferences
         });
     }
 

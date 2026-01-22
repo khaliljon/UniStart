@@ -55,6 +55,10 @@ import AdminAIFlashcardsPage from './pages/admin/AdminAIFlashcardsPage'
 import StudentProgressPage from './pages/student/StudentProgressPage'
 import StudentAchievementsPage from './pages/student/StudentAchievementsPage'
 import StudentLeaderboardPage from './pages/student/StudentLeaderboardPage'
+import OnboardingPage from './pages/student/OnboardingPage'
+
+// Profile Pages
+import PreferencesPage from './pages/profile/PreferencesPage'
 
 // AI Pages
 import AIDashboardPage from './pages/ai/AIDashboardPage'
@@ -71,12 +75,30 @@ function App() {
 
         {/* Защищенные страницы с Layout */}
         <Route element={<Layout />}>
+          {/* Onboarding (без Layout для полного экрана) */}
+          <Route
+            path="/onboarding"
+            element={
+              <PrivateRoute>
+                <OnboardingPage />
+              </PrivateRoute>
+            }
+          />
+          
           {/* Защищенные страницы */}
           <Route
             path="/profile"
             element={
               <PrivateRoute>
                 <ProfilePage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/profile/preferences"
+            element={
+              <PrivateRoute>
+                <PreferencesPage />
               </PrivateRoute>
             }
           />
