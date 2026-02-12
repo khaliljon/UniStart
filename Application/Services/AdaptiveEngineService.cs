@@ -225,4 +225,28 @@ public class AdaptiveEngineService : IAdaptiveEngineService
             question.AnswerOptions.Select(o => new AnswerOptionDto(o.Id, o.Text))
         );
     }
+
+    /// <summary>
+    /// Resets user's test progress by clearing answers and skill profiles
+    /// </summary>
+    public async Task ResetUserProgressAsync(int userId)
+    {
+        // Remove all user answers
+        var userAnswers = await _context.UserAnswers
+            .Where(ua => ua.UserId == userId)
+            .ToListAsync();
+        _context.UserAnswers.RemoveRange(userAnswers);
+
+        // Reset skill profiles to default level (50)
+        var skillProfiles = await _context.UserSkillProfiles
+            .Where(sp => sp.UserId == userId)
+            .ToListAsync();
+        foreach (var profile in skillProfiles)
+        {
+            profile.Level = 50;
+            profile.LastUpdated = DateTime.UtcNow;
+        }
+
+        await _unitOfWork.SaveChangesAsync();
+    }
 }

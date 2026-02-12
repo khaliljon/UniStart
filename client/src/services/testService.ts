@@ -22,4 +22,8 @@ export const testService = {
     const response = await api.get<UserSkillProfile[]>('/test/skill-profiles');
     return response.data;
   },
+
+  async resetProgress(): Promise<void> {
+    await api.post('/test/reset');
+  },
 };

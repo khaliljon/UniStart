@@ -7,6 +7,7 @@ import {
   submitAnswer,
   selectAnswer,
   clearAnswerResult,
+  resetTestProgress,
 } from '../store/slices/testSlice';
 
 function TestPage() {
@@ -62,6 +63,11 @@ function TestPage() {
     navigate('/analytics');
   };
 
+  const handleResetTest = async () => {
+    await dispatch(resetTestProgress());
+    dispatch(fetchNextQuestion({ examTypeCodes: selectedExams }));
+  };
+
   if (selectedExams.length === 0) {
     return null;
   }
@@ -79,9 +85,14 @@ function TestPage() {
           <p style={{ marginBottom: '2rem' }}>
             Questions answered: <strong>{questionsAnswered}</strong>
           </p>
-          <button onClick={handleFinishTest} className="btn btn-primary">
-            View Analytics
-          </button>
+          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+            <button onClick={handleFinishTest} className="btn btn-primary">
+              View Analytics
+            </button>
+            <button onClick={handleResetTest} className="btn btn-secondary" disabled={isLoading}>
+              {isLoading ? 'Resetting...' : 'Restart Test'}
+            </button>
+          </div>
         </div>
       </div>
     );

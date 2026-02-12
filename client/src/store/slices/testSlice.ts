@@ -38,6 +38,13 @@ export const submitAnswer = createAsyncThunk(
   }
 );
 
+export const resetTestProgress = createAsyncThunk(
+  'test/resetProgress',
+  async () => {
+    await testService.resetProgress();
+  }
+);
+
 const testSlice = createSlice({
   name: 'test',
   initialState,
@@ -86,6 +93,22 @@ const testSlice = createSlice({
       .addCase(submitAnswer.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.error.message || 'Failed to submit answer';
+      })
+      .addCase(resetTestProgress.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(resetTestProgress.fulfilled, (state) => {
+        state.isLoading = false;
+        state.currentQuestion = null;
+        state.selectedAnswer = null;
+        state.answerResult = null;
+        state.questionsAnswered = 0;
+        state.testCompleted = false;
+        state.error = null;
+      })
+      .addCase(resetTestProgress.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.error.message || 'Failed to reset progress';
       });
   },
 });

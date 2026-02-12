@@ -72,6 +72,18 @@ public class TestController : ControllerBase
         return Ok(profiles);
     }
 
+    /// <summary>
+    /// Reset user's test progress (clear answers) to allow retaking the test
+    /// </summary>
+    [HttpPost("reset")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> ResetTest()
+    {
+        var userId = GetCurrentUserId();
+        await _adaptiveEngine.ResetUserProgressAsync(userId);
+        return Ok(new { message = "Test progress reset successfully" });
+    }
+
     private int GetCurrentUserId()
     {
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier) 

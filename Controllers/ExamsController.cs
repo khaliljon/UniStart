@@ -23,6 +23,7 @@ public class ExamsController : ControllerBase
     /// Get all available exams
     /// </summary>
     [HttpGet]
+    [AllowAnonymous]
     [ProducesResponseType(typeof(IEnumerable<ExamTypeDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAllExams()
     {

@@ -34,4 +34,9 @@ public interface IAdaptiveEngineService
     /// Gets all skill profiles for a user
     /// </summary>
     Task<IEnumerable<UserSkillProfileDto>> GetUserSkillProfilesAsync(int userId);
+
+    /// <summary>
+    /// Resets user's test progress (clears answers and skill profiles)
+    /// </summary>
+    Task ResetUserProgressAsync(int userId);
 }

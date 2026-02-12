@@ -129,8 +129,10 @@ if (app.Environment.IsDevelopment())
 {
     using var scope = app.Services.CreateScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<UniStartDbContext>();
-    dbContext.Database.Migrate();
-    await UniStart.Infrastructure.DatabaseSeeder.SeedAsync(dbContext);
+    await dbContext.Database.MigrateAsync();
+    
+    var seeder = new DatabaseSeeder(dbContext);
+    await seeder.SeedAsync();
 }
 
 await app.RunAsync();
