@@ -13,6 +13,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{7FDF7A4A-5
 		DOMAIN_MODEL.md = DOMAIN_MODEL.md
 		FRONTEND_STRUCTURE.md = FRONTEND_STRUCTURE.md
 		README.md = README.md
+		RULES.md = RULES.md
 	EndProjectSection
 EndProject
 Global

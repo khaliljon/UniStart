@@ -1,0 +1,37 @@
+using UniStart.Application.DTOs;
+using UniStart.Domain.Entities;
+
+namespace UniStart.Application.Interfaces;
+
+public interface IAdaptiveEngineService
+{
+    /// <summary>
+    /// Gets the appropriate difficulty level based on user's skill level
+    /// </summary>
+    QuestionDifficulty GetDifficultyForSkillLevel(int skillLevel);
+
+    /// <summary>
+    /// Selects the next question for the user based on their skill profile and exam selection
+    /// </summary>
+    Task<QuestionDto?> GetNextQuestionAsync(int userId, string[] examTypeCodes, int? sectionId = null);
+
+    /// <summary>
+    /// Processes a user's answer and updates their skill profile
+    /// </summary>
+    Task<AnswerResultDto> ProcessAnswerAsync(int userId, SubmitAnswerDto answer);
+
+    /// <summary>
+    /// Updates user's skill level based on answer correctness
+    /// </summary>
+    Task<(int newLevel, int change)> UpdateSkillLevelAsync(int userId, int skillId, bool isCorrect);
+
+    /// <summary>
+    /// Gets user's current skill profile for a specific skill
+    /// </summary>
+    Task<UserSkillProfileDto?> GetUserSkillProfileAsync(int userId, int skillId);
+
+    /// <summary>
+    /// Gets all skill profiles for a user
+    /// </summary>
+    Task<IEnumerable<UserSkillProfileDto>> GetUserSkillProfilesAsync(int userId);
+}

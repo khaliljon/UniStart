@@ -1,0 +1,16 @@
+namespace UniStart.Application.DTOs;
+
+// Adaptive Test Session DTOs
+public record StartTestSessionDto(
+    string[] ExamTypeCodes,
+    int? SectionId = null
+);
+
+public record TestSessionDto(
+    string SessionId,
+    string[] ExamTypeCodes,
+    int? SectionId,
+    int CurrentQuestionIndex,
+    int TotalQuestions,
+    bool IsCompleted
+);
