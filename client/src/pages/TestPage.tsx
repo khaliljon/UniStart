@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '../hooks/useAppDispatch';
 import { useAppSelector } from '../hooks/useAppSelector';
@@ -8,13 +8,18 @@ import {
   selectAnswer,
   clearAnswerResult,
   resetTestProgress,
+  setTestMode,
+  decrementTimer,
+  resetTimer,
 } from '../store/slices/testSlice';
+import type { TestMode } from '../types';
 
 function TestPage() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { selectedExams } = useAppSelector((state) => state.exam);
   const {
+    testMode,
     currentQuestion,
     selectedAnswer,
     answerResult,
@@ -23,18 +28,51 @@ function TestPage() {
     testCompleted,
     isLoading,
     error,
+    timeRemaining,
   } = useAppSelector((state) => state.test);
 
   const [showFeedback, setShowFeedback] = useState(false);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Timer effect for exam mode
+  useEffect(() => {
+    if (testMode === 'exam' && timeRemaining !== null && timeRemaining > 0 && !answerResult) {
+      timerRef.current = setInterval(() => {
+        dispatch(decrementTimer());
+      }, 1000);
+    }
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, [testMode, timeRemaining, answerResult, dispatch]);
+
+  // Auto-submit when timer runs out
+  useEffect(() => {
+    if (testMode === 'exam' && timeRemaining === 0 && !answerResult && currentQuestion) {
+      // Auto-submit with current selection or skip
+      if (selectedAnswer) {
+        handleSubmit();
+      } else {
+        // Skip question - move to next
+        dispatch(fetchNextQuestion({ examTypeCodes: selectedExams }));
+        dispatch(resetTimer());
+      }
+    }
+  }, [timeRemaining]);
 
   useEffect(() => {
     if (selectedExams.length === 0) {
       navigate('/');
       return;
     }
+  }, [selectedExams, navigate]);
 
+  const handleSelectMode = (mode: TestMode) => {
+    dispatch(setTestMode(mode));
     dispatch(fetchNextQuestion({ examTypeCodes: selectedExams }));
-  }, [dispatch, selectedExams, navigate]);
+  };
 
   const handleOptionClick = (optionId: number) => {
     if (!answerResult && !isLoading) {
@@ -58,6 +96,9 @@ function TestPage() {
     setShowFeedback(false);
     dispatch(clearAnswerResult());
     dispatch(fetchNextQuestion({ examTypeCodes: selectedExams }));
+    if (testMode === 'exam') {
+      dispatch(resetTimer());
+    }
   };
 
   const handleFinishTest = () => {
@@ -71,6 +112,96 @@ function TestPage() {
 
   if (selectedExams.length === 0) {
     return null;
+  }
+
+  // Mode selection screen
+  if (!testMode) {
+    return (
+      <div className="test-container">
+        <div className="card" style={{ maxWidth: '600px', margin: '0 auto', padding: '2rem' }}>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '0.5rem', textAlign: 'center' }}>
+            Choose Test Mode
+          </h2>
+          <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem', textAlign: 'center' }}>
+            Select how you want to practice
+          </p>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            {/* Practice Mode Card */}
+            <button
+              onClick={() => handleSelectMode('practice')}
+              style={{
+                padding: '1.5rem',
+                border: '2px solid var(--border-color)',
+                borderRadius: '0.75rem',
+                backgroundColor: 'var(--card-background)',
+                cursor: 'pointer',
+                textAlign: 'left',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.borderColor = 'var(--primary-color)';
+                e.currentTarget.style.backgroundColor = 'rgba(99, 102, 241, 0.05)';
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.borderColor = 'var(--border-color)';
+                e.currentTarget.style.backgroundColor = 'var(--card-background)';
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <span style={{ fontSize: '2rem' }}>📚</span>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.125rem', fontWeight: '600' }}>Practice Mode</h3>
+                  <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                    No time limit • Explanations after each answer • Learn at your pace
+                  </p>
+                </div>
+              </div>
+            </button>
+
+            {/* Exam Mode Card */}
+            <button
+              onClick={() => handleSelectMode('exam')}
+              style={{
+                padding: '1.5rem',
+                border: '2px solid var(--border-color)',
+                borderRadius: '0.75rem',
+                backgroundColor: 'var(--card-background)',
+                cursor: 'pointer',
+                textAlign: 'left',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.borderColor = 'var(--warning-color)';
+                e.currentTarget.style.backgroundColor = 'rgba(245, 158, 11, 0.05)';
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.borderColor = 'var(--border-color)';
+                e.currentTarget.style.backgroundColor = 'var(--card-background)';
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <span style={{ fontSize: '2rem' }}>⏱️</span>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.125rem', fontWeight: '600' }}>Exam Mode</h3>
+                  <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                    60 seconds per question • No explanations • Simulate real exam
+                  </p>
+                </div>
+              </div>
+            </button>
+          </div>
+
+          <button
+            onClick={() => navigate('/')}
+            className="btn btn-secondary"
+            style={{ width: '100%', marginTop: '1.5rem' }}
+          >
+            ← Back to Exam Selection
+          </button>
+        </div>
+      </div>
+    );
   }
 
   if (testCompleted) {
@@ -167,6 +298,42 @@ function TestPage() {
   return (
     <div className="test-container">
       <div className="question-card card">
+        {/* Mode Badge + Timer for Exam Mode */}
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center',
+          marginBottom: '1rem',
+          padding: '0.5rem 0',
+          borderBottom: '1px solid var(--border-color)'
+        }}>
+          <span style={{
+            padding: '0.25rem 0.75rem',
+            borderRadius: '1rem',
+            fontSize: '0.75rem',
+            fontWeight: '600',
+            textTransform: 'uppercase',
+            backgroundColor: testMode === 'practice' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)',
+            color: testMode === 'practice' ? 'var(--success-color)' : 'var(--warning-color)',
+          }}>
+            {testMode === 'practice' ? '📚 Practice' : '⏱️ Exam'}
+          </span>
+          
+          {testMode === 'exam' && timeRemaining !== null && (
+            <span style={{
+              padding: '0.25rem 0.75rem',
+              borderRadius: '0.5rem',
+              fontSize: '1rem',
+              fontWeight: '700',
+              backgroundColor: timeRemaining <= 10 ? 'rgba(239, 68, 68, 0.1)' : 'rgba(99, 102, 241, 0.1)',
+              color: timeRemaining <= 10 ? 'var(--error-color)' : 'var(--primary-color)',
+              fontFamily: 'monospace',
+            }}>
+              {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}
+            </span>
+          )}
+        </div>
+
         {/* Progress Bar */}
         <div className="progress-container" style={{ marginBottom: '1.5rem' }}>
           <div style={{ 
@@ -269,7 +436,8 @@ function TestPage() {
               </div>
             )}
 
-            {answerResult.explanation && (
+            {/* Show explanation only in practice mode */}
+            {testMode === 'practice' && answerResult.explanation && (
               <div style={{
                 marginBottom: '0.75rem',
                 padding: '0.75rem',

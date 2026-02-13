@@ -33,6 +33,9 @@ export interface ExamType {
   name: string;
 }
 
+// Test Mode
+export type TestMode = 'practice' | 'exam';
+
 export interface ExamSection {
   id: number;
   examTypeCode: string;

@@ -1,8 +1,9 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { testService } from '../../services/testService';
-import type { Question, AnswerResult, StartTestRequest } from '../../types';
+import type { Question, AnswerResult, StartTestRequest, TestMode } from '../../types';
 
 interface TestState {
+  testMode: TestMode | null;
   currentQuestion: Question | null;
   selectedAnswer: number | null;
   answerResult: AnswerResult | null;
@@ -11,9 +12,11 @@ interface TestState {
   testCompleted: boolean;
   isLoading: boolean;
   error: string | null;
+  timeRemaining: number | null; // seconds remaining for exam mode
 }
 
 const initialState: TestState = {
+  testMode: null,
   currentQuestion: null,
   selectedAnswer: null,
   answerResult: null,
@@ -22,6 +25,7 @@ const initialState: TestState = {
   testCompleted: false,
   isLoading: false,
   error: null,
+  timeRemaining: null,
 };
 
 export const fetchNextQuestion = createAsyncThunk(
@@ -51,10 +55,30 @@ const testSlice = createSlice({
   name: 'test',
   initialState,
   reducers: {
+    setTestMode: (state, action: PayloadAction<TestMode>) => {
+      state.testMode = action.payload;
+      // Set timer for exam mode (30 seconds per question as default)
+      if (action.payload === 'exam') {
+        state.timeRemaining = 60; // 60 seconds per question in exam mode
+      } else {
+        state.timeRemaining = null;
+      }
+    },
     selectAnswer: (state, action: PayloadAction<number>) => {
       state.selectedAnswer = action.payload;
     },
+    decrementTimer: (state) => {
+      if (state.timeRemaining !== null && state.timeRemaining > 0) {
+        state.timeRemaining -= 1;
+      }
+    },
+    resetTimer: (state) => {
+      if (state.testMode === 'exam') {
+        state.timeRemaining = 60;
+      }
+    },
     resetTest: (state) => {
+      state.testMode = null;
       state.currentQuestion = null;
       state.selectedAnswer = null;
       state.answerResult = null;
@@ -62,6 +86,7 @@ const testSlice = createSlice({
       state.totalQuestions = 0;
       state.testCompleted = false;
       state.error = null;
+      state.timeRemaining = null;
     },
     clearAnswerResult: (state) => {
       state.answerResult = null;
@@ -103,6 +128,7 @@ const testSlice = createSlice({
       })
       .addCase(resetTestProgress.fulfilled, (state) => {
         state.isLoading = false;
+        state.testMode = null;
         state.currentQuestion = null;
         state.selectedAnswer = null;
         state.answerResult = null;
@@ -110,6 +136,7 @@ const testSlice = createSlice({
         state.totalQuestions = 0;
         state.testCompleted = false;
         state.error = null;
+        state.timeRemaining = null;
       })
       .addCase(resetTestProgress.rejected, (state, action) => {
         state.isLoading = false;
@@ -118,5 +145,5 @@ const testSlice = createSlice({
   },
 });
 
-export const { selectAnswer, resetTest, clearAnswerResult } = testSlice.actions;
+export const { setTestMode, selectAnswer, decrementTimer, resetTimer, resetTest, clearAnswerResult } = testSlice.actions;
 export default testSlice.reducer;
