@@ -86,6 +86,41 @@ public class TestController : ControllerBase
         return Ok(new { message = "Test progress reset successfully" });
     }
 
+    /// <summary>
+    /// Get questions answered incorrectly for review/practice
+    /// </summary>
+    [HttpGet("weak-questions")]
+    [ProducesResponseType(typeof(IEnumerable<QuestionDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetWeakQuestions([FromQuery] string[]? examTypeCodes = null)
+    {
+        var userId = GetCurrentUserId();
+        var questions = await _adaptiveEngine.GetIncorrectlyAnsweredQuestionsAsync(userId, examTypeCodes);
+        return Ok(questions);
+    }
+
+    /// <summary>
+    /// Get topics with user progress statistics
+    /// </summary>
+    [HttpGet("topics")]
+    [ProducesResponseType(typeof(IEnumerable<TopicProgressDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetTopicsWithProgress([FromQuery] string[]? examTypeCodes = null)
+    {
+        var userId = GetCurrentUserId();
+        var topics = await _adaptiveEngine.GetTopicsWithProgressAsync(userId, examTypeCodes);
+        return Ok(topics);
+    }
+
+    /// <summary>
+    /// Get all questions for a specific topic
+    /// </summary>
+    [HttpGet("topics/{topicId}/questions")]
+    [ProducesResponseType(typeof(IEnumerable<QuestionDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetQuestionsByTopic(int topicId)
+    {
+        var questions = await _adaptiveEngine.GetQuestionsByTopicAsync(topicId);
+        return Ok(questions);
+    }
+
     private int GetCurrentUserId()
     {
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier) 

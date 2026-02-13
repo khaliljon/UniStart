@@ -109,3 +109,13 @@ export interface StartTestRequest {
   examTypeCodes: string[];
   sectionId?: number;
 }
+
+// Topic progress for learning features
+export interface TopicProgress {
+  topicId: number;
+  topicName: string;
+  totalQuestions: number;
+  correctAnswers: number;
+  incorrectAnswers: number;
+  masteryPercentage: number;
+}

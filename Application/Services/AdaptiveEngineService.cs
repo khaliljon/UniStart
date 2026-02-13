@@ -265,7 +265,7 @@ public class AdaptiveEngineService : IAdaptiveEngineService
         return await _context.Questions
             .Include(q => q.Topic)
                 .ThenInclude(t => t.Section)
-            .Where(q => examTypeCodes.Contains(q.Topic.Section.ExamTypeCode))
+            .Where(q => q.Topic.Section != null && examTypeCodes.Contains(q.Topic.Section.ExamTypeCode))
             .CountAsync();
     }
 
@@ -278,7 +278,95 @@ public class AdaptiveEngineService : IAdaptiveEngineService
             .Include(ua => ua.Question)
                 .ThenInclude(q => q.Topic)
                     .ThenInclude(t => t.Section)
-            .Where(ua => ua.UserId == userId && examTypeCodes.Contains(ua.Question.Topic.Section.ExamTypeCode))
+            .Where(ua => ua.UserId == userId && ua.Question.Topic.Section != null && examTypeCodes.Contains(ua.Question.Topic.Section.ExamTypeCode))
             .CountAsync();
+    }
+
+    /// <summary>
+    /// Gets questions answered incorrectly for spaced repetition review
+    /// </summary>
+    public async Task<IEnumerable<QuestionDto>> GetIncorrectlyAnsweredQuestionsAsync(int userId, string[]? examTypeCodes = null)
+    {
+        var query = _context.UserAnswers
+            .Include(ua => ua.Question)
+                .ThenInclude(q => q.Topic)
+                    .ThenInclude(t => t.Section)
+            .Include(ua => ua.Question)
+                .ThenInclude(q => q.AnswerOptions)
+            .Include(ua => ua.AnswerOption)
+            .Where(ua => ua.UserId == userId && !ua.AnswerOption.IsCorrect);
+
+        if (examTypeCodes != null && examTypeCodes.Length > 0)
+        {
+            query = query.Where(ua => ua.Question.Topic.Section != null && examTypeCodes.Contains(ua.Question.Topic.Section.ExamTypeCode));
+        }
+
+        var incorrectAnswers = await query.ToListAsync();
+
+        return incorrectAnswers
+            .Select(ua => ua.Question)
+            .DistinctBy(q => q.Id)
+            .Select(MapToQuestionDto);
+    }
+
+    /// <summary>
+    /// Gets topics with user progress statistics
+    /// </summary>
+    public async Task<IEnumerable<TopicProgressDto>> GetTopicsWithProgressAsync(int userId, string[]? examTypeCodes = null)
+    {
+        var topicsQuery = _context.Topics
+            .Include(t => t.Section)
+            .Include(t => t.Questions)
+            .AsQueryable();
+
+        if (examTypeCodes != null && examTypeCodes.Length > 0)
+        {
+            topicsQuery = topicsQuery.Where(t => t.Section != null && examTypeCodes.Contains(t.Section.ExamTypeCode));
+        }
+
+        var topics = await topicsQuery.ToListAsync();
+
+        var userAnswers = await _context.UserAnswers
+            .Include(ua => ua.AnswerOption)
+            .Include(ua => ua.Question)
+                .ThenInclude(q => q.Topic)
+            .Where(ua => ua.UserId == userId)
+            .ToListAsync();
+
+        var result = topics.Select(topic =>
+        {
+            var topicAnswers = userAnswers.Where(ua => ua.Question.TopicId == topic.Id).ToList();
+            var correctCount = topicAnswers.Count(ua => ua.AnswerOption.IsCorrect);
+            var incorrectCount = topicAnswers.Count(ua => !ua.AnswerOption.IsCorrect);
+            var totalQuestions = topic.Questions.Count;
+            var mastery = totalQuestions > 0 
+                ? (double)correctCount / totalQuestions * 100 
+                : 0;
+
+            return new TopicProgressDto(
+                topic.Id,
+                topic.Name,
+                totalQuestions,
+                correctCount,
+                incorrectCount,
+                Math.Round(mastery, 1)
+            );
+        });
+
+        return result.OrderBy(t => t.MasteryPercentage);
+    }
+
+    /// <summary>
+    /// Gets all questions for a specific topic
+    /// </summary>
+    public async Task<IEnumerable<QuestionDto>> GetQuestionsByTopicAsync(int topicId)
+    {
+        var questions = await _context.Questions
+            .Include(q => q.Topic)
+            .Include(q => q.AnswerOptions)
+            .Where(q => q.TopicId == topicId)
+            .ToListAsync();
+
+        return questions.Select(MapToQuestionDto);
     }
 }

@@ -5,6 +5,8 @@ import type {
   AnswerResult,
   StartTestRequest,
   UserSkillProfile,
+  Question,
+  TopicProgress,
 } from '../types';
 
 export const testService = {
@@ -25,5 +27,22 @@ export const testService = {
 
   async resetProgress(): Promise<void> {
     await api.post('/test/reset');
+  },
+
+  async getWeakQuestions(examTypeCodes?: string[]): Promise<Question[]> {
+    const params = examTypeCodes?.length ? { examTypeCodes } : {};
+    const response = await api.get<Question[]>('/test/weak-questions', { params });
+    return response.data;
+  },
+
+  async getTopicsWithProgress(examTypeCodes?: string[]): Promise<TopicProgress[]> {
+    const params = examTypeCodes?.length ? { examTypeCodes } : {};
+    const response = await api.get<TopicProgress[]>('/test/topics', { params });
+    return response.data;
+  },
+
+  async getQuestionsByTopic(topicId: number): Promise<Question[]> {
+    const response = await api.get<Question[]>(`/test/topics/${topicId}/questions`);
+    return response.data;
   },
 };

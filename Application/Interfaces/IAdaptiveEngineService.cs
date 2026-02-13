@@ -49,4 +49,19 @@ public interface IAdaptiveEngineService
     /// Gets count of answered questions for user in selected exams
     /// </summary>
     Task<int> GetAnsweredQuestionsCountAsync(int userId, string[] examTypeCodes);
+
+    /// <summary>
+    /// Gets questions that user answered incorrectly (for review mode)
+    /// </summary>
+    Task<IEnumerable<QuestionDto>> GetIncorrectlyAnsweredQuestionsAsync(int userId, string[]? examTypeCodes = null);
+
+    /// <summary>
+    /// Gets all topics with progress for user
+    /// </summary>
+    Task<IEnumerable<TopicProgressDto>> GetTopicsWithProgressAsync(int userId, string[]? examTypeCodes = null);
+
+    /// <summary>
+    /// Gets questions by topic
+    /// </summary>
+    Task<IEnumerable<QuestionDto>> GetQuestionsByTopicAsync(int topicId);
 }

@@ -192,6 +192,29 @@ function TestPage() {
             </button>
           </div>
 
+          {/* Learning Features Section */}
+          <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border-color)' }}>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '1rem', textAlign: 'center' }}>
+              📖 Learning Tools
+            </p>
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
+              <button
+                onClick={() => navigate('/review')}
+                className="btn btn-secondary"
+                style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+              >
+                🔄 Review Mistakes
+              </button>
+              <button
+                onClick={() => navigate('/topics')}
+                className="btn btn-secondary"
+                style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+              >
+                📚 Topics
+              </button>
+            </div>
+          </div>
+
           <button
             onClick={() => navigate('/')}
             className="btn btn-secondary"

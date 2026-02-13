@@ -6,6 +6,8 @@ import RegisterPage from './pages/RegisterPage'
 import ExamSelectionPage from './pages/ExamSelectionPage'
 import TestPage from './pages/TestPage'
 import AnalyticsPage from './pages/AnalyticsPage'
+import ReviewPage from './pages/ReviewPage'
+import TopicsPage from './pages/TopicsPage'
 
 function App() {
   const { isAuthenticated } = useAppSelector((state) => state.auth)
@@ -19,6 +21,8 @@ function App() {
         <Route index element={<ExamSelectionPage />} />
         <Route path="test" element={<TestPage />} />
         <Route path="analytics" element={<AnalyticsPage />} />
+        <Route path="review" element={<ReviewPage />} />
+        <Route path="topics" element={<TopicsPage />} />
       </Route>
     </Routes>
   )

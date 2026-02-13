@@ -35,3 +35,13 @@ public record NextQuestionDto(
     int QuestionsAnswered,
     int TotalQuestions
 );
+
+// Topic progress for topic selection page
+public record TopicProgressDto(
+    int TopicId,
+    string TopicName,
+    int TotalQuestions,
+    int CorrectAnswers,
+    int IncorrectAnswers,
+    double MasteryPercentage
+);
