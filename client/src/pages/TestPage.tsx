@@ -19,6 +19,7 @@ function TestPage() {
     selectedAnswer,
     answerResult,
     questionsAnswered,
+    totalQuestions,
     testCompleted,
     isLoading,
     error,
@@ -166,9 +167,41 @@ function TestPage() {
   return (
     <div className="test-container">
       <div className="question-card card">
+        {/* Progress Bar */}
+        <div className="progress-container" style={{ marginBottom: '1.5rem' }}>
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center',
+            marginBottom: '0.5rem'
+          }}>
+            <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+              Question {questionsAnswered + 1} of {totalQuestions}
+            </span>
+            <span style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--primary-color)' }}>
+              {totalQuestions > 0 ? Math.round(((questionsAnswered) / totalQuestions) * 100) : 0}%
+            </span>
+          </div>
+          <div style={{
+            width: '100%',
+            height: '8px',
+            backgroundColor: 'var(--border-color)',
+            borderRadius: '4px',
+            overflow: 'hidden'
+          }}>
+            <div style={{
+              width: `${totalQuestions > 0 ? ((questionsAnswered) / totalQuestions) * 100 : 0}%`,
+              height: '100%',
+              backgroundColor: 'var(--primary-color)',
+              borderRadius: '4px',
+              transition: 'width 0.3s ease'
+            }} />
+          </div>
+        </div>
+
         <div className="question-header">
           <span className="question-number">
-            Question {questionsAnswered + 1} • {currentQuestion.topicName}
+            {currentQuestion.topicName}
           </span>
           <span className={`difficulty-badge ${getDifficultyClass(currentQuestion.difficulty)}`}>
             {currentQuestion.difficulty}

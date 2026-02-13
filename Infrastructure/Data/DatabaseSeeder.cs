@@ -25,12 +25,12 @@ public class DatabaseSeeder
             await ClearAllDataAsync();
         }
 
-        // Check if questions need Explanation update
-        var hasQuestionsWithExplanation = await _context.Questions
-            .AnyAsync(q => q.Explanation != null);
+        // Check if questions need Explanation update - ALL questions should have Explanation
+        var totalQuestions = await _context.Questions.CountAsync();
+        var questionsWithExplanation = await _context.Questions.CountAsync(q => q.Explanation != null);
         
-        // If questions exist but none have Explanation, clear questions only and reseed
-        if (await _context.Questions.AnyAsync() && !hasQuestionsWithExplanation)
+        // If questions exist but not all have Explanation, clear questions and reseed
+        if (totalQuestions > 0 && questionsWithExplanation < totalQuestions)
         {
             _context.UserAnswers.RemoveRange(_context.UserAnswers);
             _context.AnswerOptions.RemoveRange(_context.AnswerOptions);
@@ -374,6 +374,7 @@ public class DatabaseSeeder
             TopicId = geometry.Id,
             Text = "A circle has a circumference of 31.4 cm. What is its approximate radius?",
             Difficulty = QuestionDifficulty.Medium,
+            Explanation = "Circumference = 2πr. So r = C/(2π) = 31.4/(2×3.14) = 31.4/6.28 = 5 cm.",
             AnswerOptions = new List<AnswerOption>
             {
                 new AnswerOption { Text = "5 cm", IsCorrect = true },
@@ -390,6 +391,7 @@ public class DatabaseSeeder
             TopicId = geometry.Id,
             Text = "In a right triangle, one leg is 8 and the hypotenuse is 17. What is the length of the other leg?",
             Difficulty = QuestionDifficulty.Hard,
+            Explanation = "Using Pythagorean theorem: a² + b² = c². So 8² + b² = 17². 64 + b² = 289. b² = 225. b = 15.",
             AnswerOptions = new List<AnswerOption>
             {
                 new AnswerOption { Text = "15", IsCorrect = true },
@@ -406,6 +408,7 @@ public class DatabaseSeeder
             TopicId = quadratic.Id,
             Text = "What are the solutions to x² - 5x + 6 = 0?",
             Difficulty = QuestionDifficulty.Medium,
+            Explanation = "Factor the quadratic: (x - 2)(x - 3) = 0. Set each factor to zero: x - 2 = 0 gives x = 2, x - 3 = 0 gives x = 3.",
             AnswerOptions = new List<AnswerOption>
             {
                 new AnswerOption { Text = "x = 2 and x = 3", IsCorrect = true },
@@ -422,6 +425,7 @@ public class DatabaseSeeder
             TopicId = quadratic.Id,
             Text = "For the equation x² + 6x + k = 0 to have exactly one solution, what must k equal?",
             Difficulty = QuestionDifficulty.Hard,
+            Explanation = "For exactly one solution, discriminant must equal 0: b² - 4ac = 0. So 36 - 4(1)(k) = 0. 36 = 4k. k = 9.",
             AnswerOptions = new List<AnswerOption>
             {
                 new AnswerOption { Text = "9", IsCorrect = true },
@@ -438,6 +442,7 @@ public class DatabaseSeeder
             TopicId = dataAnalysis.Id,
             Text = "What is the mean of the numbers: 4, 8, 6, 10, 12?",
             Difficulty = QuestionDifficulty.Easy,
+            Explanation = "Mean = sum of values / count. (4 + 8 + 6 + 10 + 12) / 5 = 40 / 5 = 8.",
             AnswerOptions = new List<AnswerOption>
             {
                 new AnswerOption { Text = "8", IsCorrect = true },
@@ -454,6 +459,7 @@ public class DatabaseSeeder
             TopicId = dataAnalysis.Id,
             Text = "A dataset has values 3, 7, 7, 10, 15. What is the median?",
             Difficulty = QuestionDifficulty.Medium,
+            Explanation = "The median is the middle value when data is sorted. With 5 values (3, 7, 7, 10, 15), the middle (3rd) value is 7.",
             AnswerOptions = new List<AnswerOption>
             {
                 new AnswerOption { Text = "7", IsCorrect = true },
@@ -472,6 +478,7 @@ public class DatabaseSeeder
             TopicId = academicReading.Id,
             Text = "According to the passage, what is the primary function of photosynthesis?",
             Difficulty = QuestionDifficulty.Easy,
+            Explanation = "Photosynthesis is the process by which plants convert light energy into chemical energy (glucose) using carbon dioxide and water.",
             AnswerOptions = new List<AnswerOption>
             {
                 new AnswerOption { Text = "Converting light energy into chemical energy", IsCorrect = true },
@@ -488,6 +495,7 @@ public class DatabaseSeeder
             TopicId = academicReading.Id,
             Text = "Which sentence best summarizes the author's opinion on climate change?",
             Difficulty = QuestionDifficulty.Medium,
+            Explanation = "The author repeatedly emphasizes urgency and the need for collective action, indicating that immediate steps must be taken.",
             AnswerOptions = new List<AnswerOption>
             {
                 new AnswerOption { Text = "It's negligible", IsCorrect = false },
@@ -504,6 +512,7 @@ public class DatabaseSeeder
             TopicId = academicReading.Id,
             Text = "The author's use of the phrase \"double-edged sword\" in paragraph 3 suggests that technology:",
             Difficulty = QuestionDifficulty.Hard,
+            Explanation = "'Double-edged sword' is an idiom meaning something that has both advantages and disadvantages, or can cause both good and harm.",
             AnswerOptions = new List<AnswerOption>
             {
                 new AnswerOption { Text = "Has both positive and negative consequences", IsCorrect = true },
@@ -520,6 +529,7 @@ public class DatabaseSeeder
             TopicId = lectureComp.Id,
             Text = "The lecturer's main point about biodiversity was:",
             Difficulty = QuestionDifficulty.Medium,
+            Explanation = "The professor cited multiple examples of species loss and habitat destruction as evidence that biodiversity is declining globally.",
             AnswerOptions = new List<AnswerOption>
             {
                 new AnswerOption { Text = "It affects only forests", IsCorrect = false },
@@ -536,6 +546,7 @@ public class DatabaseSeeder
             TopicId = lectureComp.Id,
             Text = "In the lecture, why does the professor mention the extinction of the dodo bird?",
             Difficulty = QuestionDifficulty.Hard,
+            Explanation = "The dodo bird is used as a classic example of human-caused extinction through hunting and habitat destruction by European settlers.",
             AnswerOptions = new List<AnswerOption>
             {
                 new AnswerOption { Text = "To illustrate the impact of human activity on species", IsCorrect = true },
@@ -554,6 +565,7 @@ public class DatabaseSeeder
             TopicId = algebra.Id,
             Text = "Simplify: 3(x + 2) - 2(x - 1)",
             Difficulty = QuestionDifficulty.Easy,
+            Explanation = "Distribute: 3x + 6 - 2x + 2. Combine like terms: (3x - 2x) + (6 + 2) = x + 8.",
             AnswerOptions = new List<AnswerOption>
             {
                 new AnswerOption { Text = "x + 8", IsCorrect = true },
@@ -570,6 +582,7 @@ public class DatabaseSeeder
             TopicId = algebra.Id,
             Text = "If f(x) = 2x² - 3x + 1, what is f(2)?",
             Difficulty = QuestionDifficulty.Medium,
+            Explanation = "Substitute x = 2: f(2) = 2(2)² - 3(2) + 1 = 2(4) - 6 + 1 = 8 - 6 + 1 = 3.",
             AnswerOptions = new List<AnswerOption>
             {
                 new AnswerOption { Text = "3", IsCorrect = true },
@@ -586,6 +599,7 @@ public class DatabaseSeeder
             TopicId = problemSolving.Id,
             Text = "A train travels 120 km in 2 hours. What is its average speed?",
             Difficulty = QuestionDifficulty.Easy,
+            Explanation = "Average speed = distance / time = 120 km / 2 hours = 60 km/h.",
             AnswerOptions = new List<AnswerOption>
             {
                 new AnswerOption { Text = "60 km/h", IsCorrect = true },
@@ -602,6 +616,7 @@ public class DatabaseSeeder
             TopicId = problemSolving.Id,
             Text = "If 5 workers can complete a job in 12 days, how many days would it take 10 workers?",
             Difficulty = QuestionDifficulty.Medium,
+            Explanation = "Work is inversely proportional to workers. Total work = 5 × 12 = 60 worker-days. With 10 workers: 60 / 10 = 6 days.",
             AnswerOptions = new List<AnswerOption>
             {
                 new AnswerOption { Text = "6 days", IsCorrect = true },
@@ -618,6 +633,7 @@ public class DatabaseSeeder
             TopicId = problemSolving.Id,
             Text = "A mixture contains milk and water in the ratio 3:2. How much water must be added to 10 liters of mixture to make the ratio 3:4?",
             Difficulty = QuestionDifficulty.Hard,
+            Explanation = "In 10L with ratio 3:2, milk = 6L, water = 4L. For ratio 3:4, if milk is 6L, water should be 8L. Need to add 8 - 4 = 4 liters.",
             AnswerOptions = new List<AnswerOption>
             {
                 new AnswerOption { Text = "4 liters", IsCorrect = true },
@@ -634,6 +650,7 @@ public class DatabaseSeeder
             TopicId = logicalReasoning.Id,
             Text = "If all dogs are animals, and Rex is a dog, then:",
             Difficulty = QuestionDifficulty.Easy,
+            Explanation = "This is a basic syllogism. If all members of set A (dogs) belong to set B (animals), and Rex is in set A, then Rex must be in set B.",
             AnswerOptions = new List<AnswerOption>
             {
                 new AnswerOption { Text = "Rex is an animal", IsCorrect = true },
@@ -650,6 +667,7 @@ public class DatabaseSeeder
             TopicId = logicalReasoning.Id,
             Text = "If all A are B and some B are C, which must be true?",
             Difficulty = QuestionDifficulty.Medium,
+            Explanation = "Since all A are B, and some B are C, there's a possibility (but not certainty) that some of those B that are C could also be A.",
             AnswerOptions = new List<AnswerOption>
             {
                 new AnswerOption { Text = "All C are A", IsCorrect = false },
@@ -666,6 +684,7 @@ public class DatabaseSeeder
             TopicId = logicalReasoning.Id,
             Text = "Statement: All managers are leaders. Some leaders are not effective. Conclusion: Some managers are not effective. This conclusion is:",
             Difficulty = QuestionDifficulty.Hard,
+            Explanation = "The ineffective leaders might not include any managers — we only know some leaders are ineffective, not that any of those are managers.",
             AnswerOptions = new List<AnswerOption>
             {
                 new AnswerOption { Text = "Definitely true", IsCorrect = false },
@@ -682,6 +701,7 @@ public class DatabaseSeeder
             TopicId = argumentAnalysis.Id,
             Text = "\"Sales increased after the new advertisement campaign. Therefore, the campaign was successful.\" What is the logical flaw?",
             Difficulty = QuestionDifficulty.Medium,
+            Explanation = "Post hoc fallacy: just because B followed A doesn't mean A caused B. Other factors could have increased sales.",
             AnswerOptions = new List<AnswerOption>
             {
                 new AnswerOption { Text = "Assumes correlation implies causation", IsCorrect = true },
@@ -698,6 +718,7 @@ public class DatabaseSeeder
             TopicId = argumentAnalysis.Id,
             Text = "\"We should not listen to John's opinion on healthy eating because he is overweight.\" This argument is flawed because:",
             Difficulty = QuestionDifficulty.Hard,
+            Explanation = "This is an ad hominem fallacy — attacking the person's characteristics rather than addressing the merit of their argument.",
             AnswerOptions = new List<AnswerOption>
             {
                 new AnswerOption { Text = "It attacks the person rather than the argument", IsCorrect = true },

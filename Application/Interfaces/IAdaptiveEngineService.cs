@@ -39,4 +39,14 @@ public interface IAdaptiveEngineService
     /// Resets user's test progress (clears answers and skill profiles)
     /// </summary>
     Task ResetUserProgressAsync(int userId);
+
+    /// <summary>
+    /// Gets total question count for selected exams
+    /// </summary>
+    Task<int> GetTotalQuestionsCountAsync(string[] examTypeCodes);
+
+    /// <summary>
+    /// Gets count of answered questions for user in selected exams
+    /// </summary>
+    Task<int> GetAnsweredQuestionsCountAsync(int userId, string[] examTypeCodes);
 }

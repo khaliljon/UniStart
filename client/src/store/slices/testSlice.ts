@@ -7,6 +7,7 @@ interface TestState {
   selectedAnswer: number | null;
   answerResult: AnswerResult | null;
   questionsAnswered: number;
+  totalQuestions: number;
   testCompleted: boolean;
   isLoading: boolean;
   error: string | null;
@@ -17,6 +18,7 @@ const initialState: TestState = {
   selectedAnswer: null,
   answerResult: null,
   questionsAnswered: 0,
+  totalQuestions: 0,
   testCompleted: false,
   isLoading: false,
   error: null,
@@ -57,6 +59,7 @@ const testSlice = createSlice({
       state.selectedAnswer = null;
       state.answerResult = null;
       state.questionsAnswered = 0;
+      state.totalQuestions = 0;
       state.testCompleted = false;
       state.error = null;
     },
@@ -75,6 +78,8 @@ const testSlice = createSlice({
         state.isLoading = false;
         state.currentQuestion = action.payload.question;
         state.testCompleted = action.payload.testCompleted;
+        state.questionsAnswered = action.payload.questionsAnswered;
+        state.totalQuestions = action.payload.totalQuestions;
         state.answerResult = null;
         state.selectedAnswer = null;
       })
@@ -88,7 +93,6 @@ const testSlice = createSlice({
       .addCase(submitAnswer.fulfilled, (state, action: PayloadAction<AnswerResult>) => {
         state.isLoading = false;
         state.answerResult = action.payload;
-        state.questionsAnswered += 1;
       })
       .addCase(submitAnswer.rejected, (state, action) => {
         state.isLoading = false;
@@ -103,6 +107,7 @@ const testSlice = createSlice({
         state.selectedAnswer = null;
         state.answerResult = null;
         state.questionsAnswered = 0;
+        state.totalQuestions = 0;
         state.testCompleted = false;
         state.error = null;
       })

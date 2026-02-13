@@ -256,4 +256,29 @@ public class AdaptiveEngineService : IAdaptiveEngineService
 
         await _unitOfWork.SaveChangesAsync();
     }
+
+    /// <summary>
+    /// Gets total question count for selected exams
+    /// </summary>
+    public async Task<int> GetTotalQuestionsCountAsync(string[] examTypeCodes)
+    {
+        return await _context.Questions
+            .Include(q => q.Topic)
+                .ThenInclude(t => t.Section)
+            .Where(q => examTypeCodes.Contains(q.Topic.Section.ExamTypeCode))
+            .CountAsync();
+    }
+
+    /// <summary>
+    /// Gets count of answered questions for user in selected exams
+    /// </summary>
+    public async Task<int> GetAnsweredQuestionsCountAsync(int userId, string[] examTypeCodes)
+    {
+        return await _context.UserAnswers
+            .Include(ua => ua.Question)
+                .ThenInclude(q => q.Topic)
+                    .ThenInclude(t => t.Section)
+            .Where(ua => ua.UserId == userId && examTypeCodes.Contains(ua.Question.Topic.Section.ExamTypeCode))
+            .CountAsync();
+    }
 }

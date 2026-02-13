@@ -30,13 +30,15 @@ public class TestController : ControllerBase
         var userId = GetCurrentUserId();
         
         var question = await _adaptiveEngine.GetNextQuestionAsync(userId, dto.ExamTypeCodes, dto.SectionId);
+        var totalQuestions = await _adaptiveEngine.GetTotalQuestionsCountAsync(dto.ExamTypeCodes);
+        var answeredQuestions = await _adaptiveEngine.GetAnsweredQuestionsCountAsync(userId, dto.ExamTypeCodes);
         
         if (question == null)
         {
-            return Ok(new NextQuestionDto(null, true, 0, 0));
+            return Ok(new NextQuestionDto(null, true, answeredQuestions, totalQuestions));
         }
 
-        return Ok(new NextQuestionDto(question, false, 0, 0));
+        return Ok(new NextQuestionDto(question, false, answeredQuestions, totalQuestions));
     }
 
     /// <summary>
