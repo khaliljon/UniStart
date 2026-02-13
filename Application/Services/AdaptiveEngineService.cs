@@ -139,7 +139,14 @@ public class AdaptiveEngineService : IAdaptiveEngineService
 
         await _unitOfWork.SaveChangesAsync();
 
-        return new AnswerResultDto(isCorrect, correctOption.Id, newLevel, change);
+        return new AnswerResultDto(
+            isCorrect, 
+            correctOption.Id, 
+            correctOption.Text,
+            question.Explanation,
+            newLevel, 
+            change
+        );
     }
 
     /// <summary>

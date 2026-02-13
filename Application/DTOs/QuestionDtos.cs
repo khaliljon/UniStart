@@ -23,6 +23,8 @@ public record SubmitAnswerDto(
 public record AnswerResultDto(
     bool IsCorrect,
     int CorrectOptionId,
+    string CorrectOptionText,
+    string? Explanation,
     int NewSkillLevel,
     int SkillChange
 );

@@ -192,27 +192,82 @@ function TestPage() {
 
         {showFeedback && answerResult && (
           <div
+            className="feedback-card"
             style={{
               marginTop: '1.5rem',
-              padding: '1rem',
-              borderRadius: '0.5rem',
+              padding: '1.25rem',
+              borderRadius: '0.75rem',
               backgroundColor: answerResult.isCorrect
                 ? 'rgba(16, 185, 129, 0.1)'
                 : 'rgba(239, 68, 68, 0.1)',
+              border: `1px solid ${answerResult.isCorrect ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
             }}
           >
-            <p
-              style={{
-                fontWeight: '600',
-                color: answerResult.isCorrect ? 'var(--success-color)' : 'var(--error-color)',
-              }}
-            >
-              {answerResult.isCorrect ? '✓ Correct!' : '✗ Incorrect'}
-            </p>
-            <p style={{ fontSize: '0.875rem', marginTop: '0.5rem' }}>
-              Skill change: {answerResult.skillChange > 0 ? '+' : ''}
-              {answerResult.skillChange} • New level: {answerResult.newSkillLevel}
-            </p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+              <span style={{ fontSize: '1.5rem' }}>
+                {answerResult.isCorrect ? '✅' : '❌'}
+              </span>
+              <p
+                style={{
+                  fontWeight: '700',
+                  fontSize: '1.125rem',
+                  color: answerResult.isCorrect ? 'var(--success-color)' : 'var(--error-color)',
+                  margin: 0,
+                }}
+              >
+                {answerResult.isCorrect ? 'Correct!' : 'Incorrect'}
+              </p>
+            </div>
+
+            {!answerResult.isCorrect && (
+              <div style={{ 
+                marginBottom: '0.75rem',
+                padding: '0.75rem',
+                backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                borderRadius: '0.5rem',
+                border: '1px solid rgba(16, 185, 129, 0.3)'
+              }}>
+                <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                  Correct answer:
+                </p>
+                <p style={{ margin: '0.25rem 0 0 0', fontWeight: '600', color: 'var(--success-color)' }}>
+                  {answerResult.correctOptionText}
+                </p>
+              </div>
+            )}
+
+            {answerResult.explanation && (
+              <div style={{
+                marginBottom: '0.75rem',
+                padding: '0.75rem',
+                backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                borderRadius: '0.5rem',
+                border: '1px solid rgba(99, 102, 241, 0.2)'
+              }}>
+                <p style={{ margin: 0, fontSize: '0.75rem', fontWeight: '600', color: 'var(--primary-color)', textTransform: 'uppercase' }}>
+                  💡 Explanation
+                </p>
+                <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.9rem', lineHeight: '1.5' }}>
+                  {answerResult.explanation}
+                </p>
+              </div>
+            )}
+
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '1rem',
+              paddingTop: '0.5rem',
+              borderTop: '1px solid rgba(0,0,0,0.1)',
+              fontSize: '0.875rem',
+              color: 'var(--text-secondary)'
+            }}>
+              <span>
+                Skill: {answerResult.skillChange > 0 ? '+' : ''}{answerResult.skillChange}
+              </span>
+              <span>•</span>
+              <span>Level: {answerResult.newSkillLevel}</span>
+            </div>
           </div>
         )}
 

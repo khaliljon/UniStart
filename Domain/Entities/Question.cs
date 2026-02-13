@@ -6,6 +6,7 @@ public class Question
     public int TopicId { get; set; }
     public string Text { get; set; } = string.Empty;
     public QuestionDifficulty Difficulty { get; set; }
+    public string? Explanation { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     // Navigation properties

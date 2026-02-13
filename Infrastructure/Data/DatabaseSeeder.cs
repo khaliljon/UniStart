@@ -25,6 +25,19 @@ public class DatabaseSeeder
             await ClearAllDataAsync();
         }
 
+        // Check if questions need Explanation update
+        var hasQuestionsWithExplanation = await _context.Questions
+            .AnyAsync(q => q.Explanation != null);
+        
+        // If questions exist but none have Explanation, clear questions only and reseed
+        if (await _context.Questions.AnyAsync() && !hasQuestionsWithExplanation)
+        {
+            _context.UserAnswers.RemoveRange(_context.UserAnswers);
+            _context.AnswerOptions.RemoveRange(_context.AnswerOptions);
+            _context.Questions.RemoveRange(_context.Questions);
+            await _context.SaveChangesAsync();
+        }
+
         // Seed ExamTypes
         if (!await _context.ExamTypes.AnyAsync())
         {
@@ -206,6 +219,7 @@ public class DatabaseSeeder
             TopicId = mainIdea.Id,
             Text = "What is the main idea of the passage about economic growth?",
             Difficulty = QuestionDifficulty.Easy,
+            Explanation = "The passage discusses how government policies directly influence economic indicators and growth rates, making 'Growth depends on policy' the central theme.",
             AnswerOptions = new List<AnswerOption>
             {
                 new AnswerOption { Text = "Growth is unpredictable", IsCorrect = false },
@@ -222,6 +236,7 @@ public class DatabaseSeeder
             TopicId = mainIdea.Id,
             Text = "Based on the passage, which statement best summarizes the author's central argument about climate change?",
             Difficulty = QuestionDifficulty.Medium,
+            Explanation = "The author emphasizes urgency and collective responsibility throughout the passage, which aligns with the need for immediate global action rather than passive or localized responses.",
             AnswerOptions = new List<AnswerOption>
             {
                 new AnswerOption { Text = "Climate change is a natural phenomenon", IsCorrect = false },
@@ -238,6 +253,7 @@ public class DatabaseSeeder
             TopicId = grammar.Id,
             Text = "Choose the correct form of the underlined word: \"The scientist's argument was _____...\"",
             Difficulty = QuestionDifficulty.Easy,
+            Explanation = "The sentence requires an adjective to describe the argument. 'Flawed' is the past participle used as an adjective, meaning having defects or errors.",
             AnswerOptions = new List<AnswerOption>
             {
                 new AnswerOption { Text = "flawed", IsCorrect = true },
@@ -254,6 +270,7 @@ public class DatabaseSeeder
             TopicId = grammar.Id,
             Text = "Which version of the sentence is grammatically correct?",
             Difficulty = QuestionDifficulty.Medium,
+            Explanation = "With 'neither...nor', the verb agrees with the noun closest to it. Since 'teacher' is singular, we use 'was'. Also, 'neither' always pairs with 'nor', not 'or'.",
             AnswerOptions = new List<AnswerOption>
             {
                 new AnswerOption { Text = "Neither the students nor the teacher were prepared.", IsCorrect = false },
@@ -270,6 +287,7 @@ public class DatabaseSeeder
             TopicId = grammar.Id,
             Text = "Select the sentence that correctly uses parallel structure.",
             Difficulty = QuestionDifficulty.Hard,
+            Explanation = "Parallel structure requires consistency in form. 'Hiking, swimming, and riding' are all gerunds (-ing forms), maintaining grammatical parallelism throughout the list.",
             AnswerOptions = new List<AnswerOption>
             {
                 new AnswerOption { Text = "She likes hiking, swimming, and to ride bikes.", IsCorrect = false },
@@ -286,6 +304,7 @@ public class DatabaseSeeder
             TopicId = vocabulary.Id,
             Text = "In the context of the passage, the word \"ubiquitous\" most nearly means:",
             Difficulty = QuestionDifficulty.Medium,
+            Explanation = "'Ubiquitous' comes from Latin 'ubique' meaning 'everywhere'. It describes something that is present, appears, or is encountered everywhere.",
             AnswerOptions = new List<AnswerOption>
             {
                 new AnswerOption { Text = "rare", IsCorrect = false },
@@ -304,6 +323,7 @@ public class DatabaseSeeder
             TopicId = linearEq.Id,
             Text = "If 3x + 4 = 19, what is x?",
             Difficulty = QuestionDifficulty.Easy,
+            Explanation = "Subtract 4 from both sides: 3x = 15. Then divide by 3: x = 5.",
             AnswerOptions = new List<AnswerOption>
             {
                 new AnswerOption { Text = "5", IsCorrect = true },
@@ -320,6 +340,7 @@ public class DatabaseSeeder
             TopicId = linearEq.Id,
             Text = "If 2(x - 3) + 5 = 3x - 4, what is x?",
             Difficulty = QuestionDifficulty.Medium,
+            Explanation = "Expand: 2x - 6 + 5 = 3x - 4. Simplify: 2x - 1 = 3x - 4. Subtract 2x: -1 = x - 4. Add 4: x = 3.",
             AnswerOptions = new List<AnswerOption>
             {
                 new AnswerOption { Text = "3", IsCorrect = true },
@@ -336,6 +357,7 @@ public class DatabaseSeeder
             TopicId = geometry.Id,
             Text = "A triangle has sides 5, 12, and 13. What is its area?",
             Difficulty = QuestionDifficulty.Easy,
+            Explanation = "This is a right triangle (5² + 12² = 25 + 144 = 169 = 13²). Area = (1/2) × base × height = (1/2) × 5 × 12 = 30.",
             AnswerOptions = new List<AnswerOption>
             {
                 new AnswerOption { Text = "30", IsCorrect = true },

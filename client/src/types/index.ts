@@ -71,6 +71,8 @@ export interface SubmitAnswerRequest {
 export interface AnswerResult {
   isCorrect: boolean;
   correctOptionId: number;
+  correctOptionText: string;
+  explanation: string | null;
   newSkillLevel: number;
   skillChange: number;
 }
