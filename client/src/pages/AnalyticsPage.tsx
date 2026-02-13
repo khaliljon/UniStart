@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { analyticsService } from '../services/analyticsService';
+import { AnalyticsSkeleton } from '../components/Skeleton';
 import type { SkillAnalytics } from '../types';
 
 function AnalyticsPage() {
@@ -24,19 +25,15 @@ function AnalyticsPage() {
   }, []);
 
   if (isLoading) {
-    return (
-      <div className="loading">
-        <div className="spinner"></div>
-      </div>
-    );
+    return <AnalyticsSkeleton />;
   }
 
   if (error) {
-    return <p className="error-message">{error}</p>;
+    return <p className="error-message animate-fade-in">{error}</p>;
   }
 
   if (!analytics) {
-    return <p>No analytics data available</p>;
+    return <p className="animate-fade-in">No analytics data available</p>;
   }
 
   const getSkillLevelColor = (level: number) => {
@@ -46,33 +43,33 @@ function AnalyticsPage() {
   };
 
   return (
-    <div>
+    <div className="animate-fade-in">
       <h1 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '2rem' }}>
         Your Progress Analytics
       </h1>
 
       {/* Stats Overview */}
       <div className="stats-grid">
-        <div className="card stat-card">
+        <div className="card stat-card animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
           <div className="stat-value">{analytics.totalQuestionsAnswered}</div>
           <div className="stat-label">Questions Answered</div>
         </div>
-        <div className="card stat-card">
+        <div className="card stat-card animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
           <div className="stat-value">{analytics.correctAnswers}</div>
           <div className="stat-label">Correct Answers</div>
         </div>
-        <div className="card stat-card">
+        <div className="card stat-card animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
           <div className="stat-value">{analytics.overallAccuracy}%</div>
           <div className="stat-label">Accuracy</div>
         </div>
-        <div className="card stat-card">
+        <div className="card stat-card animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
           <div className="stat-value">{analytics.skillProfiles.length}</div>
           <div className="stat-label">Skills Tracked</div>
         </div>
       </div>
 
       {/* Skills Breakdown */}
-      <div className="card" style={{ marginTop: '2rem' }}>
+      <div className="card card-static animate-fade-in-up" style={{ marginTop: '2rem', animationDelay: '0.5s' }}>
         <h2 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1.5rem' }}>
           Skill Levels
         </h2>
@@ -83,8 +80,12 @@ function AnalyticsPage() {
           </p>
         ) : (
           <div className="skills-list">
-            {analytics.skillProfiles.map((skill) => (
-              <div key={skill.skillId} className="skill-item">
+            {analytics.skillProfiles.map((skill, index) => (
+              <div 
+                key={skill.skillId} 
+                className="skill-item animate-slide-in" 
+                style={{ animationDelay: `${0.6 + index * 0.1}s` }}
+              >
                 <span className="skill-name">{skill.skillName}</span>
                 <div className="skill-bar">
                   <div

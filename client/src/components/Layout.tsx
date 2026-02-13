@@ -1,12 +1,14 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '../hooks/useAppDispatch';
 import { useAppSelector } from '../hooks/useAppSelector';
+import { useTheme } from '../hooks/useTheme';
 import { logout } from '../store/slices/authSlice';
 
 function Layout() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { user } = useAppSelector((state) => state.auth);
+  const { theme, toggleTheme } = useTheme();
 
   const handleLogout = () => {
     dispatch(logout());
@@ -35,7 +37,14 @@ function Layout() {
             </li>
           </ul>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <button 
+              onClick={toggleTheme} 
+              className="theme-toggle"
+              title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+            >
+              {theme === 'light' ? '🌙' : '☀️'}
+            </button>
             <span style={{ color: 'var(--text-secondary)' }}>
               {user?.name}
             </span>

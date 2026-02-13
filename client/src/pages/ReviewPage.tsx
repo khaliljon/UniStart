@@ -4,6 +4,7 @@ import { useSelector } from 'react-redux';
 import type { RootState } from '../store';
 import type { Question, AnswerResult } from '../types';
 import { testService } from '../services/testService';
+import { QuestionSkeleton } from '../components/Skeleton';
 
 export default function ReviewPage() {
   const navigate = useNavigate();
@@ -63,162 +64,189 @@ export default function ReviewPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto" />
-          <p className="mt-4 text-gray-600">Загрузка вопросов для повторения...</p>
+      <div style={{ maxWidth: '700px', margin: '0 auto' }}>
+        <div style={{ marginBottom: '1.5rem' }}>
+          <div className="skeleton" style={{ height: '2rem', width: '200px', marginBottom: '1rem' }} />
         </div>
+        <QuestionSkeleton />
       </div>
     );
   }
 
   if (questions.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
-        <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-xl p-8 text-center">
-          <div className="text-6xl mb-4">🎉</div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">Отлично!</h2>
-          <p className="text-gray-600 mb-6">
-            У вас нет ошибок для повторения. Продолжайте практиковаться!
-          </p>
-          <button
-            onClick={() => navigate('/test')}
-            className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-          >
-            Начать новый тест
-          </button>
-        </div>
+      <div className="card animate-fade-in-scale" style={{ maxWidth: '500px', margin: '2rem auto', textAlign: 'center', padding: '3rem' }}>
+        <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🎉</div>
+        <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '1rem', color: 'var(--text-primary)' }}>Отлично!</h2>
+        <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
+          У вас нет ошибок для повторения. Продолжайте практиковаться!
+        </p>
+        <button onClick={() => navigate('/test')} className="btn btn-primary">
+          Начать новый тест
+        </button>
       </div>
     );
   }
 
   const currentQuestion = questions[currentIndex];
 
+  const getDifficultyStyle = (difficulty: string) => {
+    switch(difficulty) {
+      case 'Easy': return { backgroundColor: 'rgba(16, 185, 129, 0.1)', color: 'var(--success-color)' };
+      case 'Medium': return { backgroundColor: 'rgba(245, 158, 11, 0.1)', color: 'var(--warning-color)' };
+      default: return { backgroundColor: 'rgba(239, 68, 68, 0.1)', color: 'var(--error-color)' };
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-100 p-4 md:p-8">
-      <div className="max-w-3xl mx-auto">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-6">
-          <div className="flex items-center gap-3">
-            <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm font-medium">
-              🔄 Повторение ошибок
-            </span>
-          </div>
-          <button
-            onClick={() => navigate('/test')}
-            className="text-gray-600 hover:text-gray-800"
-          >
-            ← Назад
-          </button>
+    <div className="animate-fade-in" style={{ maxWidth: '700px', margin: '0 auto' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+        <span style={{ 
+          padding: '0.375rem 0.75rem', 
+          backgroundColor: 'rgba(245, 158, 11, 0.1)', 
+          color: 'var(--warning-color)',
+          borderRadius: '9999px',
+          fontSize: '0.875rem',
+          fontWeight: '500'
+        }}>
+          🔄 Повторение ошибок
+        </span>
+        <button onClick={() => navigate('/test')} className="btn btn-outline">
+          ← Назад
+        </button>
+      </div>
+
+      {/* Progress */}
+      <div className="card" style={{ padding: '1rem', marginBottom: '1.5rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
+          <span>Вопрос {currentIndex + 1} из {questions.length}</span>
+          <span>{currentQuestion.topicName}</span>
+        </div>
+        <div style={{ width: '100%', backgroundColor: 'var(--border-color)', borderRadius: '9999px', height: '0.5rem' }}>
+          <div style={{ 
+            width: `${((currentIndex + 1) / questions.length) * 100}%`,
+            backgroundColor: 'var(--warning-color)',
+            height: '0.5rem',
+            borderRadius: '9999px',
+            transition: 'width 0.3s ease'
+          }} />
+        </div>
+      </div>
+
+      {/* Question Card */}
+      <div className="card card-static animate-fade-in-up" key={currentQuestion.id}>
+        <div style={{ marginBottom: '1rem' }}>
+          <span style={{ 
+            padding: '0.25rem 0.75rem', 
+            borderRadius: '9999px', 
+            fontSize: '0.75rem', 
+            fontWeight: '500',
+            ...getDifficultyStyle(currentQuestion.difficulty)
+          }}>
+            {currentQuestion.difficulty === 'Easy' ? 'Легкий' :
+             currentQuestion.difficulty === 'Medium' ? 'Средний' : 'Сложный'}
+          </span>
         </div>
 
-        {/* Progress */}
-        <div className="bg-white rounded-xl p-4 mb-6">
-          <div className="flex justify-between text-sm text-gray-600 mb-2">
-            <span>Вопрос {currentIndex + 1} из {questions.length}</span>
-            <span>{currentQuestion.topicName}</span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div
-              className="bg-orange-500 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }}
-            />
-          </div>
-        </div>
+        <h2 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1.5rem', color: 'var(--text-primary)' }}>
+          {currentQuestion.text}
+        </h2>
 
-        {/* Question Card */}
-        <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8">
-          <div className="flex items-center gap-2 mb-4">
-            <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-              currentQuestion.difficulty === 'Easy' ? 'bg-green-100 text-green-700' :
-              currentQuestion.difficulty === 'Medium' ? 'bg-yellow-100 text-yellow-700' :
-              'bg-red-100 text-red-700'
-            }`}>
-              {currentQuestion.difficulty === 'Easy' ? 'Легкий' :
-               currentQuestion.difficulty === 'Medium' ? 'Средний' : 'Сложный'}
-            </span>
-          </div>
-
-          <h2 className="text-xl font-semibold text-gray-800 mb-6">
-            {currentQuestion.text}
-          </h2>
-
-          <div className="space-y-3">
-            {currentQuestion.options.map((option) => {
-              let optionClass = 'border-2 border-gray-200 hover:border-indigo-300';
-              
-              if (answerResult) {
-                if (option.id === answerResult.correctOptionId) {
-                  optionClass = 'border-2 border-green-500 bg-green-50';
-                } else if (option.id === selectedOption && !answerResult.isCorrect) {
-                  optionClass = 'border-2 border-red-500 bg-red-50';
-                }
-              } else if (selectedOption === option.id) {
-                optionClass = 'border-2 border-indigo-500 bg-indigo-50';
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          {currentQuestion.options.map((option) => {
+            let style: React.CSSProperties = { 
+              border: '2px solid var(--border-color)',
+              backgroundColor: 'var(--card-background)'
+            };
+            
+            if (answerResult) {
+              if (option.id === answerResult.correctOptionId) {
+                style = { border: '2px solid var(--success-color)', backgroundColor: 'rgba(16, 185, 129, 0.1)' };
+              } else if (option.id === selectedOption && !answerResult.isCorrect) {
+                style = { border: '2px solid var(--error-color)', backgroundColor: 'rgba(239, 68, 68, 0.1)' };
               }
+            } else if (selectedOption === option.id) {
+              style = { border: '2px solid var(--primary-color)', backgroundColor: 'rgba(79, 70, 229, 0.1)' };
+            }
 
-              return (
-                <button
-                  key={option.id}
-                  onClick={() => !answerResult && setSelectedOption(option.id)}
-                  disabled={answerResult !== null}
-                  className={`w-full p-4 rounded-xl text-left transition-all ${optionClass} disabled:cursor-default`}
-                >
-                  {option.text}
-                </button>
-              );
-            })}
-          </div>
+            return (
+              <button
+                key={option.id}
+                onClick={() => !answerResult && setSelectedOption(option.id)}
+                disabled={answerResult !== null}
+                style={{
+                  ...style,
+                  width: '100%',
+                  padding: '1rem',
+                  borderRadius: '0.75rem',
+                  textAlign: 'left',
+                  cursor: answerResult ? 'default' : 'pointer',
+                  transition: 'all 0.2s ease',
+                  color: 'var(--text-primary)',
+                  fontSize: '0.875rem'
+                }}
+              >
+                {option.text}
+              </button>
+            );
+          })}
+        </div>
 
-          {/* Result Feedback */}
-          {answerResult && (
-            <div className={`mt-6 p-4 rounded-xl ${
-              answerResult.isCorrect ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
-            }`}>
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-2xl">{answerResult.isCorrect ? '✅' : '❌'}</span>
-                <span className={`font-semibold ${answerResult.isCorrect ? 'text-green-700' : 'text-red-700'}`}>
-                  {answerResult.isCorrect ? 'Правильно!' : 'Неправильно'}
-                </span>
-              </div>
-              
-              {!answerResult.isCorrect && (
-                <p className="text-gray-700 mb-2">
-                  <span className="font-medium">Правильный ответ: </span>
-                  {answerResult.correctOptionText}
-                </p>
-              )}
-              
-              {answerResult.explanation && (
-                <div className="mt-3 pt-3 border-t border-gray-200">
-                  <p className="text-sm text-gray-600">
-                    <span className="font-medium">Объяснение: </span>
-                    {answerResult.explanation}
-                  </p>
-                </div>
-              )}
+        {/* Result Feedback */}
+        {answerResult && (
+          <div className="animate-fade-in-up" style={{
+            marginTop: '1.5rem',
+            padding: '1rem',
+            borderRadius: '0.75rem',
+            backgroundColor: answerResult.isCorrect ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+            border: `1px solid ${answerResult.isCorrect ? 'var(--success-color)' : 'var(--error-color)'}`
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+              <span style={{ fontSize: '1.5rem' }}>{answerResult.isCorrect ? '✅' : '❌'}</span>
+              <span style={{ fontWeight: '600', color: answerResult.isCorrect ? 'var(--success-color)' : 'var(--error-color)' }}>
+                {answerResult.isCorrect ? 'Правильно!' : 'Неправильно'}
+              </span>
             </div>
-          )}
-
-          {/* Actions */}
-          <div className="mt-6">
-            {!answerResult ? (
-              <button
-                onClick={handleSubmit}
-                disabled={selectedOption === null || submitting}
-                className="w-full py-3 bg-orange-600 text-white rounded-xl font-semibold hover:bg-orange-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-              >
-                {submitting ? 'Проверка...' : 'Ответить'}
-              </button>
-            ) : (
-              <button
-                onClick={handleNext}
-                className="w-full py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-colors"
-              >
-                {currentIndex < questions.length - 1 ? 'Следующий вопрос' : 'Завершить'}
-              </button>
+            
+            {!answerResult.isCorrect && (
+              <p style={{ color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
+                <span style={{ fontWeight: '500' }}>Правильный ответ: </span>
+                {answerResult.correctOptionText}
+              </p>
+            )}
+            
+            {answerResult.explanation && (
+              <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid var(--border-color)' }}>
+                <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                  <span style={{ fontWeight: '500' }}>Объяснение: </span>
+                  {answerResult.explanation}
+                </p>
+              </div>
             )}
           </div>
+        )}
+
+        {/* Actions */}
+        <div style={{ marginTop: '1.5rem' }}>
+          {!answerResult ? (
+            <button
+              onClick={handleSubmit}
+              disabled={selectedOption === null || submitting}
+              className="btn btn-primary"
+              style={{ width: '100%' }}
+            >
+              {submitting ? 'Проверка...' : 'Ответить'}
+            </button>
+          ) : (
+            <button
+              onClick={handleNext}
+              className="btn btn-primary"
+              style={{ width: '100%' }}
+            >
+              {currentIndex < questions.length - 1 ? 'Следующий вопрос' : 'Завершить'}
+            </button>
+          )}
         </div>
       </div>
     </div>
