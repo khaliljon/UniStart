@@ -336,19 +336,31 @@ public class AdaptiveEngineService : IAdaptiveEngineService
         var result = topics.Select(topic =>
         {
             var topicAnswers = userAnswers.Where(ua => ua.Question.TopicId == topic.Id).ToList();
-            var correctCount = topicAnswers.Count(ua => ua.AnswerOption.IsCorrect);
-            var incorrectCount = topicAnswers.Count(ua => !ua.AnswerOption.IsCorrect);
+            
+            // Count unique questions answered correctly (at least once)
+            var uniqueCorrectQuestions = topicAnswers
+                .Where(ua => ua.AnswerOption.IsCorrect)
+                .Select(ua => ua.QuestionId)
+                .Distinct()
+                .Count();
+            
+            // Total attempts for display
+            var correctAttempts = topicAnswers.Count(ua => ua.AnswerOption.IsCorrect);
+            var incorrectAttempts = topicAnswers.Count(ua => !ua.AnswerOption.IsCorrect);
+            
             var totalQuestions = topic.Questions.Count;
+            
+            // Mastery based on unique correct questions (capped at 100%)
             var mastery = totalQuestions > 0 
-                ? (double)correctCount / totalQuestions * 100 
+                ? Math.Min((double)uniqueCorrectQuestions / totalQuestions * 100, 100.0)
                 : 0;
 
             return new TopicProgressDto(
                 topic.Id,
                 topic.Name,
                 totalQuestions,
-                correctCount,
-                incorrectCount,
+                correctAttempts,
+                incorrectAttempts,
                 Math.Round(mastery, 1)
             );
         });

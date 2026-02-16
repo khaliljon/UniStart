@@ -119,7 +119,7 @@ function TestPage() {
     return (
       <div className="test-container">
         <div className="card" style={{ maxWidth: '600px', margin: '0 auto', padding: '2rem' }}>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '0.5rem', textAlign: 'center' }}>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '0.5rem', textAlign: 'center', color: 'var(--text-primary)' }}>
             Choose Test Mode
           </h2>
           <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem', textAlign: 'center' }}>
@@ -151,7 +151,7 @@ function TestPage() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                 <span style={{ fontSize: '2rem' }}>📚</span>
                 <div>
-                  <h3 style={{ margin: 0, fontSize: '1.125rem', fontWeight: '600' }}>Practice Mode</h3>
+                  <h3 style={{ margin: 0, fontSize: '1.125rem', fontWeight: '600', color: 'var(--text-primary)' }}>Practice Mode</h3>
                   <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
                     No time limit • Explanations after each answer • Learn at your pace
                   </p>
@@ -183,7 +183,7 @@ function TestPage() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                 <span style={{ fontSize: '2rem' }}>⏱️</span>
                 <div>
-                  <h3 style={{ margin: 0, fontSize: '1.125rem', fontWeight: '600' }}>Exam Mode</h3>
+                  <h3 style={{ margin: 0, fontSize: '1.125rem', fontWeight: '600', color: 'var(--text-primary)' }}>Exam Mode</h3>
                   <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
                     60 seconds per question • No explanations • Simulate real exam
                   </p>

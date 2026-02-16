@@ -18,8 +18,12 @@ export default function ReviewPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
+    if (selectedExams.length === 0) {
+      navigate('/');
+      return;
+    }
     loadWeakQuestions();
-  }, []);
+  }, [selectedExams, navigate]);
 
   const loadWeakQuestions = async () => {
     try {
@@ -101,7 +105,7 @@ export default function ReviewPage() {
   return (
     <div className="animate-fade-in" style={{ maxWidth: '700px', margin: '0 auto' }}>
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
         <span style={{ 
           padding: '0.375rem 0.75rem', 
           backgroundColor: 'rgba(245, 158, 11, 0.1)', 
@@ -116,6 +120,24 @@ export default function ReviewPage() {
           ← Назад
         </button>
       </div>
+
+      {/* Selected Exams */}
+      {selectedExams.length > 0 && (
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
+          {selectedExams.map(exam => (
+            <span key={exam} style={{
+              padding: '0.25rem 0.75rem',
+              backgroundColor: 'var(--primary-color)',
+              color: 'white',
+              borderRadius: '9999px',
+              fontSize: '0.75rem',
+              fontWeight: '500'
+            }}>
+              {exam}
+            </span>
+          ))}
+        </div>
+      )}
 
       {/* Progress */}
       <div className="card" style={{ padding: '1rem', marginBottom: '1.5rem' }}>

@@ -25,8 +25,12 @@ export default function TopicsPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
+    if (selectedExams.length === 0) {
+      navigate('/');
+      return;
+    }
     loadTopics();
-  }, []);
+  }, [selectedExams, navigate]);
 
   const loadTopics = async () => {
     try {
@@ -129,12 +133,30 @@ export default function TopicsPage() {
     return (
       <div className="animate-fade-in" style={{ maxWidth: '800px', margin: '0 auto' }}>
         {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
           <h1 style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-primary)' }}>📚 Темы</h1>
           <button onClick={() => navigate('/test')} className="btn btn-outline">
             ← Назад
           </button>
         </div>
+
+        {/* Selected Exams */}
+        {selectedExams.length > 0 && (
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
+            {selectedExams.map(exam => (
+              <span key={exam} style={{
+                padding: '0.25rem 0.75rem',
+                backgroundColor: 'var(--primary-color)',
+                color: 'white',
+                borderRadius: '9999px',
+                fontSize: '0.75rem',
+                fontWeight: '500'
+              }}>
+                {exam}
+              </span>
+            ))}
+          </div>
+        )}
 
         {/* Stats Summary */}
         <div className="card animate-fade-in-up" style={{ marginBottom: '1.5rem', padding: '1.5rem' }}>
@@ -176,7 +198,7 @@ export default function TopicsPage() {
                 <div>
                   <h3 style={{ fontWeight: '600', color: 'var(--text-primary)', marginBottom: '0.25rem' }}>{topic.topicName}</h3>
                   <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                    {topic.totalQuestions} вопросов
+                    {topic.totalQuestions} {topic.totalQuestions === 1 ? 'вопрос' : 'вопросов'} в теме
                   </p>
                 </div>
                 <span style={{ 
@@ -193,7 +215,7 @@ export default function TopicsPage() {
               {/* Progress Bar */}
               <div style={{ width: '100%', backgroundColor: 'var(--border-color)', borderRadius: '9999px', height: '0.5rem' }}>
                 <div style={{ 
-                  width: `${topic.masteryPercentage}%`,
+                  width: `${Math.min(topic.masteryPercentage, 100)}%`,
                   backgroundColor: getMasteryColor(topic.masteryPercentage),
                   height: '0.5rem',
                   borderRadius: '9999px',
@@ -202,7 +224,7 @@ export default function TopicsPage() {
               </div>
 
               <div style={{ marginTop: '0.5rem', display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                <span>✅ {topic.correctAnswers} правильно</span>
+                <span>✅ {topic.correctAnswers} верных ответов</span>
                 <span>❌ {topic.incorrectAnswers} ошибок</span>
               </div>
             </div>
