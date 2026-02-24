@@ -195,3 +195,89 @@ export interface SubmitAnswerRequest {
   timeSpentSeconds?: number;
   testSessionId?: number;
 }
+
+// Stage 6: Study Plan Types
+export interface StudyGoal {
+  id: number;
+  examTypeCode: string;
+  examTypeName: string;
+  targetDate: string;
+  targetScore: number;
+  isActive: boolean;
+  daysUntilExam: number;
+  recommendedHoursPerDay: number;
+  createdAt: string;
+}
+
+export interface CreateStudyGoalRequest {
+  examTypeCode: string;
+  targetDate: string;
+  targetScore: number;
+}
+
+export interface UpdateStudyGoalRequest {
+  targetDate?: string;
+  targetScore?: number;
+  isActive?: boolean;
+}
+
+export interface StudyPlan {
+  id: number;
+  goalId: number;
+  examTypeCode: string;
+  examTypeName: string;
+  generatedAt: string;
+  isActive: boolean;
+  totalEntries: number;
+  completedEntries: number;
+  completionPercent: number;
+  entries: StudyPlanEntry[];
+}
+
+export interface StudyPlanEntry {
+  id: number;
+  topicId: number;
+  topicName: string;
+  date: string;
+  recommendedMinutes: number;
+  type: 'New' | 'Review' | 'Practice' | 'Weakness';
+  recommendedQuestions: number;
+  isCompleted: boolean;
+  completedAt: string | null;
+  questionsAnswered: number;
+  correctAnswers: number;
+}
+
+export interface TodayPlan {
+  date: string;
+  hasGoal: boolean;
+  examTypeCode: string | null;
+  examTypeName: string | null;
+  daysUntilExam: number;
+  totalMinutesToday: number;
+  entries: StudyPlanEntry[];
+  recommendation: string;
+}
+
+export interface CompleteEntryRequest {
+  questionsAnswered: number;
+  correctAnswers: number;
+}
+
+export interface PlanStats {
+  totalDays: number;
+  completedDays: number;
+  skippedDays: number;
+  averageAccuracy: number;
+  totalQuestionsAnswered: number;
+  adherencePercent: number;
+  weeklySummary: WeekSummary[];
+}
+
+export interface WeekSummary {
+  weekStart: string;
+  plannedEntries: number;
+  completedEntries: number;
+  totalMinutesPlanned: number;
+  accuracy: number;
+}

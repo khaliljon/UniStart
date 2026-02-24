@@ -9,6 +9,7 @@ import AnalyticsPage from './pages/AnalyticsPage'
 import ReviewPage from './pages/ReviewPage'
 import TopicsPage from './pages/TopicsPage'
 import HistoryPage from './pages/HistoryPage'
+import StudyPlanPage from './pages/StudyPlanPage'
 
 function App() {
   const { isAuthenticated } = useAppSelector((state) => state.auth)
@@ -25,6 +26,7 @@ function App() {
         <Route path="history" element={<HistoryPage />} />
         <Route path="review" element={<ReviewPage />} />
         <Route path="topics" element={<TopicsPage />} />
+        <Route path="study-plan" element={<StudyPlanPage />} />
       </Route>
     </Routes>
   )

@@ -20,6 +20,9 @@ public class UniStartDbContext : DbContext
     public DbSet<UserSkillProfile> UserSkillProfiles => Set<UserSkillProfile>();
     public DbSet<TestSession> TestSessions => Set<TestSession>();
     public DbSet<TopicDependency> TopicDependencies => Set<TopicDependency>();
+    public DbSet<StudyGoal> StudyGoals => Set<StudyGoal>();
+    public DbSet<StudyPlan> StudyPlans => Set<StudyPlan>();
+    public DbSet<StudyPlanEntry> StudyPlanEntries => Set<StudyPlanEntry>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -181,6 +184,54 @@ public class UniStartDbContext : DbContext
                   .WithMany(t => t.DependentTopics)
                   .HasForeignKey(e => e.PrerequisiteTopicId)
                   .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // ─── Study Goal ─────────────────────────────────────────
+        modelBuilder.Entity<StudyGoal>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasOne(e => e.User)
+                  .WithMany()
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.ExamType)
+                  .WithMany()
+                  .HasForeignKey(e => e.ExamTypeCode)
+                  .OnDelete(DeleteBehavior.Restrict);
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+        });
+
+        // ─── Study Plan ─────────────────────────────────────────
+        modelBuilder.Entity<StudyPlan>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasOne(e => e.User)
+                  .WithMany()
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Goal)
+                  .WithMany(g => g.StudyPlans)
+                  .HasForeignKey(e => e.GoalId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+        });
+
+        // ─── Study Plan Entry ───────────────────────────────────
+        modelBuilder.Entity<StudyPlanEntry>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasOne(e => e.Plan)
+                  .WithMany(p => p.Entries)
+                  .HasForeignKey(e => e.PlanId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Topic)
+                  .WithMany()
+                  .HasForeignKey(e => e.TopicId)
+                  .OnDelete(DeleteBehavior.Restrict);
+            entity.Property(e => e.Type)
+                  .HasConversion<string>()
+                  .HasMaxLength(20);
+            entity.Property(e => e.IsCompleted).HasDefaultValue(false);
         });
 
         // Seed exam types
