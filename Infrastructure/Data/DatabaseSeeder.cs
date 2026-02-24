@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using UniStart.Application.Services;
 using UniStart.Domain.Entities;
 
 namespace UniStart.Infrastructure.Data;
@@ -74,6 +75,15 @@ public class DatabaseSeeder
             await SeedQuestionsAsync();
         }
 
+        // Update IRT parameters on existing questions that still have defaults
+        await UpdateIrtParametersAsync();
+
+        // Seed Topic Dependencies (knowledge graph)
+        if (!await _context.TopicDependencies.AnyAsync())
+        {
+            await SeedTopicDependenciesAsync();
+        }
+
         await _context.SaveChangesAsync();
     }
 
@@ -87,6 +97,7 @@ public class DatabaseSeeder
         _context.UserSkillProfiles.RemoveRange(_context.UserSkillProfiles);
         _context.AnswerOptions.RemoveRange(_context.AnswerOptions);
         _context.Questions.RemoveRange(_context.Questions);
+        _context.TopicDependencies.RemoveRange(_context.TopicDependencies);
         _context.Topics.RemoveRange(_context.Topics);
         _context.ExamSections.RemoveRange(_context.ExamSections);
         _context.Skills.RemoveRange(_context.Skills);
@@ -241,6 +252,9 @@ public class DatabaseSeeder
             TopicId = mainIdea.Id,
             Text = "What is the main idea of the passage about economic growth?",
             Difficulty = QuestionDifficulty.Easy,
+            DifficultyParam = -1.2,
+            DiscriminationParam = 0.8,
+            GuessParam = 0.25,
             Explanation = "The passage discusses how government policies directly influence economic indicators and growth rates, making 'Growth depends on policy' the central theme.",
             AnswerOptions = new List<AnswerOption>
             {
@@ -258,6 +272,9 @@ public class DatabaseSeeder
             TopicId = mainIdea.Id,
             Text = "Based on the passage, which statement best summarizes the author's central argument about climate change?",
             Difficulty = QuestionDifficulty.Medium,
+            DifficultyParam = 0.2,
+            DiscriminationParam = 1.1,
+            GuessParam = 0.25,
             Explanation = "The author emphasizes urgency and collective responsibility throughout the passage, which aligns with the need for immediate global action rather than passive or localized responses.",
             AnswerOptions = new List<AnswerOption>
             {
@@ -275,6 +292,9 @@ public class DatabaseSeeder
             TopicId = grammar.Id,
             Text = "Choose the correct form of the underlined word: \"The scientist's argument was _____...\"",
             Difficulty = QuestionDifficulty.Easy,
+            DifficultyParam = -1.0,
+            DiscriminationParam = 0.7,
+            GuessParam = 0.25,
             Explanation = "The sentence requires an adjective to describe the argument. 'Flawed' is the past participle used as an adjective, meaning having defects or errors.",
             AnswerOptions = new List<AnswerOption>
             {
@@ -292,6 +312,9 @@ public class DatabaseSeeder
             TopicId = grammar.Id,
             Text = "Which version of the sentence is grammatically correct?",
             Difficulty = QuestionDifficulty.Medium,
+            DifficultyParam = 0.3,
+            DiscriminationParam = 1.0,
+            GuessParam = 0.25,
             Explanation = "With 'neither...nor', the verb agrees with the noun closest to it. Since 'teacher' is singular, we use 'was'. Also, 'neither' always pairs with 'nor', not 'or'.",
             AnswerOptions = new List<AnswerOption>
             {
@@ -309,6 +332,9 @@ public class DatabaseSeeder
             TopicId = grammar.Id,
             Text = "Select the sentence that correctly uses parallel structure.",
             Difficulty = QuestionDifficulty.Hard,
+            DifficultyParam = 1.3,
+            DiscriminationParam = 1.2,
+            GuessParam = 0.25,
             Explanation = "Parallel structure requires consistency in form. 'Hiking, swimming, and riding' are all gerunds (-ing forms), maintaining grammatical parallelism throughout the list.",
             AnswerOptions = new List<AnswerOption>
             {
@@ -326,6 +352,9 @@ public class DatabaseSeeder
             TopicId = vocabulary.Id,
             Text = "In the context of the passage, the word \"ubiquitous\" most nearly means:",
             Difficulty = QuestionDifficulty.Medium,
+            DifficultyParam = 0.1,
+            DiscriminationParam = 0.9,
+            GuessParam = 0.25,
             Explanation = "'Ubiquitous' comes from Latin 'ubique' meaning 'everywhere'. It describes something that is present, appears, or is encountered everywhere.",
             AnswerOptions = new List<AnswerOption>
             {
@@ -345,6 +374,9 @@ public class DatabaseSeeder
             TopicId = linearEq.Id,
             Text = "If 3x + 4 = 19, what is x?",
             Difficulty = QuestionDifficulty.Easy,
+            DifficultyParam = -1.5,
+            DiscriminationParam = 0.9,
+            GuessParam = 0.25,
             Explanation = "Subtract 4 from both sides: 3x = 15. Then divide by 3: x = 5.",
             AnswerOptions = new List<AnswerOption>
             {
@@ -362,6 +394,9 @@ public class DatabaseSeeder
             TopicId = linearEq.Id,
             Text = "If 2(x - 3) + 5 = 3x - 4, what is x?",
             Difficulty = QuestionDifficulty.Medium,
+            DifficultyParam = 0.0,
+            DiscriminationParam = 1.1,
+            GuessParam = 0.25,
             Explanation = "Expand: 2x - 6 + 5 = 3x - 4. Simplify: 2x - 1 = 3x - 4. Subtract 2x: -1 = x - 4. Add 4: x = 3.",
             AnswerOptions = new List<AnswerOption>
             {
@@ -379,6 +414,9 @@ public class DatabaseSeeder
             TopicId = geometry.Id,
             Text = "A triangle has sides 5, 12, and 13. What is its area?",
             Difficulty = QuestionDifficulty.Easy,
+            DifficultyParam = -0.8,
+            DiscriminationParam = 0.8,
+            GuessParam = 0.25,
             Explanation = "This is a right triangle (5² + 12² = 25 + 144 = 169 = 13²). Area = (1/2) × base × height = (1/2) × 5 × 12 = 30.",
             AnswerOptions = new List<AnswerOption>
             {
@@ -396,6 +434,9 @@ public class DatabaseSeeder
             TopicId = geometry.Id,
             Text = "A circle has a circumference of 31.4 cm. What is its approximate radius?",
             Difficulty = QuestionDifficulty.Medium,
+            DifficultyParam = 0.1,
+            DiscriminationParam = 1.0,
+            GuessParam = 0.25,
             Explanation = "Circumference = 2πr. So r = C/(2π) = 31.4/(2×3.14) = 31.4/6.28 = 5 cm.",
             AnswerOptions = new List<AnswerOption>
             {
@@ -413,6 +454,9 @@ public class DatabaseSeeder
             TopicId = geometry.Id,
             Text = "In a right triangle, one leg is 8 and the hypotenuse is 17. What is the length of the other leg?",
             Difficulty = QuestionDifficulty.Hard,
+            DifficultyParam = 1.0,
+            DiscriminationParam = 1.3,
+            GuessParam = 0.25,
             Explanation = "Using Pythagorean theorem: a² + b² = c². So 8² + b² = 17². 64 + b² = 289. b² = 225. b = 15.",
             AnswerOptions = new List<AnswerOption>
             {
@@ -430,6 +474,9 @@ public class DatabaseSeeder
             TopicId = quadratic.Id,
             Text = "What are the solutions to x² - 5x + 6 = 0?",
             Difficulty = QuestionDifficulty.Medium,
+            DifficultyParam = -0.1,
+            DiscriminationParam = 1.0,
+            GuessParam = 0.25,
             Explanation = "Factor the quadratic: (x - 2)(x - 3) = 0. Set each factor to zero: x - 2 = 0 gives x = 2, x - 3 = 0 gives x = 3.",
             AnswerOptions = new List<AnswerOption>
             {
@@ -447,6 +494,9 @@ public class DatabaseSeeder
             TopicId = quadratic.Id,
             Text = "For the equation x² + 6x + k = 0 to have exactly one solution, what must k equal?",
             Difficulty = QuestionDifficulty.Hard,
+            DifficultyParam = 1.6,
+            DiscriminationParam = 1.4,
+            GuessParam = 0.25,
             Explanation = "For exactly one solution, discriminant must equal 0: b² - 4ac = 0. So 36 - 4(1)(k) = 0. 36 = 4k. k = 9.",
             AnswerOptions = new List<AnswerOption>
             {
@@ -464,6 +514,9 @@ public class DatabaseSeeder
             TopicId = dataAnalysis.Id,
             Text = "What is the mean of the numbers: 4, 8, 6, 10, 12?",
             Difficulty = QuestionDifficulty.Easy,
+            DifficultyParam = -1.3,
+            DiscriminationParam = 0.7,
+            GuessParam = 0.25,
             Explanation = "Mean = sum of values / count. (4 + 8 + 6 + 10 + 12) / 5 = 40 / 5 = 8.",
             AnswerOptions = new List<AnswerOption>
             {
@@ -481,6 +534,9 @@ public class DatabaseSeeder
             TopicId = dataAnalysis.Id,
             Text = "A dataset has values 3, 7, 7, 10, 15. What is the median?",
             Difficulty = QuestionDifficulty.Medium,
+            DifficultyParam = -0.2,
+            DiscriminationParam = 0.9,
+            GuessParam = 0.25,
             Explanation = "The median is the middle value when data is sorted. With 5 values (3, 7, 7, 10, 15), the middle (3rd) value is 7.",
             AnswerOptions = new List<AnswerOption>
             {
@@ -500,6 +556,9 @@ public class DatabaseSeeder
             TopicId = academicReading.Id,
             Text = "According to the passage, what is the primary function of photosynthesis?",
             Difficulty = QuestionDifficulty.Easy,
+            DifficultyParam = -1.1,
+            DiscriminationParam = 0.8,
+            GuessParam = 0.25,
             Explanation = "Photosynthesis is the process by which plants convert light energy into chemical energy (glucose) using carbon dioxide and water.",
             AnswerOptions = new List<AnswerOption>
             {
@@ -517,6 +576,9 @@ public class DatabaseSeeder
             TopicId = academicReading.Id,
             Text = "Which sentence best summarizes the author's opinion on climate change?",
             Difficulty = QuestionDifficulty.Medium,
+            DifficultyParam = 0.4,
+            DiscriminationParam = 1.0,
+            GuessParam = 0.25,
             Explanation = "The author repeatedly emphasizes urgency and the need for collective action, indicating that immediate steps must be taken.",
             AnswerOptions = new List<AnswerOption>
             {
@@ -534,6 +596,9 @@ public class DatabaseSeeder
             TopicId = academicReading.Id,
             Text = "The author's use of the phrase \"double-edged sword\" in paragraph 3 suggests that technology:",
             Difficulty = QuestionDifficulty.Hard,
+            DifficultyParam = 1.4,
+            DiscriminationParam = 1.2,
+            GuessParam = 0.25,
             Explanation = "'Double-edged sword' is an idiom meaning something that has both advantages and disadvantages, or can cause both good and harm.",
             AnswerOptions = new List<AnswerOption>
             {
@@ -551,6 +616,9 @@ public class DatabaseSeeder
             TopicId = lectureComp.Id,
             Text = "The lecturer's main point about biodiversity was:",
             Difficulty = QuestionDifficulty.Medium,
+            DifficultyParam = 0.2,
+            DiscriminationParam = 1.0,
+            GuessParam = 0.25,
             Explanation = "The professor cited multiple examples of species loss and habitat destruction as evidence that biodiversity is declining globally.",
             AnswerOptions = new List<AnswerOption>
             {
@@ -568,6 +636,9 @@ public class DatabaseSeeder
             TopicId = lectureComp.Id,
             Text = "In the lecture, why does the professor mention the extinction of the dodo bird?",
             Difficulty = QuestionDifficulty.Hard,
+            DifficultyParam = 1.2,
+            DiscriminationParam = 1.1,
+            GuessParam = 0.25,
             Explanation = "The dodo bird is used as a classic example of human-caused extinction through hunting and habitat destruction by European settlers.",
             AnswerOptions = new List<AnswerOption>
             {
@@ -587,6 +658,9 @@ public class DatabaseSeeder
             TopicId = algebra.Id,
             Text = "Simplify: 3(x + 2) - 2(x - 1)",
             Difficulty = QuestionDifficulty.Easy,
+            DifficultyParam = -1.0,
+            DiscriminationParam = 0.8,
+            GuessParam = 0.25,
             Explanation = "Distribute: 3x + 6 - 2x + 2. Combine like terms: (3x - 2x) + (6 + 2) = x + 8.",
             AnswerOptions = new List<AnswerOption>
             {
@@ -604,6 +678,9 @@ public class DatabaseSeeder
             TopicId = algebra.Id,
             Text = "If f(x) = 2x² - 3x + 1, what is f(2)?",
             Difficulty = QuestionDifficulty.Medium,
+            DifficultyParam = 0.0,
+            DiscriminationParam = 1.0,
+            GuessParam = 0.25,
             Explanation = "Substitute x = 2: f(2) = 2(2)² - 3(2) + 1 = 2(4) - 6 + 1 = 8 - 6 + 1 = 3.",
             AnswerOptions = new List<AnswerOption>
             {
@@ -621,6 +698,9 @@ public class DatabaseSeeder
             TopicId = problemSolving.Id,
             Text = "A train travels 120 km in 2 hours. What is its average speed?",
             Difficulty = QuestionDifficulty.Easy,
+            DifficultyParam = -1.4,
+            DiscriminationParam = 0.7,
+            GuessParam = 0.25,
             Explanation = "Average speed = distance / time = 120 km / 2 hours = 60 km/h.",
             AnswerOptions = new List<AnswerOption>
             {
@@ -638,6 +718,9 @@ public class DatabaseSeeder
             TopicId = problemSolving.Id,
             Text = "If 5 workers can complete a job in 12 days, how many days would it take 10 workers?",
             Difficulty = QuestionDifficulty.Medium,
+            DifficultyParam = 0.3,
+            DiscriminationParam = 1.1,
+            GuessParam = 0.25,
             Explanation = "Work is inversely proportional to workers. Total work = 5 × 12 = 60 worker-days. With 10 workers: 60 / 10 = 6 days.",
             AnswerOptions = new List<AnswerOption>
             {
@@ -655,6 +738,9 @@ public class DatabaseSeeder
             TopicId = problemSolving.Id,
             Text = "A mixture contains milk and water in the ratio 3:2. How much water must be added to 10 liters of mixture to make the ratio 3:4?",
             Difficulty = QuestionDifficulty.Hard,
+            DifficultyParam = 1.5,
+            DiscriminationParam = 1.3,
+            GuessParam = 0.25,
             Explanation = "In 10L with ratio 3:2, milk = 6L, water = 4L. For ratio 3:4, if milk is 6L, water should be 8L. Need to add 8 - 4 = 4 liters.",
             AnswerOptions = new List<AnswerOption>
             {
@@ -672,6 +758,9 @@ public class DatabaseSeeder
             TopicId = logicalReasoning.Id,
             Text = "If all dogs are animals, and Rex is a dog, then:",
             Difficulty = QuestionDifficulty.Easy,
+            DifficultyParam = -1.3,
+            DiscriminationParam = 0.8,
+            GuessParam = 0.25,
             Explanation = "This is a basic syllogism. If all members of set A (dogs) belong to set B (animals), and Rex is in set A, then Rex must be in set B.",
             AnswerOptions = new List<AnswerOption>
             {
@@ -689,6 +778,9 @@ public class DatabaseSeeder
             TopicId = logicalReasoning.Id,
             Text = "If all A are B and some B are C, which must be true?",
             Difficulty = QuestionDifficulty.Medium,
+            DifficultyParam = 0.4,
+            DiscriminationParam = 1.0,
+            GuessParam = 0.25,
             Explanation = "Since all A are B, and some B are C, there's a possibility (but not certainty) that some of those B that are C could also be A.",
             AnswerOptions = new List<AnswerOption>
             {
@@ -706,6 +798,9 @@ public class DatabaseSeeder
             TopicId = logicalReasoning.Id,
             Text = "Statement: All managers are leaders. Some leaders are not effective. Conclusion: Some managers are not effective. This conclusion is:",
             Difficulty = QuestionDifficulty.Hard,
+            DifficultyParam = 1.7,
+            DiscriminationParam = 1.4,
+            GuessParam = 0.25,
             Explanation = "The ineffective leaders might not include any managers — we only know some leaders are ineffective, not that any of those are managers.",
             AnswerOptions = new List<AnswerOption>
             {
@@ -723,6 +818,9 @@ public class DatabaseSeeder
             TopicId = argumentAnalysis.Id,
             Text = "\"Sales increased after the new advertisement campaign. Therefore, the campaign was successful.\" What is the logical flaw?",
             Difficulty = QuestionDifficulty.Medium,
+            DifficultyParam = 0.1,
+            DiscriminationParam = 1.1,
+            GuessParam = 0.25,
             Explanation = "Post hoc fallacy: just because B followed A doesn't mean A caused B. Other factors could have increased sales.",
             AnswerOptions = new List<AnswerOption>
             {
@@ -740,6 +838,9 @@ public class DatabaseSeeder
             TopicId = argumentAnalysis.Id,
             Text = "\"We should not listen to John's opinion on healthy eating because he is overweight.\" This argument is flawed because:",
             Difficulty = QuestionDifficulty.Hard,
+            DifficultyParam = 1.1,
+            DiscriminationParam = 1.2,
+            GuessParam = 0.25,
             Explanation = "This is an ad hominem fallacy — attacking the person's characteristics rather than addressing the merit of their argument.",
             AnswerOptions = new List<AnswerOption>
             {
@@ -752,6 +853,97 @@ public class DatabaseSeeder
         questions.Add(q30);
 
         await _context.Questions.AddRangeAsync(questions);
+        await _context.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Updates IRT parameters on existing questions that still have default values.
+    /// Uses IrtMath helper methods to map from QuestionDifficulty enum.
+    /// </summary>
+    private async Task UpdateIrtParametersAsync()
+    {
+        // Find questions that still have default IRT params (DiscriminationParam == 1.0 and DifficultyParam == 0.0)
+        var questionsToUpdate = await _context.Questions
+            .Where(q => q.DiscriminationParam == 1.0 && q.DifficultyParam == 0.0 && q.GuessParam == 0.25)
+            .ToListAsync();
+
+        if (!questionsToUpdate.Any()) return;
+
+        var random = new Random(42); // deterministic seed for reproducibility
+
+        foreach (var q in questionsToUpdate)
+        {
+            // Base IRT params from difficulty enum
+            var baseB = IrtMath.DifficultyToParam(q.Difficulty);
+            var baseA = IrtMath.DifficultyToDiscrimination(q.Difficulty);
+
+            // Add small per-question variation for realism
+            q.DifficultyParam = baseB + (random.NextDouble() - 0.5) * 0.4; // ±0.2
+            q.DiscriminationParam = Math.Max(0.5, baseA + (random.NextDouble() - 0.5) * 0.3); // ±0.15, min 0.5
+            q.GuessParam = 0.25; // 4-option MCQ
+        }
+
+        await _context.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Seeds prerequisite relationships between topics (knowledge graph).
+    /// </summary>
+    private async Task SeedTopicDependenciesAsync()
+    {
+        var topics = await _context.Topics.ToListAsync();
+
+        TopicDependency? MakeDep(string topicName, string prereqName, double weight)
+        {
+            var topic = topics.FirstOrDefault(t => t.Name == topicName);
+            var prereq = topics.FirstOrDefault(t => t.Name == prereqName);
+            if (topic == null || prereq == null) return null;
+            return new TopicDependency
+            {
+                TopicId = topic.Id,
+                PrerequisiteTopicId = prereq.Id,
+                Weight = weight
+            };
+        }
+
+        var dependencies = new List<TopicDependency?>
+        {
+            // SAT Math: Linear Equations → Quadratic Equations (strong prerequisite)
+            MakeDep("Quadratic Equations", "Linear Equations", 0.9),
+
+            // SAT Math: Geometry builds on basic algebra
+            MakeDep("Geometry", "Linear Equations", 0.4),
+
+            // SAT Math: Data Analysis benefits from algebra
+            MakeDep("Data Analysis", "Linear Equations", 0.3),
+
+            // SAT Reading: Vocabulary helps Main Idea comprehension
+            MakeDep("Main Idea & Summary", "Vocabulary in Context", 0.5),
+
+            // SAT Writing: Grammar is foundational for sentence structure
+            // (Grammar is the topic itself, so no self-dep needed)
+
+            // NUET: Algebra & Functions → Problem Solving (must know algebra to solve problems)
+            MakeDep("Problem Solving", "Algebra & Functions", 0.8),
+
+            // NUET: Logical Reasoning → Argument Analysis
+            MakeDep("Argument Analysis", "Logical Reasoning", 0.7),
+
+            // Cross-exam: SAT Math topics feed into NUET Algebra
+            MakeDep("Algebra & Functions", "Linear Equations", 0.6),
+            MakeDep("Algebra & Functions", "Quadratic Equations", 0.5),
+
+            // TOEFL: Academic Reading builds on general reading skills
+            MakeDep("Academic Reading", "Main Idea & Summary", 0.5),
+            MakeDep("Academic Reading", "Vocabulary in Context", 0.4),
+
+            // TOEFL: Integrated Writing needs reading comprehension
+            MakeDep("Integrated Writing", "Academic Reading", 0.6),
+            MakeDep("Integrated Writing", "Grammar & Sentence Structure", 0.5),
+        };
+
+        var validDeps = dependencies.Where(d => d != null).Cast<TopicDependency>().ToList();
+        await _context.TopicDependencies.AddRangeAsync(validDeps);
         await _context.SaveChangesAsync();
     }
 }

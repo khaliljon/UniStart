@@ -13,7 +13,11 @@ public record UserSkillProfileDto(
     string SkillName,
     string SkillCode,
     int Level,
-    DateTime LastUpdated
+    DateTime LastUpdated,
+    double Theta = 0.0,
+    double ThetaSE = 1.0,
+    int ConfidenceLow = 0,
+    int ConfidenceHigh = 100
 );
 
 public record SkillAnalyticsDto(

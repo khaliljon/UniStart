@@ -73,6 +73,11 @@ export interface AnswerResult {
   explanation: string | null;
   newSkillLevel: number;
   skillChange: number;
+  // IRT fields
+  theta?: number;
+  thetaSE?: number;
+  confidenceLow?: number;
+  confidenceHigh?: number;
 }
 
 // Skill types
@@ -82,6 +87,11 @@ export interface UserSkillProfile {
   skillCode: string;
   level: number;
   lastUpdated: string;
+  // IRT fields
+  theta?: number;
+  thetaSE?: number;
+  confidenceLow?: number;
+  confidenceHigh?: number;
 }
 
 export interface SkillAnalytics {

@@ -21,9 +21,9 @@ public interface IAdaptiveEngineService
     Task<AnswerResultDto> ProcessAnswerAsync(int userId, SubmitAnswerDto answer);
 
     /// <summary>
-    /// Updates user's skill level based on answer correctness
+    /// Updates user's skill level based on answer correctness using IRT EAP estimation
     /// </summary>
-    Task<(int newLevel, int change)> UpdateSkillLevelAsync(int userId, int skillId, bool isCorrect);
+    Task<(int newLevel, int change, double theta, double thetaSE)> UpdateSkillLevelAsync(int userId, int skillId, bool isCorrect);
 
     /// <summary>
     /// Gets user's current skill profile for a specific skill

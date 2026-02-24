@@ -48,13 +48,22 @@ public class AnalyticsService : IAnalyticsService
             .OrderByDescending(p => p.Level)
             .ToListAsync();
 
-        return profiles.Select(p => new UserSkillProfileDto(
-            p.SkillId,
-            p.Skill.Name,
-            p.Skill.Code,
-            p.Level,
-            p.LastUpdated
-        ));
+        return profiles.Select(p =>
+        {
+            var confLow = IrtMath.ThetaToLevel(p.Theta - 1.96 * p.ThetaSE);
+            var confHigh = IrtMath.ThetaToLevel(p.Theta + 1.96 * p.ThetaSE);
+            return new UserSkillProfileDto(
+                p.SkillId,
+                p.Skill.Name,
+                p.Skill.Code,
+                p.Level,
+                p.LastUpdated,
+                p.Theta,
+                p.ThetaSE,
+                confLow,
+                confHigh
+            );
+        });
     }
 
     // ─── Stage 4: Enhanced Analytics ───────────────────────────────

@@ -507,13 +507,22 @@ function TestPage() {
               paddingTop: '0.5rem',
               borderTop: '1px solid rgba(0,0,0,0.1)',
               fontSize: '0.875rem',
-              color: 'var(--text-secondary)'
+              color: 'var(--text-secondary)',
+              flexWrap: 'wrap',
             }}>
               <span>
                 Skill: {answerResult.skillChange > 0 ? '+' : ''}{answerResult.skillChange}
               </span>
               <span>•</span>
               <span>Level: {answerResult.newSkillLevel}</span>
+              {answerResult.confidenceLow != null && answerResult.confidenceHigh != null && (
+                <>
+                  <span>•</span>
+                  <span style={{ fontSize: '0.8rem' }}>
+                    95% CI: {answerResult.confidenceLow}–{answerResult.confidenceHigh}
+                  </span>
+                </>
+              )}
             </div>
           </div>
         )}

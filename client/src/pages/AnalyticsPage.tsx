@@ -267,7 +267,7 @@ function AnalyticsPage() {
         </div>
       </div>
 
-      {/* Skill Bars (detailed) */}
+      {/* Skill Bars (detailed, with confidence intervals) */}
       <div className="card card-static animate-fade-in-up" style={{ marginTop: '2rem', animationDelay: '0.9s' }}>
         <h2 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1.5rem' }}>
           Skill Levels
@@ -278,27 +278,55 @@ function AnalyticsPage() {
           </p>
         ) : (
           <div className="skills-list">
-            {dashboard.skillProfiles.map((skill, index) => (
-              <div
-                key={skill.skillId}
-                className="skill-item animate-slide-in"
-                style={{ animationDelay: `${1.0 + index * 0.1}s` }}
-              >
-                <span className="skill-name">{skill.skillName}</span>
-                <div className="skill-bar">
-                  <div
-                    className="skill-bar-fill"
-                    style={{
-                      width: `${skill.level}%`,
-                      backgroundColor: getSkillLevelColor(skill.level),
-                    }}
-                  />
+            {dashboard.skillProfiles.map((skill, index) => {
+              const hasConfidence = skill.confidenceLow != null && skill.confidenceHigh != null;
+              return (
+                <div
+                  key={skill.skillId}
+                  className="skill-item animate-slide-in"
+                  style={{ animationDelay: `${1.0 + index * 0.1}s` }}
+                >
+                  <span className="skill-name">{skill.skillName}</span>
+                  <div className="skill-bar" style={{ position: 'relative' }}>
+                    {/* Confidence interval band */}
+                    {hasConfidence && (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          left: `${skill.confidenceLow}%`,
+                          width: `${Math.max(0, (skill.confidenceHigh ?? 0) - (skill.confidenceLow ?? 0))}%`,
+                          height: '100%',
+                          backgroundColor: getSkillLevelColor(skill.level),
+                          opacity: 0.15,
+                          borderRadius: '0.5rem',
+                          zIndex: 0,
+                        }}
+                        title={`95% confidence: ${skill.confidenceLow}–${skill.confidenceHigh}`}
+                      />
+                    )}
+                    <div
+                      className="skill-bar-fill"
+                      style={{
+                        width: `${skill.level}%`,
+                        backgroundColor: getSkillLevelColor(skill.level),
+                        position: 'relative',
+                        zIndex: 1,
+                      }}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', minWidth: '3.5rem' }}>
+                    <span className="skill-level" style={{ color: getSkillLevelColor(skill.level) }}>
+                      {skill.level}
+                    </span>
+                    {hasConfidence && (
+                      <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+                        ±{Math.round(((skill.confidenceHigh ?? 0) - (skill.confidenceLow ?? 0)) / 2)}
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <span className="skill-level" style={{ color: getSkillLevelColor(skill.level) }}>
-                  {skill.level}
-                </span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -311,17 +339,22 @@ function AnalyticsPage() {
         <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <div style={{ width: '1rem', height: '1rem', borderRadius: '50%', backgroundColor: 'var(--error-color)' }} />
-            <span style={{ fontSize: '0.875rem' }}>0-39: Beginner (Easy questions)</span>
+            <span style={{ fontSize: '0.875rem' }}>0-39: Beginner</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <div style={{ width: '1rem', height: '1rem', borderRadius: '50%', backgroundColor: 'var(--warning-color)' }} />
-            <span style={{ fontSize: '0.875rem' }}>40-69: Intermediate (Medium questions)</span>
+            <span style={{ fontSize: '0.875rem' }}>40-69: Intermediate</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <div style={{ width: '1rem', height: '1rem', borderRadius: '50%', backgroundColor: 'var(--success-color)' }} />
-            <span style={{ fontSize: '0.875rem' }}>70-100: Advanced (Hard questions)</span>
+            <span style={{ fontSize: '0.875rem' }}>70-100: Advanced</span>
           </div>
         </div>
+        <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.75rem', lineHeight: '1.4' }}>
+          Skill levels are estimated using Item Response Theory (IRT). The shaded band on skill bars
+          shows the 95% confidence interval — a narrower band means more precise measurement.
+          Questions are selected adaptively to maximize information about your ability.
+        </p>
       </div>
     </div>
   );

@@ -19,6 +19,7 @@ public class UniStartDbContext : DbContext
     public DbSet<UserAnswer> UserAnswers => Set<UserAnswer>();
     public DbSet<UserSkillProfile> UserSkillProfiles => Set<UserSkillProfile>();
     public DbSet<TestSession> TestSessions => Set<TestSession>();
+    public DbSet<TopicDependency> TopicDependencies => Set<TopicDependency>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -88,6 +89,9 @@ public class UniStartDbContext : DbContext
             entity.ToTable("Questions");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Text).IsRequired();
+            entity.Property(e => e.DifficultyParam).HasDefaultValue(0.0);
+            entity.Property(e => e.DiscriminationParam).HasDefaultValue(1.0);
+            entity.Property(e => e.GuessParam).HasDefaultValue(0.25);
             entity.HasOne(e => e.Topic)
                   .WithMany(t => t.Questions)
                   .HasForeignKey(e => e.TopicId)
@@ -151,6 +155,8 @@ public class UniStartDbContext : DbContext
         {
             entity.ToTable("UserSkillProfiles");
             entity.HasKey(e => new { e.UserId, e.SkillId });
+            entity.Property(e => e.Theta).HasDefaultValue(0.0);
+            entity.Property(e => e.ThetaSE).HasDefaultValue(1.0);
             entity.HasOne(e => e.User)
                   .WithMany(u => u.SkillProfiles)
                   .HasForeignKey(e => e.UserId)
@@ -159,6 +165,22 @@ public class UniStartDbContext : DbContext
                   .WithMany(s => s.UserProfiles)
                   .HasForeignKey(e => e.SkillId)
                   .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // TopicDependency configuration (composite key)
+        modelBuilder.Entity<TopicDependency>(entity =>
+        {
+            entity.ToTable("TopicDependencies");
+            entity.HasKey(e => new { e.TopicId, e.PrerequisiteTopicId });
+            entity.Property(e => e.Weight).HasDefaultValue(1.0);
+            entity.HasOne(e => e.Topic)
+                  .WithMany(t => t.Prerequisites)
+                  .HasForeignKey(e => e.TopicId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.PrerequisiteTopic)
+                  .WithMany(t => t.DependentTopics)
+                  .HasForeignKey(e => e.PrerequisiteTopicId)
+                  .OnDelete(DeleteBehavior.Restrict);
         });
 
         // Seed exam types
