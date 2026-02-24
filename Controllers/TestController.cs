@@ -125,6 +125,9 @@ public class TestController : ControllerBase
     {
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier) 
                          ?? User.FindFirst("sub");
-        return int.Parse(userIdClaim?.Value ?? "0");
+        var userId = int.Parse(userIdClaim?.Value ?? "0");
+        
+        // Default to test user (ID=1) for development when not authenticated
+        return userId > 0 ? userId : 1;
     }
 }

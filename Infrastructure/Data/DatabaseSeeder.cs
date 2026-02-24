@@ -44,6 +44,12 @@ public class DatabaseSeeder
             await SeedExamTypesAsync();
         }
 
+        // Seed default test user
+        if (!await _context.Users.AnyAsync())
+        {
+            await SeedTestUserAsync();
+        }
+
         // Seed ExamSections
         if (!await _context.ExamSections.AnyAsync())
         {
@@ -85,6 +91,22 @@ public class DatabaseSeeder
         _context.ExamSections.RemoveRange(_context.ExamSections);
         _context.Skills.RemoveRange(_context.Skills);
         _context.ExamTypes.RemoveRange(_context.ExamTypes);
+        await _context.SaveChangesAsync();
+    }
+
+    private async Task SeedTestUserAsync()
+    {
+        // Create a default test user for development/testing
+        var testUser = new User
+        {
+            Email = "test@unistart.kz",
+            Name = "Test User",
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword("test123"),
+            Role = UserRole.Student,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        await _context.Users.AddAsync(testUser);
         await _context.SaveChangesAsync();
     }
 
