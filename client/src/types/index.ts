@@ -346,3 +346,55 @@ export interface PredictionHistory {
   confidenceLow: number;
   confidenceHigh: number;
 }
+
+// ─── Recommendations (Stage 8) ──────────────────────────
+
+export interface Recommendation {
+  type: 'after_session' | 'daily' | 'mode' | 'milestone' | 'streak';
+  priority: 'high' | 'medium' | 'low';
+  title: string;
+  description: string;
+  icon: string | null;
+  actionLabel: string | null;
+  actionUrl: string | null;
+  metadata: Record<string, unknown> | null;
+}
+
+export interface Streak {
+  currentStreak: number;
+  longestStreak: number;
+  studiedToday: boolean;
+  lastStudyDate: string | null;
+  totalStudyDays: number;
+}
+
+export interface Milestone {
+  id: number;
+  code: string;
+  title: string;
+  description: string;
+  icon: string;
+  achievedAt: string;
+  isNew: boolean;
+}
+
+export interface DailySummary {
+  questionsAnswered: number;
+  correctAnswers: number;
+  accuracy: number;
+  minutesSpent: number;
+  topicsStudied: number;
+}
+
+export interface DailyBriefing {
+  currentStreak: number;
+  longestStreak: number;
+  recommendations: Recommendation[];
+  recentMilestones: Milestone[];
+  streak: Streak;
+  yesterdaySummary: DailySummary | null;
+}
+
+export interface AfterSession {
+  recommendations: Recommendation[];
+}

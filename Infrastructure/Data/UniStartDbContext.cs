@@ -23,6 +23,7 @@ public class UniStartDbContext : DbContext
     public DbSet<StudyGoal> StudyGoals => Set<StudyGoal>();
     public DbSet<StudyPlan> StudyPlans => Set<StudyPlan>();
     public DbSet<StudyPlanEntry> StudyPlanEntries => Set<StudyPlanEntry>();
+    public DbSet<UserMilestone> UserMilestones => Set<UserMilestone>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -232,6 +233,20 @@ public class UniStartDbContext : DbContext
                   .HasConversion<string>()
                   .HasMaxLength(20);
             entity.Property(e => e.IsCompleted).HasDefaultValue(false);
+        });
+
+        modelBuilder.Entity<UserMilestone>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Code).HasMaxLength(50).IsRequired();
+            entity.Property(e => e.Title).HasMaxLength(200).IsRequired();
+            entity.Property(e => e.Description).HasMaxLength(500);
+            entity.Property(e => e.Icon).HasMaxLength(10).HasDefaultValue("🏆");
+            entity.HasOne(e => e.User)
+                  .WithMany()
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(e => new { e.UserId, e.Code }).IsUnique();
         });
 
         // Seed exam types
