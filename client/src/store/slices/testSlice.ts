@@ -13,6 +13,8 @@ interface TestState {
   isLoading: boolean;
   error: string | null;
   timeRemaining: number | null; // seconds remaining for exam mode
+  questionStartTime: number | null; // timestamp when question was shown
+  testSessionId: number | null;
 }
 
 const initialState: TestState = {
@@ -26,6 +28,8 @@ const initialState: TestState = {
   isLoading: false,
   error: null,
   timeRemaining: null,
+  questionStartTime: null,
+  testSessionId: null,
 };
 
 export const fetchNextQuestion = createAsyncThunk(
@@ -38,8 +42,8 @@ export const fetchNextQuestion = createAsyncThunk(
 
 export const submitAnswer = createAsyncThunk(
   'test/submitAnswer',
-  async ({ questionId, answerOptionId }: { questionId: number; answerOptionId: number }) => {
-    const response = await testService.submitAnswer({ questionId, answerOptionId });
+  async ({ questionId, answerOptionId, timeSpentSeconds, testSessionId }: { questionId: number; answerOptionId: number; timeSpentSeconds?: number; testSessionId?: number }) => {
+    const response = await testService.submitAnswer({ questionId, answerOptionId, timeSpentSeconds, testSessionId });
     return response;
   }
 );
@@ -57,12 +61,14 @@ const testSlice = createSlice({
   reducers: {
     setTestMode: (state, action: PayloadAction<TestMode>) => {
       state.testMode = action.payload;
-      // Set timer for exam mode (30 seconds per question as default)
       if (action.payload === 'exam') {
-        state.timeRemaining = 60; // 60 seconds per question in exam mode
+        state.timeRemaining = 60;
       } else {
         state.timeRemaining = null;
       }
+    },
+    setTestSessionId: (state, action: PayloadAction<number | null>) => {
+      state.testSessionId = action.payload;
     },
     selectAnswer: (state, action: PayloadAction<number>) => {
       state.selectedAnswer = action.payload;
@@ -87,6 +93,8 @@ const testSlice = createSlice({
       state.testCompleted = false;
       state.error = null;
       state.timeRemaining = null;
+      state.questionStartTime = null;
+      state.testSessionId = null;
     },
     clearAnswerResult: (state) => {
       state.answerResult = null;
@@ -107,6 +115,7 @@ const testSlice = createSlice({
         state.totalQuestions = action.payload.totalQuestions;
         state.answerResult = null;
         state.selectedAnswer = null;
+        state.questionStartTime = Date.now();
       })
       .addCase(fetchNextQuestion.rejected, (state, action) => {
         state.isLoading = false;
@@ -137,6 +146,8 @@ const testSlice = createSlice({
         state.testCompleted = false;
         state.error = null;
         state.timeRemaining = null;
+        state.questionStartTime = null;
+        state.testSessionId = null;
       })
       .addCase(resetTestProgress.rejected, (state, action) => {
         state.isLoading = false;
@@ -145,5 +156,5 @@ const testSlice = createSlice({
   },
 });
 
-export const { setTestMode, selectAnswer, decrementTimer, resetTimer, resetTest, clearAnswerResult } = testSlice.actions;
+export const { setTestMode, setTestSessionId, selectAnswer, decrementTimer, resetTimer, resetTest, clearAnswerResult } = testSlice.actions;
 export default testSlice.reducer;

@@ -18,6 +18,7 @@ public class UniStartDbContext : DbContext
     public DbSet<AnswerOption> AnswerOptions => Set<AnswerOption>();
     public DbSet<UserAnswer> UserAnswers => Set<UserAnswer>();
     public DbSet<UserSkillProfile> UserSkillProfiles => Set<UserSkillProfile>();
+    public DbSet<TestSession> TestSessions => Set<TestSession>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -121,6 +122,27 @@ public class UniStartDbContext : DbContext
             entity.HasOne(e => e.AnswerOption)
                   .WithMany(ao => ao.UserAnswers)
                   .HasForeignKey(e => e.AnswerOptionId)
+                  .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.TestSession)
+                  .WithMany(ts => ts.Answers)
+                  .HasForeignKey(e => e.TestSessionId)
+                  .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // TestSession configuration
+        modelBuilder.Entity<TestSession>(entity =>
+        {
+            entity.ToTable("TestSessions");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Mode).IsRequired().HasMaxLength(20);
+            entity.Property(e => e.ExamTypeCode).IsRequired().HasMaxLength(10);
+            entity.HasOne(e => e.User)
+                  .WithMany(u => u.TestSessions)
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.ExamType)
+                  .WithMany()
+                  .HasForeignKey(e => e.ExamTypeCode)
                   .OnDelete(DeleteBehavior.Restrict);
         });
 

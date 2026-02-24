@@ -130,7 +130,9 @@ public class AdaptiveEngineService : IAdaptiveEngineService
             UserId = userId,
             QuestionId = question.Id,
             AnswerOptionId = answer.AnswerOptionId,
-            AnsweredAt = DateTime.UtcNow
+            AnsweredAt = DateTime.UtcNow,
+            TimeSpentSeconds = answer.TimeSpentSeconds,
+            TestSessionId = answer.TestSessionId
         };
         _context.UserAnswers.Add(userAnswer);
 

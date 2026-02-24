@@ -9,9 +9,11 @@ import {
   clearAnswerResult,
   resetTestProgress,
   setTestMode,
+  setTestSessionId,
   decrementTimer,
   resetTimer,
 } from '../store/slices/testSlice';
+import { analyticsService } from '../services/analyticsService';
 import type { TestMode } from '../types';
 
 function TestPage() {
@@ -29,6 +31,8 @@ function TestPage() {
     isLoading,
     error,
     timeRemaining,
+    questionStartTime,
+    testSessionId,
   } = useAppSelector((state) => state.test);
 
   const [showFeedback, setShowFeedback] = useState(false);
@@ -69,8 +73,15 @@ function TestPage() {
     }
   }, [selectedExams, navigate]);
 
-  const handleSelectMode = (mode: TestMode) => {
+  const handleSelectMode = async (mode: TestMode) => {
     dispatch(setTestMode(mode));
+    // Start a test session for the first selected exam
+    try {
+      const session = await analyticsService.startSession(selectedExams[0], mode);
+      dispatch(setTestSessionId(session.id));
+    } catch (err) {
+      console.error('Failed to start session:', err);
+    }
     dispatch(fetchNextQuestion({ examTypeCodes: selectedExams }));
   };
 
@@ -82,10 +93,15 @@ function TestPage() {
 
   const handleSubmit = async () => {
     if (selectedAnswer && currentQuestion) {
+      const timeSpentSeconds = questionStartTime
+        ? Math.round((Date.now() - questionStartTime) / 1000)
+        : undefined;
       await dispatch(
         submitAnswer({
           questionId: currentQuestion.id,
           answerOptionId: selectedAnswer,
+          timeSpentSeconds,
+          testSessionId: testSessionId ?? undefined,
         })
       );
       setShowFeedback(true);
@@ -101,7 +117,14 @@ function TestPage() {
     }
   };
 
-  const handleFinishTest = () => {
+  const handleFinishTest = async () => {
+    if (testSessionId) {
+      try {
+        await analyticsService.completeSession(testSessionId);
+      } catch (err) {
+        console.error('Failed to complete session:', err);
+      }
+    }
     navigate('/analytics');
   };
 

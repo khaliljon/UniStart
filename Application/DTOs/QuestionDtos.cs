@@ -17,7 +17,9 @@ public record AnswerOptionDto(
 
 public record SubmitAnswerDto(
     int QuestionId,
-    int AnswerOptionId
+    int AnswerOptionId,
+    int? TimeSpentSeconds = null,
+    int? TestSessionId = null
 );
 
 public record AnswerResultDto(

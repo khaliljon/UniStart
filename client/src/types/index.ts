@@ -66,11 +66,6 @@ export interface NextQuestionResponse {
   totalQuestions: number;
 }
 
-export interface SubmitAnswerRequest {
-  questionId: number;
-  answerOptionId: number;
-}
-
 export interface AnswerResult {
   isCorrect: boolean;
   correctOptionId: number;
@@ -118,4 +113,75 @@ export interface TopicProgress {
   correctAnswers: number;
   incorrectAnswers: number;
   masteryPercentage: number;
+}
+
+// ─── Stage 4: Enhanced Analytics Types ───────────────────────────
+
+export interface Dashboard {
+  totalQuestionsAnswered: number;
+  correctAnswers: number;
+  overallAccuracy: number;
+  currentStreak: number;
+  bestStreak: number;
+  skillProfiles: UserSkillProfile[];
+  skillHistory: SkillHistoryPoint[];
+  activityHeatmap: DailyActivity[];
+  difficultyBreakdown: DifficultyStats[];
+}
+
+export interface SkillHistoryPoint {
+  skillName: string;
+  skillCode: string;
+  level: number;
+  date: string;
+}
+
+export interface DailyActivity {
+  date: string;
+  questionsAnswered: number;
+  correctCount: number;
+}
+
+export interface DifficultyStats {
+  difficulty: string;
+  totalAnswered: number;
+  correctCount: number;
+  accuracy: number;
+}
+
+export interface TestSessionSummary {
+  id: number;
+  examTypeCode: string;
+  examTypeName: string;
+  mode: string;
+  startedAt: string;
+  completedAt: string | null;
+  totalQuestions: number;
+  correctCount: number;
+  score: number | null;
+}
+
+export interface TestSessionDetail extends TestSessionSummary {
+  answers: SessionAnswer[];
+}
+
+export interface SessionAnswer {
+  questionId: number;
+  questionText: string;
+  topicName: string;
+  difficulty: string;
+  selectedOptionId: number;
+  selectedOptionText: string;
+  correctOptionId: number;
+  correctOptionText: string;
+  isCorrect: boolean;
+  explanation: string | null;
+  timeSpentSeconds: number | null;
+}
+
+export interface SubmitAnswerRequest {
+  questionId: number;
+  answerOptionId: number;
+  timeSpentSeconds?: number;
+  testSessionId?: number;
 }
