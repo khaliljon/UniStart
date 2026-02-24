@@ -281,3 +281,68 @@ export interface WeekSummary {
   totalMinutesPlanned: number;
   accuracy: number;
 }
+
+// ═══════════════════════════════════════════════════════
+//  SCORE PREDICTION
+// ═══════════════════════════════════════════════════════
+
+export interface ScorePrediction {
+  examTypeCode: string;
+  examName: string;
+  predictedScore: number;
+  minPossibleScore: number;
+  maxPossibleScore: number;
+  confidenceLow: number;
+  confidenceHigh: number;
+  confidencePercent: number;
+  targetScore: number | null;
+  gapToTarget: number | null;
+  sections: SectionPrediction[];
+  improvementTips: ImprovementTip[];
+  calculatedAt: string;
+}
+
+export interface SectionPrediction {
+  sectionId: number;
+  sectionName: string;
+  theta: number;
+  thetaSE: number;
+  predictedScore: number;
+  minScore: number;
+  maxScore: number;
+  confidenceLow: number;
+  confidenceHigh: number;
+  accuracy: number;
+  strength: 'strong' | 'average' | 'weak' | 'critical';
+}
+
+export interface ImprovementTip {
+  topicName: string;
+  sectionName: string;
+  currentTheta: number;
+  currentLevel: number;
+  potentialScoreGain: number;
+  recommendation: string;
+}
+
+export interface WhatIfResult {
+  topicName: string;
+  currentLevel: number;
+  improvedLevel: number;
+  currentPredictedTotal: number;
+  improvedPredictedTotal: number;
+  scoreGain: number;
+}
+
+export interface WhatIfRequest {
+  examTypeCode: string;
+  topicId: number;
+  improvedLevel: number;
+}
+
+export interface PredictionHistory {
+  date: string;
+  predictedScore: number;
+  confidenceLow: number;
+  confidenceHigh: number;
+}

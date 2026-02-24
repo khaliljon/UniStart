@@ -26,6 +26,7 @@ builder.Services.AddScoped<IExamService, ExamService>();
 builder.Services.AddScoped<IAdaptiveEngineService, AdaptiveEngineService>();
 builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
 builder.Services.AddScoped<IStudyPlanService, StudyPlanService>();
+builder.Services.AddScoped<IScorePredictionService, ScorePredictionService>();
 
 // Configure JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");

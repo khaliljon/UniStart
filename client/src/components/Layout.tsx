@@ -41,6 +41,9 @@ function Layout() {
             <li>
               <NavLink to="/study-plan">Plan</NavLink>
             </li>
+            <li>
+              <NavLink to="/prediction">Predict</NavLink>
+            </li>
           </ul>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
