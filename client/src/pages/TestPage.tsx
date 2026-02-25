@@ -14,6 +14,7 @@ import {
   resetTimer,
 } from '../store/slices/testSlice';
 import { analyticsService } from '../services/analyticsService';
+import { lessonService } from '../services/lessonService';
 import type { TestMode } from '../types';
 
 function TestPage() {
@@ -36,6 +37,9 @@ function TestPage() {
   } = useAppSelector((state) => state.test);
 
   const [showFeedback, setShowFeedback] = useState(false);
+  const [hintText, setHintText] = useState<string | null>(null);
+  const [hintLoading, setHintLoading] = useState(false);
+  const [showHint, setShowHint] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Timer effect for exam mode
@@ -110,6 +114,8 @@ function TestPage() {
 
   const handleNextQuestion = () => {
     setShowFeedback(false);
+    setHintText(null);
+    setShowHint(false);
     dispatch(clearAnswerResult());
     dispatch(fetchNextQuestion({ examTypeCodes: selectedExams }));
     if (testMode === 'exam') {
@@ -131,6 +137,24 @@ function TestPage() {
   const handleResetTest = async () => {
     await dispatch(resetTestProgress());
     dispatch(fetchNextQuestion({ examTypeCodes: selectedExams }));
+  };
+
+  const handleRequestHint = async () => {
+    if (!currentQuestion) return;
+    if (hintText) {
+      setShowHint(!showHint);
+      return;
+    }
+    setHintLoading(true);
+    try {
+      const hint = await lessonService.getQuestionHint(currentQuestion.id);
+      setHintText(hint);
+      setShowHint(true);
+    } catch {
+      setHintText(null);
+    } finally {
+      setHintLoading(false);
+    }
   };
 
   if (selectedExams.length === 0) {
@@ -416,10 +440,48 @@ function TestPage() {
           <span className="question-number">
             {currentQuestion.topicName}
           </span>
-          <span className={`difficulty-badge ${getDifficultyClass(currentQuestion.difficulty)}`}>
-            {currentQuestion.difficulty}
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            {testMode === 'practice' && currentQuestion.hasHint && !answerResult && (
+              <button
+                onClick={handleRequestHint}
+                disabled={hintLoading}
+                style={{
+                  padding: '0.25rem 0.75rem',
+                  borderRadius: '9999px',
+                  fontSize: '0.75rem',
+                  fontWeight: '500',
+                  border: '1px solid rgba(245, 158, 11, 0.3)',
+                  backgroundColor: showHint ? 'rgba(245, 158, 11, 0.15)' : 'rgba(245, 158, 11, 0.05)',
+                  color: 'var(--warning-color)',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                {hintLoading ? '...' : showHint ? '💡 Hide Hint' : '💡 Hint'}
+              </button>
+            )}
+            <span className={`difficulty-badge ${getDifficultyClass(currentQuestion.difficulty)}`}>
+              {currentQuestion.difficulty}
+            </span>
+          </div>
         </div>
+
+        {/* Hint Display */}
+        {showHint && hintText && (
+          <div style={{
+            margin: '0.75rem 0',
+            padding: '0.75rem 1rem',
+            borderRadius: '0.75rem',
+            backgroundColor: 'rgba(245, 158, 11, 0.08)',
+            border: '1px solid rgba(245, 158, 11, 0.2)',
+            fontSize: '0.85rem',
+            color: 'var(--text-secondary)',
+            lineHeight: '1.5'
+          }}>
+            <span style={{ fontWeight: '600', color: 'var(--warning-color)' }}>💡 Hint: </span>
+            {hintText}
+          </div>
+        )}
 
         <p className="question-text">{currentQuestion.text}</p>
 

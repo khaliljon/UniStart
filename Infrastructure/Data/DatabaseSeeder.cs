@@ -90,6 +90,18 @@ public class DatabaseSeeder
             await SeedTopicDependenciesAsync();
         }
 
+        // Seed Learning Materials (Topic Lessons + Question Hints)
+        if (!await _context.TopicLessons.AnyAsync())
+        {
+            await SeedTopicLessonsAsync();
+        }
+
+        // Seed hints for questions that don't have them
+        if (!await _context.Questions.AnyAsync(q => q.Hint != null))
+        {
+            await SeedQuestionHintsAsync();
+        }
+
         await _context.SaveChangesAsync();
     }
 
@@ -965,6 +977,245 @@ public class DatabaseSeeder
 
         var validDeps = dependencies.Where(d => d != null).Cast<TopicDependency>().ToList();
         await _context.TopicDependencies.AddRangeAsync(validDeps);
+        await _context.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Seeds mini-lessons for every topic — brief theory content students review before practice.
+    /// </summary>
+    private async Task SeedTopicLessonsAsync()
+    {
+        var topics = await _context.Topics.ToListAsync();
+
+        TopicLesson L(string topicName, int order, string title, string content, string? videoUrl = null)
+        {
+            var topic = topics.First(t => t.Name == topicName);
+            return new TopicLesson
+            {
+                TopicId = topic.Id,
+                Title = title,
+                Content = content,
+                VideoUrl = videoUrl,
+                SortOrder = order
+            };
+        }
+
+        var lessons = new List<TopicLesson>
+        {
+            // ──── SAT Reading & Writing ────────────────────────
+            L("Main Idea & Summary", 1,
+              "Finding the Main Idea",
+              "## What is a Main Idea?\n\nThe **main idea** is the central point the author wants to communicate. It answers the question: *What is this passage mostly about?*\n\n### Strategy\n1. **Read the first and last sentences** of the passage — they often frame the argument.\n2. **Identify the topic** (subject) and **what the author says** about it.\n3. Eliminate answer choices that are too broad, too narrow, or off-topic.\n\n### Common Traps\n- **Too specific**: focuses on one detail instead of the whole passage.\n- **Too general**: could apply to many passages, not this one specifically.\n- **Opposite meaning**: contradicts the author's argument.\n\n### Example\n> \"Government policies shape economic growth by setting tax rates, regulating markets, and funding infrastructure.\"\n\n**Main idea:** Government policies influence economic growth.",
+              "https://www.youtube.com/watch?v=YK6MU_H2msg"),
+
+            L("Main Idea & Summary", 2,
+              "Summarising a Passage",
+              "## How to Summarise\n\nA good summary captures the **key points** without adding personal opinion.\n\n### Steps\n1. Identify the **thesis** (main claim).\n2. Note **supporting points** — usually one per paragraph.\n3. Combine them in 1–2 sentences.\n\n### Tips\n- Use your **own words** — avoid copying phrases.\n- A correct summary should work as a replacement for the passage."),
+
+            L("Grammar & Sentence Structure", 1,
+              "Subject-Verb Agreement",
+              "## Subject-Verb Agreement\n\nThe verb must agree in number with its subject.\n\n### Rules\n| Subject | Verb |\n|---------|------|\n| Singular (The dog) | runs |\n| Plural (The dogs) | run |\n\n### Tricky Cases\n- **Prepositional phrases**: \"The box *of chocolates* **is** heavy.\" (subject = box)\n- **Compound subjects**: \"Tom **and** Jerry **are** friends.\"\n- **Either/or**: \"Either the cats **or** the dog **is** sleeping.\" (verb matches nearest subject)\n\n### Quick Check\nCross out words between subject and verb to test agreement.",
+              "https://www.youtube.com/watch?v=14fXm4FOMPM"),
+
+            L("Grammar & Sentence Structure", 2,
+              "Sentence Fragments & Run-ons",
+              "## Sentence Fragments\n\nA fragment is missing a **subject**, **verb**, or **complete thought**.\n\n❌ *Because it was raining.* (dependent clause alone)\n✅ *We stayed inside because it was raining.*\n\n## Run-on Sentences\n\nTwo independent clauses joined without proper punctuation.\n\n❌ *I love reading I go to the library every week.*\n\n### How to Fix\n1. **Period**: I love reading. I go to the library every week.\n2. **Semicolon**: I love reading; I go to the library every week.\n3. **Conjunction**: I love reading, so I go to the library every week."),
+
+            L("Vocabulary in Context", 1,
+              "Determining Word Meaning from Context",
+              "## Context Clues Strategy\n\nWhen an unfamiliar word appears in a passage, the surrounding words help reveal its meaning.\n\n### Types of Context Clues\n1. **Definition clue**: The word is directly defined. *\"Ubiquitous, meaning everywhere, ...\"*\n2. **Synonym clue**: A similar word is nearby. *\"She was elated — truly joyful.\"*\n3. **Antonym clue**: An opposite word provides contrast. *\"Unlike his timid brother, Jake was audacious.\"*\n4. **Example clue**: Examples illustrate the meaning.\n\n### Technique\n- Substitute each answer choice into the sentence.\n- Choose the one that maintains the **tone** and **logic** of the passage.",
+              "https://www.youtube.com/watch?v=CnlBahcJCeg"),
+
+            // ──── SAT Math ─────────────────────────────────────
+            L("Linear Equations", 1,
+              "Solving Linear Equations",
+              "## Linear Equations\n\nA linear equation has the form **ax + b = c** where the variable has exponent 1.\n\n### Solving Steps\n1. **Simplify** both sides (combine like terms).\n2. **Isolate** the variable using inverse operations.\n3. **Check** by substituting back.\n\n### Example\n$$2x + 5 = 13$$\n$$2x = 8$$\n$$x = 4$$\n\n### Slope-Intercept Form\n$$y = mx + b$$\n- **m** = slope (rise/run)\n- **b** = y-intercept",
+              "https://www.youtube.com/watch?v=GmMX3-nTWbE"),
+
+            L("Linear Equations", 2,
+              "Systems of Linear Equations",
+              "## Systems of Equations\n\nTwo or more equations with the same variables.\n\n### Methods\n1. **Substitution**: Solve one equation for a variable, substitute into the other.\n2. **Elimination**: Add/subtract equations to eliminate a variable.\n3. **Graphing**: The solution is where lines intersect.\n\n### Example (Elimination)\n$$x + y = 10$$\n$$x - y = 4$$\n\nAdd both: $2x = 14 \\Rightarrow x = 7$, then $y = 3$.\n\n### No Solution vs. Infinite Solutions\n- **Parallel lines** (same slope, different intercept): no solution.\n- **Same line**: infinitely many solutions."),
+
+            L("Geometry", 1,
+              "Angles, Triangles & Circles",
+              "## Key Geometry Facts\n\n### Angles\n- Supplementary: $a + b = 180°$\n- Complementary: $a + b = 90°$\n- Vertical angles are equal.\n\n### Triangles\n- Interior angles sum to **180°**.\n- **Pythagorean theorem** (right triangle): $a^2 + b^2 = c^2$\n- Area = $\\frac{1}{2} \\times base \\times height$\n\n### Circles\n- Area = $\\pi r^2$\n- Circumference = $2\\pi r$\n- Arc length = $\\frac{\\theta}{360} \\times 2\\pi r$",
+              "https://www.youtube.com/watch?v=mLeNaj2A9_0"),
+
+            L("Data Analysis", 1,
+              "Mean, Median, Mode & Graphs",
+              "## Central Tendency\n\n| Measure | Formula |\n|---------|---------|\n| Mean | Sum of values / count |\n| Median | Middle value when sorted |\n| Mode | Most frequent value |\n\n### Reading Graphs\n- **Bar chart**: compare categories.\n- **Line graph**: trends over time.\n- **Scatter plot**: correlation between two variables.\n\n### Tips\n- Watch for **outliers** — they pull the mean but not the median.\n- If the question says \"average,\" it usually means **mean**.",
+              "https://www.youtube.com/watch?v=kn83BA7cRNM"),
+
+            L("Quadratic Equations", 1,
+              "Solving Quadratic Equations",
+              "## Quadratic Form\n\n$$ax^2 + bx + c = 0$$\n\n### Three Methods\n1. **Factoring**: $(x - 2)(x + 3) = 0 \\Rightarrow x = 2$ or $x = -3$\n2. **Quadratic Formula**: $x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$\n3. **Completing the square**\n\n### Discriminant $\\Delta = b^2 - 4ac$\n- $\\Delta > 0$: two real solutions\n- $\\Delta = 0$: one real solution (vertex touches x-axis)\n- $\\Delta < 0$: no real solutions\n\n### Vertex Form\n$$y = a(x - h)^2 + k$$\nVertex at $(h, k)$.",
+              "https://www.youtube.com/watch?v=IlNAJl36-10"),
+
+            // ──── TOEFL ────────────────────────────────────────
+            L("Academic Reading", 1,
+              "Strategies for Academic Passages",
+              "## TOEFL Reading Overview\n\nYou'll encounter 3–4 academic passages (~700 words each) on science, history, or social topics.\n\n### Reading Strategy\n1. **Skim first** — read the title, first sentence of each paragraph.\n2. **Note the structure**: compare/contrast, cause/effect, chronological.\n3. **Read questions first** to know what to look for.\n\n### Question Types\n- **Factual**: stated directly in the passage.\n- **Inference**: implied but not stated.\n- **Vocabulary**: meaning from context.\n- **Summary/Insert**: overall organization.",
+              "https://www.youtube.com/watch?v=PRZepFNXnJk"),
+
+            L("Lecture Comprehension", 1,
+              "Note-taking for Lectures",
+              "## TOEFL Listening: Lectures\n\nLectures are 3–5 minutes long on academic subjects.\n\n### Note-taking Tips\n- Write **keywords**, not full sentences.\n- Use abbreviations: → (leads to), ≈ (approximately), ∵ (because).\n- Note the **main topic** at the top, then **sub-points**.\n\n### What to Listen For\n- The professor's **main point** (usually stated early).\n- **Examples** that support the point.\n- **Contrasts** or **corrections** (\"Actually,\" \"But what's interesting is...\").\n- **Rhetorical questions** — they signal key ideas."),
+
+            L("Conversation Understanding", 1,
+              "Campus Conversations",
+              "## TOEFL Listening: Conversations\n\nConversations are between a student and professor or campus staff.\n\n### Key Focus Areas\n- **Purpose**: Why did the student initiate the conversation?\n- **Attitude**: How does the speaker feel? (frustrated, confused, grateful)\n- **Outcome**: What is decided or suggested?\n\n### Common Scenarios\n- Office hours: asking about assignments or grades.\n- Registration: course selection, schedule conflicts.\n- Library/services: finding resources."),
+
+            L("Independent Speaking", 1,
+              "Structuring Your Response",
+              "## TOEFL Speaking: Independent Task\n\nYou get 15 seconds to prepare, 45 seconds to speak.\n\n### Template\n1. **State your opinion** (5 sec): \"I believe that...\"\n2. **Reason 1 + example** (15 sec): \"First, ... For example, ...\"\n3. **Reason 2 + example** (15 sec): \"Second, ... For instance, ...\"\n4. **Conclusion** (5 sec): \"That's why I think...\"\n\n### Tips\n- Speak clearly, not fast.\n- Use **transition words**: First, Second, However, Therefore.\n- It's okay to pause briefly — better than filler words."),
+
+            L("Integrated Writing", 1,
+              "Reading–Listening–Writing Strategy",
+              "## TOEFL Integrated Writing\n\nYou read a passage (3 min), listen to a lecture, then write 150–225 words showing how the lecture **challenges** the reading.\n\n### Template Structure\n1. **Intro**: \"The reading states X. However, the lecturer argues Y.\"\n2. **Body 1**: Reading point 1 → Lecture counter-argument 1.\n3. **Body 2**: Reading point 2 → Lecture counter-argument 2.\n4. **Body 3**: Reading point 3 → Lecture counter-argument 3.\n\n### Key Phrases\n- \"The reading claims... whereas the professor contends...\"\n- \"This directly contradicts the idea that...\"\n- \"According to the lecturer,...\""),
+
+            // ──── NUET ─────────────────────────────────────────
+            L("Algebra & Functions", 1,
+              "Core Algebra Concepts",
+              "## NUET Algebra & Functions\n\n### Expressions & Simplification\n- Combine like terms: $3x + 5x = 8x$\n- Distribute: $a(b + c) = ab + ac$\n- Factor: $x^2 - 9 = (x-3)(x+3)$\n\n### Functions\n- $f(x) = 2x + 1$ means \"plug in x and compute.\"\n- **Domain**: all valid inputs.\n- **Range**: all possible outputs.\n- **Composition**: $f(g(x))$ — apply g first, then f.\n\n### Inequalities\n- Flip the sign when multiplying/dividing by a negative:\n$$-2x > 6 \\Rightarrow x < -3$$",
+              "https://www.youtube.com/watch?v=SkMNREVMgJo"),
+
+            L("Problem Solving", 1,
+              "Problem-Solving Strategies",
+              "## NUET Problem Solving\n\n### General Approach\n1. **Read carefully** — identify what is asked.\n2. **Choose a method**: algebraic, numerical, or diagrammatic.\n3. **Estimate first** — eliminate clearly wrong answers.\n4. **Work backwards** from answer choices if stuck.\n\n### Common Patterns\n- **Rate × Time = Distance**\n- **Percentage**: part/whole × 100\n- **Ratio & Proportion**: cross-multiply to solve.\n\n### Tips\n- Draw diagrams for geometry problems.\n- Convert units early (meters to cm, etc.).\n- Check your answer against the question's constraints."),
+
+            L("Logical Reasoning", 1,
+              "Logical Arguments & Fallacies",
+              "## NUET Logical Reasoning\n\n### Argument Structure\n- **Premise**: a statement assumed to be true.\n- **Conclusion**: what follows from the premises.\n\n### Validity vs. Truth\n- An argument can be **logically valid** even if premises are false.\n- A **sound** argument is valid AND has true premises.\n\n### Common Fallacies\n| Fallacy | Description |\n|---------|-------------|\n| Ad hominem | Attacking the person, not the argument |\n| Straw man | Misrepresenting the opponent's position |\n| False dilemma | Presenting only two options when more exist |\n| Circular reasoning | Conclusion restates the premise |",
+              "https://www.youtube.com/watch?v=q3KSVfkPs7c"),
+
+            L("Argument Analysis", 1,
+              "Evaluating Arguments",
+              "## NUET Argument Analysis\n\n### What to Look For\n1. **Identify the conclusion** — what is being argued?\n2. **Find the evidence** — what supports it?\n3. **Assess the gap** — is the logic strong?\n\n### Strengthen / Weaken Questions\n- To **strengthen**: find evidence that supports the conclusion.\n- To **weaken**: find evidence that challenges the link between premise and conclusion.\n\n### Assumption Questions\nAn assumption is an **unstated premise** the argument depends on.\n- Ask: \"If this were NOT true, would the argument fall apart?\"\n- If yes → it's a necessary assumption.")
+        };
+
+        await _context.TopicLessons.AddRangeAsync(lessons);
+        await _context.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Seeds hints for existing questions (step-by-step guidance without revealing the answer).
+    /// </summary>
+    private async Task SeedQuestionHintsAsync()
+    {
+        var questions = await _context.Questions.Include(q => q.Topic).ToListAsync();
+
+        // Map of topic → hint templates by difficulty
+        var hintMap = new Dictionary<string, Dictionary<QuestionDifficulty, string>>
+        {
+            ["Main Idea & Summary"] = new()
+            {
+                [QuestionDifficulty.Easy] = "Focus on the first and last sentences of the passage. What single idea connects them?",
+                [QuestionDifficulty.Medium] = "Ask yourself: if I had to describe this passage in ONE sentence, what would it be? Eliminate answers that are too specific or too broad.",
+                [QuestionDifficulty.Hard] = "Consider the author's PURPOSE, not just the topic. What is the author trying to convince you of? Look for qualifying words like 'however,' 'therefore,' or 'most importantly.'"
+            },
+            ["Grammar & Sentence Structure"] = new()
+            {
+                [QuestionDifficulty.Easy] = "Read the sentence aloud — does it sound right? Check that the subject and verb agree in number (singular/plural).",
+                [QuestionDifficulty.Medium] = "Identify the main subject first, ignoring any phrases between the subject and verb. Then check: is the verb form correct?",
+                [QuestionDifficulty.Hard] = "Break the sentence into clauses. Does each clause have a subject and verb? Check for fragments, run-ons, and parallel structure."
+            },
+            ["Vocabulary in Context"] = new()
+            {
+                [QuestionDifficulty.Easy] = "Substitute each answer choice into the sentence. Which one makes the most sense in the context?",
+                [QuestionDifficulty.Medium] = "Look at the tone of the passage — is it positive, negative, or neutral? Eliminate words that don't match the tone.",
+                [QuestionDifficulty.Hard] = "Consider the SECONDARY meaning of the word. Many SAT vocabulary questions test less common definitions. Read the surrounding sentences for clues."
+            },
+            ["Linear Equations"] = new()
+            {
+                [QuestionDifficulty.Easy] = "Isolate the variable by performing the same operation on both sides. Start by subtracting, then divide.",
+                [QuestionDifficulty.Medium] = "First simplify both sides (distribute, combine like terms). Then use inverse operations to solve for the variable.",
+                [QuestionDifficulty.Hard] = "Set up the equation from the word problem first. Identify what the variable represents, then translate the relationships."
+            },
+            ["Geometry"] = new()
+            {
+                [QuestionDifficulty.Easy] = "Write down the formula you need. Plug in the values given and solve step by step.",
+                [QuestionDifficulty.Medium] = "Draw a diagram if there isn't one. Label all known values and look for geometric relationships (supplementary angles, similar triangles).",
+                [QuestionDifficulty.Hard] = "Break the figure into simpler shapes. Use the Pythagorean theorem or special triangles (30-60-90, 45-45-90) where applicable."
+            },
+            ["Data Analysis"] = new()
+            {
+                [QuestionDifficulty.Easy] = "Read the axis labels carefully. What does each axis represent? Find the data point the question asks about.",
+                [QuestionDifficulty.Medium] = "Calculate the mean by summing all values and dividing by the count. For median, sort the values and find the middle one.",
+                [QuestionDifficulty.Hard] = "Think about how adding or removing data points affects the mean vs. median. Outliers shift the mean but rarely change the median."
+            },
+            ["Quadratic Equations"] = new()
+            {
+                [QuestionDifficulty.Easy] = "Try factoring: find two numbers that multiply to c and add to b. Then set each factor equal to zero.",
+                [QuestionDifficulty.Medium] = "If factoring doesn't work easily, use the quadratic formula: x = (-b ± √(b²-4ac)) / 2a.",
+                [QuestionDifficulty.Hard] = "Start by finding the discriminant (b²-4ac) to determine how many solutions exist, then solve accordingly."
+            },
+            ["Academic Reading"] = new()
+            {
+                [QuestionDifficulty.Easy] = "Scan for keywords from the question in the passage. The answer is usually stated directly nearby.",
+                [QuestionDifficulty.Medium] = "For inference questions, find the relevant paragraph, then ask: what can I logically conclude from these facts?",
+                [QuestionDifficulty.Hard] = "For 'insert sentence' questions, check if the new sentence refers to concepts mentioned BEFORE the insertion point and introduces ideas discussed AFTER."
+            },
+            ["Lecture Comprehension"] = new()
+            {
+                [QuestionDifficulty.Easy] = "Think about the main topic the professor introduced at the beginning. The correct answer usually relates to the central theme.",
+                [QuestionDifficulty.Medium] = "Recall any examples the professor gave. What point was each example supporting?",
+                [QuestionDifficulty.Hard] = "Pay attention to the professor's tone shifts. When they say 'but' or 'actually,' a key contrast or correction follows."
+            },
+            ["Conversation Understanding"] = new()
+            {
+                [QuestionDifficulty.Easy] = "Focus on WHY the student started the conversation. What problem or question do they bring up?",
+                [QuestionDifficulty.Medium] = "Listen for the RESULT of the conversation. What does the student decide to do?",
+                [QuestionDifficulty.Hard] = "Notice the speaker's attitude — are they confident, uncertain, frustrated? This often determines the correct answer for 'attitude' questions."
+            },
+            ["Independent Speaking"] = new()
+            {
+                [QuestionDifficulty.Easy] = "State your opinion clearly, then give ONE specific reason with an example from your own experience.",
+                [QuestionDifficulty.Medium] = "Organize your response: Opinion → Reason 1 + Example → Reason 2 + Example → Brief conclusion.",
+                [QuestionDifficulty.Hard] = "Consider both sides before choosing. Briefly acknowledge the other view, then explain why your position is stronger."
+            },
+            ["Integrated Writing"] = new()
+            {
+                [QuestionDifficulty.Easy] = "Identify one point from the reading, then explain how the lecture responds to that point.",
+                [QuestionDifficulty.Medium] = "Structure your essay: for each reading point, state the claim, then describe the lecture's counter-argument.",
+                [QuestionDifficulty.Hard] = "Be specific about HOW the lecture contradicts the reading — use evidence from both sources, not just summaries."
+            },
+            ["Algebra & Functions"] = new()
+            {
+                [QuestionDifficulty.Easy] = "Plug the given value into the function and simplify step by step. Follow order of operations (PEMDAS).",
+                [QuestionDifficulty.Medium] = "Simplify the expression first (factor, distribute). Then isolate the variable to solve.",
+                [QuestionDifficulty.Hard] = "For composition f(g(x)): compute g(x) first, then substitute that result into f. Check the domain restrictions."
+            },
+            ["Problem Solving"] = new()
+            {
+                [QuestionDifficulty.Easy] = "Identify what the question asks for. Write down the given information and the formula you need.",
+                [QuestionDifficulty.Medium] = "Estimate the answer first to eliminate obviously wrong choices. Then compute carefully.",
+                [QuestionDifficulty.Hard] = "Try working backwards from the answer choices — plug each one into the problem to see which satisfies all conditions."
+            },
+            ["Logical Reasoning"] = new()
+            {
+                [QuestionDifficulty.Easy] = "Find the conclusion first (what is being claimed). Then identify what evidence supports it.",
+                [QuestionDifficulty.Medium] = "Look for the GAP between the evidence and the conclusion. The correct answer often addresses this gap.",
+                [QuestionDifficulty.Hard] = "For 'assumption' questions, try negating each answer choice. If negating it destroys the argument, it's a necessary assumption."
+            },
+            ["Argument Analysis"] = new()
+            {
+                [QuestionDifficulty.Easy] = "Ask: What is the author's main point? What evidence do they provide?",
+                [QuestionDifficulty.Medium] = "To weaken an argument, find evidence that breaks the link between premise and conclusion. To strengthen, find supporting evidence.",
+                [QuestionDifficulty.Hard] = "Identify the unstated assumption. The argument depends on something not explicitly mentioned — if that assumption fails, the argument collapses."
+            }
+        };
+
+        foreach (var q in questions)
+        {
+            if (q.Topic != null && hintMap.TryGetValue(q.Topic.Name, out var difficultyHints))
+            {
+                if (difficultyHints.TryGetValue(q.Difficulty, out var hint))
+                {
+                    q.Hint = hint;
+                }
+            }
+        }
+
         await _context.SaveChangesAsync();
     }
 }

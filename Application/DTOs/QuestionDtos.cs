@@ -7,7 +7,8 @@ public record QuestionDto(
     string Difficulty,
     int TopicId,
     string TopicName,
-    IEnumerable<AnswerOptionDto> Options
+    IEnumerable<AnswerOptionDto> Options,
+    bool HasHint = false
 );
 
 public record AnswerOptionDto(
@@ -49,5 +50,7 @@ public record TopicProgressDto(
     int TotalQuestions,
     int CorrectAnswers,
     int IncorrectAnswers,
-    double MasteryPercentage
+    double MasteryPercentage,
+    int LessonCount = 0,
+    bool HasVideoLessons = false
 );

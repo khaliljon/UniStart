@@ -24,6 +24,7 @@ public class UniStartDbContext : DbContext
     public DbSet<StudyPlan> StudyPlans => Set<StudyPlan>();
     public DbSet<StudyPlanEntry> StudyPlanEntries => Set<StudyPlanEntry>();
     public DbSet<UserMilestone> UserMilestones => Set<UserMilestone>();
+    public DbSet<TopicLesson> TopicLessons => Set<TopicLesson>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -247,6 +248,21 @@ public class UniStartDbContext : DbContext
                   .HasForeignKey(e => e.UserId)
                   .OnDelete(DeleteBehavior.Cascade);
             entity.HasIndex(e => new { e.UserId, e.Code }).IsUnique();
+        });
+
+        // ─── Topic Lesson ───────────────────────────────────
+        modelBuilder.Entity<TopicLesson>(entity =>
+        {
+            entity.ToTable("TopicLessons");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Content).IsRequired();
+            entity.Property(e => e.VideoUrl).HasMaxLength(500);
+            entity.Property(e => e.SortOrder).HasDefaultValue(0);
+            entity.HasOne(e => e.Topic)
+                  .WithMany(t => t.Lessons)
+                  .HasForeignKey(e => e.TopicId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
 
         // Seed exam types

@@ -1,6 +1,6 @@
 # UniStart — Прогресс проекта
 
-## Текущий статус: Этап 8 завершён — Рекомендательная система, streak, milestones
+## Текущий статус: Этап 9.2 завершён — Учебные материалы (мини-уроки, подсказки, видео)
 
 ---
 
@@ -283,10 +283,20 @@
 - [x] API: `GET /api/admin/questions` (filters), `GET /api/admin/questions/{id}`, `POST`, `PUT`, `DELETE`, `POST /import`, `GET /stats`
 - [x] UI: страница `/admin` — 3 вкладки (Статистика, Вопросы, Импорт), модальный просмотр деталей
 
-#### 9.2 Учебные материалы
-- [ ] **Мини-уроки** по каждой теме — краткая теория перед практикой
-- [ ] **Подсказки** (hints) — пошаговые наводящие подсказки для сложных вопросов
-- [ ] **Видео-разборы** — ссылки на объяснения (YouTube embed или собственный контент)
+#### 9.2 Учебные материалы ✅
+- [x] **Мини-уроки** по каждой теме — 19 уроков (1–2 на тему) с markdown-контентом: теория, формулы, стратегии, таблицы
+- [x] **Подсказки** (hints) — пошаговые наводящие подсказки для всех 97 вопросов (по сложности Easy/Medium/Hard)
+- [x] **Видео-ссылки** — YouTube видео на 10 из 16 тем (SAT Math, SAT R&W, TOEFL Reading, NUET)
+- [x] Новые сущности: `TopicLesson` (Id, TopicId, Title, Content, VideoUrl, SortOrder), `Question.Hint`, `Question.VideoUrl`
+- [x] Миграция `AddLearningMaterials` — TopicLessons таблица + Hint/VideoUrl столбцы
+- [x] Backend: `LessonService` + `ILessonService`, `LessonController` (4 эндпоинта)
+- [x] API: `GET /api/lessons` (список тем с уроками), `GET /api/lessons/topic/{id}`, `GET /api/lessons/{id}`, `GET /api/lessons/hint/{questionId}`
+- [x] Frontend: кнопка "📖 Урок" на TopicsPage, полноценный reader с markdown-рендером, навигация по урокам
+- [x] Frontend: кнопка "💡 Подсказка" на TestPage и TopicsPage (practice mode), lazy-load по клику
+- [x] Frontend: карточка "🎬 Видео-урок" со ссылкой на YouTube
+- [x] `TopicProgressDto` расширен: `LessonCount`, `HasVideoLessons`
+- [x] `QuestionDto` расширен: `HasHint`
+- [x] Seed: `SeedTopicLessonsAsync()` + `SeedQuestionHintsAsync()` в DatabaseSeeder
 
 #### 9.3 Реальные форматы экзаменов
 - [ ] SAT: полный mock-тест (Reading 52 вопроса + Writing 44 вопроса + Math 58 вопросов)
@@ -333,7 +343,7 @@
 | 🔴 Высокий | Этап 6 — Персональный план | Ключевой дифференциатор от конкурентов. Структурирует обучение. |
 | ✅ Готово | Этап 7 — Прогнозирование | θ→score маппинг, CI, секции, ROI tips, what-if, история |
 | ✅ Готово | Этап 8 — Рекомендации | Daily briefing, after-session, streak, 14 milestones, forgetting curve, UI |
-| ✅ Готово | Этап 9 — Контент | 97 вопросов (16/16 тем), админ-панель CRUD + bulk import, статистика |
+| ✅ Готово | Этап 9 — Контент | 97 вопросов (16/16 тем), админ-панель CRUD + bulk import, 19 мини-уроков, hints, видео-ссылки |
 | 🟢 Низкий | Этап 10 — Инфраструктура | Нужно перед продакшеном, но не блокирует разработку фич. |
 
 ---
@@ -389,18 +399,18 @@ UniStart/
 │   ├── Entities/        # User, ExamType, Question, Skill, Topic, UserAnswer, UserSkillProfile, UserMilestone
 │   └── Interfaces/      # IRepository<T>, IUnitOfWork
 ├── Application/
-│   ├── DTOs/            # AuthDtos, ExamDtos, QuestionDtos, SkillDtos, TestSessionDtos, PredictionDtos, RecommendationDtos, AdminDtos
-│   ├── Interfaces/      # IAdaptiveEngineService, IAnalyticsService, IAuthService, IExamService, IJwtService, IStudyPlanService, IScorePredictionService, IRecommendationService, IAdminService
-│   └── Services/        # AdaptiveEngineService, AnalyticsService, AuthService, ExamService, JwtService, StudyPlanService, ScorePredictionService, RecommendationService, AdminService
+│   ├── DTOs/            # AuthDtos, ExamDtos, QuestionDtos, SkillDtos, TestSessionDtos, PredictionDtos, RecommendationDtos, AdminDtos, LessonDtos
+│   ├── Interfaces/      # IAdaptiveEngineService, IAnalyticsService, IAuthService, IExamService, IJwtService, IStudyPlanService, IScorePredictionService, IRecommendationService, IAdminService, ILessonService
+│   └── Services/        # AdaptiveEngineService, AnalyticsService, AuthService, ExamService, JwtService, StudyPlanService, ScorePredictionService, RecommendationService, AdminService, LessonService
 ├── Infrastructure/
 │   ├── Data/            # UniStartDbContext, DatabaseSeeder, QuestionExpansionSeeder
 │   └── Repositories/    # Repository<T>, UnitOfWork
-├── Controllers/         # AuthController, ExamsController, TestController, AnalyticsController, UsersController, StudyPlanController, PredictionController, RecommendationController, AdminController
+├── Controllers/         # AuthController, ExamsController, TestController, AnalyticsController, UsersController, StudyPlanController, PredictionController, RecommendationController, AdminController, LessonController
 ├── client/              # React 19 frontend
 │   └── src/
 │       ├── pages/       # Login, Register, ExamSelection, Test, Analytics, Review, Topics, StudyPlan, Prediction, Recommendations, Admin
 │       ├── components/  # Layout, Skeleton
-│       ├── services/    # api, authService, examService, testService, analyticsService, studyPlanService, predictionService, recommendationService, adminService
+│       ├── services/    # api, authService, examService, testService, analyticsService, studyPlanService, predictionService, recommendationService, adminService, lessonService
 │       ├── store/       # Redux store + slices (auth, exam, test)
 │       ├── hooks/       # useAppDispatch, useAppSelector, useTheme
 │       └── types/       # TypeScript interfaces

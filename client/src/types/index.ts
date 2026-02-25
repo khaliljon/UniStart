@@ -57,6 +57,7 @@ export interface Question {
   topicId: number;
   topicName: string;
   options: AnswerOption[];
+  hasHint?: boolean;
 }
 
 export interface NextQuestionResponse {
@@ -123,6 +124,8 @@ export interface TopicProgress {
   correctAnswers: number;
   incorrectAnswers: number;
   masteryPercentage: number;
+  lessonCount?: number;
+  hasVideoLessons?: boolean;
 }
 
 // ─── Stage 4: Enhanced Analytics Types ───────────────────────────
@@ -450,4 +453,30 @@ export interface BulkImportResult {
   imported: number;
   failed: number;
   errors: string[];
+}
+
+// ─── Stage 9.2: Learning Materials ──────────────────────
+
+export interface TopicLessonSummary {
+  id: number;
+  title: string;
+  videoUrl: string | null;
+  sortOrder: number;
+}
+
+export interface TopicWithLessons {
+  topicId: number;
+  topicName: string;
+  lessonCount: number;
+  lessons: TopicLessonSummary[];
+}
+
+export interface TopicLesson {
+  id: number;
+  topicId: number;
+  topicName: string;
+  title: string;
+  content: string;
+  videoUrl: string | null;
+  sortOrder: number;
 }

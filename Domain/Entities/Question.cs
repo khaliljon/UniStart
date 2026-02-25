@@ -7,6 +7,8 @@ public class Question
     public string Text { get; set; } = string.Empty;
     public QuestionDifficulty Difficulty { get; set; }
     public string? Explanation { get; set; }
+    public string? Hint { get; set; }
+    public string? VideoUrl { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     // IRT parameters (Item Response Theory)

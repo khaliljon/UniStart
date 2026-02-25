@@ -261,7 +261,8 @@ public class AdaptiveEngineService : IAdaptiveEngineService
             question.Difficulty.ToString(),
             question.TopicId,
             question.Topic.Name,
-            question.AnswerOptions.Select(o => new AnswerOptionDto(o.Id, o.Text))
+            question.AnswerOptions.Select(o => new AnswerOptionDto(o.Id, o.Text)),
+            HasHint: !string.IsNullOrEmpty(question.Hint)
         );
     }
 
@@ -370,6 +371,7 @@ public class AdaptiveEngineService : IAdaptiveEngineService
         var topicsQuery = _context.Topics
             .Include(t => t.Section)
             .Include(t => t.Questions)
+            .Include(t => t.Lessons)
             .AsQueryable();
 
         if (examTypeCodes != null && examTypeCodes.Length > 0)
@@ -414,7 +416,9 @@ public class AdaptiveEngineService : IAdaptiveEngineService
                 totalQuestions,
                 correctAttempts,
                 incorrectAttempts,
-                Math.Round(mastery, 1)
+                Math.Round(mastery, 1),
+                LessonCount: topic.Lessons.Count,
+                HasVideoLessons: topic.Lessons.Any(l => l.VideoUrl != null)
             );
         });
 
