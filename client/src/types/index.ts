@@ -480,3 +480,126 @@ export interface TopicLesson {
   videoUrl: string | null;
   sortOrder: number;
 }
+
+// ─── Stage 9.3: Mock Exams ─────────────────────────────
+
+export interface MockExamListItem {
+  id: number;
+  examTypeCode: string;
+  examTypeName: string;
+  title: string;
+  description: string;
+  totalTimeMinutes: number;
+  sectionCount: number;
+  totalQuestions: number;
+  bestScore: number | null;
+  attemptCount: number;
+}
+
+export interface MockExamDetail {
+  id: number;
+  examTypeCode: string;
+  examTypeName: string;
+  title: string;
+  description: string;
+  totalTimeMinutes: number;
+  sections: MockExamSectionInfo[];
+}
+
+export interface MockExamSectionInfo {
+  id: number;
+  name: string;
+  timeLimitMinutes: number;
+  questionCount: number;
+  sortOrder: number;
+  instructions: string | null;
+}
+
+export interface MockExamAttempt {
+  attemptId: number;
+  mockExamId: number;
+  examTitle: string;
+  status: string;
+  currentSectionIndex: number;
+  totalSections: number;
+  startedAt: string;
+}
+
+export interface MockExamSectionState {
+  sectionIndex: number;
+  sectionName: string;
+  timeLimitMinutes: number;
+  instructions: string | null;
+  questions: MockExamQuestion[];
+  totalQuestions: number;
+  answeredCount: number;
+}
+
+export interface MockExamQuestion {
+  questionId: number;
+  text: string;
+  difficulty: string;
+  topicName: string;
+  options: MockExamOption[];
+  selectedOptionId: number | null;
+  readingPassageId: number | null;
+  passageTitle: string | null;
+  passageContent: string | null;
+}
+
+export interface MockExamOption {
+  id: number;
+  text: string;
+}
+
+export interface MockExamSectionResult {
+  sectionIndex: number;
+  sectionName: string;
+  totalQuestions: number;
+  correctCount: number;
+  unansweredCount: number;
+  accuracy: number;
+  timeLimitMinutes: number;
+}
+
+export interface MockExamResult {
+  attemptId: number;
+  mockExamId: number;
+  examTitle: string;
+  examTypeCode: string;
+  totalScore: number;
+  totalCorrect: number;
+  totalQuestions: number;
+  overallAccuracy: number;
+  totalTimeMinutes: number;
+  startedAt: string;
+  completedAt: string | null;
+  sectionResults: MockExamSectionResult[];
+  answerReview: MockExamAnswerReview[];
+}
+
+export interface MockExamAnswerReview {
+  questionId: number;
+  questionText: string;
+  topicName: string;
+  difficulty: string;
+  sectionName: string;
+  selectedOptionId: number | null;
+  selectedOptionText: string | null;
+  correctOptionId: number;
+  correctOptionText: string;
+  isCorrect: boolean;
+  isUnanswered: boolean;
+  explanation: string | null;
+}
+
+export interface MockExamHistoryItem {
+  attemptId: number;
+  mockExamId: number;
+  examTitle: string;
+  examTypeCode: string;
+  status: string;
+  totalScore: number | null;
+  startedAt: string;
+  completedAt: string | null;
+}

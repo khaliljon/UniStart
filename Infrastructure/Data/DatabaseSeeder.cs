@@ -102,6 +102,18 @@ public class DatabaseSeeder
             await SeedQuestionHintsAsync();
         }
 
+        // Seed Reading Passages (TOEFL)
+        if (!await _context.ReadingPassages.AnyAsync())
+        {
+            await SeedReadingPassagesAsync();
+        }
+
+        // Seed Mock Exams
+        if (!await _context.MockExams.AnyAsync())
+        {
+            await SeedMockExamsAsync();
+        }
+
         await _context.SaveChangesAsync();
     }
 
@@ -1216,6 +1228,215 @@ public class DatabaseSeeder
             }
         }
 
+        await _context.SaveChangesAsync();
+    }
+
+    /// <summary>Seed TOEFL-style reading passages and link Academic Reading questions to them</summary>
+    private async Task SeedReadingPassagesAsync()
+    {
+        var readingTopic = await _context.Topics.FirstOrDefaultAsync(t => t.Name == "Academic Reading");
+        if (readingTopic == null) return;
+
+        var passages = new List<ReadingPassage>
+        {
+            new ReadingPassage
+            {
+                TopicId = readingTopic.Id,
+                Title = "The Cambrian Explosion",
+                SortOrder = 1,
+                Content = @"The Cambrian Explosion, which occurred approximately 541 million years ago, represents one of the most significant events in the history of life on Earth. During a relatively brief period of geological time — roughly 20 to 25 million years — most of the major animal phyla that exist today first appeared in the fossil record. This dramatic diversification of life forms has puzzled scientists since Charles Darwin first noted it as a potential challenge to his theory of gradual evolution.
+
+Before the Cambrian period, life on Earth was dominated by simple, mostly single-celled organisms and some soft-bodied multicellular forms known collectively as the Ediacaran biota. These organisms left limited fossil evidence, making it difficult for paleontologists to trace the evolutionary lineage connecting them to the complex animals that suddenly appeared in Cambrian rocks.
+
+Several hypotheses have been proposed to explain this rapid diversification. One leading theory suggests that rising atmospheric oxygen levels reached a critical threshold that allowed larger, more metabolically active organisms to evolve. Another hypothesis points to the evolution of predation as a driving force: once some organisms developed the ability to consume others, an evolutionary arms race began, leading to the rapid development of shells, skeletons, eyes, and other defensive and sensory structures.
+
+Recent genetic studies have revealed that many of the genes responsible for animal body plans — known as Hox genes — were already present before the Cambrian Explosion. This suggests that the genetic toolkit for complex body forms existed well before these forms actually appeared in the fossil record. Environmental triggers, rather than genetic innovation alone, may have been the key factor in unleashing this burst of evolutionary creativity.
+
+The Cambrian Explosion remains an active area of research, with new fossil discoveries from sites such as the Burgess Shale in Canada and the Chengjiang formation in China continuing to reshape our understanding of early animal evolution."
+            },
+            new ReadingPassage
+            {
+                TopicId = readingTopic.Id,
+                Title = "Urban Heat Islands",
+                SortOrder = 2,
+                Content = @"Urban heat islands (UHIs) are metropolitan areas that are significantly warmer than their surrounding rural areas due to human activities and modifications to the landscape. The temperature difference between an urban center and its rural surroundings can range from 1°C to as much as 12°C, depending on factors such as city size, population density, and climate conditions. This phenomenon was first documented in the early 19th century by the amateur meteorologist Luke Howard, who recorded temperature differences between central London and the surrounding countryside.
+
+The primary cause of urban heat islands is the replacement of natural vegetation with impervious surfaces such as asphalt, concrete, and buildings. These materials absorb and store solar radiation more efficiently than natural landscapes and release this stored heat slowly, particularly during nighttime hours. Additionally, the geometric arrangement of tall buildings in urban canyons traps heat by reducing airflow and reflecting solar radiation between surfaces.
+
+Human activities contribute significantly to the UHI effect. Vehicles, air conditioning systems, industrial operations, and even human metabolism all generate waste heat that raises ambient temperatures. In dense urban areas, the concentration of these heat sources can significantly amplify the temperature differential.
+
+The consequences of urban heat islands extend beyond mere discomfort. Higher temperatures increase energy demand for cooling, leading to greater electricity consumption and higher greenhouse gas emissions. Heat-related health risks, including heat stroke, dehydration, and cardiovascular stress, disproportionately affect vulnerable populations such as the elderly, children, and those with pre-existing health conditions. Furthermore, elevated temperatures can worsen air quality by accelerating the formation of ground-level ozone and other pollutants.
+
+Mitigation strategies include increasing urban tree canopy coverage, installing green roofs and cool reflective surfaces, implementing permeable pavements, and redesigning urban spaces to promote natural ventilation. Cities such as Singapore, Melbourne, and New York have implemented ambitious greening programs that have demonstrated measurable reductions in local temperatures."
+            },
+            new ReadingPassage
+            {
+                TopicId = readingTopic.Id,
+                Title = "The Psychology of Decision-Making",
+                SortOrder = 3,
+                Content = @"For much of the 20th century, economists and psychologists assumed that human beings make decisions rationally — that is, they gather available information, weigh the costs and benefits of each option, and choose the one that maximizes their utility or satisfaction. This model of human behavior, known as the rational actor model, formed the basis of classical economic theory and influenced fields ranging from public policy to marketing.
+
+However, beginning in the 1970s, psychologists Daniel Kahneman and Amos Tversky published a series of groundbreaking studies demonstrating that human decision-making is systematically biased in predictable ways. Their research, which eventually earned Kahneman the Nobel Prize in Economics in 2002, revealed that people rely on mental shortcuts called heuristics when making judgments under uncertainty. While these heuristics are often useful, they can also lead to significant errors.
+
+One of the most well-documented heuristics is anchoring — the tendency to rely too heavily on the first piece of information encountered when making decisions. In experiments, Kahneman and Tversky showed that even arbitrary numbers could influence people's estimates of completely unrelated quantities. For example, participants who were first asked whether the percentage of African nations in the United Nations was higher or lower than 65% subsequently gave much higher estimates than those who were first asked about a comparison number of 10%.
+
+Another important finding is loss aversion — the observation that people feel the pain of losing something roughly twice as strongly as the pleasure of gaining something of equal value. This asymmetry explains why people often make irrational choices to avoid losses, such as holding onto losing investments far too long or refusing fair gambles with positive expected values.
+
+The implications of these findings have been profound. In the field of behavioral economics, researchers have developed ""nudge"" strategies that account for cognitive biases to encourage better decision-making without restricting freedom of choice. Applications include automatic enrollment in retirement savings plans, strategic placement of healthy food options in cafeterias, and simplified forms for government services."
+            }
+        };
+
+        await _context.ReadingPassages.AddRangeAsync(passages);
+        await _context.SaveChangesAsync();
+
+        // Link existing Academic Reading questions to passages (distribute evenly)
+        var readingQuestions = await _context.Questions
+            .Where(q => q.TopicId == readingTopic.Id && q.ReadingPassageId == null)
+            .OrderBy(q => q.Id)
+            .ToListAsync();
+
+        var savedPassages = await _context.ReadingPassages
+            .Where(p => p.TopicId == readingTopic.Id)
+            .OrderBy(p => p.SortOrder)
+            .ToListAsync();
+
+        if (savedPassages.Count > 0 && readingQuestions.Count > 0)
+        {
+            for (int i = 0; i < readingQuestions.Count; i++)
+            {
+                readingQuestions[i].ReadingPassageId = savedPassages[i % savedPassages.Count].Id;
+            }
+            await _context.SaveChangesAsync();
+        }
+    }
+
+    /// <summary>Seed mock exam templates for SAT, TOEFL, NUET</summary>
+    private async Task SeedMockExamsAsync()
+    {
+        // Get section IDs
+        var satRW = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "SAT" && s.Name == "Reading & Writing");
+        var satMathNC = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "SAT" && s.Name == "Math (No Calculator)");
+        var satMathC = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "SAT" && s.Name == "Math (Calculator)");
+        var toeflReading = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "TOEFL" && s.Name == "Reading");
+        var toeflListening = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "TOEFL" && s.Name == "Listening");
+        var toeflSpeaking = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "TOEFL" && s.Name == "Speaking");
+        var toeflWriting = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "TOEFL" && s.Name == "Writing");
+        var nuetMath = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "NUET" && s.Name == "Math");
+        var nuetCritical = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "NUET" && s.Name == "Critical Thinking");
+
+        var mockExams = new List<MockExam>
+        {
+            // ── SAT Mock Exam ──────────────────────────────────
+            new MockExam
+            {
+                ExamTypeCode = "SAT",
+                Title = "SAT Practice Test",
+                Description = "Full SAT practice test with Reading & Writing and Math sections. Simulates real exam conditions with timed sections. Real SAT has 154 questions (R&W 96 + Math 58); this practice version uses all available questions.",
+                TotalTimeMinutes = 45,
+                IsActive = true,
+                Sections = new List<MockExamSection>
+                {
+                    new MockExamSection
+                    {
+                        ExamSectionId = satRW?.Id,
+                        Name = "Reading & Writing",
+                        TimeLimitMinutes = 15,
+                        SortOrder = 0,
+                        Instructions = "This section measures your ability to comprehend, analyze, and use information and ideas presented in texts. Read each passage and question carefully, then select the best answer. You may refer back to the passage as often as needed. Time limit: 15 minutes."
+                    },
+                    new MockExamSection
+                    {
+                        ExamSectionId = satMathNC?.Id,
+                        Name = "Math (No Calculator)",
+                        TimeLimitMinutes = 15,
+                        SortOrder = 1,
+                        Instructions = "This section tests your mathematical reasoning without the use of a calculator. You must show your understanding of concepts and perform calculations by hand. Focus on accuracy and efficient problem-solving. Time limit: 15 minutes."
+                    },
+                    new MockExamSection
+                    {
+                        ExamSectionId = satMathC?.Id,
+                        Name = "Math (Calculator)",
+                        TimeLimitMinutes = 15,
+                        SortOrder = 2,
+                        Instructions = "This section tests your mathematical reasoning. A calculator is permitted for this section. Problems may involve more complex computations and data interpretation. Time limit: 15 minutes."
+                    }
+                }
+            },
+            // ── TOEFL Mock Exam ────────────────────────────────
+            new MockExam
+            {
+                ExamTypeCode = "TOEFL",
+                Title = "TOEFL iBT Practice Test",
+                Description = "TOEFL iBT practice test covering Reading, Listening, Speaking, and Writing sections. The Reading section features academic passages with multiple questions per passage. Real TOEFL has ~80 questions in ~3.5 hours; this practice version uses available questions.",
+                TotalTimeMinutes = 50,
+                IsActive = true,
+                Sections = new List<MockExamSection>
+                {
+                    new MockExamSection
+                    {
+                        ExamSectionId = toeflReading?.Id,
+                        Name = "Reading",
+                        TimeLimitMinutes = 18,
+                        SortOrder = 0,
+                        Instructions = "Read the academic passages carefully and answer the questions that follow. Each passage is followed by a set of questions. You can navigate between questions within this section and change your answers. Time limit: 18 minutes."
+                    },
+                    new MockExamSection
+                    {
+                        ExamSectionId = toeflListening?.Id,
+                        Name = "Listening",
+                        TimeLimitMinutes = 12,
+                        SortOrder = 1,
+                        Instructions = "Answer questions about academic lectures and campus conversations. In a real TOEFL test, you would listen to audio recordings. In this practice version, you will read transcribed excerpts. Time limit: 12 minutes."
+                    },
+                    new MockExamSection
+                    {
+                        ExamSectionId = toeflSpeaking?.Id,
+                        Name = "Speaking",
+                        TimeLimitMinutes = 10,
+                        SortOrder = 2,
+                        Instructions = "Answer questions that test your ability to speak about familiar topics and synthesize information. In this practice version, select the best response option. Time limit: 10 minutes."
+                    },
+                    new MockExamSection
+                    {
+                        ExamSectionId = toeflWriting?.Id,
+                        Name = "Writing",
+                        TimeLimitMinutes = 10,
+                        SortOrder = 3,
+                        Instructions = "Answer questions that test your ability to write in English in an academic context. In this practice version, select the best response option. Time limit: 10 minutes."
+                    }
+                }
+            },
+            // ── NUET Mock Exam ─────────────────────────────────
+            new MockExam
+            {
+                ExamTypeCode = "NUET",
+                Title = "NUET Practice Test",
+                Description = "NUET practice test with Math and Critical Thinking sections. Each section is individually timed. Real NUET has ~80 questions in 2.5 hours; this practice version uses available questions.",
+                TotalTimeMinutes = 50,
+                IsActive = true,
+                Sections = new List<MockExamSection>
+                {
+                    new MockExamSection
+                    {
+                        ExamSectionId = nuetMath?.Id,
+                        Name = "Quantitative Reasoning",
+                        TimeLimitMinutes = 25,
+                        SortOrder = 0,
+                        Instructions = "This section tests your mathematical knowledge and problem-solving skills. Topics include algebra, functions, geometry, and applied mathematics. Work through each problem carefully. Time limit: 25 minutes."
+                    },
+                    new MockExamSection
+                    {
+                        ExamSectionId = nuetCritical?.Id,
+                        Name = "Critical Thinking",
+                        TimeLimitMinutes = 25,
+                        SortOrder = 1,
+                        Instructions = "This section tests your logical reasoning and argument analysis skills. You will evaluate arguments, identify assumptions, draw conclusions, and analyze reasoning patterns. Time limit: 25 minutes."
+                    }
+                }
+            }
+        };
+
+        await _context.MockExams.AddRangeAsync(mockExams);
         await _context.SaveChangesAsync();
     }
 }

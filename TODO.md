@@ -1,6 +1,6 @@
 # UniStart — Прогресс проекта
 
-## Текущий статус: Этап 9.2 завершён — Учебные материалы (мини-уроки, подсказки, видео)
+## Текущий статус: Этап 9.3 завершён — Реальные форматы экзаменов (mock tests, passages, timed sections)
 
 ---
 
@@ -298,11 +298,23 @@
 - [x] `QuestionDto` расширен: `HasHint`
 - [x] Seed: `SeedTopicLessonsAsync()` + `SeedQuestionHintsAsync()` в DatabaseSeeder
 
-#### 9.3 Реальные форматы экзаменов
-- [ ] SAT: полный mock-тест (Reading 52 вопроса + Writing 44 вопроса + Math 58 вопросов)
-- [ ] TOEFL: Reading passages с несколькими вопросами к одному тексту
-- [ ] NUET: секции с ограниченным временем на каждую
-- [ ] Таймер и правила идентичные реальному экзамену
+#### 9.3 Реальные форматы экзаменов ✅
+- [x] **Mock Exam система** — полноценные тренировочные экзамены с секциями и таймером
+- [x] **SAT Practice Test** — 3 секции (Reading & Writing 15м + Math No Calc 15м + Math Calc 15м), все 40 вопросов
+- [x] **TOEFL iBT Practice Test** — 4 секции (Reading 18м + Listening 12м + Speaking 10м + Writing 10м), 28 вопросов
+- [x] **NUET Practice Test** — 2 секции (Quantitative Reasoning 25м + Critical Thinking 25м), 29 вопросов
+- [x] **TOEFL Reading Passages** — 3 академических текста (Cambrian Explosion, Urban Heat Islands, Psychology of Decision-Making) с привязкой вопросов к пассажам
+- [x] Новые сущности: `ReadingPassage`, `MockExam`, `MockExamSection`, `MockExamAttempt`, `MockExamAnswer`
+- [x] `Question.ReadingPassageId` — опциональная привязка вопроса к пассажу
+- [x] Миграция `AddMockExams` — 5 новых таблиц + FK ReadingPassageId
+- [x] Backend: `MockExamService` + `IMockExamService` (9 методов), `MockExamController` (9 эндпоинтов)
+- [x] API: `GET /api/mock-exams`, `GET /{id}`, `POST /{id}/start`, `GET /attempts/{id}/current-section`, `GET /attempts/{id}/sections/{idx}`, `POST /attempts/{id}/answer`, `POST /attempts/{id}/complete-section`, `GET /attempts/{id}/results`, `GET /history`, `POST /attempts/{id}/abandon`
+- [x] Frontend: `MockExamPage.tsx` — 6 фаз (list, detail, instructions, section, section-break, results)
+- [x] UI: навигатор вопросов, split-view пассаж+вопрос для TOEFL, countdown таймер с цветовыми индикаторами
+- [x] UI: результаты — общий балл, разбивка по секциям, progress bars, review с фильтрами (all/incorrect/unanswered)
+- [x] UI: история попыток, best score, attempt count
+- [x] Seed: `SeedReadingPassagesAsync()` + `SeedMockExamsAsync()` в DatabaseSeeder
+- [x] Навигация: вкладка "Mock" в Layout, маршрут `/mock-exam` в App.tsx
 
 ---
 
@@ -343,7 +355,7 @@
 | 🔴 Высокий | Этап 6 — Персональный план | Ключевой дифференциатор от конкурентов. Структурирует обучение. |
 | ✅ Готово | Этап 7 — Прогнозирование | θ→score маппинг, CI, секции, ROI tips, what-if, история |
 | ✅ Готово | Этап 8 — Рекомендации | Daily briefing, after-session, streak, 14 milestones, forgetting curve, UI |
-| ✅ Готово | Этап 9 — Контент | 97 вопросов (16/16 тем), админ-панель CRUD + bulk import, 19 мини-уроков, hints, видео-ссылки |
+| ✅ Готово | Этап 9 — Контент | 97 вопросов (16/16 тем), админ-панель, 19 уроков, hints, 3 mock exams, reading passages, timed sections |
 | 🟢 Низкий | Этап 10 — Инфраструктура | Нужно перед продакшеном, но не блокирует разработку фич. |
 
 ---
@@ -396,21 +408,21 @@
 ```
 UniStart/
 ├── Domain/
-│   ├── Entities/        # User, ExamType, Question, Skill, Topic, UserAnswer, UserSkillProfile, UserMilestone
+│   ├── Entities/        # User, ExamType, Question, Skill, Topic, UserAnswer, UserSkillProfile, UserMilestone, ReadingPassage, MockExam, MockExamSection, MockExamAttempt, MockExamAnswer
 │   └── Interfaces/      # IRepository<T>, IUnitOfWork
 ├── Application/
-│   ├── DTOs/            # AuthDtos, ExamDtos, QuestionDtos, SkillDtos, TestSessionDtos, PredictionDtos, RecommendationDtos, AdminDtos, LessonDtos
-│   ├── Interfaces/      # IAdaptiveEngineService, IAnalyticsService, IAuthService, IExamService, IJwtService, IStudyPlanService, IScorePredictionService, IRecommendationService, IAdminService, ILessonService
-│   └── Services/        # AdaptiveEngineService, AnalyticsService, AuthService, ExamService, JwtService, StudyPlanService, ScorePredictionService, RecommendationService, AdminService, LessonService
+│   ├── DTOs/            # AuthDtos, ExamDtos, QuestionDtos, SkillDtos, TestSessionDtos, PredictionDtos, RecommendationDtos, AdminDtos, LessonDtos, MockExamDtos
+│   ├── Interfaces/      # IAdaptiveEngineService, IAnalyticsService, IAuthService, IExamService, IJwtService, IStudyPlanService, IScorePredictionService, IRecommendationService, IAdminService, ILessonService, IMockExamService
+│   └── Services/        # AdaptiveEngineService, AnalyticsService, AuthService, ExamService, JwtService, StudyPlanService, ScorePredictionService, RecommendationService, AdminService, LessonService, MockExamService
 ├── Infrastructure/
 │   ├── Data/            # UniStartDbContext, DatabaseSeeder, QuestionExpansionSeeder
 │   └── Repositories/    # Repository<T>, UnitOfWork
-├── Controllers/         # AuthController, ExamsController, TestController, AnalyticsController, UsersController, StudyPlanController, PredictionController, RecommendationController, AdminController, LessonController
+├── Controllers/         # AuthController, ExamsController, TestController, AnalyticsController, UsersController, StudyPlanController, PredictionController, RecommendationController, AdminController, LessonController, MockExamController
 ├── client/              # React 19 frontend
 │   └── src/
-│       ├── pages/       # Login, Register, ExamSelection, Test, Analytics, Review, Topics, StudyPlan, Prediction, Recommendations, Admin
+│       ├── pages/       # Login, Register, ExamSelection, Test, Analytics, Review, Topics, StudyPlan, Prediction, Recommendations, Admin, MockExam
 │       ├── components/  # Layout, Skeleton
-│       ├── services/    # api, authService, examService, testService, analyticsService, studyPlanService, predictionService, recommendationService, adminService, lessonService
+│       ├── services/    # api, authService, examService, testService, analyticsService, studyPlanService, predictionService, recommendationService, adminService, lessonService, mockExamService
 │       ├── store/       # Redux store + slices (auth, exam, test)
 │       ├── hooks/       # useAppDispatch, useAppSelector, useTheme
 │       └── types/       # TypeScript interfaces

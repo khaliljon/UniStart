@@ -30,6 +30,7 @@ builder.Services.AddScoped<IScorePredictionService, ScorePredictionService>();
 builder.Services.AddScoped<IRecommendationService, RecommendationService>();
 builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddScoped<ILessonService, LessonService>();
+builder.Services.AddScoped<IMockExamService, MockExamService>();
 
 // Configure JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");

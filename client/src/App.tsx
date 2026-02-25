@@ -16,6 +16,7 @@ import RecommendationsPage from './pages/RecommendationsPage'
 import AdminStatsPage from './pages/AdminStatsPage'
 import AdminQuestionsPage from './pages/AdminQuestionsPage'
 import AdminImportPage from './pages/AdminImportPage'
+import MockExamPage from './pages/MockExamPage'
 
 function StudentRoutes() {
   return (
@@ -29,6 +30,7 @@ function StudentRoutes() {
       <Route path="study-plan" element={<StudyPlanPage />} />
       <Route path="prediction" element={<PredictionPage />} />
       <Route path="recommendations" element={<RecommendationsPage />} />
+      <Route path="mock-exam" element={<MockExamPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Route>
   )

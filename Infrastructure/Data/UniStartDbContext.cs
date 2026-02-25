@@ -25,6 +25,11 @@ public class UniStartDbContext : DbContext
     public DbSet<StudyPlanEntry> StudyPlanEntries => Set<StudyPlanEntry>();
     public DbSet<UserMilestone> UserMilestones => Set<UserMilestone>();
     public DbSet<TopicLesson> TopicLessons => Set<TopicLesson>();
+    public DbSet<ReadingPassage> ReadingPassages => Set<ReadingPassage>();
+    public DbSet<MockExam> MockExams => Set<MockExam>();
+    public DbSet<MockExamSection> MockExamSections => Set<MockExamSection>();
+    public DbSet<MockExamAttempt> MockExamAttempts => Set<MockExamAttempt>();
+    public DbSet<MockExamAnswer> MockExamAnswers => Set<MockExamAnswer>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -263,6 +268,93 @@ public class UniStartDbContext : DbContext
                   .WithMany(t => t.Lessons)
                   .HasForeignKey(e => e.TopicId)
                   .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ─── Reading Passage ───────────────────────────────
+        modelBuilder.Entity<ReadingPassage>(entity =>
+        {
+            entity.ToTable("ReadingPassages");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Title).IsRequired().HasMaxLength(300);
+            entity.Property(e => e.Content).IsRequired();
+            entity.Property(e => e.SortOrder).HasDefaultValue(0);
+            entity.HasOne(e => e.Topic)
+                  .WithMany()
+                  .HasForeignKey(e => e.TopicId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Question → ReadingPassage (optional)
+        modelBuilder.Entity<Question>()
+            .HasOne(e => e.ReadingPassage)
+            .WithMany(p => p.Questions)
+            .HasForeignKey(e => e.ReadingPassageId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        // ─── Mock Exam ──────────────────────────────────────
+        modelBuilder.Entity<MockExam>(entity =>
+        {
+            entity.ToTable("MockExams");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Description).HasMaxLength(1000);
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.HasOne(e => e.ExamType)
+                  .WithMany()
+                  .HasForeignKey(e => e.ExamTypeCode)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // ─── Mock Exam Section ──────────────────────────────
+        modelBuilder.Entity<MockExamSection>(entity =>
+        {
+            entity.ToTable("MockExamSections");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Instructions).HasMaxLength(2000);
+            entity.HasOne(e => e.MockExam)
+                  .WithMany(m => m.Sections)
+                  .HasForeignKey(e => e.MockExamId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.ExamSection)
+                  .WithMany()
+                  .HasForeignKey(e => e.ExamSectionId)
+                  .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // ─── Mock Exam Attempt ──────────────────────────────
+        modelBuilder.Entity<MockExamAttempt>(entity =>
+        {
+            entity.ToTable("MockExamAttempts");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Status).IsRequired().HasMaxLength(20);
+            entity.HasOne(e => e.User)
+                  .WithMany()
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.MockExam)
+                  .WithMany(m => m.Attempts)
+                  .HasForeignKey(e => e.MockExamId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ─── Mock Exam Answer ───────────────────────────────
+        modelBuilder.Entity<MockExamAnswer>(entity =>
+        {
+            entity.ToTable("MockExamAnswers");
+            entity.HasKey(e => e.Id);
+            entity.HasOne(e => e.Attempt)
+                  .WithMany(a => a.Answers)
+                  .HasForeignKey(e => e.AttemptId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Question)
+                  .WithMany()
+                  .HasForeignKey(e => e.QuestionId)
+                  .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.SelectedOption)
+                  .WithMany()
+                  .HasForeignKey(e => e.SelectedOptionId)
+                  .OnDelete(DeleteBehavior.SetNull);
         });
 
         // Seed exam types

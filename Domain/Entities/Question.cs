@@ -9,6 +9,7 @@ public class Question
     public string? Explanation { get; set; }
     public string? Hint { get; set; }
     public string? VideoUrl { get; set; }
+    public int? ReadingPassageId { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     // IRT parameters (Item Response Theory)
@@ -21,6 +22,7 @@ public class Question
 
     // Navigation properties
     public virtual Topic Topic { get; set; } = null!;
+    public virtual ReadingPassage? ReadingPassage { get; set; }
     public virtual ICollection<AnswerOption> AnswerOptions { get; set; } = new List<AnswerOption>();
     public virtual ICollection<UserAnswer> UserAnswers { get; set; } = new List<UserAnswer>();
 }
