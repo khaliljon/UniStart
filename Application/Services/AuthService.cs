@@ -65,6 +65,7 @@ public class AuthService : IAuthService
             user.Email,
             user.Name,
             user.Role.ToString(),
+            user.HasCompletedOnboarding,
             token,
             expiresAt
         );
@@ -86,6 +87,7 @@ public class AuthService : IAuthService
             user.Email,
             user.Name,
             user.Role.ToString(),
+            user.HasCompletedOnboarding,
             token,
             expiresAt
         );

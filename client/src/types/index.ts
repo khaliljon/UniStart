@@ -4,6 +4,7 @@ export interface User {
   email: string;
   name: string;
   role: string;
+  hasCompletedOnboarding: boolean;
   createdAt: string;
 }
 
@@ -12,6 +13,7 @@ export interface AuthResponse {
   email: string;
   name: string;
   role: string;
+  hasCompletedOnboarding: boolean;
   token: string;
   expiresAt: string;
 }
@@ -602,4 +604,34 @@ export interface MockExamHistoryItem {
   totalScore: number | null;
   startedAt: string;
   completedAt: string | null;
+}
+
+// Onboarding types
+export interface OnboardingStatus {
+  hasCompletedOnboarding: boolean;
+  examTypeCode: string | null;
+  examTypeName: string | null;
+  targetDate: string | null;
+  targetScore: number | null;
+}
+
+export interface ExamTypeInfo {
+  code: string;
+  name: string;
+  minScore: number;
+  maxScore: number;
+  description: string;
+  sections: ExamSectionInfo[];
+}
+
+export interface ExamSectionInfo {
+  name: string;
+  minScore: number;
+  maxScore: number;
+}
+
+export interface CompleteOnboardingRequest {
+  examTypeCode: string;
+  targetDate: string;
+  targetScore: number;
 }

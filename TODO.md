@@ -1,6 +1,6 @@
 # UniStart — Прогресс проекта
 
-## Текущий статус: Этап 9.3 завершён — Реальные форматы экзаменов (mock tests, passages, timed sections)
+## Текущий статус: Онбординг флоу завершён — Мастер настройки после регистрации
 
 ---
 
@@ -316,6 +316,21 @@
 - [x] Seed: `SeedReadingPassagesAsync()` + `SeedMockExamsAsync()` в DatabaseSeeder
 - [x] Навигация: вкладка "Mock" в Layout, маршрут `/mock-exam` в App.tsx
 
+#### Онбординг флоу ✅
+- [x] **Многошаговый мастер настройки** — 4 этапа: Welcome → Выбор экзамена → Настройка цели → Готово!
+- [x] `User.HasCompletedOnboarding` — флаг завершения онбординга в сущности User
+- [x] Миграция `AddOnboarding` — новый столбец в таблице Users
+- [x] `AuthResponseDto` — теперь включает `hasCompletedOnboarding`
+- [x] Backend: `OnboardingService` + `IOnboardingService` (3 метода: GetStatus, GetExamTypes, CompleteOnboarding)
+- [x] `OnboardingController` — 3 эндпоинта: `GET /api/onboarding/status`, `GET /api/onboarding/exam-types`, `POST /api/onboarding/complete`
+- [x] Авто-создание StudyGoal + StudyPlan при завершении онбординга
+- [x] `ExamTypeInfoDto` — расширенная информация об экзамене (описание, секции, шкала баллов)
+- [x] Frontend: `OnboardingPage.tsx` — визард с градиентным фоном, карточки экзаменов, слайдер баллов, preset кнопки
+- [x] Frontend: `onboardingService.ts` — клиент для API онбординга
+- [x] Redux: `setOnboardingComplete` action в authSlice
+- [x] Роутинг: `/onboarding` маршрут, автоматический redirect после регистрации/логина если не прошёл онбординг
+- [x] Типы: `OnboardingStatus`, `ExamTypeInfo`, `ExamSectionInfo`, `CompleteOnboardingRequest`
+
 ---
 
 ### Этап 10: Инфраструктура и масштабирование ⚙️
@@ -417,12 +432,12 @@ UniStart/
 ├── Infrastructure/
 │   ├── Data/            # UniStartDbContext, DatabaseSeeder, QuestionExpansionSeeder
 │   └── Repositories/    # Repository<T>, UnitOfWork
-├── Controllers/         # AuthController, ExamsController, TestController, AnalyticsController, UsersController, StudyPlanController, PredictionController, RecommendationController, AdminController, LessonController, MockExamController
+├── Controllers/         # AuthController, ExamsController, TestController, AnalyticsController, UsersController, StudyPlanController, PredictionController, RecommendationController, AdminController, LessonController, MockExamController, OnboardingController
 ├── client/              # React 19 frontend
 │   └── src/
-│       ├── pages/       # Login, Register, ExamSelection, Test, Analytics, Review, Topics, StudyPlan, Prediction, Recommendations, Admin, MockExam
+│       ├── pages/       # Login, Register, Onboarding, ExamSelection, Test, Analytics, Review, Topics, StudyPlan, Prediction, Recommendations, Admin, MockExam
 │       ├── components/  # Layout, Skeleton
-│       ├── services/    # api, authService, examService, testService, analyticsService, studyPlanService, predictionService, recommendationService, adminService, lessonService, mockExamService
+│       ├── services/    # api, authService, onboardingService, examService, testService, analyticsService, studyPlanService, predictionService, recommendationService, adminService, lessonService, mockExamService
 │       ├── store/       # Redux store + slices (auth, exam, test)
 │       ├── hooks/       # useAppDispatch, useAppSelector, useTheme
 │       └── types/       # TypeScript interfaces

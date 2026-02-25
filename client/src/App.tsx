@@ -4,6 +4,7 @@ import Layout from './components/Layout'
 import AdminLayout from './components/AdminLayout'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
+import OnboardingPage from './pages/OnboardingPage'
 import ExamSelectionPage from './pages/ExamSelectionPage'
 import TestPage from './pages/TestPage'
 import AnalyticsPage from './pages/AnalyticsPage'
@@ -50,14 +51,20 @@ function AdminRoutes() {
 function App() {
   const { isAuthenticated, user } = useAppSelector((state) => state.auth)
   const isAdmin = user?.role === 'Admin'
+  const needsOnboarding = isAuthenticated && !isAdmin && !user?.hasCompletedOnboarding
 
   return (
     <Routes>
-      <Route path="/login" element={!isAuthenticated ? <LoginPage /> : <Navigate to="/" />} />
-      <Route path="/register" element={!isAuthenticated ? <RegisterPage /> : <Navigate to="/" />} />
+      <Route path="/login" element={!isAuthenticated ? <LoginPage /> : <Navigate to={needsOnboarding ? '/onboarding' : '/'} />} />
+      <Route path="/register" element={!isAuthenticated ? <RegisterPage /> : <Navigate to={needsOnboarding ? '/onboarding' : '/'} />} />
+      <Route path="/onboarding" element={needsOnboarding ? <OnboardingPage /> : <Navigate to="/" replace />} />
 
       {isAuthenticated ? (
-        isAdmin ? AdminRoutes() : StudentRoutes()
+        needsOnboarding ? (
+          <Route path="*" element={<Navigate to="/onboarding" />} />
+        ) : (
+          isAdmin ? AdminRoutes() : StudentRoutes()
+        )
       ) : (
         <Route path="*" element={<Navigate to="/login" />} />
       )}

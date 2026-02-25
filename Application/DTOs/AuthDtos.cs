@@ -19,6 +19,7 @@ public record AuthResponseDto(
     string Email,
     string Name,
     string Role,
+    bool HasCompletedOnboarding,
     string Token,
     DateTime ExpiresAt
 );

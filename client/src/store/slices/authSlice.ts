@@ -60,6 +60,12 @@ const authSlice = createSlice({
     clearError: (state) => {
       state.error = null;
     },
+    setOnboardingComplete: (state) => {
+      if (state.user) {
+        state.user.hasCompletedOnboarding = true;
+        localStorage.setItem('user', JSON.stringify(state.user));
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -75,6 +81,7 @@ const authSlice = createSlice({
           email: action.payload.email,
           name: action.payload.name,
           role: action.payload.role,
+          hasCompletedOnboarding: action.payload.hasCompletedOnboarding,
           createdAt: new Date().toISOString(),
         };
         state.token = action.payload.token;
@@ -98,6 +105,7 @@ const authSlice = createSlice({
           email: action.payload.email,
           name: action.payload.name,
           role: action.payload.role,
+          hasCompletedOnboarding: action.payload.hasCompletedOnboarding,
           createdAt: new Date().toISOString(),
         };
         state.token = action.payload.token;
@@ -112,5 +120,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { logout, clearError } = authSlice.actions;
+export const { logout, clearError, setOnboardingComplete } = authSlice.actions;
 export default authSlice.reducer;

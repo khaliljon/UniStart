@@ -159,6 +159,7 @@ public class DatabaseSeeder
             Name = "Admin",
             PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin123"),
             Role = UserRole.Admin,
+            HasCompletedOnboarding = true,
             CreatedAt = DateTime.UtcNow
         };
 
