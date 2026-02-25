@@ -15,7 +15,10 @@ import {
 } from '../store/slices/testSlice';
 import { analyticsService } from '../services/analyticsService';
 import { lessonService } from '../services/lessonService';
-import type { TestMode } from '../types';
+import { subscriptionService } from '../services/subscriptionService';
+import { UpgradeBanner } from '../components/UpgradeBanner';
+import { DailyLimitModal } from '../components/DailyLimitModal';
+import type { TestMode, DailyUsage } from '../types';
 
 function TestPage() {
   const dispatch = useAppDispatch();
@@ -41,6 +44,19 @@ function TestPage() {
   const [hintLoading, setHintLoading] = useState(false);
   const [showHint, setShowHint] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Daily limit state
+  const [dailyUsage, setDailyUsage] = useState<DailyUsage | null>(null);
+  const [showLimitModal, setShowLimitModal] = useState(false);
+  const { user } = useAppSelector((state) => state.auth);
+  const isPro = user?.subscriptionTier === 'Pro';
+
+  // Fetch daily usage on mount and after each answer
+  useEffect(() => {
+    if (!isPro) {
+      subscriptionService.getDailyUsage().then(setDailyUsage).catch(() => {});
+    }
+  }, [isPro, questionsAnswered]);
 
   // Timer effect for exam mode
   useEffect(() => {
@@ -78,6 +94,17 @@ function TestPage() {
   }, [selectedExams, navigate]);
 
   const handleSelectMode = async (mode: TestMode) => {
+    // Check daily limit for free users
+    if (!isPro) {
+      try {
+        const usage = await subscriptionService.getDailyUsage();
+        setDailyUsage(usage);
+        if (usage.isLimitReached) {
+          setShowLimitModal(true);
+          return;
+        }
+      } catch { /* proceed if check fails */ }
+    }
     dispatch(setTestMode(mode));
     // Start a test session for the first selected exam
     try {
@@ -165,6 +192,14 @@ function TestPage() {
   if (!testMode) {
     return (
       <div className="test-container">
+        {!isPro && dailyUsage && (
+          <div style={{ maxWidth: '600px', margin: '0 auto 0' }}>
+            <UpgradeBanner
+              questionsRemaining={dailyUsage.questionsRemaining}
+              questionsLimit={dailyUsage.questionsLimit}
+            />
+          </div>
+        )}
         <div className="card" style={{ maxWidth: '600px', margin: '0 auto', padding: '2rem' }}>
           <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '0.5rem', textAlign: 'center', color: 'var(--text-primary)' }}>
             Choose Test Mode
@@ -367,6 +402,16 @@ function TestPage() {
 
   return (
     <div className="test-container">
+      {/* Daily usage banner for free users */}
+      {!isPro && dailyUsage && dailyUsage.questionsRemaining >= 0 && dailyUsage.questionsRemaining <= 5 && (
+        <UpgradeBanner
+          questionsRemaining={dailyUsage.questionsRemaining}
+          questionsLimit={dailyUsage.questionsLimit}
+        />
+      )}
+
+      <DailyLimitModal isOpen={showLimitModal} onClose={() => setShowLimitModal(false)} />
+
       <div className="question-card card">
         {/* Mode Badge + Timer for Exam Mode */}
         <div style={{ 

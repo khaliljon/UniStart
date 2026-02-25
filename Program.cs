@@ -32,6 +32,14 @@ builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddScoped<ILessonService, LessonService>();
 builder.Services.AddScoped<IMockExamService, MockExamService>();
 builder.Services.AddScoped<IOnboardingService, OnboardingService>();
+builder.Services.AddScoped<IDiagnosticService, DiagnosticService>();
+builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
+
+// Background services
+builder.Services.AddHostedService<StreakReminderBackgroundService>();
+builder.Services.AddHostedService<WeeklyDigestBackgroundService>();
 
 // Configure JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");

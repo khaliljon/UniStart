@@ -8,6 +8,8 @@ public class User
     public string PasswordHash { get; set; } = string.Empty;
     public UserRole Role { get; set; } = UserRole.Student;
     public bool HasCompletedOnboarding { get; set; } = false;
+    public SubscriptionTier SubscriptionTier { get; set; } = SubscriptionTier.Free;
+    public DateTime? SubscriptionExpiresAt { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
 
@@ -15,6 +17,10 @@ public class User
     public virtual ICollection<UserAnswer> UserAnswers { get; set; } = new List<UserAnswer>();
     public virtual ICollection<UserSkillProfile> SkillProfiles { get; set; } = new List<UserSkillProfile>();
     public virtual ICollection<TestSession> TestSessions { get; set; } = new List<TestSession>();
+    public virtual NotificationPreferences? NotificationPreferences { get; set; }
+
+    public bool IsPro => SubscriptionTier == SubscriptionTier.Pro
+                         && (SubscriptionExpiresAt == null || SubscriptionExpiresAt > DateTime.UtcNow);
 }
 
 public enum UserRole
@@ -22,4 +28,10 @@ public enum UserRole
     Student,
     Tutor,
     Admin
+}
+
+public enum SubscriptionTier
+{
+    Free,
+    Pro
 }

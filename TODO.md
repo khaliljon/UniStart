@@ -264,7 +264,7 @@
 - [x] Новая сущность `UserMilestone` (Id, UserId, Code, Title, Description, Icon, AchievedAt) + миграция
 - [x] API: `GET /api/recommendations/streak`, `GET /api/recommendations/milestones`, `POST /api/recommendations/check-milestones`
 - [x] UI: страница `/recommendations` — streak-карточка (градиент 3+/7+ дней), вчерашняя сводка, рекомендации с приоритетами, сетка достижений
-- [ ] **Weekly digest** — email/push: прогресс за неделю, прогноз, рекомендации на следующую (требует email-сервис)
+- [x] **Weekly digest** — email/push: прогресс за неделю, прогноз, рекомендации на следующую (требует email-сервис)
 
 ---
 
@@ -330,6 +330,67 @@
 - [x] Redux: `setOnboardingComplete` action в authSlice
 - [x] Роутинг: `/onboarding` маршрут, автоматический redirect после регистрации/логина если не прошёл онбординг
 - [x] Типы: `OnboardingStatus`, `ExamTypeInfo`, `ExamSectionInfo`, `CompleteOnboardingRequest`
+
+---
+
+### Бизнес-фичи и монетизация 💰
+
+| Фича | Сложность | Статус |
+|------|-----------|--------|
+| Онбординг-флоу | Средняя | ✅ Готово |
+| Диагностический тест | Лёгкая | ✅ Готово |
+| Subscription/план | Средняя | ✅ Готово |
+| Daily question limit | Лёгкая | ✅ Готово |
+| Paywall UI | Средняя | ✅ Готово |
+| Лендинг | Средняя | ✅ Готово |
+| Email-уведомления | Сложная | ✅ Готово |
+
+#### Диагностический мини-тест 🩺
+- [x] Спец-режим `diagnostic`: 10 вопросов (по 2–3 из каждой секции выбранного экзамена)
+- [x] Автоматический подбор вопросов разной сложности (Easy/Medium/Hard) для калибровки θ
+- [x] После завершения — redirect на страницу результатов с начальным прогнозом балла
+- [x] Запуск диагностики из онбординга (шаг "Ready") или отдельной кнопкой на главной
+- [x] Обновление skill profiles на основе результатов диагностики
+
+#### Subscription / тарифный план 💳
+- [x] Поле `SubscriptionTier` в User (`Free` | `Pro`), поле `SubscriptionExpiresAt`
+- [x] Миграция для новых полей
+- [x] Middleware/сервис проверки тарифа: `ISubscriptionService.HasAccess(userId, feature)`
+- [x] Конфигурация лимитов по тарифам (вопросы/день, mock exams, уроки, аналитика)
+- [x] API: `GET /api/subscription/status`, `POST /api/subscription/upgrade` (заглушка для будущей оплаты)
+- [x] FREE тариф: 15 вопросов/день, 1 урок/день, базовая аналитика, недельный прогноз
+- [x] PRO тариф: безлимитные вопросы, все уроки, mock exams, полный план, real-time прогноз
+
+#### Daily question limit 🔒
+- [x] Считать `UserAnswers` за сегодня (`AnsweredAt >= today UTC`)
+- [x] Блокировать после 15 вопросов для Free-пользователей
+- [x] UI: счётчик "осталось X вопросов сегодня" на TestPage
+- [x] UI: модальное окно при достижении лимита с CTA на апгрейд
+- [x] API: `GET /api/subscription/daily-usage` — текущее использование и лимит
+
+#### Paywall UI 🚧
+- [x] Компонент `<ProGate>` — обёртка для Pro-контента (блюр + overlay + CTA)
+- [x] Применить к: Mock Exams, расширенная аналитика (radar, heatmap), полный план подготовки
+- [x] Тизеры: показать частичные данные + "Разблокируйте PRO для полного доступа"
+- [x] Модальное окно тарифов с описанием Free vs Pro
+- [x] Компонент `<UpgradeBanner>` — ненавязчивый баннер в sidebar/footer
+
+#### Лендинг-страница 🌐
+- [x] Отдельная страница `/landing` (без авторизации)
+- [x] Hero-секция: заголовок, подзаголовок, CTA "Начать бесплатно"
+- [x] Секция возможностей: адаптивные тесты, план, прогноз, mock exams
+- [x] Секция тарифов: Free vs Pro с таблицей сравнения
+- [x] Social proof: отзывы/статистика (заглушки)
+- [x] Footer: контакты, FAQ
+- [x] Redirect на `/register` по CTA
+
+#### Email-уведомления 📧
+- [x] Интеграция MailKit для отправки email (SMTP)
+- [x] Streak-reminder: "Вы не занимались 2 дня — не потеряйте серию!"
+- [x] Weekly digest: прогресс за неделю, прогноз, рекомендации
+- [x] Welcome email после регистрации
+- [x] Настройки уведомлений: вкл/выкл для каждого типа
+- [x] Шаблоны писем (HTML) с branding UniStart
 
 ---
 

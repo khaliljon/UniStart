@@ -50,6 +50,9 @@ function Layout() {
             <li>
               <NavLink to="/mock-exam">Mock</NavLink>
             </li>
+            <li>
+              <NavLink to="/notifications">📬</NavLink>
+            </li>
           </ul>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>

@@ -626,16 +626,33 @@ function OnboardingPage() {
             </div>
 
             <button
-              onClick={handleStart}
+              onClick={() => navigate(`/diagnostic?exam=${selectedExam.code}`, { replace: true })}
               className="btn btn-primary"
               style={{
                 width: '100%',
                 padding: '1rem',
                 fontSize: '1.1rem',
                 borderRadius: '0.75rem',
+                marginBottom: '0.75rem',
               }}
             >
-              Начать подготовку 🚀
+              🩺 Пройти диагностический тест
+            </button>
+
+            <button
+              onClick={handleStart}
+              style={{
+                width: '100%',
+                padding: '0.85rem',
+                fontSize: '1rem',
+                borderRadius: '0.75rem',
+                background: 'none',
+                border: '1px solid var(--border-color, #e5e7eb)',
+                color: 'var(--text-secondary)',
+                cursor: 'pointer',
+              }}
+            >
+              Пропустить и начать подготовку →
             </button>
           </div>
         )}

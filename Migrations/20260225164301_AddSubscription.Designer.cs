@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using UniStart.Infrastructure.Data;
@@ -11,9 +12,11 @@ using UniStart.Infrastructure.Data;
 namespace UniStart.Migrations
 {
     [DbContext(typeof(UniStartDbContext))]
-    partial class UniStartDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260225164301_AddSubscription")]
+    partial class AddSubscription
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -263,62 +266,6 @@ namespace UniStart.Migrations
                     b.HasIndex("MockExamId");
 
                     b.ToTable("MockExamSections", (string)null);
-                });
-
-            modelBuilder.Entity("UniStart.Domain.Entities.NotificationPreferences", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<bool>("AchievementNotification")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(true);
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime?>("LastStreakReminderSentAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime?>("LastWeeklyDigestSentAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<bool>("StreakReminder")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(true);
-
-                    b.Property<bool>("StudyPlanReminder")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(true);
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("integer");
-
-                    b.Property<bool>("WeeklyDigest")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(true);
-
-                    b.Property<bool>("WelcomeEmail")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(true);
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId")
-                        .IsUnique();
-
-                    b.ToTable("NotificationPreferences", (string)null);
                 });
 
             modelBuilder.Entity("UniStart.Domain.Entities.Question", b =>
@@ -946,17 +893,6 @@ namespace UniStart.Migrations
                     b.Navigation("MockExam");
                 });
 
-            modelBuilder.Entity("UniStart.Domain.Entities.NotificationPreferences", b =>
-                {
-                    b.HasOne("UniStart.Domain.Entities.User", "User")
-                        .WithOne("NotificationPreferences")
-                        .HasForeignKey("UniStart.Domain.Entities.NotificationPreferences", "UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("UniStart.Domain.Entities.Question", b =>
                 {
                     b.HasOne("UniStart.Domain.Entities.ReadingPassage", "ReadingPassage")
@@ -1248,8 +1184,6 @@ namespace UniStart.Migrations
 
             modelBuilder.Entity("UniStart.Domain.Entities.User", b =>
                 {
-                    b.Navigation("NotificationPreferences");
-
                     b.Navigation("SkillProfiles");
 
                     b.Navigation("TestSessions");

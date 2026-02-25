@@ -30,6 +30,7 @@ public class UniStartDbContext : DbContext
     public DbSet<MockExamSection> MockExamSections => Set<MockExamSection>();
     public DbSet<MockExamAttempt> MockExamAttempts => Set<MockExamAttempt>();
     public DbSet<MockExamAnswer> MockExamAnswers => Set<MockExamAnswer>();
+    public DbSet<NotificationPreferences> NotificationPreferences => Set<NotificationPreferences>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -355,6 +356,23 @@ public class UniStartDbContext : DbContext
                   .WithMany()
                   .HasForeignKey(e => e.SelectedOptionId)
                   .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // ─── Notification Preferences ───────────────────────
+        modelBuilder.Entity<NotificationPreferences>(entity =>
+        {
+            entity.ToTable("NotificationPreferences");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.WelcomeEmail).HasDefaultValue(true);
+            entity.Property(e => e.StreakReminder).HasDefaultValue(true);
+            entity.Property(e => e.WeeklyDigest).HasDefaultValue(true);
+            entity.Property(e => e.StudyPlanReminder).HasDefaultValue(true);
+            entity.Property(e => e.AchievementNotification).HasDefaultValue(true);
+            entity.HasOne(e => e.User)
+                  .WithOne(u => u.NotificationPreferences)
+                  .HasForeignKey<NotificationPreferences>(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(e => e.UserId).IsUnique();
         });
 
         // Seed exam types

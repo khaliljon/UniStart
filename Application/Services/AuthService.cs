@@ -13,12 +13,17 @@ public class AuthService : IAuthService
     private readonly UniStartDbContext _context;
     private readonly IJwtService _jwtService;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IEmailService _emailService;
+    private readonly INotificationService _notificationService;
 
-    public AuthService(UniStartDbContext context, IJwtService jwtService, IUnitOfWork unitOfWork)
+    public AuthService(UniStartDbContext context, IJwtService jwtService, IUnitOfWork unitOfWork,
+        IEmailService emailService, INotificationService notificationService)
     {
         _context = context;
         _jwtService = jwtService;
         _unitOfWork = unitOfWork;
+        _emailService = emailService;
+        _notificationService = notificationService;
     }
 
     public async Task<AuthResponseDto> RegisterAsync(RegisterDto dto)
@@ -56,6 +61,14 @@ public class AuthService : IAuthService
         }
         await _unitOfWork.SaveChangesAsync();
 
+        // Create default notification preferences and send welcome email
+        await _notificationService.EnsurePreferencesExistAsync(user.Id);
+        _ = Task.Run(async () =>
+        {
+            try { await _emailService.SendWelcomeEmailAsync(user.Email, user.Name); }
+            catch { /* logged inside EmailService */ }
+        });
+
         // Generate token
         var token = _jwtService.GenerateToken(user);
         var expiresAt = DateTime.UtcNow.AddHours(24);
@@ -66,6 +79,8 @@ public class AuthService : IAuthService
             user.Name,
             user.Role.ToString(),
             user.HasCompletedOnboarding,
+            user.SubscriptionTier.ToString(),
+            user.SubscriptionExpiresAt,
             token,
             expiresAt
         );
@@ -88,6 +103,8 @@ public class AuthService : IAuthService
             user.Name,
             user.Role.ToString(),
             user.HasCompletedOnboarding,
+            user.SubscriptionTier.ToString(),
+            user.SubscriptionExpiresAt,
             token,
             expiresAt
         );

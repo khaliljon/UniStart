@@ -20,6 +20,8 @@ public record AuthResponseDto(
     string Name,
     string Role,
     bool HasCompletedOnboarding,
+    string SubscriptionTier,
+    DateTime? SubscriptionExpiresAt,
     string Token,
     DateTime ExpiresAt
 );

@@ -1,5 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { mockExamService } from '../services/mockExamService';
+import { useAppSelector } from '../hooks/useAppSelector';
+import { ProGate } from '../components/ProGate';
 import type {
   MockExamListItem,
   MockExamDetail,
@@ -21,6 +23,8 @@ type Phase =
 function MockExamPage() {
   // Phase
   const [phase, setPhase] = useState<Phase>('list');
+  const { user } = useAppSelector((state) => state.auth);
+  const isPro = user?.subscriptionTier === 'Pro' || user?.role === 'Admin';
 
   // List phase
   const [mockExams, setMockExams] = useState<MockExamListItem[]>([]);
@@ -197,6 +201,7 @@ function MockExamPage() {
     if (loading) return <div className="loading"><div className="spinner" /></div>;
 
     return (
+      <ProGate hasAccess={isPro} featureName="Mock Exams">
       <div style={{ maxWidth: 900, margin: '0 auto' }}>
         <h1 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.5rem' }}>
           📝 Mock Exams
@@ -285,6 +290,7 @@ function MockExamPage() {
           </>
         )}
       </div>
+      </ProGate>
     );
   }
 

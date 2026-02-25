@@ -5,6 +5,8 @@ export interface User {
   name: string;
   role: string;
   hasCompletedOnboarding: boolean;
+  subscriptionTier: string;
+  subscriptionExpiresAt: string | null;
   createdAt: string;
 }
 
@@ -14,6 +16,8 @@ export interface AuthResponse {
   name: string;
   role: string;
   hasCompletedOnboarding: boolean;
+  subscriptionTier: string;
+  subscriptionExpiresAt: string | null;
   token: string;
   expiresAt: string;
 }
@@ -634,4 +638,123 @@ export interface CompleteOnboardingRequest {
   examTypeCode: string;
   targetDate: string;
   targetScore: number;
+}
+
+// Diagnostic test types
+export interface DiagnosticSession {
+  sessionId: number;
+  examTypeCode: string;
+  examTypeName: string;
+  totalQuestions: number;
+  currentIndex: number;
+  isCompleted: boolean;
+}
+
+export interface DiagnosticQuestion {
+  index: number;
+  totalQuestions: number;
+  questionId: number;
+  text: string;
+  difficulty: string;
+  topicName: string;
+  sectionName: string;
+  options: AnswerOption[];
+}
+
+export interface DiagnosticAnswerResult {
+  isCorrect: boolean;
+  correctOptionId: number;
+  correctOptionText: string;
+  explanation: string | null;
+  currentIndex: number;
+  totalQuestions: number;
+  isCompleted: boolean;
+}
+
+export interface DiagnosticResult {
+  sessionId: number;
+  examTypeCode: string;
+  examTypeName: string;
+  totalQuestions: number;
+  correctCount: number;
+  scorePercent: number;
+  predictedScore: number;
+  predictedScoreMin: number;
+  predictedScoreMax: number;
+  maxPossibleScore: number;
+  level: string;
+  sectionResults: DiagnosticSectionResult[];
+  answers: DiagnosticAnswerReview[];
+}
+
+export interface DiagnosticSectionResult {
+  sectionName: string;
+  totalQuestions: number;
+  correctCount: number;
+  scorePercent: number;
+}
+
+export interface DiagnosticAnswerReview {
+  questionId: number;
+  questionText: string;
+  topicName: string;
+  difficulty: string;
+  selectedOptionId: number;
+  selectedOptionText: string;
+  correctOptionId: number;
+  correctOptionText: string;
+  isCorrect: boolean;
+  explanation: string | null;
+}
+
+// Subscription types
+export interface SubscriptionStatus {
+  tier: string;
+  isPro: boolean;
+  expiresAt: string | null;
+  dailyUsage: DailyUsage;
+  limits: TierLimits;
+}
+
+export interface DailyUsage {
+  questionsAnswered: number;
+  questionsLimit: number;
+  questionsRemaining: number;
+  lessonsViewed: number;
+  lessonsLimit: number;
+  lessonsRemaining: number;
+  isLimitReached: boolean;
+}
+
+export interface TierLimits {
+  questionsPerDay: number;
+  lessonsPerDay: number;
+  mockExamsEnabled: boolean;
+  fullAnalytics: boolean;
+  fullStudyPlan: boolean;
+  realtimePrediction: boolean;
+}
+
+export interface UpgradeResponse {
+  success: boolean;
+  tier: string;
+  expiresAt: string | null;
+  message: string;
+}
+
+// Notification types
+export interface NotificationPreferences {
+  welcomeEmail: boolean;
+  streakReminder: boolean;
+  weeklyDigest: boolean;
+  studyPlanReminder: boolean;
+  achievementNotification: boolean;
+}
+
+export interface UpdateNotificationPreferences {
+  welcomeEmail?: boolean;
+  streakReminder?: boolean;
+  weeklyDigest?: boolean;
+  studyPlanReminder?: boolean;
+  achievementNotification?: boolean;
 }

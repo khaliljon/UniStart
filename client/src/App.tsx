@@ -18,6 +18,9 @@ import AdminStatsPage from './pages/AdminStatsPage'
 import AdminQuestionsPage from './pages/AdminQuestionsPage'
 import AdminImportPage from './pages/AdminImportPage'
 import MockExamPage from './pages/MockExamPage'
+import DiagnosticTestPage from './pages/DiagnosticTestPage'
+import LandingPage from './pages/LandingPage'
+import NotificationSettingsPage from './pages/NotificationSettingsPage'
 
 function StudentRoutes() {
   return (
@@ -32,6 +35,8 @@ function StudentRoutes() {
       <Route path="prediction" element={<PredictionPage />} />
       <Route path="recommendations" element={<RecommendationsPage />} />
       <Route path="mock-exam" element={<MockExamPage />} />
+      <Route path="diagnostic" element={<DiagnosticTestPage />} />
+      <Route path="notifications" element={<NotificationSettingsPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Route>
   )
@@ -55,6 +60,7 @@ function App() {
 
   return (
     <Routes>
+      <Route path="/landing" element={!isAuthenticated ? <LandingPage /> : <Navigate to="/" replace />} />
       <Route path="/login" element={!isAuthenticated ? <LoginPage /> : <Navigate to={needsOnboarding ? '/onboarding' : '/'} />} />
       <Route path="/register" element={!isAuthenticated ? <RegisterPage /> : <Navigate to={needsOnboarding ? '/onboarding' : '/'} />} />
       <Route path="/onboarding" element={needsOnboarding ? <OnboardingPage /> : <Navigate to="/" replace />} />
@@ -66,7 +72,7 @@ function App() {
           isAdmin ? AdminRoutes() : StudentRoutes()
         )
       ) : (
-        <Route path="*" element={<Navigate to="/login" />} />
+        <Route path="*" element={<Navigate to="/landing" />} />
       )}
     </Routes>
   )

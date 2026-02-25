@@ -66,6 +66,13 @@ const authSlice = createSlice({
         localStorage.setItem('user', JSON.stringify(state.user));
       }
     },
+    setSubscription: (state, action: PayloadAction<{ tier: string; expiresAt: string | null }>) => {
+      if (state.user) {
+        state.user.subscriptionTier = action.payload.tier;
+        state.user.subscriptionExpiresAt = action.payload.expiresAt;
+        localStorage.setItem('user', JSON.stringify(state.user));
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -82,6 +89,8 @@ const authSlice = createSlice({
           name: action.payload.name,
           role: action.payload.role,
           hasCompletedOnboarding: action.payload.hasCompletedOnboarding,
+          subscriptionTier: action.payload.subscriptionTier || 'Free',
+          subscriptionExpiresAt: action.payload.subscriptionExpiresAt || null,
           createdAt: new Date().toISOString(),
         };
         state.token = action.payload.token;
@@ -106,6 +115,8 @@ const authSlice = createSlice({
           name: action.payload.name,
           role: action.payload.role,
           hasCompletedOnboarding: action.payload.hasCompletedOnboarding,
+          subscriptionTier: action.payload.subscriptionTier || 'Free',
+          subscriptionExpiresAt: action.payload.subscriptionExpiresAt || null,
           createdAt: new Date().toISOString(),
         };
         state.token = action.payload.token;
@@ -120,5 +131,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { logout, clearError, setOnboardingComplete } = authSlice.actions;
+export const { logout, clearError, setOnboardingComplete, setSubscription } = authSlice.actions;
 export default authSlice.reducer;
