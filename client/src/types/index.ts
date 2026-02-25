@@ -398,3 +398,56 @@ export interface DailyBriefing {
 export interface AfterSession {
   recommendations: Recommendation[];
 }
+
+// ─── Admin (Stage 9) ────────────────────────────────────
+
+export interface QuestionListItem {
+  id: number;
+  topicName: string;
+  sectionName: string;
+  examTypeCode: string;
+  text: string;
+  difficulty: string;
+  difficultyParam: number;
+  discriminationParam: number;
+  answerCount: number;
+  createdAt: string;
+}
+
+export interface QuestionDetail {
+  id: number;
+  topicId: number;
+  topicName: string;
+  sectionName: string;
+  examTypeCode: string;
+  text: string;
+  difficulty: string;
+  explanation: string | null;
+  difficultyParam: number;
+  discriminationParam: number;
+  guessParam: number;
+  createdAt: string;
+  answerOptions: AdminAnswerOption[];
+}
+
+export interface AdminAnswerOption {
+  id: number;
+  text: string;
+  isCorrect: boolean;
+}
+
+export interface QuestionStats {
+  totalQuestions: number;
+  byExam: Record<string, number>;
+  byDifficulty: Record<string, number>;
+  byTopic: Record<string, number>;
+  topicsWithQuestions: number;
+  topicsWithoutQuestions: number;
+}
+
+export interface BulkImportResult {
+  total: number;
+  imported: number;
+  failed: number;
+  errors: string[];
+}

@@ -47,6 +47,9 @@ function Layout() {
             <li>
               <NavLink to="/recommendations">Tips</NavLink>
             </li>
+            <li>
+              <NavLink to="/admin">Admin</NavLink>
+            </li>
           </ul>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>

@@ -12,6 +12,7 @@ import HistoryPage from './pages/HistoryPage'
 import StudyPlanPage from './pages/StudyPlanPage'
 import PredictionPage from './pages/PredictionPage'
 import RecommendationsPage from './pages/RecommendationsPage'
+import AdminPage from './pages/AdminPage'
 
 function App() {
   const { isAuthenticated } = useAppSelector((state) => state.auth)
@@ -31,6 +32,7 @@ function App() {
         <Route path="study-plan" element={<StudyPlanPage />} />
         <Route path="prediction" element={<PredictionPage />} />
         <Route path="recommendations" element={<RecommendationsPage />} />
+        <Route path="admin" element={<AdminPage />} />
       </Route>
     </Routes>
   )

@@ -28,6 +28,7 @@ builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
 builder.Services.AddScoped<IStudyPlanService, StudyPlanService>();
 builder.Services.AddScoped<IScorePredictionService, ScorePredictionService>();
 builder.Services.AddScoped<IRecommendationService, RecommendationService>();
+builder.Services.AddScoped<IAdminService, AdminService>();
 
 // Configure JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
@@ -136,6 +137,9 @@ if (app.Environment.IsDevelopment())
     
     var seeder = new DatabaseSeeder(dbContext);
     await seeder.SeedAsync();
+
+    var expansionSeeder = new QuestionExpansionSeeder(dbContext);
+    await expansionSeeder.SeedAsync();
 }
 
 await app.RunAsync();

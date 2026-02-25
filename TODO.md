@@ -1,6 +1,6 @@
 # UniStart — Прогресс проекта
 
-## Текущий статус: Этап 5 завершён — IRT-движок, CAT, кривая забывания
+## Текущий статус: Этап 8 завершён — Рекомендательная система, streak, milestones
 
 ---
 
@@ -239,37 +239,49 @@
 
 ---
 
-### Этап 8: Рекомендательная система 🎯
+### Этап 8: Рекомендательная система 🎯 ✅
 
 **Цель**: Интеллектуально подсказывать студенту, что делать дальше — какую тему учить, какой тип задач практиковать, когда повторять.
 
 #### 8.1 Контекстные рекомендации
-- [ ] **After-session рекомендации**: после завершения теста — "Рекомендуем повторить Geometry (3 ошибки)" или "Отличный результат по Algebra, попробуйте Hard!"
-- [ ] **Ежедневные рекомендации**: "Сегодня стоит повторить Grammar (последний раз 5 дней назад)" — с учётом кривой забывания
-- [ ] **Рекомендация режима**: "У вас скоро экзамен — попробуйте Exam Mode для привыкания к таймеру"
+- [x] **After-session рекомендации**: анализ ошибок по темам, похвала за сильные темы, совет по accuracy, автоматическая проверка milestones
+- [x] **Ежедневные рекомендации**: кривая забывания Эббингхауза (`IrtMath.RetentionProbability`) — рекомендация повторить тему при retention < 70%
+- [x] **Рекомендация режима**: "У вас скоро экзамен — попробуйте Exam Mode" + streak мотивация
+- [x] **Слабые навыки**: автоматическое обнаружение навыков с уровнем < 40% → рекомендация практики
+- [x] Приоритизация рекомендаций: high → medium → low, максимум 8 на день
+- [x] API: `GET /api/recommendations/daily`, `GET /api/recommendations/after-session/{id}`
+- [x] `RecommendationService.cs` — 350+ строк бизнес-логики
+- [x] `RecommendationController.cs` — 5 эндпоинтов
 
-#### 8.2 Collaborative Filtering (при масштабе)
+#### 8.2 Collaborative Filtering (отложено — при масштабе)
 - [ ] Анализ паттернов успешных студентов: "Студенты с похожим профилем, набравшие 1400+, больше всего практиковали Data Analysis"
 - [ ] Рекомендация порядка изучения тем на основе успешных траекторий других пользователей
 - [ ] Требование: минимум 100+ активных пользователей для статистической значимости
 
 #### 8.3 Мотивация и вовлечение
-- [ ] **Streak tracking** — серия дней непрерывных занятий
-- [ ] **Milestones** — "Вы ответили на 100 вопросов!", "Mastery > 80% по Algebra!"
-- [ ] **Weekly digest** — email/push: прогресс за неделю, прогноз, рекомендации на следующую
+- [x] **Streak tracking** — подсчёт серии дней из `UserAnswer.AnsweredAt`, текущий/рекордный/всего дней
+- [x] **Milestones** — 14 типов: Q10/Q50/Q100/Q250/Q500/Q1000, STREAK_3/7/14/30, MASTERY_{skill}, ACC_90, SESSIONS_10
+- [x] Новая сущность `UserMilestone` (Id, UserId, Code, Title, Description, Icon, AchievedAt) + миграция
+- [x] API: `GET /api/recommendations/streak`, `GET /api/recommendations/milestones`, `POST /api/recommendations/check-milestones`
+- [x] UI: страница `/recommendations` — streak-карточка (градиент 3+/7+ дней), вчерашняя сводка, рекомендации с приоритетами, сетка достижений
+- [ ] **Weekly digest** — email/push: прогресс за неделю, прогноз, рекомендации на следующую (требует email-сервис)
 
 ---
 
-### Этап 9: Расширение контента 📚
+### Этап 9: Расширение контента ✅
 
 **Цель**: Масштабировать базу вопросов и контента для полноценной подготовки.
 
 #### 9.1 Расширение базы вопросов
-- [ ] **100+ вопросов** для каждого экзамена (итого 300+)
-- [ ] Админ-панель для добавления/редактирования вопросов
-- [ ] Структурировать вопросы по формату реального экзамена
-- [ ] Bulk import вопросов (CSV/JSON)
-- [ ] Валидация: каждый вопрос проверяется на корректность перед публикацией
+- [x] **97 вопросов** (30 seed + 67 expanded) по всем 16 темам трёх экзаменов (SAT:40, TOEFL:28, NUET:29)
+- [x] `QuestionExpansionSeeder` — автоматическое расширение базы при запуске (проверка ≤35 вопросов)
+- [x] Админ-панель: CRUD вопросов, фильтрация по экзамену/теме/сложности, детальный просмотр
+- [x] Bulk import вопросов (JSON) с валидацией каждого вопроса и отчётом об ошибках
+- [x] Валидация: проверка topicId, difficulty, обязательно ≥2 варианта ответа, ровно 1 правильный
+- [x] Авто-расчёт IRT параметров (b, a, c) через `IrtMath.DifficultyToParam/Discrimination`
+- [x] Статистика: общее количество, по экзаменам, по сложности, по темам, покрытие тем
+- [x] API: `GET /api/admin/questions` (filters), `GET /api/admin/questions/{id}`, `POST`, `PUT`, `DELETE`, `POST /import`, `GET /stats`
+- [x] UI: страница `/admin` — 3 вкладки (Статистика, Вопросы, Импорт), модальный просмотр деталей
 
 #### 9.2 Учебные материалы
 - [ ] **Мини-уроки** по каждой теме — краткая теория перед практикой
@@ -320,8 +332,8 @@
 | 🔴 Высокий | Этап 5 — Адаптивный движок v2 | Ядро продукта. IRT даёт научно обоснованную оценку уровня. |
 | 🔴 Высокий | Этап 6 — Персональный план | Ключевой дифференциатор от конкурентов. Структурирует обучение. |
 | ✅ Готово | Этап 7 — Прогнозирование | θ→score маппинг, CI, секции, ROI tips, what-if, история |
-| 🟡 Средний | Этап 8 — Рекомендации | Повышает вовлечённость и удержание. Базовые рекомендации просты, collaborative — при масштабе. |
-| 🟡 Средний | Этап 9 — Контент | 30 вопросов достаточно для MVP, но для реального продукта нужно 300+. |
+| ✅ Готово | Этап 8 — Рекомендации | Daily briefing, after-session, streak, 14 milestones, forgetting curve, UI |
+| ✅ Готово | Этап 9 — Контент | 97 вопросов (16/16 тем), админ-панель CRUD + bulk import, статистика |
 | 🟢 Низкий | Этап 10 — Инфраструктура | Нужно перед продакшеном, но не блокирует разработку фич. |
 
 ---
@@ -374,21 +386,21 @@
 ```
 UniStart/
 ├── Domain/
-│   ├── Entities/        # User, ExamType, Question, Skill, Topic, UserAnswer, UserSkillProfile
+│   ├── Entities/        # User, ExamType, Question, Skill, Topic, UserAnswer, UserSkillProfile, UserMilestone
 │   └── Interfaces/      # IRepository<T>, IUnitOfWork
 ├── Application/
-│   ├── DTOs/            # AuthDtos, ExamDtos, QuestionDtos, SkillDtos, TestSessionDtos
-│   ├── Interfaces/      # IAdaptiveEngineService, IAnalyticsService, IAuthService, IExamService, IJwtService
-│   └── Services/        # AdaptiveEngineService, AnalyticsService, AuthService, ExamService, JwtService
+│   ├── DTOs/            # AuthDtos, ExamDtos, QuestionDtos, SkillDtos, TestSessionDtos, PredictionDtos, RecommendationDtos, AdminDtos
+│   ├── Interfaces/      # IAdaptiveEngineService, IAnalyticsService, IAuthService, IExamService, IJwtService, IStudyPlanService, IScorePredictionService, IRecommendationService, IAdminService
+│   └── Services/        # AdaptiveEngineService, AnalyticsService, AuthService, ExamService, JwtService, StudyPlanService, ScorePredictionService, RecommendationService, AdminService
 ├── Infrastructure/
-│   ├── Data/            # UniStartDbContext, DatabaseSeeder
+│   ├── Data/            # UniStartDbContext, DatabaseSeeder, QuestionExpansionSeeder
 │   └── Repositories/    # Repository<T>, UnitOfWork
-├── Controllers/         # AuthController, ExamsController, TestController, AnalyticsController, UsersController
+├── Controllers/         # AuthController, ExamsController, TestController, AnalyticsController, UsersController, StudyPlanController, PredictionController, RecommendationController, AdminController
 ├── client/              # React 19 frontend
 │   └── src/
-│       ├── pages/       # Login, Register, ExamSelection, Test, Analytics, Review, Topics
+│       ├── pages/       # Login, Register, ExamSelection, Test, Analytics, Review, Topics, StudyPlan, Prediction, Recommendations, Admin
 │       ├── components/  # Layout, Skeleton
-│       ├── services/    # api, authService, examService, testService, analyticsService
+│       ├── services/    # api, authService, examService, testService, analyticsService, studyPlanService, predictionService, recommendationService, adminService
 │       ├── store/       # Redux store + slices (auth, exam, test)
 │       ├── hooks/       # useAppDispatch, useAppSelector, useTheme
 │       └── types/       # TypeScript interfaces
