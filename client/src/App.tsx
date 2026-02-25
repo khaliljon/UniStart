@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAppSelector } from './hooks/useAppSelector'
 import Layout from './components/Layout'
+import AdminLayout from './components/AdminLayout'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import ExamSelectionPage from './pages/ExamSelectionPage'
@@ -12,28 +13,52 @@ import HistoryPage from './pages/HistoryPage'
 import StudyPlanPage from './pages/StudyPlanPage'
 import PredictionPage from './pages/PredictionPage'
 import RecommendationsPage from './pages/RecommendationsPage'
-import AdminPage from './pages/AdminPage'
+import AdminStatsPage from './pages/AdminStatsPage'
+import AdminQuestionsPage from './pages/AdminQuestionsPage'
+import AdminImportPage from './pages/AdminImportPage'
+
+function StudentRoutes() {
+  return (
+    <Route path="/" element={<Layout />}>
+      <Route index element={<ExamSelectionPage />} />
+      <Route path="test" element={<TestPage />} />
+      <Route path="analytics" element={<AnalyticsPage />} />
+      <Route path="history" element={<HistoryPage />} />
+      <Route path="review" element={<ReviewPage />} />
+      <Route path="topics" element={<TopicsPage />} />
+      <Route path="study-plan" element={<StudyPlanPage />} />
+      <Route path="prediction" element={<PredictionPage />} />
+      <Route path="recommendations" element={<RecommendationsPage />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Route>
+  )
+}
+
+function AdminRoutes() {
+  return (
+    <Route path="/" element={<AdminLayout />}>
+      <Route index element={<AdminStatsPage />} />
+      <Route path="questions" element={<AdminQuestionsPage />} />
+      <Route path="import" element={<AdminImportPage />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Route>
+  )
+}
 
 function App() {
-  const { isAuthenticated } = useAppSelector((state) => state.auth)
+  const { isAuthenticated, user } = useAppSelector((state) => state.auth)
+  const isAdmin = user?.role === 'Admin'
 
   return (
     <Routes>
       <Route path="/login" element={!isAuthenticated ? <LoginPage /> : <Navigate to="/" />} />
       <Route path="/register" element={!isAuthenticated ? <RegisterPage /> : <Navigate to="/" />} />
-      
-      <Route path="/" element={isAuthenticated ? <Layout /> : <Navigate to="/login" />}>
-        <Route index element={<ExamSelectionPage />} />
-        <Route path="test" element={<TestPage />} />
-        <Route path="analytics" element={<AnalyticsPage />} />
-        <Route path="history" element={<HistoryPage />} />
-        <Route path="review" element={<ReviewPage />} />
-        <Route path="topics" element={<TopicsPage />} />
-        <Route path="study-plan" element={<StudyPlanPage />} />
-        <Route path="prediction" element={<PredictionPage />} />
-        <Route path="recommendations" element={<RecommendationsPage />} />
-        <Route path="admin" element={<AdminPage />} />
-      </Route>
+
+      {isAuthenticated ? (
+        isAdmin ? AdminRoutes() : StudentRoutes()
+      ) : (
+        <Route path="*" element={<Navigate to="/login" />} />
+      )}
     </Routes>
   )
 }

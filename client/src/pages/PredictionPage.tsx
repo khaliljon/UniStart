@@ -7,7 +7,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  LineChart,
   Line,
   Area,
   AreaChart,

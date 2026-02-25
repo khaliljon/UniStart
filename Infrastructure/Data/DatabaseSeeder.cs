@@ -51,6 +51,12 @@ public class DatabaseSeeder
             await SeedTestUserAsync();
         }
 
+        // Seed admin user
+        if (!await _context.Users.AnyAsync(u => u.Role == UserRole.Admin))
+        {
+            await SeedAdminUserAsync();
+        }
+
         // Seed ExamSections
         if (!await _context.ExamSections.AnyAsync())
         {
@@ -118,6 +124,21 @@ public class DatabaseSeeder
         };
 
         await _context.Users.AddAsync(testUser);
+        await _context.SaveChangesAsync();
+    }
+
+    private async Task SeedAdminUserAsync()
+    {
+        var adminUser = new User
+        {
+            Email = "admin@unistart.kz",
+            Name = "Admin",
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin123"),
+            Role = UserRole.Admin,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        await _context.Users.AddAsync(adminUser);
         await _context.SaveChangesAsync();
     }
 

@@ -8,7 +8,7 @@ namespace UniStart.Controllers;
 
 [ApiController]
 [Route("api/admin")]
-[Authorize]
+[Authorize(Roles = "Admin")]
 public class AdminController : ControllerBase
 {
     private readonly IAdminService _svc;

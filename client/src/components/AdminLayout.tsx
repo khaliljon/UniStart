@@ -4,7 +4,7 @@ import { useAppSelector } from '../hooks/useAppSelector';
 import { useTheme } from '../hooks/useTheme';
 import { logout } from '../store/slices/authSlice';
 
-function Layout() {
+function AdminLayout() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { user } = useAppSelector((state) => state.auth);
@@ -20,38 +20,40 @@ function Layout() {
       <nav className="navbar">
         <div className="container navbar-content">
           <NavLink to="/" className="navbar-brand">
-            UniStart
+            UniStart <span style={{
+              fontSize: '0.65rem',
+              padding: '0.15rem 0.5rem',
+              borderRadius: '999px',
+              background: 'var(--error-color)',
+              color: '#fff',
+              marginLeft: '0.5rem',
+              verticalAlign: 'middle',
+              fontWeight: 700,
+              letterSpacing: '0.05em',
+            }}>ADMIN</span>
           </NavLink>
 
           <ul className="navbar-nav">
             <li>
               <NavLink to="/" end>
-                Exams
+                📊 Статистика
               </NavLink>
             </li>
             <li>
-              <NavLink to="/test">Test</NavLink>
+              <NavLink to="/questions">
+                📋 Вопросы
+              </NavLink>
             </li>
             <li>
-              <NavLink to="/analytics">Analytics</NavLink>
-            </li>
-            <li>
-              <NavLink to="/history">History</NavLink>
-            </li>
-            <li>
-              <NavLink to="/study-plan">Plan</NavLink>
-            </li>
-            <li>
-              <NavLink to="/prediction">Predict</NavLink>
-            </li>
-            <li>
-              <NavLink to="/recommendations">Tips</NavLink>
+              <NavLink to="/import">
+                📥 Импорт
+              </NavLink>
             </li>
           </ul>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <button 
-              onClick={toggleTheme} 
+            <button
+              onClick={toggleTheme}
               className="theme-toggle"
               title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
             >
@@ -76,4 +78,4 @@ function Layout() {
   );
 }
 
-export default Layout;
+export default AdminLayout;
