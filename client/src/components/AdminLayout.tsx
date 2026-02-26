@@ -45,6 +45,11 @@ function AdminLayout() {
               </NavLink>
             </li>
             <li>
+              <NavLink to="/users">
+                👥 Пользователи
+              </NavLink>
+            </li>
+            <li>
               <NavLink to="/import">
                 📥 Импорт
               </NavLink>

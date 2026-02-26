@@ -82,3 +82,53 @@ public record QuestionStatsDto(
     int TopicsWithQuestions,
     int TopicsWithoutQuestions
 );
+
+// ─── Admin User Management ──────────────────────────
+
+public record AdminUserDto(
+    int Id,
+    string Email,
+    string Name,
+    string Role,
+    string SubscriptionTier,
+    DateTime? SubscriptionExpiresAt,
+    bool HasCompletedOnboarding,
+    DateTime CreatedAt,
+    DateTime? UpdatedAt,
+    int TotalAnswers,
+    int CorrectAnswers,
+    int TestSessions
+);
+
+public record AdminUpdateUserDto(
+    string? Name,
+    string? Email,
+    string? Role,  // "Student", "Tutor", "Admin"
+    string? SubscriptionTier,  // "Free", "Pro"
+    DateTime? SubscriptionExpiresAt
+);
+
+public record AdminUserStatsDto(
+    int TotalUsers,
+    int Students,
+    int Tutors,
+    int Admins,
+    int ProUsers,
+    int ActiveLast7Days
+);
+
+// ─── Admin Dashboard / Overview ─────────────────────
+
+public record AdminDashboardDto(
+    QuestionStatsDto QuestionStats,
+    AdminUserStatsDto UserStats,
+    List<AdminTopicSummaryDto> Topics
+);
+
+public record AdminTopicSummaryDto(
+    int Id,
+    string Name,
+    string SectionName,
+    string ExamTypeCode,
+    int QuestionCount
+);

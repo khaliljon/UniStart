@@ -1,7 +1,8 @@
 import api from './api';
-import type { QuestionListItem, QuestionDetail, QuestionStats, BulkImportResult } from '../types';
+import type { QuestionListItem, QuestionDetail, QuestionStats, BulkImportResult, AdminUser, AdminUserStats, AdminTopicSummary, AdminDashboard } from '../types';
 
 const adminService = {
+  // ─── Questions ───────────────────────────────────────────
   getQuestions: (examTypeCode?: string, topic?: string, difficulty?: string) => {
     const params = new URLSearchParams();
     if (examTypeCode) params.set('examTypeCode', examTypeCode);
@@ -48,6 +49,39 @@ const adminService = {
 
   getStats: () =>
     api.get<QuestionStats>('/admin/stats').then(r => r.data),
+
+  // ─── Users ───────────────────────────────────────────────
+  getUsers: (role?: string, search?: string) => {
+    const params = new URLSearchParams();
+    if (role) params.set('role', role);
+    if (search) params.set('search', search);
+    const qs = params.toString();
+    return api.get<AdminUser[]>(`/admin/users${qs ? '?' + qs : ''}`).then(r => r.data);
+  },
+
+  getUser: (id: number) =>
+    api.get<AdminUser>(`/admin/users/${id}`).then(r => r.data),
+
+  updateUser: (id: number, data: {
+    name?: string;
+    email?: string;
+    role?: string;
+    subscriptionTier?: string;
+    subscriptionExpiresAt?: string;
+  }) => api.put<AdminUser>(`/admin/users/${id}`, data).then(r => r.data),
+
+  deleteUser: (id: number) =>
+    api.delete(`/admin/users/${id}`),
+
+  getUserStats: () =>
+    api.get<AdminUserStats>('/admin/users/stats').then(r => r.data),
+
+  // ─── Dashboard & Topics ──────────────────────────────────
+  getDashboard: () =>
+    api.get<AdminDashboard>('/admin/dashboard').then(r => r.data),
+
+  getTopics: () =>
+    api.get<AdminTopicSummary[]>('/admin/topics').then(r => r.data),
 };
 
 export default adminService;

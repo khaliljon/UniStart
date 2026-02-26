@@ -142,6 +142,37 @@ body {
   box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
 }
 
+/* Global select & option styles for dark mode compatibility */
+select,
+.form-select {
+  padding: 0.625rem 0.875rem;
+  font-size: 0.875rem;
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  background-color: var(--card-background);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+select:focus,
+.form-select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+select option,
+.form-select option {
+  background-color: var(--card-background);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] select option,
+[data-theme="dark"] .form-select option {
+  background-color: #1e293b;
+  color: #f1f5f9;
+}
+
 .error-message {
   color: var(--error-color);
   font-size: 0.75rem;

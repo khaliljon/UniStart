@@ -86,4 +86,87 @@ public class AdminController : ControllerBase
         var result = await _svc.GetStatsAsync();
         return Ok(result);
     }
+
+    // ═══════════════════════════════════════════════════════
+    //  USERS
+    // ═══════════════════════════════════════════════════════
+
+    /// <summary>List all users with optional filters</summary>
+    [HttpGet("users")]
+    public async Task<IActionResult> GetUsers(
+        [FromQuery] string? role = null,
+        [FromQuery] string? search = null)
+    {
+        var result = await _svc.GetUsersAsync(role, search);
+        return Ok(result);
+    }
+
+    /// <summary>Get user details by ID</summary>
+    [HttpGet("users/{id:int}")]
+    public async Task<IActionResult> GetUser(int id)
+    {
+        var result = await _svc.GetUserByIdAsync(id);
+        if (result == null) return NotFound();
+        return Ok(result);
+    }
+
+    /// <summary>Update user (role, subscription, etc.)</summary>
+    [HttpPut("users/{id:int}")]
+    public async Task<IActionResult> UpdateUser(int id, [FromBody] AdminUpdateUserDto dto)
+    {
+        try
+        {
+            var result = await _svc.UpdateUserAsync(id, dto);
+            if (result == null) return NotFound();
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    /// <summary>Delete a user and all related data</summary>
+    [HttpDelete("users/{id:int}")]
+    public async Task<IActionResult> DeleteUser(int id)
+    {
+        try
+        {
+            var ok = await _svc.DeleteUserAsync(id);
+            if (!ok) return NotFound();
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    /// <summary>User statistics summary</summary>
+    [HttpGet("users/stats")]
+    public async Task<IActionResult> GetUserStats()
+    {
+        var result = await _svc.GetUserStatsAsync();
+        return Ok(result);
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  DASHBOARD & TOPICS
+    // ═══════════════════════════════════════════════════════
+
+    /// <summary>Admin dashboard with overview stats</summary>
+    [HttpGet("dashboard")]
+    public async Task<IActionResult> GetDashboard()
+    {
+        var result = await _svc.GetDashboardAsync();
+        return Ok(result);
+    }
+
+    /// <summary>List all topics with question counts</summary>
+    [HttpGet("topics")]
+    public async Task<IActionResult> GetTopics()
+    {
+        var result = await _svc.GetTopicsAsync();
+        return Ok(result);
+    }
 }

@@ -85,21 +85,22 @@ function AdminQuestionsPage() {
       {/* Filters */}
       <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
         <select value={filterExam} onChange={e => setFilterExam(e.target.value)}
-          style={{ padding: '0.5rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', background: 'var(--card-background)', color: 'var(--text-primary)' }}>
+          style={{ padding: '0.5rem' }}>
           <option value="">Все экзамены</option>
           <option value="SAT">SAT</option>
           <option value="TOEFL">TOEFL</option>
           <option value="NUET">NUET</option>
         </select>
         <select value={filterDiff} onChange={e => setFilterDiff(e.target.value)}
-          style={{ padding: '0.5rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', background: 'var(--card-background)', color: 'var(--text-primary)' }}>
+          style={{ padding: '0.5rem' }}>
           <option value="">Все уровни</option>
           <option value="Easy">Easy</option>
           <option value="Medium">Medium</option>
           <option value="Hard">Hard</option>
         </select>
         <input placeholder="Тема…" value={filterTopic} onChange={e => setFilterTopic(e.target.value)}
-          style={{ padding: '0.5rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', background: 'var(--card-background)', color: 'var(--text-primary)', flex: 1, minWidth: '120px' }} />
+          className="form-input"
+          style={{ flex: 1, minWidth: '120px' }} />
       </div>
 
       {/* Table */}

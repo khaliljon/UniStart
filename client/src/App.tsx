@@ -17,6 +17,7 @@ import RecommendationsPage from './pages/RecommendationsPage'
 import AdminStatsPage from './pages/AdminStatsPage'
 import AdminQuestionsPage from './pages/AdminQuestionsPage'
 import AdminImportPage from './pages/AdminImportPage'
+import AdminUsersPage from './pages/AdminUsersPage'
 import MockExamPage from './pages/MockExamPage'
 import DiagnosticTestPage from './pages/DiagnosticTestPage'
 import LandingPage from './pages/LandingPage'
@@ -47,6 +48,7 @@ function AdminRoutes() {
     <Route path="/" element={<AdminLayout />}>
       <Route index element={<AdminStatsPage />} />
       <Route path="questions" element={<AdminQuestionsPage />} />
+      <Route path="users" element={<AdminUsersPage />} />
       <Route path="import" element={<AdminImportPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Route>

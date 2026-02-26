@@ -461,6 +461,46 @@ export interface BulkImportResult {
   errors: string[];
 }
 
+// ─── Admin User Management ──────────────────────────────
+
+export interface AdminUser {
+  id: number;
+  email: string;
+  name: string;
+  role: string;
+  subscriptionTier: string;
+  subscriptionExpiresAt: string | null;
+  hasCompletedOnboarding: boolean;
+  createdAt: string;
+  updatedAt: string | null;
+  totalAnswers: number;
+  correctAnswers: number;
+  testSessions: number;
+}
+
+export interface AdminUserStats {
+  totalUsers: number;
+  students: number;
+  tutors: number;
+  admins: number;
+  proUsers: number;
+  activeLast7Days: number;
+}
+
+export interface AdminTopicSummary {
+  id: number;
+  name: string;
+  sectionName: string;
+  examTypeCode: string;
+  questionCount: number;
+}
+
+export interface AdminDashboard {
+  questionStats: QuestionStats;
+  userStats: AdminUserStats;
+  topics: AdminTopicSummary[];
+}
+
 // ─── Stage 9.2: Learning Materials ──────────────────────
 
 export interface TopicLessonSummary {
