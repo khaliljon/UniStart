@@ -84,7 +84,7 @@ function LandingPage() {
   const navigate = useNavigate();
 
   return (
-    <div style={{ background: '#fff', color: '#1a1a2e', minHeight: '100vh' }}>
+    <div style={{ background: 'var(--background-color)', color: 'var(--text-primary)', minHeight: '100vh' }}>
 
       {/* ═══ Navbar ═══ */}
       <nav style={{
@@ -103,12 +103,12 @@ function LandingPage() {
             onClick={() => navigate('/login')}
             style={{
               padding: '0.5rem 1.25rem',
-              border: '1px solid #e5e7eb',
+              border: '1px solid var(--border-color)',
               borderRadius: '0.5rem',
               background: 'transparent',
               cursor: 'pointer',
               fontWeight: 500,
-              color: '#374151',
+              color: 'var(--text-primary)',
             }}
           >
             Войти
@@ -162,7 +162,7 @@ function LandingPage() {
         </h1>
         <p style={{
           fontSize: '1.2rem',
-          color: '#6b7280',
+          color: 'var(--text-secondary)',
           lineHeight: 1.7,
           maxWidth: '600px',
           margin: '0 auto 2.5rem',
@@ -193,10 +193,10 @@ function LandingPage() {
             }}
             style={{
               padding: '0.9rem 2rem',
-              border: '2px solid #e5e7eb',
+              border: '2px solid var(--border-color)',
               borderRadius: '0.75rem',
               background: 'transparent',
-              color: '#374151',
+              color: 'var(--text-primary)',
               fontSize: '1.1rem',
               fontWeight: 500,
               cursor: 'pointer',
@@ -209,7 +209,7 @@ function LandingPage() {
 
       {/* ═══ Stats ═══ */}
       <section style={{
-        background: '#f9fafb',
+        background: 'var(--bg-secondary)',
         padding: '3rem 2rem',
       }}>
         <div style={{
@@ -223,7 +223,7 @@ function LandingPage() {
           {STATS.map((s) => (
             <div key={s.label}>
               <div style={{ fontSize: '2rem', fontWeight: 800, color: '#6366f1' }}>{s.value}</div>
-              <div style={{ fontSize: '0.9rem', color: '#6b7280', marginTop: '0.25rem' }}>{s.label}</div>
+              <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>{s.label}</div>
             </div>
           ))}
         </div>
@@ -239,7 +239,7 @@ function LandingPage() {
           <h2 style={{ fontSize: '2rem', fontWeight: 700, marginBottom: '0.75rem' }}>
             Всё для эффективной подготовки
           </h2>
-          <p style={{ color: '#6b7280', fontSize: '1.05rem', maxWidth: '550px', margin: '0 auto' }}>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '1.05rem', maxWidth: '550px', margin: '0 auto' }}>
             Научно обоснованные методы адаптивного обучения, объединённые в удобной платформе
           </p>
         </div>
@@ -253,8 +253,8 @@ function LandingPage() {
             <div key={f.title} style={{
               padding: '1.75rem',
               borderRadius: '1rem',
-              border: '1px solid #e5e7eb',
-              background: '#fff',
+              border: '1px solid var(--border-color)',
+              background: 'var(--card-bg)',
               transition: 'box-shadow 0.2s, transform 0.2s',
             }}
             onMouseEnter={(e) => {
@@ -268,7 +268,7 @@ function LandingPage() {
             >
               <div style={{ fontSize: '2rem', marginBottom: '0.75rem' }}>{f.icon}</div>
               <h3 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '0.5rem' }}>{f.title}</h3>
-              <p style={{ color: '#6b7280', fontSize: '0.9rem', lineHeight: 1.6 }}>{f.desc}</p>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: 1.6 }}>{f.desc}</p>
             </div>
           ))}
         </div>
@@ -277,14 +277,14 @@ function LandingPage() {
       {/* ═══ Pricing ═══ */}
       <section style={{
         padding: '5rem 2rem',
-        background: '#f9fafb',
+        background: 'var(--bg-secondary)',
       }}>
         <div style={{ maxWidth: '800px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
             <h2 style={{ fontSize: '2rem', fontWeight: 700, marginBottom: '0.75rem' }}>
               Простые и понятные тарифы
             </h2>
-            <p style={{ color: '#6b7280', fontSize: '1.05rem' }}>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '1.05rem' }}>
               Начните бесплатно — обновитесь когда будете готовы
             </p>
           </div>
@@ -294,8 +294,8 @@ function LandingPage() {
               <div key={plan.name} style={{
                 padding: '2rem',
                 borderRadius: '1.25rem',
-                border: plan.highlight ? '2px solid #6366f1' : '1px solid #e5e7eb',
-                background: '#fff',
+                border: plan.highlight ? '2px solid #6366f1' : '1px solid var(--border-color)',
+                background: 'var(--card-bg)',
                 position: 'relative',
                 boxShadow: plan.highlight ? '0 8px 30px rgba(99,102,241,0.15)' : 'none',
               }}>
@@ -314,17 +314,17 @@ function LandingPage() {
                     Популярный
                   </div>
                 )}
-                <div style={{ fontWeight: 700, fontSize: '1.25rem', marginBottom: '0.25rem', color: plan.highlight ? '#6366f1' : '#1a1a2e' }}>
+                <div style={{ fontWeight: 700, fontSize: '1.25rem', marginBottom: '0.25rem', color: plan.highlight ? '#6366f1' : 'var(--text-primary)' }}>
                   {plan.name}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.25rem', marginBottom: '0.25rem' }}>
                   <span style={{ fontSize: '2.5rem', fontWeight: 800 }}>{plan.price}</span>
-                  <span style={{ color: '#6b7280', fontSize: '0.9rem' }}>{plan.period}</span>
+                  <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{plan.period}</span>
                 </div>
 
                 <ul style={{ listStyle: 'none', padding: 0, margin: '1.5rem 0', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
                   {plan.features.map((f) => (
-                    <li key={f} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', color: '#374151' }}>
+                    <li key={f} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', color: 'var(--text-primary)' }}>
                       <span style={{ color: plan.highlight ? '#6366f1' : '#10b981', flexShrink: 0 }}>✓</span>
                       {f}
                     </li>
@@ -337,9 +337,9 @@ function LandingPage() {
                     width: '100%',
                     padding: '0.75rem',
                     borderRadius: '0.75rem',
-                    border: plan.highlight ? 'none' : '2px solid #e5e7eb',
+                    border: plan.highlight ? 'none' : '2px solid var(--border-color)',
                     background: plan.highlight ? '#6366f1' : 'transparent',
-                    color: plan.highlight ? '#fff' : '#374151',
+                    color: plan.highlight ? '#fff' : 'var(--text-primary)',
                     fontWeight: 600,
                     cursor: 'pointer',
                     fontSize: '1rem',
@@ -374,13 +374,13 @@ function LandingPage() {
             <div key={t.name} style={{
               padding: '1.5rem',
               borderRadius: '1rem',
-              border: '1px solid #e5e7eb',
-              background: '#fff',
+              border: '1px solid var(--border-color)',
+              background: 'var(--card-bg)',
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                 <div>
                   <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>{t.name}</div>
-                  <div style={{ color: '#6b7280', fontSize: '0.8rem' }}>{t.exam}</div>
+                  <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>{t.exam}</div>
                 </div>
                 <div style={{
                   background: '#6366f115',
@@ -393,7 +393,7 @@ function LandingPage() {
                   {t.score}
                 </div>
               </div>
-              <p style={{ color: '#6b7280', fontSize: '0.9rem', lineHeight: 1.6, margin: 0 }}>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: 1.6, margin: 0 }}>
                 "{t.text}"
               </p>
             </div>

@@ -10,12 +10,18 @@
   --secondary-color: #6b7280;
   --success-color: #10b981;
   --error-color: #ef4444;
+  --danger: #ef4444;
+  --error-bg: #fef2f2;
+  --error-text: #991b1b;
   --warning-color: #f59e0b;
   --background-color: #f9fafb;
   --card-background: #ffffff;
+  --card-bg: #ffffff;
+  --bg-secondary: #f3f4f6;
   --text-primary: #111827;
   --text-secondary: #6b7280;
   --border-color: #e5e7eb;
+  --border: #e5e7eb;
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
   --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
@@ -27,12 +33,18 @@
   --secondary-color: #9ca3af;
   --success-color: #34d399;
   --error-color: #f87171;
+  --danger: #f87171;
+  --error-bg: rgba(248, 113, 113, 0.1);
+  --error-text: #fca5a5;
   --warning-color: #fbbf24;
   --background-color: #0f172a;
   --card-background: #1e293b;
+  --card-bg: #1e293b;
+  --bg-secondary: #293548;
   --text-primary: #f1f5f9;
   --text-secondary: #94a3b8;
   --border-color: #334155;
+  --border: #334155;
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.5);
@@ -119,6 +131,8 @@ body {
   font-size: 0.875rem;
   border: 1px solid var(--border-color);
   border-radius: 0.5rem;
+  background-color: var(--card-background);
+  color: var(--text-primary);
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 

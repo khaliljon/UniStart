@@ -153,8 +153,8 @@ function DiagnosticTestPage() {
               display: 'inline-block',
               padding: '0.3rem 1rem',
               borderRadius: '2rem',
-              background: '#6366f115',
-              color: '#6366f1',
+              background: 'rgba(99, 102, 241, 0.08)',
+              color: 'var(--primary-color)',
               fontWeight: 600,
               fontSize: '0.9rem',
               marginBottom: '1.5rem',
@@ -198,8 +198,8 @@ function DiagnosticTestPage() {
 
             {error && (
               <div style={{
-                background: '#fef2f2',
-                color: '#991b1b',
+                background: 'var(--error-bg)',
+                color: 'var(--error-text)',
                 padding: '0.75rem',
                 borderRadius: '0.5rem',
                 marginBottom: '1rem',
@@ -319,11 +319,11 @@ function DiagnosticTestPage() {
                   let borderColor = 'var(--border-color, #e5e7eb)';
                   let bgColor = 'transparent';
                   if (answerResult) {
-                    if (isCorrect) { borderColor = '#10b981'; bgColor = '#10b98110'; }
-                    else if (isWrong) { borderColor = '#ef4444'; bgColor = '#ef444410'; }
+                    if (isCorrect) { borderColor = 'var(--success-color)'; bgColor = 'rgba(16, 185, 129, 0.06)'; }
+                    else if (isWrong) { borderColor = 'var(--error-color)'; bgColor = 'rgba(239, 68, 68, 0.06)'; }
                   } else if (isSelected) {
-                    borderColor = '#6366f1';
-                    bgColor = '#6366f108';
+                    borderColor = 'var(--primary-color)';
+                    bgColor = 'rgba(99, 102, 241, 0.03)';
                   }
 
                   return (
@@ -431,7 +431,7 @@ function DiagnosticTestPage() {
                   <div style={{
                     textAlign: 'center',
                     padding: '1rem',
-                    color: '#6366f1',
+                    color: 'var(--primary-color)',
                     fontWeight: 600,
                     fontSize: '1.05rem',
                   }}>
@@ -484,9 +484,9 @@ function DiagnosticTestPage() {
               marginBottom: '1.5rem',
             }}>
               {[
-                { label: 'Правильно', value: `${results.correctCount}/${results.totalQuestions}`, color: '#10b981' },
-                { label: 'Точность', value: `${results.scorePercent}%`, color: '#6366f1' },
-                { label: 'Уровень', value: results.level, color: LEVEL_COLORS[results.level] || '#6366f1' },
+                { label: 'Правильно', value: `${results.correctCount}/${results.totalQuestions}`, color: 'var(--success-color)' },
+                { label: 'Точность', value: `${results.scorePercent}%`, color: 'var(--primary-color)' },
+                { label: 'Уровень', value: results.level, color: LEVEL_COLORS[results.level] || 'var(--primary-color)' },
               ].map((stat) => (
                 <div key={stat.label} style={{
                   background: 'var(--card-bg, #fff)',
@@ -622,8 +622,8 @@ function DiagnosticTestPage() {
                       </div>
                       {!a.isCorrect && (
                         <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                          Ваш ответ: <span style={{ color: '#ef4444' }}>{a.selectedOptionText}</span>
-                          {' → '}Правильно: <span style={{ color: '#10b981', fontWeight: 600 }}>{a.correctOptionText}</span>
+                          Ваш ответ: <span style={{ color: 'var(--error-color)' }}>{a.selectedOptionText}</span>
+                          {' → '}Правильно: <span style={{ color: 'var(--success-color)', fontWeight: 600 }}>{a.correctOptionText}</span>
                         </div>
                       )}
                       {a.explanation && (
@@ -670,8 +670,8 @@ function DiagnosticTestPage() {
         {/* Global error */}
         {error && phase !== 'intro' && (
           <div style={{
-            background: '#fef2f2',
-            color: '#991b1b',
+            background: 'var(--error-bg)',
+            color: 'var(--error-text)',
             padding: '0.75rem 1rem',
             borderRadius: '0.5rem',
             marginTop: '1rem',

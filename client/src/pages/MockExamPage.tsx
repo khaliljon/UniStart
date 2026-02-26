@@ -522,7 +522,7 @@ function MockExamPage() {
               ) : (
                 <button
                   className="btn btn-primary"
-                  style={{ background: '#27ae60' }}
+                  style={{ background: 'var(--success-color)' }}
                   onClick={handleCompleteSection}
                 >
                   {sectionState.sectionIndex + 1 < attempt.totalSections
@@ -536,7 +536,7 @@ function MockExamPage() {
 
         {/* Abandon button */}
         <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
-          <button className="btn btn-outline" style={{ color: '#e74c3c', borderColor: '#e74c3c', fontSize: '0.8rem' }} onClick={handleAbandon}>
+          <button className="btn btn-outline" style={{ color: 'var(--error-color)', borderColor: 'var(--error-color)', fontSize: '0.8rem' }} onClick={handleAbandon}>
             Abandon Exam
           </button>
         </div>
@@ -650,11 +650,11 @@ function MockExamPage() {
                     {i + 1}. {a.questionText}
                   </p>
                   {!a.isUnanswered && !a.isCorrect && (
-                    <p style={{ color: '#e74c3c', fontSize: '0.85rem', margin: '0.25rem 0' }}>
+                    <p style={{ color: 'var(--error-color)', fontSize: '0.85rem', margin: '0.25rem 0' }}>
                       Your answer: {a.selectedOptionText}
                     </p>
                   )}
-                  <p style={{ color: '#27ae60', fontSize: '0.85rem', margin: '0.25rem 0' }}>
+                  <p style={{ color: 'var(--success-color)', fontSize: '0.85rem', margin: '0.25rem 0' }}>
                     Correct: {a.correctOptionText}
                   </p>
                   {a.explanation && (

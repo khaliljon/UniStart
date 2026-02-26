@@ -209,8 +209,8 @@ function OnboardingPage() {
 
             {error && (
               <div style={{
-                background: '#fef2f2',
-                color: '#991b1b',
+                background: 'var(--error-bg)',
+                color: 'var(--error-text)',
                 padding: '0.75rem 1rem',
                 borderRadius: '0.5rem',
                 marginBottom: '1rem',
@@ -351,8 +351,8 @@ function OnboardingPage() {
 
             {error && (
               <div style={{
-                background: '#fef2f2',
-                color: '#991b1b',
+                background: 'var(--error-bg)',
+                color: 'var(--error-text)',
                 padding: '0.75rem 1rem',
                 borderRadius: '0.5rem',
                 marginBottom: '1rem',

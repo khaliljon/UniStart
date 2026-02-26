@@ -261,11 +261,11 @@ function ScoreCard({ prediction }: { prediction: ScorePrediction }) {
               <div style={{
                 position: 'absolute', top: 0, bottom: 0,
                 left: `${((prediction.targetScore - prediction.minPossibleScore) / (prediction.maxPossibleScore - prediction.minPossibleScore)) * 100}%`,
-                width: '3px', background: '#ef4444', borderRadius: '2px',
+                width: '3px', background: 'var(--error-color)', borderRadius: '2px',
               }}>
                 <div style={{
                   position: 'absolute', top: '-18px', left: '50%', transform: 'translateX(-50%)',
-                  fontSize: '0.65rem', color: '#ef4444', fontWeight: 700, whiteSpace: 'nowrap',
+                  fontSize: '0.65rem', color: 'var(--error-color)', fontWeight: 700, whiteSpace: 'nowrap',
                 }}>
                   🎯 {prediction.targetScore}
                 </div>

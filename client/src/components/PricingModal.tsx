@@ -88,8 +88,8 @@ export function PricingModal({ isOpen, onClose }: PricingModalProps) {
 
         {result && (
           <div style={{
-            background: '#10b98115',
-            color: '#10b981',
+            background: 'rgba(16, 185, 129, 0.08)',
+            color: 'var(--success-color)',
             padding: '0.75rem',
             borderRadius: '0.5rem',
             textAlign: 'center',
@@ -119,7 +119,7 @@ export function PricingModal({ isOpen, onClose }: PricingModalProps) {
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               {FREE_FEATURES.map((f) => (
                 <li key={f} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                  <span style={{ color: '#10b981' }}>✓</span> {f}
+                  <span style={{ color: 'var(--success-color)' }}>✓</span> {f}
                 </li>
               ))}
             </ul>
@@ -127,17 +127,17 @@ export function PricingModal({ isOpen, onClose }: PricingModalProps) {
 
           {/* Pro */}
           <div style={{
-            border: '2px solid #6366f1',
+            border: '2px solid var(--primary-color)',
             borderRadius: '1rem',
             padding: '1.5rem',
-            background: '#6366f108',
+            background: 'rgba(99, 102, 241, 0.03)',
             position: 'relative',
           }}>
             <div style={{
               position: 'absolute',
               top: '-10px',
               right: '1rem',
-              background: '#6366f1',
+              background: 'var(--primary-color)',
               color: '#fff',
               padding: '0.15rem 0.75rem',
               borderRadius: '1rem',
@@ -146,7 +146,7 @@ export function PricingModal({ isOpen, onClose }: PricingModalProps) {
             }}>
               Рекомендуем
             </div>
-            <div style={{ fontWeight: 700, fontSize: '1.2rem', marginBottom: '0.25rem', color: '#6366f1' }}>
+            <div style={{ fontWeight: 700, fontSize: '1.2rem', marginBottom: '0.25rem', color: 'var(--primary-color)' }}>
               Pro
             </div>
             <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.25rem' }}>
@@ -158,7 +158,7 @@ export function PricingModal({ isOpen, onClose }: PricingModalProps) {
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               {PRO_FEATURES.map((f) => (
                 <li key={f} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-primary)' }}>
-                  <span style={{ color: '#6366f1' }}>✓</span> {f}
+                  <span style={{ color: 'var(--primary-color)' }}>✓</span> {f}
                 </li>
               ))}
             </ul>
