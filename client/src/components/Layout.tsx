@@ -1,20 +1,7 @@
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { useAppDispatch } from '../hooks/useAppDispatch';
-import { useAppSelector } from '../hooks/useAppSelector';
-import { useTheme } from '../hooks/useTheme';
-import { logout } from '../store/slices/authSlice';
+import { Outlet, NavLink } from 'react-router-dom';
+import ProfileDropdown from './ProfileDropdown';
 
 function Layout() {
-  const dispatch = useAppDispatch();
-  const navigate = useNavigate();
-  const { user } = useAppSelector((state) => state.auth);
-  const { theme, toggleTheme } = useTheme();
-
-  const handleLogout = () => {
-    dispatch(logout());
-    navigate('/login');
-  };
-
   return (
     <div className="layout">
       <nav className="navbar">
@@ -26,50 +13,27 @@ function Layout() {
           <ul className="navbar-nav">
             <li>
               <NavLink to="/" end>
-                Exams
+                🏠 Главная
               </NavLink>
             </li>
             <li>
-              <NavLink to="/test">Test</NavLink>
+              <NavLink to="/learn">
+                📚 Обучение
+              </NavLink>
             </li>
             <li>
-              <NavLink to="/analytics">Analytics</NavLink>
+              <NavLink to="/progress">
+                📊 Прогресс
+              </NavLink>
             </li>
             <li>
-              <NavLink to="/history">History</NavLink>
-            </li>
-            <li>
-              <NavLink to="/study-plan">Plan</NavLink>
-            </li>
-            <li>
-              <NavLink to="/prediction">Predict</NavLink>
-            </li>
-            <li>
-              <NavLink to="/recommendations">Tips</NavLink>
-            </li>
-            <li>
-              <NavLink to="/mock-exam">Mock</NavLink>
-            </li>
-            <li>
-              <NavLink to="/notifications">📬</NavLink>
+              <NavLink to="/plan">
+                📅 План
+              </NavLink>
             </li>
           </ul>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <button 
-              onClick={toggleTheme} 
-              className="theme-toggle"
-              title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
-            >
-              {theme === 'light' ? '🌙' : '☀️'}
-            </button>
-            <span style={{ color: 'var(--text-secondary)' }}>
-              {user?.name}
-            </span>
-            <button onClick={handleLogout} className="btn btn-outline">
-              Logout
-            </button>
-          </div>
+          <ProfileDropdown />
         </div>
       </nav>
 

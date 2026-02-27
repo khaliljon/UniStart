@@ -23,4 +23,9 @@ public interface IAdminService
     // Dashboard
     Task<AdminDashboardDto> GetDashboardAsync();
     Task<List<AdminTopicSummaryDto>> GetTopicsAsync();
+
+    // Topics
+    Task<AdminTopicSummaryDto> CreateTopicAsync(CreateTopicDto dto);
+    Task<List<AdminSectionDto>> GetSectionsAsync();
+    Task<List<AdminSkillDto>> GetSkillsAsync();
 }

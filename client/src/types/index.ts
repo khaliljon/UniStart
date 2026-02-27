@@ -495,6 +495,18 @@ export interface AdminTopicSummary {
   questionCount: number;
 }
 
+export interface AdminSection {
+  id: number;
+  name: string;
+  examTypeCode: string;
+}
+
+export interface AdminSkill {
+  id: number;
+  code: string;
+  name: string;
+}
+
 export interface AdminDashboard {
   questionStats: QuestionStats;
   userStats: AdminUserStats;

@@ -534,4 +534,63 @@ public class AdminService : IAdminService
             QuestionCount: t.Questions.Count
         )).ToList();
     }
+
+    // ═══════════════════════════════════════════════════════
+    //  CREATE TOPIC
+    // ═══════════════════════════════════════════════════════
+
+    public async Task<AdminTopicSummaryDto> CreateTopicAsync(CreateTopicDto dto)
+    {
+        if (string.IsNullOrWhiteSpace(dto.Name))
+            throw new ArgumentException("Название темы не может быть пустым");
+
+        var section = await _db.ExamSections.FindAsync(dto.SectionId)
+            ?? throw new ArgumentException($"Секция с ID {dto.SectionId} не найдена");
+
+        var skill = await _db.Skills.FindAsync(dto.SkillId)
+            ?? throw new ArgumentException($"Навык с ID {dto.SkillId} не найден");
+
+        var exists = await _db.Topics.AnyAsync(t => t.Name == dto.Name && t.SectionId == dto.SectionId);
+        if (exists)
+            throw new ArgumentException($"Тема '{dto.Name}' уже существует в секции '{section.Name}'");
+
+        var topic = new Topic
+        {
+            Name = dto.Name,
+            SectionId = dto.SectionId,
+            SkillId = dto.SkillId
+        };
+
+        _db.Topics.Add(topic);
+        await _db.SaveChangesAsync();
+
+        return new AdminTopicSummaryDto(
+            Id: topic.Id,
+            Name: topic.Name,
+            SectionName: section.Name,
+            ExamTypeCode: section.ExamTypeCode,
+            QuestionCount: 0
+        );
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  SECTIONS & SKILLS (for dropdowns)
+    // ═══════════════════════════════════════════════════════
+
+    public async Task<List<AdminSectionDto>> GetSectionsAsync()
+    {
+        return await _db.ExamSections
+            .OrderBy(s => s.ExamTypeCode)
+            .ThenBy(s => s.Name)
+            .Select(s => new AdminSectionDto(s.Id, s.Name, s.ExamTypeCode))
+            .ToListAsync();
+    }
+
+    public async Task<List<AdminSkillDto>> GetSkillsAsync()
+    {
+        return await _db.Skills
+            .OrderBy(s => s.Name)
+            .Select(s => new AdminSkillDto(s.Id, s.Code, s.Name))
+            .ToListAsync();
+    }
 }

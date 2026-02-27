@@ -132,3 +132,21 @@ public record AdminTopicSummaryDto(
     string ExamTypeCode,
     int QuestionCount
 );
+
+public record CreateTopicDto(
+    string Name,
+    int SectionId,
+    int SkillId
+);
+
+public record AdminSectionDto(
+    int Id,
+    string Name,
+    string ExamTypeCode
+);
+
+public record AdminSkillDto(
+    int Id,
+    string Code,
+    string Name
+);

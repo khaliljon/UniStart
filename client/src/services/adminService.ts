@@ -1,5 +1,5 @@
 import api from './api';
-import type { QuestionListItem, QuestionDetail, QuestionStats, BulkImportResult, AdminUser, AdminUserStats, AdminTopicSummary, AdminDashboard } from '../types';
+import type { QuestionListItem, QuestionDetail, QuestionStats, BulkImportResult, AdminUser, AdminUserStats, AdminTopicSummary, AdminDashboard, AdminSection, AdminSkill } from '../types';
 
 const adminService = {
   // ─── Questions ───────────────────────────────────────────
@@ -82,6 +82,15 @@ const adminService = {
 
   getTopics: () =>
     api.get<AdminTopicSummary[]>('/admin/topics').then(r => r.data),
+
+  createTopic: (data: { name: string; sectionId: number; skillId: number }) =>
+    api.post<AdminTopicSummary>('/admin/topics', data).then(r => r.data),
+
+  getSections: () =>
+    api.get<AdminSection[]>('/admin/sections').then(r => r.data),
+
+  getSkills: () =>
+    api.get<AdminSkill[]>('/admin/skills').then(r => r.data),
 };
 
 export default adminService;

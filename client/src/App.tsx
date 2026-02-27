@@ -5,39 +5,40 @@ import AdminLayout from './components/AdminLayout'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import OnboardingPage from './pages/OnboardingPage'
-import ExamSelectionPage from './pages/ExamSelectionPage'
-import TestPage from './pages/TestPage'
-import AnalyticsPage from './pages/AnalyticsPage'
-import ReviewPage from './pages/ReviewPage'
-import TopicsPage from './pages/TopicsPage'
-import HistoryPage from './pages/HistoryPage'
+import DashboardPage from './pages/DashboardPage'
+import LearnPage from './pages/LearnPage'
+import ProgressPage from './pages/ProgressPage'
 import StudyPlanPage from './pages/StudyPlanPage'
-import PredictionPage from './pages/PredictionPage'
-import RecommendationsPage from './pages/RecommendationsPage'
+import ProfilePage from './pages/ProfilePage'
+import NotificationSettingsPage from './pages/NotificationSettingsPage'
+import DiagnosticTestPage from './pages/DiagnosticTestPage'
 import AdminStatsPage from './pages/AdminStatsPage'
 import AdminQuestionsPage from './pages/AdminQuestionsPage'
 import AdminImportPage from './pages/AdminImportPage'
 import AdminUsersPage from './pages/AdminUsersPage'
-import MockExamPage from './pages/MockExamPage'
-import DiagnosticTestPage from './pages/DiagnosticTestPage'
 import LandingPage from './pages/LandingPage'
-import NotificationSettingsPage from './pages/NotificationSettingsPage'
 
 function StudentRoutes() {
   return (
     <Route path="/" element={<Layout />}>
-      <Route index element={<ExamSelectionPage />} />
-      <Route path="test" element={<TestPage />} />
-      <Route path="analytics" element={<AnalyticsPage />} />
-      <Route path="history" element={<HistoryPage />} />
-      <Route path="review" element={<ReviewPage />} />
-      <Route path="topics" element={<TopicsPage />} />
-      <Route path="study-plan" element={<StudyPlanPage />} />
-      <Route path="prediction" element={<PredictionPage />} />
-      <Route path="recommendations" element={<RecommendationsPage />} />
-      <Route path="mock-exam" element={<MockExamPage />} />
+      <Route index element={<DashboardPage />} />
+      <Route path="learn" element={<LearnPage />} />
+      <Route path="progress" element={<ProgressPage />} />
+      <Route path="plan" element={<StudyPlanPage />} />
+      <Route path="profile" element={<ProfilePage />} />
+      <Route path="profile/notifications" element={<NotificationSettingsPage />} />
       <Route path="diagnostic" element={<DiagnosticTestPage />} />
-      <Route path="notifications" element={<NotificationSettingsPage />} />
+      {/* Legacy redirects */}
+      <Route path="test" element={<Navigate to="/learn" replace />} />
+      <Route path="mock-exam" element={<Navigate to="/learn?tab=mock" replace />} />
+      <Route path="topics" element={<Navigate to="/learn?tab=topics" replace />} />
+      <Route path="review" element={<Navigate to="/learn?tab=review" replace />} />
+      <Route path="analytics" element={<Navigate to="/progress" replace />} />
+      <Route path="prediction" element={<Navigate to="/progress?tab=prediction" replace />} />
+      <Route path="history" element={<Navigate to="/progress?tab=history" replace />} />
+      <Route path="study-plan" element={<Navigate to="/plan" replace />} />
+      <Route path="recommendations" element={<Navigate to="/" replace />} />
+      <Route path="notifications" element={<Navigate to="/profile/notifications" replace />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Route>
   )

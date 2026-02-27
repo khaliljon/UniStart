@@ -169,4 +169,35 @@ public class AdminController : ControllerBase
         var result = await _svc.GetTopicsAsync();
         return Ok(result);
     }
+
+    /// <summary>Create a new topic</summary>
+    [HttpPost("topics")]
+    public async Task<IActionResult> CreateTopic([FromBody] CreateTopicDto dto)
+    {
+        try
+        {
+            var result = await _svc.CreateTopicAsync(dto);
+            return Created($"/api/admin/topics", result);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    /// <summary>List all exam sections (for dropdowns)</summary>
+    [HttpGet("sections")]
+    public async Task<IActionResult> GetSections()
+    {
+        var result = await _svc.GetSectionsAsync();
+        return Ok(result);
+    }
+
+    /// <summary>List all skills (for dropdowns)</summary>
+    [HttpGet("skills")]
+    public async Task<IActionResult> GetSkills()
+    {
+        var result = await _svc.GetSkillsAsync();
+        return Ok(result);
+    }
 }
