@@ -12,11 +12,13 @@ namespace UniStart.Controllers;
 public class TestController : ControllerBase
 {
     private readonly IAdaptiveEngineService _adaptiveEngine;
+    private readonly ISubscriptionService _subscriptionService;
     private readonly ILogger<TestController> _logger;
 
-    public TestController(IAdaptiveEngineService adaptiveEngine, ILogger<TestController> logger)
+    public TestController(IAdaptiveEngineService adaptiveEngine, ISubscriptionService subscriptionService, ILogger<TestController> logger)
     {
         _adaptiveEngine = adaptiveEngine;
+        _subscriptionService = subscriptionService;
         _logger = logger;
     }
 
@@ -30,8 +32,8 @@ public class TestController : ControllerBase
         var userId = GetCurrentUserId();
         
         var question = await _adaptiveEngine.GetNextQuestionAsync(userId, dto.ExamTypeCodes, dto.SectionId, dto.TopicId);
-        var totalQuestions = await _adaptiveEngine.GetTotalQuestionsCountAsync(dto.ExamTypeCodes);
-        var answeredQuestions = await _adaptiveEngine.GetAnsweredQuestionsCountAsync(userId, dto.ExamTypeCodes);
+        var totalQuestions = await _adaptiveEngine.GetTotalQuestionsCountAsync(dto.ExamTypeCodes, dto.SectionId, dto.TopicId);
+        var answeredQuestions = await _adaptiveEngine.GetAnsweredQuestionsCountAsync(userId, dto.ExamTypeCodes, dto.SectionId, dto.TopicId);
         
         if (question == null)
         {
@@ -50,6 +52,10 @@ public class TestController : ControllerBase
     public async Task<IActionResult> SubmitAnswer([FromBody] SubmitAnswerDto dto)
     {
         var userId = GetCurrentUserId();
+
+        // Server-side daily question limit enforcement
+        if (!await _subscriptionService.CanAnswerQuestionAsync(userId))
+            return StatusCode(429, new { error = "Дневной лимит вопросов исчерпан. Перейдите на Pro для безлимитного доступа." });
 
         try
         {
@@ -125,9 +131,8 @@ public class TestController : ControllerBase
     {
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier) 
                          ?? User.FindFirst("sub");
-        var userId = int.Parse(userIdClaim?.Value ?? "0");
-        
-        // Default to test user (ID=1) for development when not authenticated
-        return userId > 0 ? userId : 1;
+        if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var userId) || userId <= 0)
+            throw new UnauthorizedAccessException("Invalid user identity");
+        return userId;
     }
 }

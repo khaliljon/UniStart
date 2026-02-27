@@ -117,6 +117,8 @@ public class MockExamController : ControllerBase
     private int GetUserId()
     {
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier) ?? User.FindFirst("sub");
-        return int.Parse(userIdClaim?.Value ?? "0");
+        if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var userId) || userId <= 0)
+            throw new UnauthorizedAccessException("Invalid user identity");
+        return userId;
     }
 }

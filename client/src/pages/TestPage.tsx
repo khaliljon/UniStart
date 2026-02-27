@@ -197,7 +197,7 @@ function TestPage() {
 
   // Auto-start when coming from the plan (with topicId)
   useEffect(() => {
-    if (topicId && !practiceStarted && !currentQuestion && !testCompleted) {
+    if (topicId && selectedExams.length > 0 && !practiceStarted && !currentQuestion && !testCompleted) {
       handleStartPractice();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

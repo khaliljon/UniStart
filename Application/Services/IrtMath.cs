@@ -240,8 +240,7 @@ public static class IrtMath
         var topItems = itemInfos.Where(x => x.info >= threshold).ToList();
         if (topItems.Count == 0) topItems = itemInfos.Take(1).ToList();
 
-        var random = new Random();
-        return topItems[random.Next(topItems.Count)].item;
+        return topItems[Random.Shared.Next(topItems.Count)].item;
     }
 
     // ─── Helpers ────────────────────────────────────────────────

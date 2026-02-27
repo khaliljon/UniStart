@@ -109,6 +109,14 @@ public class AdaptiveEngineService : IAdaptiveEngineService
         var selectedOption = question.AnswerOptions.FirstOrDefault(o => o.Id == answer.AnswerOptionId)
             ?? throw new ArgumentException("Answer option not found");
 
+        // Prevent duplicate answers: check if this user already answered this question in this session
+        var alreadyAnswered = await _context.UserAnswers
+            .AnyAsync(ua => ua.UserId == userId 
+                         && ua.QuestionId == answer.QuestionId 
+                         && ua.TestSessionId == answer.TestSessionId);
+        if (alreadyAnswered)
+            throw new ArgumentException("Вы уже ответили на этот вопрос в текущей сессии");
+
         var correctOption = question.AnswerOptions.First(o => o.IsCorrect);
         var isCorrect = selectedOption.IsCorrect;
 
@@ -296,28 +304,40 @@ public class AdaptiveEngineService : IAdaptiveEngineService
     }
 
     /// <summary>
-    /// Gets total question count for selected exams
+    /// Gets total question count for selected exams, optionally filtered by section/topic
     /// </summary>
-    public async Task<int> GetTotalQuestionsCountAsync(string[] examTypeCodes)
+    public async Task<int> GetTotalQuestionsCountAsync(string[] examTypeCodes, int? sectionId = null, int? topicId = null)
     {
-        return await _context.Questions
+        var query = _context.Questions
             .Include(q => q.Topic)
                 .ThenInclude(t => t.Section)
-            .Where(q => q.Topic.Section != null && examTypeCodes.Contains(q.Topic.Section.ExamTypeCode))
-            .CountAsync();
+            .Where(q => q.Topic.Section != null && examTypeCodes.Contains(q.Topic.Section.ExamTypeCode));
+
+        if (topicId.HasValue)
+            query = query.Where(q => q.TopicId == topicId.Value);
+        else if (sectionId.HasValue)
+            query = query.Where(q => q.Topic.SectionId == sectionId.Value);
+
+        return await query.CountAsync();
     }
 
     /// <summary>
-    /// Gets count of answered questions for user in selected exams
+    /// Gets count of answered questions for user in selected exams, optionally filtered by section/topic
     /// </summary>
-    public async Task<int> GetAnsweredQuestionsCountAsync(int userId, string[] examTypeCodes)
+    public async Task<int> GetAnsweredQuestionsCountAsync(int userId, string[] examTypeCodes, int? sectionId = null, int? topicId = null)
     {
-        return await _context.UserAnswers
+        var query = _context.UserAnswers
             .Include(ua => ua.Question)
                 .ThenInclude(q => q.Topic)
                     .ThenInclude(t => t.Section)
-            .Where(ua => ua.UserId == userId && ua.Question.Topic.Section != null && examTypeCodes.Contains(ua.Question.Topic.Section.ExamTypeCode))
-            .CountAsync();
+            .Where(ua => ua.UserId == userId && ua.Question.Topic.Section != null && examTypeCodes.Contains(ua.Question.Topic.Section.ExamTypeCode));
+
+        if (topicId.HasValue)
+            query = query.Where(ua => ua.Question.TopicId == topicId.Value);
+        else if (sectionId.HasValue)
+            query = query.Where(ua => ua.Question.Topic.SectionId == sectionId.Value);
+
+        return await query.CountAsync();
     }
 
     /// <summary>

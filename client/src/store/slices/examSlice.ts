@@ -11,10 +11,18 @@ interface ExamState {
   error: string | null;
 }
 
+// Restore selectedExams from localStorage so they survive page refresh
+const savedExams = (() => {
+  try {
+    const stored = localStorage.getItem('selectedExams');
+    return stored ? JSON.parse(stored) as string[] : [];
+  } catch { return []; }
+})();
+
 const initialState: ExamState = {
   exams: [],
   sections: [],
-  selectedExams: [],
+  selectedExams: savedExams,
   selectedSection: null,
   isLoading: false,
   error: null,
@@ -45,6 +53,11 @@ const examSlice = createSlice({
       } else {
         state.selectedExams.splice(index, 1);
       }
+      localStorage.setItem('selectedExams', JSON.stringify(state.selectedExams));
+    },
+    setSelectedExams: (state, action: PayloadAction<string[]>) => {
+      state.selectedExams = action.payload;
+      localStorage.setItem('selectedExams', JSON.stringify(action.payload));
     },
     setSelectedSection: (state, action: PayloadAction<number | null>) => {
       state.selectedSection = action.payload;
@@ -52,6 +65,7 @@ const examSlice = createSlice({
     clearSelection: (state) => {
       state.selectedExams = [];
       state.selectedSection = null;
+      localStorage.removeItem('selectedExams');
     },
   },
   extraReducers: (builder) => {
@@ -74,5 +88,5 @@ const examSlice = createSlice({
   },
 });
 
-export const { toggleExamSelection, setSelectedSection, clearSelection } = examSlice.actions;
+export const { toggleExamSelection, setSelectedExams, setSelectedSection, clearSelection } = examSlice.actions;
 export default examSlice.reducer;

@@ -41,14 +41,14 @@ public interface IAdaptiveEngineService
     Task ResetUserProgressAsync(int userId);
 
     /// <summary>
-    /// Gets total question count for selected exams
+    /// Gets total question count for selected exams, optionally filtered by section/topic
     /// </summary>
-    Task<int> GetTotalQuestionsCountAsync(string[] examTypeCodes);
+    Task<int> GetTotalQuestionsCountAsync(string[] examTypeCodes, int? sectionId = null, int? topicId = null);
 
     /// <summary>
-    /// Gets count of answered questions for user in selected exams
+    /// Gets count of answered questions for user in selected exams, optionally filtered by section/topic
     /// </summary>
-    Task<int> GetAnsweredQuestionsCountAsync(int userId, string[] examTypeCodes);
+    Task<int> GetAnsweredQuestionsCountAsync(int userId, string[] examTypeCodes, int? sectionId = null, int? topicId = null);
 
     /// <summary>
     /// Gets questions that user answered incorrectly (for review mode)

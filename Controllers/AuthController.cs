@@ -38,7 +38,7 @@ public class AuthController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unexpected error during registration for {Email}", dto.Email);
-            return StatusCode(500, new { error = "An unexpected error occurred", details = ex.Message });
+            return StatusCode(500, new { error = "An unexpected error occurred" });
         }
     }
 
@@ -63,7 +63,7 @@ public class AuthController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unexpected error during login for {Email}", dto.Email);
-            return StatusCode(500, new { error = "An unexpected error occurred", details = ex.Message });
+            return StatusCode(500, new { error = "An unexpected error occurred" });
         }
     }
 }

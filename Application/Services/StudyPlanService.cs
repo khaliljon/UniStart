@@ -336,9 +336,10 @@ public class StudyPlanService : IStudyPlanService
             if (!answersByTopic.TryGetValue(entry.TopicId, out var topicStats))
                 continue;
 
-            // Auto-complete if user answered at least 1 question for this topic today
-            // (they actually practiced — the system should track it)
-            if (topicStats.Total >= 1)
+            // Auto-complete if user answered enough questions for this topic today
+            // Require at least half the recommended amount (minimum 2) to prevent trivial completion
+            var threshold = Math.Max(2, entry.RecommendedQuestions / 2);
+            if (topicStats.Total >= threshold)
             {
                 entry.IsCompleted = true;
                 entry.CompletedAt = DateTime.UtcNow;

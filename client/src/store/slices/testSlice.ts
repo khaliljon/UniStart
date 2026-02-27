@@ -68,6 +68,7 @@ const testSlice = createSlice({
       state.questionsAnswered = 0;
       state.totalQuestions = 0;
       state.testCompleted = false;
+      state.isLoading = false;
       state.error = null;
       state.questionStartTime = null;
       state.testSessionId = null;
