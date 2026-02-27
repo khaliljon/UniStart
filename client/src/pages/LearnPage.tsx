@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAppSelector } from '../hooks/useAppSelector';
 import TestPage from './TestPage';
@@ -24,17 +23,10 @@ function LearnPage() {
   const { selectedExams } = useAppSelector((state) => state.exam);
 
   const tabParam = searchParams.get('tab');
-  const [activeTab, setActiveTab] = useState<LearnTab>(isValidTab(tabParam) ? tabParam : 'practice');
-
-  useEffect(() => {
-    if (isValidTab(tabParam) && tabParam !== activeTab) {
-      setActiveTab(tabParam);
-    }
-  }, [tabParam, activeTab]);
+  const activeTab: LearnTab = isValidTab(tabParam) ? tabParam : 'practice';
 
   const switchTab = (tab: LearnTab) => {
-    setActiveTab(tab);
-    setSearchParams(tab === 'practice' ? {} : { tab });
+    setSearchParams(tab === 'practice' ? {} : { tab }, { replace: true });
   };
 
   // If no exams selected, prompt user

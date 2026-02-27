@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import AnalyticsPage from './AnalyticsPage';
 import PredictionPage from './PredictionPage';
@@ -18,17 +17,10 @@ const isValidTab = (v: string | null): v is ProgressTab =>
 function ProgressPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get('tab');
-  const [activeTab, setActiveTab] = useState<ProgressTab>(isValidTab(tabParam) ? tabParam : 'overview');
-
-  useEffect(() => {
-    if (isValidTab(tabParam) && tabParam !== activeTab) {
-      setActiveTab(tabParam);
-    }
-  }, [tabParam, activeTab]);
+  const activeTab: ProgressTab = isValidTab(tabParam) ? tabParam : 'overview';
 
   const switchTab = (tab: ProgressTab) => {
-    setActiveTab(tab);
-    setSearchParams(tab === 'overview' ? {} : { tab });
+    setSearchParams(tab === 'overview' ? {} : { tab }, { replace: true });
   };
 
   return (

@@ -39,9 +39,6 @@ export interface ExamType {
   name: string;
 }
 
-// Test Mode
-export type TestMode = 'practice' | 'exam';
-
 export interface ExamSection {
   id: number;
   examTypeCode: string;
@@ -120,6 +117,7 @@ export interface SkillProgress {
 export interface StartTestRequest {
   examTypeCodes: string[];
   sectionId?: number;
+  topicId?: number;
 }
 
 // Topic progress for learning features

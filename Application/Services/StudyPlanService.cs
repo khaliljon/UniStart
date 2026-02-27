@@ -289,6 +289,77 @@ public class StudyPlanService : IStudyPlanService
     }
 
     // ═══════════════════════════════════════════════════════
+    //  AUTO-COMPLETE TODAY'S ENTRIES FROM ACTUAL ANSWERS
+    // ═══════════════════════════════════════════════════════
+
+    public async Task<TodayPlanDto> AutoCompleteTodayAsync(int userId)
+    {
+        var today = DateTime.SpecifyKind(DateTime.UtcNow.Date, DateTimeKind.Utc);
+
+        var plan = await _db.StudyPlans
+            .FirstOrDefaultAsync(p => p.UserId == userId && p.IsActive);
+
+        if (plan == null)
+            return await GetTodayPlanAsync(userId);
+
+        // Get today's incomplete entries
+        var incompleteEntries = await _db.StudyPlanEntries
+            .Include(e => e.Topic)
+            .Include(e => e.Plan)
+            .Where(e => e.PlanId == plan.Id && e.Date == today && !e.IsCompleted)
+            .ToListAsync();
+
+        if (!incompleteEntries.Any())
+            return await GetTodayPlanAsync(userId);
+
+        // Get all user answers from today, grouped by topicId
+        var todayAnswers = await _db.UserAnswers
+            .Include(a => a.Question)
+            .Include(a => a.AnswerOption)
+            .Where(a => a.UserId == userId && a.AnsweredAt >= today)
+            .ToListAsync();
+
+        var answersByTopic = todayAnswers
+            .Where(a => a.Question != null)
+            .GroupBy(a => a.Question!.TopicId)
+            .ToDictionary(
+                g => g.Key,
+                g => new {
+                    Total = g.Count(),
+                    Correct = g.Count(a => a.AnswerOption != null && a.AnswerOption.IsCorrect)
+                }
+            );
+
+        var autoCompleted = 0;
+        foreach (var entry in incompleteEntries)
+        {
+            if (!answersByTopic.TryGetValue(entry.TopicId, out var topicStats))
+                continue;
+
+            // Auto-complete if user answered at least 1 question for this topic today
+            // (they actually practiced — the system should track it)
+            if (topicStats.Total >= 1)
+            {
+                entry.IsCompleted = true;
+                entry.CompletedAt = DateTime.UtcNow;
+                entry.QuestionsAnswered = topicStats.Total;
+                entry.CorrectAnswers = topicStats.Correct;
+                autoCompleted++;
+            }
+        }
+
+        if (autoCompleted > 0)
+        {
+            await _db.SaveChangesAsync();
+            _logger.LogInformation(
+                "Auto-completed {Count} plan entries for user {UserId}",
+                autoCompleted, userId);
+        }
+
+        return await GetTodayPlanAsync(userId);
+    }
+
+    // ═══════════════════════════════════════════════════════
     //  STATS
     // ═══════════════════════════════════════════════════════
 

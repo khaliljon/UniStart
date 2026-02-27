@@ -1,5 +1,5 @@
-import { useEffect, useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAppDispatch } from '../hooks/useAppDispatch';
 import { useAppSelector } from '../hooks/useAppSelector';
 import {
@@ -8,24 +8,29 @@ import {
   selectAnswer,
   clearAnswerResult,
   resetTestProgress,
-  setTestMode,
+  resetTest,
   setTestSessionId,
-  decrementTimer,
-  resetTimer,
 } from '../store/slices/testSlice';
 import { analyticsService } from '../services/analyticsService';
 import { lessonService } from '../services/lessonService';
 import { subscriptionService } from '../services/subscriptionService';
+import { studyPlanService } from '../services/studyPlanService';
 import { UpgradeBanner } from '../components/UpgradeBanner';
 import { DailyLimitModal } from '../components/DailyLimitModal';
-import type { TestMode, DailyUsage } from '../types';
+import type { DailyUsage } from '../types';
 
 function TestPage() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { selectedExams } = useAppSelector((state) => state.exam);
+
+  // Read plan-related params from URL
+  const topicIdParam = searchParams.get('topicId');
+  const planEntryIdParam = searchParams.get('planEntryId');
+  const topicId = topicIdParam ? parseInt(topicIdParam, 10) : undefined;
+  const planEntryId = planEntryIdParam ? parseInt(planEntryIdParam, 10) : undefined;
   const {
-    testMode,
     currentQuestion,
     selectedAnswer,
     answerResult,
@@ -34,7 +39,6 @@ function TestPage() {
     testCompleted,
     isLoading,
     error,
-    timeRemaining,
     questionStartTime,
     testSessionId,
   } = useAppSelector((state) => state.test);
@@ -43,7 +47,8 @@ function TestPage() {
   const [hintText, setHintText] = useState<string | null>(null);
   const [hintLoading, setHintLoading] = useState(false);
   const [showHint, setShowHint] = useState(false);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const [showQuitConfirm, setShowQuitConfirm] = useState(false);
+  const [practiceStarted, setPracticeStarted] = useState(false);
 
   // Daily limit state
   const [dailyUsage, setDailyUsage] = useState<DailyUsage | null>(null);
@@ -58,42 +63,14 @@ function TestPage() {
     }
   }, [isPro, questionsAnswered]);
 
-  // Timer effect for exam mode
-  useEffect(() => {
-    if (testMode === 'exam' && timeRemaining !== null && timeRemaining > 0 && !answerResult) {
-      timerRef.current = setInterval(() => {
-        dispatch(decrementTimer());
-      }, 1000);
-    }
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-    };
-  }, [testMode, timeRemaining, answerResult, dispatch]);
-
-  // Auto-submit when timer runs out
-  useEffect(() => {
-    if (testMode === 'exam' && timeRemaining === 0 && !answerResult && currentQuestion) {
-      // Auto-submit with current selection or skip
-      if (selectedAnswer) {
-        handleSubmit();
-      } else {
-        // Skip question - move to next
-        dispatch(fetchNextQuestion({ examTypeCodes: selectedExams }));
-        dispatch(resetTimer());
-      }
-    }
-  }, [timeRemaining]);
-
+  // Redirect if no exams selected
   useEffect(() => {
     if (selectedExams.length === 0) {
       navigate('/');
-      return;
     }
   }, [selectedExams, navigate]);
 
-  const handleSelectMode = async (mode: TestMode) => {
+  const handleStartPractice = async () => {
     // Check daily limit for free users
     if (!isPro) {
       try {
@@ -105,15 +82,14 @@ function TestPage() {
         }
       } catch { /* proceed if check fails */ }
     }
-    dispatch(setTestMode(mode));
-    // Start a test session for the first selected exam
+    setPracticeStarted(true);
     try {
-      const session = await analyticsService.startSession(selectedExams[0], mode);
+      const session = await analyticsService.startSession(selectedExams[0], 'practice');
       dispatch(setTestSessionId(session.id));
     } catch (err) {
       console.error('Failed to start session:', err);
     }
-    dispatch(fetchNextQuestion({ examTypeCodes: selectedExams }));
+    dispatch(fetchNextQuestion({ examTypeCodes: selectedExams, topicId }));
   };
 
   const handleOptionClick = (optionId: number) => {
@@ -144,10 +120,7 @@ function TestPage() {
     setHintText(null);
     setShowHint(false);
     dispatch(clearAnswerResult());
-    dispatch(fetchNextQuestion({ examTypeCodes: selectedExams }));
-    if (testMode === 'exam') {
-      dispatch(resetTimer());
-    }
+    dispatch(fetchNextQuestion({ examTypeCodes: selectedExams, topicId }));
   };
 
   const handleFinishTest = async () => {
@@ -158,12 +131,50 @@ function TestPage() {
         console.error('Failed to complete session:', err);
       }
     }
-    navigate('/analytics');
+    // Auto-complete plan entry if we came from the plan
+    if (planEntryId) {
+      try {
+        await studyPlanService.autoCompleteToday();
+      } catch { /* ignore */ }
+      // Clear plan params from URL and navigate back to plan
+      navigate('/plan');
+      return;
+    }
+    navigate('/progress');
   };
 
   const handleResetTest = async () => {
     await dispatch(resetTestProgress());
-    dispatch(fetchNextQuestion({ examTypeCodes: selectedExams }));
+    dispatch(fetchNextQuestion({ examTypeCodes: selectedExams, topicId }));
+  };
+
+  const handleQuitTest = async () => {
+    // Complete the session if one exists
+    if (testSessionId) {
+      try {
+        await analyticsService.completeSession(testSessionId);
+      } catch (err) {
+        console.error('Failed to complete session:', err);
+      }
+    }
+    // Auto-complete plan entry if we came from the plan
+    if (planEntryId) {
+      try {
+        await studyPlanService.autoCompleteToday();
+      } catch { /* ignore */ }
+    }
+    dispatch(resetTest());
+    setPracticeStarted(false);
+    setShowQuitConfirm(false);
+    // Navigate back to plan if we came from there
+    if (planEntryId) {
+      // Remove plan params from URL
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete('topicId');
+      newParams.delete('planEntryId');
+      setSearchParams(newParams, { replace: true });
+      navigate('/plan');
+    }
   };
 
   const handleRequestHint = async () => {
@@ -184,14 +195,23 @@ function TestPage() {
     }
   };
 
+  // Auto-start when coming from the plan (with topicId)
+  useEffect(() => {
+    if (topicId && !practiceStarted && !currentQuestion && !testCompleted) {
+      handleStartPractice();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [topicId]);
+
   if (selectedExams.length === 0) {
     return null;
   }
 
-  // Mode selection screen
-  if (!testMode) {
+  // Start screen — before practice begins
+  if (!practiceStarted && !currentQuestion && !testCompleted) {
     return (
       <div className="test-container">
+        <DailyLimitModal isOpen={showLimitModal} onClose={() => setShowLimitModal(false)} />
         {!isPro && dailyUsage && (
           <div style={{ maxWidth: '600px', margin: '0 auto 0' }}>
             <UpgradeBanner
@@ -200,109 +220,43 @@ function TestPage() {
             />
           </div>
         )}
-        <div className="card" style={{ maxWidth: '600px', margin: '0 auto', padding: '2rem' }}>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '0.5rem', textAlign: 'center', color: 'var(--text-primary)' }}>
-            Choose Test Mode
+        <div className="card" style={{ maxWidth: '500px', margin: '0 auto', padding: '2.5rem', textAlign: 'center' }}>
+          <span style={{ fontSize: '3rem', display: 'block', marginBottom: '1rem' }}>{topicId ? '📅' : '📚'}</span>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '0.5rem', color: 'var(--text-primary)' }}>
+            {topicId ? 'Задание по плану' : 'Адаптивная практика'}
           </h2>
-          <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem', textAlign: 'center' }}>
-            Select how you want to practice
+          <p style={{ color: 'var(--text-secondary)', marginBottom: '0.5rem', lineHeight: '1.5' }}>
+            {topicId
+              ? 'Вопросы подобраны по теме из вашего учебного плана. После завершения результат автоматически зачтётся в план.'
+              : 'Вопросы подбираются под ваш уровень с помощью IRT-алгоритма. Объяснения после каждого ответа, подсказки и без ограничения по времени.'
+            }
           </p>
-          
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {/* Practice Mode Card */}
-            <button
-              onClick={() => handleSelectMode('practice')}
-              style={{
-                padding: '1.5rem',
-                border: '2px solid var(--border-color)',
-                borderRadius: '0.75rem',
-                backgroundColor: 'var(--card-background)',
-                cursor: 'pointer',
-                textAlign: 'left',
-                transition: 'all 0.2s ease',
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.borderColor = 'var(--primary-color)';
-                e.currentTarget.style.backgroundColor = 'rgba(99, 102, 241, 0.05)';
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.borderColor = 'var(--border-color)';
-                e.currentTarget.style.backgroundColor = 'var(--card-background)';
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <span style={{ fontSize: '2rem' }}>📚</span>
-                <div>
-                  <h3 style={{ margin: 0, fontSize: '1.125rem', fontWeight: '600', color: 'var(--text-primary)' }}>Practice Mode</h3>
-                  <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                    No time limit • Explanations after each answer • Learn at your pace
-                  </p>
-                </div>
-              </div>
-            </button>
-
-            {/* Exam Mode Card */}
-            <button
-              onClick={() => handleSelectMode('exam')}
-              style={{
-                padding: '1.5rem',
-                border: '2px solid var(--border-color)',
-                borderRadius: '0.75rem',
-                backgroundColor: 'var(--card-background)',
-                cursor: 'pointer',
-                textAlign: 'left',
-                transition: 'all 0.2s ease',
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.borderColor = 'var(--warning-color)';
-                e.currentTarget.style.backgroundColor = 'rgba(245, 158, 11, 0.05)';
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.borderColor = 'var(--border-color)';
-                e.currentTarget.style.backgroundColor = 'var(--card-background)';
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <span style={{ fontSize: '2rem' }}>⏱️</span>
-                <div>
-                  <h3 style={{ margin: 0, fontSize: '1.125rem', fontWeight: '600', color: 'var(--text-primary)' }}>Exam Mode</h3>
-                  <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                    60 seconds per question • No explanations • Simulate real exam
-                  </p>
-                </div>
-              </div>
-            </button>
+          <div style={{
+            display: 'flex',
+            gap: '0.5rem',
+            justifyContent: 'center',
+            flexWrap: 'wrap',
+            margin: '1rem 0 1.5rem'
+          }}>
+            {selectedExams.map(code => (
+              <span key={code} style={{
+                padding: '0.25rem 0.75rem',
+                borderRadius: '1rem',
+                fontSize: '0.75rem',
+                fontWeight: '600',
+                backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                color: 'var(--primary-color)',
+              }}>
+                {code}
+              </span>
+            ))}
           </div>
-
-          {/* Learning Features Section */}
-          <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border-color)' }}>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '1rem', textAlign: 'center' }}>
-              📖 Learning Tools
-            </p>
-            <div style={{ display: 'flex', gap: '0.75rem' }}>
-              <button
-                onClick={() => navigate('/review')}
-                className="btn btn-secondary"
-                style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
-              >
-                🔄 Review Mistakes
-              </button>
-              <button
-                onClick={() => navigate('/topics')}
-                className="btn btn-secondary"
-                style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
-              >
-                📚 Topics
-              </button>
-            </div>
-          </div>
-
           <button
-            onClick={() => navigate('/')}
-            className="btn btn-secondary"
-            style={{ width: '100%', marginTop: '1.5rem' }}
+            onClick={handleStartPractice}
+            className="btn btn-primary"
+            style={{ padding: '0.75rem 2rem', fontSize: '1rem' }}
           >
-            ← Back to Exam Selection
+            ▶ Начать практику
           </button>
         </div>
       </div>
@@ -313,22 +267,28 @@ function TestPage() {
     return (
       <div className="test-container">
         <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
+          <span style={{ fontSize: '3rem', display: 'block', marginBottom: '1rem' }}>🎉</span>
           <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '1rem' }}>
-            Test Completed!
+            {planEntryId ? 'Задание выполнено!' : 'Практика завершена!'}
           </h2>
-          <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>
-            You've answered all available questions. Check your analytics to see your progress.
+          <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+            {planEntryId
+              ? 'Результат автоматически зачтён в ваш учебный план.'
+              : 'Вы ответили на все доступные вопросы. Проверьте аналитику, чтобы увидеть прогресс.'
+            }
           </p>
-          <p style={{ marginBottom: '2rem' }}>
-            Questions answered: <strong>{questionsAnswered}</strong>
+          <p style={{ marginBottom: '2rem', fontSize: '1.1rem' }}>
+            Отвечено вопросов: <strong>{questionsAnswered}</strong>
           </p>
           <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
             <button onClick={handleFinishTest} className="btn btn-primary">
-              View Analytics
+              {planEntryId ? '📅 Вернуться к плану' : '📊 Аналитика'}
             </button>
-            <button onClick={handleResetTest} className="btn btn-secondary" disabled={isLoading}>
-              {isLoading ? 'Resetting...' : 'Restart Test'}
-            </button>
+            {!planEntryId && (
+              <button onClick={handleResetTest} className="btn btn-secondary" disabled={isLoading}>
+                {isLoading ? 'Сброс...' : '🔄 Начать заново'}
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -413,7 +373,7 @@ function TestPage() {
       <DailyLimitModal isOpen={showLimitModal} onClose={() => setShowLimitModal(false)} />
 
       <div className="question-card card">
-        {/* Mode Badge + Timer for Exam Mode */}
+        {/* Practice Mode Badge + Quit */}
         <div style={{ 
           display: 'flex', 
           justifyContent: 'space-between', 
@@ -428,26 +388,72 @@ function TestPage() {
             fontSize: '0.75rem',
             fontWeight: '600',
             textTransform: 'uppercase',
-            backgroundColor: testMode === 'practice' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)',
-            color: testMode === 'practice' ? 'var(--success-color)' : 'var(--warning-color)',
+            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+            color: 'var(--success-color)',
           }}>
-            {testMode === 'practice' ? '📚 Practice' : '⏱️ Exam'}
+            📚 Practice
           </span>
-          
-          {testMode === 'exam' && timeRemaining !== null && (
-            <span style={{
+          <button
+            onClick={() => setShowQuitConfirm(true)}
+            style={{
               padding: '0.25rem 0.75rem',
               borderRadius: '0.5rem',
-              fontSize: '1rem',
-              fontWeight: '700',
-              backgroundColor: timeRemaining <= 10 ? 'rgba(239, 68, 68, 0.1)' : 'rgba(99, 102, 241, 0.1)',
-              color: timeRemaining <= 10 ? 'var(--error-color)' : 'var(--primary-color)',
-              fontFamily: 'monospace',
-            }}>
-              {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}
-            </span>
-          )}
+              fontSize: '0.75rem',
+              fontWeight: '500',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              backgroundColor: 'rgba(239, 68, 68, 0.05)',
+              color: 'var(--error-color)',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+            }}
+            onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.15)'; }}
+            onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.05)'; }}
+          >
+            ✕ Выйти
+          </button>
         </div>
+
+        {/* Quit Confirmation */}
+        {showQuitConfirm && (
+          <div style={{
+            marginBottom: '1rem',
+            padding: '1rem',
+            borderRadius: '0.75rem',
+            backgroundColor: 'rgba(239, 68, 68, 0.08)',
+            border: '1px solid rgba(239, 68, 68, 0.2)',
+          }}>
+            <p style={{ margin: '0 0 0.75rem', fontSize: '0.9rem', color: 'var(--text-primary)' }}>
+              {planEntryId
+                ? `Завершить задание? Ваш прогресс (${questionsAnswered} вопросов) будет зачтён в учебный план.`
+                : `Завершить практику? Ваш прогресс (${questionsAnswered} вопросов) сохранится.`
+              }
+            </p>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button
+                onClick={handleQuitTest}
+                className="btn"
+                style={{
+                  padding: '0.375rem 1rem',
+                  fontSize: '0.8rem',
+                  backgroundColor: 'var(--error-color)',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '0.5rem',
+                  cursor: 'pointer',
+                }}
+              >
+                Да, выйти
+              </button>
+              <button
+                onClick={() => setShowQuitConfirm(false)}
+                className="btn btn-secondary"
+                style={{ padding: '0.375rem 1rem', fontSize: '0.8rem' }}
+              >
+                Продолжить
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Progress Bar */}
         <div className="progress-container" style={{ marginBottom: '1.5rem' }}>
@@ -486,7 +492,7 @@ function TestPage() {
             {currentQuestion.topicName}
           </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            {testMode === 'practice' && currentQuestion.hasHint && !answerResult && (
+            {currentQuestion.hasHint && !answerResult && (
               <button
                 onClick={handleRequestHint}
                 disabled={hintLoading}
@@ -590,7 +596,7 @@ function TestPage() {
             )}
 
             {/* Show explanation only in practice mode */}
-            {testMode === 'practice' && answerResult.explanation && (
+            {answerResult.explanation && (
               <div style={{
                 marginBottom: '0.75rem',
                 padding: '0.75rem',

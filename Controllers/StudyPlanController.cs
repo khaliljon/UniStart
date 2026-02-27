@@ -155,6 +155,20 @@ public class StudyPlanController : ControllerBase
         return Ok(entry);
     }
 
+    /// <summary>
+    /// Auto-complete today's plan entries based on actual user answers.
+    /// Checks UserAnswers for each pending topic and marks entries as completed
+    /// with real question counts and accuracy.
+    /// </summary>
+    [HttpPost("auto-complete-today")]
+    [ProducesResponseType(typeof(TodayPlanDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> AutoCompleteToday()
+    {
+        var userId = GetCurrentUserId();
+        var todayPlan = await _service.AutoCompleteTodayAsync(userId);
+        return Ok(todayPlan);
+    }
+
     // ─── Stats ───────────────────────────────────────────────
 
     /// <summary>

@@ -21,6 +21,9 @@ public interface IStudyPlanService
     // ─── Entry Completion ────────────────────────────────────
     Task<StudyPlanEntryDto?> CompleteEntryAsync(int userId, int entryId, CompleteEntryDto dto);
 
+    // ─── Auto-Complete ───────────────────────────────────────
+    Task<TodayPlanDto> AutoCompleteTodayAsync(int userId);
+
     // ─── Stats ───────────────────────────────────────────────
     Task<PlanStatsDto> GetPlanStatsAsync(int userId);
 }

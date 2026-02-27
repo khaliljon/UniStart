@@ -45,7 +45,7 @@ public class AdaptiveEngineService : IAdaptiveEngineService
     /// Selects next question using Computerized Adaptive Testing (CAT).
     /// Uses maximum Fisher information criterion with randomized top-fraction selection.
     /// </summary>
-    public async Task<QuestionDto?> GetNextQuestionAsync(int userId, string[] examTypeCodes, int? sectionId = null)
+    public async Task<QuestionDto?> GetNextQuestionAsync(int userId, string[] examTypeCodes, int? sectionId = null, int? topicId = null)
     {
         // Get user's answered question IDs to avoid repetition
         var answeredQuestionIds = await _context.UserAnswers
@@ -71,6 +71,11 @@ public class AdaptiveEngineService : IAdaptiveEngineService
         if (sectionId.HasValue)
         {
             questionsQuery = questionsQuery.Where(q => q.Topic.SectionId == sectionId.Value);
+        }
+
+        if (topicId.HasValue)
+        {
+            questionsQuery = questionsQuery.Where(q => q.TopicId == topicId.Value);
         }
 
         var availableQuestions = await questionsQuery.ToListAsync();

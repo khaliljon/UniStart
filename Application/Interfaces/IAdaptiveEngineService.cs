@@ -13,7 +13,7 @@ public interface IAdaptiveEngineService
     /// <summary>
     /// Selects the next question for the user based on their skill profile and exam selection
     /// </summary>
-    Task<QuestionDto?> GetNextQuestionAsync(int userId, string[] examTypeCodes, int? sectionId = null);
+    Task<QuestionDto?> GetNextQuestionAsync(int userId, string[] examTypeCodes, int? sectionId = null, int? topicId = null);
 
     /// <summary>
     /// Processes a user's answer and updates their skill profile

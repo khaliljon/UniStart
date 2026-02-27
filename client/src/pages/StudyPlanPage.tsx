@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   ResponsiveContainer,
   BarChart,
@@ -38,6 +39,7 @@ const TYPE_COLORS: Record<string, string> = {
 };
 
 function StudyPlanPage() {
+  const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>('today');
   const [goal, setGoal] = useState<StudyGoal | null>(null);
   const [todayPlan, setTodayPlan] = useState<TodayPlan | null>(null);
@@ -54,14 +56,19 @@ function StudyPlanPage() {
   const [formScore, setFormScore] = useState(80);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Complete entry modal
-  const [completingEntry, setCompletingEntry] = useState<StudyPlanEntry | null>(null);
-  const [completeQuestions, setCompleteQuestions] = useState(5);
-  const [completeCorrect, setCompleteCorrect] = useState(3);
+  // Delete confirmation
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const loadData = useCallback(async () => {
     try {
       setIsLoading(true);
+
+      // Auto-complete today's entries from actual answers first
+      try {
+        const autoCompletedToday = await studyPlanService.autoCompleteToday();
+        setTodayPlan(autoCompletedToday);
+      } catch { /* ignore — will load normally */ }
+
       const [goalData, todayData, planData, examData] = await Promise.all([
         studyPlanService.getActiveGoal(),
         studyPlanService.getTodayPlan(),
@@ -140,24 +147,9 @@ function StudyPlanPage() {
     }
   };
 
-  const handleCompleteEntry = async () => {
-    if (!completingEntry) return;
-    try {
-      await studyPlanService.completeEntry(completingEntry.id, {
-        questionsAnswered: completeQuestions,
-        correctAnswers: Math.min(completeCorrect, completeQuestions),
-      });
-      setCompletingEntry(null);
-      // Refresh data
-      const todayData = await studyPlanService.getTodayPlan();
-      setTodayPlan(todayData);
-      const planData = await studyPlanService.getActivePlan();
-      setPlan(planData);
-      const statsData = await studyPlanService.getPlanStats();
-      setStats(statsData);
-    } catch (err) {
-      console.error(err);
-    }
+  const handleStartEntry = (entry: StudyPlanEntry) => {
+    // Navigate to practice filtered by this entry's topic
+    navigate(`/learn?tab=practice&topicId=${entry.topicId}&planEntryId=${entry.id}`);
   };
 
   const handleDeleteGoal = async () => {
@@ -168,6 +160,7 @@ function StudyPlanPage() {
       setPlan(null);
       setTodayPlan(null);
       setStats(null);
+      setShowDeleteConfirm(false);
     } catch (err) {
       console.error(err);
     }
@@ -218,7 +211,7 @@ function StudyPlanPage() {
 
       {/* ─── Goal Card ─── */}
       {goal ? (
-        <GoalCard goal={goal} onDelete={handleDeleteGoal} />
+        <GoalCard goal={goal} onDelete={() => setShowDeleteConfirm(true)} />
       ) : (
         <div className="card animate-fade-in-up" style={{ padding: '2rem', textAlign: 'center' }}>
           <h2 style={{ marginBottom: '0.5rem' }}>🎯 Установите цель обучения</h2>
@@ -269,7 +262,7 @@ function StudyPlanPage() {
           </div>
 
           {tab === 'today' && todayPlan && (
-            <TodayTab todayPlan={todayPlan} onComplete={setCompletingEntry} />
+            <TodayTab todayPlan={todayPlan} onStart={handleStartEntry} />
           )}
 
           {tab === 'plan' && plan && (
@@ -282,17 +275,33 @@ function StudyPlanPage() {
         </>
       )}
 
-      {/* ─── Complete Entry Modal ─── */}
-      {completingEntry && (
-        <CompleteEntryModal
-          entry={completingEntry}
-          questions={completeQuestions}
-          correct={completeCorrect}
-          onChangeQuestions={setCompleteQuestions}
-          onChangeCorrect={setCompleteCorrect}
-          onSubmit={handleCompleteEntry}
-          onClose={() => setCompletingEntry(null)}
-        />
+      {/* ─── Delete Confirmation Dialog ─── */}
+      {showDeleteConfirm && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex',
+          alignItems: 'center', justifyContent: 'center', zIndex: 1000
+        }} onClick={() => setShowDeleteConfirm(false)}>
+          <div className="card animate-fade-in-scale" style={{ padding: '2rem', maxWidth: '400px', width: '90%' }}
+            onClick={(e) => e.stopPropagation()}>
+            <h2 style={{ margin: '0 0 0.5rem' }}>⚠️ Удалить цель?</h2>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', lineHeight: 1.5 }}>
+              Это действие удалит текущую цель и весь учебный план безвозвратно.
+              Ваш прогресс по ответам сохранится, но план нужно будет создать заново.
+            </p>
+            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+              <button className="btn btn-outline" onClick={() => setShowDeleteConfirm(false)}>
+                Отмена
+              </button>
+              <button
+                className="btn"
+                style={{ background: 'var(--error-color)', color: '#fff' }}
+                onClick={handleDeleteGoal}
+              >
+                Удалить цель
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -303,10 +312,12 @@ function StudyPlanPage() {
 // ═══════════════════════════════════════════════════════════
 
 function GoalCard({ goal, onDelete }: { goal: StudyGoal; onDelete: () => void }) {
+  const [showMenu, setShowMenu] = useState(false);
+
   return (
     <div className="card card-static animate-fade-in-up" style={{ padding: '1.25rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div>
+        <div style={{ flex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
             <h2 style={{ margin: 0 }}>🎯 {goal.examTypeName}</h2>
             <span style={{
@@ -330,9 +341,41 @@ function GoalCard({ goal, onDelete }: { goal: StudyGoal; onDelete: () => void })
             <StatBox label="Дедлайн" value={new Date(goal.targetDate).toLocaleDateString('ru-RU')} />
           </div>
         </div>
-        <button onClick={onDelete} className="btn btn-outline" style={{ fontSize: '0.8rem', padding: '0.3rem 0.6rem' }}>
-          ✕
-        </button>
+        {/* Three-dot menu instead of dangerous X */}
+        <div style={{ position: 'relative' }}>
+          <button
+            onClick={() => setShowMenu(!showMenu)}
+            className="btn btn-outline"
+            style={{ fontSize: '1rem', padding: '0.3rem 0.6rem', lineHeight: 1 }}
+          >
+            ⋯
+          </button>
+          {showMenu && (
+            <>
+              <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setShowMenu(false)} />
+              <div style={{
+                position: 'absolute', right: 0, top: '100%', marginTop: '0.25rem',
+                background: 'var(--card-bg)', border: '1px solid var(--border-color)',
+                borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                zIndex: 100, minWidth: '180px', overflow: 'hidden'
+              }}>
+                <button
+                  onClick={() => { setShowMenu(false); onDelete(); }}
+                  style={{
+                    width: '100%', padding: '0.6rem 1rem', background: 'none',
+                    border: 'none', cursor: 'pointer', textAlign: 'left',
+                    color: 'var(--error-color)', fontSize: '0.85rem',
+                    display: 'flex', alignItems: 'center', gap: '0.5rem'
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--primary-bg)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
+                >
+                  🗑️ Удалить цель
+                </button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -349,7 +392,7 @@ function StatBox({ label, value, color }: { label: string; value: string | numbe
 
 // ─── Today Tab ────────────────────────────────────────────
 
-function TodayTab({ todayPlan, onComplete }: { todayPlan: TodayPlan; onComplete: (entry: StudyPlanEntry) => void }) {
+function TodayTab({ todayPlan, onStart }: { todayPlan: TodayPlan; onStart: (entry: StudyPlanEntry) => void }) {
   const completedCount = todayPlan.entries.filter(e => e.isCompleted).length;
   const totalCount = todayPlan.entries.length;
   const progress = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
@@ -386,7 +429,7 @@ function TodayTab({ todayPlan, onComplete }: { todayPlan: TodayPlan; onComplete:
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           {todayPlan.entries.map((entry) => (
-            <EntryCard key={entry.id} entry={entry} onComplete={() => onComplete(entry)} />
+            <EntryCard key={entry.id} entry={entry} onStart={() => onStart(entry)} />
           ))}
         </div>
       )}
@@ -394,13 +437,16 @@ function TodayTab({ todayPlan, onComplete }: { todayPlan: TodayPlan; onComplete:
   );
 }
 
-function EntryCard({ entry, onComplete }: { entry: StudyPlanEntry; onComplete: () => void }) {
+function EntryCard({ entry, onStart }: { entry: StudyPlanEntry; onStart: () => void }) {
   const typeColor = TYPE_COLORS[entry.type] || '#6366f1';
+  const accuracy = entry.questionsAnswered > 0
+    ? Math.round((entry.correctAnswers / entry.questionsAnswered) * 100)
+    : 0;
 
   return (
     <div className="card card-static" style={{
       padding: '1rem',
-      opacity: entry.isCompleted ? 0.6 : 1,
+      opacity: entry.isCompleted ? 0.85 : 1,
       borderLeft: `4px solid ${typeColor}`,
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -412,19 +458,26 @@ function EntryCard({ entry, onComplete }: { entry: StudyPlanEntry; onComplete: (
             }}>
               {TYPE_LABELS[entry.type] || entry.type}
             </span>
-            {entry.isCompleted && <span style={{ color: 'var(--success-color)' }}>✓</span>}
+            {entry.isCompleted && <span style={{ color: 'var(--success-color)', fontWeight: 600 }}>✓ Выполнено</span>}
           </div>
           <div style={{ fontWeight: 600, fontSize: '1rem' }}>{entry.topicName}</div>
           <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
             {entry.recommendedMinutes} мин • {entry.recommendedQuestions} вопросов
             {entry.isCompleted && entry.questionsAnswered > 0 && (
-              <> • Результат: {entry.correctAnswers}/{entry.questionsAnswered}</>
+              <> • Результат: <span style={{
+                color: accuracy >= 70 ? 'var(--success-color)' : accuracy >= 40 ? 'var(--warning-color)' : 'var(--error-color)',
+                fontWeight: 600
+              }}>{entry.correctAnswers}/{entry.questionsAnswered} ({accuracy}%)</span></>
             )}
           </div>
         </div>
-        {!entry.isCompleted && (
-          <button className="btn btn-primary" style={{ fontSize: '0.85rem' }} onClick={onComplete}>
-            Выполнено
+        {!entry.isCompleted ? (
+          <button className="btn btn-primary" style={{ fontSize: '0.85rem', whiteSpace: 'nowrap' }} onClick={onStart}>
+            ▶ Начать
+          </button>
+        ) : (
+          <button className="btn btn-outline" style={{ fontSize: '0.8rem', whiteSpace: 'nowrap' }} onClick={onStart}>
+            🔄 Ещё
           </button>
         )}
       </div>
@@ -678,70 +731,6 @@ function GoalFormModal({
             </button>
           </div>
         </form>
-      </div>
-    </div>
-  );
-}
-
-function CompleteEntryModal({
-  entry, questions, correct, onChangeQuestions, onChangeCorrect, onSubmit, onClose,
-}: {
-  entry: StudyPlanEntry; questions: number; correct: number;
-  onChangeQuestions: (v: number) => void; onChangeCorrect: (v: number) => void;
-  onSubmit: () => void; onClose: () => void;
-}) {
-  return (
-    <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex',
-      alignItems: 'center', justifyContent: 'center', zIndex: 1000
-    }} onClick={onClose}>
-      <div className="card animate-fade-in-scale" style={{ padding: '2rem', maxWidth: '400px', width: '90%' }}
-        onClick={(e) => e.stopPropagation()}>
-        <h2 style={{ margin: '0 0 0.5rem' }}>✅ Отметить выполненным</h2>
-        <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
-          {entry.topicName} — {TYPE_LABELS[entry.type]}
-        </p>
-
-        <div style={{ marginBottom: '1rem' }}>
-          <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: 600, fontSize: '0.9rem' }}>
-            Вопросов отвечено
-          </label>
-          <input
-            type="number"
-            min="0"
-            max="50"
-            value={questions}
-            onChange={(e) => onChangeQuestions(Number(e.target.value))}
-            style={{
-              width: '100%', padding: '0.6rem', borderRadius: '8px',
-              border: '1px solid var(--border-color)', background: 'var(--card-bg)',
-              color: 'var(--text-primary)', fontSize: '0.95rem'
-            }}
-          />
-        </div>
-
-        <div style={{ marginBottom: '1.5rem' }}>
-          <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: 600, fontSize: '0.9rem' }}>
-            Правильных ответов
-          </label>
-          <input
-            type="number"
-            min="0"
-            max={questions}
-            value={correct}
-            onChange={(e) => onChangeCorrect(Number(e.target.value))}
-            style={{
-              width: '100%', padding: '0.6rem', borderRadius: '8px',
-              border: '1px solid var(--border-color)', background: 'var(--card-bg)',
-              color: 'var(--text-primary)', fontSize: '0.95rem'
-            }}
-          />
-        </div>
-
-        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-          <button className="btn btn-outline" onClick={onClose}>Отмена</button>
-          <button className="btn btn-primary" onClick={onSubmit}>Сохранить</button>
-        </div>
       </div>
     </div>
   );

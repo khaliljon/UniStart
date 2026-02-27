@@ -15,7 +15,6 @@ import {
   Radar,
   BarChart,
   Bar,
-  Cell,
 } from 'recharts';
 import { analyticsService } from '../services/analyticsService';
 import { AnalyticsSkeleton } from '../components/Skeleton';
@@ -176,10 +175,11 @@ function AnalyticsPage() {
                   backgroundColor: 'var(--card-background)',
                   border: '1px solid var(--border-color)',
                   borderRadius: '0.5rem',
-                  color: 'var(--text-primary)',
                 }}
+                itemStyle={{ color: 'var(--text-primary)' }}
+                labelStyle={{ color: 'var(--text-primary)', fontWeight: 600 }}
               />
-              <Legend />
+              <Legend wrapperStyle={{ color: 'var(--text-primary)' }} />
               {uniqueSkills.map((skill, i) => (
                 <Line
                   key={skill}
@@ -212,16 +212,13 @@ function AnalyticsPage() {
                   backgroundColor: 'var(--card-background)',
                   border: '1px solid var(--border-color)',
                   borderRadius: '0.5rem',
-                  color: 'var(--text-primary)',
                 }}
+                itemStyle={{ color: 'var(--text-primary)' }}
+                labelStyle={{ color: 'var(--text-primary)', fontWeight: 600 }}
               />
-              <Legend />
-              <Bar dataKey="correctCount" name="Correct" stackId="a" radius={[0, 0, 0, 0]}>
-                {difficultyData.map((entry) => (
-                  <Cell key={entry.difficulty} fill={DIFFICULTY_COLORS[entry.difficulty] || '#6366f1'} />
-                ))}
-              </Bar>
-              <Bar dataKey="incorrectCount" name="Incorrect" stackId="a" fill="#e5e7eb" radius={[4, 4, 0, 0]} />
+              <Legend wrapperStyle={{ color: 'var(--text-primary)' }} />
+              <Bar dataKey="correctCount" name="Correct" stackId="a" fill="#10b981" radius={[0, 0, 0, 0]} />
+              <Bar dataKey="incorrectCount" name="Incorrect" stackId="a" fill="#f87171" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
           <div style={{ display: 'flex', gap: '2rem', justifyContent: 'center', marginTop: '0.75rem' }}>

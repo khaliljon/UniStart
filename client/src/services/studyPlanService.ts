@@ -73,6 +73,13 @@ export const studyPlanService = {
     return response.data;
   },
 
+  // ─── Auto-Complete ───────────────────────────────────────
+
+  async autoCompleteToday(): Promise<TodayPlan> {
+    const response = await api.post<TodayPlan>('/study-plan/auto-complete-today');
+    return response.data;
+  },
+
   // ─── Stats ───────────────────────────────────────────────
 
   async getPlanStats(): Promise<PlanStats> {
