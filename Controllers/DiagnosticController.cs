@@ -3,12 +3,14 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UniStart.Application.DTOs;
 using UniStart.Application.Interfaces;
+using Asp.Versioning;
 
 namespace UniStart.Controllers;
 
 [ApiController]
 [Route("api/diagnostic")]
 [Authorize]
+[ApiVersion("1.0")]
 public class DiagnosticController : ControllerBase
 {
     private readonly IDiagnosticService _diagnosticService;

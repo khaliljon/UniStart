@@ -1,21 +1,36 @@
+using System.Diagnostics;
+using Hangfire;
+using Hangfire.Storage;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.FeatureManagement.Mvc;
 using System.Security.Claims;
 using UniStart.Application.DTOs;
 using UniStart.Application.Interfaces;
+using UniStart.Infrastructure.Data;
+using Asp.Versioning;
 
 namespace UniStart.Controllers;
 
 [ApiController]
 [Route("api/admin")]
 [Authorize(Roles = "Admin")]
+[ApiVersion("1.0")]
 public class AdminController : ControllerBase
 {
     private readonly IAdminService _svc;
+    private readonly IAuditService _audit;
+    private readonly UniStartDbContext _db;
+    private readonly HealthCheckService _healthCheck;
 
-    public AdminController(IAdminService svc)
+    public AdminController(IAdminService svc, IAuditService audit, UniStartDbContext db, HealthCheckService healthCheck)
     {
         _svc = svc;
+        _audit = audit;
+        _db = db;
+        _healthCheck = healthCheck;
     }
 
     /// <summary>List questions with optional filters</summary>
@@ -23,9 +38,11 @@ public class AdminController : ControllerBase
     public async Task<IActionResult> GetQuestions(
         [FromQuery] string? examTypeCode = null,
         [FromQuery] string? topic = null,
-        [FromQuery] string? difficulty = null)
+        [FromQuery] string? difficulty = null,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 50)
     {
-        var result = await _svc.GetQuestionsAsync(examTypeCode, topic, difficulty);
+        var result = await _svc.GetQuestionsAsync(examTypeCode, topic, difficulty, page, pageSize);
         return Ok(result);
     }
 
@@ -45,6 +62,10 @@ public class AdminController : ControllerBase
         try
         {
             var result = await _svc.CreateQuestionAsync(dto);
+            var (adminId, email) = GetCurrentAdmin();
+            await _audit.LogAsync(adminId, email, "Create", "Question", result.Id.ToString(),
+                newValues: new { result.Id, result.TopicName, result.Difficulty, result.Text },
+                ipAddress: GetClientIp());
             return CreatedAtAction(nameof(GetQuestion), new { id = result.Id }, result);
         }
         catch (ArgumentException ex)
@@ -57,8 +78,14 @@ public class AdminController : ControllerBase
     [HttpPut("questions/{id:int}")]
     public async Task<IActionResult> UpdateQuestion(int id, [FromBody] UpdateQuestionDto dto)
     {
+        var before = await _svc.GetQuestionByIdAsync(id);
         var result = await _svc.UpdateQuestionAsync(id, dto);
         if (result == null) return NotFound();
+        var (adminId, email) = GetCurrentAdmin();
+        await _audit.LogAsync(adminId, email, "Update", "Question", id.ToString(),
+            oldValues: before != null ? new { before.Difficulty, before.Text, before.DifficultyParam } : null,
+            newValues: new { result.Difficulty, result.Text, result.DifficultyParam },
+            ipAddress: GetClientIp());
         return Ok(result);
     }
 
@@ -66,8 +93,13 @@ public class AdminController : ControllerBase
     [HttpDelete("questions/{id:int}")]
     public async Task<IActionResult> DeleteQuestion(int id)
     {
+        var before = await _svc.GetQuestionByIdAsync(id);
         var ok = await _svc.DeleteQuestionAsync(id);
         if (!ok) return NotFound();
+        var (adminId, email) = GetCurrentAdmin();
+        await _audit.LogAsync(adminId, email, "Delete", "Question", id.ToString(),
+            oldValues: before != null ? new { before.TopicName, before.Difficulty, before.Text } : null,
+            ipAddress: GetClientIp());
         return NoContent();
     }
 
@@ -76,6 +108,10 @@ public class AdminController : ControllerBase
     public async Task<IActionResult> BulkImport([FromBody] BulkImportDto dto)
     {
         var result = await _svc.BulkImportAsync(dto);
+        var (adminId, email) = GetCurrentAdmin();
+        await _audit.LogAsync(adminId, email, "BulkImport", "Question", null,
+            newValues: new { result.Total, result.Imported, result.Failed },
+            ipAddress: GetClientIp());
         return Ok(result);
     }
 
@@ -95,9 +131,11 @@ public class AdminController : ControllerBase
     [HttpGet("users")]
     public async Task<IActionResult> GetUsers(
         [FromQuery] string? role = null,
-        [FromQuery] string? search = null)
+        [FromQuery] string? search = null,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 50)
     {
-        var result = await _svc.GetUsersAsync(role, search);
+        var result = await _svc.GetUsersAsync(role, search, page, pageSize);
         return Ok(result);
     }
 
@@ -116,8 +154,14 @@ public class AdminController : ControllerBase
     {
         try
         {
+            var before = await _svc.GetUserByIdAsync(id);
             var result = await _svc.UpdateUserAsync(id, dto);
             if (result == null) return NotFound();
+            var (adminId, email) = GetCurrentAdmin();
+            await _audit.LogAsync(adminId, email, "Update", "User", id.ToString(),
+                oldValues: before != null ? new { before.Role, before.SubscriptionTier, before.Email } : null,
+                newValues: new { result.Role, result.SubscriptionTier, result.Email },
+                ipAddress: GetClientIp());
             return Ok(result);
         }
         catch (InvalidOperationException ex)
@@ -132,8 +176,13 @@ public class AdminController : ControllerBase
     {
         try
         {
+            var before = await _svc.GetUserByIdAsync(id);
             var ok = await _svc.DeleteUserAsync(id);
             if (!ok) return NotFound();
+            var (adminId, email) = GetCurrentAdmin();
+            await _audit.LogAsync(adminId, email, "Delete", "User", id.ToString(),
+                oldValues: before != null ? new { before.Email, before.Name, before.Role } : null,
+                ipAddress: GetClientIp());
             return NoContent();
         }
         catch (InvalidOperationException ex)
@@ -177,6 +226,10 @@ public class AdminController : ControllerBase
         try
         {
             var result = await _svc.CreateTopicAsync(dto);
+            var (adminId, email) = GetCurrentAdmin();
+            await _audit.LogAsync(adminId, email, "Create", "Topic", result.Id.ToString(),
+                newValues: new { result.Name, result.SectionName, result.ExamTypeCode },
+                ipAddress: GetClientIp());
             return Created($"/api/admin/topics", result);
         }
         catch (ArgumentException ex)
@@ -200,4 +253,407 @@ public class AdminController : ControllerBase
         var result = await _svc.GetSkillsAsync();
         return Ok(result);
     }
+
+    // ═══════════════════════════════════════════════════════
+    //  BLOCK / SUSPEND (OP-14)
+    // ═══════════════════════════════════════════════════════
+
+    /// <summary>Block a user</summary>
+    [HttpPost("users/{id:int}/block")]
+    public async Task<IActionResult> BlockUser(int id, [FromBody] BlockUserDto? dto = null)
+    {
+        try
+        {
+            var result = await _svc.BlockUserAsync(id, dto?.Reason);
+            if (result == null) return NotFound();
+            var (adminId, email) = GetCurrentAdmin();
+            await _audit.LogAsync(adminId, email, "Block", "User", id.ToString(),
+                newValues: new { Reason = dto?.Reason },
+                ipAddress: GetClientIp());
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    /// <summary>Unblock a user</summary>
+    [HttpPost("users/{id:int}/unblock")]
+    public async Task<IActionResult> UnblockUser(int id)
+    {
+        var result = await _svc.UnblockUserAsync(id);
+        if (result == null) return NotFound();
+        var (adminId, email) = GetCurrentAdmin();
+        await _audit.LogAsync(adminId, email, "Unblock", "User", id.ToString(), ipAddress: GetClientIp());
+        return Ok(result);
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  AUDIT LOGS (OP-7)
+    // ═══════════════════════════════════════════════════════
+
+    /// <summary>Query audit logs with filters</summary>
+    [HttpGet("audit-logs")]
+    public async Task<IActionResult> GetAuditLogs(
+        [FromQuery] string? action = null,
+        [FromQuery] string? entityType = null,
+        [FromQuery] int? userId = null,
+        [FromQuery] DateTime? from = null,
+        [FromQuery] DateTime? to = null,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 50)
+    {
+        var result = await _audit.GetLogsAsync(action, entityType, userId, from, to, page, pageSize);
+        return Ok(result);
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  RESTORE (Soft Delete — OP-9)
+    // ═══════════════════════════════════════════════════════
+
+    /// <summary>Restore a soft-deleted question</summary>
+    [HttpPost("questions/{id:int}/restore")]
+    public async Task<IActionResult> RestoreQuestion(int id)
+    {
+        var ok = await _svc.RestoreQuestionAsync(id);
+        if (!ok) return NotFound(new { error = "Question not found or not deleted" });
+        var (adminId, email) = GetCurrentAdmin();
+        await _audit.LogAsync(adminId, email, "Restore", "Question", id.ToString(), ipAddress: GetClientIp());
+        return Ok(new { message = "Question restored" });
+    }
+
+    /// <summary>Restore a soft-deleted user</summary>
+    [HttpPost("users/{id:int}/restore")]
+    public async Task<IActionResult> RestoreUser(int id)
+    {
+        var ok = await _svc.RestoreUserAsync(id);
+        if (!ok) return NotFound(new { error = "User not found or not deleted" });
+        var (adminId, email) = GetCurrentAdmin();
+        await _audit.LogAsync(adminId, email, "Restore", "User", id.ToString(), ipAddress: GetClientIp());
+        return Ok(new { message = "User restored" });
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  CSV EXPORT (OP-18)
+    // ═══════════════════════════════════════════════════════
+
+    /// <summary>Export all questions as CSV</summary>
+    [HttpGet("questions/export")]
+    [FeatureGate("CsvExport")]
+    public async Task<IActionResult> ExportQuestions(
+        [FromQuery] string? examTypeCode = null,
+        [FromQuery] string? difficulty = null)
+    {
+        var result = await _svc.GetQuestionsAsync(examTypeCode, null, difficulty, 1, 10000);
+        var csv = BuildCsv(result.Items, new[]
+        {
+            ("ID", (Func<QuestionListDto, string>)(q => q.Id.ToString())),
+            ("Exam", q => q.ExamTypeCode),
+            ("Section", q => q.SectionName),
+            ("Topic", q => q.TopicName),
+            ("Difficulty", q => q.Difficulty),
+            ("b", q => q.DifficultyParam.ToString("F2")),
+            ("a", q => q.DiscriminationParam.ToString("F2")),
+            ("Answers", q => q.AnswerCount.ToString()),
+            ("Text", q => q.Text),
+            ("Created", q => q.CreatedAt.ToString("yyyy-MM-dd")),
+        });
+        return File(System.Text.Encoding.UTF8.GetBytes(csv), "text/csv", "questions.csv");
+    }
+
+    /// <summary>Export all users as CSV</summary>
+    [HttpGet("users/export")]
+    [FeatureGate("CsvExport")]
+    public async Task<IActionResult> ExportUsers(
+        [FromQuery] string? role = null)
+    {
+        var result = await _svc.GetUsersAsync(role, null, 1, 10000);
+        var csv = BuildCsv(result.Items, new[]
+        {
+            ("ID", (Func<AdminUserDto, string>)(u => u.Id.ToString())),
+            ("Name", u => u.Name),
+            ("Email", u => u.Email),
+            ("Role", u => u.Role),
+            ("Tier", u => u.SubscriptionTier),
+            ("Blocked", u => u.IsBlocked ? "Yes" : "No"),
+            ("Onboarding", u => u.HasCompletedOnboarding ? "Yes" : "No"),
+            ("TotalAnswers", u => u.TotalAnswers.ToString()),
+            ("CorrectAnswers", u => u.CorrectAnswers.ToString()),
+            ("Sessions", u => u.TestSessions.ToString()),
+            ("Created", u => u.CreatedAt.ToString("yyyy-MM-dd")),
+        });
+        return File(System.Text.Encoding.UTF8.GetBytes(csv), "text/csv", "users.csv");
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  HELPERS
+    // ═══════════════════════════════════════════════════════
+
+    private static string BuildCsv<T>(List<T> items, (string header, Func<T, string> getValue)[] columns)
+    {
+        var sb = new System.Text.StringBuilder();
+        // BOM for Excel UTF-8 detection
+        sb.Append('\uFEFF');
+        // Header
+        sb.AppendLine(string.Join(",", columns.Select(c => CsvEscape(c.header))));
+        // Rows
+        foreach (var item in items)
+            sb.AppendLine(string.Join(",", columns.Select(c => CsvEscape(c.getValue(item)))));
+        return sb.ToString();
+    }
+
+    private static string CsvEscape(string value)
+    {
+        if (string.IsNullOrEmpty(value)) return "\"\"";
+        if (value.Contains(',') || value.Contains('"') || value.Contains('\n'))
+            return $"\"{value.Replace("\"", "\"\"")}\"";
+        return value;
+    }
+
+    // ───────────────────────────────────────────────────────
+    //  BACKGROUND JOBS STATUS (OP-12)
+    // ───────────────────────────────────────────────────────
+
+    /// <summary>Get status of all recurring background jobs</summary>
+    [HttpGet("jobs/status")]
+    public IActionResult GetJobsStatus()
+    {
+        using var connection = JobStorage.Current.GetConnection();
+        var recurringJobs = connection.GetRecurringJobs();
+
+        var result = recurringJobs.Select(j => new
+        {
+            j.Id,
+            cron = j.Cron,
+            queue = j.Queue,
+            lastExecution = j.LastExecution,
+            nextExecution = j.NextExecution,
+            lastJobId = j.LastJobId,
+            lastJobState = j.LastJobId != null
+                ? connection.GetJobData(j.LastJobId)?.State
+                : null,
+            createdAt = j.CreatedAt
+        });
+
+        return Ok(new { jobs = result });
+    }
+
+    /// <summary>Trigger a recurring job manually</summary>
+    [HttpPost("jobs/{jobId}/trigger")]
+    public IActionResult TriggerJob(string jobId)
+    {
+        RecurringJob.TriggerJob(jobId);
+        return Ok(new { message = $"Job '{jobId}' triggered." });
+    }
+
+    // ───────────────────────────────────────────────────────
+    //  SYSTEM HEALTH (OP-23)
+    // ───────────────────────────────────────────────────────
+
+    /// <summary>Get comprehensive system health overview</summary>
+    [HttpGet("system/health")]
+    public async Task<IActionResult> GetSystemHealth()
+    {
+        // 1. Health checks
+        var healthReport = await _healthCheck.CheckHealthAsync();
+
+        // 2. Database stats
+        var totalUsers = await _db.Users.CountAsync();
+        var totalQuestions = await _db.Questions.CountAsync();
+        var totalAnswers = await _db.UserAnswers.CountAsync();
+        var totalSessions = await _db.TestSessions.CountAsync();
+        var activeUsersToday = await _db.UserAnswers
+            .Where(a => a.AnsweredAt.Date == DateTime.UtcNow.Date)
+            .Select(a => a.UserId)
+            .Distinct()
+            .CountAsync();
+        var answersToday = await _db.UserAnswers
+            .Where(a => a.AnsweredAt.Date == DateTime.UtcNow.Date)
+            .CountAsync();
+
+        // 3. Recurring jobs
+        object? jobsInfo = null;
+        try
+        {
+            using var conn = JobStorage.Current.GetConnection();
+            var recurringJobs = conn.GetRecurringJobs();
+            jobsInfo = recurringJobs.Select(j => new
+            {
+                j.Id,
+                cron = j.Cron,
+                lastExecution = j.LastExecution,
+                nextExecution = j.NextExecution,
+                lastJobState = j.LastJobId != null
+                    ? conn.GetJobData(j.LastJobId)?.State
+                    : null
+            });
+        }
+        catch { /* Hangfire may not be ready */ }
+
+        // 4. Process info
+        var process = Process.GetCurrentProcess();
+
+        return Ok(new
+        {
+            status = healthReport.Status.ToString(),
+            healthChecks = healthReport.Entries.Select(e => new
+            {
+                name = e.Key,
+                status = e.Value.Status.ToString(),
+                duration = e.Value.Duration.TotalMilliseconds,
+                error = e.Value.Exception?.Message
+            }),
+            database = new
+            {
+                totalUsers,
+                totalQuestions,
+                totalAnswers,
+                totalSessions,
+                activeUsersToday,
+                answersToday
+            },
+            recurringJobs = jobsInfo,
+            system = new
+            {
+                environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production",
+                dotnetVersion = Environment.Version.ToString(),
+                machineName = Environment.MachineName,
+                uptime = (DateTime.UtcNow - process.StartTime.ToUniversalTime()).TotalMinutes,
+                memoryMB = process.WorkingSet64 / 1024.0 / 1024.0,
+                threadCount = process.Threads.Count,
+                serverTime = DateTime.UtcNow
+            }
+        });
+    }
+
+    // ───────────────────────────────────────────────────────
+    //  USER ACTIVITY (OP-23)
+    // ───────────────────────────────────────────────────────
+
+    /// <summary>Get detailed activity for a specific user</summary>
+    [HttpGet("users/{id:int}/activity")]
+    public async Task<IActionResult> GetUserActivity(
+        int id,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 30)
+    {
+        var user = await _db.Users
+            .AsNoTracking()
+            .Include(u => u.NotificationPreferences)
+            .FirstOrDefaultAsync(u => u.Id == id);
+        if (user == null) return NotFound(new { error = "User not found" });
+
+        // Recent sessions
+        var sessionsQuery = _db.TestSessions
+            .Where(s => s.UserId == id)
+            .OrderByDescending(s => s.StartedAt);
+        var totalSessions = await sessionsQuery.CountAsync();
+        var sessions = await sessionsQuery
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(s => new
+            {
+                s.Id,
+                s.StartedAt,
+                s.CompletedAt,
+                s.TotalQuestions,
+                s.CorrectCount,
+                isCompleted = s.CompletedAt != null,
+                s.ExamTypeCode
+            })
+            .ToListAsync();
+
+        // Summary stats
+        var totalAnswers = await _db.UserAnswers.CountAsync(a => a.UserId == id);
+        var correctAnswers = await _db.UserAnswers
+            .Include(a => a.AnswerOption)
+            .CountAsync(a => a.UserId == id && a.AnswerOption.IsCorrect);
+
+        var lastActivity = await _db.UserAnswers
+            .Where(a => a.UserId == id)
+            .OrderByDescending(a => a.AnsweredAt)
+            .Select(a => (DateTime?)a.AnsweredAt)
+            .FirstOrDefaultAsync();
+
+        // Skill profiles
+        var skills = await _db.UserSkillProfiles
+            .Where(p => p.UserId == id)
+            .Include(p => p.Skill)
+            .Select(p => new
+            {
+                skillName = p.Skill.Name,
+                p.Theta,
+                p.ThetaSE,
+                p.Level,
+                p.LastUpdated
+            })
+            .ToListAsync();
+
+        // Streak
+        var streak = 0;
+        var checkDate = DateTime.UtcNow.Date.AddDays(-1);
+        while (true)
+        {
+            var hasActivity = await _db.UserAnswers
+                .AnyAsync(a => a.UserId == id && a.AnsweredAt.Date == checkDate);
+            if (!hasActivity) break;
+            streak++;
+            checkDate = checkDate.AddDays(-1);
+        }
+
+        // Activity by day (last 30 days)
+        var thirtyDaysAgo = DateTime.UtcNow.AddDays(-30);
+        var dailyActivity = await _db.UserAnswers
+            .Where(a => a.UserId == id && a.AnsweredAt > thirtyDaysAgo)
+            .GroupBy(a => a.AnsweredAt.Date)
+            .Select(g => new { date = g.Key, count = g.Count() })
+            .OrderBy(x => x.date)
+            .ToListAsync();
+
+        return Ok(new
+        {
+            user = new
+            {
+                user.Id,
+                user.Name,
+                user.Email,
+                user.Role,
+                user.SubscriptionTier,
+                user.CreatedAt,
+                user.IsBlocked,
+                user.BlockReason
+            },
+            summary = new
+            {
+                totalAnswers,
+                correctAnswers,
+                accuracy = totalAnswers > 0 ? Math.Round((double)correctAnswers / totalAnswers * 100, 1) : 0,
+                totalSessions,
+                currentStreak = streak,
+                lastActivity
+            },
+            skills,
+            dailyActivity,
+            sessions = new
+            {
+                items = sessions,
+                totalCount = totalSessions,
+                page,
+                pageSize,
+                totalPages = (int)Math.Ceiling((double)totalSessions / pageSize)
+            }
+        });
+    }
+
+    private (int userId, string email) GetCurrentAdmin()
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var emailClaim = User.FindFirst(ClaimTypes.Email)?.Value ?? "unknown";
+        if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var id))
+            throw new UnauthorizedAccessException("Admin identity not found");
+        return (id, emailClaim);
+    }
+
+    private string? GetClientIp() => HttpContext.Connection.RemoteIpAddress?.ToString();
 }

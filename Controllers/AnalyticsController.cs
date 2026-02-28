@@ -3,12 +3,14 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UniStart.Application.DTOs;
 using UniStart.Application.Interfaces;
+using Asp.Versioning;
 
 namespace UniStart.Controllers;
 
 [ApiController]
 [Route("api/analytics")]
 [Authorize]
+[ApiVersion("1.0")]
 public class AnalyticsController : ControllerBase
 {
     private readonly IAnalyticsService _analyticsService;

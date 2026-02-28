@@ -16,6 +16,9 @@ import AdminStatsPage from './pages/AdminStatsPage'
 import AdminQuestionsPage from './pages/AdminQuestionsPage'
 import AdminImportPage from './pages/AdminImportPage'
 import AdminUsersPage from './pages/AdminUsersPage'
+import AdminAuditLogsPage from './pages/AdminAuditLogsPage'
+import AdminSystemHealthPage from './pages/AdminSystemHealthPage'
+import AdminUserActivityPage from './pages/AdminUserActivityPage'
 import LandingPage from './pages/LandingPage'
 
 function StudentRoutes() {
@@ -50,6 +53,9 @@ function AdminRoutes() {
       <Route index element={<AdminStatsPage />} />
       <Route path="questions" element={<AdminQuestionsPage />} />
       <Route path="users" element={<AdminUsersPage />} />
+      <Route path="audit" element={<AdminAuditLogsPage />} />
+      <Route path="health" element={<AdminSystemHealthPage />} />
+      <Route path="activity" element={<AdminUserActivityPage />} />
       <Route path="import" element={<AdminImportPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Route>

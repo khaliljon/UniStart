@@ -1,13 +1,17 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.FeatureManagement.Mvc;
 using System.Security.Claims;
 using UniStart.Application.Interfaces;
+using Asp.Versioning;
 
 namespace UniStart.Controllers;
 
 [ApiController]
 [Route("api/recommendations")]
 [Authorize]
+[ApiVersion("1.0")]
+[FeatureGate("Recommendations")]
 public class RecommendationController : ControllerBase
 {
     private readonly IRecommendationService _svc;

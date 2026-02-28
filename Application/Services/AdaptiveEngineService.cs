@@ -100,6 +100,19 @@ public class AdaptiveEngineService : IAdaptiveEngineService
     /// </summary>
     public async Task<AnswerResultDto> ProcessAnswerAsync(int userId, SubmitAnswerDto answer)
     {
+        // Validate TestSession ownership if provided
+        if (answer.TestSessionId.HasValue)
+        {
+            var session = await _context.TestSessions
+                .FirstOrDefaultAsync(s => s.Id == answer.TestSessionId.Value);
+            if (session == null)
+                throw new ArgumentException("Test session not found");
+            if (session.UserId != userId)
+                throw new ArgumentException("Test session does not belong to this user");
+            if (session.CompletedAt != null)
+                throw new ArgumentException("Test session is already completed");
+        }
+
         var question = await _context.Questions
             .Include(q => q.AnswerOptions)
             .Include(q => q.Topic)

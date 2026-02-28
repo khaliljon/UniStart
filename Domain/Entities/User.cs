@@ -1,6 +1,6 @@
 namespace UniStart.Domain.Entities;
 
-public class User
+public class User : ISoftDeletable, IAuditable
 {
     public int Id { get; set; }
     public string Email { get; set; } = string.Empty;
@@ -12,6 +12,16 @@ public class User
     public DateTime? SubscriptionExpiresAt { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
+
+    // Soft Delete (OP-9)
+    public bool IsDeleted { get; set; }
+    public DateTime? DeletedAt { get; set; }
+    public int? DeletedBy { get; set; }
+
+    // Block / Suspend (OP-14)
+    public bool IsBlocked { get; set; }
+    public DateTime? BlockedAt { get; set; }
+    public string? BlockReason { get; set; }
 
     // Navigation properties
     public virtual ICollection<UserAnswer> UserAnswers { get; set; } = new List<UserAnswer>();

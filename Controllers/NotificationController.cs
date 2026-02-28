@@ -3,12 +3,14 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UniStart.Application.DTOs;
 using UniStart.Application.Interfaces;
+using Asp.Versioning;
 
 namespace UniStart.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
+[ApiVersion("1.0")]
 public class NotificationController : ControllerBase
 {
     private readonly INotificationService _notificationService;

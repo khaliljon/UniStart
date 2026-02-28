@@ -1,14 +1,18 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.FeatureManagement.Mvc;
 using UniStart.Application.DTOs;
 using UniStart.Application.Interfaces;
+using Asp.Versioning;
 
 namespace UniStart.Controllers;
 
 [ApiController]
 [Route("api/study-plan")]
 [Authorize]
+[ApiVersion("1.0")]
+[FeatureGate("StudyPlan")]
 public class StudyPlanController : ControllerBase
 {
     private readonly IStudyPlanService _service;

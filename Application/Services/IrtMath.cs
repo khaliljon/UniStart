@@ -58,24 +58,25 @@ public static class IrtMath
 
     /// <summary>
     /// Expected A Posteriori (EAP) estimation of ability θ.
-    /// Uses numerical integration with a standard normal prior N(0,1).
+    /// Uses numerical integration with a normal prior.
     /// Returns (thetaEstimate, standardError).
     /// 
     /// More robust than MLE for small numbers of responses:
     /// - Always converges (unlike MLE which can diverge with all-correct/all-wrong)
     /// - Bayesian shrinkage toward prior mean (regularization)
+    /// - Extended range [-5, 5] with 81 quadrature points to prevent posterior collapse
     /// </summary>
     public static (double theta, double se) EstimateAbilityEAP(
         IList<(Question item, bool correct)> responses,
         double priorMean = 0.0,
-        double priorSD = 1.0,
-        int quadPoints = 41)
+        double priorSD = 1.5,
+        int quadPoints = 81)
     {
         if (responses.Count == 0)
             return (priorMean, priorSD);
 
-        // Gauss-Hermite quadrature points over [-4, 4]
-        var thetaRange = Linspace(-4.0, 4.0, quadPoints);
+        // Extended range [-5, 5] with more quadrature points to avoid posterior collapse for extreme θ
+        var thetaRange = Linspace(-5.0, 5.0, quadPoints);
         
         var numerator = 0.0;   // E[θ|X]
         var numerator2 = 0.0;  // E[θ²|X]
@@ -103,7 +104,14 @@ public static class IrtMath
         }
 
         if (denominator < 1e-300)
+        {
+            // Adaptive fallback: if posterior collapses, use a wider prior and retry once
+            if (quadPoints < 161)
+            {
+                return EstimateAbilityEAP(responses, priorMean, priorSD * 1.5, 161);
+            }
             return (priorMean, priorSD);
+        }
 
         var thetaEAP = numerator / denominator;
         var variance = (numerator2 / denominator) - (thetaEAP * thetaEAP);

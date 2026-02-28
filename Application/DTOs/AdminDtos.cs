@@ -93,6 +93,9 @@ public record AdminUserDto(
     string SubscriptionTier,
     DateTime? SubscriptionExpiresAt,
     bool HasCompletedOnboarding,
+    bool IsBlocked,
+    DateTime? BlockedAt,
+    string? BlockReason,
     DateTime CreatedAt,
     DateTime? UpdatedAt,
     int TotalAnswers,
@@ -106,6 +109,10 @@ public record AdminUpdateUserDto(
     string? Role,  // "Student", "Tutor", "Admin"
     string? SubscriptionTier,  // "Free", "Pro"
     DateTime? SubscriptionExpiresAt
+);
+
+public record BlockUserDto(
+    string? Reason
 );
 
 public record AdminUserStatsDto(
@@ -149,4 +156,37 @@ public record AdminSkillDto(
     int Id,
     string Code,
     string Name
+);
+
+// ─── Audit Log (OP-7) ──────────────────────────────────
+
+public record AuditLogDto(
+    long Id,
+    int UserId,
+    string UserEmail,
+    string Action,
+    string EntityType,
+    string? EntityId,
+    string? OldValues,
+    string? NewValues,
+    string? IpAddress,
+    DateTime Timestamp
+);
+
+public record AuditLogPagedResult(
+    List<AuditLogDto> Items,
+    int TotalCount,
+    int Page,
+    int PageSize,
+    int TotalPages
+);
+
+// ─── Generic Paged Result (OP-13) ────────────────
+
+public record PagedResult<T>(
+    List<T> Items,
+    int TotalCount,
+    int Page,
+    int PageSize,
+    int TotalPages
 );

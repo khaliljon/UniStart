@@ -1,6 +1,6 @@
 namespace UniStart.Domain.Entities;
 
-public class Question
+public class Question : ISoftDeletable, IAuditable
 {
     public int Id { get; set; }
     public int TopicId { get; set; }
@@ -11,6 +11,7 @@ public class Question
     public string? VideoUrl { get; set; }
     public int? ReadingPassageId { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? UpdatedAt { get; set; }
 
     // IRT parameters (Item Response Theory)
     /// <summary>Difficulty parameter (b) on the logit scale, typically -3 to +3</summary>
@@ -19,6 +20,11 @@ public class Question
     public double DiscriminationParam { get; set; } = 1.0;
     /// <summary>Guessing parameter (c) for 3PL model, typically 0.0 to 0.35</summary>
     public double GuessParam { get; set; } = 0.25;
+
+    // Soft Delete (OP-9)
+    public bool IsDeleted { get; set; }
+    public DateTime? DeletedAt { get; set; }
+    public int? DeletedBy { get; set; }
 
     // Navigation properties
     public virtual Topic Topic { get; set; } = null!;

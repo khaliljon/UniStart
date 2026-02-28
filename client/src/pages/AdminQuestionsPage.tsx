@@ -46,6 +46,11 @@ function AdminQuestionsPage() {
   const [modalMode, setModalMode] = useState<ModalMode>('view');
   const [form, setForm] = useState(emptyForm);
 
+  // Pagination (OP-13)
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+
   // Topic creation
   const [showTopicModal, setShowTopicModal] = useState(false);
   const [sections, setSections] = useState<AdminSection[]>([]);
@@ -58,14 +63,16 @@ function AdminQuestionsPage() {
     try {
       setIsLoading(true);
       setError(null);
-      const q = await adminService.getQuestions(filterExam || undefined, filterTopic || undefined, filterDiff || undefined);
-      setQuestions(q);
+      const result = await adminService.getQuestions(filterExam || undefined, filterTopic || undefined, filterDiff || undefined, page, 50);
+      setQuestions(result.items);
+      setTotalPages(result.totalPages);
+      setTotalCount(result.totalCount);
     } catch {
       setError('Ошибка загрузки');
     } finally {
       setIsLoading(false);
     }
-  }, [filterExam, filterDiff, filterTopic]);
+  }, [filterExam, filterDiff, filterTopic, page]);
 
   const loadTopics = async () => {
     try {
@@ -282,7 +289,7 @@ function AdminQuestionsPage() {
         <div>
           <h1 style={{ margin: 0 }}>📋 Управление вопросами</h1>
           <p style={{ color: 'var(--text-secondary)', margin: '0.25rem 0 0' }}>
-            {questions.length} вопросов • {topics.length} тем
+            {totalCount} вопросов • {topics.length} тем{totalPages > 1 ? ` • стр. ${page}/${totalPages}` : ''}
           </p>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -291,6 +298,9 @@ function AdminQuestionsPage() {
           </button>
           <button className="btn btn-outline" onClick={openTopicModal} style={{ fontSize: '0.9rem' }}>
             📂 Новая тема
+          </button>
+          <button className="btn btn-outline" onClick={() => adminService.exportQuestionsCsv(filterExam || undefined, filterDiff || undefined)} style={{ fontSize: '0.9rem' }}>
+            📥 CSV
           </button>
         </div>
       </div>
@@ -309,13 +319,13 @@ function AdminQuestionsPage() {
 
       {/* Toolbar: Filters + View Toggle */}
       <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', flexWrap: 'wrap', alignItems: 'center' }}>
-        <select value={filterExam} onChange={e => setFilterExam(e.target.value)} style={{ padding: '0.5rem' }}>
+        <select value={filterExam} onChange={e => { setFilterExam(e.target.value); setPage(1); }} style={{ padding: '0.5rem' }}>
           <option value="">Все экзамены</option>
           <option value="SAT">SAT</option>
           <option value="TOEFL">TOEFL</option>
           <option value="NUET">NUET</option>
         </select>
-        <select value={filterDiff} onChange={e => setFilterDiff(e.target.value)} style={{ padding: '0.5rem' }}>
+        <select value={filterDiff} onChange={e => { setFilterDiff(e.target.value); setPage(1); }} style={{ padding: '0.5rem' }}>
           <option value="">Все уровни</option>
           <option value="Easy">Easy</option>
           <option value="Medium">Medium</option>
@@ -324,7 +334,7 @@ function AdminQuestionsPage() {
         <input
           placeholder="Поиск по теме…"
           value={filterTopic}
-          onChange={e => setFilterTopic(e.target.value)}
+          onChange={e => { setFilterTopic(e.target.value); setPage(1); }}
           className="form-input"
           style={{ flex: 1, minWidth: '140px' }}
         />
@@ -395,6 +405,18 @@ function AdminQuestionsPage() {
           {questions.length === 0 && !isLoading && (
             <div style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--text-secondary)' }}>
               Нет вопросов по выбранным фильтрам
+            </div>
+          )}
+          {/* Pagination (OP-13) */}
+          {totalPages > 1 && (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', padding: '1rem 0' }}>
+              <button className="btn btn-outline" disabled={page <= 1} onClick={() => setPage(1)} style={{ fontSize: '0.85rem' }}>«</button>
+              <button className="btn btn-outline" disabled={page <= 1} onClick={() => setPage(p => p - 1)} style={{ fontSize: '0.85rem' }}>‹</button>
+              <span style={{ padding: '0 0.75rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                {page} / {totalPages}
+              </span>
+              <button className="btn btn-outline" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)} style={{ fontSize: '0.85rem' }}>›</button>
+              <button className="btn btn-outline" disabled={page >= totalPages} onClick={() => setPage(totalPages)} style={{ fontSize: '0.85rem' }}>»</button>
             </div>
           )}
         </div>

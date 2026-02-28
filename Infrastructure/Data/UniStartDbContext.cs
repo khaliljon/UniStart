@@ -31,6 +31,7 @@ public class UniStartDbContext : DbContext
     public DbSet<MockExamAttempt> MockExamAttempts => Set<MockExamAttempt>();
     public DbSet<MockExamAnswer> MockExamAnswers => Set<MockExamAnswer>();
     public DbSet<NotificationPreferences> NotificationPreferences => Set<NotificationPreferences>();
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -45,6 +46,12 @@ public class UniStartDbContext : DbContext
             entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
             entity.Property(e => e.PasswordHash).IsRequired();
             entity.HasIndex(e => e.Email).IsUnique();
+            // Soft delete (OP-9)
+            entity.HasQueryFilter(e => !e.IsDeleted);
+            entity.Property(e => e.IsDeleted).HasDefaultValue(false);
+            // Block / Suspend (OP-14)
+            entity.Property(e => e.IsBlocked).HasDefaultValue(false);
+            entity.Property(e => e.BlockReason).HasMaxLength(500);
         });
 
         // ExamType configuration
@@ -107,6 +114,13 @@ public class UniStartDbContext : DbContext
                   .WithMany(t => t.Questions)
                   .HasForeignKey(e => e.TopicId)
                   .OnDelete(DeleteBehavior.Cascade);
+
+            // Soft delete (OP-9)
+            entity.HasQueryFilter(e => !e.IsDeleted);
+            entity.Property(e => e.IsDeleted).HasDefaultValue(false);
+
+            // Performance index (OP-8)
+            entity.HasIndex(e => e.TopicId).HasDatabaseName("IX_Questions_TopicId");
         });
 
         // AnswerOption configuration
@@ -142,6 +156,10 @@ public class UniStartDbContext : DbContext
                   .WithMany(ts => ts.Answers)
                   .HasForeignKey(e => e.TestSessionId)
                   .OnDelete(DeleteBehavior.SetNull);
+
+            // Performance indexes (OP-8)
+            entity.HasIndex(e => new { e.UserId, e.AnsweredAt }).HasDatabaseName("IX_UserAnswers_UserId_AnsweredAt");
+            entity.HasIndex(e => new { e.UserId, e.QuestionId, e.TestSessionId }).HasDatabaseName("IX_UserAnswers_UserId_QuestionId_SessionId");
         });
 
         // TestSession configuration
@@ -155,6 +173,9 @@ public class UniStartDbContext : DbContext
                   .WithMany(u => u.TestSessions)
                   .HasForeignKey(e => e.UserId)
                   .OnDelete(DeleteBehavior.Cascade);
+
+            // Performance index (OP-8)
+            entity.HasIndex(e => new { e.UserId, e.StartedAt }).HasDatabaseName("IX_TestSessions_UserId_StartedAt");
             entity.HasOne(e => e.ExamType)
                   .WithMany()
                   .HasForeignKey(e => e.ExamTypeCode)
@@ -240,6 +261,9 @@ public class UniStartDbContext : DbContext
                   .HasConversion<string>()
                   .HasMaxLength(20);
             entity.Property(e => e.IsCompleted).HasDefaultValue(false);
+
+            // Performance index (OP-8)
+            entity.HasIndex(e => new { e.PlanId, e.Date }).HasDatabaseName("IX_StudyPlanEntries_PlanId_Date");
         });
 
         modelBuilder.Entity<UserMilestone>(entity =>
@@ -337,6 +361,9 @@ public class UniStartDbContext : DbContext
                   .WithMany(m => m.Attempts)
                   .HasForeignKey(e => e.MockExamId)
                   .OnDelete(DeleteBehavior.Cascade);
+
+            // Performance index (OP-8)
+            entity.HasIndex(e => new { e.UserId, e.Status }).HasDatabaseName("IX_MockExamAttempts_UserId_Status");
         });
 
         // ─── Mock Exam Answer ───────────────────────────────
@@ -375,11 +402,56 @@ public class UniStartDbContext : DbContext
             entity.HasIndex(e => e.UserId).IsUnique();
         });
 
+        // ─── Audit Log (OP-7) ────────────────────────────
+        modelBuilder.Entity<AuditLog>(entity =>
+        {
+            entity.ToTable("AuditLogs");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Action).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.EntityType).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.EntityId).HasMaxLength(50);
+            entity.Property(e => e.UserEmail).IsRequired().HasMaxLength(255);
+            entity.Property(e => e.IpAddress).HasMaxLength(45);
+            entity.Property(e => e.OldValues).HasColumnType("jsonb");
+            entity.Property(e => e.NewValues).HasColumnType("jsonb");
+            entity.HasOne(e => e.User)
+                  .WithMany()
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(e => e.Timestamp).HasDatabaseName("IX_AuditLogs_Timestamp");
+            entity.HasIndex(e => new { e.EntityType, e.EntityId }).HasDatabaseName("IX_AuditLogs_Entity");
+            entity.HasIndex(e => e.UserId).HasDatabaseName("IX_AuditLogs_UserId");
+        });
+
         // Seed exam types
         modelBuilder.Entity<ExamType>().HasData(
             new ExamType { Code = "SAT", Name = "SAT (Scholastic Assessment Test)" },
             new ExamType { Code = "TOEFL", Name = "TOEFL (Test of English as a Foreign Language)" },
             new ExamType { Code = "NUET", Name = "NUET (Nazarbayev University Entrance Test)" }
         );
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  AUTO-FILL AUDIT COLUMNS (OP-16)
+    // ═══════════════════════════════════════════════════════
+
+    public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        foreach (var entry in ChangeTracker.Entries<IAuditable>())
+        {
+            if (entry.State == EntityState.Added)
+            {
+                entry.Entity.CreatedAt = DateTime.UtcNow;
+            }
+
+            if (entry.State == EntityState.Modified)
+            {
+                entry.Entity.UpdatedAt = DateTime.UtcNow;
+                // Prevent overwriting CreatedAt on updates
+                entry.Property(nameof(IAuditable.CreatedAt)).IsModified = false;
+            }
+        }
+
+        return await base.SaveChangesAsync(cancellationToken);
     }
 }

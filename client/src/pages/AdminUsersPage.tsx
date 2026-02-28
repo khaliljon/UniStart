@@ -35,21 +35,30 @@ function AdminUsersPage() {
     subscriptionTier: '',
   });
 
+  // Pagination (OP-13)
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+
   const loadUsers = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
-      const data = await adminService.getUsers(
+      const result = await adminService.getUsers(
         filterRole || undefined,
-        searchQuery || undefined
+        searchQuery || undefined,
+        page,
+        50
       );
-      setUsers(data);
+      setUsers(result.items);
+      setTotalPages(result.totalPages);
+      setTotalCount(result.totalCount);
     } catch {
       setError('Ошибка загрузки пользователей');
     } finally {
       setIsLoading(false);
     }
-  }, [filterRole, searchQuery]);
+  }, [filterRole, searchQuery, page]);
 
   const loadStats = async () => {
     try {
@@ -66,6 +75,7 @@ function AdminUsersPage() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setSearchQuery(searchInput);
+    setPage(1);
   };
 
   const openUser = (user: AdminUser) => {
@@ -126,9 +136,40 @@ function AdminUsersPage() {
     }
   };
 
+  // Block / Unblock (OP-14)
+  const blockUser = async (id: number) => {
+    const reason = prompt('Причина блокировки (необязательно):');
+    try {
+      setError(null);
+      const updated = await adminService.blockUser(id, reason || undefined);
+      setSelected(updated);
+      setSuccess('Пользователь заблокирован');
+      loadUsers();
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Ошибка блокировки';
+      setError(msg);
+    }
+  };
+
+  const unblockUser = async (id: number) => {
+    try {
+      setError(null);
+      const updated = await adminService.unblockUser(id);
+      setSelected(updated);
+      setSuccess('Пользователь разблокирован');
+      loadUsers();
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Ошибка разблокировки';
+      setError(msg);
+    }
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       <h1>👥 Управление пользователями</h1>
+      <button className="btn btn-outline" onClick={() => adminService.exportUsersCsv(filterRole || undefined)} style={{ fontSize: '0.85rem', alignSelf: 'flex-start', marginTop: '-0.5rem' }}>
+        📥 Экспорт CSV
+      </button>
 
       {/* Stats Cards */}
       {stats && (
@@ -149,7 +190,7 @@ function AdminUsersPage() {
       <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
         <select
           value={filterRole}
-          onChange={(e) => setFilterRole(e.target.value)}
+          onChange={(e) => { setFilterRole(e.target.value); setPage(1); }}
           className="select"
           style={{ padding: '0.5rem', borderRadius: '8px', minWidth: '140px' }}
         >
@@ -207,7 +248,10 @@ function AdminUsersPage() {
                     onMouseLeave={(e) => (e.currentTarget.style.background = selected?.id === u.id ? 'var(--bg-hover)' : '')}
                   >
                     <td style={{ padding: '0.5rem' }}>{u.id}</td>
-                    <td style={{ padding: '0.5rem', fontWeight: 500 }}>{u.name}</td>
+                    <td style={{ padding: '0.5rem', fontWeight: 500 }}>
+                      {u.name}
+                      {u.isBlocked && <span style={{ color: 'var(--error-color)', fontSize: '0.75rem', marginLeft: '0.35rem' }} title={u.blockReason || 'Заблокирован'}>🚫</span>}
+                    </td>
                     <td style={{ padding: '0.5rem', color: 'var(--text-secondary)' }}>{u.email}</td>
                     <td style={{ padding: '0.5rem' }}>
                       <span style={{
@@ -245,8 +289,20 @@ function AdminUsersPage() {
           )}
 
           <div style={{ marginTop: '0.75rem', textAlign: 'right', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
-            Найдено: {users.length}
+            Найдено: {totalCount}
           </div>
+          {/* Pagination (OP-13) */}
+          {totalPages > 1 && (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 0 0' }}>
+              <button className="btn btn-outline" disabled={page <= 1} onClick={() => setPage(1)} style={{ fontSize: '0.85rem' }}>«</button>
+              <button className="btn btn-outline" disabled={page <= 1} onClick={() => setPage(p => p - 1)} style={{ fontSize: '0.85rem' }}>‹</button>
+              <span style={{ padding: '0 0.75rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                {page} / {totalPages}
+              </span>
+              <button className="btn btn-outline" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)} style={{ fontSize: '0.85rem' }}>›</button>
+              <button className="btn btn-outline" disabled={page >= totalPages} onClick={() => setPage(totalPages)} style={{ fontSize: '0.85rem' }}>»</button>
+            </div>
+          )}
         </div>
 
         {/* Detail panel */}
@@ -325,6 +381,15 @@ function AdminUsersPage() {
                   <InfoField label="Обновлён" value={selected.updatedAt ? new Date(selected.updatedAt).toLocaleDateString('ru-RU') : '—'} />
                 </div>
 
+                {/* Block status (OP-14) */}
+                {selected.isBlocked && (
+                  <div style={{ padding: '0.75rem', background: 'rgba(239,68,68,0.08)', borderRadius: '8px', border: '1px solid var(--error-color)' }}>
+                    <div style={{ fontWeight: 600, color: 'var(--error-color)', fontSize: '0.9rem' }}>🚫 Заблокирован</div>
+                    {selected.blockReason && <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>Причина: {selected.blockReason}</div>}
+                    {selected.blockedAt && <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>С {new Date(selected.blockedAt).toLocaleDateString('ru-RU')}</div>}
+                  </div>
+                )}
+
                 <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem' }}>
                   <h3 style={{ fontSize: '1rem', margin: '0 0 0.5rem' }}>📊 Статистика</h3>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
@@ -341,6 +406,25 @@ function AdminUsersPage() {
 
                 <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
                   <button className="btn btn-primary" onClick={startEdit} style={{ flex: 1 }}>✏️ Редактировать</button>
+                  {selected.role !== 'Admin' && (
+                    selected.isBlocked ? (
+                      <button
+                        className="btn"
+                        onClick={() => unblockUser(selected.id)}
+                        style={{ flex: 1, background: 'var(--success-color)', color: '#fff', border: 'none', cursor: 'pointer', borderRadius: '8px', padding: '0.5rem' }}
+                      >
+                        ✅ Разблокировать
+                      </button>
+                    ) : (
+                      <button
+                        className="btn"
+                        onClick={() => blockUser(selected.id)}
+                        style={{ flex: 1, background: 'var(--warning-color)', color: '#fff', border: 'none', cursor: 'pointer', borderRadius: '8px', padding: '0.5rem' }}
+                      >
+                        🚫 Заблокировать
+                      </button>
+                    )
+                  )}
                   <button
                     className="btn"
                     onClick={() => deleteUser(selected.id)}

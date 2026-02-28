@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using UniStart.Application.DTOs;
 using UniStart.Application.Interfaces;
@@ -12,19 +13,23 @@ public class AdminService : IAdminService
 {
     private readonly UniStartDbContext _db;
     private readonly ILogger<AdminService> _logger;
+    private readonly IMemoryCache _cache;
+    private static readonly TimeSpan CacheTtl = TimeSpan.FromMinutes(15);
 
-    public AdminService(UniStartDbContext db, ILogger<AdminService> logger)
+    public AdminService(UniStartDbContext db, ILogger<AdminService> logger, IMemoryCache cache)
     {
         _db = db;
         _logger = logger;
+        _cache = cache;
     }
 
     // ═══════════════════════════════════════════════════════
     //  LIST
     // ═══════════════════════════════════════════════════════
 
-    public async Task<List<QuestionListDto>> GetQuestionsAsync(
-        string? examTypeCode = null, string? topicName = null, string? difficulty = null)
+    public async Task<PagedResult<QuestionListDto>> GetQuestionsAsync(
+        string? examTypeCode = null, string? topicName = null, string? difficulty = null,
+        int page = 1, int pageSize = 50)
     {
         var query = _db.Questions
             .Include(q => q.Topic)
@@ -42,12 +47,22 @@ public class AdminService : IAdminService
         if (!string.IsNullOrEmpty(difficulty) && Enum.TryParse<QuestionDifficulty>(difficulty, true, out var diff))
             query = query.Where(q => q.Difficulty == diff);
 
-        var questions = await query.OrderBy(q => q.Topic.Section!.ExamTypeCode)
+        var orderedQuery = query.OrderBy(q => q.Topic.Section!.ExamTypeCode)
             .ThenBy(q => q.Topic.Name)
-            .ThenBy(q => q.Difficulty)
+            .ThenBy(q => q.Difficulty);
+
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize, 1, 200);
+
+        var totalCount = await orderedQuery.CountAsync();
+        var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+
+        var questions = await orderedQuery
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync();
 
-        return questions.Select(q => new QuestionListDto(
+        var items = questions.Select(q => new QuestionListDto(
             Id: q.Id,
             TopicName: q.Topic.Name,
             SectionName: q.Topic.Section?.Name ?? "",
@@ -59,6 +74,8 @@ public class AdminService : IAdminService
             AnswerCount: q.AnswerOptions.Count,
             CreatedAt: q.CreatedAt
         )).ToList();
+
+        return new PagedResult<QuestionListDto>(items, totalCount, page, pageSize, totalPages);
     }
 
     // ═══════════════════════════════════════════════════════
@@ -175,14 +192,12 @@ public class AdminService : IAdminService
 
         if (question == null) return false;
 
-        // Remove related user answers first
-        var userAnswers = await _db.UserAnswers.Where(a => a.QuestionId == id).ToListAsync();
-        _db.UserAnswers.RemoveRange(userAnswers);
-
-        _db.AnswerOptions.RemoveRange(question.AnswerOptions);
-        _db.Questions.Remove(question);
+        // Soft delete (OP-9) — mark as deleted instead of removing
+        question.IsDeleted = true;
+        question.DeletedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync();
 
+        _logger.LogInformation("Soft-deleted question {QuestionId}", id);
         return true;
     }
 
@@ -318,7 +333,8 @@ public class AdminService : IAdminService
     //  USERS — LIST
     // ═══════════════════════════════════════════════════════
 
-    public async Task<List<AdminUserDto>> GetUsersAsync(string? role = null, string? search = null)
+    public async Task<PagedResult<AdminUserDto>> GetUsersAsync(string? role = null, string? search = null,
+        int page = 1, int pageSize = 50)
     {
         var query = _db.Users.AsQueryable();
 
@@ -328,7 +344,18 @@ public class AdminService : IAdminService
         if (!string.IsNullOrEmpty(search))
             query = query.Where(u => u.Email.Contains(search) || u.Name.Contains(search));
 
-        var users = await query.OrderByDescending(u => u.CreatedAt).ToListAsync();
+        var orderedQuery = query.OrderByDescending(u => u.CreatedAt);
+
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize, 1, 200);
+
+        var totalCount = await orderedQuery.CountAsync();
+        var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+
+        var users = await orderedQuery
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
 
         var userIds = users.Select(u => u.Id).ToList();
 
@@ -350,7 +377,7 @@ public class AdminService : IAdminService
             .Select(g => new { UserId = g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.UserId, x => x.Count);
 
-        return users.Select(u =>
+        var items = users.Select(u =>
         {
             answerStats.TryGetValue(u.Id, out var stats);
             sessionCounts.TryGetValue(u.Id, out var sessions);
@@ -363,6 +390,9 @@ public class AdminService : IAdminService
                 SubscriptionTier: u.SubscriptionTier.ToString(),
                 SubscriptionExpiresAt: u.SubscriptionExpiresAt,
                 HasCompletedOnboarding: u.HasCompletedOnboarding,
+                IsBlocked: u.IsBlocked,
+                BlockedAt: u.BlockedAt,
+                BlockReason: u.BlockReason,
                 CreatedAt: u.CreatedAt,
                 UpdatedAt: u.UpdatedAt,
                 TotalAnswers: stats?.Total ?? 0,
@@ -370,6 +400,8 @@ public class AdminService : IAdminService
                 TestSessions: sessions
             );
         }).ToList();
+
+        return new PagedResult<AdminUserDto>(items, totalCount, page, pageSize, totalPages);
     }
 
     // ═══════════════════════════════════════════════════════
@@ -395,6 +427,9 @@ public class AdminService : IAdminService
             SubscriptionTier: user.SubscriptionTier.ToString(),
             SubscriptionExpiresAt: user.SubscriptionExpiresAt,
             HasCompletedOnboarding: user.HasCompletedOnboarding,
+            IsBlocked: user.IsBlocked,
+            BlockedAt: user.BlockedAt,
+            BlockReason: user.BlockReason,
             CreatedAt: user.CreatedAt,
             UpdatedAt: user.UpdatedAt,
             TotalAnswers: totalAnswers,
@@ -455,20 +490,13 @@ public class AdminService : IAdminService
                 throw new InvalidOperationException("Cannot delete the last admin user");
         }
 
-        // Remove related data
-        var userAnswers = await _db.UserAnswers.Where(a => a.UserId == id).ToListAsync();
-        _db.UserAnswers.RemoveRange(userAnswers);
-
-        var skillProfiles = await _db.UserSkillProfiles.Where(sp => sp.UserId == id).ToListAsync();
-        _db.UserSkillProfiles.RemoveRange(skillProfiles);
-
-        var testSessions = await _db.TestSessions.Where(s => s.UserId == id).ToListAsync();
-        _db.TestSessions.RemoveRange(testSessions);
-
-        _db.Users.Remove(user);
+        // Soft delete (OP-9) — mark as deleted instead of removing
+        user.IsDeleted = true;
+        user.DeletedAt = DateTime.UtcNow;
+        user.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync();
 
-        _logger.LogInformation("Admin deleted user {UserId} ({Email})", id, user.Email);
+        _logger.LogInformation("Soft-deleted user {UserId} ({Email})", id, user.Email);
         return true;
     }
 
@@ -564,6 +592,10 @@ public class AdminService : IAdminService
         _db.Topics.Add(topic);
         await _db.SaveChangesAsync();
 
+        // Invalidate caches
+        _cache.Remove("admin:sections");
+        _cache.Remove("admin:skills");
+
         return new AdminTopicSummaryDto(
             Id: topic.Id,
             Name: topic.Name,
@@ -579,18 +611,103 @@ public class AdminService : IAdminService
 
     public async Task<List<AdminSectionDto>> GetSectionsAsync()
     {
-        return await _db.ExamSections
-            .OrderBy(s => s.ExamTypeCode)
-            .ThenBy(s => s.Name)
-            .Select(s => new AdminSectionDto(s.Id, s.Name, s.ExamTypeCode))
-            .ToListAsync();
+        return await _cache.GetOrCreateAsync("admin:sections", async entry =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = CacheTtl;
+            return await _db.ExamSections
+                .OrderBy(s => s.ExamTypeCode)
+                .ThenBy(s => s.Name)
+                .Select(s => new AdminSectionDto(s.Id, s.Name, s.ExamTypeCode))
+                .ToListAsync();
+        }) ?? [];
     }
 
     public async Task<List<AdminSkillDto>> GetSkillsAsync()
     {
-        return await _db.Skills
-            .OrderBy(s => s.Name)
-            .Select(s => new AdminSkillDto(s.Id, s.Code, s.Name))
-            .ToListAsync();
+        return await _cache.GetOrCreateAsync("admin:skills", async entry =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = CacheTtl;
+            return await _db.Skills
+                .OrderBy(s => s.Name)
+                .Select(s => new AdminSkillDto(s.Id, s.Code, s.Name))
+                .ToListAsync();
+        }) ?? [];
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  RESTORE (Soft Delete — OP-9)
+    // ═══════════════════════════════════════════════════════
+
+    public async Task<bool> RestoreQuestionAsync(int id)
+    {
+        // IgnoreQueryFilters to find soft-deleted records
+        var question = await _db.Questions
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(q => q.Id == id && q.IsDeleted);
+
+        if (question == null) return false;
+
+        question.IsDeleted = false;
+        question.DeletedAt = null;
+        question.DeletedBy = null;
+        await _db.SaveChangesAsync();
+
+        _logger.LogInformation("Restored question {QuestionId}", id);
+        return true;
+    }
+
+    public async Task<bool> RestoreUserAsync(int id)
+    {
+        var user = await _db.Users
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(u => u.Id == id && u.IsDeleted);
+
+        if (user == null) return false;
+
+        user.IsDeleted = false;
+        user.DeletedAt = null;
+        user.DeletedBy = null;
+        user.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+
+        _logger.LogInformation("Restored user {UserId} ({Email})", id, user.Email);
+        return true;
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  BLOCK / SUSPEND (OP-14)
+    // ═══════════════════════════════════════════════════════
+
+    public async Task<AdminUserDto?> BlockUserAsync(int id, string? reason = null)
+    {
+        var user = await _db.Users.FindAsync(id);
+        if (user == null) return null;
+
+        if (user.Role == UserRole.Admin)
+            throw new InvalidOperationException("Cannot block an admin user");
+
+        user.IsBlocked = true;
+        user.BlockedAt = DateTime.UtcNow;
+        user.BlockReason = reason;
+        user.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+
+        _logger.LogInformation("Blocked user {UserId} ({Email}). Reason: {Reason}", id, user.Email, reason ?? "none");
+        return await GetUserByIdAsync(id);
+    }
+
+    public async Task<AdminUserDto?> UnblockUserAsync(int id)
+    {
+        var user = await _db.Users.FindAsync(id);
+        if (user == null) return null;
+
+        user.IsBlocked = false;
+        user.BlockedAt = null;
+        user.BlockReason = null;
+        user.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+
+        _logger.LogInformation("Unblocked user {UserId} ({Email})", id, user.Email);
+        return await GetUserByIdAsync(id);
     }
 }

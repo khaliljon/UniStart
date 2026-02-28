@@ -1,0 +1,29 @@
+# ═══════════════════════════════════════════════════════════
+#  UniStart Backup Cron Configuration
+#  Add these to your server's crontab: crontab -e
+# ═══════════════════════════════════════════════════════════
+
+# Environment (adjust paths)
+# PGHOST=localhost
+# PGPORT=5432
+# PGUSER=postgres
+# PGPASSWORD=your_password
+# PGDATABASE=unistart
+# BACKUP_DIR=/opt/unistart/backups
+# S3_BUCKET=unistart-backups  (optional)
+
+# ─── Daily backup at 03:00 UTC ───
+0 3 * * * cd /opt/unistart && ./scripts/backup.sh daily >> /var/log/unistart-backup.log 2>&1
+
+# ─── Weekly backup on Sunday at 04:00 UTC ───
+0 4 * * 0 cd /opt/unistart && ./scripts/backup.sh weekly >> /var/log/unistart-backup.log 2>&1
+
+# ─── Monthly backup on 1st at 05:00 UTC ───
+0 5 1 * * cd /opt/unistart && ./scripts/backup.sh monthly >> /var/log/unistart-backup.log 2>&1
+
+# ═══════════════════════════════════════════════════════════
+#  Retention Policy:
+#    - Daily:   7 backups (1 week)
+#    - Weekly:  4 backups (1 month)
+#    - Monthly: 2 backups (2 months)
+# ═══════════════════════════════════════════════════════════

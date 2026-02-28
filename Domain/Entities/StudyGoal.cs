@@ -1,6 +1,6 @@
 namespace UniStart.Domain.Entities;
 
-public class StudyGoal
+public class StudyGoal : IAuditable
 {
     public int Id { get; set; }
     public int UserId { get; set; }
@@ -9,6 +9,7 @@ public class StudyGoal
     public int TargetScore { get; set; }
     public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? UpdatedAt { get; set; }
 
     // Navigation properties
     public virtual User User { get; set; } = null!;

@@ -2,12 +2,14 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UniStart.Application.DTOs;
 using UniStart.Application.Interfaces;
+using Asp.Versioning;
 
 namespace UniStart.Controllers;
 
 [ApiController]
 [Route("api/exams")]
 [Authorize]
+[ApiVersion("1.0")]
 public class ExamsController : ControllerBase
 {
     private readonly IExamService _examService;

@@ -408,6 +408,14 @@ export interface AfterSession {
 
 // ─── Admin (Stage 9) ────────────────────────────────────
 
+export interface PagedResult<T> {
+  items: T[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
 export interface QuestionListItem {
   id: number;
   topicName: string;
@@ -469,6 +477,9 @@ export interface AdminUser {
   subscriptionTier: string;
   subscriptionExpiresAt: string | null;
   hasCompletedOnboarding: boolean;
+  isBlocked: boolean;
+  blockedAt: string | null;
+  blockReason: string | null;
   createdAt: string;
   updatedAt: string | null;
   totalAnswers: number;

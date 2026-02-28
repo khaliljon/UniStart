@@ -47,6 +47,63 @@ namespace UniStart.Migrations
                     b.ToTable("AnswerOptions", (string)null);
                 });
 
+            modelBuilder.Entity("UniStart.Domain.Entities.AuditLog", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("EntityId")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("EntityType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("IpAddress")
+                        .HasMaxLength(45)
+                        .HasColumnType("character varying(45)");
+
+                    b.Property<string>("NewValues")
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("OldValues")
+                        .HasColumnType("jsonb");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UserEmail")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Timestamp")
+                        .HasDatabaseName("IX_AuditLogs_Timestamp");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("IX_AuditLogs_UserId");
+
+                    b.HasIndex("EntityType", "EntityId")
+                        .HasDatabaseName("IX_AuditLogs_Entity");
+
+                    b.ToTable("AuditLogs", (string)null);
+                });
+
             modelBuilder.Entity("UniStart.Domain.Entities.ExamSection", b =>
                 {
                     b.Property<int>("Id")
@@ -222,7 +279,8 @@ namespace UniStart.Migrations
 
                     b.HasIndex("MockExamId");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("UserId", "Status")
+                        .HasDatabaseName("IX_MockExamAttempts_UserId_Status");
 
                     b.ToTable("MockExamAttempts", (string)null);
                 });
@@ -332,6 +390,12 @@ namespace UniStart.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("DeletedBy")
+                        .HasColumnType("integer");
+
                     b.Property<int>("Difficulty")
                         .HasColumnType("integer");
 
@@ -356,6 +420,11 @@ namespace UniStart.Migrations
                     b.Property<string>("Hint")
                         .HasColumnType("text");
 
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
                     b.Property<int?>("ReadingPassageId")
                         .HasColumnType("integer");
 
@@ -366,6 +435,9 @@ namespace UniStart.Migrations
                     b.Property<int>("TopicId")
                         .HasColumnType("integer");
 
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("VideoUrl")
                         .HasColumnType("text");
 
@@ -373,7 +445,8 @@ namespace UniStart.Migrations
 
                     b.HasIndex("ReadingPassageId");
 
-                    b.HasIndex("TopicId");
+                    b.HasIndex("TopicId")
+                        .HasDatabaseName("IX_Questions_TopicId");
 
                     b.ToTable("Questions", (string)null);
                 });
@@ -465,6 +538,9 @@ namespace UniStart.Migrations
                     b.Property<int>("TargetScore")
                         .HasColumnType("integer");
 
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<int>("UserId")
                         .HasColumnType("integer");
 
@@ -552,9 +628,10 @@ namespace UniStart.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("PlanId");
-
                     b.HasIndex("TopicId");
+
+                    b.HasIndex("PlanId", "Date")
+                        .HasDatabaseName("IX_StudyPlanEntries_PlanId_Date");
 
                     b.ToTable("StudyPlanEntries");
                 });
@@ -599,7 +676,8 @@ namespace UniStart.Migrations
 
                     b.HasIndex("ExamTypeCode");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("UserId", "StartedAt")
+                        .HasDatabaseName("IX_TestSessions_UserId_StartedAt");
 
                     b.ToTable("TestSessions", (string)null);
                 });
@@ -612,6 +690,9 @@ namespace UniStart.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -622,6 +703,9 @@ namespace UniStart.Migrations
 
                     b.Property<int>("SkillId")
                         .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
@@ -696,8 +780,21 @@ namespace UniStart.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("BlockReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime?>("BlockedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("DeletedBy")
+                        .HasColumnType("integer");
 
                     b.Property<string>("Email")
                         .IsRequired()
@@ -706,6 +803,16 @@ namespace UniStart.Migrations
 
                     b.Property<bool>("HasCompletedOnboarding")
                         .HasColumnType("boolean");
+
+                    b.Property<bool>("IsBlocked")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -770,7 +877,11 @@ namespace UniStart.Migrations
 
                     b.HasIndex("TestSessionId");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("UserId", "AnsweredAt")
+                        .HasDatabaseName("IX_UserAnswers_UserId_AnsweredAt");
+
+                    b.HasIndex("UserId", "QuestionId", "TestSessionId")
+                        .HasDatabaseName("IX_UserAnswers_UserId_QuestionId_SessionId");
 
                     b.ToTable("UserAnswers", (string)null);
                 });
@@ -859,6 +970,17 @@ namespace UniStart.Migrations
                         .IsRequired();
 
                     b.Navigation("Question");
+                });
+
+            modelBuilder.Entity("UniStart.Domain.Entities.AuditLog", b =>
+                {
+                    b.HasOne("UniStart.Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("UniStart.Domain.Entities.ExamSection", b =>

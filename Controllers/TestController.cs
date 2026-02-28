@@ -3,12 +3,14 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UniStart.Application.DTOs;
 using UniStart.Application.Interfaces;
+using Asp.Versioning;
 
 namespace UniStart.Controllers;
 
 [ApiController]
 [Route("api/test")]
 [Authorize]
+[ApiVersion("1.0")]
 public class TestController : ControllerBase
 {
     private readonly IAdaptiveEngineService _adaptiveEngine;

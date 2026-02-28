@@ -1,21 +1,27 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.FeatureManagement.Mvc;
 using UniStart.Application.DTOs;
 using UniStart.Application.Interfaces;
+using Asp.Versioning;
 
 namespace UniStart.Controllers;
 
 [ApiController]
 [Route("api/mock-exams")]
 [Authorize]
+[ApiVersion("1.0")]
+[FeatureGate("MockExams")]
 public class MockExamController : ControllerBase
 {
     private readonly IMockExamService _mockExamService;
+    private readonly ISubscriptionService _subscriptionService;
 
-    public MockExamController(IMockExamService mockExamService)
+    public MockExamController(IMockExamService mockExamService, ISubscriptionService subscriptionService)
     {
         _mockExamService = mockExamService;
+        _subscriptionService = subscriptionService;
     }
 
     /// <summary>List available mock exams</summary>
@@ -74,6 +80,11 @@ public class MockExamController : ControllerBase
     public async Task<IActionResult> SubmitAnswer(int attemptId, [FromBody] MockExamSubmitAnswerDto dto)
     {
         var userId = GetUserId();
+
+        // Server-side daily question limit enforcement (Free tier)
+        if (!await _subscriptionService.CanAnswerQuestionAsync(userId))
+            return StatusCode(429, new { error = "Дневной лимит вопросов исчерпан. Перейдите на Pro для безлимитного доступа." });
+
         var success = await _mockExamService.SubmitAnswerAsync(userId, attemptId, dto);
         return success ? Ok(new { success = true }) : BadRequest(new { error = "Cannot submit answer" });
     }

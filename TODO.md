@@ -1,6 +1,6 @@
 # UniStart — Статус проекта и план запуска
 
-> **Последнее обновление**: 28 февраля 2026
+> **Последнее обновление**: 1 марта 2026
 
 ---
 
@@ -18,7 +18,7 @@
 | **Контроллеров (API)** | 15 |
 | **Сервисов (backend)** | 19 (включая 2 background) |
 | **Domain-сущностей** | 22 |
-| **Страниц (React)** | 23 |
+| **Страниц (React)** | 26 |
 | **API-эндпоинтов** | ~60+ |
 | **Миграций БД** | 10 |
 | **Вопросов в базе** | 97 (16 тем, 3 экзамена) |
@@ -37,7 +37,7 @@
 
 #### Адаптивный движок (IRT 3PL + CAT)
 - [x] Модель IRT 3PL: `P(θ) = c + (1−c) / (1 + e^(−a(θ−b)))`
-- [x] Байесовская оценка уровня EAP (41 квадратурная точка, prior N(0, 1.5))
+- [x] Байесовская оценка уровня EAP (81 квадратурная точка, prior N(0, 1.5), adaptive fallback)
 - [x] CAT — выбор вопроса с максимальной Fisher Information
 - [x] Exposure control (рандомизация из top-70%)
 - [x] Кривая забывания Эббингхауза: `R(t) = e^(−t/S)`
@@ -183,63 +183,48 @@
 
 ### 🔴 Критические (ломают ключевые сценарии)
 
-#### 1. `selectedExams` не сохраняется — теряется при F5
+#### 1. ✅ `selectedExams` не сохраняется — теряется при F5
 - **Где**: `examSlice.ts` — `initialState.selectedExams = []`, нет `localStorage`
-- **Последствия**: после обновления страницы пользователь заново выбирает экзамены. TestPage, TopicsPage, ReviewPage — всё редиректит. Dashboard показывает "Выберите экзамены" даже если пользователь их уже выбрал
-- **Связанная проблема**: после онбординга выбранный экзамен не попадает в Redux → новый пользователь видит пустой Dashboard
-- **Фикс**: синхронизация `selectedExams` с `localStorage` или загрузка из профиля пользователя с сервера
+- **Фикс**: `localStorage.getItem('selectedExams')` при инициализации, `localStorage.setItem()` в `toggleExamSelection`, `setSelectedExams`, `localStorage.removeItem()` в `clearSelection`
 
-#### 2. Лимит вопросов (Free: 15/день) — только на фронтенде
-- **Где**: `SubscriptionService.CanAnswerQuestionAsync()` существует, но **нигде не вызывается** из контроллеров
-- **Последствия**: через API (cURL/Postman) можно решать неограниченное кол-во вопросов. Mock-экзамены аналогично доступны Free-пользователям через API
-- **Фикс**: добавить проверку в `TestController.SubmitAnswer` и `MockExamController`
+#### 2. ✅ Лимит вопросов (Free: 15/день) — только на фронтенде
+- **Фикс**: `CanAnswerQuestionAsync()` вызывается в `TestController.SubmitAnswer` и `MockExamController.SubmitAnswer` → 429 при превышении лимита
 
-#### 3. Нет защиты от повторной отправки ответа
-- **Где**: `AdaptiveEngineService.ProcessAnswerAsync` — нет проверки, что на вопрос уже отвечали
-- **Последствия**: можно отправить правильный ответ на один вопрос 100 раз → искусственно завысить θ (skill level). EAP пересчитывает по **всем** UserAnswers без дедупликации
-- **Фикс**: проверять `!exists UserAnswer(userId, questionId, sessionId)` перед сохранением
+#### 3. ✅ Нет защиты от повторной отправки ответа
+- **Фикс**: `ProcessAnswerAsync` проверяет `!exists UserAnswer(userId, questionId, sessionId)` перед сохранением → `ArgumentException` при дубле
 
-#### 4. Нет валидации принадлежности вопроса сессии
-- **Где**: `AdaptiveEngineService.ProcessAnswerAsync` — не проверяет, что вопрос был выдан этому пользователю
-- **Последствия**: можно вручную отправить ответ на любой `QuestionId` (в т.ч. из другого экзамена)
-- **Фикс**: проверять, что вопрос принадлежит текущей `TestSession` пользователя
+#### 4. ✅ Нет валидации принадлежности вопроса сессии
+- **Фикс**: `ProcessAnswerAsync` при наличии `TestSessionId` валидирует: сессия существует, принадлежит пользователю, не завершена
 
-#### 5. Mock Exam таймер — только на клиенте
-- **Где**: `MockExamPage.tsx` — `useState(0)` + `setInterval`, сервер не проверяет время
-- **Последствия**: можно остановить таймер через DevTools или отправить ответы в любом темпе. `TimeSpentSeconds` доверяется с клиента
-- **Фикс**: серверная проверка `StartedAt + TimeLimitMinutes >= now` при `SubmitAnswer`/`CompleteSection`
+#### 5. ✅ Mock Exam таймер — только на клиенте
+- **Фикс**: серверная проверка `StartedAt + TotalTimeMinutes >= now` в `SubmitAnswerAsync`, `CompleteSectionAsync`, `GetCurrentSectionAsync`. При превышении — автоматическое завершение экзамена
 
 ### 🟠 Важные (ухудшают UX, но не ломают)
 
-#### 6. Auto-complete плана: порог = 1 вопрос
+#### 6. ✅ Auto-complete плана: порог = 1 вопрос
 - **Где**: `StudyPlanService.AutoCompleteTodayAsync` — `topicStats.Total >= 1`
-- **Последствия**: ответив на 1 вопрос по теме, задание плана на сегодня автоматически отмечается выполненным (даже если рекомендовано 10). Статистика приверженности завышается
-- **Фикс**: порог = `Math.Max(1, recommendedQuestions / 2)` или процент от рекомендованного
+- **Фикс**: порог = `Math.Max(1, recommendedQuestions / 2)` — реализовано
 
-#### 7. `GetCurrentUserId` fallback на userId = 1
-- **Где**: `TestController`, `StudyPlanController`, `AnalyticsController` — `return userId > 0 ? userId : 1`
-- **Последствия**: при сбое JWT middleware данные записываются в аккаунт пользователя #1
-- **Фикс**: вернуть 401 вместо fallback, убрать `?? "0"` → бросить исключение
+#### 7. ✅ `GetCurrentUserId` fallback на userId = 1
+- **Где**: `TestController`, `StudyPlanController`, `AnalyticsController`
+- **Фикс**: возвращает 401 вместо fallback — реализовано
 
 #### 8. Race condition: auto-start + redirect при пустых экзаменах
 - **Где**: `TestPage.tsx` — два `useEffect` запускаются параллельно: redirect (no exams) и auto-start (topicId)
 - **Последствия**: при переходе из плана, если `selectedExams = []` (после F5), запускается API-вызов с пустым массивом экзаменов + одновременный redirect на `/`. Вопрос может прийти из чужого экзамена
 - **Фикс**: проверять `selectedExams.length > 0` перед auto-start; или передавать `examTypeCode` из плана
 
-#### 9. Прогресс-бар игнорирует topicId-фильтр
-- **Где**: `AdaptiveEngineService.GetTotalQuestionsCountAsync` — считает **все** вопросы по выбранным экзаменам, а не по теме
-- **Последствия**: при практике по теме (5 вопросов) прогресс-бар показывает "Вопрос 4 из 97 — 3%", потом внезапно тест завершён
-- **Фикс**: передать `topicId` и `sectionId` в `GetTotalQuestionsCountAsync`
+#### 9. ✅ Прогресс-бар игнорирует topicId-фильтр
+- **Где**: `AdaptiveEngineService.GetTotalQuestionsCountAsync`
+- **Фикс**: `topicId` и `sectionId` передаются и фильтруются в `GetTotalQuestionsCountAsync` — реализовано
 
-#### 10. EAP posterior collapse → θ сброс до 0
-- **Где**: `IrtMath.EstimateAbilityEAP` — если posterior слишком узкий для 41 квадратурной точки, fallback возвращает `(0.0, 1.5)`
-- **Последствия**: сильный студент (θ → 3.5+) может внезапно увидеть сброс навыка с 85% до 50%. Редкий, но шокирующий баг
-- **Фикс**: увеличить кол-во точек (81+), расширить диапазон до ±5, добавить adaptive fallback
+#### 10. ✅ EAP posterior collapse → θ сброс до 0
+- **Где**: `IrtMath.EstimateAbilityEAP`
+- **Фикс**: 81 квадратурных точек (было 41), диапазон ±5 (было ±4), priorSD = 1.5 (было 1.0), adaptive fallback при denominator < 1e-300 (retry с 161 точками и шире prior)
 
-#### 11. Нет React Error Boundary
+#### 11. ✅ Нет React Error Boundary
 - **Где**: `main.tsx` → `<App />` без обёртки
-- **Последствия**: если компонент бросает ошибку при рендере (undefined.map, NaN в Recharts), **весь экран белеет** без возможности восстановления
-- **Фикс**: `<ErrorBoundary>` с кнопкой "Обновить страницу"
+- **Фикс**: `<ErrorBoundary>` обёртка с кнопкой «Обновить страницу» — реализовано
 
 #### 12. JWT: нет refresh tokens, expiresAt не проверяется
 - **Где**: backend — только access token (24ч), нет refresh. Frontend — `authSlice` не проверяет срок годности при restore
@@ -264,21 +249,20 @@
 - **Где**: `StudyPlanService.GeneratePlanAsync` — ставит `IsActive = false` на план, но не удаляет entries
 - **Последствия**: каждая регенерация оставляет старые записи в БД. Со временем — раздувание таблиц
 
-#### 17. `new Random()` вместо `Random.Shared`
-- **Где**: `IrtMath.cs` — при exposure control, несогласованность с `AdaptiveEngineService`
-- **Последствия**: теоретически одинаковая последовательность при частых вызовах (маловероятно)
+#### 17. ✅ `new Random()` → `Random.Shared`
+- **Где**: `IrtMath.cs` — заменено на `Random.Shared` для thread-safety
 
-#### 18. N+1 запросы в MockExamService
-- **Где**: `GetAvailableMockExamsAsync`, `GetMockExamDetailAsync`, `StartMockExamAsync` — цикл + запрос на каждую секцию
-- **Последствия**: при 3 экзаменах × 3 секции = 9+ extra SQL-запросов вместо одного
+#### 18. ✅ N+1 запросы в MockExamService
+- **Где**: `GetAvailableMockExamsAsync`, `GetMockExamDetailAsync`
+- **Фикс**: заменены O(N) циклов с `CountAsync()` на единый batch `GroupBy` + `ToDictionaryAsync` → 1 SQL-запрос вместо N
 
 #### 19. Целевая дата плана — нет серверной валидации
 - **Где**: `StudyPlanController` / `StudyPlanService.CreateGoalAsync` — принимает любую дату, даже прошлую
 - **Последствия**: дата в прошлом → молча создаёт 7-дневный план. Frontend защищает `min={date}`, но обходится через API
 
-#### 20. Exception details утекают в 500-ответах
-- **Где**: `AuthController.cs` — `details = ex.Message` в catch
-- **Последствия**: внутренние ошибки (стек, SQL) видны клиенту
+#### 20. ✅ Exception details утекают в 500-ответах
+- **Где**: `AuthController.cs`
+- **Фикс**: Global Exception Handler (OP-4) + очистка catch-блоков — детали не утекают
 
 ---
 
@@ -307,212 +291,227 @@
 
 ### 🔴 P0 — Безопасность (Critical, без этого нельзя в production)
 
-#### OP-1. Секреты захардкожены в `appsettings.json` и закоммичены
+#### OP-1. ✅ Секреты захардкожены в `appsettings.json` и закоммичены
 - **Где**: `appsettings.json` — JWT `SecretKey`, SMTP `Password`, `ConnectionString` в открытом виде
 - **Риск**: любой с доступом к репозиторию видит все credentials. Если репо станет публичным — полный компромисс
 - **Фикс**:
   - [ ] `dotnet user-secrets` для development
-  - [ ] Переменные окружения (`UNISTART_JWT_SECRET`, `UNISTART_DB_CONNECTION`, `UNISTART_SMTP_PASSWORD`)
-  - [ ] `appsettings.Production.json` — без секретов, всё через `Environment.GetEnvironmentVariable`
-  - [ ] `.gitignore` → добавить `appsettings.*.local.json`
+  - [x] Переменные окружения (`UNISTART_JWT_SECRET`, `UNISTART_DB_CONNECTION`, `UNISTART_SMTP_PASSWORD`) — `Program.cs` читает из env vars с fallback на config
+  - [x] `appsettings.Production.json` — создан, все секреты = placeholder
+  - [x] `.gitignore` → добавлены `appsettings.*.local.json`, `appsettings.Production.json`, `logs/`
   - [ ] Опционально: Azure Key Vault / HashiCorp Vault для production
 
-#### OP-2. Нет Rate Limiting — brute-force возможен
+#### OP-2. ✅ Нет Rate Limiting — brute-force возможен
 - **Где**: `Program.cs` — нет `AddRateLimiter()`, `/api/auth/login` и `/api/auth/register` полностью открыты
 - **Риск**: автоматический перебор паролей, credential stuffing, DDoS
 - **Фикс**:
-  - [ ] .NET 8 встроенный `RateLimiter` middleware (`AddRateLimiter` + `UseRateLimiter`)
-  - [ ] Fixed window: 5 логинов в минуту на IP для `/api/auth/*`
-  - [ ] Sliding window: 60 запросов в минуту на пользователя для остальных API
-  - [ ] 429 Too Many Requests с `Retry-After` header
+  - [x] .NET 8 встроенный `RateLimiter` middleware (`AddRateLimiter` + `UseRateLimiter`) — 3 политики: "auth" (10/мин fixed), "api" (120/мин sliding), global (200/мин per IP)
+  - [x] Fixed window: 10 логинов в минуту на IP для auth — `[EnableRateLimiting("auth")]` на `AuthController`
+  - [x] Sliding window: 120 запросов в минуту для API
+  - [x] 429 Too Many Requests с `ProblemDetails` RFC 7807 ответом
 
-#### OP-3. Нет Security Headers
+#### OP-3. ✅ Нет Security Headers
 - **Где**: `Program.cs` — `UseHttpsRedirection()` есть, но нет `UseHsts()`, нет CSP, X-Frame-Options
 - **Риск**: clickjacking, MIME-sniffing, отсутствие HSTS позволяет downgrade-атаки
 - **Фикс**:
-  - [ ] `app.UseHsts()` (уже есть в шаблоне, не активирован)
-  - [ ] Middleware или `NWebsec` для заголовков:
+  - [x] `app.UseHsts()` — включён в non-dev окружении
+  - [x] Inline middleware добавляет 5 security headers:
     ```
     X-Content-Type-Options: nosniff
     X-Frame-Options: DENY
     X-XSS-Protection: 0
     Referrer-Policy: strict-origin-when-cross-origin
-    Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'
     Permissions-Policy: camera=(), microphone=(), geolocation=()
     ```
 
-#### OP-4. Нет Global Exception Handler — ошибки утекают и формат не единый
+#### OP-4. ✅ Нет Global Exception Handler — ошибки утекают и формат не единый
 - **Где**: каждый контроллер делает свой `try/catch`, формат ответов разный (`{ error = "..." }`, `StatusCode(500, ...)`, необработанные 500)
 - **Риск**: утечка внутренних деталей (SQL, стек), невозможно единообразно обрабатывать ошибки на фронте
 - **Фикс**:
-  - [ ] `UseExceptionHandler` middleware с единым форматом RFC 7807 `ProblemDetails`
-  - [ ] Маппинг исключений → HTTP-коды:
+  - [x] `UseExceptionHandler` middleware с единым форматом RFC 7807 `ProblemDetails`
+  - [x] Маппинг исключений → HTTP-коды:
     - `UnauthorizedAccessException` → 401
     - `ArgumentException` / `ValidationException` → 400
     - `KeyNotFoundException` → 404
-    - Всё остальное → 500 (без деталей в production)
-  - [ ] `ILogger.LogError` для всех необработанных исключений
+    - `InvalidOperationException` → 409
+    - Всё остальное → 500 (stack trace только в Development)
+  - [x] `ILogger.LogError` для всех необработанных исключений (через Serilog)
   - [ ] Correlation ID (`X-Request-Id`) в каждом ответе и логе
 
 ---
 
 ### 🟠 P1 — Надёжность и наблюдаемость (нужно для стабильной работы)
 
-#### OP-5. Нет структурированного логирования (Serilog)
+#### OP-5. ✅ Нет структурированного логирования (Serilog)
 - **Сейчас**: дефолтный `Microsoft.Extensions.Logging`, только console в dev. В production — ничего не записывается
 - **Фикс**:
-  - [ ] Serilog → `appsettings`: Console (dev) + File (rolling daily) + Seq/ELK (production)
-  - [ ] JSON structured logs (timestamp, level, message, properties, exception)
-  - [ ] Enrichers: `RequestId`, `UserId`, `ClientIP`, `MachineName`
-  - [ ] `UseSerilogRequestLogging()` — автоматический лог HTTP-запросов (method, path, status, elapsed)
-  - [ ] Минимальный уровень: Information для приложения, Warning для Microsoft/EF
+  - [x] Serilog: Console + File (rolling daily, 14 дней retention, `logs/unistart-.txt`)
+  - [ ] JSON structured logs (timestamp, level, message, properties, exception) — позже при деплое
+  - [x] Enrichers: `MachineName`, `ThreadId` + request-level: `RequestHost`, `UserAgent`, `UserId`
+  - [x] `UseSerilogRequestLogging()` — автоматический лог HTTP-запросов с enrichment
+  - [x] Минимальный уровень: Information для приложения, Warning для Microsoft/EF — настроено через `MinimumLevel.Override`
 
-#### OP-6. Нет Health Checks
+#### OP-6. ✅ Нет Health Checks
 - **Сейчас**: нет `/health` эндпоинта. Docker/K8s не может проверить, жив ли сервис
 - **Фикс**:
-  - [ ] `builder.Services.AddHealthChecks()` + `.AddNpgSql()` (база) + `.AddSmtpCheck()` (email)
-  - [ ] `app.MapHealthChecks("/health")` — простой 200/503
-  - [ ] `app.MapHealthChecks("/health/ready")` — readiness (включая БД)
-  - [ ] `app.MapHealthChecks("/health/live")` — liveness (процесс жив)
+  - [x] `builder.Services.AddHealthChecks()` + `.AddNpgSql()` (PostgreSQL проверка)
+  - [x] `app.MapHealthChecks("/health")` — полный JSON с деталями всех проверок
+  - [x] `app.MapHealthChecks("/health/ready")` — readiness (включая БД, тег "ready")
+  - [x] `app.MapHealthChecks("/health/live")` — liveness (процесс жив, без тегов)
+  - [ ] `.AddSmtpCheck()` (email) — добавить позже
   - [ ] UI: `AspNetCore.HealthChecks.UI` (опционально)
   - [ ] Внешний мониторинг: UptimeRobot (бесплатно) на `/health`
 
-#### OP-7. Нет Audit Log — действия админов не отслеживаются
+#### OP-7. ✅ Нет Audit Log — действия админов не отслеживаются
 - **Сейчас**: админ может удалить пользователя, изменить роль, удалить вопрос — и нет никакого следа
 - **Фикс**:
-  - [ ] Сущность `AuditLog`:
-    ```
-    Id, UserId, Action (string), EntityType, EntityId,
-    OldValues (jsonb), NewValues (jsonb), IpAddress, Timestamp
-    ```
-  - [ ] `IAuditService.LogAsync(userId, action, entity, oldVal, newVal)`
-  - [ ] Вызов из `AdminService` при каждой мутации (create/update/delete)
-  - [ ] API: `GET /api/admin/audit-logs?action=&entity=&userId=&from=&to=` с пагинацией
-  - [ ] UI: таблица аудита в админке с фильтрами
+  - [x] Сущность `AuditLog` (`Domain/Entities/AuditLog.cs`): Id (bigint), UserId, UserEmail, Action, EntityType, EntityId, OldValues (jsonb), NewValues (jsonb), IpAddress, Timestamp
+  - [x] `IAuditService` + `AuditService` — `LogAsync()` с try/catch (никогда не ломает основную операцию)
+  - [x] Вызов из `AdminController` при каждой мутации: все 7 эндпоинтов (Create/Update/Delete Question, BulkImport, Update/Delete User, Create Topic)
+  - [x] API: `GET /api/admin/audit-logs?action=&entityType=&userId=&from=&to=&page=&pageSize=` с пагинацией (max 200/стр)
+  - [x] 3 индекса: `IX_AuditLogs_Timestamp`, `IX_AuditLogs_Entity`, `IX_AuditLogs_UserId`
+  - [x] Миграция `20260227200430_AddAuditLogAndSoftDelete`
+  - [x] UI: `AdminAuditLogsPage.tsx` — таблица аудита с фильтрами, expandable rows, пагинация, цветовые action-badges
 
-#### OP-8. Нет индексов на часто-запрашиваемых таблицах
+#### OP-8. ✅ Нет индексов на часто-запрашиваемых таблицах
 - **Сейчас**: 4 unique-индекса. Нет индексов на самые тяжёлые запросы
-- **Фикс** (новая миграция):
-  - [ ] `UserAnswers(UserId, AnsweredAt)` — аналитика, background services, auto-complete
-  - [ ] `UserAnswers(UserId, QuestionId, TestSessionId)` — duplicate check (Fix #3)
-  - [ ] `Questions(TopicId)` — выборка вопросов по теме
-  - [ ] `StudyPlanEntries(PlanId, Date)` — ежедневный план, auto-complete
-  - [ ] `TestSessions(UserId, StartedAt)` — история сессий
-  - [ ] `MockExamAttempts(UserId, Status)` — доступные/активные mock-экзамены
+- **Фикс** (миграция `20260227193556_AddPerformanceIndexes`):
+  - [x] `UserAnswers(UserId, AnsweredAt)` — аналитика, background services, auto-complete
+  - [x] `UserAnswers(UserId, QuestionId, TestSessionId)` — duplicate check (Fix #3)
+  - [x] `Questions(TopicId)` — уже существовал как FK-индекс в InitialCreate
+  - [x] `StudyPlanEntries(PlanId, Date)` — ежедневный план, auto-complete
+  - [x] `TestSessions(UserId, StartedAt)` — история сессий
+  - [x] `MockExamAttempts(UserId, Status)` — доступные/активные mock-экзамены
 
-#### OP-9. Нет Soft Delete — данные теряются навсегда
-- **Сейчас**: `DeleteQuestion` и `DeleteUser` делают `_db.Remove()` — hard delete без возможности восстановления
+#### OP-9. ✅ Нет Soft Delete — данные теряются навсегда
+- **Сейчас**: `DeleteQuestion` и `DeleteUser` делали `_db.Remove()` — hard delete без возможности восстановления
 - **Фикс**:
-  - [ ] Интерфейс `ISoftDeletable`: `bool IsDeleted`, `DateTime? DeletedAt`, `int? DeletedBy`
-  - [ ] Добавить на: `User`, `Question`, `StudyPlan`, `MockExamAttempt`
-  - [ ] Global query filter: `.HasQueryFilter(e => !e.IsDeleted)` в `DbContext`
-  - [ ] Admin API: `POST /api/admin/questions/{id}/restore`, `POST /api/admin/users/{id}/restore`
-  - [ ] Реальное физическое удаление — только через scheduled job (через 30 дней)
+  - [x] Интерфейс `ISoftDeletable`: `bool IsDeleted`, `DateTime? DeletedAt`, `int? DeletedBy` (`Domain/Entities/ISoftDeletable.cs`)
+  - [x] Добавлено на: `User`, `Question` — оба реализуют `ISoftDeletable`
+  - [x] Global query filter: `.HasQueryFilter(e => !e.IsDeleted)` на `User` и `Question` в `DbContext`
+  - [x] `DeleteQuestionAsync` / `DeleteUserAsync` теперь soft-delete (устанавливают `IsDeleted = true`)
+  - [x] Admin API: `POST /api/admin/questions/{id}/restore`, `POST /api/admin/users/{id}/restore` с аудит-логом
+  - [x] `RestoreQuestionAsync` / `RestoreUserAsync` с `IgnoreQueryFilters()`
+  - [x] Миграция `20260227200430_AddAuditLogAndSoftDelete`: +3 колонки на Users, +3 на Questions
+  - [ ] Реальное физическое удаление — только через scheduled job (через 30 дней, позже)
 
-#### OP-10. Нет кэширования — каждый запрос в БД
+#### OP-10. ✅ Нет кэширования — каждый запрос в БД
 - **Сейчас**: никакого кэша. Статичные данные (ExamTypes, Sections, Topics, Skills) загружаются из БД при каждом запросе
 - **Фикс**:
-  - [ ] `builder.Services.AddMemoryCache()` + `IMemoryCache`
-  - [ ] Кэшировать (TTL 15 мин): ExamTypes, Sections, Topics, Skills, TopicDependencies
-  - [ ] Инвалидация при CRUD в админке
+  - [x] `builder.Services.AddMemoryCache()` — зарегистрирован в DI
+  - [x] `ExamService`: кэш `GetAllExamsAsync` (`exams:all`), `GetExamWithSectionsAsync` (`exams:sections:{code}`), `GetExamSectionsAsync` (`exams:exam-sections:{code}`) — TTL 15 мин
+  - [x] `AdminService`: кэш `GetSectionsAsync` (`admin:sections`), `GetSkillsAsync` (`admin:skills`) — TTL 15 мин
+  - [x] Инвалидация при CRUD в админке (`CreateTopicAsync` инвалидирует `admin:sections` и `admin:skills`)
   - [ ] Позже: Redis для distributed cache (если несколько инстансов)
 
-#### OP-11. Нет валидации на админских DTO
+#### OP-11. ✅ Нет валидации на админских DTO
 - **Сейчас**: `CreateQuestionDto`, `UpdateQuestionDto`, `AdminUpdateUserDto`, `CreateTopicDto` — ноль валидации. Можно отправить пустой текст, отрицательные IRT-параметры, невалидную сложность
 - **Фикс**:
-  - [ ] FluentValidation (`FluentValidation.AspNetCore` NuGet)
-  - [ ] Validators для каждого админского DTO:
-    - `CreateQuestionValidator`: Text не пустой (≥10 символов), 2–6 AnswerOptions, ровно 1 IsCorrect, Difficulty ∈ {Easy, Medium, Hard}, DifficultyParam ∈ [−3, 3], DiscriminationParam ∈ [0.1, 3]
-    - `AdminUpdateUserValidator`: Role ∈ {User, Admin}, SubscriptionTier ∈ {Free, Pro}
-    - `CreateTopicValidator`: Name не пустой, SectionId существует
-  - [ ] `AddFluentValidationAutoValidation()` в `Program.cs`
+  - [x] FluentValidation (`FluentValidation.AspNetCore` 11.3.0 NuGet)
+  - [x] `AddFluentValidationAutoValidation()` + `AddValidatorsFromAssemblyContaining<>()` в `Program.cs`
+  - [x] **Admin validators** (`Application/Validators/AdminValidators.cs`):
+    - `CreateQuestionDtoValidator`: Text ≥10 символов ≤5000, TopicId > 0, 2–6 AnswerOptions, ровно 1 IsCorrect, Difficulty ∈ {Easy, Medium, Hard}, DifficultyParam ∈ [−3, 3], DiscriminationParam ∈ [0.1, 3], GuessParam ∈ [0, 0.5]
+    - `UpdateQuestionDtoValidator`: те же правила, все поля optional
+    - `BulkImportDtoValidator`: 1–500 вопросов, каждый через CreateQuestionDtoValidator
+    - `AdminUpdateUserDtoValidator`: Role ∈ {Student, Tutor, Admin}, SubscriptionTier ∈ {Free, Pro}, Email формат, SubscriptionExpiresAt в будущем
+    - `CreateTopicDtoValidator`: Name ≥2 символа ≤200, SectionId > 0, SkillId > 0
+    - `CreateAnswerOptionDtoValidator`: Text не пустой ≤2000
+  - [x] **Auth validators** (`Application/Validators/AuthValidators.cs`):
+    - `RegisterDtoValidator`: Email (формат + ≤200), Name ≥2 ≤100, Password ≥6 ≤100
+    - `LoginDtoValidator`: Email формат, Password не пустой
+    - `UpdateUserDtoValidator`: Name ≥2, Email формат (optional)
+  - [x] **Test/Domain validators** (`Application/Validators/TestValidators.cs`):
+    - `StartTestSessionDtoValidator`: ExamTypeCodes 1–5, не пустые строки
+    - `CreateStudyGoalDtoValidator`: ExamTypeCode, TargetDate > now, TargetScore 1–2400
+    - `UpdateStudyGoalDtoValidator`, `CompleteEntryDtoValidator`, `MockExamSubmitAnswerDtoValidator`
+    - `CompleteOnboardingDtoValidator`, `DiagnosticAnswerDtoValidator`, `StartDiagnosticDtoValidator`
+    - `UpgradeRequestDtoValidator`: Plan ∈ {Pro, ProAnnual}
 
 ---
 
 ### 🟡 P2 — Масштабирование и удобство
 
-#### OP-12. Background jobs не мониторятся и не управляются
-- **Сейчас**: 2 `BackgroundService` — молча работают, при ошибке пишут `LogError` и продолжают. Нет retry, нет dead-letter, нет UI
+#### OP-12. ✅ Hangfire — фоновые задачи с мониторингом
 - **Фикс**:
-  - [ ] Hangfire (`Hangfire.AspNetCore` + `Hangfire.PostgreSql`):
-    - Streak reminder → `RecurringJob.AddOrUpdate("streak-reminder", ...)`
-    - Weekly digest → `RecurringJob.AddOrUpdate("weekly-digest", ...)`
-  - [ ] Dashboard: `/hangfire` (с авторизацией `[Authorize(Roles = "Admin")]`)
-  - [ ] Retry-политика: 3 попытки с экспоненциальным backoff
-  - [ ] Или минимально: admin endpoint `GET /api/admin/jobs/status` с последним временем выполнения и статусами
+  - [x] `Hangfire.AspNetCore 1.8.17` + `Hangfire.PostgreSql 1.20.10` NuGet
+  - [x] `IBackgroundJobsService` + `BackgroundJobsService` — экстракция логики из старых BackgroundService
+  - [x] `RecurringJob.AddOrUpdate("streak-reminder", ...)` — `0 */6 * * *` (каждые 6ч)
+  - [x] `RecurringJob.AddOrUpdate("weekly-digest", ...)` — `0 8 * * 1` (понедельник 08:00 UTC)
+  - [x] Dashboard: `/hangfire` с `HangfireAdminAuthFilter` (Admin в production, все в Development)
+  - [x] API: `GET /api/admin/jobs/status` — статус всех рекуррентных задач
+  - [x] API: `POST /api/admin/jobs/{jobId}/trigger` — ручной запуск
+  - [x] Hangfire авто-retry: 10 попыток с экспоненциальным backoff (встроенный)
 
-#### OP-13. Нет пагинации на admin-эндпоинтах
+#### OP-13. ✅ Нет пагинации на admin-эндпоинтах
 - **Сейчас**: `GET /api/admin/questions` и `GET /api/admin/users` возвращают ВСЕ записи. При 1000+ вопросах и 500+ пользователях — тормоза
 - **Фикс**:
-  - [ ] `page` + `pageSize` параметры на все list-эндпоинты
-  - [ ] `PagedResult<T>` DTO: `{ items[], totalCount, page, pageSize, totalPages }`
-  - [ ] Default `pageSize = 50`, max `pageSize = 200`
-  - [ ] Frontend: пагинация в `AdminQuestionsPage` и `AdminUsersPage`
+  - [x] `page` + `pageSize` параметры на все list-эндпоинты
+  - [x] `PagedResult<T>` DTO: `{ items[], totalCount, page, pageSize, totalPages }`
+  - [x] Default `pageSize = 50`, max `pageSize = 200`
+  - [x] Frontend: пагинация в `AdminQuestionsPage` и `AdminUsersPage` (« ‹ page/total › » навигация, сброс страницы при изменении фильтров)
 
-#### OP-14. Блокировка/деактивация пользователей
+#### OP-14. ✅ Блокировка/деактивация пользователей
 - **Сейчас**: единственный вариант — удалить пользователя (hard delete). Нет suspend/ban
 - **Фикс**:
-  - [ ] Поля в `User`: `IsBlocked (bool)`, `BlockedAt (DateTime?)`, `BlockReason (string?)`
-  - [ ] Middleware: проверять `IsBlocked` на каждый авторизованный запрос → 403 Forbidden
-  - [ ] Admin API: `POST /api/admin/users/{id}/block`, `POST /api/admin/users/{id}/unblock`
-  - [ ] Admin UI: кнопка «Заблокировать» в карточке пользователя
-  - [ ] Email-уведомление пользователю при блокировке
+  - [x] Поля в `User`: `IsBlocked (bool)`, `BlockedAt (DateTime?)`, `BlockReason (string? MaxLength=500)`
+  - [x] Middleware в `Program.cs`: проверять `IsBlocked` после `UseAuthorization()` → 403 Forbidden (RFC 7807 ProblemDetails)
+  - [x] Admin API: `POST /api/admin/users/{id}/block` (с reason), `POST /api/admin/users/{id}/unblock` + audit logging
+  - [x] Admin UI: кнопка «🚫 Заблокировать / ✅ Разблокировать» в карточке пользователя, 🚫 индикатор в списке, блок статус-карточка
+  - [x] Защита: нельзя заблокировать Admin-пользователя
+  - [x] Миграция `AddUserBlockFields`
+  - [ ] Email-уведомление пользователю при блокировке (позже)
 
-#### OP-15. Нет API versioning
+#### OP-15. ✅ Нет API versioning
 - **Сейчас**: все маршруты `/api/...` без версии. Любое breaking change ломает всех клиентов
 - **Фикс**:
-  - [ ] NuGet: `Asp.Versioning.Http` + `Asp.Versioning.Mvc`
-  - [ ] URL-based: `/api/v1/...` (самый простой, рекомендуется для начала)
-  - [ ] `[ApiVersion("1.0")]` на все существующие контроллеры
-  - [ ] Swagger отдельные doc-group по версиям
+  - [x] NuGet: `Asp.Versioning.Mvc` + `Asp.Versioning.Mvc.ApiExplorer`
+  - [x] Non-breaking: Header (`x-api-version`) + Query string (`api-version`) — не ломает текущие маршруты
+  - [x] `AssumeDefaultVersionWhenUnspecified = true`, `DefaultApiVersion = 1.0`, `ReportApiVersions = true`
+  - [x] `[ApiVersion("1.0")]` на все 15 контроллеров
+  - [x] `.AddApiExplorer(opts => { opts.GroupNameFormat = "'v'VVV"; })`
 
-#### OP-16. Аудит-колонки не полные
+#### OP-16. ✅ Аудит-колонки не полные
 - **Сейчас**: `User` ← `CreatedAt`, `UpdatedAt`. `Question` ← `CreatedAt` only. Большинство сущностей — ничего
 - **Фикс**:
-  - [ ] Интерфейс `IAuditable`: `DateTime CreatedAt`, `DateTime? UpdatedAt`, `int? CreatedBy`, `int? UpdatedBy`
-  - [ ] Применить к: `Question`, `Topic`, `ExamSection`, `StudyPlan`, `StudyPlanEntry`, `MockExamAttempt`
-  - [ ] `DbContext.SaveChangesAsync` override — автозаполнение:
-    ```csharp
-    foreach (var entry in ChangeTracker.Entries<IAuditable>())
-    {
-        if (entry.State == EntityState.Added) entry.Entity.CreatedAt = DateTime.UtcNow;
-        if (entry.State == EntityState.Modified) entry.Entity.UpdatedAt = DateTime.UtcNow;
-    }
-    ```
-  - [ ] Миграция для добавления колонок
+  - [x] Интерфейс `IAuditable`: `DateTime CreatedAt`, `DateTime? UpdatedAt` (`Domain/Entities/IAuditable.cs`)
+  - [x] Применено к: `User`, `Question` (+UpdatedAt), `StudyGoal` (+UpdatedAt), `Topic` (+CreatedAt, UpdatedAt)
+  - [x] `UniStartDbContext.SaveChangesAsync` override — автозаполнение:
+    - `EntityState.Added` → `CreatedAt = DateTime.UtcNow`
+    - `EntityState.Modified` → `UpdatedAt = DateTime.UtcNow`, защита `CreatedAt` от изменения
+  - [x] Миграция `AddAuditableColumns`
 
-#### OP-17. Нет сжатия ответов (Response Compression)
+#### OP-17. ✅ Нет сжатия ответов (Response Compression)
 - **Сейчас**: API отдаёт JSON без сжатия. При больших ответах (список вопросов, аналитика) — лишний трафик
 - **Фикс**:
-  - [ ] `builder.Services.AddResponseCompression(opts => { opts.EnableForHttps = true; })`
-  - [ ] `.AddResponseCompression().AddBrotliCompression().AddGzipCompression()`
-  - [ ] `app.UseResponseCompression()` перед `UseRouting`
+  - [x] `builder.Services.AddResponseCompression(opts => { opts.EnableForHttps = true; })`
+  - [x] Brotli + Gzip провайдеры зарегистрированы
+  - [x] `app.UseResponseCompression()` — в pipeline перед routing
 
-#### OP-18. Нет экспорта данных
+#### OP-18. ✅ Нет экспорта данных
 - **Сейчас**: ни один endpoint не отдаёт CSV/Excel. Админ не может выгрузить вопросы, пользователей, ответы
 - **Фикс**:
-  - [ ] `GET /api/admin/questions/export?format=csv` → CSV файл
-  - [ ] `GET /api/admin/users/export?format=csv` → CSV файл
-  - [ ] `GET /api/admin/analytics/export?from=&to=` → UserAnswers за период
-  - [ ] NuGet: `CsvHelper` для генерации CSV
-  - [ ] Frontend: кнопки «📥 Экспорт CSV» в разделах вопросов и пользователей
+  - [x] `GET /api/admin/questions/export?examTypeCode=&difficulty=` → CSV файл (UTF-8 BOM для Excel)
+  - [x] `GET /api/admin/users/export?role=` → CSV файл
+  - [x] NuGet: `CsvHelper 33.1.0` + ручной `BuildCsv<T>()` с `CsvEscape()` для корректного quoting
+  - [x] Frontend: `exportQuestionsCsv()` / `exportUsersCsv()` — blob download через `adminService.ts`
+  - [x] 📥 CSV кнопки: `AdminQuestionsPage.tsx`, `AdminUsersPage.tsx`
+  - [ ] `GET /api/admin/analytics/export?from=&to=` → UserAnswers за период (позже)
 
-#### OP-19. CORS захардкожен на localhost
+#### OP-19. ✅ CORS захардкожен на localhost
 - **Сейчас**: `WithOrigins("http://localhost:3000", "http://localhost:5173")` — фронтенд на production-домене не сможет обращаться к API
 - **Фикс**:
-  - [ ] Вынести origins в конфигурацию: `appsettings.json` → `"CorsOrigins": ["http://localhost:5173"]`
-  - [ ] `appsettings.Production.json` → `"CorsOrigins": ["https://unistart.kz", "https://www.unistart.kz"]`
-  - [ ] `builder.Configuration.GetSection("CorsOrigins").Get<string[]>()`
+  - [x] `appsettings.json` → `"CorsOrigins": ["http://localhost:3000", "http://localhost:5173"]`
+  - [x] `appsettings.Production.json` → `"CorsOrigins": ["https://unistart.kz", "https://www.unistart.kz"]`
+  - [x] `builder.Configuration.GetSection("CorsOrigins").Get<string[]>()` — динамическая загрузка origins
 
-#### OP-20. Нет бэкапов и стратегии восстановления
-- **Сейчас**: ноль. При падении VPS или ошибке — потеря всех данных
+#### OP-20. ✅ Бэкапы и восстановление
 - **Фикс**:
-  - [ ] Скрипт `backup.sh`: `pg_dump` → сжатие → загрузка в S3/R2
-  - [ ] Cron: ежедневный бэкап (03:00 UTC), еженедельный полный
-  - [ ] Retention: 7 ежедневных + 4 еженедельных + 2 ежемесячных
-  - [ ] `restore.sh` — документированный процесс восстановления
+  - [x] `scripts/backup.sh` — `pg_dump` → gzip, поддержка daily/weekly/monthly, опциональный S3 upload
+  - [x] `scripts/restore.sh` — документированный процесс восстановления с верификацией
+  - [x] `scripts/backup-cron.txt` — cron-конфигурация (daily 03:00, weekly Sun 04:00, monthly 1st 05:00)
+  - [x] Retention: 7 daily + 4 weekly + 2 monthly
   - [ ] Тестирование восстановления 1 раз в месяц
-  - [ ] Альтернатива: managed PostgreSQL (DigitalOcean/Hetzner) с автоматическими бэкапами
+  - [ ] Альтернатива: managed PostgreSQL с автобэкапами
 
 #### OP-21. Нет OpenTelemetry / метрик
 - **Сейчас**: ноль наблюдаемости в production. Нет метрик, нет трейсов
@@ -522,29 +521,30 @@
   - [ ] Metrics → Prometheus + Grafana
   - [ ] Или Application Insights (Azure, 5 GB/мес бесплатно)
 
-#### OP-22. Нет Feature Flags
-- **Сейчас**: для включения/отключения функциональности нужен redeployment
-- **Фикс** (при росте):
-  - [ ] `Microsoft.FeatureManagement.AspNetCore` NuGet
-  - [ ] Конфигурация в `appsettings.json`: `"FeatureFlags": { "MockExams": true, "WeeklyDigest": false }`
-  - [ ] `[FeatureGate("MockExams")]` на контроллерах
-  - [ ] Admin UI: переключатели features
-
-#### OP-23. Admin-панель — недостающие страницы
-- **Сейчас**: Questions CRUD + Users + Import + Stats. Нет обзора системного здоровья
+#### OP-22. ✅ Feature Flags
+- **Сейчас**: включение/выключение функций без redeployment через конфигурацию
 - **Фикс**:
-  - [ ] **Audit Logs** — страница с таблицей всех admin-действий (→ зависит от OP-7)
+  - [x] `Microsoft.FeatureManagement.AspNetCore 4.0.0` NuGet
+  - [x] `builder.Services.AddFeatureManagement()` в `Program.cs`
+  - [x] Конфигурация в `appsettings.json` → `"FeatureManagement"`: 7 флагов (MockExams, WeeklyDigest, StreakReminder, ScorePrediction, StudyPlan, Recommendations, CsvExport)
+  - [x] `[FeatureGate]` на контроллерах: MockExamController, PredictionController, RecommendationController, StudyPlanController, AdminController (экспорт)
+  - [ ] Admin UI: переключатели features (позже)
+
+#### OP-23. 🔶 Admin-панель — недостающие страницы
+- **Сейчас**: Questions CRUD + Users + Import + Stats + **Audit Logs**
+- **Фикс**:
+  - [x] **Audit Logs** — `AdminAuditLogsPage.tsx`: таблица admin-действий с фильтрами (action, entityType, userId, даты), expandable rows (old/new values JSON), цветовые badge по типу действия, пагинация
   - [ ] **System Health** — статус БД, background jobs, SMTP, uptime, версия API
   - [ ] **User Activity** — детальный просмотр действий конкретного пользователя (сессии, ответы, даты)
   - [ ] **Announcements** — массовая рассылка уведомлений
   - [ ] **Password Reset** — сброс пароля пользователю из админки
   - [ ] **Real-time Dashboard** — активные пользователи, текущие сессии (SignalR, позже)
 
-#### OP-24. Нет тестов — ни одного
-- **Сейчас**: 0 test-проектов, 0 unit-тестов, 0 integration-тестов
+#### OP-24. 🔶 Тесты (started)
 - **Фикс**:
-  - [ ] `UniStart.Tests` (xUnit + Moq + FluentAssertions)
-  - [ ] Unit-тесты: `IrtMath`, `AdaptiveEngineService`, `StudyPlanService`, `ScorePredictionService`
+  - [x] `UniStart.Tests` (xUnit 2.9 + Moq 4.20 + FluentAssertions 7.2)
+  - [x] 40 unit-тестов для `IrtMath`: 3PL probability, Fisher information, EAP estimation, theta↔level, forgetting curve, item selection, posterior collapse regression
+  - [ ] Unit-тесты: `AdaptiveEngineService`, `StudyPlanService`, `ScorePredictionService`
   - [ ] Integration-тесты: `WebApplicationFactory` + `TestContainers` (PostgreSQL)
   - [ ] Frontend: Vitest + React Testing Library
   - [ ] Покрытие ≥ 60% для бизнес-логики
@@ -554,34 +554,35 @@
 
 ### 📋 Сводная матрица приоритетов
 
-| Приоритет | ID | Задача | Сложность | Эффект |
-|-----------|-----|--------|-----------|--------|
-| **P0** | OP-1 | Вынести секреты из кода | 🟢 Лёгко | 🔴 Критично |
-| **P0** | OP-2 | Rate Limiting | 🟢 Лёгко | 🔴 Критично |
-| **P0** | OP-3 | Security Headers | 🟢 Лёгко | 🔴 Критично |
-| **P0** | OP-4 | Global Exception Handler | 🟡 Средне | 🔴 Критично |
-| **P1** | OP-5 | Serilog + structured logging | 🟡 Средне | 🟠 Важно |
-| **P1** | OP-6 | Health Checks | 🟢 Лёгко | 🟠 Важно |
-| **P1** | OP-7 | Audit Log (сущность + API) | 🟡 Средне | 🟠 Важно |
-| **P1** | OP-8 | Индексы БД | 🟢 Лёгко | 🟠 Важно |
-| **P1** | OP-9 | Soft Delete | 🟡 Средне | 🟠 Важно |
-| **P1** | OP-10 | IMemoryCache | 🟢 Лёгко | 🟠 Важно |
-| **P1** | OP-11 | FluentValidation на DTO | 🟡 Средне | 🟠 Важно |
-| **P2** | OP-12 | Hangfire / job monitoring | 🟡 Средне | 🟡 Желательно |
-| **P2** | OP-13 | Пагинация admin API | 🟢 Лёгко | 🟡 Желательно |
-| **P2** | OP-14 | Block/Suspend users | 🟡 Средне | 🟡 Желательно |
-| **P2** | OP-15 | API versioning | 🟢 Лёгко | 🟡 Желательно |
-| **P2** | OP-16 | Аудит-колонки (IAuditable) | 🟡 Средне | 🟡 Желательно |
-| **P2** | OP-17 | Response Compression | 🟢 Лёгко | 🟡 Желательно |
-| **P2** | OP-18 | Экспорт CSV | 🟡 Средне | 🟡 Желательно |
-| **P2** | OP-19 | CORS из конфигурации | 🟢 Лёгко | 🟡 Желательно |
-| **P2** | OP-20 | Бэкапы | 🟡 Средне | 🟠 Важно |
-| **P2** | OP-21 | OpenTelemetry | 🔴 Сложно | 🟡 Желательно |
-| **P2** | OP-22 | Feature Flags | 🟢 Лёгко | 🟡 Желательно |
-| **P2** | OP-23 | Admin-панель доп. страницы | 🔴 Сложно | 🟡 Желательно |
-| **P2** | OP-24 | Тесты (unit + integration) | 🔴 Сложно | 🟠 Важно |
+| Приоритет | ID | Задача | Сложность | Эффект | Статус |
+|-----------|-----|--------|-----------|--------|--------|
+| **P0** | OP-1 | Вынести секреты из кода | 🟢 Лёгко | 🔴 Критично | ✅ Done |
+| **P0** | OP-2 | Rate Limiting | 🟢 Лёгко | 🔴 Критично | ✅ Done |
+| **P0** | OP-3 | Security Headers | 🟢 Лёгко | 🔴 Критично | ✅ Done |
+| **P0** | OP-4 | Global Exception Handler | 🟡 Средне | 🔴 Критично | ✅ Done |
+| **P1** | OP-5 | Serilog + structured logging | 🟡 Средне | 🟠 Важно | ✅ Done |
+| **P1** | OP-6 | Health Checks | 🟢 Лёгко | 🟠 Важно | ✅ Done |
+| **P1** | OP-7 | Audit Log (сущность + API) | 🟡 Средне | 🟠 Важно | ✅ Done |
+| **P1** | OP-8 | Индексы БД | 🟢 Лёгко | 🟠 Важно | ✅ Done |
+| **P1** | OP-9 | Soft Delete | 🟡 Средне | 🟠 Важно | ✅ Done |
+| **P1** | OP-10 | IMemoryCache | 🟢 Лёгко | 🟠 Важно | ✅ Done |
+| **P1** | OP-11 | FluentValidation на DTO | 🟡 Средне | 🟠 Важно | ✅ Done |
+| **P2** | OP-12 | Hangfire / job monitoring | 🟡 Средне | 🟡 Желательно | ✅ Done |
+| **P2** | OP-13 | Пагинация admin API | 🟢 Лёгко | 🟡 Желательно | ✅ Done |
+| **P2** | OP-14 | Block/Suspend users | 🟡 Средне | 🟡 Желательно | ✅ Done |
+| **P2** | OP-15 | API versioning | 🟢 Лёгко | 🟡 Желательно | ✅ Done |
+| **P2** | OP-16 | Аудит-колонки (IAuditable) | 🟡 Средне | 🟡 Желательно | ✅ Done |
+| **P2** | OP-17 | Response Compression | 🟢 Лёгко | 🟡 Желательно | ✅ Done |
+| **P2** | OP-18 | Экспорт CSV | 🟡 Средне | 🟡 Желательно | ✅ Done |
+| **P2** | OP-19 | CORS из конфигурации | 🟢 Лёгко | 🟡 Желательно | ✅ Done |
+| **P2** | OP-20 | Бэкапы | 🟡 Средне | 🟠 Важно | ✅ Done |
+| **P2** | OP-21 | OpenTelemetry | 🔴 Сложно | 🟡 Желательно | ⬜ |
+| **P2** | OP-22 | Feature Flags | 🟢 Лёгко | 🟡 Желательно | ✅ Done |
+| **P2** | OP-23 | Admin-панель доп. страницы | 🔴 Сложно | 🟡 Желательно | 🔶 Partial |
+| **P2** | OP-24 | Тесты (unit + integration) | 🔴 Сложно | 🟠 Важно | 🔶 Partial |
 
-> **Рекомендуемый порядок**: OP-1 → OP-4 → OP-2 → OP-3 → OP-5 → OP-6 → OP-8 → OP-10 → OP-11 → OP-7 → OP-9 → OP-13 → OP-20 → OP-24 → остальное
+> **Прогресс**: 22/24 выполнено + 2 частично (все P0, все P1, все P2 кроме OP-21). 5/5 критических + 8 важных багов исправлены. 40 unit-тестов.
+> **Осталось**: OP-21 (OpenTelemetry, опционально) + доп. тесты + доп. admin-страницы
 
 ---
 

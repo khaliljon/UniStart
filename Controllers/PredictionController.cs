@@ -1,14 +1,18 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.FeatureManagement.Mvc;
 using UniStart.Application.DTOs;
 using UniStart.Application.Interfaces;
+using Asp.Versioning;
 
 namespace UniStart.Controllers;
 
 [ApiController]
 [Route("api/prediction")]
 [Authorize]
+[ApiVersion("1.0")]
+[FeatureGate("ScorePrediction")]
 public class PredictionController : ControllerBase
 {
     private readonly IScorePredictionService _service;

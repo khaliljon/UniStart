@@ -3,12 +3,14 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UniStart.Application.DTOs;
 using UniStart.Application.Interfaces;
+using Asp.Versioning;
 
 namespace UniStart.Controllers;
 
 [ApiController]
 [Route("api/onboarding")]
 [Authorize]
+[ApiVersion("1.0")]
 public class OnboardingController : ControllerBase
 {
     private readonly IOnboardingService _onboardingService;

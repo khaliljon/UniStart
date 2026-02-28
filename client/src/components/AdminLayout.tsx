@@ -54,6 +54,21 @@ function AdminLayout() {
                 📥 Импорт
               </NavLink>
             </li>
+            <li>
+              <NavLink to="/audit">
+                📜 Аудит
+              </NavLink>
+            </li>
+            <li>
+              <NavLink to="/health">
+                🏥 Здоровье
+              </NavLink>
+            </li>
+            <li>
+              <NavLink to="/activity">
+                👤 Активность
+              </NavLink>
+            </li>
           </ul>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
