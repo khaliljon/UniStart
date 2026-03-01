@@ -114,6 +114,12 @@ public class DatabaseSeeder
             await SeedMockExamsAsync();
         }
 
+        // Seed tutor profiles, reviews, and conversations
+        if (!await _context.TutorProfiles.AnyAsync())
+        {
+            await SeedTutorDataAsync();
+        }
+
         await _context.SaveChangesAsync();
     }
 
@@ -1439,5 +1445,246 @@ The implications of these findings have been profound. In the field of behaviora
 
         await _context.MockExams.AddRangeAsync(mockExams);
         await _context.SaveChangesAsync();
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  T-5  TUTOR SEED DATA
+    // ═══════════════════════════════════════════════════════
+    private async Task SeedTutorDataAsync()
+    {
+        // --- 1. Create tutor users ---
+        var tutors = new[]
+        {
+            new User
+            {
+                Email = "tutor.elena@unistart.kz",
+                Name = "Елена Смирнова",
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("tutor123"),
+                Role = UserRole.Tutor,
+                HasCompletedOnboarding = true,
+                CreatedAt = DateTime.UtcNow.AddMonths(-6)
+            },
+            new User
+            {
+                Email = "tutor.dmitry@unistart.kz",
+                Name = "Дмитрий Козлов",
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("tutor123"),
+                Role = UserRole.Tutor,
+                HasCompletedOnboarding = true,
+                CreatedAt = DateTime.UtcNow.AddMonths(-4)
+            },
+            new User
+            {
+                Email = "tutor.anna@unistart.kz",
+                Name = "Анна Волкова",
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("tutor123"),
+                Role = UserRole.Tutor,
+                HasCompletedOnboarding = true,
+                CreatedAt = DateTime.UtcNow.AddMonths(-2)
+            }
+        };
+
+        await _context.Users.AddRangeAsync(tutors);
+        await _context.SaveChangesAsync();
+
+        // --- 2. Create tutor profiles ---
+        var profiles = new[]
+        {
+            new TutorProfile
+            {
+                UserId = tutors[0].Id,
+                Headline = "Эксперт ЕГЭ по математике и физике",
+                Bio = "Преподаю математику и физику более 10 лет. Мои ученики стабильно набирают 90+ баллов на ЕГЭ. Индивидуальный подход к каждому студенту.",
+                Experience = "Кандидат физико-математических наук. 12 лет преподавания в МФТИ. Автор учебных пособий по подготовке к ЕГЭ.",
+                Specializations = "EGE,OGE",
+                HourlyRate = 2500m,
+                IsAvailable = true,
+                IsVerified = true,
+                ContactPreference = ContactPreference.Both,
+                AverageRating = 4.8m,
+                TotalReviews = 3,
+                TotalStudents = 2,
+                CreatedAt = DateTime.UtcNow.AddMonths(-6),
+                UpdatedAt = DateTime.UtcNow
+            },
+            new TutorProfile
+            {
+                UserId = tutors[1].Id,
+                Headline = "IELTS/TOEFL Preparation Specialist",
+                Bio = "Certified IELTS instructor with 8+ years of experience. Band 9.0 holder. I help students achieve their target scores efficiently through proven strategies.",
+                Experience = "MA in Applied Linguistics. Cambridge CELTA certified. Former British Council examiner. 500+ students prepared.",
+                Specializations = "IELTS,TOEFL,SAT",
+                HourlyRate = 3000m,
+                IsAvailable = true,
+                IsVerified = true,
+                ContactPreference = ContactPreference.Chat,
+                AverageRating = 4.6m,
+                TotalReviews = 2,
+                TotalStudents = 1,
+                CreatedAt = DateTime.UtcNow.AddMonths(-4),
+                UpdatedAt = DateTime.UtcNow
+            },
+            new TutorProfile
+            {
+                UserId = tutors[2].Id,
+                Headline = "Подготовка к SAT и международным экзаменам",
+                Bio = "Помогаю студентам подготовиться к SAT, ACT и другим международным тестам. Фокус на академическом английском и критическом мышлении.",
+                Experience = "Выпускница Columbia University. 5 лет опыта подготовки к SAT. Средний прирост студентов — 200 баллов.",
+                Specializations = "SAT,IELTS",
+                HourlyRate = 2000m,
+                IsAvailable = false,
+                IsVerified = false,
+                ContactPreference = ContactPreference.Email,
+                AverageRating = 4.9m,
+                TotalReviews = 2,
+                TotalStudents = 1,
+                CreatedAt = DateTime.UtcNow.AddMonths(-2),
+                UpdatedAt = DateTime.UtcNow
+            }
+        };
+
+        await _context.TutorProfiles.AddRangeAsync(profiles);
+        await _context.SaveChangesAsync();
+
+        // --- 3. Schedule slots ---
+        var scheduleSlots = new List<TutorScheduleSlot>();
+
+        // Elena — weekdays 10:00-18:00
+        foreach (var dow in new[] { DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday })
+        {
+            scheduleSlots.Add(new TutorScheduleSlot
+            {
+                TutorProfileId = profiles[0].Id,
+                DayOfWeek = dow,
+                StartTime = new TimeOnly(10, 0),
+                EndTime = new TimeOnly(18, 0)
+            });
+        }
+
+        // Dmitry — Mon, Wed, Fri 14:00-20:00
+        foreach (var dow in new[] { DayOfWeek.Monday, DayOfWeek.Wednesday, DayOfWeek.Friday })
+        {
+            scheduleSlots.Add(new TutorScheduleSlot
+            {
+                TutorProfileId = profiles[1].Id,
+                DayOfWeek = dow,
+                StartTime = new TimeOnly(14, 0),
+                EndTime = new TimeOnly(20, 0)
+            });
+        }
+
+        // Anna — Sat, Sun 09:00-15:00
+        foreach (var dow in new[] { DayOfWeek.Saturday, DayOfWeek.Sunday })
+        {
+            scheduleSlots.Add(new TutorScheduleSlot
+            {
+                TutorProfileId = profiles[2].Id,
+                DayOfWeek = dow,
+                StartTime = new TimeOnly(9, 0),
+                EndTime = new TimeOnly(15, 0)
+            });
+        }
+
+        await _context.TutorScheduleSlots.AddRangeAsync(scheduleSlots);
+        await _context.SaveChangesAsync();
+
+        // --- 4. Reviews (from test user) ---
+        var testUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == "test@unistart.kz");
+        if (testUser != null)
+        {
+            var reviews = new[]
+            {
+                new TutorReview
+                {
+                    TutorProfileId = profiles[0].Id,
+                    StudentId = testUser.Id,
+                    Rating = 5,
+                    Comment = "Отличный преподаватель! За три месяца подняла балл с 60 до 92. Очень рекомендую!",
+                    CreatedAt = DateTime.UtcNow.AddDays(-30)
+                },
+                new TutorReview
+                {
+                    TutorProfileId = profiles[1].Id,
+                    StudentId = testUser.Id,
+                    Rating = 5,
+                    Comment = "Fantastic teacher! Helped me get IELTS 7.5 in just 2 months of preparation.",
+                    CreatedAt = DateTime.UtcNow.AddDays(-20)
+                },
+                new TutorReview
+                {
+                    TutorProfileId = profiles[2].Id,
+                    StudentId = testUser.Id,
+                    Rating = 5,
+                    Comment = "Анна помогла структурировать подготовку к SAT. Очень системный подход.",
+                    CreatedAt = DateTime.UtcNow.AddDays(-10)
+                }
+            };
+
+            await _context.TutorReviews.AddRangeAsync(reviews);
+            await _context.SaveChangesAsync();
+
+            // --- 5. Test conversation + messages ---
+            var conversation = new Conversation
+            {
+                StudentId = testUser.Id,
+                TutorId = tutors[0].Id,
+                LastMessagePreview = "Спасибо, до встречи!",
+                LastMessageAt = DateTime.UtcNow.AddHours(-2),
+                UnreadCountStudent = 1,
+                UnreadCountTutor = 0,
+                Status = ConversationStatus.Active,
+                CreatedAt = DateTime.UtcNow.AddDays(-7)
+            };
+
+            await _context.Conversations.AddAsync(conversation);
+            await _context.SaveChangesAsync();
+
+            var messages = new[]
+            {
+                new Message
+                {
+                    ConversationId = conversation.Id,
+                    SenderId = testUser.Id,
+                    Text = "Здравствуйте, Елена! Хочу подготовиться к ЕГЭ по математике. Можете помочь?",
+                    SentAt = DateTime.UtcNow.AddDays(-7),
+                    Type = MessageType.Text
+                },
+                new Message
+                {
+                    ConversationId = conversation.Id,
+                    SenderId = tutors[0].Id,
+                    Text = "Здравствуйте! Конечно, с удовольствием помогу. Какой у вас текущий уровень? Сколько времени до экзамена?",
+                    SentAt = DateTime.UtcNow.AddDays(-7).AddMinutes(15),
+                    Type = MessageType.Text
+                },
+                new Message
+                {
+                    ConversationId = conversation.Id,
+                    SenderId = testUser.Id,
+                    Text = "Пробник написала на 65 баллов. До экзамена 4 месяца.",
+                    SentAt = DateTime.UtcNow.AddDays(-7).AddMinutes(30),
+                    Type = MessageType.Text
+                },
+                new Message
+                {
+                    ConversationId = conversation.Id,
+                    SenderId = tutors[0].Id,
+                    Text = "Отлично, за 4 месяца есть все шансы выйти на 85+. Давайте начнём с диагностики — пройдите тест на платформе, и мы обсудим план.",
+                    SentAt = DateTime.UtcNow.AddDays(-6).AddHours(10),
+                    Type = MessageType.Text
+                },
+                new Message
+                {
+                    ConversationId = conversation.Id,
+                    SenderId = tutors[0].Id,
+                    Text = "Спасибо, до встречи!",
+                    SentAt = DateTime.UtcNow.AddHours(-2),
+                    Type = MessageType.Text
+                }
+            };
+
+            await _context.Messages.AddRangeAsync(messages);
+            await _context.SaveChangesAsync();
+        }
     }
 }

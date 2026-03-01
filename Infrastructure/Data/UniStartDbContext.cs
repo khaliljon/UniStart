@@ -32,6 +32,11 @@ public class UniStartDbContext : DbContext
     public DbSet<MockExamAnswer> MockExamAnswers => Set<MockExamAnswer>();
     public DbSet<NotificationPreferences> NotificationPreferences => Set<NotificationPreferences>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<TutorProfile> TutorProfiles => Set<TutorProfile>();
+    public DbSet<TutorScheduleSlot> TutorScheduleSlots => Set<TutorScheduleSlot>();
+    public DbSet<TutorReview> TutorReviews => Set<TutorReview>();
+    public DbSet<Conversation> Conversations => Set<Conversation>();
+    public DbSet<Message> Messages => Set<Message>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -421,6 +426,108 @@ public class UniStartDbContext : DbContext
             entity.HasIndex(e => e.Timestamp).HasDatabaseName("IX_AuditLogs_Timestamp");
             entity.HasIndex(e => new { e.EntityType, e.EntityId }).HasDatabaseName("IX_AuditLogs_Entity");
             entity.HasIndex(e => e.UserId).HasDatabaseName("IX_AuditLogs_UserId");
+        });
+
+        // ─── Tutor Profile ─────────────────────────────────
+        modelBuilder.Entity<TutorProfile>(entity =>
+        {
+            entity.ToTable("TutorProfiles");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Headline).HasMaxLength(200);
+            entity.Property(e => e.Bio).HasMaxLength(2000);
+            entity.Property(e => e.Experience).HasMaxLength(1000);
+            entity.Property(e => e.AvatarUrl).HasMaxLength(500);
+            entity.Property(e => e.Specializations).HasMaxLength(100);
+            entity.Property(e => e.HourlyRate).HasPrecision(10, 2);
+            entity.Property(e => e.AverageRating).HasPrecision(3, 2);
+            entity.Property(e => e.IsAvailable).HasDefaultValue(true);
+            entity.Property(e => e.IsVerified).HasDefaultValue(false);
+            entity.Property(e => e.ContactPreference)
+                  .HasConversion<string>()
+                  .HasMaxLength(10);
+            entity.HasOne(e => e.User)
+                  .WithOne(u => u.TutorProfile)
+                  .HasForeignKey<TutorProfile>(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(e => e.UserId).IsUnique();
+            entity.HasIndex(e => e.IsAvailable).HasDatabaseName("IX_TutorProfiles_IsAvailable");
+        });
+
+        // ─── Tutor Schedule Slot ────────────────────────────
+        modelBuilder.Entity<TutorScheduleSlot>(entity =>
+        {
+            entity.ToTable("TutorScheduleSlots");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.DayOfWeek).HasConversion<int>();
+            entity.HasOne(e => e.TutorProfile)
+                  .WithMany(tp => tp.Schedule)
+                  .HasForeignKey(e => e.TutorProfileId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ─── Tutor Review ──────────────────────────────────
+        modelBuilder.Entity<TutorReview>(entity =>
+        {
+            entity.ToTable("TutorReviews");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Comment).HasMaxLength(1000);
+            entity.HasOne(e => e.TutorProfile)
+                  .WithMany(tp => tp.Reviews)
+                  .HasForeignKey(e => e.TutorProfileId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Student)
+                  .WithMany()
+                  .HasForeignKey(e => e.StudentId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            // One review per student per tutor
+            entity.HasIndex(e => new { e.TutorProfileId, e.StudentId })
+                  .IsUnique()
+                  .HasDatabaseName("IX_TutorReviews_Tutor_Student");
+        });
+
+        // ─── Conversation ──────────────────────────────────
+        modelBuilder.Entity<Conversation>(entity =>
+        {
+            entity.ToTable("Conversations");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.LastMessagePreview).HasMaxLength(100);
+            entity.Property(e => e.Status)
+                  .HasConversion<string>()
+                  .HasMaxLength(20);
+            entity.HasOne(e => e.Student)
+                  .WithMany()
+                  .HasForeignKey(e => e.StudentId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Tutor)
+                  .WithMany()
+                  .HasForeignKey(e => e.TutorId)
+                  .OnDelete(DeleteBehavior.Restrict);
+            // One conversation per student-tutor pair
+            entity.HasIndex(e => new { e.StudentId, e.TutorId })
+                  .IsUnique()
+                  .HasDatabaseName("IX_Conversations_Student_Tutor");
+            entity.HasIndex(e => e.LastMessageAt).HasDatabaseName("IX_Conversations_LastMessageAt");
+        });
+
+        // ─── Message ───────────────────────────────────────
+        modelBuilder.Entity<Message>(entity =>
+        {
+            entity.ToTable("Messages");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Text).HasMaxLength(4000).IsRequired();
+            entity.Property(e => e.Type)
+                  .HasConversion<string>()
+                  .HasMaxLength(10);
+            entity.HasOne(e => e.Conversation)
+                  .WithMany(c => c.Messages)
+                  .HasForeignKey(e => e.ConversationId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Sender)
+                  .WithMany()
+                  .HasForeignKey(e => e.SenderId)
+                  .OnDelete(DeleteBehavior.Restrict);
+            entity.HasIndex(e => new { e.ConversationId, e.SentAt })
+                  .HasDatabaseName("IX_Messages_Conversation_SentAt");
         });
 
         // Seed exam types

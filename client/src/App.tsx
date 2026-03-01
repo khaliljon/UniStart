@@ -20,6 +20,10 @@ import AdminAuditLogsPage from './pages/AdminAuditLogsPage'
 import AdminSystemHealthPage from './pages/AdminSystemHealthPage'
 import AdminUserActivityPage from './pages/AdminUserActivityPage'
 import LandingPage from './pages/LandingPage'
+import TutorsPage from './pages/TutorsPage'
+import TutorProfilePage from './pages/TutorProfilePage'
+import MessagesPage from './pages/MessagesPage'
+import TutorDashboardPage from './pages/TutorDashboardPage'
 
 function StudentRoutes() {
   return (
@@ -31,6 +35,10 @@ function StudentRoutes() {
       <Route path="profile" element={<ProfilePage />} />
       <Route path="profile/notifications" element={<NotificationSettingsPage />} />
       <Route path="diagnostic" element={<DiagnosticTestPage />} />
+      <Route path="tutors" element={<TutorsPage />} />
+      <Route path="tutors/:userId" element={<TutorProfilePage />} />
+      <Route path="messages" element={<MessagesPage />} />
+      <Route path="tutor/dashboard" element={<TutorDashboardPage />} />
       {/* Legacy redirects */}
       <Route path="test" element={<Navigate to="/learn" replace />} />
       <Route path="mock-exam" element={<Navigate to="/learn?tab=mock" replace />} />

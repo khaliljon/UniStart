@@ -20,6 +20,7 @@ using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.FeatureManagement;
 using UniStart.Application.Validators;
+using UniStart.Hubs;
 using UniStart.Infrastructure.Data;
 using UniStart.Infrastructure.Repositories;
 
@@ -82,6 +83,13 @@ try
     builder.Services.AddScoped<INotificationService, NotificationService>();
     builder.Services.AddScoped<IAuditService, AuditService>();
     builder.Services.AddScoped<IBackgroundJobsService, BackgroundJobsService>();
+    builder.Services.AddScoped<ITutorService, TutorService>();
+    builder.Services.AddScoped<IMessageService, MessageService>();
+
+    // ═══════════════════════════════════════════════════════
+    //  SIGNALR — Real-time Chat
+    // ═══════════════════════════════════════════════════════
+    builder.Services.AddSignalR();
 
     // ═══════════════════════════════════════════════════════
     //  HANGFIRE — Background Job Processing (OP-12)
@@ -147,6 +155,21 @@ try
             ValidAudience = jwtSettings["Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
             ClockSkew = TimeSpan.Zero
+        };
+
+        // SignalR passes JWT via query string for WebSocket connections
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+                var path = context.HttpContext.Request.Path;
+                if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+                {
+                    context.Token = accessToken;
+                }
+                return Task.CompletedTask;
+            }
         };
     });
 
@@ -423,6 +446,7 @@ try
     });
 
     app.MapControllers();
+    app.MapHub<ChatHub>("/hubs/chat");
 
     // ═══════════════════════════════════════════════════════
     //  HEALTH CHECK ENDPOINTS (OP-6)

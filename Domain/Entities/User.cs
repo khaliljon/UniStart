@@ -28,6 +28,7 @@ public class User : ISoftDeletable, IAuditable
     public virtual ICollection<UserSkillProfile> SkillProfiles { get; set; } = new List<UserSkillProfile>();
     public virtual ICollection<TestSession> TestSessions { get; set; } = new List<TestSession>();
     public virtual NotificationPreferences? NotificationPreferences { get; set; }
+    public virtual TutorProfile? TutorProfile { get; set; }
 
     public bool IsPro => SubscriptionTier == SubscriptionTier.Pro
                          && (SubscriptionExpiresAt == null || SubscriptionExpiresAt > DateTime.UtcNow);

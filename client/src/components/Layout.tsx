@@ -31,6 +31,11 @@ function Layout() {
                 📅 План
               </NavLink>
             </li>
+            <li>
+              <NavLink to="/tutors">
+                🎓 Тьюторы
+              </NavLink>
+            </li>
           </ul>
 
           <ProfileDropdown />

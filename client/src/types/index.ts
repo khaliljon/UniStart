@@ -819,3 +819,116 @@ export interface UpdateNotificationPreferences {
   studyPlanReminder?: boolean;
   achievementNotification?: boolean;
 }
+
+// ─── Tutor types ──────────────────────────────────────
+export interface TutorCard {
+  userId: number;
+  name: string;
+  headline: string;
+  bio: string;
+  specializations: string[];
+  averageRating: number;
+  totalReviews: number;
+  totalStudents: number;
+  isAvailable: boolean;
+  isVerified: boolean;
+  hourlyRate: number | null;
+  avatarUrl: string | null;
+}
+
+export interface TutorListResult {
+  items: TutorCard[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+export interface TutorProfileDetail {
+  userId: number;
+  name: string;
+  email: string;
+  headline: string;
+  bio: string;
+  experience: string;
+  specializations: string[];
+  averageRating: number;
+  totalReviews: number;
+  totalStudents: number;
+  isAvailable: boolean;
+  isVerified: boolean;
+  hourlyRate: number | null;
+  avatarUrl: string | null;
+  contactPreference: string;
+  createdAt: string;
+  schedule: ScheduleSlot[];
+  recentReviews: TutorReview[];
+}
+
+export interface ScheduleSlot {
+  id: number;
+  dayOfWeek: number;
+  dayName: string;
+  startTime: string;
+  endTime: string;
+}
+
+export interface TutorReview {
+  id: number;
+  studentId: number;
+  studentName: string;
+  rating: number;
+  comment: string | null;
+  createdAt: string;
+}
+
+export interface UpdateTutorProfile {
+  headline?: string;
+  bio?: string;
+  experience?: string;
+  specializations?: string[];
+  hourlyRate?: number;
+  isAvailable?: boolean;
+  contactPreference?: string;
+}
+
+export interface ScheduleSlotInput {
+  dayOfWeek: number;
+  startTime: string;
+  endTime: string;
+}
+
+export interface CreateReviewRequest {
+  rating: number;
+  comment?: string;
+}
+
+// ─── Messaging types ──────────────────────────────────
+export interface Conversation {
+  id: number;
+  otherUserId: number;
+  otherUserName: string;
+  otherUserRole: string;
+  lastMessagePreview: string | null;
+  lastMessageAt: string | null;
+  unreadCount: number;
+  status: string;
+}
+
+export interface Message {
+  id: number;
+  senderId: number;
+  senderName: string;
+  text: string;
+  sentAt: string;
+  readAt: string | null;
+  isEdited: boolean;
+  type: string;
+  isMine: boolean;
+}
+
+export interface MessagesPage {
+  items: Message[];
+  totalCount: number;
+  hasMore: boolean;
+}

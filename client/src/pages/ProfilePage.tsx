@@ -31,7 +31,7 @@ function ProfilePage() {
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: '1.25rem', fontWeight: 700, flexShrink: 0,
           }}>
-            {user?.name?.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) || '?'}
+            {user?.name?.split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2) || '?'}
           </div>
           <div>
             <h2 style={{ margin: 0, fontSize: '1.2rem' }}>{user?.name}</h2>

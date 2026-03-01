@@ -36,7 +36,7 @@ function ProfileDropdown() {
   };
 
   const initials = user?.name
-    ? user.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
+    ? user.name.split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2)
     : '?';
 
   return (
@@ -80,6 +80,14 @@ function ProfileDropdown() {
           <button className="profile-dropdown-item" onClick={() => goTo('/profile')}>
             <span>👤</span> Профиль
           </button>
+          <button className="profile-dropdown-item" onClick={() => goTo('/messages')}>
+            <span>💬</span> Сообщения
+          </button>
+          {user?.role === 'Tutor' && (
+            <button className="profile-dropdown-item" onClick={() => goTo('/tutor/dashboard')}>
+              <span>🎓</span> Панель тьютора
+            </button>
+          )}
           <button className="profile-dropdown-item" onClick={() => goTo('/profile/notifications')}>
             <span>🔔</span> Уведомления
           </button>
