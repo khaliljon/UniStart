@@ -90,7 +90,7 @@ function AdminAuditLogsPage() {
 
   return (
     <div>
-      <h1 style={{ marginBottom: '1.5rem' }}>📜 Журнал аудита</h1>
+      <h1 style={{ marginBottom: '1.5rem' }}>Журнал аудита</h1>
 
       {/* Filters */}
       <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap', alignItems: 'end' }}>

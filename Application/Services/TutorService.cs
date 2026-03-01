@@ -186,22 +186,22 @@ public class TutorService : ITutorService
         return new ReviewDto(review.Id, studentId, student?.Name ?? "—", review.Rating, review.Comment, review.CreatedAt);
     }
 
-    public async Task<List<TutorCardDto>> GetMyStudentsAsync(int tutorUserId)
+    public async Task<List<StudentDto>> GetMyStudentsAsync(int tutorUserId)
     {
-        // Students who have active conversations with this tutor
-        var studentIds = await _db.Conversations
+        // Get active conversations with student data
+        var conversations = await _db.Conversations
+            .Include(c => c.Student)
             .Where(c => c.TutorId == tutorUserId && c.Status == ConversationStatus.Active)
-            .Select(c => c.StudentId)
-            .Distinct()
+            .OrderByDescending(c => c.LastMessageAt ?? c.CreatedAt)
             .ToListAsync();
 
-        var students = await _db.Users
-            .Where(u => studentIds.Contains(u.Id))
-            .ToListAsync();
-
-        return students.Select(s => new TutorCardDto(
-            s.Id, s.Name, "", "", Array.Empty<string>(),
-            0, 0, 0, true, false, null, null
+        return conversations.Select(c => new StudentDto(
+            c.Student.Id,
+            c.Student.Name,
+            c.Student.Email,
+            c.CreatedAt,
+            c.LastMessageAt,
+            c.LastMessagePreview
         )).ToList();
     }
 
@@ -224,6 +224,108 @@ public class TutorService : ITutorService
             });
             await _db.SaveChangesAsync();
         }
+    }
+
+    public async Task<List<PendingRequestDto>> GetPendingRequestsAsync(int tutorUserId)
+    {
+        var requests = await _db.Conversations
+            .Include(c => c.Student)
+            .Where(c => c.TutorId == tutorUserId && c.Status == ConversationStatus.Pending)
+            .OrderByDescending(c => c.CreatedAt)
+            .ToListAsync();
+
+        return requests.Select(c => new PendingRequestDto(
+            c.Id,
+            c.Student.Id,
+            c.Student.Name,
+            c.Student.Email,
+            c.RequestMessage,
+            c.CreatedAt
+        )).ToList();
+    }
+
+    public async Task<AcceptDeclineResultDto> AcceptStudentAsync(int tutorUserId, int conversationId)
+    {
+        var conv = await _db.Conversations
+            .Include(c => c.Student)
+            .FirstOrDefaultAsync(c => c.Id == conversationId && c.TutorId == tutorUserId)
+            ?? throw new KeyNotFoundException("Request not found");
+
+        if (conv.Status != ConversationStatus.Pending)
+            throw new InvalidOperationException("Эту заявку уже нельзя принять");
+
+        conv.Status = ConversationStatus.Active;
+
+        // System message
+        var tutor = await _db.Users.FindAsync(tutorUserId);
+        var sysMsg = new Message
+        {
+            ConversationId = conversationId,
+            SenderId = tutorUserId,
+            Text = $"{tutor?.Name ?? "Тьютор"} принял(а) вашу заявку. Можете начать общение!",
+            SentAt = DateTime.UtcNow,
+            Type = MessageType.System
+        };
+        _db.Messages.Add(sysMsg);
+
+        conv.LastMessagePreview = sysMsg.Text;
+        conv.LastMessageAt = sysMsg.SentAt;
+        conv.UnreadCountStudent++;
+
+        // Update tutor's student count
+        var tutorProfile = await _db.TutorProfiles.FirstOrDefaultAsync(tp => tp.UserId == tutorUserId);
+        if (tutorProfile != null)
+        {
+            var studentCount = await _db.Conversations
+                .CountAsync(c => c.TutorId == tutorUserId && c.Status == ConversationStatus.Active);
+            tutorProfile.TotalStudents = studentCount; // already includes current after status change
+        }
+
+        await _db.SaveChangesAsync();
+        return new AcceptDeclineResultDto(conversationId, "Active", sysMsg.Text);
+    }
+
+    public async Task<AcceptDeclineResultDto> DeclineStudentAsync(int tutorUserId, int conversationId, string? reason)
+    {
+        var conv = await _db.Conversations
+            .FirstOrDefaultAsync(c => c.Id == conversationId && c.TutorId == tutorUserId)
+            ?? throw new KeyNotFoundException("Request not found");
+
+        if (conv.Status != ConversationStatus.Pending)
+            throw new InvalidOperationException("Эту заявку уже нельзя отклонить");
+
+        conv.Status = ConversationStatus.Declined;
+        conv.DeclinedAt = DateTime.UtcNow;
+        conv.DeclineReason = reason?.Length > 500 ? reason[..500] : reason;
+
+        // System message
+        var tutor = await _db.Users.FindAsync(tutorUserId);
+        var sysText = string.IsNullOrWhiteSpace(reason)
+            ? $"{tutor?.Name ?? "Тьютор"} отклонил(а) заявку"
+            : $"{tutor?.Name ?? "Тьютор"} отклонил(а) заявку: {reason}";
+
+        var sysMsg = new Message
+        {
+            ConversationId = conversationId,
+            SenderId = tutorUserId,
+            Text = sysText,
+            SentAt = DateTime.UtcNow,
+            Type = MessageType.System
+        };
+        _db.Messages.Add(sysMsg);
+
+        conv.LastMessagePreview = sysText;
+        conv.LastMessageAt = sysMsg.SentAt;
+        conv.UnreadCountStudent++;
+
+        await _db.SaveChangesAsync();
+        return new AcceptDeclineResultDto(conversationId, "Declined", sysText);
+    }
+
+    public async Task<int> GetStudentIdByConversationAsync(int conversationId)
+    {
+        var conv = await _db.Conversations.FindAsync(conversationId);
+        return conv?.StudentId ?? 0;
     }
 
     // ─── Mapping ────────────────────────────────────────

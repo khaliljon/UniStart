@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAppSelector } from './hooks/useAppSelector'
 import Layout from './components/Layout'
 import AdminLayout from './components/AdminLayout'
+import TutorLayout from './components/TutorLayout'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import OnboardingPage from './pages/OnboardingPage'
@@ -19,11 +20,16 @@ import AdminUsersPage from './pages/AdminUsersPage'
 import AdminAuditLogsPage from './pages/AdminAuditLogsPage'
 import AdminSystemHealthPage from './pages/AdminSystemHealthPage'
 import AdminUserActivityPage from './pages/AdminUserActivityPage'
+import AdminTutorsPage from './pages/AdminTutorsPage'
 import LandingPage from './pages/LandingPage'
 import TutorsPage from './pages/TutorsPage'
 import TutorProfilePage from './pages/TutorProfilePage'
 import MessagesPage from './pages/MessagesPage'
-import TutorDashboardPage from './pages/TutorDashboardPage'
+import TutorHomePage from './pages/TutorHomePage'
+import TutorStudentsPage from './pages/TutorStudentsPage'
+import TutorSchedulePage from './pages/TutorSchedulePage'
+import TutorProfileEditPage from './pages/TutorProfileEditPage'
+import TutorReviewsPage from './pages/TutorReviewsPage'
 
 function StudentRoutes() {
   return (
@@ -38,7 +44,6 @@ function StudentRoutes() {
       <Route path="tutors" element={<TutorsPage />} />
       <Route path="tutors/:userId" element={<TutorProfilePage />} />
       <Route path="messages" element={<MessagesPage />} />
-      <Route path="tutor/dashboard" element={<TutorDashboardPage />} />
       {/* Legacy redirects */}
       <Route path="test" element={<Navigate to="/learn" replace />} />
       <Route path="mock-exam" element={<Navigate to="/learn?tab=mock" replace />} />
@@ -61,6 +66,7 @@ function AdminRoutes() {
       <Route index element={<AdminStatsPage />} />
       <Route path="questions" element={<AdminQuestionsPage />} />
       <Route path="users" element={<AdminUsersPage />} />
+      <Route path="tutors" element={<AdminTutorsPage />} />
       <Route path="audit" element={<AdminAuditLogsPage />} />
       <Route path="health" element={<AdminSystemHealthPage />} />
       <Route path="activity" element={<AdminUserActivityPage />} />
@@ -70,10 +76,27 @@ function AdminRoutes() {
   )
 }
 
+function TutorRoutes() {
+  return (
+    <Route path="/" element={<TutorLayout />}>
+      <Route index element={<TutorHomePage />} />
+      <Route path="students" element={<TutorStudentsPage />} />
+      <Route path="messages" element={<MessagesPage />} />
+      <Route path="schedule" element={<TutorSchedulePage />} />
+      <Route path="reviews" element={<TutorReviewsPage />} />
+      <Route path="my-profile" element={<TutorProfileEditPage />} />
+      <Route path="profile" element={<ProfilePage />} />
+      <Route path="tutors/:userId" element={<TutorProfilePage />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Route>
+  )
+}
+
 function App() {
   const { isAuthenticated, user } = useAppSelector((state) => state.auth)
   const isAdmin = user?.role === 'Admin'
-  const needsOnboarding = isAuthenticated && !isAdmin && !user?.hasCompletedOnboarding
+  const isTutor = user?.role === 'Tutor'
+  const needsOnboarding = isAuthenticated && !isAdmin && !isTutor && !user?.hasCompletedOnboarding
 
   return (
     <Routes>
@@ -86,7 +109,7 @@ function App() {
         needsOnboarding ? (
           <Route path="*" element={<Navigate to="/onboarding" />} />
         ) : (
-          isAdmin ? AdminRoutes() : StudentRoutes()
+          isAdmin ? AdminRoutes() : isTutor ? TutorRoutes() : StudentRoutes()
         )
       ) : (
         <Route path="*" element={<Navigate to="/landing" />} />

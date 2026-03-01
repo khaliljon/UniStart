@@ -13,6 +13,9 @@ public class User : ISoftDeletable, IAuditable
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
 
+    // Online presence (T-9)
+    public DateTime? LastSeenAt { get; set; }
+
     // Soft Delete (OP-9)
     public bool IsDeleted { get; set; }
     public DateTime? DeletedAt { get; set; }

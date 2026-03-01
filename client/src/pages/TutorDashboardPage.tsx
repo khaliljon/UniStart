@@ -129,15 +129,15 @@ function TutorDashboardPage() {
   }
 
   const tabs = [
-    { id: 'profile' as const, label: '👤 Профиль' },
-    { id: 'schedule' as const, label: '📅 Расписание' },
-    { id: 'students' as const, label: '👥 Ученики' },
+    { id: 'profile' as const, label: 'Профиль' },
+    { id: 'schedule' as const, label: 'Расписание' },
+    { id: 'students' as const, label: 'Ученики' },
   ];
 
   return (
     <div className="animate-fade-in">
       <div style={{ marginBottom: '1.5rem' }}>
-        <h1 style={{ margin: '0 0 0.25rem' }}>🎓 Панель тьютора</h1>
+        <h1 style={{ margin: '0 0 0.25rem' }}>Панель тьютора</h1>
         <p style={{ margin: 0, color: 'var(--text-secondary)' }}>
           Управляйте своим профилем и расписанием
         </p>

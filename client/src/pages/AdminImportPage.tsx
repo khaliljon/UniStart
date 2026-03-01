@@ -23,7 +23,7 @@ function AdminImportPage() {
 
   return (
     <div className="animate-fade-in" style={{ padding: '2rem 0' }}>
-      <h1 style={{ marginBottom: '0.5rem' }}>📥 Импорт вопросов</h1>
+      <h1 style={{ marginBottom: '0.5rem' }}>Импорт вопросов</h1>
       <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
         Массовый импорт вопросов из JSON
       </p>
@@ -60,7 +60,7 @@ function AdminImportPage() {
             border: `1px solid ${importResult.failed > 0 ? 'var(--error-color)' : 'var(--success-color)'}`
           }}>
             <div style={{ fontWeight: 600, marginBottom: '0.5rem' }}>
-              ✅ Импортировано: {importResult.imported} / {importResult.imported + importResult.failed}
+              Импортировано: {importResult.imported} / {importResult.imported + importResult.failed}
             </div>
             {importResult.errors.length > 0 && (
               <div style={{ fontSize: '0.85rem', color: 'var(--error-color)' }}>
@@ -73,7 +73,7 @@ function AdminImportPage() {
 
       {/* Reference */}
       <div className="card" style={{ padding: '1.5rem', marginTop: '1rem' }}>
-        <h3 style={{ marginBottom: '0.75rem' }}>📖 Формат вопроса</h3>
+        <h3 style={{ marginBottom: '0.75rem' }}>Формат вопроса</h3>
         <pre style={{
           background: 'var(--background-color)', padding: '1rem', borderRadius: '0.5rem',
           fontSize: '0.8rem', overflow: 'auto', color: 'var(--text-primary)'

@@ -9,6 +9,10 @@ public interface ITutorService
     Task<TutorProfileDetailDto> UpdateMyProfileAsync(int userId, UpdateTutorProfileDto dto);
     Task<TutorProfileDetailDto> SetScheduleAsync(int userId, SetScheduleDto dto);
     Task<ReviewDto> LeaveReviewAsync(int studentId, int tutorUserId, CreateReviewDto dto);
-    Task<List<TutorCardDto>> GetMyStudentsAsync(int tutorUserId);
+    Task<List<StudentDto>> GetMyStudentsAsync(int tutorUserId);
+    Task<List<PendingRequestDto>> GetPendingRequestsAsync(int tutorUserId);
+    Task<AcceptDeclineResultDto> AcceptStudentAsync(int tutorUserId, int conversationId);
+    Task<AcceptDeclineResultDto> DeclineStudentAsync(int tutorUserId, int conversationId, string? reason);
+    Task<int> GetStudentIdByConversationAsync(int conversationId);
     Task EnsureTutorProfileAsync(int userId);
 }

@@ -74,11 +74,11 @@ export default function AdminSystemHealthPage() {
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <h2 style={{ margin: 0 }}>🏥 Здоровье системы</h2>
+        <h2 style={{ margin: 0 }}>Здоровье системы</h2>
         <button onClick={load} style={{
           padding: '8px 16px', borderRadius: 8, border: '1px solid var(--border)',
           background: 'var(--bg-secondary)', cursor: 'pointer', color: 'var(--text-primary)'
-        }}>🔄 Обновить</button>
+        }}>Обновить</button>
       </div>
 
       {/* Overall Status Banner */}
@@ -87,7 +87,7 @@ export default function AdminSystemHealthPage() {
         background: overallColor + '18', border: `2px solid ${overallColor}`,
         display: 'flex', alignItems: 'center', gap: 12
       }}>
-        <span style={{ fontSize: 28 }}>{data.status === 'Healthy' ? '✅' : data.status === 'Degraded' ? '⚠️' : '❌'}</span>
+        <span style={{ fontSize: 28 }}>{data.status === 'Healthy' ? '' : data.status === 'Degraded' ? '' : ''}</span>
         <div>
           <div style={{ fontWeight: 700, fontSize: 18, color: overallColor }}>
             {data.status === 'Healthy' ? 'Система работает нормально' :
@@ -102,19 +102,19 @@ export default function AdminSystemHealthPage() {
 
       {/* Cards Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 24 }}>
-        <StatCard label="Окружение" value={data.system.environment} icon="🌐" />
-        <StatCard label="Uptime" value={formatUptime(data.system.uptime)} icon="⏱️" />
-        <StatCard label="Память" value={`${data.system.memoryMB.toFixed(0)} MB`} icon="💾" />
-        <StatCard label=".NET" value={data.system.dotnetVersion} icon="⚙️" />
-        <StatCard label="Потоки" value={String(data.system.threadCount)} icon="🧵" />
-        <StatCard label="Машина" value={data.system.machineName} icon="🖥️" />
+        <StatCard label="Окружение" value={data.system.environment} icon="" />
+        <StatCard label="Uptime" value={formatUptime(data.system.uptime)} icon="" />
+        <StatCard label="Память" value={`${data.system.memoryMB.toFixed(0)} MB`} icon="" />
+        <StatCard label=".NET" value={data.system.dotnetVersion} icon="" />
+        <StatCard label="Потоки" value={String(data.system.threadCount)} icon="" />
+        <StatCard label="Машина" value={data.system.machineName} icon="" />
       </div>
 
       {/* Two-column layout */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 24 }}>
         {/* Health Checks */}
         <div style={{ background: 'var(--bg-secondary)', borderRadius: 12, padding: 20 }}>
-          <h3 style={{ margin: '0 0 16px' }}>🩺 Health Checks</h3>
+          <h3 style={{ margin: '0 0 16px' }}>Health Checks</h3>
           {data.healthChecks.length === 0 ? (
             <div style={{ color: 'var(--text-secondary)' }}>Нет проверок</div>
           ) : data.healthChecks.map(hc => (
@@ -139,7 +139,7 @@ export default function AdminSystemHealthPage() {
 
         {/* Database Stats */}
         <div style={{ background: 'var(--bg-secondary)', borderRadius: 12, padding: 20 }}>
-          <h3 style={{ margin: '0 0 16px' }}>🗄️ База данных</h3>
+          <h3 style={{ margin: '0 0 16px' }}>База данных</h3>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <DbStat label="Пользователей" value={data.database.totalUsers} />
             <DbStat label="Вопросов" value={data.database.totalQuestions} />
@@ -153,7 +153,7 @@ export default function AdminSystemHealthPage() {
 
       {/* Recurring Jobs */}
       <div style={{ background: 'var(--bg-secondary)', borderRadius: 12, padding: 20 }}>
-        <h3 style={{ margin: '0 0 16px' }}>⚡ Фоновые задачи (Hangfire)</h3>
+        <h3 style={{ margin: '0 0 16px' }}>Фоновые задачи (Hangfire)</h3>
         {!data.recurringJobs || data.recurringJobs.length === 0 ? (
           <div style={{ color: 'var(--text-secondary)' }}>Нет зарегистрированных задач</div>
         ) : (

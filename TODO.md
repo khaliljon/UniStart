@@ -586,212 +586,231 @@
 
 ---
 
-## 🎓 Тьюторская система и внутренний мессенджер
+## 🎓 Тьюторская система — Статус и план доработок
 
-> **Цель**: Студенты видят каталог тьюторов с профилями и рейтингами, могут написать тьютору через встроенный чат. Тьюторы управляют своим профилем, специализацией и расписанием. Чат — real-time (SignalR).
+> **Последнее обновление**: 1 марта 2026
+> **Текущий статус**: MVP реализовано, real-time чат сломан, нет enrollment flow, тьюторы видят студенческий UI
 
-### Архитектура решения
+### Что уже реализовано ✅
+
+| Компонент | Статус | Файлы |
+|-----------|--------|-------|
+| 5 доменных сущностей (TutorProfile, TutorScheduleSlot, TutorReview, Conversation, Message) | ✅ | `Domain/Entities/` |
+| EF Core миграция `AddTutoringAndMessaging` | ✅ | `Migrations/` |
+| 15 DTO (каталог, профиль, расписание, отзывы, сообщения) | ✅ | `Application/DTOs/TutorDtos.cs` |
+| TutorService (каталог, профиль, расписание, отзывы) | ✅ | `Application/Services/TutorService.cs` |
+| MessageService (диалоги, сообщения, unread) | ✅ | `Application/Services/MessageService.cs` |
+| TutorController (6 endpoints) + MessageController (6 endpoints) | ✅ | `Controllers/` |
+| ChatHub (SignalR) — подключение, группы, JWT auth | ✅ | `Hubs/ChatHub.cs` |
+| Program.cs — DI, AddSignalR, MapHub, JWT OnMessageReceived | ✅ | `Program.cs` |
+| TutorsPage — каталог с поиском/фильтрами/сортировкой/пагинацией | ✅ | `client/src/pages/TutorsPage.tsx` |
+| TutorProfilePage — профиль, расписание, отзывы, кнопка "Написать" | ✅ | `client/src/pages/TutorProfilePage.tsx` |
+| MessagesPage — split-layout мессенджер | ✅ | `client/src/pages/MessagesPage.tsx` |
+| TutorDashboardPage — редактирование профиля, расписание, ученики | ✅ | `client/src/pages/TutorDashboardPage.tsx` |
+| chatService.ts — SignalR singleton с auto-reconnect | ✅ | `client/src/services/chatService.ts` |
+| Маршруты (/tutors, /tutors/:id, /messages, /tutor/dashboard) | ✅ | `App.tsx` |
+| Навигация: 🎓 Тьюторы в navbar, 💬 Сообщения в dropdown | ✅ | `Layout.tsx`, `ProfileDropdown.tsx` |
+| Seeder: 3 тьютора, профили, расписание, отзывы, тестовый диалог | ✅ | `DatabaseSeeder.cs` |
+
+---
+
+### 🔴 Критические баги — Real-time чат не работает
+
+#### BUG-T1. ❌ SignalR `ReceiveMessage` — аргументы не совпадают → сообщения не доставляются
+- **Где**: Hub отправляет **2 аргумента** (`conversationId`, `message`), клиент слушает **1** (`msg`)
+- **Hub**: `Clients.Group(...).SendAsync("ReceiveMessage", conversationId, message)` → `ChatHub.cs:56`
+- **Client**: `connection.on('ReceiveMessage', (msg: Message) => ...)` → `chatService.ts:28`
+- **Результат**: Клиент получает `conversationId` (число) вместо `Message` объекта. Все поля `msg.text`, `msg.senderId` = undefined. **Real-time сообщения полностью сломаны.** REST-fallback в `MessagesPage.tsx:117-124` частично маскирует проблему.
+- **Фикс**: Привести к единой сигнатуре — Hub отправляет 1 объект, клиент читает 1 объект
+
+#### BUG-T2. ❌ Сообщения из ВСЕХ диалогов попадают в активный чат
+- **Где**: `MessagesPage.tsx:59-63` — `onMessage` добавляет **каждое** входящее сообщение в `messages[]` без проверки `conversationId`
+- **Результат**: Если открыт чат с Тьютором А, сообщение от Тьютора Б появляется в этом же чате
+- **Фикс**: Фильтровать по `conversationId` — добавлять в messages только если совпадает с `activeId`
+
+#### BUG-T3. ❌ `UserTyping` отправляет `userId` вместо `userName`
+- **Hub**: `SendAsync("UserTyping", conversationId, userId)` → `ChatHub.cs:99` — отправляет **int**
+- **Client**: ожидает `(conversationId: number, userName: string)` → `chatService.ts:36`
+- **Результат**: Индикатор печати показывает "42" вместо "Елена Смирнова"
+- **Фикс**: Hub должен резолвить userName из базы перед отправкой
+
+#### BUG-T4. ❌ Typing indicator не привязан к активному диалогу
+- **Где**: `MessagesPage.tsx:77` — `setTypingUser(userName)` ставится без проверки `_convId === activeId`
+- **Результат**: Печатание в любом диалоге отображается в текущем открытом
+- **Фикс**: Проверять `conversationId === activeId`
+
+#### BUG-T5. ❌ `GetUnreadCount` — формат ответа не совпадает
+- **Controller**: `return Ok(new { count })` → объект `{ count: N }`
+- **Client**: `api.get<number>(...)` → ожидает число `N`
+- **Результат**: Клиент получит `[object Object]` или `NaN` при отображении
+- **Фикс**: Controller должен вернуть `Ok(count)` или клиент должен читать `.count`
+
+---
+
+### 🟠 Архитектурные пробелы — тьюторы = обычные студенты
+
+#### GAP-T1. ❌ Нет тьюторского Layout — тьюторы видят студенческий UI
+
+**Проблема**: Все не-admin пользователи проходят через `StudentRoutes()` → `<Layout />`. Тьютор видит навигацию "Главная → Обучение → Прогресс → План → Тьюторы" — студенческие страницы, которые для него бесполезны. Ссылка "🎓 Тьюторы" ведёт на каталог *других* тьюторов.
+
+**Как на реальных платформах** (Preply, Italki, Wyzant):
+- Тьютор имеет **отдельный интерфейс** с навбаром: Dashboard → Ученики → Сообщения → Расписание → Профиль
+- Главная тьютора = сводка: новые заявки, непрочитанные сообщения, расписание на сегодня, рейтинг
+- Нет доступа к студенческим "Обучение", "Прогресс", "План"
+
+**Решение**: `TutorLayout` + `TutorRoutes()` в `App.tsx` (по аналогии с `AdminLayout` + `AdminRoutes()`)
+
+#### GAP-T2. ❌ Нет enrollment flow (заявка → принятие)
+
+**Проблема**: Сейчас любой студент может написать любому тьютору. "Ученик" — это просто пользователь с активным диалогом. Тьютор не может:
+- Принять/отклонить заявку
+- Заблокировать студента
+- Видеть "новые заявки" отдельно
+
+**Как на реальных платформах**:
+- **Preply**: студент бронирует пробное занятие → тьютор подтверждает → становятся связаны
+- **Italki**: студент отправляет запрос → тьютор принимает/отклоняет → открывается чат
+- **Wyzant**: студент описывает задачу → подходящие тьюторы получают уведомление → откликаются
+
+**Решение**:
+1. Новый статус `ConversationStatus.Pending` (студент отправил заявку, тьютор ещё не ответил)
+2. Тьютор видит блок "Новые заявки" на дашборде → кнопки "✅ Принять" / "❌ Отклонить"
+3. При принятии — статус → `Active`, открывается чат, системное сообщение "Тьютор принял вашу заявку"
+4. При отклонении — статус → `Declined`, студент видит уведомление
+
+#### GAP-T3. ❌ Нет тьюторского Dashboard (полноценного)
+
+**Проблема**: Текущий `TutorDashboardPage` — это форма редактирования профиля. Нет:
+- Сводки (непрочитанные, заявки, расписание на сегодня)
+- Быстрых действий
+- Аналитики (рейтинг за неделю, кол-во новых учеников)
+
+**Решение**: Полноценная главная страница тьютора с карточками-виджетами
+
+#### GAP-T4. ❌ Нет online/presence индикаторов
+
+**Проблема**: Нет видимости, онлайн ли тьютор/студент. Неизвестно, когда ждать ответа.
+
+**Как на реальных платформах**: зелёная точка "Онлайн" / серая "Был(а) 2ч назад"
+
+**Решение**: SignalR + Redis (или in-memory) для трекинга presence. Поле `LastSeenAt` в User.
+
+#### GAP-T5. ❌ Нет архивации/удаления диалогов
+
+**Проблема**: `ConversationStatus.Archived` есть в enum, но нет API/UI для архивации
+
+#### GAP-T6. ❌ Нет верификации тьюторов через admin panel
+
+**Проблема**: `IsVerified` есть в модели, но нет admin-эндпоинта и UI для верификации
+
+---
+
+### 📋 План реализации — Фаза 2 тьюторской системы
+
+#### Этап T-6: Критические баг-фиксы мессенджера 🔴
+> **Приоритет: ВЫСШИЙ — без этого чат не работает**
+
+- [x] **T-6.1** Fix SignalR `ReceiveMessage` аргументы (Hub → 1 объект с `conversationId` внутри)
+- [x] **T-6.2** Fix `MessagesPage` — фильтрация сообщений по `conversationId` перед добавлением
+- [x] **T-6.3** Fix `UserTyping` — Hub резолвит `userName` из БД, клиент фильтрует по `conversationId`
+- [x] **T-6.4** Fix `GetUnreadCount` — `Ok(count)` вместо `Ok(new { count })`
+- [x] **T-6.5** Fix `GetMyStudentsAsync` — отдельный `StudentDto` вместо пустого `TutorCardDto`
+- [x] **T-6.6** Интеграционно проверить: отправка → доставка → прочтение (e2e)
+
+#### Этап T-7: Enrollment flow (заявка → принятие) 🟠
+> **Студент кидает заявку, тьютор решает — принять или отклонить**
+
+**Backend:**
+- [x] **T-7.1** Расширить `ConversationStatus`: `Pending` → `Active` / `Declined` / `Archived`
+- [x] **T-7.2** EF миграция: новые значения enum, добавить `DeclinedAt`, `DeclineReason` в `Conversation`
+- [x] **T-7.3** `StartConversationAsync` → создаёт со статусом `Pending` (а не `Active`)
+- [x] **T-7.4** `ITutorService.AcceptStudentAsync(tutorId, conversationId)` → статус `Active`, системное сообщение
+- [x] **T-7.5** `ITutorService.DeclineStudentAsync(tutorId, conversationId, reason?)` → статус `Declined`
+- [x] **T-7.6** `MessageService.SendMessageAsync` — запретить отправку в `Pending`/`Declined` диалоги (кроме системных)
+- [x] **T-7.7** `ITutorService.GetPendingRequestsAsync(tutorId)` — список ожидающих заявок
+- [x] **T-7.8** Endpoints: `POST /api/tutors/requests/{id}/accept`, `POST /api/tutors/requests/{id}/decline`
+- [x] **T-7.9** SignalR: уведомление тьютору `NewRequest`, студенту `RequestAccepted` / `RequestDeclined`
+
+**Frontend:**
+- [x] **T-7.10** `TutorProfilePage` — при нажатии "💬 Написать" показать модалку с сообщением-заявкой (имя, цель, текст)
+- [x] **T-7.11** После отправки заявки — статус "⏳ Заявка отправлена, ожидайте ответа тьютора"
+- [x] **T-7.12** В списке диалогов — `Pending` диалоги отмечены бэйджем "Ожидает"
+- [x] **T-7.13** В чате `Pending` — заблокировать поле ввода, показать "Тьютор ещё не принял заявку"
+
+#### Этап T-8: Tutor Layout + персонализированные страницы 🟠
+> **Тьюторы получают свой интерфейс, как Admin имеет свой**
+
+**Инфраструктура:**
+- [x] **T-8.1** `TutorLayout.tsx` — отдельный layout с навбаром: 🏠 Главная → 👥 Ученики → 💬 Сообщения → 📅 Расписание → 👤 Профиль
+- [x] **T-8.2** `TutorRoutes()` в `App.tsx` — отдельный набор маршрутов для `role === 'Tutor'`
+- [x] **T-8.3** Маршруты: `/` (dashboard) → `/students` → `/messages` → `/schedule` → `/profile` → `/reviews`
+
+**Страницы:**
+- [x] **T-8.4** `TutorHomePage.tsx` — сводка-dashboard тьютора:
+  - Карточки: ⏳ Новые заявки (счётчик) → 💬 Непрочитанные → 📅 Занятия сегодня → ★ Рейтинг
+  - Блок "Новые заявки" с кнопками ✅ Принять / ❌ Отклонить
+  - Последние сообщения (preview)
+  - Расписание на сегодня
+- [x] **T-8.5** `TutorStudentsPage.tsx` — список учеников:
+  - Карточки: аватар, имя, дата начала, последний контакт
+  - Фильтр: активные / архив
+  - Клик → открывает диалог в `/messages`
+- [x] **T-8.6** `TutorSchedulePage.tsx` — визуальный редактор расписания:
+  - Сетка 7 дней × 24 часа (выделение мышкой)
+  - Перетаскивание слотов
+  - Кнопка "Сохранить"
+- [x] **T-8.7** `TutorProfileEditPage.tsx` — полноэкранное редактирование профиля:
+  - Live-preview (как будет выглядеть карточка)
+  - Drag-and-drop для аватара
+  - Markdown preview для bio
+- [x] **T-8.8** `TutorReviewsPage.tsx` — все отзывы о тьюторе:
+  - Фильтр по рейтингу
+  - Статистика: средний балл, распределение оценок (5★ = 70%, 4★ = 20%, ...)
+
+#### Этап T-9: Online/Presence и UX-улучшения мессенджера 🟡
+
+- [x] **T-9.1** Поле `LastSeenAt` (DateTime?) в User + миграция
+- [x] **T-9.2** `ChatHub.OnConnectedAsync` → обновляет `LastSeenAt`, добавляет в in-memory set `_onlineUsers`
+- [x] **T-9.3** `ChatHub.OnDisconnectedAsync` → обновляет `LastSeenAt`, удаляет из set
+- [x] **T-9.4** API: `GET /api/users/{id}/presence` → `{ isOnline, lastSeenAt }`
+- [x] **T-9.5** Frontend: зелёная/серая точка в карточках тьюторов и в шапке чата
+- [x] **T-9.6** "Был(а) в сети 2 ч назад" / "Онлайн" текст
+- [x] **T-9.7** Архивация диалогов — кнопка "📦 Архивировать" в шапке чата + вкладка "Архив" в списке
+- [x] **T-9.8** Уведомление sound/badge при новом сообщении (Web Notification API, если вкладка не активна)
+- [x] **T-9.9** Unread badge на иконке 💬 в навбаре (live-update через SignalR)
+- [x] **T-9.10** Scroll-to-bottom кнопка при скролле вверх + lazy-load старых сообщений
+
+#### Этап T-10: Admin-модерация тьюторов 🟡
+
+- [x] **T-10.1** `AdminTutorsPage.tsx` — список тьюторов с действиями:
+  - Верифицировать / снять верификацию
+  - Заблокировать / разблокировать
+  - Просмотреть профиль, отзывы, диалоги
+- [x] **T-10.2** API: `POST /api/admin/tutors/{id}/verify`, `POST /api/admin/tutors/{id}/block`
+- [x] **T-10.3** AuditLog записи для всех admin-действий с тьюторами
+- [x] **T-10.4** Email-уведомление тьютору при верификации: "Ваш профиль подтверждён ✓"
+
+---
+
+### Порядок реализации (Фаза 2)
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│  Frontend (React)                                           │
-│  ┌──────────────┐  ┌──────────────┐  ┌───────────────────┐  │
-│  │ /tutors      │  │ /tutors/:id  │  │ /messages         │  │
-│  │  Каталог     │  │  Профиль     │  │  Чат (SignalR)    │  │
-│  │  тьюторов    │  │  тьютора     │  │  real-time        │  │
-│  └──────────────┘  └──────────────┘  └───────────────────┘  │
-│  ┌─────────────────────────────────┐                        │
-│  │ /tutor/dashboard                │                        │
-│  │  Кабинет тьютора (свой профиль, │                        │
-│  │  студенты, расписание, заявки)  │                        │
-│  └─────────────────────────────────┘                        │
-└─────────────────────────────────────────────────────────────┘
-        ▼ REST + SignalR WebSocket
-┌─────────────────────────────────────────────────────────────┐
-│  Backend (.NET 8)                                           │
-│  ┌──────────────────┐  ┌────────────────────┐               │
-│  │ TutorController   │  │ MessageController  │               │
-│  │  GET /tutors      │  │  GET /conversations│               │
-│  │  GET /tutors/:id  │  │  GET /messages/:id │               │
-│  │  PUT /tutor/profile│ │  POST /messages    │               │
-│  └──────────────────┘  └────────────────────┘               │
-│  ┌──────────────────┐  ┌────────────────────┐               │
-│  │ ChatHub (SignalR) │  │ ITutorService      │               │
-│  │  SendMessage      │  │ IMessageService    │               │
-│  │  MarkAsRead       │  └────────────────────┘               │
-│  │  Typing indicator │                                       │
-│  └──────────────────┘                                       │
-└─────────────────────────────────────────────────────────────┘
-        ▼
-┌─────────────────────────────────────────────────────────────┐
-│  PostgreSQL — новые таблицы                                  │
-│  ┌────────────────┐  ┌──────────────┐  ┌─────────────────┐  │
-│  │ TutorProfiles  │  │ Conversations│  │ Messages        │  │
-│  │ UserId (FK)    │  │ Id           │  │ ConversationId  │  │
-│  │ Bio            │  │ StudentId    │  │ SenderId        │  │
-│  │ Specializations│  │ TutorId      │  │ Text            │  │
-│  │ HourlyRate     │  │ CreatedAt    │  │ SentAt          │  │
-│  │ Rating         │  │ LastMessageAt│  │ ReadAt          │  │
-│  │ IsAvailable    │  │ Status       │  │ Type            │  │
-│  └────────────────┘  └──────────────┘  └─────────────────┘  │
-│  ┌────────────────┐  ┌──────────────┐                       │
-│  │ TutorReviews   │  │ TutorSchedule│                       │
-│  │ TutorId        │  │ TutorId      │                       │
-│  │ StudentId      │  │ DayOfWeek    │                       │
-│  │ Rating (1-5)   │  │ StartTime    │                       │
-│  │ Comment        │  │ EndTime      │                       │
-│  └────────────────┘  └──────────────┘                       │
-└─────────────────────────────────────────────────────────────┘
+T-6 (баг-фиксы)  ──→  T-7 (enrollment)  ──→  T-8 (tutor UI)  ──→  T-9 (presence)  ──→  T-10 (admin)
+   🔴 КРИТИЧНО          🟠 ВАЖНО               🟠 ВАЖНО            🟡 УЛУЧШЕНИЕ        🟡 УЛУЧШЕНИЕ
+   ~1ч                   ~3ч                     ~4ч                  ~2ч                  ~1ч
 ```
-
-### Этап T-1: Domain-сущности и миграция 🟢
-
-> **5 новых сущностей, 1 миграция**
-
-- [ ] **`TutorProfile`** — расширенный профиль тьютора (1:1 к User)
-  - `Id`, `UserId` (FK → User), `Bio` (text, ≤2000), `Headline` (≤200, "Сертифицированный TOEFL-тьютор")
-  - `Specializations` (jsonb массив ExamTypeCode: ["SAT", "TOEFL"]), `HourlyRate` (decimal? для будущей монетизации)
-  - `AverageRating` (decimal, кэш), `TotalReviews` (int, кэш), `TotalStudents` (int, кэш)
-  - `IsAvailable` (bool — принимает ли новых учеников), `IsVerified` (bool — подтверждён админом)
-  - `Experience` (text, ≤1000, "5 лет опыта, средний прирост учеников +150 баллов SAT")
-  - `AvatarUrl` (string?), `ContactPreference` (enum: Chat / Email / Both)
-  - `CreatedAt`, `UpdatedAt` (IAuditable)
-
-- [ ] **`TutorSchedule`** — расписание доступности
-  - `Id`, `TutorProfileId` (FK), `DayOfWeek` (0–6), `StartTime` (TimeOnly), `EndTime` (TimeOnly)
-
-- [ ] **`TutorReview`** — отзывы студентов
-  - `Id`, `TutorProfileId` (FK), `StudentId` (FK → User), `Rating` (1–5), `Comment` (≤1000)
-  - `CreatedAt`, unique constraint: (TutorProfileId, StudentId) — один отзыв от одного студента
-
-- [ ] **`Conversation`** — чат-диалог (1:1 студент ↔ тьютор)
-  - `Id`, `StudentId` (FK → User), `TutorId` (FK → User)
-  - `LastMessageAt`, `LastMessagePreview` (≤100), `UnreadCountStudent`, `UnreadCountTutor`
-  - `Status` (Active / Archived), `CreatedAt`
-  - Unique constraint: (StudentId, TutorId)
-
-- [ ] **`Message`** — сообщения в чате
-  - `Id` (bigint), `ConversationId` (FK), `SenderId` (FK → User)
-  - `Text` (≤4000), `SentAt` (DateTime UTC), `ReadAt` (DateTime?), `IsEdited` (bool)
-  - `Type` (enum: Text / System) — system = "Беседа начата", "Тьютор принял заявку"
-  - Индекс: `(ConversationId, SentAt)` для пагинации
-
-- [ ] **EF Core миграция** `AddTutoringAndMessaging`
-
-### Этап T-2: Backend — сервисы и API 🟡
-
-> **2 сервиса, 2 контроллера, 1 SignalR Hub**
-
-- [ ] **`ITutorService`** + `TutorService`
-  - `GetTutorsAsync(filters)` — каталог: поиск по имени, фильтр по экзамену, сортировка (рейтинг, цена, отзывы), IsAvailable only, пагинация
-  - `GetTutorProfileAsync(userId)` — полный профиль + расписание + последние отзывы
-  - `UpdateMyProfileAsync(userId, dto)` — тьютор редактирует свой профиль
-  - `SetScheduleAsync(userId, slots[])` — установить расписание
-  - `LeaveReviewAsync(studentId, tutorId, rating, comment)` — оставить отзыв (пересчёт AverageRating)
-  - `GetMyStudentsAsync(tutorId)` — список студентов, с которыми есть активные беседы
-
-- [ ] **`IMessageService`** + `MessageService`
-  - `GetConversationsAsync(userId)` — все диалоги пользователя (студент видит своих тьюторов, тьютор видит своих студентов)
-  - `GetMessagesAsync(conversationId, userId, page)` — история сообщений с пагинацией (новые → старые)
-  - `SendMessageAsync(senderId, conversationId, text)` — отправка + обновление LastMessage + инкремент unread
-  - `StartConversationAsync(studentId, tutorId)` — создать беседу (или вернуть существующую)
-  - `MarkAsReadAsync(conversationId, userId)` — обнулить unread counter
-
-- [ ] **`TutorController`** (`/api/tutors`)
-  - `GET /api/tutors?search=&exam=&sort=rating&available=true&page=&pageSize=` — каталог (публичный для авторизованных)
-  - `GET /api/tutors/{id}` — профиль тьютора + расписание + отзывы
-  - `PUT /api/tutor/profile` — редактирование своего профиля `[Authorize(Roles = "Tutor")]`
-  - `PUT /api/tutor/schedule` — обновить расписание `[Authorize(Roles = "Tutor")]`
-  - `POST /api/tutors/{id}/reviews` — оставить отзыв `[Authorize(Roles = "Student")]`
-  - `GET /api/tutor/students` — мои студенты `[Authorize(Roles = "Tutor")]`
-
-- [ ] **`MessageController`** (`/api/messages`)
-  - `GET /api/messages/conversations` — список диалогов текущего пользователя
-  - `GET /api/messages/conversations/{id}` — сообщения диалога (пагинация, cursor-based)
-  - `POST /api/messages/conversations` — начать диалог `{ tutorId }` (только студент)
-  - `POST /api/messages/conversations/{id}/messages` — отправить сообщение
-  - `POST /api/messages/conversations/{id}/read` — пометить прочитанным
-
-- [ ] **`ChatHub`** (SignalR Hub) — `/hubs/chat`
-  - `OnConnectedAsync` — подключение, join в группу `user_{userId}`
-  - `SendMessage(conversationId, text)` — отправка через хаб → push обоим участникам
-  - `MarkAsRead(conversationId)` — пометить прочитанным → push счётчик
-  - `Typing(conversationId)` → "печатает..." индикатор
-  - JWT-аутентификация через `?access_token=` query parameter (SignalR стандарт)
-
-### Этап T-3: Frontend — страницы 🟡
-
-> **4 новые страницы + 1 компонент в навигации**
-
-- [ ] **`TutorsPage.tsx`** (`/tutors`) — Каталог тьюторов
-  - Карточки тьюторов: аватар (заглушка с инициалами), имя, headline, ★ рейтинг, кол-во отзывов
-  - Бэйджи специализаций: 🟦 SAT | 🟩 TOEFL | 🟨 NUET
-  - Фильтры: поиск по имени, экзамен, "Только доступные", сортировка (по рейтингу/по отзывам)
-  - Зелёная точка "Доступен" / серая "Не принимает"
-  - Кнопка "💬 Написать" → создание беседы + redirect на /messages
-  - Responsive grid: 3 col → 2 col → 1 col
-
-- [ ] **`TutorProfilePage.tsx`** (`/tutors/:id`) — Профиль тьютора
-  - Hero-секция: аватар, имя, headline, рейтинг, кол-во студентов
-  - "О себе" (Bio), "Опыт" (Experience)
-  - Специализации (бэйджи экзаменов)
-  - Расписание (таблица по дням недели, зелёные слоты)
-  - Отзывы: ★★★★☆ + комментарий + имя студента + дата
-  - Кнопка "💬 Начать чат" (если студент) / "✏️ Редактировать" (если свой профиль)
-  - Форма отзыва (★ рейтинг + комментарий), только если был диалог
-
-- [ ] **`MessagesPage.tsx`** (`/messages`) — Мессенджер
-  - Split-layout: список бесед (слева) + чат (справа)
-  - Список бесед: аватар, имя, последнее сообщение, время, badge непрочитанных
-  - Чат: пузырьки (мои справа синие, чужие слева серые), время, галочки прочтения
-  - Поле ввода + кнопка отправки + Enter to send
-  - "Печатает..." индикатор (SignalR)
-  - Auto-scroll к последнему сообщению, lazy-load старых при scroll вверх
-  - Пустое состояние: "Выберите диалог или найдите тьютора"
-  - Mobile: slide-in список → чат (одна панель за раз)
-
-- [ ] **`TutorDashboardPage.tsx`** (`/tutor/dashboard`) — Кабинет тьютора
-  - Редактирование профиля: bio, headline, experience, specializations (чекбоксы), availability toggle
-  - Расписание: визуальный редактор (чекбоксы по дням + time pickers)
-  - Список активных студентов (из бесед): имя, последний контакт, средний прогресс
-  - Статистика: ★ рейтинг, кол-во отзывов, кол-во студентов
-  - Последние отзывы
-
-- [ ] **Навигация**
-  - `Layout.tsx`: добавить 📣 **Тьюторы** в navbar (между "Прогресс" и "План")
-  - `ProfileDropdown.tsx`: 💬 **Сообщения** с badge непрочитанных
-  - Для тьюторов: 🎓 **Мой кабинет** в dropdown
-
-### Этап T-4: NuGet + SignalR инфраструктура 🟢
-
-- [ ] `Microsoft.AspNetCore.SignalR` (встроенный в .NET 8)
-- [ ] `Program.cs`: `builder.Services.AddSignalR()`, `app.MapHub<ChatHub>("/hubs/chat")`
-- [ ] JWT auth для SignalR: `AddAuthentication().AddJwtBearer(opts => { opts.Events.OnMessageReceived = ... access_token query })` — уже есть, нужен event handler
-- [ ] CORS: добавить `/hubs/*` в allowed origins
-- [ ] Frontend: `@microsoft/signalr` npm package
-- [ ] `chatService.ts` — класс-singleton: connect, disconnect, onMessage, sendMessage, onTyping
-
-### Этап T-5: Seeder — тестовые данные 🟢
-
-- [ ] 3 тьюторских аккаунта (tutor1/tutor2/tutor3@unistart.kz) с разными специализациями
-- [ ] TutorProfile для каждого: bio, headline, расписание, ratings
-- [ ] 5–10 тестовых отзывов
-- [ ] 2–3 тестовые беседы с сообщениями
-
-### Порядок реализации
 
 | Шаг | Этап | Описание | Зависимости | Сложность |
 |-----|------|----------|-------------|-----------|
-| 1 | T-1 | Сущности + миграция | — | 🟢 Лёгко |
-| 2 | T-4 | SignalR setup + chatService.ts | — | 🟢 Лёгко |
-| 3 | T-2a | TutorService + TutorController | T-1 | 🟡 Средне |
-| 4 | T-2b | MessageService + MessageController + ChatHub | T-1, T-4 | 🟡 Средне |
-| 5 | T-3a | TutorsPage + TutorProfilePage | T-2a | 🟡 Средне |
-| 6 | T-3b | MessagesPage (SignalR real-time) | T-2b | 🔴 Сложно |
-| 7 | T-3c | TutorDashboardPage | T-2a | 🟡 Средне |
-| 8 | T-5 | Seeder + тестовые данные | T-1 | 🟢 Лёгко |
+| 1 | T-6 | Баг-фиксы мессенджера (5 багов) | — | 🟢 Быстро |
+| 2 | T-7 | Enrollment flow (заявка → принятие/отклонение) | T-6 | 🟡 Средне |
+| 3 | T-8.1–8.3 | TutorLayout + TutorRoutes | — | 🟡 Средне |
+| 4 | T-8.4 | TutorHomePage (dashboard тьютора) | T-7, T-8.1 | 🟡 Средне |
+| 5 | T-8.5–8.8 | Остальные тьюторские страницы | T-8.1 | 🟡 Средне |
+| 6 | T-9 | Presence + UX мессенджера | T-6 | 🟡 Средне |
+| 7 | T-10 | Admin-модерация тьюторов | T-8 | 🟢 Быстро |
 
-> **Итого**: ~8 шагов, оценка трудозатрат ~4–6 часов. Результат: полноценная тьюторская маркетплейс-система с real-time чатом.
+> **Итого Фаза 2**: ~11ч. После реализации — полноценная тьюторская маркетплейс-система уровня Preply/Italki lite.
 
 ---
 

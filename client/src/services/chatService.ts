@@ -5,6 +5,8 @@ type MessageHandler = (message: Message) => void;
 type UnreadHandler = (count: number) => void;
 type TypingHandler = (conversationId: number, userName: string) => void;
 type ReadHandler = (conversationId: number) => void;
+type PresenceHandler = (userId: number) => void;
+type StatusChangedHandler = (conversationId: number, newStatus: string) => void;
 
 class ChatService {
   private connection: signalR.HubConnection | null = null;
@@ -12,6 +14,9 @@ class ChatService {
   private onUnreadHandlers: UnreadHandler[] = [];
   private onTypingHandlers: TypingHandler[] = [];
   private onReadHandlers: ReadHandler[] = [];
+  private onOnlineHandlers: PresenceHandler[] = [];
+  private onOfflineHandlers: PresenceHandler[] = [];
+  private onStatusChangedHandlers: StatusChangedHandler[] = [];
 
   async start(): Promise<void> {
     if (this.connection?.state === signalR.HubConnectionState.Connected) return;
@@ -41,6 +46,18 @@ class ChatService {
       this.onReadHandlers.forEach(h => h(conversationId));
     });
 
+    this.connection.on('UserOnline', (userId: number) => {
+      this.onOnlineHandlers.forEach(h => h(userId));
+    });
+
+    this.connection.on('UserOffline', (userId: number) => {
+      this.onOfflineHandlers.forEach(h => h(userId));
+    });
+
+    this.connection.on('ConversationStatusChanged', (conversationId: number, newStatus: string) => {
+      this.onStatusChangedHandlers.forEach(h => h(conversationId, newStatus));
+    });
+
     try {
       await this.connection.start();
     } catch (err) {
@@ -57,6 +74,8 @@ class ChatService {
     this.onUnreadHandlers = [];
     this.onTypingHandlers = [];
     this.onReadHandlers = [];
+    this.onOnlineHandlers = [];
+    this.onOfflineHandlers = [];
   }
 
   async sendMessage(conversationId: number, text: string): Promise<void> {
@@ -102,6 +121,27 @@ class ChatService {
     this.onReadHandlers.push(handler);
     return () => {
       this.onReadHandlers = this.onReadHandlers.filter(h => h !== handler);
+    };
+  }
+
+  onOnline(handler: PresenceHandler): () => void {
+    this.onOnlineHandlers.push(handler);
+    return () => {
+      this.onOnlineHandlers = this.onOnlineHandlers.filter(h => h !== handler);
+    };
+  }
+
+  onOffline(handler: PresenceHandler): () => void {
+    this.onOfflineHandlers.push(handler);
+    return () => {
+      this.onOfflineHandlers = this.onOfflineHandlers.filter(h => h !== handler);
+    };
+  }
+
+  onStatusChanged(handler: StatusChangedHandler): () => void {
+    this.onStatusChangedHandlers.push(handler);
+    return () => {
+      this.onStatusChangedHandlers = this.onStatusChangedHandlers.filter(h => h !== handler);
     };
   }
 

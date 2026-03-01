@@ -29,10 +29,10 @@ import type {
 } from '../types';
 
 const STRENGTH_CONFIG: Record<string, { label: string; color: string; emoji: string }> = {
-  strong: { label: 'Сильная', color: '#10b981', emoji: '💪' },
-  average: { label: 'Средняя', color: '#f59e0b', emoji: '📊' },
-  weak: { label: 'Слабая', color: '#ef4444', emoji: '⚠️' },
-  critical: { label: 'Критическая', color: '#dc2626', emoji: '🚨' },
+  strong: { label: 'Сильная', color: '#10b981', emoji: '' },
+  average: { label: 'Средняя', color: '#f59e0b', emoji: '' },
+  weak: { label: 'Слабая', color: '#ef4444', emoji: '' },
+  critical: { label: 'Критическая', color: '#dc2626', emoji: '' },
 };
 
 function PredictionPage() {
@@ -144,7 +144,7 @@ function PredictionPage() {
     <div className="animate-fade-in" style={{ padding: '1.5rem 0' }}>
       {/* Header with exam selector */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
-        <h1 style={{ margin: 0 }}>🔮 Прогноз результата</h1>
+        <h1 style={{ margin: 0 }}>Прогноз результата</h1>
         <select
           value={selectedExam}
           onChange={(e) => setSelectedExam(e.target.value)}
@@ -267,7 +267,7 @@ function ScoreCard({ prediction }: { prediction: ScorePrediction }) {
                   position: 'absolute', top: '-18px', left: '50%', transform: 'translateX(-50%)',
                   fontSize: '0.65rem', color: 'var(--error-color)', fontWeight: 700, whiteSpace: 'nowrap',
                 }}>
-                  🎯 {prediction.targetScore}
+                  {prediction.targetScore}
                 </div>
               </div>
             )}
@@ -281,7 +281,7 @@ function ScoreCard({ prediction }: { prediction: ScorePrediction }) {
               fontSize: '2rem', fontWeight: 700,
               color: prediction.gapToTarget === 0 ? 'var(--success-color)' : 'var(--warning-color)',
             }}>
-              {prediction.gapToTarget === 0 ? '✅' : `−${prediction.gapToTarget}`}
+              {prediction.gapToTarget === 0 ? '✓' : `−${prediction.gapToTarget}`}
             </div>
             <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
               {prediction.gapToTarget === 0 ? 'Цель достигнута!' : 'до цели'}
@@ -308,7 +308,7 @@ function SectionsBarChart({ sections }: { sections: SectionPrediction[] }) {
 
   return (
     <div className="card card-static animate-fade-in-up" style={{ padding: '1.25rem' }}>
-      <h3 style={{ margin: '0 0 1rem' }}>📊 Прогноз по секциям</h3>
+      <h3 style={{ margin: '0 0 1rem' }}>Прогноз по секциям</h3>
       <ResponsiveContainer width="100%" height={220}>
         <BarChart data={data} layout="vertical">
           <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
@@ -337,7 +337,7 @@ function SectionsRadar({ sections }: { sections: SectionPrediction[] }) {
 
   return (
     <div className="card card-static animate-fade-in-up" style={{ padding: '1.25rem' }}>
-      <h3 style={{ margin: '0 0 1rem' }}>🎯 Профиль по секциям</h3>
+      <h3 style={{ margin: '0 0 1rem' }}>Профиль по секциям</h3>
       <ResponsiveContainer width="100%" height={220}>
         <RadarChart data={radarData}>
           <PolarGrid stroke="var(--border-color)" />
@@ -357,7 +357,7 @@ function SectionsRadar({ sections }: { sections: SectionPrediction[] }) {
 function SectionDetails({ sections }: { sections: SectionPrediction[] }) {
   return (
     <div style={{ marginTop: '1rem' }}>
-      <h3 style={{ marginBottom: '0.75rem' }}>📋 Детали по секциям</h3>
+      <h3 style={{ marginBottom: '0.75rem' }}>Детали по секциям</h3>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '0.75rem' }}>
         {sections.map((s) => {
           const cfg = STRENGTH_CONFIG[s.strength] || STRENGTH_CONFIG.average;
@@ -420,7 +420,7 @@ function SectionDetails({ sections }: { sections: SectionPrediction[] }) {
 function ImprovementTips({ tips }: { tips: ScorePrediction['improvementTips'] }) {
   return (
     <div className="card card-static animate-fade-in-up" style={{ padding: '1.25rem', marginTop: '1rem' }}>
-      <h3 style={{ margin: '0 0 1rem' }}>💡 Рекомендации по улучшению</h3>
+      <h3 style={{ margin: '0 0 1rem' }}>Рекомендации по улучшению</h3>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
         {tips.map((tip, i) => (
           <div key={i} style={{
@@ -475,7 +475,7 @@ function WhatIfSection({
 }) {
   return (
     <div className="card card-static animate-fade-in-up" style={{ padding: '1.25rem', marginTop: '1rem' }}>
-      <h3 style={{ margin: '0 0 1rem' }}>🧪 Что если...?</h3>
+      <h3 style={{ margin: '0 0 1rem' }}>Что если...?</h3>
       <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1rem' }}>
         Узнайте, как улучшение конкретной темы повлияет на прогнозируемый балл
       </p>
@@ -573,7 +573,7 @@ function HistoryChart({ history, prediction }: { history: PredictionHistory[]; p
 
   return (
     <div className="card card-static animate-fade-in-up" style={{ padding: '1.25rem', marginTop: '1rem' }}>
-      <h3 style={{ margin: '0 0 1rem' }}>📈 История прогноза</h3>
+      <h3 style={{ margin: '0 0 1rem' }}>История прогноза</h3>
       <ResponsiveContainer width="100%" height={280}>
         <AreaChart data={data}>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />

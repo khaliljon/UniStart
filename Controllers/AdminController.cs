@@ -656,4 +656,74 @@ public class AdminController : ControllerBase
     }
 
     private string? GetClientIp() => HttpContext.Connection.RemoteIpAddress?.ToString();
+
+    // ═══════════════════════════════════════════════════════
+    //  TUTOR MODERATION (T-10)
+    // ═══════════════════════════════════════════════════════
+
+    /// <summary>List all tutors with their profiles</summary>
+    [HttpGet("tutors")]
+    public async Task<IActionResult> GetAllTutors()
+    {
+        var tutors = await _db.TutorProfiles
+            .Include(tp => tp.User)
+            .OrderByDescending(tp => tp.CreatedAt)
+            .Select(tp => new
+            {
+                tutorProfileId = tp.Id,
+                userId = tp.UserId,
+                name = tp.User.Name,
+                email = tp.User.Email,
+                headline = tp.Headline,
+                specializations = tp.Specializations,
+                isAvailable = tp.IsAvailable,
+                isVerified = tp.IsVerified,
+                isBlocked = tp.User.IsBlocked,
+                blockReason = tp.User.BlockReason,
+                averageRating = tp.AverageRating,
+                totalReviews = tp.TotalReviews,
+                totalStudents = tp.TotalStudents,
+                hourlyRate = tp.HourlyRate,
+                createdAt = tp.CreatedAt
+            })
+            .ToListAsync();
+
+        return Ok(tutors);
+    }
+
+    /// <summary>Verify a tutor profile</summary>
+    [HttpPost("tutors/{id:int}/verify")]
+    public async Task<IActionResult> VerifyTutor(int id)
+    {
+        var profile = await _db.TutorProfiles.Include(tp => tp.User).FirstOrDefaultAsync(tp => tp.Id == id);
+        if (profile == null) return NotFound(new { error = "Tutor profile not found" });
+
+        profile.IsVerified = true;
+        await _db.SaveChangesAsync();
+
+        var (adminId, email) = GetCurrentAdmin();
+        await _audit.LogAsync(adminId, email, "VerifyTutor", "TutorProfile", id.ToString(),
+            newValues: new { profile.UserId, profile.User.Name, IsVerified = true },
+            ipAddress: GetClientIp());
+
+        return Ok(new { verified = true, tutorProfileId = id });
+    }
+
+    /// <summary>Unverify a tutor profile</summary>
+    [HttpPost("tutors/{id:int}/unverify")]
+    public async Task<IActionResult> UnverifyTutor(int id)
+    {
+        var profile = await _db.TutorProfiles.Include(tp => tp.User).FirstOrDefaultAsync(tp => tp.Id == id);
+        if (profile == null) return NotFound(new { error = "Tutor profile not found" });
+
+        profile.IsVerified = false;
+        await _db.SaveChangesAsync();
+
+        var (adminId, email) = GetCurrentAdmin();
+        await _audit.LogAsync(adminId, email, "UnverifyTutor", "TutorProfile", id.ToString(),
+            newValues: new { profile.UserId, profile.User.Name, IsVerified = false },
+            ipAddress: GetClientIp());
+
+        return Ok(new { verified = false, tutorProfileId = id });
+    }
 }

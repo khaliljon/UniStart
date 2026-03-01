@@ -38,7 +38,7 @@ export function DailyLimitModal({ isOpen, onClose }: DailyLimitModalProps) {
           textAlign: 'center',
           boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
         }}>
-          <div style={{ fontSize: '3.5rem', marginBottom: '1rem' }}>⏰</div>
+          <div style={{ fontSize: '3.5rem', marginBottom: '1rem' }}></div>
           <h2 style={{ fontSize: '1.5rem', marginBottom: '0.75rem', color: 'var(--text-primary)' }}>
             Лимит на сегодня исчерпан
           </h2>
@@ -63,7 +63,7 @@ export function DailyLimitModal({ isOpen, onClose }: DailyLimitModalProps) {
               marginBottom: '0.75rem',
             }}
           >
-            🚀 Перейти на Pro
+            Перейти на Pro
           </button>
 
           <button

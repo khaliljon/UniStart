@@ -12,8 +12,13 @@ public class Conversation
     public int UnreadCountStudent { get; set; } = 0;
     public int UnreadCountTutor { get; set; } = 0;
 
-    public ConversationStatus Status { get; set; } = ConversationStatus.Active;
+    public ConversationStatus Status { get; set; } = ConversationStatus.Pending;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    // Enrollment flow
+    public string? RequestMessage { get; set; }   // Student's initial message in request
+    public DateTime? DeclinedAt { get; set; }
+    public string? DeclineReason { get; set; }
 
     // Navigation
     public virtual User Student { get; set; } = null!;
@@ -23,6 +28,8 @@ public class Conversation
 
 public enum ConversationStatus
 {
+    Pending,
     Active,
+    Declined,
     Archived
 }

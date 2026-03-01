@@ -9,9 +9,9 @@ import type { ExamTypeInfo } from '../types';
 type Step = 'welcome' | 'exam' | 'target' | 'ready';
 
 const EXAM_ICONS: Record<string, string> = {
-  SAT: '🎓',
-  TOEFL: '🌍',
-  NUET: '🇰🇿',
+  SAT: '',
+  TOEFL: '',
+  NUET: '',
 };
 
 const EXAM_COLORS: Record<string, string> = {
@@ -138,7 +138,6 @@ function OnboardingPage() {
         {/* ─── Step 1: Welcome ─── */}
         {step === 'welcome' && (
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🚀</div>
             <h1 style={{ fontSize: '2rem', marginBottom: '0.75rem', color: 'var(--text-primary)' }}>
               Добро пожаловать, {user?.name}!
             </h1>
@@ -156,10 +155,10 @@ function OnboardingPage() {
               <h3 style={{ marginBottom: '1rem', color: 'var(--text-primary)' }}>Что вас ждёт:</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 {[
-                  { icon: '🎯', text: 'Адаптивные тесты, подстраивающиеся под ваш уровень' },
-                  { icon: '📊', text: 'Детальная аналитика и прогноз баллов' },
-                  { icon: '📅', text: 'Персональный план подготовки' },
-                  { icon: '📝', text: 'Пробные экзамены в реальном формате' },
+                  { icon: '', text: 'Адаптивные тесты, подстраивающиеся под ваш уровень' },
+                  { icon: '', text: 'Детальная аналитика и прогноз баллов' },
+                  { icon: '', text: 'Персональный план подготовки' },
+                  { icon: '', text: 'Пробные экзамены в реальном формате' },
                 ].map((item, i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                     <span style={{ fontSize: '1.3rem' }}>{item.icon}</span>
@@ -372,7 +371,7 @@ function OnboardingPage() {
                   color: 'var(--text-primary)',
                   fontSize: '0.95rem',
                 }}>
-                  📅 Дата экзамена
+                  Дата экзамена
                 </label>
                 <input
                   type="date"
@@ -411,7 +410,7 @@ function OnboardingPage() {
                   color: 'var(--text-primary)',
                   fontSize: '0.95rem',
                 }}>
-                  🎯 Целевой балл
+                  Целевой балл
                 </label>
                 <div style={{
                   display: 'flex',
@@ -541,7 +540,6 @@ function OnboardingPage() {
         {/* ─── Step 4: Ready! ─── */}
         {step === 'ready' && selectedExam && (
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🎉</div>
             <h2 style={{ fontSize: '1.75rem', marginBottom: '0.75rem', color: 'var(--text-primary)' }}>
               Всё готово!
             </h2>
@@ -613,9 +611,9 @@ function OnboardingPage() {
               </h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 {[
-                  { icon: '1️⃣', text: 'Пройдите диагностический тест, чтобы определить уровень' },
-                  { icon: '2️⃣', text: 'Изучите план подготовки на сегодня' },
-                  { icon: '3️⃣', text: 'Просмотрите свою аналитику после первых тестов' },
+                  { icon: '1.', text: 'Пройдите диагностический тест, чтобы определить уровень' },
+                  { icon: '2.', text: 'Изучите план подготовки на сегодня' },
+                  { icon: '3.', text: 'Просмотрите свою аналитику после первых тестов' },
                 ].map((item, i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <span>{item.icon}</span>
@@ -636,7 +634,7 @@ function OnboardingPage() {
                 marginBottom: '0.75rem',
               }}
             >
-              🩺 Пройти диагностический тест
+              Пройти диагностический тест
             </button>
 
             <button

@@ -287,20 +287,20 @@ function AdminQuestionsPage() {
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
         <div>
-          <h1 style={{ margin: 0 }}>📋 Управление вопросами</h1>
+          <h1 style={{ margin: 0 }}>Управление вопросами</h1>
           <p style={{ color: 'var(--text-secondary)', margin: '0.25rem 0 0' }}>
             {totalCount} вопросов • {topics.length} тем{totalPages > 1 ? ` • стр. ${page}/${totalPages}` : ''}
           </p>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           <button className="btn btn-primary" onClick={() => startCreate()} style={{ fontSize: '0.9rem' }}>
-            ➕ Новый вопрос
+            Новый вопрос
           </button>
           <button className="btn btn-outline" onClick={openTopicModal} style={{ fontSize: '0.9rem' }}>
-            📂 Новая тема
+            Новая тема
           </button>
           <button className="btn btn-outline" onClick={() => adminService.exportQuestionsCsv(filterExam || undefined, filterDiff || undefined)} style={{ fontSize: '0.9rem' }}>
-            📥 CSV
+            CSV
           </button>
         </div>
       </div>
@@ -346,7 +346,7 @@ function AdminQuestionsPage() {
               background: viewMode === 'table' ? 'var(--primary-color)' : 'var(--card-background)',
               color: viewMode === 'table' ? '#fff' : 'var(--text-secondary)',
             }}
-          >📋 Таблица</button>
+          >Таблица</button>
           <button
             onClick={() => setViewMode('topics')}
             style={{
@@ -355,7 +355,7 @@ function AdminQuestionsPage() {
               background: viewMode === 'topics' ? 'var(--primary-color)' : 'var(--card-background)',
               color: viewMode === 'topics' ? '#fff' : 'var(--text-secondary)',
             }}
-          >📂 По темам</button>
+          >По темам</button>
         </div>
       </div>
 
@@ -449,7 +449,7 @@ function AdminQuestionsPage() {
                       style={{ fontSize: '0.8rem', padding: '0.3rem 0.7rem' }}
                       onClick={() => startCreate(topicObj.id)}
                     >
-                      ➕ Добавить
+                      Добавить
                     </button>
                   )}
                 </div>
@@ -539,7 +539,7 @@ function AdminQuestionsPage() {
                     background: 'rgba(79,70,229,0.06)', border: '1px solid var(--primary-color)',
                     fontSize: '0.9rem', marginBottom: '1rem', lineHeight: 1.5,
                   }}>
-                    <strong>💡 Объяснение:</strong> {selected.explanation}
+                    <strong>Объяснение:</strong> {selected.explanation}
                   </div>
                 )}
 
@@ -551,11 +551,11 @@ function AdminQuestionsPage() {
 
                 <div style={{ display: 'flex', gap: '0.75rem' }}>
                   <button className="btn btn-primary" style={{ fontSize: '0.85rem' }} onClick={startEdit}>
-                    ✏️ Редактировать
+                    Редактировать
                   </button>
                   <button className="btn btn-outline" style={{ fontSize: '0.85rem', color: 'var(--error-color)', borderColor: 'var(--error-color)' }}
                     onClick={() => deleteQuestion(selected.id)}>
-                    🗑️ Удалить
+                    Удалить
                   </button>
                 </div>
               </>
@@ -566,7 +566,7 @@ function AdminQuestionsPage() {
               <>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
                   <h2 style={{ margin: 0, fontSize: '1.15rem' }}>
-                    {modalMode === 'create' ? '➕ Новый вопрос' : '✏️ Редактирование'}
+                    {modalMode === 'create' ? 'Новый вопрос' : 'Редактирование'}
                   </h2>
                   <button onClick={closeModal} style={closeBtn}>✕</button>
                 </div>
@@ -696,7 +696,7 @@ function AdminQuestionsPage() {
                   {/* Actions */}
                   <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
                     <button className="btn btn-primary" onClick={modalMode === 'create' ? saveCreate : saveEdit} style={{ flex: 1 }}>
-                      {modalMode === 'create' ? '✅ Создать вопрос' : '💾 Сохранить'}
+                      {modalMode === 'create' ? 'Создать вопрос' : 'Сохранить'}
                     </button>
                     <button className="btn btn-outline" onClick={modalMode === 'edit' ? () => setModalMode('view') : closeModal} style={{ flex: 1 }}>
                       Отмена
@@ -724,7 +724,7 @@ function AdminQuestionsPage() {
             onClick={e => e.stopPropagation()}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-              <h2 style={{ margin: 0, fontSize: '1.15rem' }}>📂 Новая тема</h2>
+              <h2 style={{ margin: 0, fontSize: '1.15rem' }}>Новая тема</h2>
               <button onClick={() => setShowTopicModal(false)} style={closeBtn}>✕</button>
             </div>
 
@@ -778,7 +778,7 @@ function AdminQuestionsPage() {
 
               <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
                 <button className="btn btn-primary" onClick={saveTopic} style={{ flex: 1 }}>
-                  ✅ Создать тему
+                  Создать тему
                 </button>
                 <button className="btn btn-outline" onClick={() => setShowTopicModal(false)} style={{ flex: 1 }}>
                   Отмена

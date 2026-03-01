@@ -50,7 +50,7 @@ export function ProGate({ children, hasAccess, featureName = 'эту функц�
             boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
             maxWidth: '320px',
           }}>
-            <div style={{ fontSize: '2rem', marginBottom: '0.75rem' }}>🔒</div>
+            <div style={{ fontSize: '2rem', marginBottom: '0.75rem' }}></div>
             <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.1rem', color: 'var(--text-primary)' }}>
               Pro-функция
             </h3>

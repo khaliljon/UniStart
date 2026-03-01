@@ -87,6 +87,11 @@ try
     builder.Services.AddScoped<IMessageService, MessageService>();
 
     // ═══════════════════════════════════════════════════════
+    //  PRESENCE TRACKER — Singleton (T-9)
+    // ═══════════════════════════════════════════════════════
+    builder.Services.AddSingleton<PresenceTracker>();
+
+    // ═══════════════════════════════════════════════════════
     //  SIGNALR — Real-time Chat
     // ═══════════════════════════════════════════════════════
     builder.Services.AddSignalR();

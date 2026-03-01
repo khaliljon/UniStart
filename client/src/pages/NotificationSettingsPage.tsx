@@ -7,31 +7,31 @@ const NOTIFICATION_ITEMS = [
     key: 'welcomeEmail' as const,
     label: 'Welcome-письмо',
     description: 'Приветственное письмо при регистрации',
-    icon: '👋',
+    icon: '',
   },
   {
     key: 'streakReminder' as const,
     label: 'Напоминание о серии',
     description: 'Уведомление, если вы не занимались 2+ дня',
-    icon: '🔥',
+    icon: '',
   },
   {
     key: 'weeklyDigest' as const,
     label: 'Еженедельный дайджест',
     description: 'Отчёт о прогрессе за неделю каждый понедельник',
-    icon: '📊',
+    icon: '',
   },
   {
     key: 'studyPlanReminder' as const,
     label: 'Напоминание о плане',
     description: 'Ежедневное напоминание о плане обучения',
-    icon: '📅',
+    icon: '',
   },
   {
     key: 'achievementNotification' as const,
     label: 'Достижения',
     description: 'Уведомления о новых достижениях и вехах',
-    icon: '🏆',
+    icon: '',
   },
 ];
 
@@ -122,7 +122,7 @@ function NotificationSettingsPage() {
 
   return (
     <div style={{ maxWidth: 640, margin: '0 auto' }}>
-      <h1 style={{ marginBottom: '0.5rem' }}>📬 Уведомления</h1>
+      <h1 style={{ marginBottom: '0.5rem' }}>Уведомления</h1>
       <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>
         Управляйте email-уведомлениями. Мы отправляем только то, что вам действительно нужно.
       </p>
@@ -251,7 +251,7 @@ function NotificationSettingsPage() {
         }}
       >
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
-          <span style={{ fontSize: '1.25rem' }}>💡</span>
+          <span style={{ fontSize: '1.25rem' }}></span>
           <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
             <strong style={{ color: 'var(--text-primary)' }}>Как это работает:</strong>
             <br />

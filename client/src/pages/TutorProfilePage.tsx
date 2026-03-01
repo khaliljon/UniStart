@@ -22,6 +22,9 @@ function TutorProfilePage() {
   const [reviewSuccess, setReviewSuccess] = useState(false);
 
   const [startingChat, setStartingChat] = useState(false);
+  const [showRequestModal, setShowRequestModal] = useState(false);
+  const [requestMessage, setRequestMessage] = useState('');
+  const [requestSent, setRequestSent] = useState(false);
 
   const fetchProfile = useCallback(async () => {
     if (!userId) return;
@@ -44,10 +47,15 @@ function TutorProfilePage() {
     if (!profile) return;
     setStartingChat(true);
     try {
-      const conversation = await messageService.startConversation(profile.userId);
-      navigate(`/messages?c=${conversation.id}`);
+      const conversation = await messageService.startConversation(profile.userId, requestMessage || undefined);
+      if (conversation.status === 'Pending') {
+        setRequestSent(true);
+        setShowRequestModal(false);
+      } else {
+        navigate(`/messages?c=${conversation.id}`);
+      }
     } catch {
-      alert('Не удалось начать диалог');
+      alert('Не удалось отправить заявку');
     } finally {
       setStartingChat(false);
     }
@@ -85,7 +93,7 @@ function TutorProfilePage() {
   if (error || !profile) {
     return (
       <div className="animate-fade-in card" style={{ textAlign: 'center', padding: '3rem' }}>
-        <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>😔</div>
+        <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>—</div>
         <h3>{error || 'Тьютор не найден'}</h3>
         <button className="btn btn-primary" onClick={() => navigate('/tutors')} style={{ marginTop: '1rem' }}>
           ← К списку тьюторов
@@ -137,12 +145,12 @@ function TutorProfilePage() {
               <strong>{profile.averageRating.toFixed(1)}</strong>{' '}
               <span style={{ color: 'var(--text-secondary)' }}>({profile.totalReviews} отзывов)</span>
             </div>
-            <div>👥 <strong>{profile.totalStudents}</strong> учеников</div>
+            <div><strong>{profile.totalStudents}</strong> учеников</div>
             {profile.hourlyRate != null && (
               <div style={{ color: 'var(--primary-color)', fontWeight: 600 }}>{profile.hourlyRate}₽/час</div>
             )}
             <div style={{ color: 'var(--text-secondary)' }}>
-              📧 {profile.contactPreference === 'Chat' ? 'Чат' : profile.contactPreference === 'Email' ? 'Email' : 'Чат / Email'}
+              {profile.contactPreference === 'Chat' ? 'Чат' : profile.contactPreference === 'Email' ? 'Email' : 'Чат / Email'}
             </div>
           </div>
 
@@ -162,14 +170,24 @@ function TutorProfilePage() {
         {/* Action buttons */}
         {!isOwnProfile && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignSelf: 'flex-start' }}>
-            <button
-              className="btn btn-primary"
-              onClick={handleStartChat}
-              disabled={startingChat}
-              style={{ padding: '0.65rem 1.5rem', fontSize: '0.95rem' }}
-            >
-              {startingChat ? '...' : '💬 Написать'}
-            </button>
+            {requestSent ? (
+              <div style={{
+                padding: '0.65rem 1.5rem', fontSize: '0.9rem', borderRadius: '8px',
+                background: 'var(--bg-secondary)', color: 'var(--text-secondary)',
+                textAlign: 'center', fontWeight: 500,
+              }}>
+                Заявка отправлена
+              </div>
+            ) : (
+              <button
+                className="btn btn-primary"
+                onClick={() => setShowRequestModal(true)}
+                disabled={startingChat}
+                style={{ padding: '0.65rem 1.5rem', fontSize: '0.95rem' }}
+              >
+                Написать тьютору
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -180,7 +198,7 @@ function TutorProfilePage() {
           {/* Bio */}
           {profile.bio && (
             <div className="card">
-              <h3 style={{ margin: '0 0 0.75rem' }}>📄 О себе</h3>
+              <h3 style={{ margin: '0 0 0.75rem' }}>О себе</h3>
               <p style={{ margin: 0, whiteSpace: 'pre-line', lineHeight: 1.6, fontSize: '0.93rem' }}>{profile.bio}</p>
             </div>
           )}
@@ -188,7 +206,7 @@ function TutorProfilePage() {
           {/* Experience */}
           {profile.experience && (
             <div className="card">
-              <h3 style={{ margin: '0 0 0.75rem' }}>🏆 Опыт</h3>
+              <h3 style={{ margin: '0 0 0.75rem' }}>Опыт</h3>
               <p style={{ margin: 0, whiteSpace: 'pre-line', lineHeight: 1.6, fontSize: '0.93rem' }}>{profile.experience}</p>
             </div>
           )}
@@ -196,7 +214,7 @@ function TutorProfilePage() {
           {/* Schedule */}
           {profile.schedule.length > 0 && (
             <div className="card">
-              <h3 style={{ margin: '0 0 0.75rem' }}>📅 Расписание</h3>
+              <h3 style={{ margin: '0 0 0.75rem' }}>Расписание</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                 {profile.schedule.map(slot => (
                   <div key={slot.id} style={{
@@ -217,7 +235,7 @@ function TutorProfilePage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div className="card">
             <h3 style={{ margin: '0 0 0.75rem' }}>
-              💬 Отзывы ({profile.totalReviews})
+              Отзывы ({profile.totalReviews})
             </h3>
 
             {profile.recentReviews.length === 0 ? (
@@ -248,7 +266,7 @@ function TutorProfilePage() {
           {/* Leave a review */}
           {!isOwnProfile && !reviewSuccess && (
             <div className="card">
-              <h3 style={{ margin: '0 0 0.75rem' }}>✍️ Оставить отзыв</h3>
+              <h3 style={{ margin: '0 0 0.75rem' }}>Оставить отзыв</h3>
               <form onSubmit={handleReview} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 <div>
                   <label style={{ fontSize: '0.85rem', marginBottom: '0.25rem', display: 'block' }}>Оценка</label>
@@ -293,11 +311,46 @@ function TutorProfilePage() {
 
           {reviewSuccess && (
             <div className="card" style={{ background: '#10b981', color: '#fff', textAlign: 'center' }}>
-              ✅ Спасибо за ваш отзыв!
+              Спасибо за ваш отзыв!
             </div>
           )}
         </div>
       </div>
+
+      {/* Request Modal */}
+      {showRequestModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 1000,
+        }} onClick={() => setShowRequestModal(false)}>
+          <div className="card" style={{ width: '100%', maxWidth: '480px', margin: '1rem' }} onClick={e => e.stopPropagation()}>
+            <h3 style={{ margin: '0 0 0.5rem' }}>Заявка на обучение</h3>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: '0 0 1rem' }}>
+              Тьютор {profile.name} получит вашу заявку и решит, принять или отклонить.
+              После принятия откроется чат.
+            </p>
+            <textarea
+              className="form-input"
+              rows={4}
+              value={requestMessage}
+              onChange={e => setRequestMessage(e.target.value)}
+              placeholder="Расскажите о себе и ваших целях (необязательно)..."
+              style={{ width: '100%', resize: 'vertical', fontSize: '0.9rem', marginBottom: '1rem' }}
+            />
+            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+              <button className="btn" onClick={() => setShowRequestModal(false)}>Отмена</button>
+              <button
+                className="btn btn-primary"
+                onClick={handleStartChat}
+                disabled={startingChat}
+              >
+                {startingChat ? 'Отправка...' : 'Отправить заявку'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

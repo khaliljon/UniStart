@@ -53,7 +53,7 @@ function HistoryPage() {
     });
   };
 
-  const getModeIcon = (mode: string) => (mode === 'exam' ? '⏱️' : '📚');
+  const getModeIcon = (mode: string) => (mode === 'exam' ? '' : '');
   const getScoreColor = (score: number | null) => {
     if (score === null) return 'var(--text-secondary)';
     if (score >= 80) return 'var(--success-color)';
@@ -173,12 +173,12 @@ function HistoryPage() {
                                   fontSize: '0.85rem',
                                   color: 'var(--text-secondary)',
                                 }}>
-                                  💡 {answer.explanation}
+                                  {answer.explanation}
                                 </div>
                               )}
                             </div>
                             <span style={{ fontSize: '1.25rem', flexShrink: 0 }}>
-                              {answer.isCorrect ? '✅' : '❌'}
+                              {answer.isCorrect ? '✓' : '✕'}
                             </span>
                           </div>
                         </div>

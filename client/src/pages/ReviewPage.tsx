@@ -80,7 +80,7 @@ export default function ReviewPage() {
   if (questions.length === 0) {
     return (
       <div className="card animate-fade-in-scale" style={{ maxWidth: '500px', margin: '2rem auto', textAlign: 'center', padding: '3rem' }}>
-        <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🎉</div>
+        <div style={{ fontSize: '4rem', marginBottom: '1rem' }}></div>
         <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '1rem', color: 'var(--text-primary)' }}>Отлично!</h2>
         <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
           У вас нет ошибок для повторения. Продолжайте практиковаться!
@@ -114,7 +114,7 @@ export default function ReviewPage() {
           fontSize: '0.875rem',
           fontWeight: '500'
         }}>
-          🔄 Повторение ошибок
+          Повторение ошибок
         </span>
         <button onClick={() => navigate('/test')} className="btn btn-outline">
           ← Назад
@@ -225,7 +225,7 @@ export default function ReviewPage() {
             border: `1px solid ${answerResult.isCorrect ? 'var(--success-color)' : 'var(--error-color)'}`
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-              <span style={{ fontSize: '1.5rem' }}>{answerResult.isCorrect ? '✅' : '❌'}</span>
+              <span style={{ fontSize: '1.5rem' }}>{answerResult.isCorrect ? '✓' : '✕'}</span>
               <span style={{ fontWeight: '600', color: answerResult.isCorrect ? 'var(--success-color)' : 'var(--error-color)' }}>
                 {answerResult.isCorrect ? 'Правильно!' : 'Неправильно'}
               </span>

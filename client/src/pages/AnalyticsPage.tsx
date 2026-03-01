@@ -136,7 +136,7 @@ function AnalyticsPage() {
         </div>
         <div className="card stat-card animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
           <div className="stat-value" style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', justifyContent: 'center' }}>
-            🔥 {dashboard.currentStreak}
+            {dashboard.currentStreak}
           </div>
           <div className="stat-label">Day Streak (Best: {dashboard.bestStreak})</div>
         </div>

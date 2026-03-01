@@ -120,7 +120,8 @@ public class AuthService : IAuthService
             user.Email,
             user.Name,
             user.Role.ToString(),
-            user.CreatedAt
+            user.CreatedAt,
+            user.LastSeenAt
         );
     }
 
@@ -149,7 +150,8 @@ public class AuthService : IAuthService
             user.Email,
             user.Name,
             user.Role.ToString(),
-            user.CreatedAt
+            user.CreatedAt,
+            user.LastSeenAt
         );
     }
 }

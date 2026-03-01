@@ -38,7 +38,8 @@ public class MessageService : IMessageService
                 c.LastMessagePreview,
                 c.LastMessageAt,
                 unread,
-                c.Status.ToString()
+                c.Status.ToString(),
+                c.RequestMessage
             );
         }).ToList();
     }
@@ -67,6 +68,7 @@ public class MessageService : IMessageService
 
         var items = messages.Select(m => new MessageDto(
             m.Id,
+            conversationId,
             m.SenderId,
             m.Sender.Name,
             m.Text,
@@ -87,6 +89,10 @@ public class MessageService : IMessageService
 
         if (conv.StudentId != senderId && conv.TutorId != senderId)
             throw new UnauthorizedAccessException("Access denied");
+
+        // Block sending in non-active conversations
+        if (conv.Status != ConversationStatus.Active)
+            throw new InvalidOperationException("Отправка сообщений возможна только в активных диалогах");
 
         var message = new Message
         {
@@ -113,12 +119,12 @@ public class MessageService : IMessageService
 
         var sender = await _db.Users.FindAsync(senderId);
         return new MessageDto(
-            message.Id, senderId, sender?.Name ?? "—", message.Text,
+            message.Id, conversationId, senderId, sender?.Name ?? "—", message.Text,
             message.SentAt, null, false, "Text", true
         );
     }
 
-    public async Task<ConversationDto> StartConversationAsync(int studentId, int tutorId)
+    public async Task<ConversationDto> StartConversationAsync(int studentId, int tutorId, string? requestMessage)
     {
         // Check tutor exists and is a tutor
         var tutor = await _db.Users.FindAsync(tutorId)
@@ -140,16 +146,18 @@ public class MessageService : IMessageService
             return new ConversationDto(
                 existing.Id, tutor.Id, tutor.Name, tutor.Role.ToString(),
                 existing.LastMessagePreview, existing.LastMessageAt,
-                existing.UnreadCountStudent, existing.Status.ToString()
+                existing.UnreadCountStudent, existing.Status.ToString(),
+                existing.RequestMessage
             );
         }
 
-        // Create new conversation
+        // Create new conversation with Pending status
         var conv = new Conversation
         {
             StudentId = studentId,
             TutorId = tutorId,
-            Status = ConversationStatus.Active,
+            Status = ConversationStatus.Pending,
+            RequestMessage = requestMessage?.Length > 500 ? requestMessage[..500] : requestMessage,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -160,7 +168,7 @@ public class MessageService : IMessageService
         {
             Conversation = conv,
             SenderId = studentId,
-            Text = $"{student.Name} начал(а) беседу",
+            Text = $"{student.Name} отправил(а) заявку на обучение",
             SentAt = DateTime.UtcNow,
             Type = MessageType.System
         };
@@ -170,21 +178,13 @@ public class MessageService : IMessageService
         conv.LastMessageAt = sysMsg.SentAt;
         conv.UnreadCountTutor = 1;
 
-        // Update tutor's student count
-        var tutorProfile = await _db.TutorProfiles.FirstOrDefaultAsync(tp => tp.UserId == tutorId);
-        if (tutorProfile != null)
-        {
-            var studentCount = await _db.Conversations
-                .CountAsync(c => c.TutorId == tutorId && c.Status == ConversationStatus.Active);
-            tutorProfile.TotalStudents = studentCount + 1; // +1 for the new one
-        }
-
         await _db.SaveChangesAsync();
 
         return new ConversationDto(
             conv.Id, tutor.Id, tutor.Name, tutor.Role.ToString(),
             conv.LastMessagePreview, conv.LastMessageAt,
-            0, conv.Status.ToString()
+            0, conv.Status.ToString(),
+            conv.RequestMessage
         );
     }
 
@@ -227,5 +227,23 @@ public class MessageService : IMessageService
             .SumAsync(c => c.UnreadCountTutor);
 
         return asStudent + asTutor;
+    }
+
+    public async Task<string> GetUserNameAsync(int userId)
+    {
+        var user = await _db.Users.FindAsync(userId);
+        return user?.Name ?? "—";
+    }
+
+    public async Task<bool> ArchiveConversationAsync(int conversationId, int userId)
+    {
+        var conv = await _db.Conversations.FindAsync(conversationId);
+        if (conv == null) return false;
+        if (conv.StudentId != userId && conv.TutorId != userId) return false;
+        if (conv.Status == ConversationStatus.Archived) return true;
+
+        conv.Status = ConversationStatus.Archived;
+        await _db.SaveChangesAsync();
+        return true;
     }
 }

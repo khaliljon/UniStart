@@ -913,10 +913,12 @@ export interface Conversation {
   lastMessageAt: string | null;
   unreadCount: number;
   status: string;
+  requestMessage: string | null;
 }
 
 export interface Message {
   id: number;
+  conversationId: number;
   senderId: number;
   senderName: string;
   text: string;
@@ -931,4 +933,28 @@ export interface MessagesPage {
   items: Message[];
   totalCount: number;
   hasMore: boolean;
+}
+
+export interface PendingRequest {
+  conversationId: number;
+  studentId: number;
+  studentName: string;
+  studentEmail: string;
+  requestMessage: string | null;
+  requestedAt: string;
+}
+
+export interface StudentInfo {
+  userId: number;
+  name: string;
+  email: string;
+  conversationStartedAt: string;
+  lastMessageAt: string | null;
+  lastMessagePreview: string | null;
+}
+
+export interface AcceptDeclineResult {
+  conversationId: number;
+  status: string;
+  systemMessage: string | null;
 }

@@ -32,7 +32,8 @@ public record UserDto(
     string Email,
     string Name,
     string Role,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    DateTime? LastSeenAt = null
 );
 
 public record UpdateUserDto(

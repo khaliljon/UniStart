@@ -1,4 +1,5 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { useState, useRef, useEffect } from 'react';
 import { useAppDispatch } from '../hooks/useAppDispatch';
 import { useAppSelector } from '../hooks/useAppSelector';
 import { useTheme } from '../hooks/useTheme';
@@ -9,6 +10,18 @@ function AdminLayout() {
   const navigate = useNavigate();
   const { user } = useAppSelector((state) => state.auth);
   const { theme, toggleTheme } = useTheme();
+  const [moreOpen, setMoreOpen] = useState(false);
+  const moreRef = useRef<HTMLLIElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (moreRef.current && !moreRef.current.contains(e.target as Node)) {
+        setMoreOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   const handleLogout = () => {
     dispatch(logout());
@@ -36,38 +49,60 @@ function AdminLayout() {
           <ul className="navbar-nav">
             <li>
               <NavLink to="/" end>
-                📊 Статистика
+                Обзор
               </NavLink>
             </li>
             <li>
               <NavLink to="/questions">
-                📋 Вопросы
+                Вопросы
               </NavLink>
             </li>
             <li>
               <NavLink to="/users">
-                👥 Пользователи
+                Пользователи
               </NavLink>
             </li>
-            <li>
-              <NavLink to="/import">
-                📥 Импорт
-              </NavLink>
-            </li>
-            <li>
-              <NavLink to="/audit">
-                📜 Аудит
-              </NavLink>
-            </li>
-            <li>
-              <NavLink to="/health">
-                🏥 Здоровье
-              </NavLink>
-            </li>
-            <li>
-              <NavLink to="/activity">
-                👤 Активность
-              </NavLink>
+            <li ref={moreRef} style={{ position: 'relative' }}>
+              <button
+                onClick={() => setMoreOpen(!moreOpen)}
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  color: 'var(--text-primary)', fontSize: 'inherit', fontFamily: 'inherit',
+                  padding: '0.5rem 0.75rem', display: 'flex', alignItems: 'center', gap: '0.25rem',
+                }}
+              >
+                Ещё <span style={{ fontSize: '0.55rem', opacity: 0.6 }}>▼</span>
+              </button>
+              {moreOpen && (
+                <div style={{
+                  position: 'absolute', top: '100%', right: 0, minWidth: '170px',
+                  background: 'var(--bg-primary)', border: '1px solid var(--border-color)',
+                  borderRadius: '8px', boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
+                  zIndex: 100, padding: '0.35rem 0', marginTop: '0.25rem',
+                }}>
+                  {[
+                    { label: 'Тьюторы', path: '/tutors' },
+                    { label: 'Импорт', path: '/import' },
+                    { label: 'Аудит', path: '/audit' },
+                    { label: 'Здоровье', path: '/health' },
+                    { label: 'Активность', path: '/activity' },
+                  ].map(item => (
+                    <NavLink
+                      key={item.path}
+                      to={item.path}
+                      onClick={() => setMoreOpen(false)}
+                      style={({ isActive }) => ({
+                        display: 'block', padding: '0.5rem 1rem', fontSize: '0.88rem',
+                        color: isActive ? 'var(--primary-color)' : 'var(--text-primary)',
+                        fontWeight: isActive ? 600 : 400,
+                        textDecoration: 'none',
+                      })}
+                    >
+                      {item.label}
+                    </NavLink>
+                  ))}
+                </div>
+              )}
             </li>
           </ul>
 
@@ -75,15 +110,15 @@ function AdminLayout() {
             <button
               onClick={toggleTheme}
               className="theme-toggle"
-              title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+              title={theme === 'light' ? 'Тёмная тема' : 'Светлая тема'}
             >
-              {theme === 'light' ? '🌙' : '☀️'}
+              {theme === 'light' ? '◑' : '○'}
             </button>
             <span style={{ color: 'var(--text-secondary)' }}>
               {user?.name}
             </span>
             <button onClick={handleLogout} className="btn btn-outline">
-              Logout
+              Выйти
             </button>
           </div>
         </div>

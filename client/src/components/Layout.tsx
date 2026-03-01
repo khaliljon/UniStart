@@ -13,27 +13,22 @@ function Layout() {
           <ul className="navbar-nav">
             <li>
               <NavLink to="/" end>
-                🏠 Главная
+                Главная
               </NavLink>
             </li>
             <li>
               <NavLink to="/learn">
-                📚 Обучение
+                Обучение
               </NavLink>
             </li>
             <li>
               <NavLink to="/progress">
-                📊 Прогресс
+                Прогресс
               </NavLink>
             </li>
             <li>
               <NavLink to="/plan">
-                📅 План
-              </NavLink>
-            </li>
-            <li>
-              <NavLink to="/tutors">
-                🎓 Тьюторы
+                План
               </NavLink>
             </li>
           </ul>

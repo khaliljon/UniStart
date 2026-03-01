@@ -20,7 +20,7 @@ function ProfilePage() {
 
   return (
     <div className="animate-fade-in" style={{ maxWidth: '640px', margin: '0 auto', padding: '2rem 0' }}>
-      <h1 style={{ marginBottom: '1.5rem' }}>👤 Профиль</h1>
+      <h1 style={{ marginBottom: '1.5rem' }}>Профиль</h1>
 
       {/* ─── User Info Card ─── */}
       <div className="card" style={{ padding: '1.5rem', marginBottom: '1.25rem' }}>
@@ -47,7 +47,7 @@ function ProfilePage() {
 
       {/* ─── Subscription ─── */}
       <div className="card" style={{ padding: '1.5rem', marginBottom: '1.25rem' }}>
-        <h3 style={{ margin: '0 0 0.75rem', fontSize: '1rem' }}>💳 Подписка</h3>
+        <h3 style={{ margin: '0 0 0.75rem', fontSize: '1rem' }}>Подписка</h3>
         <div style={{
           display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem',
         }}>
@@ -56,7 +56,7 @@ function ProfilePage() {
             background: isPro ? 'linear-gradient(135deg, #f59e0b, #ef4444)' : 'var(--bg-secondary)',
             color: isPro ? '#fff' : 'var(--text-secondary)',
           }}>
-            {isPro ? '⭐ PRO' : 'FREE'}
+            {isPro ? 'PRO' : 'FREE'}
           </span>
           {isPro && user?.subscriptionExpiresAt && (
             <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
@@ -75,14 +75,14 @@ function ProfilePage() {
         {!isPro && (
           <button className="btn btn-primary" style={{ marginTop: '0.75rem', fontSize: '0.85rem' }}
             onClick={() => { /* TODO: upgrade flow */ }}>
-            ⬆️ Перейти на PRO
+            Перейти на PRO
           </button>
         )}
       </div>
 
       {/* ─── Selected Exams ─── */}
       <div className="card" style={{ padding: '1.5rem', marginBottom: '1.25rem' }}>
-        <h3 style={{ margin: '0 0 0.75rem', fontSize: '1rem' }}>📝 Мои экзамены</h3>
+        <h3 style={{ margin: '0 0 0.75rem', fontSize: '1rem' }}>Мои экзамены</h3>
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
           {exams.map(exam => {
             const isSelected = selectedExams.includes(exam.code);

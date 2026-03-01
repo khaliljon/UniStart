@@ -5,7 +5,9 @@ import type {
   UpdateTutorProfile,
   ScheduleSlotInput,
   CreateReviewRequest,
-  TutorCard,
+  StudentInfo,
+  PendingRequest,
+  AcceptDeclineResult,
 } from '../types';
 
 export interface TutorListParams {
@@ -40,8 +42,23 @@ export const tutorService = {
     await api.post(`/tutors/${userId}/reviews`, data);
   },
 
-  async getMyStudents(): Promise<TutorCard[]> {
-    const response = await api.get<TutorCard[]>('/tutors/my-students');
+  async getMyStudents(): Promise<StudentInfo[]> {
+    const response = await api.get<StudentInfo[]>('/tutors/my-students');
+    return response.data;
+  },
+
+  async getPendingRequests(): Promise<PendingRequest[]> {
+    const response = await api.get<PendingRequest[]>('/tutors/requests/pending');
+    return response.data;
+  },
+
+  async acceptStudent(conversationId: number): Promise<AcceptDeclineResult> {
+    const response = await api.post<AcceptDeclineResult>(`/tutors/requests/${conversationId}/accept`);
+    return response.data;
+  },
+
+  async declineStudent(conversationId: number, reason?: string): Promise<AcceptDeclineResult> {
+    const response = await api.post<AcceptDeclineResult>(`/tutors/requests/${conversationId}/decline`, { reason });
     return response.data;
   },
 };

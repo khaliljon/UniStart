@@ -145,7 +145,6 @@ function DiagnosticTestPage() {
             textAlign: 'center',
             boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
           }}>
-            <div style={{ fontSize: '3.5rem', marginBottom: '1rem' }}>🩺</div>
             <h1 style={{ fontSize: '1.75rem', marginBottom: '0.75rem', color: 'var(--text-primary)' }}>
               Диагностический тест
             </h1>
@@ -183,10 +182,10 @@ function DiagnosticTestPage() {
             }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
                 {[
-                  { icon: '⏱️', text: 'Занимает ~5 минут' },
-                  { icon: '📊', text: 'Вопросы Easy / Medium / Hard из каждой секции' },
-                  { icon: '🎯', text: 'Получите прогноз балла и уровень' },
-                  { icon: '💡', text: 'После каждого вопроса — объяснение' },
+                  { icon: '', text: 'Занимает ~5 минут' },
+                  { icon: '', text: 'Вопросы Easy / Medium / Hard из каждой секции' },
+                  { icon: '', text: 'Получите прогноз балла и уровень' },
+                  { icon: '', text: 'После каждого вопроса — объяснение' },
                 ].map((item, i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                     <span style={{ fontSize: '1.1rem' }}>{item.icon}</span>

@@ -8,10 +8,10 @@ import ReviewPage from './ReviewPage';
 type LearnTab = 'practice' | 'mock' | 'topics' | 'review';
 
 const TABS: { id: LearnTab; label: string; icon: string; desc: string }[] = [
-  { id: 'practice', label: 'Практика', icon: '▶️', desc: 'Адаптивный тест' },
-  { id: 'mock', label: 'Mock Exam', icon: '📝', desc: 'Полный формат экзамена' },
-  { id: 'topics', label: 'Темы', icon: '📂', desc: 'Уроки и практика по темам' },
-  { id: 'review', label: 'Ошибки', icon: '🔄', desc: 'Повторение ошибок' },
+  { id: 'practice', label: 'Практика', icon: '▶', desc: 'Адаптивный тест' },
+  { id: 'mock', label: 'Mock Exam', icon: '', desc: 'Полный формат экзамена' },
+  { id: 'topics', label: 'Темы', icon: '', desc: 'Уроки и практика по темам' },
+  { id: 'review', label: 'Ошибки', icon: '', desc: 'Повторение ошибок' },
 ];
 
 const isValidTab = (v: string | null): v is LearnTab =>
@@ -33,7 +33,6 @@ function LearnPage() {
   if (selectedExams.length === 0) {
     return (
       <div className="animate-fade-in" style={{ textAlign: 'center', padding: '4rem 1rem' }}>
-        <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📚</div>
         <h2>Выберите экзамен</h2>
         <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
           Для начала обучения нужно выбрать хотя бы один экзамен

@@ -6,9 +6,9 @@ import HistoryPage from './HistoryPage';
 type ProgressTab = 'overview' | 'prediction' | 'history';
 
 const TABS: { id: ProgressTab; label: string; icon: string }[] = [
-  { id: 'overview', label: 'Обзор', icon: '📊' },
-  { id: 'prediction', label: 'Прогноз', icon: '🎯' },
-  { id: 'history', label: 'История', icon: '📋' },
+  { id: 'overview', label: 'Обзор', icon: '' },
+  { id: 'prediction', label: 'Прогноз', icon: '' },
+  { id: 'history', label: 'История', icon: '' },
 ];
 
 const isValidTab = (v: string | null): v is ProgressTab =>

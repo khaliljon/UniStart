@@ -1,8 +1,10 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using UniStart.Application.DTOs;
 using UniStart.Application.Interfaces;
+using UniStart.Hubs;
 using Asp.Versioning;
 
 namespace UniStart.Controllers;
@@ -14,10 +16,12 @@ namespace UniStart.Controllers;
 public class TutorController : ControllerBase
 {
     private readonly ITutorService _tutorService;
+    private readonly IHubContext<ChatHub> _hubContext;
 
-    public TutorController(ITutorService tutorService)
+    public TutorController(ITutorService tutorService, IHubContext<ChatHub> hubContext)
     {
         _tutorService = tutorService;
+        _hubContext = hubContext;
     }
 
     /// <summary>Каталог тьюторов с фильтрами и пагинацией</summary>
@@ -80,6 +84,70 @@ public class TutorController : ControllerBase
         var userId = GetUserId();
         var students = await _tutorService.GetMyStudentsAsync(userId);
         return Ok(students);
+    }
+
+    /// <summary>Ожидающие заявки от студентов</summary>
+    [HttpGet("requests/pending")]
+    [Authorize(Roles = "Tutor,Admin")]
+    public async Task<IActionResult> GetPendingRequests()
+    {
+        var userId = GetUserId();
+        var requests = await _tutorService.GetPendingRequestsAsync(userId);
+        return Ok(requests);
+    }
+
+    /// <summary>Принять заявку студента</summary>
+    [HttpPost("requests/{conversationId:int}/accept")]
+    [Authorize(Roles = "Tutor,Admin")]
+    public async Task<IActionResult> AcceptStudent(int conversationId)
+    {
+        var userId = GetUserId();
+        var result = await _tutorService.AcceptStudentAsync(userId, conversationId);
+
+        // Push status change + system message to student via SignalR
+        var studentId = await _tutorService.GetStudentIdByConversationAsync(conversationId);
+        if (studentId > 0)
+        {
+            await _hubContext.Clients.Group($"user_{studentId}").SendAsync(
+                "ConversationStatusChanged", conversationId, "Active");
+
+            if (!string.IsNullOrEmpty(result.SystemMessage))
+            {
+                var sysMsg = new MessageDto(
+                    0, conversationId, userId, "", result.SystemMessage,
+                    DateTime.UtcNow, null, false, "System", false);
+                await _hubContext.Clients.Group($"user_{studentId}").SendAsync("ReceiveMessage", sysMsg);
+            }
+        }
+
+        return Ok(result);
+    }
+
+    /// <summary>Отклонить заявку студента</summary>
+    [HttpPost("requests/{conversationId:int}/decline")]
+    [Authorize(Roles = "Tutor,Admin")]
+    public async Task<IActionResult> DeclineStudent(int conversationId, [FromBody] DeclineRequestDto? dto)
+    {
+        var userId = GetUserId();
+        var result = await _tutorService.DeclineStudentAsync(userId, conversationId, dto?.Reason);
+
+        // Push status change + system message to student via SignalR
+        var studentId = await _tutorService.GetStudentIdByConversationAsync(conversationId);
+        if (studentId > 0)
+        {
+            await _hubContext.Clients.Group($"user_{studentId}").SendAsync(
+                "ConversationStatusChanged", conversationId, "Declined");
+
+            if (!string.IsNullOrEmpty(result.SystemMessage))
+            {
+                var sysMsg = new MessageDto(
+                    0, conversationId, userId, "", result.SystemMessage,
+                    DateTime.UtcNow, null, false, "System", false);
+                await _hubContext.Clients.Group($"user_{studentId}").SendAsync("ReceiveMessage", sysMsg);
+            }
+        }
+
+        return Ok(result);
     }
 
     private int GetUserId()

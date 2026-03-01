@@ -15,8 +15,8 @@ export const messageService = {
     return response.data;
   },
 
-  async startConversation(tutorId: number): Promise<Conversation> {
-    const response = await api.post<Conversation>('/messages/conversations', { tutorId });
+  async startConversation(tutorId: number, message?: string): Promise<Conversation> {
+    const response = await api.post<Conversation>('/messages/conversations', { tutorId, message });
     return response.data;
   },
 
@@ -31,5 +31,9 @@ export const messageService = {
   async getUnreadCount(): Promise<number> {
     const response = await api.get<number>('/messages/unread-count');
     return response.data;
+  },
+
+  async archiveConversation(conversationId: number): Promise<void> {
+    await api.post(`/messages/conversations/${conversationId}/archive`);
   },
 };

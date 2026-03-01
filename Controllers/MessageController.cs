@@ -43,7 +43,7 @@ public class MessageController : ControllerBase
     public async Task<IActionResult> StartConversation([FromBody] StartConversationDto dto)
     {
         var userId = GetUserId();
-        var conversation = await _messageService.StartConversationAsync(userId, dto.TutorId);
+        var conversation = await _messageService.StartConversationAsync(userId, dto.TutorId, dto.Message);
         return Ok(conversation);
     }
 
@@ -71,7 +71,16 @@ public class MessageController : ControllerBase
     {
         var userId = GetUserId();
         var count = await _messageService.GetUnreadCountAsync(userId);
-        return Ok(new { count });
+        return Ok(count);
+    }
+
+    /// <summary>Архивировать диалог</summary>
+    [HttpPost("conversations/{id:int}/archive")]
+    public async Task<IActionResult> ArchiveConversation(int id)
+    {
+        var userId = GetUserId();
+        var result = await _messageService.ArchiveConversationAsync(id, userId);
+        return result ? Ok(new { archived = true }) : NotFound();
     }
 
     private int GetUserId()

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { messageService } from '../services/messageService';
 import { chatService } from '../services/chatService';
+import { userService, type PresenceInfo } from '../services/userService';
 import type { Conversation, Message } from '../types';
 
 function MessagesPage() {
@@ -16,15 +17,42 @@ function MessagesPage() {
   const [sending, setSending] = useState(false);
   const [typingUser, setTypingUser] = useState('');
   const [mobileShowChat, setMobileShowChat] = useState(!!searchParams.get('c'));
+  const [showArchived, setShowArchived] = useState(false);
+
+  // Presence state: userId → PresenceInfo
+  const [presenceMap, setPresenceMap] = useState<Record<number, PresenceInfo>>({});
+
+  // Scroll-to-bottom + lazy-load
+  const [showScrollBtn, setShowScrollBtn] = useState(false);
+  const [loadingOlder, setLoadingOlder] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Notification permission
+  const [notifPermission, setNotifPermission] = useState<NotificationPermission>(
+    typeof Notification !== 'undefined' ? Notification.permission : 'denied'
+  );
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const typingTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
-  // Load conversations
+  // ─── Load conversations ────────────────────
   const loadConversations = useCallback(async () => {
     try {
       const data = await messageService.getConversations();
       setConversations(data);
+
+      // Batch-load presence for all conversation partners
+      const userIds = data.map(c => c.otherUserId);
+      if (userIds.length > 0) {
+        try {
+          const batch = await userService.getPresenceBatch(userIds);
+          const map: Record<number, PresenceInfo> = {};
+          batch.forEach(p => { map[p.userId] = { isOnline: p.isOnline, lastSeenAt: null }; });
+          setPresenceMap(prev => ({ ...prev, ...map }));
+        } catch { /* ignore */ }
+      }
     } catch (err) {
       console.error('Failed to load conversations:', err);
     } finally {
@@ -32,13 +60,14 @@ function MessagesPage() {
     }
   }, []);
 
-  // Load messages for active conversation
+  // ─── Load messages for active conversation ──
   const loadMessages = useCallback(async (convId: number) => {
     setLoadingMsgs(true);
+    setCurrentPage(1);
     try {
-      const data = await messageService.getMessages(convId);
-      setMessages(data.items.reverse()); // API returns newest first, we display oldest first
-      // Mark as read
+      const data = await messageService.getMessages(convId, 1, 50);
+      setMessages(data.items.reverse());
+      setHasMore(data.hasMore);
       await messageService.markAsRead(convId);
       setConversations(prev => prev.map(c =>
         c.id === convId ? { ...c, unreadCount: 0 } : c
@@ -50,20 +79,45 @@ function MessagesPage() {
     }
   }, []);
 
-  // Initialize SignalR
+  // ─── Lazy-load older messages ───────────────
+  const loadOlderMessages = useCallback(async () => {
+    if (!activeId || loadingOlder || !hasMore) return;
+    setLoadingOlder(true);
+    const nextPage = currentPage + 1;
+    try {
+      const data = await messageService.getMessages(activeId, nextPage, 50);
+      const older = data.items.reverse();
+      setMessages(prev => [...older, ...prev]);
+      setHasMore(data.hasMore);
+      setCurrentPage(nextPage);
+    } catch (err) {
+      console.error('Failed to load older messages:', err);
+    } finally {
+      setLoadingOlder(false);
+    }
+  }, [activeId, loadingOlder, hasMore, currentPage]);
+
+  // ─── Load presence for active conversation partner ──
+  const loadPresence = useCallback(async (userId: number) => {
+    try {
+      const info = await userService.getPresence(userId);
+      setPresenceMap(prev => ({ ...prev, [userId]: info }));
+    } catch { /* ignore */ }
+  }, []);
+
+  // ─── Initialize SignalR ─────────────────────
   useEffect(() => {
     chatService.start();
 
     const unsubMsg = chatService.onMessage((msg: Message) => {
-      // Add message if it belongs to active conversation
-      setMessages(prev => {
-        // Check if this message is for the current conversation by sender
-        // We include all incoming messages and update conversations list
-        return [...prev, msg];
+      setActiveId(currentActiveId => {
+        if (msg.conversationId === currentActiveId) {
+          setMessages(prev => [...prev, msg]);
+        }
+        return currentActiveId;
       });
-      // Update conversation preview
       setConversations(prev => prev.map(c => {
-        if (msg.isMine || c.otherUserId === msg.senderId) {
+        if (c.id === msg.conversationId) {
           return {
             ...c,
             lastMessagePreview: msg.text.slice(0, 100),
@@ -73,12 +127,28 @@ function MessagesPage() {
         }
         return c;
       }));
+
+      // Web Notification for incoming messages
+      if (!msg.isMine && notifPermission === 'granted' && document.hidden) {
+        try {
+          new Notification(`${msg.senderName}`, {
+            body: msg.text.slice(0, 80),
+            icon: '/favicon.ico',
+            tag: `msg-${msg.conversationId}`,
+          });
+        } catch { /* ignore */ }
+      }
     });
 
-    const unsubTyping = chatService.onTyping((_convId, userName) => {
-      setTypingUser(userName);
-      if (typingTimeout.current) clearTimeout(typingTimeout.current);
-      typingTimeout.current = setTimeout(() => setTypingUser(''), 3000);
+    const unsubTyping = chatService.onTyping((convId, userName) => {
+      setActiveId(currentActiveId => {
+        if (convId === currentActiveId) {
+          setTypingUser(userName);
+          if (typingTimeout.current) clearTimeout(typingTimeout.current);
+          typingTimeout.current = setTimeout(() => setTypingUser(''), 3000);
+        }
+        return currentActiveId;
+      });
     });
 
     const unsubRead = chatService.onRead((_convId) => {
@@ -87,28 +157,70 @@ function MessagesPage() {
       ));
     });
 
+    // Presence events
+    const unsubOnline = chatService.onOnline((userId) => {
+      setPresenceMap(prev => ({ ...prev, [userId]: { isOnline: true, lastSeenAt: new Date().toISOString() } }));
+    });
+
+    const unsubOffline = chatService.onOffline((userId) => {
+      setPresenceMap(prev => ({ ...prev, [userId]: { isOnline: false, lastSeenAt: new Date().toISOString() } }));
+    });
+
+    // Conversation status changes (enrollment accept/decline)
+    const unsubStatus = chatService.onStatusChanged((conversationId, newStatus) => {
+      setConversations(prev => prev.map(c =>
+        c.id === conversationId ? { ...c, status: newStatus } : c
+      ));
+    });
+
     return () => {
       unsubMsg();
       unsubTyping();
       unsubRead();
+      unsubOnline();
+      unsubOffline();
+      unsubStatus();
     };
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [notifPermission]);
 
-  useEffect(() => {
-    loadConversations();
-  }, [loadConversations]);
+  useEffect(() => { loadConversations(); }, [loadConversations]);
 
   useEffect(() => {
     if (activeId) {
       loadMessages(activeId);
       setSearchParams({ c: String(activeId) }, { replace: true });
+      // Load presence for active conversation partner
+      const conv = conversations.find(c => c.id === activeId);
+      if (conv) loadPresence(conv.otherUserId);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeId, loadMessages, setSearchParams]);
 
-  // Auto scroll to bottom
+  // Auto scroll to bottom on new messages
   useEffect(() => {
+    if (!showScrollBtn) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, showScrollBtn]);
+
+  // ─── Scroll detection for scroll-to-bottom button ──
+  const handleScroll = useCallback(() => {
+    const el = messagesContainerRef.current;
+    if (!el) return;
+    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 150;
+    setShowScrollBtn(!nearBottom);
+
+    // Lazy-load trigger: near top
+    if (el.scrollTop < 80 && hasMore && !loadingOlder) {
+      loadOlderMessages();
+    }
+  }, [hasMore, loadingOlder, loadOlderMessages]);
+
+  const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    setShowScrollBtn(false);
+  };
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -118,7 +230,6 @@ function MessagesPage() {
       await chatService.sendMessage(activeId, messageText.trim());
       setMessageText('');
     } catch {
-      // Fallback to REST
       try {
         await messageService.sendMessage(activeId, messageText.trim());
         setMessageText('');
@@ -132,9 +243,7 @@ function MessagesPage() {
   };
 
   const handleTyping = () => {
-    if (activeId) {
-      chatService.sendTyping(activeId);
-    }
+    if (activeId) chatService.sendTyping(activeId);
   };
 
   const selectConversation = (id: number) => {
@@ -142,6 +251,24 @@ function MessagesPage() {
     setMobileShowChat(true);
   };
 
+  const handleArchive = async (convId: number) => {
+    if (!confirm('Архивировать этот диалог?')) return;
+    try {
+      await messageService.archiveConversation(convId);
+      setConversations(prev => prev.map(c =>
+        c.id === convId ? { ...c, status: 'Archived' } : c
+      ));
+      if (activeId === convId) setActiveId(null);
+    } catch { alert('Не удалось архивировать'); }
+  };
+
+  const requestNotificationPermission = async () => {
+    if (typeof Notification === 'undefined') return;
+    const perm = await Notification.requestPermission();
+    setNotifPermission(perm);
+  };
+
+  // ─── Helpers ────────────────────────────────
   const formatTime = (dateStr: string) => {
     const d = new Date(dateStr);
     const now = new Date();
@@ -151,8 +278,44 @@ function MessagesPage() {
            d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
   };
 
+  const formatLastSeen = (dateStr: string | null): string => {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - d.getTime();
+    const diffMin = Math.floor(diffMs / 60000);
+    if (diffMin < 1) return 'только что';
+    if (diffMin < 60) return `${diffMin} мин назад`;
+    const diffH = Math.floor(diffMin / 60);
+    if (diffH < 24) return `${diffH} ч назад`;
+    const diffD = Math.floor(diffH / 24);
+    return `${diffD} д назад`;
+  };
+
   const getInitials = (name: string) =>
     name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+
+  // ─── Filtered conversations ─────────────────
+  const filteredConvs = conversations.filter(c =>
+    showArchived ? c.status === 'Archived' : c.status !== 'Archived'
+  );
+
+  // ─── Presence dot component ─────────────────
+  const PresenceDot = ({ userId, size = 10 }: { userId: number; size?: number }) => {
+    const p = presenceMap[userId];
+    const online = p?.isOnline ?? false;
+    return (
+      <span style={{
+        display: 'inline-block',
+        width: `${size}px`, height: `${size}px`,
+        borderRadius: '50%',
+        background: online ? '#22c55e' : '#9ca3af',
+        border: '2px solid var(--bg-primary)',
+        position: 'absolute',
+        bottom: 0, right: 0,
+      }} title={online ? 'Онлайн' : 'Офлайн'} />
+    );
+  };
 
   // ─── Conversation list sidebar ──────────────
   const renderConversationList = () => (
@@ -164,21 +327,45 @@ function MessagesPage() {
     className="chat-sidebar"
     >
       <div style={{
-        padding: '1rem', borderBottom: '1px solid var(--border-color)',
-        fontWeight: 700, fontSize: '1.1rem',
+        padding: '0.75rem 1rem', borderBottom: '1px solid var(--border-color)',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
       }}>
-        💬 Сообщения
+        <span style={{ fontWeight: 700, fontSize: '1.1rem' }}>Сообщения</span>
+        <div style={{ display: 'flex', gap: '0.25rem' }}>
+          {notifPermission !== 'granted' && typeof Notification !== 'undefined' && (
+            <button
+              onClick={requestNotificationPermission}
+              className="btn"
+              style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem' }}
+              title="Включить уведомления"
+            >
+              Уведомления
+            </button>
+          )}
+          <button
+            onClick={() => setShowArchived(!showArchived)}
+            className="btn"
+            style={{
+              padding: '0.2rem 0.5rem', fontSize: '0.75rem',
+              background: showArchived ? 'var(--primary-color)' : undefined,
+              color: showArchived ? '#fff' : undefined,
+            }}
+            title={showArchived ? 'Показать активные' : 'Показать архив'}
+          >
+            Архив
+          </button>
+        </div>
       </div>
       <div style={{ flex: 1, overflowY: 'auto' }}>
         {loadingConvs ? (
           <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>Загрузка...</div>
-        ) : conversations.length === 0 ? (
+        ) : filteredConvs.length === 0 ? (
           <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
-            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📭</div>
-            Нет диалогов
+            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>{showArchived ? '' : ''}</div>
+            {showArchived ? 'Нет архивных диалогов' : 'Нет диалогов'}
           </div>
         ) : (
-          conversations.map(conv => (
+          filteredConvs.map(conv => (
             <div
               key={conv.id}
               onClick={() => selectConversation(conv.id)}
@@ -193,13 +380,16 @@ function MessagesPage() {
               onMouseEnter={(e) => { if (activeId !== conv.id) (e.currentTarget as HTMLElement).style.background = 'var(--bg-secondary)'; }}
               onMouseLeave={(e) => { if (activeId !== conv.id) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
             >
-              <div style={{
-                width: '42px', height: '42px', borderRadius: '50%', flexShrink: 0,
-                background: 'linear-gradient(135deg, var(--primary-color), var(--primary-hover))',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: '#fff', fontWeight: 700, fontSize: '0.85rem',
-              }}>
-                {getInitials(conv.otherUserName)}
+              <div style={{ position: 'relative', flexShrink: 0 }}>
+                <div style={{
+                  width: '42px', height: '42px', borderRadius: '50%',
+                  background: 'linear-gradient(135deg, var(--primary-color), var(--primary-hover))',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: '#fff', fontWeight: 700, fontSize: '0.85rem',
+                }}>
+                  {getInitials(conv.otherUserName)}
+                </div>
+                <PresenceDot userId={conv.otherUserId} size={10} />
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -216,7 +406,10 @@ function MessagesPage() {
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 }}>
                   <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {conv.lastMessagePreview || 'Начните диалог'}
+                    {conv.status === 'Pending' ? 'Ожидает ответа'
+                      : conv.status === 'Declined' ? 'Отклонено'
+                      : conv.status === 'Archived' ? 'Архив'
+                      : conv.lastMessagePreview || 'Начните диалог'}
                   </span>
                   {conv.unreadCount > 0 && (
                     <span style={{
@@ -244,13 +437,15 @@ function MessagesPage() {
           flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
           flexDirection: 'column', color: 'var(--text-secondary)', gap: '0.5rem',
         }}>
-          <div style={{ fontSize: '3rem' }}>💬</div>
+          <div style={{ fontSize: '3rem' }}></div>
           <p>Выберите диалог для начала общения</p>
         </div>
       );
     }
 
     const activeConv = conversations.find(c => c.id === activeId);
+    const otherPresence = activeConv ? presenceMap[activeConv.otherUserId] : null;
+    const isOtherOnline = otherPresence?.isOnline ?? false;
 
     return (
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', minWidth: 0 }}>
@@ -268,33 +463,73 @@ function MessagesPage() {
           </button>
           {activeConv && (
             <>
-              <div style={{
-                width: '36px', height: '36px', borderRadius: '50%',
-                background: 'linear-gradient(135deg, var(--primary-color), var(--primary-hover))',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: '#fff', fontWeight: 700, fontSize: '0.8rem', flexShrink: 0,
-              }}>
-                {getInitials(activeConv.otherUserName)}
+              <div style={{ position: 'relative', flexShrink: 0 }}>
+                <div style={{
+                  width: '36px', height: '36px', borderRadius: '50%',
+                  background: 'linear-gradient(135deg, var(--primary-color), var(--primary-hover))',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: '#fff', fontWeight: 700, fontSize: '0.8rem',
+                }}>
+                  {getInitials(activeConv.otherUserName)}
+                </div>
+                <PresenceDot userId={activeConv.otherUserId} size={9} />
               </div>
-              <div>
+              <div style={{ flex: 1 }}>
                 <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>{activeConv.otherUserName}</div>
                 {typingUser ? (
                   <div style={{ fontSize: '0.78rem', color: 'var(--primary-color)' }}>печатает...</div>
+                ) : isOtherOnline ? (
+                  <div style={{ fontSize: '0.78rem', color: '#22c55e' }}>Онлайн</div>
+                ) : otherPresence?.lastSeenAt ? (
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                    Был(а) в сети {formatLastSeen(otherPresence.lastSeenAt)}
+                  </div>
                 ) : (
-                  <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>{activeConv.otherUserRole === 'Tutor' ? 'Тьютор' : 'Студент'}</div>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                    {activeConv.otherUserRole === 'Tutor' ? 'Тьютор' : 'Студент'}
+                  </div>
                 )}
               </div>
+              {/* Archive button */}
+              {activeConv.status === 'Active' && (
+                <button
+                  onClick={() => handleArchive(activeConv.id)}
+                  className="btn"
+                  style={{ padding: '0.3rem 0.6rem', fontSize: '0.8rem' }}
+                  title="Архивировать диалог"
+                >
+                  Архив
+                </button>
+              )}
             </>
           )}
         </div>
 
         {/* Messages */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        <div
+          ref={messagesContainerRef}
+          onScroll={handleScroll}
+          style={{ flex: 1, overflowY: 'auto', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', position: 'relative' }}
+        >
+          {/* Load older button */}
+          {hasMore && (
+            <div style={{ textAlign: 'center', padding: '0.5rem' }}>
+              <button
+                onClick={loadOlderMessages}
+                disabled={loadingOlder}
+                className="btn"
+                style={{ padding: '0.3rem 0.8rem', fontSize: '0.8rem' }}
+              >
+                {loadingOlder ? 'Загрузка...' : 'Загрузить старые сообщения'}
+              </button>
+            </div>
+          )}
+
           {loadingMsgs ? (
             <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>Загрузка...</div>
           ) : messages.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>
-              Начните диалог — напишите первое сообщение 👋
+              Начните диалог — напишите первое сообщение
             </div>
           ) : (
             messages.map(msg => (
@@ -302,13 +537,13 @@ function MessagesPage() {
                 key={msg.id}
                 style={{
                   display: 'flex',
-                  justifyContent: msg.isMine ? 'flex-end' : 'flex-start',
+                  justifyContent: msg.type === 'System' ? 'center' : msg.isMine ? 'flex-end' : 'flex-start',
                 }}
               >
                 <div style={{
                   maxWidth: '70%',
                   padding: '0.6rem 0.9rem',
-                  borderRadius: msg.isMine ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+                  borderRadius: msg.type === 'System' ? '12px' : msg.isMine ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
                   background: msg.type === 'System'
                     ? 'var(--bg-secondary)'
                     : msg.isMine
@@ -345,7 +580,41 @@ function MessagesPage() {
           <div ref={messagesEndRef} />
         </div>
 
+        {/* Scroll-to-bottom button */}
+        {showScrollBtn && (
+          <div style={{ position: 'relative' }}>
+            <button
+              onClick={scrollToBottom}
+              style={{
+                position: 'absolute', bottom: '0.5rem', right: '1rem',
+                width: '36px', height: '36px', borderRadius: '50%',
+                background: 'var(--primary-color)', color: '#fff',
+                border: 'none', cursor: 'pointer', fontSize: '1.1rem',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                zIndex: 10,
+              }}
+              title="Прокрутить вниз"
+            >
+              ↓
+            </button>
+          </div>
+        )}
+
         {/* Input */}
+        {activeConv && (activeConv.status === 'Pending' || activeConv.status === 'Declined' || activeConv.status === 'Archived') ? (
+          <div style={{
+            padding: '1rem', borderTop: '1px solid var(--border-color)',
+            textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.85rem',
+            background: 'var(--bg-secondary)',
+          }}>
+            {activeConv.status === 'Pending'
+              ? 'Тьютор ещё не принял заявку. Сообщения будут доступны после принятия.'
+              : activeConv.status === 'Declined'
+                ? 'Заявка отклонена. Отправка сообщений невозможна.'
+                : 'Диалог архивирован.'}
+          </div>
+        ) : (
         <form
           onSubmit={handleSend}
           style={{
@@ -372,6 +641,7 @@ function MessagesPage() {
             {sending ? '...' : '➤'}
           </button>
         </form>
+        )}
       </div>
     );
   };

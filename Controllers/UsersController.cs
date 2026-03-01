@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UniStart.Application.DTOs;
 using UniStart.Application.Interfaces;
+using UniStart.Application.Services;
 using Asp.Versioning;
 
 namespace UniStart.Controllers;
@@ -14,11 +15,13 @@ namespace UniStart.Controllers;
 public class UsersController : ControllerBase
 {
     private readonly IAuthService _authService;
+    private readonly PresenceTracker _presenceTracker;
     private readonly ILogger<UsersController> _logger;
 
-    public UsersController(IAuthService authService, ILogger<UsersController> logger)
+    public UsersController(IAuthService authService, PresenceTracker presenceTracker, ILogger<UsersController> logger)
     {
         _authService = authService;
+        _presenceTracker = presenceTracker;
         _logger = logger;
     }
 
@@ -77,6 +80,37 @@ public class UsersController : ControllerBase
         {
             return BadRequest(new { error = ex.Message });
         }
+    }
+
+    /// <summary>
+    /// Get user online presence status
+    /// </summary>
+    [HttpGet("{id}/presence")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetPresence(int id)
+    {
+        var user = await _authService.GetUserByIdAsync(id);
+        if (user == null)
+            return NotFound(new { error = "User not found" });
+
+        var isOnline = _presenceTracker.IsOnline(id);
+        return Ok(new { isOnline, lastSeenAt = user.LastSeenAt });
+    }
+
+    /// <summary>
+    /// Get presence for multiple users at once
+    /// </summary>
+    [HttpPost("presence/batch")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public IActionResult GetPresenceBatch([FromBody] int[] userIds)
+    {
+        var result = userIds.Select(id => new
+        {
+            userId = id,
+            isOnline = _presenceTracker.IsOnline(id)
+        });
+        return Ok(result);
     }
 
     private int GetCurrentUserId()

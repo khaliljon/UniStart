@@ -102,11 +102,13 @@ public record ConversationDto(
     string? LastMessagePreview,
     DateTime? LastMessageAt,
     int UnreadCount,
-    string Status
+    string Status,
+    string? RequestMessage
 );
 
 public record MessageDto(
     long Id,
+    int ConversationId,
     int SenderId,
     string SenderName,
     string Text,
@@ -122,7 +124,36 @@ public record SendMessageDto(
 );
 
 public record StartConversationDto(
-    int TutorId
+    int TutorId,
+    string? Message   // Optional request message
+);
+
+public record StudentDto(
+    int UserId,
+    string Name,
+    string Email,
+    DateTime ConversationStartedAt,
+    DateTime? LastMessageAt,
+    string? LastMessagePreview
+);
+
+public record PendingRequestDto(
+    int ConversationId,
+    int StudentId,
+    string StudentName,
+    string StudentEmail,
+    string? RequestMessage,
+    DateTime RequestedAt
+);
+
+public record AcceptDeclineResultDto(
+    int ConversationId,
+    string Status,
+    string? SystemMessage
+);
+
+public record DeclineRequestDto(
+    string? Reason
 );
 
 public record MessagesPageDto(

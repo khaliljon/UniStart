@@ -53,16 +53,16 @@ function AdminStatsPage() {
 
   return (
     <div className="animate-fade-in" style={{ padding: '2rem 0' }}>
-      <h1 style={{ marginBottom: '0.5rem' }}>📊 Статистика контента</h1>
+      <h1 style={{ marginBottom: '0.5rem' }}>Статистика контента</h1>
       <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
         Обзор базы вопросов платформы
       </p>
 
       {/* Top counters */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-        <StatCard label="Всего вопросов" value={stats.totalQuestions} icon="📝" />
-        <StatCard label="Тем покрыто" value={`${stats.topicsWithQuestions}/${stats.topicsWithQuestions + stats.topicsWithoutQuestions}`} icon="🗂️" />
-        <StatCard label="Без вопросов" value={stats.topicsWithoutQuestions} icon={stats.topicsWithoutQuestions === 0 ? '✅' : '⚠️'} />
+        <StatCard label="Всего вопросов" value={stats.totalQuestions} icon="" />
+        <StatCard label="Тем покрыто" value={`${stats.topicsWithQuestions}/${stats.topicsWithQuestions + stats.topicsWithoutQuestions}`} icon="" />
+        <StatCard label="Без вопросов" value={stats.topicsWithoutQuestions} icon="" />
       </div>
 
       {/* By exam */}

@@ -52,7 +52,7 @@ function DashboardPage() {
       {/* ─── Header ─── */}
       <div style={{ marginBottom: '1.5rem' }}>
         <h1 style={{ margin: 0, fontSize: '1.5rem' }}>
-          {greeting}, {user?.name?.split(' ')[0]} 👋
+          {greeting}, {user?.name?.split(' ')[0]}
         </h1>
         {selectedExams.length > 0 && (
           <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
@@ -69,14 +69,14 @@ function DashboardPage() {
       {/* ─── Stats Row ─── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem', marginBottom: '1.5rem' }}>
         <StatCard
-          icon="🔥"
+          icon=""
           label="Серия"
           value={streak ? `${streak.currentStreak} дн.` : '—'}
           accent={streak && streak.currentStreak >= 7 ? 'var(--error-color)' : streak && streak.currentStreak >= 3 ? 'var(--warning-color)' : undefined}
           loading={isLoading}
         />
         <StatCard
-          icon="✅"
+          icon=""
           label="Сегодня"
           value={usage ? `${usage.questionsAnswered}` : '—'}
           sub={usage ? `из ${usage.questionsLimit === -1 ? '∞' : usage.questionsLimit}` : ''}
@@ -84,14 +84,14 @@ function DashboardPage() {
         />
         {yesterday && (
           <StatCard
-            icon="📈"
+            icon=""
             label="Вчера"
             value={`${yesterday.accuracy}%`}
             sub={`${yesterday.questionsAnswered} вопр.`}
           />
         )}
         <StatCard
-          icon="🏆"
+          icon=""
           label="Рекорд"
           value={streak ? `${streak.longestStreak} дн.` : '—'}
           loading={isLoading}
@@ -100,16 +100,16 @@ function DashboardPage() {
 
       {/* ─── Quick Actions ─── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem', marginBottom: '1.5rem' }}>
-        <ActionCard icon="▶️" title="Практика" desc="Адаптивный тест" onClick={() => navigate('/learn')} primary />
-        <ActionCard icon="📝" title="Mock Exam" desc="Полный формат" onClick={() => navigate('/learn?tab=mock')} />
-        <ActionCard icon="🔄" title="Повторение" desc="Работа над ошибками" onClick={() => navigate('/learn?tab=review')} />
-        <ActionCard icon="📊" title="Прогресс" desc="Аналитика и прогноз" onClick={() => navigate('/progress')} />
+        <ActionCard icon="▶" title="Практика" desc="Адаптивный тест" onClick={() => navigate('/learn')} primary />
+        <ActionCard icon="" title="Mock Exam" desc="Полный формат" onClick={() => navigate('/learn?tab=mock')} />
+        <ActionCard icon="" title="Повторение" desc="Работа над ошибками" onClick={() => navigate('/learn?tab=review')} />
+        <ActionCard icon="" title="Прогресс" desc="Аналитика и прогноз" onClick={() => navigate('/progress')} />
       </div>
 
       {/* ─── Recommendations ─── */}
       {recs.length > 0 && (
         <div style={{ marginBottom: '1.5rem' }}>
-          <h2 style={{ fontSize: '1.1rem', marginBottom: '0.75rem' }}>💡 Рекомендации</h2>
+          <h2 style={{ fontSize: '1.1rem', marginBottom: '0.75rem' }}>Рекомендации</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             {recs.map((r, i) => (
               <div
@@ -122,7 +122,7 @@ function DashboardPage() {
                 }}
                 onClick={() => r.actionUrl && navigate(r.actionUrl)}
               >
-                <span style={{ fontSize: '1.25rem' }}>{r.icon || '📌'}</span>
+                <span style={{ fontSize: '1.25rem' }}>{r.icon || ''}</span>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{r.title}</div>
                   <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{r.description}</div>
@@ -141,7 +141,6 @@ function DashboardPage() {
       {/* ─── No exams selected prompt ─── */}
       {selectedExams.length === 0 && (
         <div className="card" style={{ padding: '2rem', textAlign: 'center' }}>
-          <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>📝</div>
           <h3 style={{ marginBottom: '0.5rem' }}>Выберите экзамены</h3>
           <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
             Перейдите в профиль и выберите экзамены для подготовки

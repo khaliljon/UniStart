@@ -4,6 +4,8 @@ import { useAppDispatch } from '../hooks/useAppDispatch';
 import { useAppSelector } from '../hooks/useAppSelector';
 import { useTheme } from '../hooks/useTheme';
 import { logout } from '../store/slices/authSlice';
+import { messageService } from '../services/messageService';
+import { chatService } from '../services/chatService';
 
 function ProfileDropdown() {
   const dispatch = useAppDispatch();
@@ -11,6 +13,7 @@ function ProfileDropdown() {
   const { user } = useAppSelector((state) => state.auth);
   const { theme, toggleTheme } = useTheme();
   const [open, setOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const ref = useRef<HTMLDivElement>(null);
 
   // Close on outside click
@@ -22,6 +25,17 @@ function ProfileDropdown() {
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  // Unread messages tracking
+  useEffect(() => {
+    messageService.getUnreadCount().then(setUnreadCount).catch(() => {});
+    chatService.start();
+    const unsub = chatService.onUnreadCount((count) => setUnreadCount(count));
+    const interval = setInterval(() => {
+      messageService.getUnreadCount().then(setUnreadCount).catch(() => {});
+    }, 60000);
+    return () => { unsub(); clearInterval(interval); };
   }, []);
 
   const handleLogout = () => {
@@ -47,7 +61,16 @@ function ProfileDropdown() {
         className="profile-trigger"
         title="Профиль"
       >
-        <span className="profile-avatar">{initials}</span>
+        <span className="profile-avatar" style={{ position: 'relative' }}>
+          {initials}
+          {unreadCount > 0 && (
+            <span style={{
+              position: 'absolute', top: '-2px', right: '-4px',
+              width: '8px', height: '8px', borderRadius: '50%',
+              background: '#ef4444', border: '2px solid var(--bg-primary)',
+            }} />
+          )}
+        </span>
         <span className="profile-name">{user?.name}</span>
         <span style={{ fontSize: '0.6rem', marginLeft: '0.2rem', opacity: 0.6 }}>▼</span>
       </button>
@@ -77,32 +100,37 @@ function ProfileDropdown() {
           <div className="profile-dropdown-divider" />
 
           {/* Menu items */}
-          <button className="profile-dropdown-item" onClick={() => goTo('/profile')}>
-            <span>👤</span> Профиль
-          </button>
           <button className="profile-dropdown-item" onClick={() => goTo('/messages')}>
-            <span>💬</span> Сообщения
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+              Сообщения
+              {unreadCount > 0 && (
+                <span style={{
+                  background: '#ef4444', color: '#fff', borderRadius: '999px',
+                  padding: '0.05rem 0.35rem', fontSize: '0.65rem', fontWeight: 700, lineHeight: 1.2,
+                }}>{unreadCount > 99 ? '99+' : unreadCount}</span>
+              )}
+            </span>
           </button>
-          {user?.role === 'Tutor' && (
-            <button className="profile-dropdown-item" onClick={() => goTo('/tutor/dashboard')}>
-              <span>🎓</span> Панель тьютора
-            </button>
-          )}
+          <button className="profile-dropdown-item" onClick={() => goTo('/tutors')}>
+            Тьюторы
+          </button>
+          <button className="profile-dropdown-item" onClick={() => goTo('/profile')}>
+            Профиль
+          </button>
           <button className="profile-dropdown-item" onClick={() => goTo('/profile/notifications')}>
-            <span>🔔</span> Уведомления
+            Уведомления
           </button>
 
           <div className="profile-dropdown-divider" />
 
           <button className="profile-dropdown-item" onClick={() => { toggleTheme(); }}>
-            <span>{theme === 'light' ? '🌙' : '☀️'}</span>
-            {theme === 'light' ? 'Тёмная тема' : 'Светлая тема'}
+            {theme === 'light' ? 'Темная тема' : 'Светлая тема'}
           </button>
 
           <div className="profile-dropdown-divider" />
 
           <button className="profile-dropdown-item profile-dropdown-danger" onClick={handleLogout}>
-            <span>🚪</span> Выйти
+            Выйти
           </button>
         </div>
       )}

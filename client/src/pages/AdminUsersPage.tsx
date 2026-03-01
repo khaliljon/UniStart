@@ -166,9 +166,9 @@ function AdminUsersPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      <h1>👥 Управление пользователями</h1>
+      <h1>Управление пользователями</h1>
       <button className="btn btn-outline" onClick={() => adminService.exportUsersCsv(filterRole || undefined)} style={{ fontSize: '0.85rem', alignSelf: 'flex-start', marginTop: '-0.5rem' }}>
-        📥 Экспорт CSV
+        Экспорт CSV
       </button>
 
       {/* Stats Cards */}
@@ -209,7 +209,7 @@ function AdminUsersPage() {
             className="form-input"
             style={{ flex: 1 }}
           />
-          <button type="submit" className="btn btn-primary" style={{ padding: '0.5rem 1rem' }}>🔍</button>
+          <button type="submit" className="btn btn-primary" style={{ padding: '0.5rem 1rem' }}>Поиск</button>
         </form>
       </div>
 
@@ -250,7 +250,7 @@ function AdminUsersPage() {
                     <td style={{ padding: '0.5rem' }}>{u.id}</td>
                     <td style={{ padding: '0.5rem', fontWeight: 500 }}>
                       {u.name}
-                      {u.isBlocked && <span style={{ color: 'var(--error-color)', fontSize: '0.75rem', marginLeft: '0.35rem' }} title={u.blockReason || 'Заблокирован'}>🚫</span>}
+                      {u.isBlocked && <span style={{ color: 'var(--error-color)', fontSize: '0.75rem', marginLeft: '0.35rem' }} title={u.blockReason || 'Заблокирован'}>[Блок]</span>}
                     </td>
                     <td style={{ padding: '0.5rem', color: 'var(--text-secondary)' }}>{u.email}</td>
                     <td style={{ padding: '0.5rem' }}>
@@ -310,7 +310,7 @@ function AdminUsersPage() {
           <div className="card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2 style={{ margin: 0, fontSize: '1.2rem' }}>
-                {editMode ? '✏️ Редактирование' : '👤 Профиль пользователя'}
+                {editMode ? 'Редактирование' : 'Профиль пользователя'}
               </h2>
               <button onClick={() => setSelected(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', color: 'var(--text-muted)' }}>✕</button>
             </div>
@@ -376,7 +376,7 @@ function AdminUsersPage() {
                   <InfoField label="Email" value={selected.email} />
                   <InfoField label="Роль" value={selected.role} color={ROLE_COLORS[selected.role]} />
                   <InfoField label="Подписка" value={selected.subscriptionTier} color={TIER_COLORS[selected.subscriptionTier]} />
-                  <InfoField label="Онбординг" value={selected.hasCompletedOnboarding ? '✅ Пройден' : '⏳ Не завершён'} />
+                  <InfoField label="Онбординг" value={selected.hasCompletedOnboarding ? 'Пройден' : 'Не завершён'} />
                   <InfoField label="Дата регистрации" value={new Date(selected.createdAt).toLocaleDateString('ru-RU')} />
                   <InfoField label="Обновлён" value={selected.updatedAt ? new Date(selected.updatedAt).toLocaleDateString('ru-RU') : '—'} />
                 </div>
@@ -384,14 +384,14 @@ function AdminUsersPage() {
                 {/* Block status (OP-14) */}
                 {selected.isBlocked && (
                   <div style={{ padding: '0.75rem', background: 'rgba(239,68,68,0.08)', borderRadius: '8px', border: '1px solid var(--error-color)' }}>
-                    <div style={{ fontWeight: 600, color: 'var(--error-color)', fontSize: '0.9rem' }}>🚫 Заблокирован</div>
+                    <div style={{ fontWeight: 600, color: 'var(--error-color)', fontSize: '0.9rem' }}>Заблокирован</div>
                     {selected.blockReason && <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>Причина: {selected.blockReason}</div>}
                     {selected.blockedAt && <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>С {new Date(selected.blockedAt).toLocaleDateString('ru-RU')}</div>}
                   </div>
                 )}
 
                 <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem' }}>
-                  <h3 style={{ fontSize: '1rem', margin: '0 0 0.5rem' }}>📊 Статистика</h3>
+                  <h3 style={{ fontSize: '1rem', margin: '0 0 0.5rem' }}>Статистика</h3>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
                     <StatCard label="Ответов" value={selected.totalAnswers} color="var(--primary-color)" small />
                     <StatCard label="Верных" value={selected.correctAnswers} color="var(--success-color)" small />
@@ -405,7 +405,7 @@ function AdminUsersPage() {
                 </div>
 
                 <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
-                  <button className="btn btn-primary" onClick={startEdit} style={{ flex: 1 }}>✏️ Редактировать</button>
+                  <button className="btn btn-primary" onClick={startEdit} style={{ flex: 1 }}>Редактировать</button>
                   {selected.role !== 'Admin' && (
                     selected.isBlocked ? (
                       <button
@@ -413,7 +413,7 @@ function AdminUsersPage() {
                         onClick={() => unblockUser(selected.id)}
                         style={{ flex: 1, background: 'var(--success-color)', color: '#fff', border: 'none', cursor: 'pointer', borderRadius: '8px', padding: '0.5rem' }}
                       >
-                        ✅ Разблокировать
+                        Разблокировать
                       </button>
                     ) : (
                       <button
@@ -421,7 +421,7 @@ function AdminUsersPage() {
                         onClick={() => blockUser(selected.id)}
                         style={{ flex: 1, background: 'var(--warning-color)', color: '#fff', border: 'none', cursor: 'pointer', borderRadius: '8px', padding: '0.5rem' }}
                       >
-                        🚫 Заблокировать
+                        Заблокировать
                       </button>
                     )
                   )}
@@ -430,7 +430,7 @@ function AdminUsersPage() {
                     onClick={() => deleteUser(selected.id)}
                     style={{ flex: 1, background: 'var(--error-color)', color: '#fff', border: 'none', cursor: 'pointer', borderRadius: '8px', padding: '0.5rem' }}
                   >
-                    🗑️ Удалить
+                    Удалить
                   </button>
                 </div>
               </>

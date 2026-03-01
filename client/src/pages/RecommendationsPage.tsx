@@ -54,7 +54,7 @@ function RecommendationsPage() {
 
   return (
     <div className="container animate-fade-in" style={{ padding: '2rem 1rem' }}>
-      <h1 style={{ marginBottom: '0.5rem' }}>🧭 Рекомендации</h1>
+      <h1 style={{ marginBottom: '0.5rem' }}>Рекомендации</h1>
       <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
         Персональные советы на основе вашего прогресса
       </p>
@@ -78,7 +78,7 @@ function RecommendationsPage() {
           }}
         >
           <div style={{ fontSize: '3rem' }}>
-            {streak.currentStreak >= 7 ? '🔥' : streak.currentStreak >= 3 ? '⚡' : streak.studiedToday ? '✅' : '📅'}
+            {streak.currentStreak >= 7 ? '' : streak.currentStreak >= 3 ? '' : streak.studiedToday ? '✓' : ''}
           </div>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>
@@ -86,7 +86,7 @@ function RecommendationsPage() {
             </div>
             <div style={{ opacity: 0.85, fontSize: '0.9rem', marginTop: '0.25rem' }}>
               {streak.studiedToday
-                ? 'Вы уже позанимались сегодня 🎉'
+                ? 'Вы уже позанимались сегодня'
                 : streak.currentStreak > 0
                   ? 'Не забудьте позаниматься сегодня!'
                   : 'Ответьте хотя бы на несколько вопросов, чтобы начать серию'}
@@ -116,7 +116,7 @@ function RecommendationsPage() {
       {/* ─── Yesterday Summary ────────────────────────── */}
       {briefing?.yesterdaySummary && (
         <div className="card animate-slide-up" style={{ padding: '1.25rem', marginBottom: '1.5rem' }}>
-          <h3 style={{ marginBottom: '1rem', fontSize: '1rem' }}>📊 Вчерашний итог</h3>
+          <h3 style={{ marginBottom: '1rem', fontSize: '1rem' }}>Вчерашний итог</h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '1rem' }}>
             <StatBox label="Вопросов" value={briefing.yesterdaySummary.questionsAnswered} />
             <StatBox label="Верных" value={briefing.yesterdaySummary.correctAnswers} />
@@ -133,13 +133,13 @@ function RecommendationsPage() {
           className={`btn ${activeTab === 'daily' ? 'btn-primary' : 'btn-secondary'}`}
           onClick={() => setActiveTab('daily')}
         >
-          💡 Советы дня ({briefing?.recommendations.length ?? 0})
+                    Советы дня ({briefing?.recommendations.length ?? 0})
         </button>
         <button
           className={`btn ${activeTab === 'milestones' ? 'btn-primary' : 'btn-secondary'}`}
           onClick={() => setActiveTab('milestones')}
         >
-          🏆 Достижения ({allMilestones.length})
+          Достижения ({allMilestones.length})
         </button>
       </div>
 
@@ -148,7 +148,7 @@ function RecommendationsPage() {
         <div className="animate-fade-in">
           {(!briefing?.recommendations || briefing.recommendations.length === 0) ? (
             <div className="card" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
-              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🎉</div>
+              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}></div>
               <p>На сегодня рекомендаций нет — вы на правильном пути!</p>
             </div>
           ) : (
@@ -166,7 +166,7 @@ function RecommendationsPage() {
         <div className="animate-fade-in">
           {allMilestones.length === 0 ? (
             <div className="card" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
-              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🎯</div>
+              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}></div>
               <p>Начните заниматься, чтобы получить первые достижения!</p>
             </div>
           ) : (
@@ -192,7 +192,7 @@ function RecommendationsPage() {
             border: '2px solid var(--warning-color)',
           }}
         >
-          <h3 style={{ marginBottom: '1rem' }}>🎊 Новые достижения!</h3>
+          <h3 style={{ marginBottom: '1rem' }}>Новые достижения!</h3>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
             {briefing.recentMilestones.filter(m => m.isNew).map(m => (
               <div
@@ -252,7 +252,7 @@ function RecommendationCard({ rec, onAction }: { rec: Recommendation; onAction: 
         background: style.bg,
       }}
     >
-      <div style={{ fontSize: '1.75rem', flexShrink: 0 }}>{rec.icon ?? '💡'}</div>
+      <div style={{ fontSize: '1.75rem', flexShrink: 0 }}>{rec.icon ?? ''}</div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontWeight: 600, marginBottom: '0.25rem' }}>{rec.title}</div>
         <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{rec.description}</div>

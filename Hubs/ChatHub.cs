@@ -2,6 +2,8 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using UniStart.Application.Interfaces;
+using UniStart.Application.Services;
+using UniStart.Infrastructure.Data;
 
 namespace UniStart.Hubs;
 
@@ -9,10 +11,14 @@ namespace UniStart.Hubs;
 public class ChatHub : Hub
 {
     private readonly IMessageService _messageService;
+    private readonly PresenceTracker _presenceTracker;
+    private readonly UniStartDbContext _db;
 
-    public ChatHub(IMessageService messageService)
+    public ChatHub(IMessageService messageService, PresenceTracker presenceTracker, UniStartDbContext db)
     {
         _messageService = messageService;
+        _presenceTracker = presenceTracker;
+        _db = db;
     }
 
     public override async Task OnConnectedAsync()
@@ -21,6 +27,22 @@ public class ChatHub : Hub
         if (userId > 0)
         {
             await Groups.AddToGroupAsync(Context.ConnectionId, $"user_{userId}");
+
+            var isNew = _presenceTracker.UserConnected(userId, Context.ConnectionId);
+
+            // Update LastSeenAt in DB
+            var user = await _db.Users.FindAsync(userId);
+            if (user != null)
+            {
+                user.LastSeenAt = DateTime.UtcNow;
+                await _db.SaveChangesAsync();
+            }
+
+            // If user just came online, broadcast to others who have conversations with them
+            if (isNew)
+            {
+                await Clients.Others.SendAsync("UserOnline", userId);
+            }
         }
         await base.OnConnectedAsync();
     }
@@ -31,6 +53,21 @@ public class ChatHub : Hub
         if (userId > 0)
         {
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"user_{userId}");
+
+            var isOffline = _presenceTracker.UserDisconnected(userId, Context.ConnectionId);
+
+            // Update LastSeenAt in DB
+            var user = await _db.Users.FindAsync(userId);
+            if (user != null)
+            {
+                user.LastSeenAt = DateTime.UtcNow;
+                await _db.SaveChangesAsync();
+            }
+
+            if (isOffline)
+            {
+                await Clients.Others.SendAsync("UserOffline", userId);
+            }
         }
         await base.OnDisconnectedAsync(exception);
     }
@@ -52,9 +89,15 @@ public class ChatHub : Hub
 
         var recipientId = conv.OtherUserId;
 
-        // Push to both sender and recipient
-        await Clients.Group($"user_{userId}").SendAsync("ReceiveMessage", conversationId, message);
-        await Clients.Group($"user_{recipientId}").SendAsync("ReceiveMessage", conversationId, message);
+        // Send with correct IsMine flag for each participant
+        var recipientMessage = new UniStart.Application.DTOs.MessageDto(
+            message.Id, message.ConversationId, message.SenderId, message.SenderName,
+            message.Text, message.SentAt, message.ReadAt, message.IsEdited,
+            message.Type, IsMine: false
+        );
+
+        await Clients.Group($"user_{userId}").SendAsync("ReceiveMessage", message);
+        await Clients.Group($"user_{recipientId}").SendAsync("ReceiveMessage", recipientMessage);
 
         // Update unread count for recipient
         var unread = await _messageService.GetUnreadCountAsync(recipientId);
@@ -96,7 +139,9 @@ public class ChatHub : Hub
         var conv = conversations.FirstOrDefault(c => c.Id == conversationId);
         if (conv != null)
         {
-            await Clients.Group($"user_{conv.OtherUserId}").SendAsync("UserTyping", conversationId, userId);
+            // Send userName (not userId) so clients can display a name
+            var user = await _messageService.GetUserNameAsync(userId);
+            await Clients.Group($"user_{conv.OtherUserId}").SendAsync("UserTyping", conversationId, user);
         }
     }
 

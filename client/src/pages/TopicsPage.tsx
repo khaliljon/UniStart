@@ -237,7 +237,7 @@ export default function TopicsPage() {
       else if (line.startsWith('- ')) {
         elements.push(<p key={i} style={{ margin: '0.25rem 0', paddingLeft: '1.5rem', fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: '1.6' }}>• {line.slice(2)}</p>);
       }
-      // Emoji/symbol lines (like ❌ ✅)
+      // Other lines
       else if (line.trim().length > 0) {
         // Inline formatting: **bold**, *italic*, `code`, $math$
         const formatted = line
@@ -287,7 +287,7 @@ export default function TopicsPage() {
             fontSize: '0.875rem',
             fontWeight: '500'
           }}>
-            📖 Урок • {currentTopic?.topicName}
+            Урок • {currentTopic?.topicName}
           </span>
           <button onClick={() => { setViewMode('topics'); loadTopics(); }} className="btn btn-outline">
             ← К темам
@@ -341,7 +341,7 @@ export default function TopicsPage() {
               alignItems: 'center',
               gap: '0.75rem'
             }}>
-              <span style={{ fontSize: '1.5rem' }}>🎬</span>
+              <span style={{ fontSize: '1.5rem' }}></span>
               <div style={{ flex: 1 }}>
                 <p style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--text-primary)', margin: 0 }}>Видео-урок</p>
                 <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: '0.25rem 0 0 0' }}>Посмотрите обучающее видео для лучшего понимания</p>
@@ -375,7 +375,7 @@ export default function TopicsPage() {
               className="btn btn-primary"
               style={{ flex: 1 }}
             >
-              🎯 Начать практику
+              Начать практику
             </button>
           )}
         </div>
@@ -389,7 +389,7 @@ export default function TopicsPage() {
       <div className="animate-fade-in" style={{ maxWidth: '800px', margin: '0 auto' }}>
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-primary)' }}>📚 Темы</h1>
+          <h1 style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-primary)' }}>Темы</h1>
           <button onClick={() => navigate('/test')} className="btn btn-outline">
             ← Назад
           </button>
@@ -453,7 +453,7 @@ export default function TopicsPage() {
                   <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
                     {topic.totalQuestions} {topic.totalQuestions === 1 ? 'вопрос' : 'вопросов'} в теме
                     {(topic.lessonCount ?? 0) > 0 && (
-                      <span style={{ marginLeft: '0.5rem' }}>• 📖 {topic.lessonCount} {topic.lessonCount === 1 ? 'урок' : 'уроков'}</span>
+                      <span style={{ marginLeft: '0.5rem' }}>• {topic.lessonCount} {topic.lessonCount === 1 ? 'урок' : 'уроков'}</span>
                     )}
                   </p>
                 </div>
@@ -480,8 +480,8 @@ export default function TopicsPage() {
               </div>
 
               <div style={{ marginTop: '0.5rem', display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                <span>✅ {topic.correctAnswers} верных ответов</span>
-                <span>❌ {topic.incorrectAnswers} ошибок</span>
+                <span>✓ {topic.correctAnswers} верных ответов</span>
+                <span>✕ {topic.incorrectAnswers} ошибок</span>
               </div>
 
               {/* Action Buttons */}
@@ -492,7 +492,7 @@ export default function TopicsPage() {
                     className="btn btn-outline"
                     style={{ flex: 1, fontSize: '0.8rem', padding: '0.5rem' }}
                   >
-                    📖 Урок
+                    Урок
                   </button>
                 )}
                 <button
@@ -500,7 +500,7 @@ export default function TopicsPage() {
                   className="btn btn-primary"
                   style={{ flex: 1, fontSize: '0.8rem', padding: '0.5rem' }}
                 >
-                  🎯 Практика
+                  Практика
                 </button>
               </div>
             </div>
@@ -509,7 +509,6 @@ export default function TopicsPage() {
 
         {topics.length === 0 && (
           <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
-            <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>📭</div>
             <p style={{ color: 'var(--text-secondary)' }}>Темы не найдены для выбранных экзаменов</p>
           </div>
         )}
@@ -532,7 +531,7 @@ export default function TopicsPage() {
           fontSize: '0.875rem',
           fontWeight: '500'
         }}>
-          📚 {currentTopic?.topicName}
+          {currentTopic?.topicName}
         </span>
         <button onClick={() => setViewMode('topics')} className="btn btn-outline">
           ← К темам
@@ -586,7 +585,7 @@ export default function TopicsPage() {
                 transition: 'all 0.2s ease'
               }}
             >
-              {hintLoading ? '...' : showHint ? '💡 Скрыть подсказку' : '💡 Подсказка'}
+              {hintLoading ? '...' : showHint ? 'Скрыть подсказку' : 'Подсказка'}
             </button>
           )}
         </div>
@@ -603,7 +602,7 @@ export default function TopicsPage() {
             color: 'var(--text-secondary)',
             lineHeight: '1.5'
           }}>
-            <span style={{ fontWeight: '600', color: 'var(--warning-color)' }}>💡 Подсказка: </span>
+            <span style={{ fontWeight: '600', color: 'var(--warning-color)' }}>Подсказка: </span>
             {hintText}
           </div>
         )}
@@ -662,7 +661,7 @@ export default function TopicsPage() {
             border: `1px solid ${answerResult.isCorrect ? 'var(--success-color)' : 'var(--error-color)'}`
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-              <span style={{ fontSize: '1.5rem' }}>{answerResult.isCorrect ? '✅' : '❌'}</span>
+              <span style={{ fontSize: '1.5rem' }}>{answerResult.isCorrect ? '✓' : '✕'}</span>
               <span style={{ fontWeight: '600', color: answerResult.isCorrect ? 'var(--success-color)' : 'var(--error-color)' }}>
                 {answerResult.isCorrect ? 'Правильно!' : 'Неправильно'}
               </span>

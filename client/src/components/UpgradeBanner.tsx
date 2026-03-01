@@ -34,7 +34,7 @@ export function UpgradeBanner({ questionsRemaining, questionsLimit }: UpgradeBan
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <span style={{ fontSize: '1.2rem' }}>
-            {isExhausted ? '🔒' : isLow ? '⚡' : '✨'}
+            {isExhausted ? '✕' : isLow ? '!' : '★'}
           </span>
           <div>
             <div style={{

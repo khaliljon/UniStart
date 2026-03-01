@@ -221,7 +221,6 @@ function TestPage() {
           </div>
         )}
         <div className="card" style={{ maxWidth: '500px', margin: '0 auto', padding: '2.5rem', textAlign: 'center' }}>
-          <span style={{ fontSize: '3rem', display: 'block', marginBottom: '1rem' }}>{topicId ? '📅' : '📚'}</span>
           <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '0.5rem', color: 'var(--text-primary)' }}>
             {topicId ? 'Задание по плану' : 'Адаптивная практика'}
           </h2>
@@ -267,7 +266,6 @@ function TestPage() {
     return (
       <div className="test-container">
         <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
-          <span style={{ fontSize: '3rem', display: 'block', marginBottom: '1rem' }}>🎉</span>
           <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '1rem' }}>
             {planEntryId ? 'Задание выполнено!' : 'Практика завершена!'}
           </h2>
@@ -282,11 +280,11 @@ function TestPage() {
           </p>
           <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
             <button onClick={handleFinishTest} className="btn btn-primary">
-              {planEntryId ? '📅 Вернуться к плану' : '📊 Аналитика'}
+              {planEntryId ? 'Вернуться к плану' : 'Аналитика'}
             </button>
             {!planEntryId && (
               <button onClick={handleResetTest} className="btn btn-secondary" disabled={isLoading}>
-                {isLoading ? 'Сброс...' : '🔄 Начать заново'}
+                {isLoading ? 'Сброс...' : 'Начать заново'}
               </button>
             )}
           </div>
@@ -391,7 +389,7 @@ function TestPage() {
             backgroundColor: 'rgba(16, 185, 129, 0.1)',
             color: 'var(--success-color)',
           }}>
-            📚 Practice
+            Practice
           </span>
           <button
             onClick={() => setShowQuitConfirm(true)}
@@ -508,7 +506,7 @@ function TestPage() {
                   transition: 'all 0.2s ease'
                 }}
               >
-                {hintLoading ? '...' : showHint ? '💡 Hide Hint' : '💡 Hint'}
+                {hintLoading ? '...' : showHint ? 'Hide Hint' : 'Hint'}
               </button>
             )}
             <span className={`difficulty-badge ${getDifficultyClass(currentQuestion.difficulty)}`}>
@@ -529,7 +527,7 @@ function TestPage() {
             color: 'var(--text-secondary)',
             lineHeight: '1.5'
           }}>
-            <span style={{ fontWeight: '600', color: 'var(--warning-color)' }}>💡 Hint: </span>
+            <span style={{ fontWeight: '600', color: 'var(--warning-color)' }}>Hint: </span>
             {hintText}
           </div>
         )}
@@ -564,7 +562,7 @@ function TestPage() {
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
               <span style={{ fontSize: '1.5rem' }}>
-                {answerResult.isCorrect ? '✅' : '❌'}
+                {answerResult.isCorrect ? '✓' : '✕'}
               </span>
               <p
                 style={{
@@ -605,7 +603,7 @@ function TestPage() {
                 border: '1px solid rgba(99, 102, 241, 0.2)'
               }}>
                 <p style={{ margin: 0, fontSize: '0.75rem', fontWeight: '600', color: 'var(--primary-color)', textTransform: 'uppercase' }}>
-                  💡 Explanation
+                  Explanation
                 </p>
                 <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.9rem', lineHeight: '1.5' }}>
                   {answerResult.explanation}

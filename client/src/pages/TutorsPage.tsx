@@ -139,8 +139,8 @@ function TutorsPage() {
           {renderStars(tutor.averageRating)}{' '}
           <strong style={{ color: 'var(--text-primary)' }}>{tutor.averageRating.toFixed(1)}</strong>
         </span>
-        <span>📝 {tutor.totalReviews}</span>
-        <span>👥 {tutor.totalStudents}</span>
+        <span>{tutor.totalReviews}</span>
+        <span>{tutor.totalStudents}</span>
         {tutor.hourlyRate != null && (
           <span style={{ marginLeft: 'auto', fontWeight: 600, color: 'var(--primary-color)' }}>
             {tutor.hourlyRate}₽/ч
@@ -161,7 +161,7 @@ function TutorsPage() {
   return (
     <div className="animate-fade-in">
       <div style={{ marginBottom: '1.5rem' }}>
-        <h1 style={{ margin: '0 0 0.25rem' }}>🎓 Тьюторы</h1>
+        <h1 style={{ margin: '0 0 0.25rem' }}>Тьюторы</h1>
         <p style={{ margin: 0, color: 'var(--text-secondary)' }}>
           Найдите опытного тьютора для подготовки к экзаменам
         </p>
@@ -179,7 +179,7 @@ function TutorsPage() {
             style={{ flex: 1, padding: '0.5rem 0.75rem', fontSize: '0.9rem' }}
           />
           <button type="submit" className="btn btn-primary" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
-            🔍
+            Поиск
           </button>
         </form>
 
@@ -228,7 +228,7 @@ function TutorsPage() {
         </div>
       ) : !result || result.items.length === 0 ? (
         <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
-          <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>🔍</div>
+          <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}></div>
           <h3>Тьюторы не найдены</h3>
           <p style={{ color: 'var(--text-secondary)' }}>Попробуйте изменить параметры поиска</p>
         </div>

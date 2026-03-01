@@ -249,6 +249,32 @@ const adminService = {
         totalCount: number; page: number; pageSize: number; totalPages: number;
       };
     }>(`/admin/users/${userId}/activity?page=${page}&pageSize=${pageSize}`).then(r => r.data),
+
+  // ─── Tutor Moderation (T-10) ──────────────────────────────
+  getTutors: () =>
+    api.get<Array<{
+      tutorProfileId: number;
+      userId: number;
+      name: string;
+      email: string;
+      headline: string;
+      specializations: string;
+      isAvailable: boolean;
+      isVerified: boolean;
+      isBlocked: boolean;
+      blockReason: string | null;
+      averageRating: number;
+      totalReviews: number;
+      totalStudents: number;
+      hourlyRate: number | null;
+      createdAt: string;
+    }>>('/admin/tutors').then(r => r.data),
+
+  verifyTutor: (tutorProfileId: number) =>
+    api.post<{ verified: boolean; tutorProfileId: number }>(`/admin/tutors/${tutorProfileId}/verify`).then(r => r.data),
+
+  unverifyTutor: (tutorProfileId: number) =>
+    api.post<{ verified: boolean; tutorProfileId: number }>(`/admin/tutors/${tutorProfileId}/unverify`).then(r => r.data),
 };
 
 export default adminService;

@@ -204,7 +204,7 @@ function MockExamPage() {
       <ProGate hasAccess={isPro} featureName="Mock Exams">
       <div style={{ maxWidth: 900, margin: '0 auto' }}>
         <h1 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.5rem' }}>
-          📝 Mock Exams
+          Mock Exams
         </h1>
         <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>
           Take a full-length practice test under real exam conditions with timed sections
@@ -242,7 +242,7 @@ function MockExamPage() {
         {/* History */}
         {history.length > 0 && (
           <>
-            <h2 style={{ fontSize: '1.1rem', marginBottom: '0.75rem' }}>📊 Recent Attempts</h2>
+            <h2 style={{ fontSize: '1.1rem', marginBottom: '0.75rem' }}>Recent Attempts</h2>
             <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
                 <thead>
@@ -268,7 +268,7 @@ function MockExamPage() {
                       </td>
                       <td style={{ padding: '0.5rem' }}>
                         <span style={{ color: h.status === 'completed' ? '#27ae60' : '#e67e22', fontWeight: 500 }}>
-                          {h.status === 'completed' ? '✅ Completed' : '⏳ In progress'}
+                          {h.status === 'completed' ? '✓ Completed' : 'In progress'}
                         </span>
                       </td>
                       <td style={{ padding: '0.5rem', color: 'var(--text-secondary)' }}>
@@ -316,7 +316,7 @@ function MockExamPage() {
           </div>
         </div>
 
-        <h2 style={{ fontSize: '1.1rem', marginBottom: '0.75rem' }}>📋 Sections</h2>
+        <h2 style={{ fontSize: '1.1rem', marginBottom: '0.75rem' }}>Sections</h2>
         {examDetail.sections.map((s, i) => (
           <div key={s.id} className="card" style={{ marginBottom: '0.75rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -339,7 +339,7 @@ function MockExamPage() {
 
         <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
           <button className="btn btn-primary" style={{ padding: '0.75rem 3rem', fontSize: '1rem' }} onClick={handleStartExam} disabled={loading}>
-            {loading ? 'Starting...' : '🚀 Start Exam'}
+            {loading ? 'Starting...' : 'Start Exam'}
           </button>
         </div>
       </div>
@@ -408,7 +408,7 @@ function MockExamPage() {
             </span>
             {/* Timer */}
             <div style={{ background: 'var(--bg-secondary)', padding: '6px 16px', borderRadius: 8, fontWeight: 700, fontSize: '1.1rem', fontFamily: 'monospace', color: timerColor, minWidth: 80, textAlign: 'center' }}>
-              ⏱ {formatTime(timeLeft)}
+              {formatTime(timeLeft)}
             </div>
           </div>
         </div>
@@ -442,7 +442,7 @@ function MockExamPage() {
           {hasPassage && (
             <div className="card" style={{ flex: 1, maxHeight: 600, overflowY: 'auto', fontSize: '0.88rem', lineHeight: 1.7 }}>
               <h3 style={{ margin: '0 0 0.75rem', fontSize: '1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
-                📖 {currentQuestion.passageTitle}
+                {currentQuestion.passageTitle}
               </h3>
               {currentQuestion.passageContent?.split('\n\n').map((p, i) => (
                 <p key={i} style={{ margin: '0 0 0.75rem', textAlign: 'justify' }}>{p}</p>
@@ -526,8 +526,8 @@ function MockExamPage() {
                   onClick={handleCompleteSection}
                 >
                   {sectionState.sectionIndex + 1 < attempt.totalSections
-                    ? '✅ Complete Section'
-                    : '🏁 Finish Exam'}
+                    ? 'Complete Section'
+                    : 'Finish Exam'}
                 </button>
               )}
             </div>
@@ -577,7 +577,7 @@ function MockExamPage() {
         </div>
 
         {/* Section breakdown */}
-        <h2 style={{ fontSize: '1.1rem', marginBottom: '0.75rem' }}>📊 Section Results</h2>
+        <h2 style={{ fontSize: '1.1rem', marginBottom: '0.75rem' }}>Section Results</h2>
         <div style={{ display: 'grid', gap: '0.75rem', marginBottom: '1.5rem', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))' }}>
           {results.sectionResults.map(sr => (
             <div key={sr.sectionIndex} className="card">
@@ -586,9 +586,9 @@ function MockExamPage() {
                 {sr.accuracy}%
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                <span>✅ {sr.correctCount} correct</span>
-                <span>❌ {sr.totalQuestions - sr.correctCount - sr.unansweredCount} wrong</span>
-                {sr.unansweredCount > 0 && <span>⬜ {sr.unansweredCount} skipped</span>}
+                <span>✓ {sr.correctCount} correct</span>
+                <span>✕ {sr.totalQuestions - sr.correctCount - sr.unansweredCount} wrong</span>
+                {sr.unansweredCount > 0 && <span>{sr.unansweredCount} skipped</span>}
               </div>
               {/* Progress bar */}
               <div style={{ marginTop: '0.5rem', height: 6, borderRadius: 3, background: 'var(--bg-secondary)', overflow: 'hidden' }}>
@@ -600,7 +600,7 @@ function MockExamPage() {
 
         {/* Answer review toggle */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-          <h2 style={{ fontSize: '1.1rem', margin: 0 }}>📝 Answer Review</h2>
+          <h2 style={{ fontSize: '1.1rem', margin: 0 }}>Answer Review</h2>
           <button className="btn btn-outline" style={{ fontSize: '0.8rem' }} onClick={() => setShowReview(!showReview)}>
             {showReview ? 'Hide Review' : 'Show Review'}
           </button>
@@ -642,7 +642,7 @@ function MockExamPage() {
                         color: a.isCorrect ? '#27ae60' : a.isUnanswered ? '#95a5a6' : '#e74c3c',
                         fontWeight: 600, fontSize: '0.8rem'
                       }}>
-                        {a.isCorrect ? '✅ Correct' : a.isUnanswered ? '⬜ Skipped' : '❌ Wrong'}
+                        {a.isCorrect ? '✓ Correct' : a.isUnanswered ? 'Skipped' : '✕ Wrong'}
                       </span>
                     </div>
                   </div>
@@ -659,7 +659,7 @@ function MockExamPage() {
                   </p>
                   {a.explanation && (
                     <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginTop: '0.5rem', fontStyle: 'italic', lineHeight: 1.5 }}>
-                      💡 {a.explanation}
+                      {a.explanation}
                     </p>
                   )}
                 </div>

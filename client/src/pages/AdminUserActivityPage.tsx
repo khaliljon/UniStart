@@ -57,7 +57,7 @@ export default function AdminUserActivityPage() {
 
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-      <h2 style={{ marginBottom: 16 }}>👤 Активность пользователя</h2>
+      <h2 style={{ marginBottom: 16 }}>Активность пользователя</h2>
 
       {/* Search bar */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
@@ -97,7 +97,7 @@ export default function AdminUserActivityPage() {
             <div>
               <div style={{ fontSize: 20, fontWeight: 700 }}>
                 {data.user.name}
-                {data.user.isBlocked && <span style={{ color: '#ef4444', marginLeft: 8 }}>🚫 Заблокирован</span>}
+                {data.user.isBlocked && <span style={{ color: '#ef4444', marginLeft: 8 }}>Заблокирован</span>}
               </div>
               <div style={{ color: 'var(--text-secondary)', marginTop: 4 }}>
                 {data.user.email} · {data.user.role} · {data.user.subscriptionTier}
@@ -131,7 +131,7 @@ export default function AdminUserActivityPage() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 24 }}>
             {/* Skills */}
             <div style={{ background: 'var(--bg-secondary)', borderRadius: 12, padding: 20 }}>
-              <h3 style={{ margin: '0 0 12px' }}>🎯 Навыки</h3>
+              <h3 style={{ margin: '0 0 12px' }}>Навыки</h3>
               {data.skills.length === 0 ? (
                 <div style={{ color: 'var(--text-secondary)' }}>Нет данных</div>
               ) : data.skills.map(s => (
@@ -155,7 +155,7 @@ export default function AdminUserActivityPage() {
 
             {/* Daily Activity Chart (simple bar chart) */}
             <div style={{ background: 'var(--bg-secondary)', borderRadius: 12, padding: 20 }}>
-              <h3 style={{ margin: '0 0 12px' }}>📅 Активность (30 дней)</h3>
+              <h3 style={{ margin: '0 0 12px' }}>Активность (30 дней)</h3>
               {data.dailyActivity.length === 0 ? (
                 <div style={{ color: 'var(--text-secondary)' }}>Нет данных</div>
               ) : (
@@ -182,7 +182,7 @@ export default function AdminUserActivityPage() {
           {/* Sessions Table */}
           <div style={{ background: 'var(--bg-secondary)', borderRadius: 12, padding: 20 }}>
             <h3 style={{ margin: '0 0 12px' }}>
-              📋 Сессии ({data.sessions.totalCount})
+              Сессии ({data.sessions.totalCount})
             </h3>
             {data.sessions.items.length === 0 ? (
               <div style={{ color: 'var(--text-secondary)' }}>Нет сессий</div>

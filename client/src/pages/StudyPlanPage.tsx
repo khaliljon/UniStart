@@ -196,14 +196,14 @@ function StudyPlanPage() {
   return (
     <div className="animate-fade-in" style={{ padding: '1.5rem 0' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-        <h1 style={{ margin: 0 }}>📚 Учебный план</h1>
+        <h1 style={{ margin: 0 }}>Учебный план</h1>
         {goal && (
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <button className="btn btn-outline" onClick={handleRegenerate} disabled={isSubmitting}>
-              🔄 Перегенерировать
+              Перегенерировать
             </button>
             <button className="btn btn-outline" onClick={() => setShowGoalForm(true)}>
-              ✏️ Изменить цель
+              Изменить цель
             </button>
           </div>
         )}
@@ -214,7 +214,7 @@ function StudyPlanPage() {
         <GoalCard goal={goal} onDelete={() => setShowDeleteConfirm(true)} />
       ) : (
         <div className="card animate-fade-in-up" style={{ padding: '2rem', textAlign: 'center' }}>
-          <h2 style={{ marginBottom: '0.5rem' }}>🎯 Установите цель обучения</h2>
+          <h2 style={{ marginBottom: '0.5rem' }}>Установите цель обучения</h2>
           <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
             Выберите экзамен, дедлайн и целевой балл — мы составим персональный план
           </p>
@@ -247,7 +247,7 @@ function StudyPlanPage() {
             display: 'flex', gap: '0.5rem', marginTop: '1.5rem', marginBottom: '1rem',
             borderBottom: '2px solid var(--border-color)', paddingBottom: '0.5rem'
           }}>
-            {([['today', '📅 Сегодня'], ['plan', '📋 Весь план'], ['stats', '📊 Статистика']] as [Tab, string][]).map(
+            {([['today', 'Сегодня'], ['plan', 'Весь план'], ['stats', 'Статистика']] as [Tab, string][]).map(
               ([key, label]) => (
                 <button
                   key={key}
@@ -283,7 +283,7 @@ function StudyPlanPage() {
         }} onClick={() => setShowDeleteConfirm(false)}>
           <div className="card animate-fade-in-scale" style={{ padding: '2rem', maxWidth: '400px', width: '90%' }}
             onClick={(e) => e.stopPropagation()}>
-            <h2 style={{ margin: '0 0 0.5rem' }}>⚠️ Удалить цель?</h2>
+            <h2 style={{ margin: '0 0 0.5rem' }}>Удалить цель?</h2>
             <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', lineHeight: 1.5 }}>
               Это действие удалит текущую цель и весь учебный план безвозвратно.
               Ваш прогресс по ответам сохранится, но план нужно будет создать заново.
@@ -319,7 +319,7 @@ function GoalCard({ goal, onDelete }: { goal: StudyGoal; onDelete: () => void })
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div style={{ flex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
-            <h2 style={{ margin: 0 }}>🎯 {goal.examTypeName}</h2>
+            <h2 style={{ margin: 0 }}>{goal.examTypeName}</h2>
             <span style={{
               background: 'var(--primary-color)', color: '#fff',
               padding: '0.2rem 0.6rem', borderRadius: '12px', fontSize: '0.8rem'
@@ -370,7 +370,7 @@ function GoalCard({ goal, onDelete }: { goal: StudyGoal; onDelete: () => void })
                   onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--primary-bg)')}
                   onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
                 >
-                  🗑️ Удалить цель
+                  Удалить цель
                 </button>
               </div>
             </>
@@ -402,7 +402,6 @@ function TodayTab({ todayPlan, onStart }: { todayPlan: TodayPlan; onStart: (entr
       {/* Recommendation */}
       <div className="card card-static" style={{ padding: '1rem', marginBottom: '1rem', background: 'var(--primary-bg)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <span style={{ fontSize: '1.5rem' }}>💡</span>
           <div>
             <div style={{ fontWeight: 600, marginBottom: '0.2rem' }}>{todayPlan.recommendation}</div>
             <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
@@ -477,7 +476,7 @@ function EntryCard({ entry, onStart }: { entry: StudyPlanEntry; onStart: () => v
           </button>
         ) : (
           <button className="btn btn-outline" style={{ fontSize: '0.8rem', whiteSpace: 'nowrap' }} onClick={onStart}>
-            🔄 Ещё
+            Ещё
           </button>
         )}
       </div>
@@ -536,7 +535,6 @@ function PlanTab({ plan }: { plan: StudyPlan }) {
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                 <div style={{ fontWeight: 600 }}>
-                  {isToday && '📅 '}
                   {new Date(dateStr).toLocaleDateString('ru-RU', { weekday: 'short', day: 'numeric', month: 'short' })}
                   {isToday && ' (Сегодня)'}
                 </div>
@@ -580,7 +578,7 @@ function StatsTab({ stats }: { stats: PlanStats }) {
     <div className="animate-fade-in-up">
       {/* Summary stats */}
       <div className="card card-static" style={{ padding: '1.25rem', marginBottom: '1rem' }}>
-        <h3 style={{ margin: '0 0 1rem' }}>📊 Общая статистика</h3>
+        <h3 style={{ margin: '0 0 1rem' }}>Общая статистика</h3>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '1rem' }}>
           <StatBox label="Дней активности" value={stats.completedDays} color="var(--success-color)" />
           <StatBox label="Пропущено дней" value={stats.skippedDays} color="var(--error-color)" />
@@ -601,7 +599,7 @@ function StatsTab({ stats }: { stats: PlanStats }) {
       {/* Weekly completion chart */}
       {weeklyChartData.length > 0 && (
         <div className="card card-static" style={{ padding: '1.25rem', marginBottom: '1rem' }}>
-          <h3 style={{ margin: '0 0 1rem' }}>📈 Еженедельный прогресс</h3>
+          <h3 style={{ margin: '0 0 1rem' }}>Еженедельный прогресс</h3>
           <ResponsiveContainer width="100%" height={260}>
             <BarChart data={weeklyChartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
@@ -623,7 +621,7 @@ function StatsTab({ stats }: { stats: PlanStats }) {
       {/* Accuracy trend */}
       {weeklyChartData.length > 1 && (
         <div className="card card-static" style={{ padding: '1.25rem' }}>
-          <h3 style={{ margin: '0 0 1rem' }}>🎯 Динамика точности</h3>
+          <h3 style={{ margin: '0 0 1rem' }}>Динамика точности</h3>
           <ResponsiveContainer width="100%" height={220}>
             <LineChart data={weeklyChartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
@@ -665,7 +663,7 @@ function GoalFormModal({
     }} onClick={onClose}>
       <div className="card animate-fade-in-scale" style={{ padding: '2rem', maxWidth: '450px', width: '90%' }}
         onClick={(e) => e.stopPropagation()}>
-        <h2 style={{ margin: '0 0 1.5rem' }}>🎯 Установить цель</h2>
+        <h2 style={{ margin: '0 0 1.5rem' }}>Установить цель</h2>
         <form onSubmit={onSubmit}>
           <div style={{ marginBottom: '1rem' }}>
             <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: 600, fontSize: '0.9rem' }}>
