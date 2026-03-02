@@ -11,4 +11,5 @@ public class TopicLesson
 
     // Navigation
     public virtual Topic Topic { get; set; } = null!;
+    public virtual ICollection<LessonStep> Steps { get; set; } = new List<LessonStep>();
 }

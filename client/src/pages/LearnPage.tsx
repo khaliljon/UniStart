@@ -4,18 +4,43 @@ import TestPage from './TestPage';
 import MockExamPage from './MockExamPage';
 import TopicsPage from './TopicsPage';
 import ReviewPage from './ReviewPage';
+import FormulaPage from './FormulaPage';
+import FlashcardPage from './FlashcardPage';
+import TimedDrillPage from './TimedDrillPage';
+import StrategyPage from './StrategyPage';
+import MistakeJournalPage from './MistakeJournalPage';
 
-type LearnTab = 'practice' | 'mock' | 'topics' | 'review';
+type LearnTab = 'practice' | 'mock' | 'topics' | 'review' | 'formulas' | 'flashcards' | 'drills' | 'strategies' | 'mistakes';
 
-const TABS: { id: LearnTab; label: string; icon: string; desc: string }[] = [
-  { id: 'practice', label: 'Практика', icon: '▶', desc: 'Адаптивный тест' },
-  { id: 'mock', label: 'Mock Exam', icon: '', desc: 'Полный формат экзамена' },
-  { id: 'topics', label: 'Темы', icon: '', desc: 'Уроки и практика по темам' },
-  { id: 'review', label: 'Ошибки', icon: '', desc: 'Повторение ошибок' },
+interface TabGroup {
+  label: string;
+  tabs: { id: LearnTab; label: string; desc: string }[];
+}
+
+const TAB_GROUPS: TabGroup[] = [
+  {
+    label: 'Learn',
+    tabs: [
+      { id: 'topics', label: 'Lessons', desc: 'Structured lessons by topic' },
+      { id: 'formulas', label: 'Formulas', desc: 'Formula reference cards' },
+      { id: 'flashcards', label: 'Flashcards', desc: 'Spaced repetition cards' },
+      { id: 'strategies', label: 'Strategies', desc: 'Exam strategy guides' },
+    ],
+  },
+  {
+    label: 'Train',
+    tabs: [
+      { id: 'practice', label: 'Practice', desc: 'Adaptive practice' },
+      { id: 'mock', label: 'Mock Exam', desc: 'Full exam format' },
+      { id: 'drills', label: 'Drills', desc: 'Timed drill challenges' },
+      { id: 'review', label: 'Review', desc: 'Review wrong answers' },
+      { id: 'mistakes', label: 'Journal', desc: 'Mistake analysis' },
+    ],
+  },
 ];
 
-const isValidTab = (v: string | null): v is LearnTab =>
-  v === 'practice' || v === 'mock' || v === 'topics' || v === 'review';
+const ALL_TAB_IDS = TAB_GROUPS.flatMap(g => g.tabs.map(t => t.id));
+const isValidTab = (v: string | null): v is LearnTab => ALL_TAB_IDS.includes(v as LearnTab);
 
 function LearnPage() {
   const navigate = useNavigate();
@@ -33,12 +58,12 @@ function LearnPage() {
   if (selectedExams.length === 0) {
     return (
       <div className="animate-fade-in" style={{ textAlign: 'center', padding: '4rem 1rem' }}>
-        <h2>Выберите экзамен</h2>
+        <h2>Select an Exam</h2>
         <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
-          Для начала обучения нужно выбрать хотя бы один экзамен
+          Choose at least one exam to start learning
         </p>
         <button className="btn btn-primary" onClick={() => navigate('/profile')}>
-          Выбрать экзамен
+          Select Exam
         </button>
       </div>
     );
@@ -46,19 +71,26 @@ function LearnPage() {
 
   return (
     <div className="animate-fade-in" style={{ padding: '1.5rem 0' }}>
-      {/* Tab bar */}
-      <div className="learn-tabs">
-        {TABS.map(tab => (
-          <button
-            key={tab.id}
-            className={`learn-tab ${activeTab === tab.id ? 'learn-tab-active' : ''}`}
-            onClick={() => switchTab(tab.id)}
-          >
-            <span className="learn-tab-icon">{tab.icon}</span>
-            <span className="learn-tab-label">{tab.label}</span>
-          </button>
-        ))}
-      </div>
+      {/* Tab groups */}
+      {TAB_GROUPS.map(group => (
+        <div key={group.label} style={{ marginBottom: '0.5rem' }}>
+          <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem', paddingLeft: '0.25rem' }}>
+            {group.label}
+          </div>
+          <div className="learn-tabs" style={{ marginBottom: '0.25rem' }}>
+            {group.tabs.map(tab => (
+              <button
+                key={tab.id}
+                className={`learn-tab ${activeTab === tab.id ? 'learn-tab-active' : ''}`}
+                onClick={() => switchTab(tab.id)}
+                title={tab.desc}
+              >
+                <span className="learn-tab-label">{tab.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
 
       {/* Tab content */}
       <div style={{ marginTop: '0.5rem' }}>
@@ -66,6 +98,11 @@ function LearnPage() {
         {activeTab === 'mock' && <MockExamPage />}
         {activeTab === 'topics' && <TopicsPage />}
         {activeTab === 'review' && <ReviewPage />}
+        {activeTab === 'formulas' && <FormulaPage />}
+        {activeTab === 'flashcards' && <FlashcardPage />}
+        {activeTab === 'drills' && <TimedDrillPage />}
+        {activeTab === 'strategies' && <StrategyPage />}
+        {activeTab === 'mistakes' && <MistakeJournalPage />}
       </div>
     </div>
   );

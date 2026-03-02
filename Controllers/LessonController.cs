@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UniStart.Application.DTOs;
@@ -65,5 +66,52 @@ public class LessonController : ControllerBase
         var hint = await _lessonService.GetQuestionHintAsync(questionId);
         if (hint == null) return NotFound(new { message = "No hint available for this question" });
         return Ok(new { hint });
+    }
+
+    /// <summary>
+    /// Get lesson with steps and user progress
+    /// </summary>
+    [HttpGet("{lessonId}/steps")]
+    [ProducesResponseType(typeof(LessonWithStepsDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetLessonWithSteps(int lessonId)
+    {
+        var userId = GetCurrentUserId();
+        var result = await _lessonService.GetLessonWithStepsAsync(userId, lessonId);
+        if (result == null) return NotFound();
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Mark a lesson step as completed
+    /// </summary>
+    [HttpPost("steps/{stepId}/complete")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> MarkStepCompleted(int stepId)
+    {
+        var userId = GetCurrentUserId();
+        await _lessonService.MarkStepCompletedAsync(userId, stepId);
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Get lesson progress percentage
+    /// </summary>
+    [HttpGet("{lessonId}/progress")]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetLessonProgress(int lessonId)
+    {
+        var userId = GetCurrentUserId();
+        var percent = await _lessonService.GetLessonProgressPercentAsync(userId, lessonId);
+        return Ok(new { lessonId, progressPercent = percent });
+    }
+
+    private int GetCurrentUserId()
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier) 
+                         ?? User.FindFirst("sub");
+        if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var userId) || userId <= 0)
+            throw new UnauthorizedAccessException("Invalid user identity");
+        return userId;
     }
 }

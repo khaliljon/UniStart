@@ -86,6 +86,13 @@ try
     builder.Services.AddScoped<ITutorService, TutorService>();
     builder.Services.AddScoped<IMessageService, MessageService>();
 
+    // Learning v2 services (TH-1..TH-6)
+    builder.Services.AddScoped<IFormulaService, FormulaService>();
+    builder.Services.AddScoped<IFlashcardService, FlashcardService>();
+    builder.Services.AddScoped<ITimedDrillService, TimedDrillService>();
+    builder.Services.AddScoped<IStrategyService, StrategyService>();
+    builder.Services.AddScoped<IMistakeService, MistakeService>();
+
     // ═══════════════════════════════════════════════════════
     //  PRESENCE TRACKER — Singleton (T-9)
     // ═══════════════════════════════════════════════════════

@@ -1097,3 +1097,399 @@ UniStart/
 | `client/src/types/index.ts` | Добавить topicId в ImprovementTip |
 
 *Создано: 27 февраля 2026*
+
+---
+
+## 📚 Раздел «Обучение» v2 — Расширение контента, методик и экзаменов
+
+> **Последнее обновление**: 2 марта 2026
+> **Цель**: Превратить раздел «Обучение» из простого тренажёра вопросов в полноценную обучающую платформу с разнообразными режимами, глубокой теорией и поддержкой 5 экзаменов.
+
+---
+
+### 🌍 Часть A: Новые экзамены — IELTS + CSCA (Gaokao)
+
+#### Текущее состояние
+
+| Экзамен | Code | Вопросов | Секций | Статус |
+|---------|------|----------|--------|--------|
+| SAT | `SAT` | 40 | 3 (R&W, Math No Calc, Math Calc) | ✅ Готов |
+| TOEFL iBT | `TOEFL` | 28 | 4 (Reading, Listening, Speaking, Writing) | ✅ Готов |
+| NUET | `NUET` | 29 | 2 (Math, Critical Thinking) | ✅ Готов |
+| **IELTS Academic** | `IELTS` | — | — | ⬜ Планируется |
+| **CSCA (Gaokao)** | `CSCA` | — | — | ⬜ Планируется |
+
+---
+
+#### EX-1. IELTS Academic 🇬🇧
+
+**Формат экзамена:**
+- **Listening** (30 мин, 40 вопросов) — 4 записи с заполнением пропусков, множественный выбор, matching
+- **Reading** (60 мин, 40 вопросов) — 3 академических текста, True/False/Not Given, matching headings, sentence completion
+- **Writing** (60 мин, 2 задания) — Task 1: описание графика/диаграммы (150+ слов), Task 2: эссе-аргументация (250+ слов)
+- **Speaking** (11–14 мин, 3 части) — Part 1: знакомство, Part 2: монолог (cue card), Part 3: дискуссия
+- **Шкала**: 0–9 (band score, шаг 0.5) по каждой секции + Overall Band
+
+**Что реализуем:**
+
+| Компонент | Описание | Сложность |
+|-----------|----------|-----------|
+| ExamType `IELTS` | Code: `IELTS`, Name: `IELTS Academic` | 🟢 |
+| 4 секции | Listening (0–9), Reading (0–9), Writing (0–9), Speaking (0–9) | 🟢 |
+| Вопросы Reading | 30+ вопросов: True/False/Not Given, matching, fill-in-the-blank, MCQ | 🟡 |
+| Вопросы Listening | 20+ вопросов: MCQ, sentence completion, matching (с аудио-контекстом описанным текстом) | 🟡 |
+| Reading Passages | 3+ академических текста (по аналогии с TOEFL Reading) | 🟡 |
+| Mock Exam IELTS | Полный формат: 4 секции, 80 вопросов, 2ч 45мин | 🔴 |
+| θ→Band Score маппинг | `θ`: -3..+3 → Band: 1.0–9.0 (шаг 0.5) | 🟢 |
+| Темы | 8–10 тем: Paraphrasing, Skimming & Scanning, Sentence Completion, Matching Headings, T/F/NG, Vocabulary in Context, Listening for Specific Info, Note Completion | 🟢 |
+| Мини-уроки | По 1–2 урока на тему (стратегии IELTS Reading, Listening tips) | 🟡 |
+
+**Задачи:**
+- [ ] **EX-1.1** Seeder: ExamType `IELTS`, 4 ExamSection, 8–10 Topic, Skills, TopicDependencies
+- [ ] **EX-1.2** Seeder: 30+ Reading вопросов с IRT-параметрами + 3 Reading Passages
+- [ ] **EX-1.3** Seeder: 20+ Listening вопросов (текстовое описание аудио-контекста)
+- [ ] **EX-1.4** Mock Exam definition: IELTS Practice Test (80 вопросов, 165 мин, 4 секции)
+- [ ] **EX-1.5** ScorePredictionService: маппинг θ → IELTS Band Score (0–9, шаг 0.5)
+- [ ] **EX-1.6** Frontend: карточка IELTS в онбординге, профиле, dashboard
+- [ ] **EX-1.7** Мини-уроки: 10+ уроков по стратегиям IELTS (Reading skimming, T/F/NG technique, Listening note-taking)
+- [ ] **EX-1.8** Уникальные типы вопросов: True/False/Not Given (новый UI-компонент вместо MCQ)
+
+---
+
+#### EX-2. CSCA / Gaokao (Китай) 🇨🇳
+
+**Формат экзамена:**
+- **Gaokao** — единый государственный вступительный экзамен Китая (~10 млн сдающих/год)
+- **Обязательные предметы**: Chinese (语文), Math (数学), Foreign Language (外语, обычно English)
+- **Для платформы** реализуем Math + English секции (наиболее релевантные для международной аудитории)
+- **Math**: алгебра, геометрия, тригонометрия, статистика, последовательности, функции, производные
+- **English**: reading comprehension, cloze test (fill-in-the-blank), grammar, vocabulary, writing
+- **Шкала**: 0–150 по каждому предмету
+
+**Что реализуем:**
+
+| Компонент | Описание | Сложность |
+|-----------|----------|-----------|
+| ExamType `CSCA` | Code: `CSCA`, Name: `Gaokao (China College Admission)` | 🟢 |
+| 2 секции | Math (0–150), English (0–150) | 🟢 |
+| Вопросы Math | 25+ вопросов: алгебра, геометрия, тригонометрия, функции, производные | 🟡 |
+| Вопросы English | 20+ вопросов: reading, cloze, grammar, vocabulary | 🟡 |
+| Mock Exam CSCA | Math (120 мин) + English (120 мин) | 🔴 |
+| θ→Score маппинг | `θ`: -3..+3 → Score: 0–150 | 🟢 |
+| Темы | 10–12 тем: Algebra, Functions, Trigonometry, Sequences, Derivatives, Geometry, Probability & Statistics, Reading Comprehension, Cloze Test, Grammar & Usage, Vocabulary | 🟢 |
+| Мини-уроки | Формулы + стратегии по каждой теме | 🟡 |
+
+**Задачи:**
+- [ ] **EX-2.1** Seeder: ExamType `CSCA`, 2 ExamSection, 10–12 Topic, Skills, TopicDependencies
+- [ ] **EX-2.2** Seeder: 25+ Math вопросов (включая производные и тригонометрию)
+- [ ] **EX-2.3** Seeder: 20+ English вопросов (cloze test — новый формат)
+- [ ] **EX-2.4** Mock Exam definition: Gaokao Practice Test (45 вопросов, 240 мин, 2 секции)
+- [ ] **EX-2.5** ScorePredictionService: маппинг θ → Gaokao Score (0–150)
+- [ ] **EX-2.6** Frontend: карточка CSCA в онбординге, профиле, dashboard
+- [ ] **EX-2.7** Мини-уроки: 12+ уроков (формулы тригонометрии, производные, грамматика Gaokao English)
+- [ ] **EX-2.8** Cloze test UI: текст с пропусками, выбор слова из вариантов (новый компонент)
+
+---
+
+### 📖 Часть B: Улучшение теории и уроков
+
+#### Текущее состояние теории
+
+Сейчас: 19 мини-уроков (Markdown-текст + опциональное YouTube-видео). Формат: `TopicLesson { Title, Content (markdown), VideoUrl, SortOrder }`. Отображается в `TopicsPage.tsx` → вкладка "Урок" перед практикой. **Проблемы:**
+- Контент чисто текстовый, нет интерактивных элементов
+- Нет проверки понимания после прочтения урока
+- Нет структурирования: формулы отдельно, стратегии отдельно
+- Нет прогресса по теории (прочитал/не прочитал)
+
+#### TH-1. Структурированные уроки с прогрессом 📖
+
+**Идея**: Разбить каждый урок на шаги (steps). Пользователь проходит урок шаг за шагом с трекингом прогресса.
+
+**Модель:**
+```
+TopicLesson (существует)
+  └── LessonStep (новая)
+       ├── Id, LessonId, SortOrder
+       ├── StepType: "theory" | "example" | "quiz" | "summary"
+       ├── Title: string
+       ├── Content: string (markdown)
+       ├── QuizQuestionId: int? (связь с Question для проверки)
+       └── UserLessonProgress (новая)
+            ├── UserId, LessonStepId, CompletedAt
+```
+
+**UX:**
+1. Урок = пошаговый wizard (1/5 → 2/5 → ... → 5/5)
+2. Шаг "theory" = текст + формулы (KaTeX) + картинки
+3. Шаг "example" = разобранный пример с пошаговым решением (spoiler для каждого шага)
+4. Шаг "quiz" = 1–2 вопроса для проверки понимания (inline, не уходя со страницы)
+5. Шаг "summary" = ключевые выводы + формулы в рамке
+6. Прогресс-бар урока, бейджи "📗 Прочитано" на карточке темы
+
+**Задачи:**
+- [ ] **TH-1.1** Domain: сущность `LessonStep` (Id, LessonId, StepType, Title, Content, QuizQuestionId, SortOrder)
+- [ ] **TH-1.2** Domain: сущность `UserLessonProgress` (UserId, LessonStepId, CompletedAt)
+- [ ] **TH-1.3** EF миграция: таблицы `LessonSteps`, `UserLessonProgress`
+- [ ] **TH-1.4** LessonService: `GetLessonWithStepsAsync`, `MarkStepCompletedAsync`, `GetLessonProgressAsync`
+- [ ] **TH-1.5** API: `GET /api/lessons/{id}/steps`, `POST /api/lessons/steps/{stepId}/complete`, `GET /api/lessons/{id}/progress`
+- [ ] **TH-1.6** Frontend: `LessonViewer.tsx` — пошаговый wizard с прогресс-баром, навигацией "Назад/Далее"
+- [ ] **TH-1.7** Frontend: inline quiz-компонент (вопрос прямо в уроке, без перехода на отдельную страницу)
+- [ ] **TH-1.8** TopicsPage: бейдж "✓ Пройдено" / "3/5 шагов" на карточке темы
+- [ ] **TH-1.9** Seeder: переработать 19 существующих уроков в step-формат (theory → example → quiz → summary)
+
+---
+
+#### TH-2. Формульный справочник (Formula Sheet) 📐
+
+**Идея**: Отдельный раздел / вкладка "Формулы" — быстрый доступ ко всем формулам по экзамену. Как cheat sheet перед экзаменом.
+
+**UX:**
+- Группировка по темам (Algebra → Quadratic Formula, Factoring, ...; Geometry → Area, Volume, ...)
+- Поиск по формулам (быстрый фильтр)
+- KaTeX рендеринг формул
+- Кнопка "⭐ В избранное" — пользователь собирает свой набор формул для повторения
+- Печатная версия (Print CSS)
+
+**Модель:**
+```
+FormulaCard
+  ├── Id, TopicId, Title, Formula (KaTeX string), Description, ExamTypeCode
+  └── UserFormulaBookmark
+       ├── UserId, FormulaCardId, CreatedAt
+```
+
+**Задачи:**
+- [ ] **TH-2.1** Domain: сущность `FormulaCard` (Id, TopicId, Title, Formula, Description, SortOrder)
+- [ ] **TH-2.2** Domain: сущность `UserFormulaBookmark` (UserId, FormulaCardId, CreatedAt)
+- [ ] **TH-2.3** EF миграция
+- [ ] **TH-2.4** FormulaService: `GetFormulasByExamAsync`, `ToggleBookmarkAsync`, `GetBookmarkedAsync`
+- [ ] **TH-2.5** API: `GET /api/formulas?examTypeCode=SAT`, `POST /api/formulas/{id}/bookmark`, `GET /api/formulas/bookmarks`
+- [ ] **TH-2.6** Frontend: новая вкладка "📐 Формулы" в LearnPage (или отдельная страница)
+- [ ] **TH-2.7** Frontend: карточки формул с KaTeX, поиск, фильтр по теме, кнопка закладки
+- [ ] **TH-2.8** Seeder: 40+ формул для SAT Math, 20+ для NUET Math, 15+ для CSCA Math
+
+---
+
+#### TH-3. Flashcards — карточки для запоминания 🃏
+
+**Идея**: Система карточек (вопрос ↔ ответ) с алгоритмом интервального повторения (SM-2). Для запоминания: формулы, словарь TOEFL/IELTS, ключевые концепции.
+
+**Алгоритм SM-2 (SuperMemo 2):**
+```
+После каждого ответа (оценка 0–5):
+  if quality >= 3: // правильно
+    interval = previous_interval × EF
+    EF = max(1.3, EF + 0.1 − (5 − quality) × (0.08 + (5 − quality) × 0.02))
+  else: // забыл
+    interval = 1 day, repetition = 0
+
+NextReview = now + interval
+```
+
+**Модель:**
+```
+FlashcardDeck
+  ├── Id, Title, Description, ExamTypeCode?, TopicId?, IsSystem (bool), CreatedByUserId?
+  └── Flashcard
+       ├── Id, DeckId, Front (string/markdown), Back (string/markdown), SortOrder
+       └── UserFlashcardProgress
+            ├── UserId, FlashcardId
+            ├── EaseFactor (float, default 2.5)
+            ├── Interval (int days)
+            ├── Repetitions (int)
+            ├── NextReviewAt (DateTime)
+            ├── LastReviewedAt (DateTime?)
+            └── LastQuality (int 0-5)
+```
+
+**UX:**
+1. Колоды: системные (SAT Vocabulary, TOEFL Academic Words, Math Formulas, IELTS Key Phrases) + пользовательские
+2. Режим изучения: показ Front → пользователь думает → кнопка "Показать ответ" → Back → оценка (Не помню / Трудно / Нормально / Легко)
+3. Dashboard: "📦 12 карточек на повторение сегодня"
+4. Прогресс: New / Learning / Review / Mastered
+5. Аналитика: % запоминания, streak повторений
+
+**Задачи:**
+- [ ] **TH-3.1** Domain: сущности `FlashcardDeck`, `Flashcard`, `UserFlashcardProgress`
+- [ ] **TH-3.2** EF миграция
+- [ ] **TH-3.3** FlashcardService: SM-2 алгоритм, `GetDueCardsAsync`, `ReviewCardAsync`, `GetDeckProgressAsync`
+- [ ] **TH-3.4** FlashcardService: `CreateDeckAsync`, `AddCardAsync` (пользовательские колоды)
+- [ ] **TH-3.5** API: `GET /api/flashcards/decks`, `GET /api/flashcards/decks/{id}/due`, `POST /api/flashcards/review`, `POST /api/flashcards/decks` (CRUD)
+- [ ] **TH-3.6** Frontend: новая вкладка "🃏 Карточки" в LearnPage
+- [ ] **TH-3.7** Frontend: `FlashcardStudy.tsx` — flipcard-анимация, кнопки оценки, прогресс-бар
+- [ ] **TH-3.8** Frontend: `FlashcardDecks.tsx` — список колод с прогрессом (new/learning/review/mastered)
+- [ ] **TH-3.9** Frontend: создание своих колод и карточек
+- [ ] **TH-3.10** Seeder: системные колоды (SAT Vocabulary 50 слов, TOEFL Academic Words 50, Math Formulas 30, IELTS Key Phrases 30)
+- [ ] **TH-3.11** Рекомендация на Dashboard: "У вас 15 карточек на повторение" → ссылка
+
+---
+
+#### TH-4. Timed Drills — режим на скорость ⏱️
+
+**Идея**: Короткие блиц-сессии (5–10 мин) с таймером. Тренировка скорости, имитация тайм-прессинга экзамена. Gamification-элемент.
+
+**Режимы:**
+1. **Speed Round** — 10 вопросов, 60 секунд каждый. Счётчик правильных + среднее время
+2. **Marathon** — максимум вопросов за 5/10/15 минут. Leaderboard-friendly
+3. **Streak Challenge** — отвечай правильно подряд. Одна ошибка = конец. Best streak counter
+
+**Модель:**
+```
+TimedDrillResult
+  ├── Id, UserId, DrillType ("speed" | "marathon" | "streak")
+  ├── ExamTypeCode, TopicId?
+  ├── QuestionsAnswered, CorrectAnswers
+  ├── TotalTimeSeconds, AverageTimeSeconds
+  ├── BestStreak
+  ├── StartedAt, CompletedAt
+```
+
+**UX:**
+1. Выбор режима → выбор темы (опционально) → старт
+2. Таймер + счётчик + streak-визуализация (огонёк 🔥)
+3. Результат: score, comparison с прошлыми попытками, "Побит личный рекорд!"
+4. Мини-лидерборд (личный): лучшие результаты по каждому режиму
+
+**Задачи:**
+- [ ] **TH-4.1** Domain: сущность `TimedDrillResult`
+- [ ] **TH-4.2** EF миграция
+- [ ] **TH-4.3** TimedDrillService: `StartDrillAsync`, `GetPersonalBestsAsync`, `SaveResultAsync`
+- [ ] **TH-4.4** API: `POST /api/drills/start`, `POST /api/drills/complete`, `GET /api/drills/personal-bests`
+- [ ] **TH-4.5** Frontend: новая вкладка "⏱️ Блиц" в LearnPage
+- [ ] **TH-4.6** Frontend: `TimedDrill.tsx` — таймер, вопрос, мгновенный feedback, streak-counter
+- [ ] **TH-4.7** Frontend: экран результатов с comparison vs personal best
+- [ ] **TH-4.8** Рекомендация: "Пройдите блиц по Algebra — ваш рекорд: 8/10"
+
+---
+
+#### TH-5. Strategy Guides — стратегии сдачи экзаменов 🎯
+
+**Идея**: Отдельный раздел со стратегиями и тактиками конкретного экзамена. Не привязан к теме — привязан к экзамену. Важно для SAT, IELTS, TOEFL где знание стратегий даёт +50–100 баллов.
+
+**Контент (примеры):**
+- **SAT**: "Process of Elimination", "Back-solving", "Plugging In Numbers", "Reading: Main Idea First", "Time Management: 1.25 min per question"
+- **TOEFL**: "Note-taking for Listening", "Template for Independent Writing", "Transition words for Speaking"
+- **IELTS**: "Skimming vs Scanning", "True/False/Not Given technique", "Band 7+ Writing structure"
+- **NUET**: "Критическое мышление: логические ошибки", "Скорочтение графиков"
+- **CSCA**: "Gaokao Math: порядок решения", "Cloze test: контекстные подсказки"
+
+**Модель:**
+```
+StrategyGuide
+  ├── Id, ExamTypeCode, Title, Summary, Content (markdown)
+  ├── Category: "test-taking" | "time-management" | "section-specific" | "mental"
+  ├── EstimatedReadMinutes, SortOrder
+  └── UserGuideProgress
+       ├── UserId, GuideId, ReadAt
+```
+
+**Задачи:**
+- [ ] **TH-5.1** Domain: сущности `StrategyGuide`, `UserGuideProgress`
+- [ ] **TH-5.2** EF миграция
+- [ ] **TH-5.3** StrategyService: `GetGuidesByExamAsync`, `MarkReadAsync`
+- [ ] **TH-5.4** API: `GET /api/strategies?examTypeCode=SAT`, `POST /api/strategies/{id}/read`
+- [ ] **TH-5.5** Frontend: новая вкладка "🎯 Стратегии" в LearnPage
+- [ ] **TH-5.6** Frontend: `StrategyList.tsx` — карточки по категориям, бейдж "✓ Прочитано"
+- [ ] **TH-5.7** Frontend: `StrategyViewer.tsx` — чтение с markdown, estimated time, прогресс-чекбокс
+- [ ] **TH-5.8** Seeder: 5+ стратегий на каждый экзамен (25+ всего)
+- [ ] **TH-5.9** Рекомендация: "Изучите стратегию 'Process of Elimination' для SAT" → ссылка
+
+---
+
+#### TH-6. Mistake Journal — дневник ошибок 📓
+
+**Идея**: Расширение текущей вкладки "Ошибки". Сейчас — просто повторное решение неправильных вопросов. Нужно: анализ паттернов ошибок, группировка по типу ошибки, персональные заметки.
+
+**Что добавим:**
+1. **Паттерн-анализ**: "Вы часто путаете значения слов в контексте (5 из 8 ошибок в Reading)" 
+2. **Тип ошибки** (тег): "Невнимательность", "Не знал материал", "Не хватило времени", "Ловушка в условии"
+3. **Заметки пользователя**: к каждой ошибке можно добавить текстовую заметку ("Запомнить: area of circle = πr², NOT πd²")
+4. **Фильтры**: по теме, по типу ошибки, по дате, по экзамену
+5. **Экспорт**: PDF / CSV
+
+**Модель:**
+```
+UserMistakeNote
+  ├── Id, UserId, UserAnswerId (FK → UserAnswer)
+  ├── ErrorType: "careless" | "knowledge_gap" | "time_pressure" | "trick_question" | null
+  ├── NoteText: string?
+  ├── CreatedAt, UpdatedAt
+```
+
+**Задачи:**
+- [ ] **TH-6.1** Domain: сущность `UserMistakeNote`
+- [ ] **TH-6.2** EF миграция
+- [ ] **TH-6.3** MistakeService: `GetMistakesWithNotesAsync`, `AddNoteAsync`, `SetErrorTypeAsync`, `GetErrorPatternAnalysisAsync`
+- [ ] **TH-6.4** API: `GET /api/mistakes?examTypeCode=&topicId=&errorType=`, `POST /api/mistakes/{userAnswerId}/note`, `PUT /api/mistakes/{userAnswerId}/error-type`
+- [ ] **TH-6.5** Frontend: переделать ReviewPage → полноценный MistakeJournal с фильтрами, заметками, тег-классификацией
+- [ ] **TH-6.6** Frontend: паттерн-анализ (bar chart типов ошибок, топ-3 слабых паттерна)
+- [ ] **TH-6.7** Рекомендация: "У вас 70% ошибок — невнимательность. Попробуйте Timed Drill для тренировки внимания"
+
+---
+
+### 🗂 Часть C: Обновлённая структура раздела «Обучение»
+
+#### Было (4 вкладки):
+```
+📚 Обучение
+├── ▶ Практика        — Адаптивный тест (IRT + CAT)
+├── 📝 Mock Exam       — Полноформатные тренировочные экзамены
+├── 📗 Темы            — Уроки + практика по темам
+└── ❌ Ошибки          — Повторение неправильных ответов
+```
+
+#### Станет (8 вкладок / под-группы):
+```
+📚 Обучение
+├── 🧠 Учись
+│   ├── 📖 Темы & Уроки     — Пошаговые уроки с quiz-проверкой (TH-1)
+│   ├── 📐 Формулы           — Справочник формул с закладками (TH-2)
+│   ├── 🎯 Стратегии         — Стратегии сдачи по каждому экзамену (TH-5)
+│   └── 🃏 Карточки          — Flashcards с SM-2 spaced repetition (TH-3)
+│
+├── 💪 Тренируйся
+│   ├── ▶ Практика           — Адаптивный тест (IRT + CAT) [существует]
+│   ├── ⏱️ Блиц              — Timed drills: speed/marathon/streak (TH-4)
+│   ├── 📝 Mock Exam          — Полноформатные экзамены [существует]
+│   └── 📓 Дневник ошибок    — Анализ + заметки + паттерны (TH-6)
+```
+
+**Техническая реализация** — два варианта UI:
+
+**Вариант A** (рекомендуемый): Двухуровневая навигация — 2 группы ("Учись" / "Тренируйся") с под-вкладками. Compact tabs с иконками.
+
+**Вариант B**: Плоский список из 8 вкладок с горизонтальным скроллом (как сейчас, но больше).
+
+**Задачи:**
+- [ ] **TH-C.1** LearnPage.tsx: переделать навигацию на двухуровневую (группы + вкладки)
+- [ ] **TH-C.2** Роутинг: `/learn?tab=lessons`, `/learn?tab=formulas`, `/learn?tab=strategies`, `/learn?tab=flashcards`, `/learn?tab=drills`, `/learn?tab=mistakes`
+- [ ] **TH-C.3** Mobile-адаптация: collapsible группы или horizontal scroll
+
+---
+
+### 📋 Сводная матрица — Расширение обучения
+
+| ID | Задача | Тип | Сложность | Зависимости | Статус |
+|----|--------|-----|-----------|-------------|--------|
+| **EX-1** | IELTS Academic (вопросы + mock + θ→band) | Экзамен | 🔴 Сложно | — | ⬜ |
+| **EX-2** | CSCA / Gaokao (Math + English) | Экзамен | 🔴 Сложно | — | ⬜ |
+| **TH-1** | Структурированные уроки с шагами | Теория | 🟡 Средне | — | ⬜ |
+| **TH-2** | Формульный справочник | Теория | 🟢 Лёгко | — | ⬜ |
+| **TH-3** | Flashcards + SM-2 | Методика | 🟡 Средне | — | ⬜ |
+| **TH-4** | Timed Drills (speed/marathon/streak) | Методика | 🟡 Средне | — | ⬜ |
+| **TH-5** | Strategy Guides | Контент | 🟢 Лёгко | — | ⬜ |
+| **TH-6** | Mistake Journal (дневник ошибок) | UX | 🟡 Средне | — | ⬜ |
+| **TH-C** | Обновлённая навигация LearnPage | UI | 🟢 Лёгко | TH-1..TH-6 | ⬜ |
+
+### Порядок реализации
+
+```
+  Фаза 1 (контент)          Фаза 2 (методики)         Фаза 3 (экзамены)
+  ─────────────────         ──────────────────         ──────────────────
+  TH-1 Уроки с шагами  →   TH-3 Flashcards       →   EX-1 IELTS
+  TH-2 Формулы         →   TH-4 Timed Drills     →   EX-2 CSCA
+  TH-5 Стратегии       →   TH-6 Mistake Journal  →   TH-C Новая навигация
+       ~3–4 дня                  ~3–4 дня                  ~5–7 дней
+```
+
+> **Итого**: ~2 недели активной работы. После реализации — полноценная EdTech платформа с 5 экзаменами, 200+ вопросами, flashcards, timed drills, стратегиями и дневником ошибок.

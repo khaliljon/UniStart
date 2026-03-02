@@ -1,5 +1,5 @@
 import api from './api';
-import type { TopicWithLessons, TopicLesson } from '../types';
+import type { TopicWithLessons, TopicLesson, LessonWithSteps } from '../types';
 
 export const lessonService = {
   async getTopicLessons(examTypeCodes?: string[]): Promise<TopicWithLessons[]> {
@@ -25,5 +25,20 @@ export const lessonService = {
     } catch {
       return null;
     }
+  },
+
+  // Step-based lessons (TH-1)
+  async getLessonWithSteps(lessonId: number): Promise<LessonWithSteps> {
+    const response = await api.get<LessonWithSteps>(`/lessons/${lessonId}/steps`);
+    return response.data;
+  },
+
+  async markStepCompleted(stepId: number): Promise<void> {
+    await api.post(`/lessons/steps/${stepId}/complete`);
+  },
+
+  async getLessonProgress(lessonId: number): Promise<number> {
+    const response = await api.get<{ lessonId: number; progressPercent: number }>(`/lessons/${lessonId}/progress`);
+    return response.data.progressPercent;
   },
 };

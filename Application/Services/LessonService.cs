@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using UniStart.Application.DTOs;
 using UniStart.Application.Interfaces;
+using UniStart.Domain.Entities;
 using UniStart.Infrastructure.Data;
 
 namespace UniStart.Application.Services;
@@ -86,5 +87,66 @@ public class LessonService : ILessonService
     {
         var question = await _context.Questions.FindAsync(questionId);
         return question?.Hint;
+    }
+
+    // ─── Step-based lessons (TH-1) ─────────────────────────
+
+    public async Task<LessonWithStepsDto?> GetLessonWithStepsAsync(int userId, int lessonId)
+    {
+        var lesson = await _context.TopicLessons
+            .Include(l => l.Topic)
+            .Include(l => l.Steps)
+            .FirstOrDefaultAsync(l => l.Id == lessonId);
+
+        if (lesson == null) return null;
+
+        var stepIds = lesson.Steps.Select(s => s.Id).ToList();
+        var completedStepIds = await _context.UserLessonProgress
+            .Where(p => p.UserId == userId && stepIds.Contains(p.LessonStepId))
+            .Select(p => p.LessonStepId)
+            .ToListAsync();
+
+        var steps = lesson.Steps.OrderBy(s => s.SortOrder).Select(s => new LessonStepDto(
+            s.Id, s.LessonId, s.Title, s.Content,
+            s.StepType.ToString(), s.QuizQuestionId, s.SortOrder
+        ));
+
+        return new LessonWithStepsDto(
+            lesson.Id, lesson.TopicId, lesson.Topic.Name,
+            lesson.Title, lesson.VideoUrl,
+            steps, completedStepIds.Count, lesson.Steps.Count
+        );
+    }
+
+    public async Task MarkStepCompletedAsync(int userId, int lessonStepId)
+    {
+        var exists = await _context.UserLessonProgress
+            .AnyAsync(p => p.UserId == userId && p.LessonStepId == lessonStepId);
+
+        if (!exists)
+        {
+            _context.UserLessonProgress.Add(new UserLessonProgress
+            {
+                UserId = userId,
+                LessonStepId = lessonStepId,
+                CompletedAt = DateTime.UtcNow
+            });
+            await _context.SaveChangesAsync();
+        }
+    }
+
+    public async Task<int> GetLessonProgressPercentAsync(int userId, int lessonId)
+    {
+        var lesson = await _context.TopicLessons
+            .Include(l => l.Steps)
+            .FirstOrDefaultAsync(l => l.Id == lessonId);
+
+        if (lesson == null || lesson.Steps.Count == 0) return 0;
+
+        var stepIds = lesson.Steps.Select(s => s.Id).ToList();
+        var completed = await _context.UserLessonProgress
+            .CountAsync(p => p.UserId == userId && stepIds.Contains(p.LessonStepId));
+
+        return (int)Math.Round(100.0 * completed / lesson.Steps.Count);
     }
 }

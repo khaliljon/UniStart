@@ -961,3 +961,198 @@ export interface AcceptDeclineResult {
   status: string;
   systemMessage: string | null;
 }
+
+// ─── Learning v2 types ────────────────────────────────
+
+// Lesson Steps (TH-1)
+export interface LessonStep {
+  id: number;
+  lessonId: number;
+  title: string;
+  content: string;
+  stepType: 'Theory' | 'Example' | 'Quiz' | 'Summary';
+  quizQuestionId: number | null;
+  sortOrder: number;
+}
+
+export interface LessonWithSteps {
+  id: number;
+  topicId: number;
+  topicName: string;
+  title: string;
+  videoUrl: string | null;
+  steps: LessonStep[];
+  completedSteps: number;
+  totalSteps: number;
+}
+
+// Formula Cards (TH-2)
+export interface FormulaCard {
+  id: number;
+  topicId: number;
+  topicName: string;
+  title: string;
+  formula: string;
+  description: string | null;
+  isBookmarked: boolean;
+}
+
+// Flashcards (TH-3)
+export interface FlashcardDeck {
+  id: number;
+  title: string;
+  description: string | null;
+  examTypeCode: string | null;
+  topicId: number | null;
+  isSystem: boolean;
+  totalCards: number;
+  dueCards: number;
+  masteredCards: number;
+}
+
+export interface FlashcardReview {
+  id: number;
+  front: string;
+  back: string;
+  currentInterval: number | null;
+  easeFactor: number | null;
+}
+
+export interface FlashcardDto {
+  id: number;
+  deckId: number;
+  front: string;
+  back: string;
+  sortOrder: number;
+}
+
+export interface CreateDeckRequest {
+  title: string;
+  description?: string;
+  examTypeCode?: string;
+  topicId?: number;
+}
+
+export interface CreateFlashcardRequest {
+  deckId: number;
+  front: string;
+  back: string;
+}
+
+export interface ReviewFlashcardRequest {
+  flashcardId: number;
+  quality: number; // 0-5
+}
+
+// Timed Drills (TH-4)
+export interface StartDrillRequest {
+  drillType: 'Speed' | 'Marathon' | 'Streak';
+  examTypeCodes?: string[];
+  topicId?: number;
+  timeLimitMinutes?: number;
+}
+
+export interface DrillQuestion {
+  questionId: number;
+  text: string;
+  topicName: string | null;
+  difficulty: string;
+  options: DrillAnswerOption[];
+}
+
+export interface DrillAnswerOption {
+  id: number;
+  text: string;
+}
+
+export interface SubmitDrillAnswerRequest {
+  drillResultId: number;
+  questionId: number;
+  answerOptionId: number;
+  timeSpentSeconds: number;
+}
+
+export interface DrillAnswerResult {
+  isCorrect: boolean;
+  correctOptionId: number | null;
+  explanation: string | null;
+  currentStreak: number;
+  totalCorrect: number;
+  totalAnswered: number;
+  drillEnded: boolean;
+}
+
+export interface DrillResult {
+  id: number;
+  drillType: string;
+  questionsAnswered: number;
+  correctAnswers: number;
+  totalTimeSeconds: number;
+  averageTimeSeconds: number;
+  bestStreak: number;
+  accuracyPercent: number;
+  completedAt: string;
+}
+
+export interface PersonalBest {
+  drillType: string;
+  bestScore: number | null;
+  bestStreak: number | null;
+  bestAverageTime: number | null;
+  achievedAt: string | null;
+}
+
+// Strategy Guides (TH-5)
+export interface StrategyGuide {
+  id: number;
+  examTypeCode: string;
+  title: string;
+  summary: string;
+  content: string;
+  category: string;
+  estimatedReadMinutes: number;
+  isRead: boolean;
+}
+
+export interface StrategyGuideSummary {
+  id: number;
+  examTypeCode: string;
+  title: string;
+  summary: string;
+  category: string;
+  estimatedReadMinutes: number;
+  isRead: boolean;
+}
+
+// Mistake Journal (TH-6)
+export interface MistakeEntry {
+  userAnswerId: number;
+  questionId: number;
+  questionText: string;
+  topicName: string;
+  difficulty: string;
+  userAnswerText: string | null;
+  correctAnswerText: string | null;
+  explanation: string | null;
+  answeredAt: string;
+  errorType: string | null;
+  noteText: string | null;
+}
+
+export interface ErrorPattern {
+  errorType: string;
+  count: number;
+  percentage: number;
+}
+
+export interface TopicMistake {
+  topicId: number;
+  topicName: string;
+  mistakeCount: number;
+}
+
+export interface MistakeAnalysis {
+  totalMistakes: number;
+  errorPatterns: ErrorPattern[];
+  topicBreakdown: TopicMistake[];
+}

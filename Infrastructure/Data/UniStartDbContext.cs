@@ -38,6 +38,19 @@ public class UniStartDbContext : DbContext
     public DbSet<Conversation> Conversations => Set<Conversation>();
     public DbSet<Message> Messages => Set<Message>();
 
+    // Learning v2 entities
+    public DbSet<LessonStep> LessonSteps => Set<LessonStep>();
+    public DbSet<UserLessonProgress> UserLessonProgress => Set<UserLessonProgress>();
+    public DbSet<FormulaCard> FormulaCards => Set<FormulaCard>();
+    public DbSet<UserFormulaBookmark> UserFormulaBookmarks => Set<UserFormulaBookmark>();
+    public DbSet<FlashcardDeck> FlashcardDecks => Set<FlashcardDeck>();
+    public DbSet<Flashcard> Flashcards => Set<Flashcard>();
+    public DbSet<UserFlashcardProgress> UserFlashcardProgress => Set<UserFlashcardProgress>();
+    public DbSet<TimedDrillResult> TimedDrillResults => Set<TimedDrillResult>();
+    public DbSet<StrategyGuide> StrategyGuides => Set<StrategyGuide>();
+    public DbSet<UserGuideProgress> UserGuideProgress => Set<UserGuideProgress>();
+    public DbSet<UserMistakeNote> UserMistakeNotes => Set<UserMistakeNote>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -530,11 +543,218 @@ public class UniStartDbContext : DbContext
                   .HasDatabaseName("IX_Messages_Conversation_SentAt");
         });
 
+        // ─── Lesson Step (TH-1) ────────────────────────────
+        modelBuilder.Entity<LessonStep>(entity =>
+        {
+            entity.ToTable("LessonSteps");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Content).IsRequired();
+            entity.Property(e => e.StepType).HasConversion<string>().HasMaxLength(20);
+            entity.Property(e => e.SortOrder).HasDefaultValue(0);
+            entity.HasOne(e => e.Lesson)
+                  .WithMany(l => l.Steps)
+                  .HasForeignKey(e => e.LessonId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.QuizQuestion)
+                  .WithMany()
+                  .HasForeignKey(e => e.QuizQuestionId)
+                  .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // ─── User Lesson Progress (TH-1) ───────────────────
+        modelBuilder.Entity<UserLessonProgress>(entity =>
+        {
+            entity.ToTable("UserLessonProgress");
+            entity.HasKey(e => e.Id);
+            entity.HasOne(e => e.User)
+                  .WithMany()
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.LessonStep)
+                  .WithMany(s => s.UserProgress)
+                  .HasForeignKey(e => e.LessonStepId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(e => new { e.UserId, e.LessonStepId })
+                  .IsUnique()
+                  .HasDatabaseName("IX_UserLessonProgress_User_Step");
+        });
+
+        // ─── Formula Card (TH-2) ───────────────────────────
+        modelBuilder.Entity<FormulaCard>(entity =>
+        {
+            entity.ToTable("FormulaCards");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Formula).IsRequired().HasMaxLength(1000);
+            entity.Property(e => e.Description).HasMaxLength(500);
+            entity.Property(e => e.SortOrder).HasDefaultValue(0);
+            entity.HasOne(e => e.Topic)
+                  .WithMany()
+                  .HasForeignKey(e => e.TopicId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ─── User Formula Bookmark (TH-2) ──────────────────
+        modelBuilder.Entity<UserFormulaBookmark>(entity =>
+        {
+            entity.ToTable("UserFormulaBookmarks");
+            entity.HasKey(e => e.Id);
+            entity.HasOne(e => e.User)
+                  .WithMany()
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.FormulaCard)
+                  .WithMany(f => f.Bookmarks)
+                  .HasForeignKey(e => e.FormulaCardId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(e => new { e.UserId, e.FormulaCardId })
+                  .IsUnique()
+                  .HasDatabaseName("IX_UserFormulaBookmarks_User_Formula");
+        });
+
+        // ─── Flashcard Deck (TH-3) ─────────────────────────
+        modelBuilder.Entity<FlashcardDeck>(entity =>
+        {
+            entity.ToTable("FlashcardDecks");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Description).HasMaxLength(500);
+            entity.Property(e => e.IsSystem).HasDefaultValue(false);
+            entity.HasOne(e => e.ExamType)
+                  .WithMany()
+                  .HasForeignKey(e => e.ExamTypeCode)
+                  .OnDelete(DeleteBehavior.SetNull);
+            entity.HasOne(e => e.Topic)
+                  .WithMany()
+                  .HasForeignKey(e => e.TopicId)
+                  .OnDelete(DeleteBehavior.SetNull);
+            entity.HasOne(e => e.CreatedByUser)
+                  .WithMany()
+                  .HasForeignKey(e => e.CreatedByUserId)
+                  .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // ─── Flashcard (TH-3) ──────────────────────────────
+        modelBuilder.Entity<Flashcard>(entity =>
+        {
+            entity.ToTable("Flashcards");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Front).IsRequired().HasMaxLength(2000);
+            entity.Property(e => e.Back).IsRequired().HasMaxLength(2000);
+            entity.Property(e => e.SortOrder).HasDefaultValue(0);
+            entity.HasOne(e => e.Deck)
+                  .WithMany(d => d.Cards)
+                  .HasForeignKey(e => e.DeckId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ─── User Flashcard Progress (TH-3, SM-2) ──────────
+        modelBuilder.Entity<UserFlashcardProgress>(entity =>
+        {
+            entity.ToTable("UserFlashcardProgress");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.EaseFactor).HasDefaultValue(2.5);
+            entity.Property(e => e.IntervalDays).HasDefaultValue(1);
+            entity.HasOne(e => e.User)
+                  .WithMany()
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Flashcard)
+                  .WithMany(f => f.UserProgress)
+                  .HasForeignKey(e => e.FlashcardId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(e => new { e.UserId, e.FlashcardId })
+                  .IsUnique()
+                  .HasDatabaseName("IX_UserFlashcardProgress_User_Card");
+            entity.HasIndex(e => new { e.UserId, e.NextReviewAt })
+                  .HasDatabaseName("IX_UserFlashcardProgress_User_NextReview");
+        });
+
+        // ─── Timed Drill Result (TH-4) ─────────────────────
+        modelBuilder.Entity<TimedDrillResult>(entity =>
+        {
+            entity.ToTable("TimedDrillResults");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.DrillType).HasConversion<string>().HasMaxLength(20);
+            entity.HasOne(e => e.User)
+                  .WithMany()
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.ExamType)
+                  .WithMany()
+                  .HasForeignKey(e => e.ExamTypeCode)
+                  .OnDelete(DeleteBehavior.SetNull);
+            entity.HasOne(e => e.Topic)
+                  .WithMany()
+                  .HasForeignKey(e => e.TopicId)
+                  .OnDelete(DeleteBehavior.SetNull);
+            entity.HasIndex(e => new { e.UserId, e.DrillType })
+                  .HasDatabaseName("IX_TimedDrillResults_User_Type");
+        });
+
+        // ─── Strategy Guide (TH-5) ─────────────────────────
+        modelBuilder.Entity<StrategyGuide>(entity =>
+        {
+            entity.ToTable("StrategyGuides");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Summary).IsRequired().HasMaxLength(500);
+            entity.Property(e => e.Content).IsRequired();
+            entity.Property(e => e.Category).IsRequired().HasMaxLength(30);
+            entity.Property(e => e.EstimatedReadMinutes).HasDefaultValue(5);
+            entity.Property(e => e.SortOrder).HasDefaultValue(0);
+            entity.HasOne(e => e.ExamType)
+                  .WithMany()
+                  .HasForeignKey(e => e.ExamTypeCode)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ─── User Guide Progress (TH-5) ────────────────────
+        modelBuilder.Entity<UserGuideProgress>(entity =>
+        {
+            entity.ToTable("UserGuideProgress");
+            entity.HasKey(e => e.Id);
+            entity.HasOne(e => e.User)
+                  .WithMany()
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Guide)
+                  .WithMany(g => g.UserProgress)
+                  .HasForeignKey(e => e.GuideId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(e => new { e.UserId, e.GuideId })
+                  .IsUnique()
+                  .HasDatabaseName("IX_UserGuideProgress_User_Guide");
+        });
+
+        // ─── User Mistake Note (TH-6) ──────────────────────
+        modelBuilder.Entity<UserMistakeNote>(entity =>
+        {
+            entity.ToTable("UserMistakeNotes");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.ErrorType).HasConversion<string>().HasMaxLength(20);
+            entity.Property(e => e.NoteText).HasMaxLength(1000);
+            entity.HasOne(e => e.User)
+                  .WithMany()
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.UserAnswer)
+                  .WithMany()
+                  .HasForeignKey(e => e.UserAnswerId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(e => new { e.UserId, e.UserAnswerId })
+                  .IsUnique()
+                  .HasDatabaseName("IX_UserMistakeNotes_User_Answer");
+        });
+
         // Seed exam types
         modelBuilder.Entity<ExamType>().HasData(
             new ExamType { Code = "SAT", Name = "SAT (Scholastic Assessment Test)" },
             new ExamType { Code = "TOEFL", Name = "TOEFL (Test of English as a Foreign Language)" },
-            new ExamType { Code = "NUET", Name = "NUET (Nazarbayev University Entrance Test)" }
+            new ExamType { Code = "NUET", Name = "NUET (Nazarbayev University Entrance Test)" },
+            new ExamType { Code = "IELTS", Name = "IELTS Academic" },
+            new ExamType { Code = "CSCA", Name = "Gaokao (China College Admission)" }
         );
     }
 

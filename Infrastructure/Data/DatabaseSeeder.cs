@@ -120,6 +120,22 @@ public class DatabaseSeeder
             await SeedTutorDataAsync();
         }
 
+        // ─── Learning v2 seed data ────────────────────────────
+        if (!await _context.FormulaCards.AnyAsync())
+        {
+            await SeedFormulaCardsAsync();
+        }
+
+        if (!await _context.FlashcardDecks.AnyAsync())
+        {
+            await SeedFlashcardDecksAsync();
+        }
+
+        if (!await _context.StrategyGuides.AnyAsync())
+        {
+            await SeedStrategyGuidesAsync();
+        }
+
         await _context.SaveChangesAsync();
     }
 
@@ -1686,5 +1702,350 @@ The implications of these findings have been profound. In the field of behaviora
             await _context.Messages.AddRangeAsync(messages);
             await _context.SaveChangesAsync();
         }
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  LEARNING V2 SEED DATA
+    // ═══════════════════════════════════════════════════════
+
+    private async Task SeedFormulaCardsAsync()
+    {
+        var linearEq = await _context.Topics.FirstOrDefaultAsync(t => t.Name == "Linear Equations");
+        var geometry = await _context.Topics.FirstOrDefaultAsync(t => t.Name == "Geometry");
+        var quadratic = await _context.Topics.FirstOrDefaultAsync(t => t.Name == "Quadratic Equations");
+        var dataAnalysis = await _context.Topics.FirstOrDefaultAsync(t => t.Name == "Data Analysis");
+        var algebra = await _context.Topics.FirstOrDefaultAsync(t => t.Name == "Algebra & Functions");
+        var problemSolving = await _context.Topics.FirstOrDefaultAsync(t => t.Name == "Problem Solving");
+
+        var cards = new List<FormulaCard>();
+        int sort = 1;
+
+        if (linearEq != null)
+        {
+            cards.Add(new FormulaCard { TopicId = linearEq.Id, Title = "Slope-Intercept Form", Formula = "y = mx + b", Description = "m = slope, b = y-intercept", SortOrder = sort++ });
+            cards.Add(new FormulaCard { TopicId = linearEq.Id, Title = "Point-Slope Form", Formula = "y - y1 = m(x - x1)", Description = "Useful when you know a point and the slope", SortOrder = sort++ });
+            cards.Add(new FormulaCard { TopicId = linearEq.Id, Title = "Slope Formula", Formula = "m = (y2 - y1) / (x2 - x1)", Description = "Calculate slope from two points", SortOrder = sort++ });
+        }
+
+        if (geometry != null)
+        {
+            cards.Add(new FormulaCard { TopicId = geometry.Id, Title = "Area of Circle", Formula = "A = pi * r^2", Description = "r = radius", SortOrder = sort++ });
+            cards.Add(new FormulaCard { TopicId = geometry.Id, Title = "Circumference", Formula = "C = 2 * pi * r", Description = "r = radius", SortOrder = sort++ });
+            cards.Add(new FormulaCard { TopicId = geometry.Id, Title = "Pythagorean Theorem", Formula = "a^2 + b^2 = c^2", Description = "c = hypotenuse of right triangle", SortOrder = sort++ });
+            cards.Add(new FormulaCard { TopicId = geometry.Id, Title = "Area of Triangle", Formula = "A = (1/2) * b * h", Description = "b = base, h = height", SortOrder = sort++ });
+            cards.Add(new FormulaCard { TopicId = geometry.Id, Title = "Volume of Cylinder", Formula = "V = pi * r^2 * h", Description = "r = radius, h = height", SortOrder = sort++ });
+        }
+
+        if (quadratic != null)
+        {
+            cards.Add(new FormulaCard { TopicId = quadratic.Id, Title = "Quadratic Formula", Formula = "x = (-b +/- sqrt(b^2 - 4ac)) / 2a", Description = "Solves ax^2 + bx + c = 0", SortOrder = sort++ });
+            cards.Add(new FormulaCard { TopicId = quadratic.Id, Title = "Discriminant", Formula = "D = b^2 - 4ac", Description = "D > 0: two real roots, D = 0: one root, D < 0: no real roots", SortOrder = sort++ });
+            cards.Add(new FormulaCard { TopicId = quadratic.Id, Title = "Vertex Form", Formula = "y = a(x - h)^2 + k", Description = "Vertex at (h, k)", SortOrder = sort++ });
+        }
+
+        if (dataAnalysis != null)
+        {
+            cards.Add(new FormulaCard { TopicId = dataAnalysis.Id, Title = "Mean (Average)", Formula = "mean = sum(x_i) / n", Description = "Sum of values divided by count", SortOrder = sort++ });
+            cards.Add(new FormulaCard { TopicId = dataAnalysis.Id, Title = "Probability", Formula = "P(A) = favorable / total", Description = "Basic probability formula", SortOrder = sort++ });
+            cards.Add(new FormulaCard { TopicId = dataAnalysis.Id, Title = "Percent Change", Formula = "change = ((new - old) / old) * 100%", Description = "Positive = increase, negative = decrease", SortOrder = sort++ });
+        }
+
+        if (algebra != null)
+        {
+            cards.Add(new FormulaCard { TopicId = algebra.Id, Title = "Difference of Squares", Formula = "a^2 - b^2 = (a + b)(a - b)", Description = "Factoring pattern", SortOrder = sort++ });
+            cards.Add(new FormulaCard { TopicId = algebra.Id, Title = "Exponent Rules", Formula = "a^m * a^n = a^(m+n); (a^m)^n = a^(mn)", Description = "Basic exponent operations", SortOrder = sort++ });
+        }
+
+        if (problemSolving != null)
+        {
+            cards.Add(new FormulaCard { TopicId = problemSolving.Id, Title = "Distance Formula", Formula = "d = sqrt((x2-x1)^2 + (y2-y1)^2)", Description = "Distance between two points", SortOrder = sort++ });
+            cards.Add(new FormulaCard { TopicId = problemSolving.Id, Title = "Simple Interest", Formula = "I = P * r * t", Description = "P = principal, r = rate, t = time", SortOrder = sort++ });
+        }
+
+        if (cards.Count > 0)
+        {
+            await _context.FormulaCards.AddRangeAsync(cards);
+            await _context.SaveChangesAsync();
+        }
+    }
+
+    private async Task SeedFlashcardDecksAsync()
+    {
+        var decks = new List<FlashcardDeck>
+        {
+            new FlashcardDeck
+            {
+                Title = "SAT Math Key Terms",
+                Description = "Essential math vocabulary for SAT",
+                ExamTypeCode = "SAT",
+                IsSystem = true,
+                Cards = new List<Flashcard>
+                {
+                    new Flashcard { Front = "What is a linear function?", Back = "A function whose graph is a straight line. General form: f(x) = mx + b", SortOrder = 1 },
+                    new Flashcard { Front = "Define 'slope'", Back = "The rate of change of a line. Calculated as rise/run or (y2-y1)/(x2-x1)", SortOrder = 2 },
+                    new Flashcard { Front = "What is a quadratic equation?", Back = "An equation of the form ax^2 + bx + c = 0, where a is not 0. Its graph is a parabola.", SortOrder = 3 },
+                    new Flashcard { Front = "What is the vertex of a parabola?", Back = "The highest or lowest point of a parabola. For y = ax^2 + bx + c, the x-coordinate is -b/(2a).", SortOrder = 4 },
+                    new Flashcard { Front = "Define 'median'", Back = "The middle value when data is arranged in order. For even count, average the two middle values.", SortOrder = 5 },
+                    new Flashcard { Front = "What is standard deviation?", Back = "A measure of how spread out values are from the mean. Higher SD = more spread.", SortOrder = 6 },
+                    new Flashcard { Front = "Define 'perpendicular lines'", Back = "Lines that intersect at a 90-degree angle. Their slopes are negative reciprocals (m1 * m2 = -1).", SortOrder = 7 },
+                    new Flashcard { Front = "What is a system of equations?", Back = "Two or more equations with the same variables. Solutions satisfy all equations simultaneously.", SortOrder = 8 },
+                },
+            },
+            new FlashcardDeck
+            {
+                Title = "TOEFL Academic Vocabulary",
+                Description = "High-frequency academic words for TOEFL",
+                ExamTypeCode = "TOEFL",
+                IsSystem = true,
+                Cards = new List<Flashcard>
+                {
+                    new Flashcard { Front = "Analyze", Back = "To examine something in detail in order to understand it or draw conclusions.", SortOrder = 1 },
+                    new Flashcard { Front = "Hypothesis", Back = "A proposed explanation made as a starting point for further investigation.", SortOrder = 2 },
+                    new Flashcard { Front = "Empirical", Back = "Based on observation or experience rather than theory or pure logic.", SortOrder = 3 },
+                    new Flashcard { Front = "Paradigm", Back = "A typical example or pattern of something; a model or framework.", SortOrder = 4 },
+                    new Flashcard { Front = "Synthesize", Back = "To combine elements to form a coherent whole; to integrate information.", SortOrder = 5 },
+                    new Flashcard { Front = "Ubiquitous", Back = "Present, appearing, or found everywhere.", SortOrder = 6 },
+                    new Flashcard { Front = "Mitigate", Back = "To make less severe, serious, or painful.", SortOrder = 7 },
+                    new Flashcard { Front = "Innovative", Back = "Introducing new ideas; original and creative in thinking.", SortOrder = 8 },
+                },
+            },
+            new FlashcardDeck
+            {
+                Title = "NUET Critical Thinking",
+                Description = "Key concepts for NUET Critical Thinking section",
+                ExamTypeCode = "NUET",
+                IsSystem = true,
+                Cards = new List<Flashcard>
+                {
+                    new Flashcard { Front = "What is a logical fallacy?", Back = "An error in reasoning that renders an argument invalid. Common types: ad hominem, straw man, false dilemma.", SortOrder = 1 },
+                    new Flashcard { Front = "Define 'deductive reasoning'", Back = "Reasoning from general premises to a specific conclusion. If premises are true, the conclusion must be true.", SortOrder = 2 },
+                    new Flashcard { Front = "Define 'inductive reasoning'", Back = "Reasoning from specific observations to a general conclusion. The conclusion is probable but not certain.", SortOrder = 3 },
+                    new Flashcard { Front = "What is a 'straw man' fallacy?", Back = "Misrepresenting someone's argument to make it easier to attack.", SortOrder = 4 },
+                    new Flashcard { Front = "What is 'correlation vs causation'?", Back = "Correlation means two things occur together; causation means one causes the other. Correlation does not imply causation.", SortOrder = 5 },
+                    new Flashcard { Front = "What is a 'premise'?", Back = "A statement or proposition used as a basis for an argument or conclusion.", SortOrder = 6 },
+                },
+            },
+        };
+
+        await _context.FlashcardDecks.AddRangeAsync(decks);
+        await _context.SaveChangesAsync();
+    }
+
+    private async Task SeedStrategyGuidesAsync()
+    {
+        var guides = new List<StrategyGuide>
+        {
+            // SAT Strategies
+            new StrategyGuide
+            {
+                ExamTypeCode = "SAT",
+                Title = "SAT Time Management",
+                Summary = "How to pace yourself across SAT sections",
+                Category = "time-management",
+                EstimatedReadMinutes = 5,
+                SortOrder = 1,
+                Content = @"Time Management for the SAT
+
+The SAT has strict time limits per section. Effective pacing is critical.
+
+Reading & Writing (64 minutes, 54 questions):
+- Aim for ~1 min 10 sec per question
+- Do not spend more than 2 minutes on any single question
+- If stuck, mark and move on -- return if time permits
+
+Math No Calculator (25 minutes, 20 questions):
+- About 75 seconds per question
+- Solve easy questions first to bank time for harder ones
+
+Math Calculator (55 minutes, 38 questions):
+- About 87 seconds per question
+- Use your calculator strategically, not for every problem
+
+General Tips:
+- Wear a watch (no smart watches)
+- Practice with timed sections regularly
+- In the last 2 minutes, answer all remaining questions (no penalty for guessing)"
+            },
+            new StrategyGuide
+            {
+                ExamTypeCode = "SAT",
+                Title = "Process of Elimination",
+                Summary = "Use elimination to increase accuracy on SAT",
+                Category = "test-taking",
+                EstimatedReadMinutes = 4,
+                SortOrder = 2,
+                Content = @"Process of Elimination (POE)
+
+Since the SAT has no guessing penalty, always eliminate wrong answers before choosing.
+
+Step 1: Read the question carefully
+Step 2: Identify obviously wrong answers (usually 1-2 are clearly incorrect)
+Step 3: Compare remaining options against the passage/problem
+Step 4: Choose the best supported answer
+
+For Reading:
+- Wrong answers often use extreme language ('always', 'never', 'all')
+- Correct answers are usually moderate and well-supported
+- Watch for 'half-right' answers that are partially correct but miss something
+
+For Math:
+- Plug answer choices back into the equation
+- Start with choice B or C for numerical answers (often in order)
+- Estimate before calculating to eliminate unreasonable options"
+            },
+            new StrategyGuide
+            {
+                ExamTypeCode = "SAT",
+                Title = "SAT Math Strategy: Plugging In",
+                Summary = "When algebra gets complex, use numbers instead",
+                Category = "section-specific",
+                EstimatedReadMinutes = 4,
+                SortOrder = 3,
+                Content = @"Plugging In Numbers
+
+When a problem uses variables and the answer choices also use variables, try plugging in specific numbers.
+
+How to Plug In:
+1. Choose simple numbers (2, 3, 5 -- avoid 0 and 1)
+2. Substitute into the problem
+3. Calculate the result
+4. Check which answer choice gives the same result
+
+Example: If x > 0, which equals (x^2 + 2x) / x?
+- Plug in x = 3: (9 + 6)/3 = 5
+- Check answers: x + 2 = 5 (correct!)
+
+When to Use:
+- 'If x is a positive integer...' type problems
+- Percent problems -- plug in 100
+- Ratio problems -- use the actual ratio numbers
+- Any problem where the answer has variables"
+            },
+
+            // TOEFL Strategies
+            new StrategyGuide
+            {
+                ExamTypeCode = "TOEFL",
+                Title = "TOEFL Reading Strategies",
+                Summary = "Approaches for the TOEFL reading section",
+                Category = "section-specific",
+                EstimatedReadMinutes = 5,
+                SortOrder = 1,
+                Content = @"TOEFL Reading Section Strategy
+
+You have 54-72 minutes for 3-4 passages (about 700 words each).
+
+Before Reading:
+- Skim the first paragraph to understand the topic
+- Read the first sentence of each paragraph for structure
+
+Question Types and Approaches:
+1. Factual Information: Find specific details in the passage
+2. Vocabulary: Use context clues from surrounding sentences
+3. Inference: The answer must be logically supported, not just possible
+4. Insert Text: Check pronoun references and transition logic
+5. Summary: Choose 3 main ideas (avoid minor details)
+
+Time Strategy:
+- Spend 18 minutes per passage
+- Read the passage in 4-5 minutes
+- Answer questions in order (they follow passage order)
+- Save the summary question for last"
+            },
+            new StrategyGuide
+            {
+                ExamTypeCode = "TOEFL",
+                Title = "TOEFL Note-Taking",
+                Summary = "Effective note-taking for listening and speaking",
+                Category = "test-taking",
+                EstimatedReadMinutes = 4,
+                SortOrder = 2,
+                Content = @"Note-Taking for TOEFL
+
+Good notes are the foundation of listening, speaking, and writing sections.
+
+Listening Notes:
+- Write main topic in a circle at the top
+- Use abbreviations (bc = because, w/ = with, -> = leads to)
+- Capture key terms and relationships, not every word
+- Note speaker tone changes (disagreement, surprise)
+- Mark examples with 'ex:' -- they often appear in questions
+
+Speaking Notes (30 seconds prep):
+- Write 3-4 bullet points maximum
+- Include: main point, supporting detail 1, supporting detail 2
+- Note transition words to use (however, in addition, for example)
+
+Writing Notes:
+- Create a quick outline: thesis, body 1, body 2, conclusion
+- Jot down 2 examples per body paragraph
+- Plan your word count (~300-350 for independent, ~150-225 for integrated)"
+            },
+
+            // NUET Strategies
+            new StrategyGuide
+            {
+                ExamTypeCode = "NUET",
+                Title = "NUET Critical Thinking Approach",
+                Summary = "Systematic approach to NUET critical thinking questions",
+                Category = "section-specific",
+                EstimatedReadMinutes = 5,
+                SortOrder = 1,
+                Content = @"NUET Critical Thinking Strategy
+
+The NUET Critical Thinking section tests logical reasoning and argument analysis.
+
+For Argument Analysis:
+1. Identify the conclusion (what the argument is trying to prove)
+2. Find the premises (facts/reasons given to support the conclusion)
+3. Look for assumptions (unstated beliefs connecting premises to conclusion)
+4. Evaluate whether the reasoning is valid
+
+For Logical Reasoning:
+1. Read the stimulus carefully
+2. Identify the question type (strengthen, weaken, assumption, inference)
+3. Predict the answer before looking at options
+4. Eliminate clearly wrong answers first
+
+Common Patterns:
+- Strengthen: Find an answer that provides additional support
+- Weaken: Find an answer that undermines a key assumption
+- Assumption: Find what MUST be true for the argument to work
+- Inference: Find what logically follows from the given information
+
+Avoid: Answers that go too far beyond the given information"
+            },
+            new StrategyGuide
+            {
+                ExamTypeCode = "NUET",
+                Title = "NUET Math Problem-Solving",
+                Summary = "Techniques for the NUET mathematics section",
+                Category = "section-specific",
+                EstimatedReadMinutes = 4,
+                SortOrder = 2,
+                Content = @"NUET Math Problem-Solving Techniques
+
+Read-Plan-Solve-Check Approach:
+1. READ: Understand what is being asked. Identify known and unknown values.
+2. PLAN: Choose strategy (algebra, estimation, working backwards, drawing diagrams).
+3. SOLVE: Execute the plan step by step.
+4. CHECK: Verify the answer makes sense in context.
+
+Key Strategies:
+- Estimation: Round numbers to check if your answer is reasonable
+- Working Backwards: Start from the answer choices
+- Drawing Diagrams: Especially for geometry and word problems
+- Pattern Recognition: Look for sequences, ratios, and common forms
+
+Number Properties to Remember:
+- Even + Even = Even, Odd + Odd = Even
+- Anything times an even number is even
+- If a number ends in 0 or 5, it is divisible by 5
+- Divisibility by 3: sum of digits divisible by 3"
+            },
+        };
+
+        await _context.StrategyGuides.AddRangeAsync(guides);
+        await _context.SaveChangesAsync();
     }
 }
