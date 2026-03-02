@@ -1053,4 +1053,47 @@ UniStart/
 
 ---
 
+---
+
+## T-12: Рекомендации, навигация и UX (аудит 02.03.2026)
+
+### Выявленные проблемы
+
+#### 1. Эмодзи в рекомендациях
+- **Где**: `RecommendationService.cs` — поля `Icon` содержат эмодзи (🧠, ⚠️, 📝, 🌟, 💪, 🎯, 🔥, ⏱️)
+- **Проблема**: Рекомендации на Dashboard отображают эмодзи вместо нейтральных иконок
+- **Фикс**: Убрать эмодзи из `Icon` — поставить `null`. Frontend уже обрабатывает `r.icon || ''`
+
+#### 2. «0 из ∞» — непонятное отображение для Pro
+- **Где**: `DashboardPage.tsx` строка 84 — `usage.questionsLimit === -1 ? '∞' : usage.questionsLimit`
+- **Проблема**: Pro-пользователи видят «0 из ∞» — неинформативно, выглядит как ошибка
+- **Фикс**: Для Pro показывать «Безлимит» вместо «из ∞»
+
+#### 3. Кнопки рекомендаций ведут на `/test?topicId=X` — нерабочий роут
+- **Где**: `RecommendationService.cs` — все `ActionUrl` генерируются как `/test?topicId=X`, `/test?mode=exam`, `/test`
+- **Проблема**: Во фронтенде нет роута `/test`. Практика живёт на `/learn?tab=practice&topicId=X`, mock — `/learn?tab=mock`. При переходе по `/test` пользователь попадает на «Практика завершена»
+- **Фикс**: Заменить все `ActionUrl` в бэкенде: `/test?topicId=X` → `/learn?tab=practice&topicId=X`, `/test?mode=exam` → `/learn?tab=mock`, `/test` → `/learn`
+
+#### 4. «Практика завершена» / «Задание выполнено» при первом входе
+- **Где**: `TestPage.tsx` — состояние `testCompleted` в Redux persist'ится между навигациями
+- **Проблема**: После завершения практики `testCompleted = true` остаётся в store. При следующем переходе из рекомендации/плана по topicId пользователь сразу видит «Практика завершена», не ответив ни на один вопрос
+- **Фикс**: При монтировании TestPage с `topicId` — dispatch `resetTest()` перед авто-стартом, чтобы сбросить stale-состояние
+
+#### 5. Рекомендации на странице Прогноза без ссылок
+- **Где**: `PredictionPage.tsx` — компонент `ImprovementTips` (строки 420–458)
+- **Проблема**: Советы «Усильте практику X» показываются как текст без кнопок/ссылок. Пользователь не может одним кликом перейти к практике по теме
+- **Фикс**: Добавить `topicId` в `ImprovementTipDto` (бэкенд) и `ImprovementTip` (фронт). Отрисовать кнопку «Практика →» с навигацией на `/learn?tab=practice&topicId=X`
+
+### Файлы затронутые
+
+| Файл | Изменение |
+|------|-----------|
+| `Application/Services/RecommendationService.cs` | Убрать эмодзи из Icon, исправить ActionUrl |
+| `Application/DTOs/PredictionDtos.cs` | Добавить TopicId в ImprovementTipDto |
+| `Application/Services/ScorePredictionService.cs` | Передавать topic.Id в tip |
+| `client/src/pages/DashboardPage.tsx` | Исправить «0 из ∞» |
+| `client/src/pages/TestPage.tsx` | resetTest при монтировании с topicId |
+| `client/src/pages/PredictionPage.tsx` | Кнопка «Практика →» в ImprovementTips |
+| `client/src/types/index.ts` | Добавить topicId в ImprovementTip |
+
 *Создано: 27 февраля 2026*

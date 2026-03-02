@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   ResponsiveContainer,
   BarChart,
@@ -418,6 +419,7 @@ function SectionDetails({ sections }: { sections: SectionPrediction[] }) {
 // ═══════════════════════════════════════════════════════════
 
 function ImprovementTips({ tips }: { tips: ScorePrediction['improvementTips'] }) {
+  const navigate = useNavigate();
   return (
     <div className="card card-static animate-fade-in-up" style={{ padding: '1.25rem', marginTop: '1rem' }}>
       <h3 style={{ margin: '0 0 1rem' }}>Рекомендации по улучшению</h3>
@@ -446,9 +448,18 @@ function ImprovementTips({ tips }: { tips: ScorePrediction['improvementTips'] })
                 {tip.recommendation}
               </div>
               <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
-                Текущий уровень: {tip.currentLevel}% • θ = {tip.currentTheta}
+                Текущий уровень: {tip.currentLevel}% | theta = {tip.currentTheta}
               </div>
             </div>
+            {tip.topicId > 0 && (
+              <button
+                className="btn btn-primary"
+                style={{ padding: '0.35rem 0.75rem', fontSize: '0.78rem', whiteSpace: 'nowrap' }}
+                onClick={() => navigate(`/learn?tab=practice&topicId=${tip.topicId}`)}
+              >
+                Практика
+              </button>
+            )}
           </div>
         ))}
       </div>

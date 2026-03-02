@@ -58,6 +58,7 @@ function TutorLayout() {
   }, []);
 
   const handleLogout = () => {
+    chatService.stop();
     dispatch(logout());
     navigate('/login');
   };

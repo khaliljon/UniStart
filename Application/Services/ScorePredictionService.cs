@@ -399,6 +399,7 @@ public class ScorePredictionService : IScorePredictionService
             };
 
             tips.Add(new ImprovementTipDto(
+                TopicId: topic.Id,
                 TopicName: topic.Name,
                 SectionName: sectionName,
                 CurrentTheta: Math.Round(theta, 2),

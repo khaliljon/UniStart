@@ -90,13 +90,14 @@ public class ChatHub : Hub
         var recipientId = conv.OtherUserId;
 
         // Send with correct IsMine flag for each participant
+        // Use Clients.Caller for sender to prevent duplication if orphaned connections exist
         var recipientMessage = new UniStart.Application.DTOs.MessageDto(
             message.Id, message.ConversationId, message.SenderId, message.SenderName,
             message.Text, message.SentAt, message.ReadAt, message.IsEdited,
             message.Type, IsMine: false
         );
 
-        await Clients.Group($"user_{userId}").SendAsync("ReceiveMessage", message);
+        await Clients.Caller.SendAsync("ReceiveMessage", message);
         await Clients.Group($"user_{recipientId}").SendAsync("ReceiveMessage", recipientMessage);
 
         // Update unread count for recipient

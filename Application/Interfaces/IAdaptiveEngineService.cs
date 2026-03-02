@@ -51,6 +51,11 @@ public interface IAdaptiveEngineService
     Task<int> GetAnsweredQuestionsCountAsync(int userId, string[] examTypeCodes, int? sectionId = null, int? topicId = null);
 
     /// <summary>
+    /// Calculates mastery percentage for a topic (0-100) based on last answer per question
+    /// </summary>
+    Task<int> GetTopicMasteryAsync(int userId, string[] examTypeCodes, int? topicId = null);
+
+    /// <summary>
     /// Gets questions that user answered incorrectly (for review mode)
     /// </summary>
     Task<IEnumerable<QuestionDto>> GetIncorrectlyAnsweredQuestionsAsync(int userId, string[]? examTypeCodes = null);

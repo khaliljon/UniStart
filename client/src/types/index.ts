@@ -68,6 +68,8 @@ export interface NextQuestionResponse {
   testCompleted: boolean;
   questionsAnswered: number;
   totalQuestions: number;
+  topicMastery: number;
+  masteryReached: boolean;
 }
 
 export interface AnswerResult {
@@ -324,6 +326,7 @@ export interface SectionPrediction {
 }
 
 export interface ImprovementTip {
+  topicId: number;
   topicName: string;
   sectionName: string;
   currentTheta: number;

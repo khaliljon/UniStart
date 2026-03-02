@@ -74,9 +74,9 @@ public class RecommendationService : IRecommendationService
                 Priority: te.Count >= 3 ? "high" : "medium",
                 Title: $"Повторите {te.Topic.Name}",
                 Description: $"В этой сессии {te.Count} ошибок по теме «{te.Topic.Name}». Рекомендуем дополнительную практику.",
-                Icon: "📝",
+                Icon: null,
                 ActionLabel: "Практика",
-                ActionUrl: $"/test?topicId={te.Topic.Id}",
+                ActionUrl: $"/learn?tab=practice&topicId={te.Topic.Id}",
                 Metadata: new Dictionary<string, object>
                 {
                     ["topicId"] = te.Topic.Id,
@@ -104,9 +104,9 @@ public class RecommendationService : IRecommendationService
                 Priority: "low",
                 Title: $"Отлично по {ts.Topic.Name}!",
                 Description: $"Все {ts.Count} ответов правильные. Попробуйте более сложные вопросы!",
-                Icon: "🌟",
+                Icon: null,
                 ActionLabel: "Hard-режим",
-                ActionUrl: $"/test?topicId={ts.Topic.Id}&difficulty=Hard",
+                ActionUrl: $"/learn?tab=practice&topicId={ts.Topic.Id}",
                 Metadata: new Dictionary<string, object>
                 {
                     ["topicId"] = ts.Topic.Id,
@@ -126,9 +126,9 @@ public class RecommendationService : IRecommendationService
                     Priority: "high",
                     Title: "Не сдавайтесь!",
                     Description: $"Точность {accuracy:F0}% — попробуйте вернуться к основам. Начните с Practice-режима.",
-                    Icon: "💪",
-                    ActionLabel: "Practice Mode",
-                    ActionUrl: "/test?mode=practice",
+                    Icon: null,
+                    ActionLabel: "Практика",
+                    ActionUrl: "/learn",
                     Metadata: null
                 ));
             }
@@ -138,10 +138,10 @@ public class RecommendationService : IRecommendationService
                     Type: "after_session",
                     Priority: "low",
                     Title: "Отличный результат!",
-                    Description: $"Точность {accuracy:F0}%! Попробуйте Exam Mode для подготовки к реальному экзамену.",
-                    Icon: "🎯",
-                    ActionLabel: "Exam Mode",
-                    ActionUrl: "/test?mode=exam",
+                    Description: $"Точность {accuracy:F0}%! Попробуйте Mock Exam для подготовки к реальному экзамену.",
+                    Icon: null,
+                    ActionLabel: "Mock Exam",
+                    ActionUrl: "/learn?tab=mock",
                     Metadata: null
                 ));
             }
@@ -420,9 +420,9 @@ public class RecommendationService : IRecommendationService
                     Priority: retention < 0.4 ? "high" : "medium",
                     Title: $"Повторите {ta.Topic.Name}",
                     Description: $"Последнее занятие {daysSince:F0} дней назад. Оценка запоминания: {retention * 100:F0}%.",
-                    Icon: "🧠",
+                    Icon: null,
                     ActionLabel: "Повторить",
-                    ActionUrl: $"/test?topicId={ta.Topic.Id}",
+                    ActionUrl: $"/learn?tab=practice&topicId={ta.Topic.Id}",
                     Metadata: new Dictionary<string, object>
                     {
                         ["topicId"] = ta.Topic.Id,
@@ -441,11 +441,43 @@ public class RecommendationService : IRecommendationService
             .Take(3)
             .ToListAsync();
 
+        // Get mastered topic IDs — topics where ALL questions have last answer correct
+        var masteredTopicIds = new HashSet<int>();
+        var userTopicAnswers = await _db.UserAnswers
+            .Include(ua => ua.AnswerOption)
+            .Include(ua => ua.Question)
+            .Where(ua => ua.UserId == userId)
+            .GroupBy(ua => ua.Question.TopicId)
+            .Select(g => new {
+                TopicId = g.Key,
+                Questions = g.GroupBy(ua => ua.QuestionId)
+                    .Select(qg => qg.OrderByDescending(ua => ua.AnsweredAt).First().AnswerOption!.IsCorrect)
+            })
+            .ToListAsync();
+        
+        var topicQuestionTotals = await _db.Questions
+            .GroupBy(q => q.TopicId)
+            .Select(g => new { TopicId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.TopicId, x => x.Count);
+        
+        foreach (var ta in userTopicAnswers)
+        {
+            var totalInTopic = topicQuestionTotals.GetValueOrDefault(ta.TopicId, 0);
+            var allCorrect = ta.Questions.All(c => c);
+            var answeredAll = ta.Questions.Count() == totalInTopic;
+            if (totalInTopic > 0 && answeredAll && allCorrect)
+                masteredTopicIds.Add(ta.TopicId);
+        }
+
         foreach (var wp in weakProfiles)
         {
             // Find a topic for this skill
             var topic = await _db.Topics
                 .FirstOrDefaultAsync(t => t.SkillId == wp.SkillId);
+
+            // Skip if topic is fully mastered (all questions answered correctly)
+            if (topic != null && masteredTopicIds.Contains(topic.Id))
+                continue;
 
             if (topic != null)
             {
@@ -454,9 +486,9 @@ public class RecommendationService : IRecommendationService
                     Priority: "high",
                     Title: $"Подтяните {wp.Skill.Name}",
                     Description: $"Уровень {wp.Level}% — рекомендуем практику по «{topic.Name}»",
-                    Icon: "⚠️",
+                    Icon: null,
                     ActionLabel: "Практика",
-                    ActionUrl: $"/test?topicId={topic.Id}",
+                    ActionUrl: $"/learn?tab=practice&topicId={topic.Id}",
                     Metadata: new Dictionary<string, object>
                     {
                         ["skillId"] = wp.SkillId,
@@ -479,10 +511,10 @@ public class RecommendationService : IRecommendationService
                     Type: "mode",
                     Priority: "high",
                     Title: "Экзамен через " + (int)daysUntilExam + " дней!",
-                    Description: "Попробуйте Exam Mode для тренировки в условиях таймера",
-                    Icon: "⏱️",
-                    ActionLabel: "Exam Mode",
-                    ActionUrl: "/test?mode=exam",
+                    Description: "Попробуйте Mock Exam для тренировки в условиях таймера",
+                    Icon: null,
+                    ActionLabel: "Mock Exam",
+                    ActionUrl: "/learn?tab=mock",
                     Metadata: new Dictionary<string, object>
                     {
                         ["daysUntilExam"] = (int)daysUntilExam,
@@ -502,11 +534,11 @@ public class RecommendationService : IRecommendationService
                     recs.Add(new RecommendationDto(
                         Type: "mode",
                         Priority: "low",
-                        Title: "Попробуйте Exam Mode",
+                        Title: "Попробуйте Mock Exam",
                         Description: "Вы ещё не пробовали экзаменационный режим. Потренируйтесь с таймером!",
-                        Icon: "📝",
+                        Icon: null,
                         ActionLabel: "Попробовать",
-                        ActionUrl: "/test?mode=exam",
+                        ActionUrl: "/learn?tab=mock",
                         Metadata: null
                     ));
                 }
@@ -522,9 +554,9 @@ public class RecommendationService : IRecommendationService
                 Priority: "medium",
                 Title: $"Серия {streak.CurrentStreak} дней!",
                 Description: "Не прерывайте серию — ответьте хотя бы на 5 вопросов сегодня",
-                Icon: "🔥",
+                Icon: null,
                 ActionLabel: "Начать",
-                ActionUrl: "/test",
+                ActionUrl: "/learn",
                 Metadata: new Dictionary<string, object>
                 {
                     ["currentStreak"] = streak.CurrentStreak

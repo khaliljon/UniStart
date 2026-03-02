@@ -40,7 +40,9 @@ public record NextQuestionDto(
     QuestionDto? Question,
     bool TestCompleted,
     int QuestionsAnswered,
-    int TotalQuestions
+    int TotalQuestions,
+    int TopicMastery = 0,
+    bool MasteryReached = false
 );
 
 // Topic progress for topic selection page

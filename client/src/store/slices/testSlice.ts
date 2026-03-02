@@ -8,6 +8,8 @@ interface TestState {
   answerResult: AnswerResult | null;
   questionsAnswered: number;
   totalQuestions: number;
+  topicMastery: number;
+  masteryReached: boolean;
   testCompleted: boolean;
   isLoading: boolean;
   error: string | null;
@@ -21,6 +23,8 @@ const initialState: TestState = {
   answerResult: null,
   questionsAnswered: 0,
   totalQuestions: 0,
+  topicMastery: 0,
+  masteryReached: false,
   testCompleted: false,
   isLoading: false,
   error: null,
@@ -67,6 +71,8 @@ const testSlice = createSlice({
       state.answerResult = null;
       state.questionsAnswered = 0;
       state.totalQuestions = 0;
+      state.topicMastery = 0;
+      state.masteryReached = false;
       state.testCompleted = false;
       state.isLoading = false;
       state.error = null;
@@ -90,6 +96,8 @@ const testSlice = createSlice({
         state.testCompleted = action.payload.testCompleted;
         state.questionsAnswered = action.payload.questionsAnswered;
         state.totalQuestions = action.payload.totalQuestions;
+        state.topicMastery = action.payload.topicMastery ?? 0;
+        state.masteryReached = action.payload.masteryReached ?? false;
         state.answerResult = null;
         state.selectedAnswer = null;
         state.questionStartTime = Date.now();
@@ -119,6 +127,8 @@ const testSlice = createSlice({
         state.answerResult = null;
         state.questionsAnswered = 0;
         state.totalQuestions = 0;
+        state.topicMastery = 0;
+        state.masteryReached = false;
         state.testCompleted = false;
         state.error = null;
         state.questionStartTime = null;

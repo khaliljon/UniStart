@@ -153,6 +153,13 @@ public class StudyPlanService : IStudyPlanService
         var daysUntilExam = (int)(goal.TargetDate.Date - today).TotalDays;
         if (daysUntilExam < 1) daysUntilExam = 7; // At least one week
 
+        // ─── 6b. Get actual question counts per topic ────
+        var topicQuestionCounts = await _db.Questions
+            .Where(q => topics.Select(t => t.Id).Contains(q.TopicId))
+            .GroupBy(q => q.TopicId)
+            .Select(g => new { TopicId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.TopicId, x => x.Count);
+
         // ─── 7. Build the plan ───────────────────────────────
         var plan = new StudyPlan
         {
@@ -166,7 +173,7 @@ public class StudyPlanService : IStudyPlanService
 
         var entries = BuildPlanEntries(
             plan.Id, sortedTopics, profiles, dependencies,
-            completedTopicIds, today, daysUntilExam);
+            completedTopicIds, topicQuestionCounts, today, daysUntilExam);
 
         _db.StudyPlanEntries.AddRange(entries);
         await _db.SaveChangesAsync();
@@ -230,6 +237,21 @@ public class StudyPlanService : IStudyPlanService
                          e.Type == StudyEntryType.Review ? 1 :
                          e.Type == StudyEntryType.New ? 2 : 3)
             .ToListAsync();
+
+        // Cap RecommendedQuestions to actual topic question count
+        var entryTopicIds = entries.Select(e => e.TopicId).Distinct().ToList();
+        var topicQCounts = await _db.Questions
+            .Where(q => entryTopicIds.Contains(q.TopicId))
+            .GroupBy(q => q.TopicId)
+            .Select(g => new { TopicId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.TopicId, x => x.Count);
+
+        foreach (var entry in entries)
+        {
+            var actual = topicQCounts.GetValueOrDefault(entry.TopicId, entry.RecommendedQuestions);
+            if (entry.RecommendedQuestions > actual)
+                entry.RecommendedQuestions = actual;
+        }
 
         var totalMinutes = entries.Where(e => !e.IsCompleted).Sum(e => e.RecommendedMinutes);
         var daysUntilExam = (int)(goal.TargetDate - today).TotalDays;
@@ -302,15 +324,30 @@ public class StudyPlanService : IStudyPlanService
         if (plan == null)
             return await GetTodayPlanAsync(userId);
 
-        // Get today's incomplete entries
-        var incompleteEntries = await _db.StudyPlanEntries
+        // Get today's entries (both incomplete for auto-completion and completed for stats refresh)
+        var todayEntries = await _db.StudyPlanEntries
             .Include(e => e.Topic)
             .Include(e => e.Plan)
-            .Where(e => e.PlanId == plan.Id && e.Date == today && !e.IsCompleted)
+            .Where(e => e.PlanId == plan.Id && e.Date == today)
             .ToListAsync();
 
-        if (!incompleteEntries.Any())
-            return await GetTodayPlanAsync(userId);
+        var incompleteEntries = todayEntries.Where(e => !e.IsCompleted).ToList();
+        var completedEntries = todayEntries.Where(e => e.IsCompleted).ToList();
+
+        // Fix RecommendedQuestions if they exceed actual topic question count
+        var topicIds = todayEntries.Select(e => e.TopicId).Distinct().ToList();
+        var actualTopicCounts = await _db.Questions
+            .Where(q => topicIds.Contains(q.TopicId))
+            .GroupBy(q => q.TopicId)
+            .Select(g => new { TopicId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.TopicId, x => x.Count);
+
+        foreach (var entry in todayEntries)
+        {
+            var actual = actualTopicCounts.GetValueOrDefault(entry.TopicId, entry.RecommendedQuestions);
+            if (entry.RecommendedQuestions > actual)
+                entry.RecommendedQuestions = actual;
+        }
 
         // Get all user answers from today, grouped by topicId
         var todayAnswers = await _db.UserAnswers
@@ -339,7 +376,12 @@ public class StudyPlanService : IStudyPlanService
             // Auto-complete if user answered enough questions for this topic today
             // Require at least half the recommended amount (minimum 2) to prevent trivial completion
             var threshold = Math.Max(2, entry.RecommendedQuestions / 2);
-            if (topicStats.Total >= threshold)
+            
+            // Also require minimum 30% accuracy — answering everything wrong doesn't count
+            var accuracy = topicStats.Total > 0 ? (double)topicStats.Correct / topicStats.Total : 0;
+            var minAccuracy = 0.3;
+            
+            if (topicStats.Total >= threshold && accuracy >= minAccuracy)
             {
                 entry.IsCompleted = true;
                 entry.CompletedAt = DateTime.UtcNow;
@@ -349,12 +391,28 @@ public class StudyPlanService : IStudyPlanService
             }
         }
 
-        if (autoCompleted > 0)
+        // Also refresh stats for already-completed entries (user may have continued practicing)
+        var statsUpdated = false;
+        foreach (var entry in completedEntries)
+        {
+            if (!answersByTopic.TryGetValue(entry.TopicId, out var freshStats))
+                continue;
+
+            if (freshStats.Total != entry.QuestionsAnswered || freshStats.Correct != entry.CorrectAnswers)
+            {
+                entry.QuestionsAnswered = freshStats.Total;
+                entry.CorrectAnswers = freshStats.Correct;
+                statsUpdated = true;
+            }
+        }
+
+        if (autoCompleted > 0 || statsUpdated)
         {
             await _db.SaveChangesAsync();
-            _logger.LogInformation(
-                "Auto-completed {Count} plan entries for user {UserId}",
-                autoCompleted, userId);
+            if (autoCompleted > 0)
+                _logger.LogInformation(
+                    "Auto-completed {Count} plan entries for user {UserId}",
+                    autoCompleted, userId);
         }
 
         return await GetTodayPlanAsync(userId);
@@ -442,6 +500,7 @@ public class StudyPlanService : IStudyPlanService
         Dictionary<int, UserSkillProfile> profiles,
         List<TopicDependency> dependencies,
         List<int> completedTopicIds,
+        Dictionary<int, int> topicQuestionCounts,
         DateTime startDate,
         int totalDays)
     {
@@ -483,12 +542,13 @@ public class StudyPlanService : IStudyPlanService
                 _ => PracticeMinutes
             };
 
-            // More questions for weak topics
+            // More questions for weak topics, but never more than available in the topic
+            var maxQuestions = topicQuestionCounts.GetValueOrDefault(topic.Id, 5);
             var questions = type switch
             {
-                StudyEntryType.Weakness => 10,
-                StudyEntryType.New => 7,
-                _ => 5
+                StudyEntryType.Weakness => Math.Min(10, maxQuestions),
+                StudyEntryType.New => Math.Min(7, maxQuestions),
+                _ => Math.Min(5, maxQuestions)
             };
 
             entries.Add(new StudyPlanEntry
@@ -529,7 +589,7 @@ public class StudyPlanService : IStudyPlanService
                     Date = startDate.AddDays(reviewAvailDay),
                     RecommendedMinutes = ReviewMinutes,
                     Type = StudyEntryType.Review,
-                    RecommendedQuestions = 3
+                    RecommendedQuestions = Math.Min(3, topicQuestionCounts.GetValueOrDefault(topic.Id, 3))
                 });
 
                 dailyLoad[reviewAvailDay] += ReviewMinutes;
@@ -554,6 +614,7 @@ public class StudyPlanService : IStudyPlanService
                 while (dailyLoad[d] < MinDailyMinutes && weakIdx < weakTopics.Count * 3)
                 {
                     var (topic, _) = weakTopics[weakIdx % weakTopics.Count];
+                    var gapMaxQ = topicQuestionCounts.GetValueOrDefault(topic.Id, 5);
 
                     entries.Add(new StudyPlanEntry
                     {
@@ -562,7 +623,7 @@ public class StudyPlanService : IStudyPlanService
                         Date = startDate.AddDays(d),
                         RecommendedMinutes = PracticeMinutes,
                         Type = StudyEntryType.Weakness,
-                        RecommendedQuestions = 5
+                        RecommendedQuestions = Math.Min(5, gapMaxQ)
                     });
 
                     dailyLoad[d] += PracticeMinutes;

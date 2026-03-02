@@ -10,6 +10,8 @@ type StatusChangedHandler = (conversationId: number, newStatus: string) => void;
 
 class ChatService {
   private connection: signalR.HubConnection | null = null;
+  private startPromise: Promise<void> | null = null;
+  private currentToken: string | null = null;
   private onMessageHandlers: MessageHandler[] = [];
   private onUnreadHandlers: UnreadHandler[] = [];
   private onTypingHandlers: TypingHandler[] = [];
@@ -19,10 +21,35 @@ class ChatService {
   private onStatusChangedHandlers: StatusChangedHandler[] = [];
 
   async start(): Promise<void> {
-    if (this.connection?.state === signalR.HubConnectionState.Connected) return;
-
     const token = localStorage.getItem('token');
     if (!token) return;
+
+    // If token changed (account switch), force full reconnect
+    if (this.currentToken && this.currentToken !== token) {
+      if (this.connection) {
+        try { await this.connection.stop(); } catch { /* ignore */ }
+        this.connection = null;
+      }
+      this.startPromise = null;
+      this.currentToken = null;
+    }
+
+    // Already connected with the same token — nothing to do
+    if (this.connection?.state === signalR.HubConnectionState.Connected) return;
+
+    // Currently connecting — wait for it instead of creating orphaned connections
+    if (this.startPromise) {
+      try { await this.startPromise; } catch { /* ignore */ }
+      return;
+    }
+
+    // Connection exists but in a bad state (Disconnected/Reconnecting) — stop it first
+    if (this.connection) {
+      try { await this.connection.stop(); } catch { /* ignore */ }
+      this.connection = null;
+    }
+
+    this.currentToken = token;
 
     this.connection = new signalR.HubConnectionBuilder()
       .withUrl('/hubs/chat', { accessTokenFactory: () => token })
@@ -58,16 +85,21 @@ class ChatService {
       this.onStatusChangedHandlers.forEach(h => h(conversationId, newStatus));
     });
 
+    this.startPromise = this.connection.start();
     try {
-      await this.connection.start();
+      await this.startPromise;
     } catch (err) {
       console.error('SignalR connection failed:', err);
+    } finally {
+      this.startPromise = null;
     }
   }
 
   async stop(): Promise<void> {
+    this.startPromise = null;
+    this.currentToken = null;
     if (this.connection) {
-      await this.connection.stop();
+      try { await this.connection.stop(); } catch { /* ignore */ }
       this.connection = null;
     }
     this.onMessageHandlers = [];
@@ -76,6 +108,7 @@ class ChatService {
     this.onReadHandlers = [];
     this.onOnlineHandlers = [];
     this.onOfflineHandlers = [];
+    this.onStatusChangedHandlers = [];
   }
 
   async sendMessage(conversationId: number, text: string): Promise<void> {

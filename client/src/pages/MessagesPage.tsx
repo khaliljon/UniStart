@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, Fragment } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { messageService } from '../services/messageService';
 import { chatService } from '../services/chatService';
@@ -37,6 +37,11 @@ function MessagesPage() {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const typingTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
+  // Scroll-to-unread tracking
+  const [firstUnreadMsgId, setFirstUnreadMsgId] = useState<number | null>(null);
+  const firstUnreadRef = useRef<HTMLDivElement>(null);
+  const isInitialLoadRef = useRef(false);
+
   // ─── Load conversations ────────────────────
   const loadConversations = useCallback(async () => {
     try {
@@ -61,14 +66,26 @@ function MessagesPage() {
   }, []);
 
   // ─── Load messages for active conversation ──
-  const loadMessages = useCallback(async (convId: number) => {
+  const loadMessages = useCallback(async (convId: number, unreadCount = 0) => {
     setLoadingMsgs(true);
     setCurrentPage(1);
+    isInitialLoadRef.current = true;
     try {
       const data = await messageService.getMessages(convId, 1, 50);
-      setMessages(data.items.reverse());
+      const sorted = data.items.reverse();
+      setMessages(sorted);
+
+      // Track first unread message for scroll positioning
+      if (unreadCount > 0 && sorted.length >= unreadCount) {
+        setFirstUnreadMsgId(sorted[sorted.length - unreadCount].id);
+      } else {
+        setFirstUnreadMsgId(null);
+      }
+
       setHasMore(data.hasMore);
       await messageService.markAsRead(convId);
+      // Also notify via SignalR so ProfileDropdown badge updates
+      chatService.markAsRead(convId).catch(() => {});
       setConversations(prev => prev.map(c =>
         c.id === convId ? { ...c, unreadCount: 0 } : c
       ));
@@ -112,7 +129,11 @@ function MessagesPage() {
     const unsubMsg = chatService.onMessage((msg: Message) => {
       setActiveId(currentActiveId => {
         if (msg.conversationId === currentActiveId) {
-          setMessages(prev => [...prev, msg]);
+          setMessages(prev => {
+            // Deduplicate by message ID to prevent duplicates from orphaned connections
+            if (prev.some(m => m.id === msg.id)) return prev;
+            return [...prev, msg];
+          });
         }
         return currentActiveId;
       });
@@ -188,21 +209,35 @@ function MessagesPage() {
 
   useEffect(() => {
     if (activeId) {
-      loadMessages(activeId);
-      setSearchParams({ c: String(activeId) }, { replace: true });
-      // Load presence for active conversation partner
       const conv = conversations.find(c => c.id === activeId);
+      loadMessages(activeId, conv?.unreadCount ?? 0);
+      setSearchParams({ c: String(activeId) }, { replace: true });
       if (conv) loadPresence(conv.otherUserId);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeId, loadMessages, setSearchParams]);
 
-  // Auto scroll to bottom on new messages
+  // Auto scroll: on initial load → first unread; on new messages → bottom if near bottom
   useEffect(() => {
+    if (loadingMsgs || messages.length === 0) return;
+
+    if (isInitialLoadRef.current) {
+      isInitialLoadRef.current = false;
+      requestAnimationFrame(() => {
+        if (firstUnreadRef.current) {
+          firstUnreadRef.current.scrollIntoView({ behavior: 'instant', block: 'start' });
+        } else {
+          messagesEndRef.current?.scrollIntoView({ behavior: 'instant' });
+        }
+      });
+      return;
+    }
+
+    // New incoming messages: scroll to bottom only if already near bottom
     if (!showScrollBtn) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [messages, showScrollBtn]);
+  }, [messages, showScrollBtn, loadingMsgs]);
 
   // ─── Scroll detection for scroll-to-bottom button ──
   const handleScroll = useCallback(() => {
@@ -448,11 +483,12 @@ function MessagesPage() {
     const isOtherOnline = otherPresence?.isOnline ?? false;
 
     return (
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', minWidth: 0 }}>
-        {/* Chat header */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', minWidth: 0, overflow: 'hidden' }}>
+        {/* Chat header — fixed, never scrolls */}
         <div style={{
           padding: '0.75rem 1rem', borderBottom: '1px solid var(--border-color)',
           display: 'flex', alignItems: 'center', gap: '0.75rem',
+          background: 'var(--bg-primary)', flexShrink: 0, zIndex: 5,
         }}>
           <button
             onClick={() => setMobileShowChat(false)}
@@ -509,7 +545,7 @@ function MessagesPage() {
         <div
           ref={messagesContainerRef}
           onScroll={handleScroll}
-          style={{ flex: 1, overflowY: 'auto', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', position: 'relative' }}
+          style={{ flex: 1, overflowY: 'auto', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', position: 'relative', minHeight: 0 }}
         >
           {/* Load older button */}
           {hasMore && (
@@ -533,13 +569,25 @@ function MessagesPage() {
             </div>
           ) : (
             messages.map(msg => (
-              <div
-                key={msg.id}
-                style={{
-                  display: 'flex',
-                  justifyContent: msg.type === 'System' ? 'center' : msg.isMine ? 'flex-end' : 'flex-start',
-                }}
-              >
+              <Fragment key={msg.id}>
+                {msg.id === firstUnreadMsgId && (
+                  <div ref={firstUnreadRef} style={{
+                    display: 'flex', alignItems: 'center', gap: '0.75rem',
+                    padding: '0.5rem 0', margin: '0.25rem 0',
+                  }}>
+                    <div style={{ flex: 1, height: '1px', background: 'var(--primary-color)', opacity: 0.5 }} />
+                    <span style={{ fontSize: '0.75rem', color: 'var(--primary-color)', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                      Новые сообщения
+                    </span>
+                    <div style={{ flex: 1, height: '1px', background: 'var(--primary-color)', opacity: 0.5 }} />
+                  </div>
+                )}
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: msg.type === 'System' ? 'center' : msg.isMine ? 'flex-end' : 'flex-start',
+                  }}
+                >
                 <div style={{
                   maxWidth: '70%',
                   padding: '0.6rem 0.9rem',
@@ -575,6 +623,7 @@ function MessagesPage() {
                   </div>
                 </div>
               </div>
+              </Fragment>
             ))
           )}
           <div ref={messagesEndRef} />

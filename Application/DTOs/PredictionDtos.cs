@@ -48,6 +48,7 @@ public record SectionPredictionDto(
 /// Recommendation to improve score
 /// </summary>
 public record ImprovementTipDto(
+    int TopicId,
     string TopicName,
     string SectionName,
     double CurrentTheta,

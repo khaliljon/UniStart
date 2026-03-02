@@ -40,6 +40,7 @@ function ProfileDropdown() {
 
   const handleLogout = () => {
     setOpen(false);
+    chatService.stop();
     dispatch(logout());
     navigate('/login');
   };

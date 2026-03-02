@@ -7,7 +7,6 @@ import {
   submitAnswer,
   selectAnswer,
   clearAnswerResult,
-  resetTestProgress,
   resetTest,
   setTestSessionId,
 } from '../store/slices/testSlice';
@@ -36,6 +35,8 @@ function TestPage() {
     answerResult,
     questionsAnswered,
     totalQuestions,
+    topicMastery,
+    masteryReached,
     testCompleted,
     isLoading,
     error,
@@ -49,6 +50,8 @@ function TestPage() {
   const [showHint, setShowHint] = useState(false);
   const [showQuitConfirm, setShowQuitConfirm] = useState(false);
   const [practiceStarted, setPracticeStarted] = useState(false);
+  const [sessionAnswered, setSessionAnswered] = useState(0);
+  const [, setMasteryShown] = useState(false);
 
   // Daily limit state
   const [dailyUsage, setDailyUsage] = useState<DailyUsage | null>(null);
@@ -119,6 +122,7 @@ function TestPage() {
     setShowFeedback(false);
     setHintText(null);
     setShowHint(false);
+    setSessionAnswered(prev => prev + 1);
     dispatch(clearAnswerResult());
     dispatch(fetchNextQuestion({ examTypeCodes: selectedExams, topicId }));
   };
@@ -143,11 +147,6 @@ function TestPage() {
     navigate('/progress');
   };
 
-  const handleResetTest = async () => {
-    await dispatch(resetTestProgress());
-    dispatch(fetchNextQuestion({ examTypeCodes: selectedExams, topicId }));
-  };
-
   const handleQuitTest = async () => {
     // Complete the session if one exists
     if (testSessionId) {
@@ -165,6 +164,7 @@ function TestPage() {
     }
     dispatch(resetTest());
     setPracticeStarted(false);
+    setSessionAnswered(0);
     setShowQuitConfirm(false);
     // Navigate back to plan if we came from there
     if (planEntryId) {
@@ -195,9 +195,15 @@ function TestPage() {
     }
   };
 
-  // Auto-start when coming from the plan (with topicId)
+  // Reset stale test state and auto-start when arriving with a topicId (from recommendation or plan)
   useEffect(() => {
-    if (topicId && selectedExams.length > 0 && !practiceStarted && !currentQuestion && !testCompleted) {
+    if (topicId && selectedExams.length > 0) {
+      // Clear any stale completed/question state from previous sessions
+      dispatch(resetTest());
+      setPracticeStarted(false);
+      setSessionAnswered(0);
+      // Start practice directly — don't wait for re-render,
+      // resetTest() synchronously clears the store before fetchNextQuestion fires
       handleStartPractice();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -263,28 +269,71 @@ function TestPage() {
   }
 
   if (testCompleted) {
+    const isMastered = masteryReached || topicMastery >= 80;
     return (
       <div className="test-container">
         <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
+          {isMastered && (
+            <div style={{
+              width: '64px', height: '64px', borderRadius: '50%',
+              backgroundColor: 'rgba(16, 185, 129, 0.1)', display: 'flex',
+              alignItems: 'center', justifyContent: 'center',
+              margin: '0 auto 1rem', fontSize: '2rem'
+            }}>
+              ✓
+            </div>
+          )}
           <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '1rem' }}>
-            {planEntryId ? 'Задание выполнено!' : 'Практика завершена!'}
+            {planEntryId
+              ? 'Задание выполнено!'
+              : isMastered
+                ? 'Тема освоена!'
+                : 'Практика завершена!'}
           </h2>
           <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
             {planEntryId
               ? 'Результат автоматически зачтён в ваш учебный план.'
-              : 'Вы ответили на все доступные вопросы. Проверьте аналитику, чтобы увидеть прогресс.'
+              : isMastered
+                ? 'Вы правильно ответили на все вопросы темы. Отличная работа!'
+                : 'Вы ответили на все доступные вопросы. Проверьте аналитику, чтобы увидеть прогресс.'
             }
           </p>
-          <p style={{ marginBottom: '2rem', fontSize: '1.1rem' }}>
-            Отвечено вопросов: <strong>{questionsAnswered}</strong>
+          {topicMastery > 0 && (
+            <div style={{ marginBottom: '1.5rem' }}>
+              <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
+                Освоение темы
+              </div>
+              <div style={{
+                width: '200px', height: '8px', backgroundColor: 'var(--border-color)',
+                borderRadius: '4px', overflow: 'hidden', margin: '0 auto 0.5rem'
+              }}>
+                <div style={{
+                  width: `${topicMastery}%`, height: '100%',
+                  backgroundColor: topicMastery >= 80 ? 'var(--success-color)' : 'var(--primary-color)',
+                  borderRadius: '4px', transition: 'width 0.3s ease'
+                }} />
+              </div>
+              <span style={{
+                fontSize: '1.25rem', fontWeight: '700',
+                color: topicMastery >= 80 ? 'var(--success-color)' : 'var(--primary-color)'
+              }}>
+                {topicMastery}%
+              </span>
+            </div>
+          )}
+          <p style={{ marginBottom: '2rem', fontSize: '0.95rem', color: 'var(--text-secondary)' }}>
+            Отвечено вопросов за сессию: <strong>{sessionAnswered}</strong>
           </p>
           <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
             <button onClick={handleFinishTest} className="btn btn-primary">
               {planEntryId ? 'Вернуться к плану' : 'Аналитика'}
             </button>
             {!planEntryId && (
-              <button onClick={handleResetTest} className="btn btn-secondary" disabled={isLoading}>
-                {isLoading ? 'Сброс...' : 'Начать заново'}
+              <button onClick={() => {
+                setMasteryShown(true);
+                dispatch(fetchNextQuestion({ examTypeCodes: selectedExams, topicId }));
+              }} className="btn btn-secondary" disabled={isLoading}>
+                Продолжить практику
               </button>
             )}
           </div>
@@ -453,37 +502,69 @@ function TestPage() {
           </div>
         )}
 
-        {/* Progress Bar */}
-        <div className="progress-container" style={{ marginBottom: '1.5rem' }}>
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center',
-            marginBottom: '0.5rem'
-          }}>
-            <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-              Question {questionsAnswered + 1} of {totalQuestions}
-            </span>
-            <span style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--primary-color)' }}>
-              {totalQuestions > 0 ? Math.round(((questionsAnswered) / totalQuestions) * 100) : 0}%
-            </span>
-          </div>
-          <div style={{
-            width: '100%',
-            height: '8px',
-            backgroundColor: 'var(--border-color)',
-            borderRadius: '4px',
-            overflow: 'hidden'
-          }}>
-            <div style={{
-              width: `${totalQuestions > 0 ? ((questionsAnswered) / totalQuestions) * 100 : 0}%`,
-              height: '100%',
-              backgroundColor: 'var(--primary-color)',
-              borderRadius: '4px',
-              transition: 'width 0.3s ease'
-            }} />
-          </div>
-        </div>
+        {/* Progress Bar — mastery-based for topic practice, session-based otherwise */}
+        {(() => {
+          const hasTopic = !!topicId;
+          const mastery = topicMastery;
+          const total = totalQuestions > 0 ? totalQuestions : 1;
+          const isRecycling = sessionAnswered >= total;
+          const masteryColor = mastery >= 80 ? 'var(--success-color)' : mastery >= 50 ? 'rgb(245, 158, 11)' : 'var(--primary-color)';
+
+          return (
+            <div className="progress-container" style={{ marginBottom: '1.5rem' }}>
+              {/* Top row: question counter + mastery badge */}
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center',
+                marginBottom: '0.5rem'
+              }}>
+                <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                  {isRecycling
+                    ? `Solved: ${sessionAnswered} (${totalQuestions} in topic)`
+                    : `Question ${sessionAnswered + 1} of ${totalQuestions}`}
+                </span>
+                {hasTopic && (
+                  <span style={{
+                    display: 'flex', alignItems: 'center', gap: '0.375rem',
+                    fontSize: '0.8rem', fontWeight: '600', color: masteryColor,
+                  }}>
+                    Освоение: {mastery}%
+                  </span>
+                )}
+                {!hasTopic && (
+                  <span style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--primary-color)' }}>
+                    {totalQuestions > 0 ? Math.min(Math.round((sessionAnswered / total) * 100), 100) : 0}%
+                  </span>
+                )}
+              </div>
+              {/* Mastery progress bar for topic practice */}
+              {hasTopic ? (
+                <div style={{
+                  width: '100%', height: '8px', backgroundColor: 'var(--border-color)',
+                  borderRadius: '4px', overflow: 'hidden'
+                }}>
+                  <div style={{
+                    width: `${mastery}%`, height: '100%',
+                    backgroundColor: masteryColor,
+                    borderRadius: '4px', transition: 'width 0.5s ease'
+                  }} />
+                </div>
+              ) : (
+                <div style={{
+                  width: '100%', height: '8px', backgroundColor: 'var(--border-color)',
+                  borderRadius: '4px', overflow: 'hidden'
+                }}>
+                  <div style={{
+                    width: `${totalQuestions > 0 ? Math.min((sessionAnswered / total) * 100, 100) : 0}%`,
+                    height: '100%', backgroundColor: 'var(--primary-color)',
+                    borderRadius: '4px', transition: 'width 0.3s ease'
+                  }} />
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         <div className="question-header">
           <span className="question-number">

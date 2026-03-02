@@ -112,7 +112,7 @@ public class QuestionExpansionSeeder
               -0.9, 0.9),
 
             Q("The system of equations 2x + y = 10 and x − y = 2 has the solution (x, y). What is x + y?",
-              new[] { ("6", false), ("8", false), ("4", false), ("6", true) },
+              new[] { ("10", false), ("8", false), ("4", false), ("6", true) },
               QuestionDifficulty.Medium, "Adding equations: 3x = 12, so x = 4. Then y = 10 − 8 = 2. x + y = 6.",
               0.2, 1.0),
 

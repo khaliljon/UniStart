@@ -4,6 +4,7 @@ import { useAppDispatch } from '../hooks/useAppDispatch';
 import { useAppSelector } from '../hooks/useAppSelector';
 import { useTheme } from '../hooks/useTheme';
 import { logout } from '../store/slices/authSlice';
+import { chatService } from '../services/chatService';
 
 function AdminLayout() {
   const dispatch = useAppDispatch();
@@ -24,6 +25,7 @@ function AdminLayout() {
   }, []);
 
   const handleLogout = () => {
+    chatService.stop();
     dispatch(logout());
     navigate('/login');
   };

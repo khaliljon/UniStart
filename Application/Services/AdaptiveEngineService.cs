@@ -79,7 +79,76 @@ public class AdaptiveEngineService : IAdaptiveEngineService
         }
 
         var availableQuestions = await questionsQuery.ToListAsync();
-        if (availableQuestions.Count == 0) return null;
+        
+        // If no unanswered questions remain, recycle previously answered ones
+        // Only recycle questions that still need work (not mastered)
+        if (availableQuestions.Count == 0)
+        {
+            var recycleQuery = _context.Questions
+                .Include(q => q.Topic)
+                    .ThenInclude(t => t.Section)
+                .Include(q => q.AnswerOptions)
+                .Where(q => answeredQuestionIds.Contains(q.Id));
+
+            if (examTypeCodes.Length > 0)
+                recycleQuery = recycleQuery.Where(q => q.Topic.Section != null && examTypeCodes.Contains(q.Topic.Section.ExamTypeCode));
+            if (sectionId.HasValue)
+                recycleQuery = recycleQuery.Where(q => q.Topic.SectionId == sectionId.Value);
+            if (topicId.HasValue)
+                recycleQuery = recycleQuery.Where(q => q.TopicId == topicId.Value);
+
+            var allRecyclable = await recycleQuery.ToListAsync();
+            if (allRecyclable.Count == 0) return null;
+
+            // Get answer history for each question (fetch raw, compute streaks in memory)
+            var recyclableIds = allRecyclable.Select(q => q.Id).ToList();
+            var rawAnswers = await _context.UserAnswers
+                .Where(ua => ua.UserId == userId && recyclableIds.Contains(ua.QuestionId))
+                .Include(ua => ua.AnswerOption)
+                .OrderByDescending(ua => ua.AnsweredAt)
+                .ToListAsync();
+
+            var lastAnswers = rawAnswers
+                .GroupBy(ua => ua.QuestionId)
+                .Select(g => {
+                    var ordered = g.ToList(); // already sorted desc by AnsweredAt
+                    var streak = 0;
+                    foreach (var ua in ordered)
+                    {
+                        if (ua.AnswerOption?.IsCorrect == true) streak++;
+                        else break;
+                    }
+                    return new {
+                        QuestionId = g.Key,
+                        LastAnswered = ordered.First().AnsweredAt,
+                        WasCorrect = ordered.First().AnswerOption?.IsCorrect == true,
+                        CorrectStreak = streak
+                    };
+                })
+                .ToList();
+
+            var lookup = lastAnswers.ToDictionary(a => a.QuestionId);
+
+            // Filter out questions with 2+ consecutive correct answers (mastered)
+            availableQuestions = allRecyclable
+                .Where(q => !lookup.TryGetValue(q.Id, out var a) || a.CorrectStreak < 2)
+                .OrderBy(q => lookup.TryGetValue(q.Id, out var a) && a.WasCorrect ? 1 : 0)
+                .ThenBy(q => lookup.TryGetValue(q.Id, out var a) ? a.LastAnswered : DateTime.MinValue)
+                .ToList();
+
+            // If all questions are mastered, allow free practice over all questions
+            // (user can keep practicing even after mastery — just recycle everything)
+            if (availableQuestions.Count == 0)
+            {
+                availableQuestions = allRecyclable
+                    .OrderBy(q => lookup.TryGetValue(q.Id, out var a) ? a.LastAnswered : DateTime.MinValue)
+                    .ToList();
+            }
+
+            // Take top candidates for CAT selection
+            var candidateCount = Math.Min(availableQuestions.Count, Math.Max(5, availableQuestions.Count / 2));
+            availableQuestions = availableQuestions.Take(candidateCount).ToList();
+        }
 
         // Get user's current θ estimate (average across skills relevant to these exams)
         var theta = await GetUserThetaAsync(userId);
@@ -122,13 +191,15 @@ public class AdaptiveEngineService : IAdaptiveEngineService
         var selectedOption = question.AnswerOptions.FirstOrDefault(o => o.Id == answer.AnswerOptionId)
             ?? throw new ArgumentException("Answer option not found");
 
-        // Prevent duplicate answers: check if this user already answered this question in this session
-        var alreadyAnswered = await _context.UserAnswers
+        // Prevent rapid duplicate submits of the exact same answer (double-click protection only)
+        var duplicateCutoff = DateTime.UtcNow.AddSeconds(-1);
+        var recentDuplicate = await _context.UserAnswers
             .AnyAsync(ua => ua.UserId == userId 
                          && ua.QuestionId == answer.QuestionId 
-                         && ua.TestSessionId == answer.TestSessionId);
-        if (alreadyAnswered)
-            throw new ArgumentException("Вы уже ответили на этот вопрос в текущей сессии");
+                         && ua.AnswerOptionId == answer.AnswerOptionId
+                         && ua.AnsweredAt > duplicateCutoff);
+        if (recentDuplicate)
+            throw new ArgumentException("Вы уже ответили на этот вопрос");
 
         var correctOption = question.AnswerOptions.First(o => o.IsCorrect);
         var isCorrect = selectedOption.IsCorrect;
@@ -351,6 +422,36 @@ public class AdaptiveEngineService : IAdaptiveEngineService
             query = query.Where(ua => ua.Question.Topic.SectionId == sectionId.Value);
 
         return await query.CountAsync();
+    }
+
+    /// <summary>
+    /// Calculates mastery percentage for a topic based on the last answer to each question.
+    /// Mastery = (questions with last answer correct) / (total questions in topic) * 100
+    /// Returns 0 if no questions answered yet.
+    /// </summary>
+    public async Task<int> GetTopicMasteryAsync(int userId, string[] examTypeCodes, int? topicId = null)
+    {
+        if (!topicId.HasValue) return 0;
+
+        var totalQuestions = await GetTotalQuestionsCountAsync(examTypeCodes, topicId: topicId);
+        if (totalQuestions == 0) return 0;
+
+        // Get the last answer for each question in this topic
+        var lastAnswerPerQuestion = await _context.UserAnswers
+            .Include(ua => ua.AnswerOption)
+            .Include(ua => ua.Question)
+            .Where(ua => ua.UserId == userId && ua.Question.TopicId == topicId.Value)
+            .GroupBy(ua => ua.QuestionId)
+            .Select(g => new {
+                QuestionId = g.Key,
+                WasCorrect = g.OrderByDescending(ua => ua.AnsweredAt).First().AnswerOption!.IsCorrect
+            })
+            .ToListAsync();
+
+        if (lastAnswerPerQuestion.Count == 0) return 0;
+
+        var correctCount = lastAnswerPerQuestion.Count(a => a.WasCorrect);
+        return (int)Math.Round((double)correctCount / totalQuestions * 100);
     }
 
     /// <summary>

@@ -36,13 +36,14 @@ public class TestController : ControllerBase
         var question = await _adaptiveEngine.GetNextQuestionAsync(userId, dto.ExamTypeCodes, dto.SectionId, dto.TopicId);
         var totalQuestions = await _adaptiveEngine.GetTotalQuestionsCountAsync(dto.ExamTypeCodes, dto.SectionId, dto.TopicId);
         var answeredQuestions = await _adaptiveEngine.GetAnsweredQuestionsCountAsync(userId, dto.ExamTypeCodes, dto.SectionId, dto.TopicId);
+        var topicMastery = await _adaptiveEngine.GetTopicMasteryAsync(userId, dto.ExamTypeCodes, dto.TopicId);
         
         if (question == null)
         {
-            return Ok(new NextQuestionDto(null, true, answeredQuestions, totalQuestions));
+            return Ok(new NextQuestionDto(null, true, answeredQuestions, totalQuestions, topicMastery, topicMastery >= 80));
         }
 
-        return Ok(new NextQuestionDto(question, false, answeredQuestions, totalQuestions));
+        return Ok(new NextQuestionDto(question, false, answeredQuestions, totalQuestions, topicMastery, topicMastery >= 80));
     }
 
     /// <summary>
@@ -66,6 +67,8 @@ public class TestController : ControllerBase
         }
         catch (ArgumentException ex)
         {
+            _logger.LogWarning("SubmitAnswer 400 for user {UserId}, question {QuestionId}, session {SessionId}: {Error}",
+                userId, dto.QuestionId, dto.TestSessionId, ex.Message);
             return BadRequest(new { error = ex.Message });
         }
     }

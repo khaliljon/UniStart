@@ -79,7 +79,7 @@ function DashboardPage() {
           icon=""
           label="Сегодня"
           value={usage ? `${usage.questionsAnswered}` : '—'}
-          sub={usage ? `из ${usage.questionsLimit === -1 ? '∞' : usage.questionsLimit}` : ''}
+          sub={usage ? (usage.questionsLimit === -1 ? 'Безлимит' : `из ${usage.questionsLimit}`) : ''}
           loading={isLoading}
         />
         {yesterday && (
