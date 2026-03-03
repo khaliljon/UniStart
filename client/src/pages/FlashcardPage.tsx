@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAppSelector } from '../hooks/useAppSelector';
 import { flashcardService } from '../services/flashcardService';
 import type { FlashcardDeck, FlashcardReview } from '../types';
+import MathText from '../components/MathRenderer';
 
 type View = 'decks' | 'review' | 'create';
 
@@ -124,7 +125,7 @@ function FlashcardPage() {
             {flipped ? 'Answer' : 'Question'} -- click to flip
           </p>
           <div style={{ fontSize: '1.2rem', lineHeight: 1.6 }}>
-            {flipped ? card.back : card.front}
+            <MathText text={flipped ? card.back : card.front} as="div" />
           </div>
         </div>
 

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAppSelector } from '../hooks/useAppSelector';
 import { formulaService } from '../services/formulaService';
 import type { FormulaCard } from '../types';
+import MathText, { renderMarkdown } from '../components/MathRenderer';
 
 function FormulaPage() {
   const { selectedExams } = useAppSelector((state) => state.exam);
@@ -96,25 +97,24 @@ function FormulaPage() {
                       className="btn-icon"
                       onClick={() => handleToggleBookmark(f.id)}
                       title={f.isBookmarked ? 'Remove bookmark' : 'Add bookmark'}
-                      style={{ opacity: f.isBookmarked ? 1 : 0.4, fontSize: '1.1rem', background: 'none', border: 'none', cursor: 'pointer' }}
+                      style={{ opacity: f.isBookmarked ? 1 : 0.5, fontSize: '1.2rem', background: 'none', border: 'none', cursor: 'pointer', color: f.isBookmarked ? 'var(--warning-color)' : 'var(--text-secondary)' }}
                     >
-                      {f.isBookmarked ? '[*]' : '[ ]'}
+                      {f.isBookmarked ? '\u2605' : '\u2606'}
                     </button>
                   </div>
                   <div
                     style={{
                       margin: '0.75rem 0', padding: '0.75rem',
                       background: 'var(--bg-secondary)', borderRadius: '8px',
-                      fontFamily: 'monospace', fontSize: '1.1rem', textAlign: 'center',
+                      fontSize: '1.1rem', textAlign: 'center',
                       overflowX: 'auto'
                     }}
                   >
-                    {f.formula}
+                    <MathText text={`$${f.formula}$`} />
                   </div>
                   {f.description && (
-                    <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                      {f.description}
-                    </p>
+                    <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)' }}
+                      dangerouslySetInnerHTML={{ __html: renderMarkdown(f.description) }} />
                   )}
                 </div>
               ))}

@@ -507,7 +507,7 @@ function WhatIfSection({
           >
             {topics.map((t) => (
               <option key={t.topicId} value={t.topicId}>
-                {t.topicName} ({t.masteryPercentage}%)
+                {t.topicName} ({t.irtLevel ?? t.masteryPercentage}%)
               </option>
             ))}
           </select>

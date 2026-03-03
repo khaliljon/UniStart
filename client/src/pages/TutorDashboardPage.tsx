@@ -198,7 +198,7 @@ function TutorDashboardPage() {
                 value={headline}
                 onChange={(e) => setHeadline(e.target.value)}
                 className="form-input"
-                placeholder="напр. Репетитор ЕГЭ по математике"
+                placeholder="e.g. Expert SAT Math Tutor"
                 maxLength={200}
                 style={{ width: '100%', padding: '0.5rem 0.75rem' }}
               />
@@ -237,7 +237,7 @@ function TutorDashboardPage() {
                 value={specializations}
                 onChange={(e) => setSpecializations(e.target.value)}
                 className="form-input"
-                placeholder="EGE, OGE, SAT"
+                placeholder="e.g. SAT, TOEFL, IELTS"
                 style={{ width: '100%', padding: '0.5rem 0.75rem' }}
               />
             </div>

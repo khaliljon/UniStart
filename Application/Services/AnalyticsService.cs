@@ -266,7 +266,7 @@ public class AnalyticsService : IAnalyticsService
     {
         var sessions = await _context.TestSessions
             .Include(s => s.ExamType)
-            .Where(s => s.UserId == userId)
+            .Where(s => s.UserId == userId && s.TotalQuestions > 0)
             .OrderByDescending(s => s.StartedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)

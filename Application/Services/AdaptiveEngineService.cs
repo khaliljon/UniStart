@@ -520,6 +520,11 @@ public class AdaptiveEngineService : IAdaptiveEngineService
 
         var topics = await topicsQuery.ToListAsync();
 
+        // Fetch IRT skill profiles for the user
+        var skillProfiles = await _context.UserSkillProfiles
+            .Where(p => p.UserId == userId)
+            .ToDictionaryAsync(p => p.SkillId);
+
         var userAnswers = await _context.UserAnswers
             .Include(ua => ua.AnswerOption)
             .Include(ua => ua.Question)
@@ -549,6 +554,11 @@ public class AdaptiveEngineService : IAdaptiveEngineService
                 ? Math.Min((double)uniqueCorrectQuestions / totalQuestions * 100, 100.0)
                 : 0;
 
+            // IRT level from skill profile (same formula as WhatIf)
+            var irtLevel = skillProfiles.TryGetValue(topic.SkillId, out var sp)
+                ? IrtMath.ThetaToLevel(sp.Theta)
+                : 50;
+
             return new TopicProgressDto(
                 topic.Id,
                 topic.Name,
@@ -557,7 +567,8 @@ public class AdaptiveEngineService : IAdaptiveEngineService
                 incorrectAttempts,
                 Math.Round(mastery, 1),
                 LessonCount: topic.Lessons.Count,
-                HasVideoLessons: topic.Lessons.Any(l => l.VideoUrl != null)
+                HasVideoLessons: topic.Lessons.Any(l => l.VideoUrl != null),
+                IrtLevel: irtLevel
             );
         });
 

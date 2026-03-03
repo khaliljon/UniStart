@@ -173,6 +173,35 @@ select option,
   color: #f1f5f9;
 }
 
+/* KaTeX dark mode — ensure math symbols are visible */
+[data-theme="dark"] .katex {
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .katex .mord,
+[data-theme="dark"] .katex .mbin,
+[data-theme="dark"] .katex .mrel,
+[data-theme="dark"] .katex .mopen,
+[data-theme="dark"] .katex .mclose,
+[data-theme="dark"] .katex .mpunct,
+[data-theme="dark"] .katex .mop,
+[data-theme="dark"] .katex .minner {
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .katex .mfrac .frac-line {
+  border-color: #94a3b8;
+}
+
+[data-theme="dark"] .katex .sqrt > .sqrt-line {
+  border-color: #94a3b8;
+}
+
+/* Ensure katex display mode blocks are readable */
+[data-theme="dark"] .katex-display {
+  color: #e2e8f0;
+}
+
 .error-message {
   color: var(--error-color);
   font-size: 0.75rem;

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAppSelector } from '../hooks/useAppSelector';
 import { strategyService } from '../services/strategyService';
 import type { StrategyGuideSummary, StrategyGuide } from '../types';
+import { ContentRenderer } from '../components/MathRenderer';
 
 function StrategyPage() {
   const { selectedExams } = useAppSelector((state) => state.exam);
@@ -67,9 +68,7 @@ function StrategyPage() {
           <p style={{ color: 'var(--text-secondary)', fontStyle: 'italic', marginBottom: '1.5rem' }}>
             {activeGuide.summary}
           </p>
-          <div style={{ lineHeight: 1.8, whiteSpace: 'pre-wrap' }}>
-            {activeGuide.content}
-          </div>
+          <ContentRenderer content={activeGuide.content} style={{ lineHeight: 1.8 }} />
         </div>
       </div>
     );

@@ -189,12 +189,12 @@ function TutorsPage() {
           className="form-input"
           style={{ padding: '0.5rem 0.75rem', fontSize: '0.85rem', minWidth: '150px' }}
         >
-          <option value="">Все экзамены</option>
-          <option value="EGE">ЕГЭ</option>
-          <option value="OGE">ОГЭ</option>
+          <option value="">All exams</option>
           <option value="SAT">SAT</option>
-          <option value="IELTS">IELTS</option>
           <option value="TOEFL">TOEFL</option>
+          <option value="IELTS">IELTS</option>
+          <option value="NUET">NUET</option>
+          <option value="CSCA">CSCA</option>
         </select>
 
         <select

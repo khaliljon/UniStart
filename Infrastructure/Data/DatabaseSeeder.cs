@@ -44,6 +44,20 @@ public class DatabaseSeeder
         {
             await SeedExamTypesAsync();
         }
+        // Add IELTS/CSCA exam types if they don't exist
+        else
+        {
+            if (!await _context.ExamTypes.AnyAsync(e => e.Code == "IELTS"))
+            {
+                _context.ExamTypes.Add(new ExamType { Code = "IELTS", Name = "IELTS Academic (Listening/Reading/Writing/Speaking)" });
+                await _context.SaveChangesAsync();
+            }
+            if (!await _context.ExamTypes.AnyAsync(e => e.Code == "CSCA"))
+            {
+                _context.ExamTypes.Add(new ExamType { Code = "CSCA", Name = "CSCA (Math Analysis + Logical Reasoning)" });
+                await _context.SaveChangesAsync();
+            }
+        }
 
         // Seed default test user
         if (!await _context.Users.AnyAsync())
@@ -62,6 +76,11 @@ public class DatabaseSeeder
         {
             await SeedExamSectionsAsync();
         }
+        // Add IELTS/CSCA sections if they don't exist
+        else if (!await _context.ExamSections.AnyAsync(s => s.ExamTypeCode == "IELTS"))
+        {
+            await SeedIeltsCscaSectionsAsync();
+        }
 
         // Seed Skills
         if (!await _context.Skills.AnyAsync())
@@ -73,6 +92,11 @@ public class DatabaseSeeder
         if (!await _context.Topics.AnyAsync())
         {
             await SeedTopicsAsync();
+        }
+        // Add IELTS/CSCA topics if they don't exist
+        else if (!await _context.Topics.AnyAsync(t => t.Section != null && t.Section.ExamTypeCode == "IELTS"))
+        {
+            await SeedIeltsCscaTopicsAsync();
         }
 
         // Seed Questions with AnswerOptions
@@ -113,6 +137,11 @@ public class DatabaseSeeder
         {
             await SeedMockExamsAsync();
         }
+        // Add IELTS/CSCA mocks if they don't exist yet
+        else if (!await _context.MockExams.AnyAsync(m => m.ExamTypeCode == "IELTS"))
+        {
+            await SeedIeltsCscaMockExamsAsync();
+        }
 
         // Seed tutor profiles, reviews, and conversations
         if (!await _context.TutorProfiles.AnyAsync())
@@ -125,15 +154,30 @@ public class DatabaseSeeder
         {
             await SeedFormulaCardsAsync();
         }
+        // Add IELTS/CSCA formulas if missing
+        else if (!await _context.FormulaCards.AnyAsync(f => f.Topic.Section != null && f.Topic.Section.ExamTypeCode == "IELTS"))
+        {
+            await SeedIeltsCscaFormulaCardsAsync();
+        }
 
         if (!await _context.FlashcardDecks.AnyAsync())
         {
             await SeedFlashcardDecksAsync();
         }
+        // Add IELTS/CSCA flashcard decks if missing
+        else if (!await _context.FlashcardDecks.AnyAsync(d => d.ExamTypeCode == "IELTS"))
+        {
+            await SeedIeltsCscaFlashcardDecksAsync();
+        }
 
         if (!await _context.StrategyGuides.AnyAsync())
         {
             await SeedStrategyGuidesAsync();
+        }
+        // Add IELTS/CSCA strategy guides if missing
+        else if (!await _context.StrategyGuides.AnyAsync(g => g.ExamTypeCode == "IELTS"))
+        {
+            await SeedIeltsCscaStrategyGuidesAsync();
         }
 
         await _context.SaveChangesAsync();
@@ -195,7 +239,9 @@ public class DatabaseSeeder
         {
             new ExamType { Code = "SAT", Name = "SAT (Английский + Математика)" },
             new ExamType { Code = "TOEFL", Name = "TOEFL (Чтение/Аудирование/Говорение/Письмо)" },
-            new ExamType { Code = "NUET", Name = "NUET (Математика + Критическое мышление)" }
+            new ExamType { Code = "NUET", Name = "NUET (Математика + Критическое мышление)" },
+            new ExamType { Code = "IELTS", Name = "IELTS Academic (Listening/Reading/Writing/Speaking)" },
+            new ExamType { Code = "CSCA", Name = "CSCA (Math Analysis + Logical Reasoning)" }
         };
 
         await _context.ExamTypes.AddRangeAsync(examTypes);
@@ -219,7 +265,39 @@ public class DatabaseSeeder
 
             // NUET Sections
             new ExamSection { ExamTypeCode = "NUET", Name = "Math", MinScore = 0, MaxScore = 140 },
-            new ExamSection { ExamTypeCode = "NUET", Name = "Critical Thinking", MinScore = 0, MaxScore = 140 }
+            new ExamSection { ExamTypeCode = "NUET", Name = "Critical Thinking", MinScore = 0, MaxScore = 140 },
+
+            // IELTS Sections (band scores 0–9)
+            new ExamSection { ExamTypeCode = "IELTS", Name = "Listening", MinScore = 0, MaxScore = 9 },
+            new ExamSection { ExamTypeCode = "IELTS", Name = "Reading", MinScore = 0, MaxScore = 9 },
+            new ExamSection { ExamTypeCode = "IELTS", Name = "Writing", MinScore = 0, MaxScore = 9 },
+            new ExamSection { ExamTypeCode = "IELTS", Name = "Speaking", MinScore = 0, MaxScore = 9 },
+
+            // CSCA Sections
+            new ExamSection { ExamTypeCode = "CSCA", Name = "Math Analysis", MinScore = 0, MaxScore = 100 },
+            new ExamSection { ExamTypeCode = "CSCA", Name = "Logical Reasoning", MinScore = 0, MaxScore = 100 }
+        };
+
+        await _context.ExamSections.AddRangeAsync(sections);
+        await _context.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Seeds only IELTS and CSCA exam sections for existing databases.
+    /// </summary>
+    private async Task SeedIeltsCscaSectionsAsync()
+    {
+        var sections = new List<ExamSection>
+        {
+            // IELTS Sections (band scores 0–9)
+            new ExamSection { ExamTypeCode = "IELTS", Name = "Listening", MinScore = 0, MaxScore = 9 },
+            new ExamSection { ExamTypeCode = "IELTS", Name = "Reading", MinScore = 0, MaxScore = 9 },
+            new ExamSection { ExamTypeCode = "IELTS", Name = "Writing", MinScore = 0, MaxScore = 9 },
+            new ExamSection { ExamTypeCode = "IELTS", Name = "Speaking", MinScore = 0, MaxScore = 9 },
+
+            // CSCA Sections
+            new ExamSection { ExamTypeCode = "CSCA", Name = "Math Analysis", MinScore = 0, MaxScore = 100 },
+            new ExamSection { ExamTypeCode = "CSCA", Name = "Logical Reasoning", MinScore = 0, MaxScore = 100 }
         };
 
         await _context.ExamSections.AddRangeAsync(sections);
@@ -254,6 +332,12 @@ public class DatabaseSeeder
         var toeflWriting = await _context.ExamSections.FirstAsync(s => s.ExamTypeCode == "TOEFL" && s.Name == "Writing");
         var nuetMath = await _context.ExamSections.FirstAsync(s => s.ExamTypeCode == "NUET" && s.Name == "Math");
         var nuetCritical = await _context.ExamSections.FirstAsync(s => s.ExamTypeCode == "NUET" && s.Name == "Critical Thinking");
+        var ieltsListening = await _context.ExamSections.FirstAsync(s => s.ExamTypeCode == "IELTS" && s.Name == "Listening");
+        var ieltsReading = await _context.ExamSections.FirstAsync(s => s.ExamTypeCode == "IELTS" && s.Name == "Reading");
+        var ieltsWriting = await _context.ExamSections.FirstAsync(s => s.ExamTypeCode == "IELTS" && s.Name == "Writing");
+        var ieltsSpeaking = await _context.ExamSections.FirstAsync(s => s.ExamTypeCode == "IELTS" && s.Name == "Speaking");
+        var cscaMath = await _context.ExamSections.FirstAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Math Analysis");
+        var cscaLogic = await _context.ExamSections.FirstAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Logical Reasoning");
 
         var skillRead = await _context.Skills.FirstAsync(s => s.Code == "SK_READ");
         var skillWrite = await _context.Skills.FirstAsync(s => s.Code == "SK_WRITE");
@@ -286,7 +370,25 @@ public class DatabaseSeeder
             new Topic { Name = "Algebra & Functions", SkillId = skillMath.Id, SectionId = nuetMath.Id },
             new Topic { Name = "Problem Solving", SkillId = skillMath.Id, SectionId = nuetMath.Id },
             new Topic { Name = "Logical Reasoning", SkillId = skillCrit.Id, SectionId = nuetCritical.Id },
-            new Topic { Name = "Argument Analysis", SkillId = skillCrit.Id, SectionId = nuetCritical.Id }
+            new Topic { Name = "Argument Analysis", SkillId = skillCrit.Id, SectionId = nuetCritical.Id },
+
+            // IELTS Topics
+            new Topic { Name = "IELTS Listening Comprehension", SkillId = skillListen.Id, SectionId = ieltsListening.Id },
+            new Topic { Name = "IELTS Note & Form Completion", SkillId = skillListen.Id, SectionId = ieltsListening.Id },
+            new Topic { Name = "IELTS Academic Reading", SkillId = skillRead.Id, SectionId = ieltsReading.Id },
+            new Topic { Name = "IELTS Reading: Matching & True/False", SkillId = skillRead.Id, SectionId = ieltsReading.Id },
+            new Topic { Name = "IELTS Task 1: Data Description", SkillId = skillWrite.Id, SectionId = ieltsWriting.Id },
+            new Topic { Name = "IELTS Task 2: Essay Writing", SkillId = skillWrite.Id, SectionId = ieltsWriting.Id },
+            new Topic { Name = "IELTS Speaking Parts 1 & 2", SkillId = skillSpeak.Id, SectionId = ieltsSpeaking.Id },
+            new Topic { Name = "IELTS Speaking Part 3: Discussion", SkillId = skillSpeak.Id, SectionId = ieltsSpeaking.Id },
+
+            // CSCA Topics
+            new Topic { Name = "Calculus & Analysis", SkillId = skillMath.Id, SectionId = cscaMath.Id },
+            new Topic { Name = "Probability & Statistics", SkillId = skillMath.Id, SectionId = cscaMath.Id },
+            new Topic { Name = "Discrete Mathematics", SkillId = skillMath.Id, SectionId = cscaMath.Id },
+            new Topic { Name = "Formal Logic", SkillId = skillCrit.Id, SectionId = cscaLogic.Id },
+            new Topic { Name = "Algorithmic Thinking", SkillId = skillCrit.Id, SectionId = cscaLogic.Id },
+            new Topic { Name = "Data Interpretation", SkillId = skillCrit.Id, SectionId = cscaLogic.Id }
         };
 
         await _context.Topics.AddRangeAsync(topics);
@@ -309,6 +411,20 @@ public class DatabaseSeeder
         var problemSolving = await _context.Topics.FirstAsync(t => t.Name == "Problem Solving");
         var logicalReasoning = await _context.Topics.FirstAsync(t => t.Name == "Logical Reasoning");
         var argumentAnalysis = await _context.Topics.FirstAsync(t => t.Name == "Argument Analysis");
+        var ieltsListenComp = await _context.Topics.FirstAsync(t => t.Name == "IELTS Listening Comprehension");
+        var ieltsNoteForm = await _context.Topics.FirstAsync(t => t.Name == "IELTS Note & Form Completion");
+        var ieltsAcadRead = await _context.Topics.FirstAsync(t => t.Name == "IELTS Academic Reading");
+        var ieltsReadMatch = await _context.Topics.FirstAsync(t => t.Name == "IELTS Reading: Matching & True/False");
+        var ieltsTask1 = await _context.Topics.FirstAsync(t => t.Name == "IELTS Task 1: Data Description");
+        var ieltsTask2 = await _context.Topics.FirstAsync(t => t.Name == "IELTS Task 2: Essay Writing");
+        var ieltsSpeaking12 = await _context.Topics.FirstAsync(t => t.Name == "IELTS Speaking Parts 1 & 2");
+        var ieltsSpeaking3 = await _context.Topics.FirstAsync(t => t.Name == "IELTS Speaking Part 3: Discussion");
+        var calculus = await _context.Topics.FirstAsync(t => t.Name == "Calculus & Analysis");
+        var probStats = await _context.Topics.FirstAsync(t => t.Name == "Probability & Statistics");
+        var discreteMath = await _context.Topics.FirstAsync(t => t.Name == "Discrete Mathematics");
+        var formalLogic = await _context.Topics.FirstAsync(t => t.Name == "Formal Logic");
+        var algoThinking = await _context.Topics.FirstAsync(t => t.Name == "Algorithmic Thinking");
+        var dataInterp = await _context.Topics.FirstAsync(t => t.Name == "Data Interpretation");
 
         var questions = new List<Question>();
 
@@ -920,6 +1036,784 @@ public class DatabaseSeeder
         };
         questions.Add(q30);
 
+        // ================== IELTS Questions ==================
+
+        // IELTS Listening Comprehension
+        var iq1 = new Question
+        {
+            TopicId = ieltsListenComp.Id,
+            Text = "The speaker says the museum opens at what time on weekdays?",
+            Difficulty = QuestionDifficulty.Easy,
+            DifficultyParam = -1.1,
+            DiscriminationParam = 0.8,
+            GuessParam = 0.25,
+            Explanation = "In IELTS Listening Section 1, factual details such as times, dates, and prices are commonly tested. Listen for specific numbers mentioned in context.",
+            AnswerOptions = new List<AnswerOption>
+            {
+                new AnswerOption { Text = "9:00 AM", IsCorrect = true },
+                new AnswerOption { Text = "10:00 AM", IsCorrect = false },
+                new AnswerOption { Text = "8:30 AM", IsCorrect = false },
+                new AnswerOption { Text = "11:00 AM", IsCorrect = false }
+            }
+        };
+        questions.Add(iq1);
+
+        var iq2 = new Question
+        {
+            TopicId = ieltsListenComp.Id,
+            Text = "According to the lecture, what is the main advantage of renewable energy sources over fossil fuels?",
+            Difficulty = QuestionDifficulty.Medium,
+            DifficultyParam = 0.3,
+            DiscriminationParam = 1.0,
+            GuessParam = 0.25,
+            Explanation = "The lecturer explicitly contrasts renewable sources with fossil fuels, emphasising that renewables do not deplete finite resources.",
+            AnswerOptions = new List<AnswerOption>
+            {
+                new AnswerOption { Text = "They are cheaper to install", IsCorrect = false },
+                new AnswerOption { Text = "They do not deplete finite resources", IsCorrect = true },
+                new AnswerOption { Text = "They produce more energy per unit", IsCorrect = false },
+                new AnswerOption { Text = "They require less maintenance", IsCorrect = false }
+            }
+        };
+        questions.Add(iq2);
+
+        var iq3 = new Question
+        {
+            TopicId = ieltsListenComp.Id,
+            Text = "The professor mentions three factors contributing to urbanisation. Which factor does she describe as 'the most significant'?",
+            Difficulty = QuestionDifficulty.Hard,
+            DifficultyParam = 1.4,
+            DiscriminationParam = 1.2,
+            GuessParam = 0.25,
+            Explanation = "When a speaker uses superlatives ('most significant', 'primary', 'key'), the word immediately following is the tested detail.",
+            AnswerOptions = new List<AnswerOption>
+            {
+                new AnswerOption { Text = "Industrial growth", IsCorrect = false },
+                new AnswerOption { Text = "Employment opportunities", IsCorrect = true },
+                new AnswerOption { Text = "Better healthcare", IsCorrect = false },
+                new AnswerOption { Text = "Educational institutions", IsCorrect = false }
+            }
+        };
+        questions.Add(iq3);
+
+        // IELTS Note & Form Completion
+        var iq4 = new Question
+        {
+            TopicId = ieltsNoteForm.Id,
+            Text = "Complete the note: The library card costs _____ per year for non-students.",
+            Difficulty = QuestionDifficulty.Easy,
+            DifficultyParam = -1.0,
+            DiscriminationParam = 0.7,
+            GuessParam = 0.25,
+            Explanation = "Note-completion questions require listening for specific factual information. The speaker mentions the exact annual fee for non-student library memberships.",
+            AnswerOptions = new List<AnswerOption>
+            {
+                new AnswerOption { Text = "£25", IsCorrect = true },
+                new AnswerOption { Text = "£15", IsCorrect = false },
+                new AnswerOption { Text = "£50", IsCorrect = false },
+                new AnswerOption { Text = "£35", IsCorrect = false }
+            }
+        };
+        questions.Add(iq4);
+
+        var iq5 = new Question
+        {
+            TopicId = ieltsNoteForm.Id,
+            Text = "Complete the form: Applicant's previous employer was a _____ company.",
+            Difficulty = QuestionDifficulty.Medium,
+            DifficultyParam = 0.2,
+            DiscriminationParam = 1.0,
+            GuessParam = 0.25,
+            Explanation = "Form-completion tasks test the ability to capture specific details. Listen for the type of company mentioned in the applicant's work history.",
+            AnswerOptions = new List<AnswerOption>
+            {
+                new AnswerOption { Text = "marketing", IsCorrect = true },
+                new AnswerOption { Text = "finance", IsCorrect = false },
+                new AnswerOption { Text = "technology", IsCorrect = false },
+                new AnswerOption { Text = "engineering", IsCorrect = false }
+            }
+        };
+        questions.Add(iq5);
+
+        // IELTS Academic Reading
+        var iq6 = new Question
+        {
+            TopicId = ieltsAcadRead.Id,
+            Text = "According to the passage, the primary cause of coral reef bleaching is:",
+            Difficulty = QuestionDifficulty.Easy,
+            DifficultyParam = -1.0,
+            DiscriminationParam = 0.8,
+            GuessParam = 0.25,
+            Explanation = "The passage explicitly states that rising sea temperatures cause coral to expel symbiotic algae, resulting in bleaching.",
+            AnswerOptions = new List<AnswerOption>
+            {
+                new AnswerOption { Text = "Rising sea temperatures", IsCorrect = true },
+                new AnswerOption { Text = "Ocean acidification", IsCorrect = false },
+                new AnswerOption { Text = "Overfishing", IsCorrect = false },
+                new AnswerOption { Text = "Pollution from ships", IsCorrect = false }
+            }
+        };
+        questions.Add(iq6);
+
+        var iq7 = new Question
+        {
+            TopicId = ieltsAcadRead.Id,
+            Text = "The author suggests that genetic modification of crops is controversial primarily because:",
+            Difficulty = QuestionDifficulty.Medium,
+            DifficultyParam = 0.4,
+            DiscriminationParam = 1.1,
+            GuessParam = 0.25,
+            Explanation = "The passage discusses both potential benefits and unknown long-term ecological impacts, framing the controversy around unresolved safety concerns.",
+            AnswerOptions = new List<AnswerOption>
+            {
+                new AnswerOption { Text = "It reduces crop diversity", IsCorrect = false },
+                new AnswerOption { Text = "Long-term ecological effects remain unknown", IsCorrect = true },
+                new AnswerOption { Text = "Farmers cannot afford the technology", IsCorrect = false },
+                new AnswerOption { Text = "Consumers refuse to buy GM products", IsCorrect = false }
+            }
+        };
+        questions.Add(iq7);
+
+        var iq8 = new Question
+        {
+            TopicId = ieltsAcadRead.Id,
+            Text = "Which of the following best describes the author's tone when discussing artificial intelligence in the workplace?",
+            Difficulty = QuestionDifficulty.Hard,
+            DifficultyParam = 1.3,
+            DiscriminationParam = 1.2,
+            GuessParam = 0.25,
+            Explanation = "The author acknowledges both benefits and risks of AI, using phrases like 'while promising' and 'yet concerns persist', indicating a balanced, cautious stance.",
+            AnswerOptions = new List<AnswerOption>
+            {
+                new AnswerOption { Text = "Enthusiastically supportive", IsCorrect = false },
+                new AnswerOption { Text = "Cautiously optimistic", IsCorrect = true },
+                new AnswerOption { Text = "Deeply pessimistic", IsCorrect = false },
+                new AnswerOption { Text = "Entirely neutral", IsCorrect = false }
+            }
+        };
+        questions.Add(iq8);
+
+        // IELTS Reading: Matching & True/False
+        var iq9 = new Question
+        {
+            TopicId = ieltsReadMatch.Id,
+            Text = "The passage states: 'Solar energy will replace all fossil fuels by 2030.' Is this TRUE, FALSE, or NOT GIVEN?",
+            Difficulty = QuestionDifficulty.Easy,
+            DifficultyParam = -0.8,
+            DiscriminationParam = 0.8,
+            GuessParam = 0.25,
+            Explanation = "The passage discusses solar energy's growing role but never makes an absolute claim about replacing ALL fossil fuels by a specific date. The answer is NOT GIVEN.",
+            AnswerOptions = new List<AnswerOption>
+            {
+                new AnswerOption { Text = "True", IsCorrect = false },
+                new AnswerOption { Text = "False", IsCorrect = false },
+                new AnswerOption { Text = "Not Given", IsCorrect = true },
+                new AnswerOption { Text = "Partially True", IsCorrect = false }
+            }
+        };
+        questions.Add(iq9);
+
+        var iq10 = new Question
+        {
+            TopicId = ieltsReadMatch.Id,
+            Text = "Match the researcher to their finding: Dr. Chen's study focused on:",
+            Difficulty = QuestionDifficulty.Medium,
+            DifficultyParam = 0.3,
+            DiscriminationParam = 1.0,
+            GuessParam = 0.25,
+            Explanation = "Matching questions require scanning the passage for proper nouns. Dr. Chen's work is mentioned in paragraph 4 in connection with sleep patterns.",
+            AnswerOptions = new List<AnswerOption>
+            {
+                new AnswerOption { Text = "Sleep patterns in adolescents", IsCorrect = true },
+                new AnswerOption { Text = "Dietary habits in elderly populations", IsCorrect = false },
+                new AnswerOption { Text = "Exercise and cognitive function", IsCorrect = false },
+                new AnswerOption { Text = "Stress management techniques", IsCorrect = false }
+            }
+        };
+        questions.Add(iq10);
+
+        var iq11 = new Question
+        {
+            TopicId = ieltsReadMatch.Id,
+            Text = "The passage states that early childhood bilingualism delays language development. TRUE, FALSE, or NOT GIVEN?",
+            Difficulty = QuestionDifficulty.Hard,
+            DifficultyParam = 1.2,
+            DiscriminationParam = 1.1,
+            GuessParam = 0.25,
+            Explanation = "The passage explicitly contradicts this — it states that while bilingual children may initially mix languages, overall development timelines are comparable. The answer is FALSE.",
+            AnswerOptions = new List<AnswerOption>
+            {
+                new AnswerOption { Text = "True", IsCorrect = false },
+                new AnswerOption { Text = "False", IsCorrect = true },
+                new AnswerOption { Text = "Not Given", IsCorrect = false },
+                new AnswerOption { Text = "Cannot be determined", IsCorrect = false }
+            }
+        };
+        questions.Add(iq11);
+
+        // IELTS Task 1: Data Description
+        var iq12 = new Question
+        {
+            TopicId = ieltsTask1.Id,
+            Text = "When describing a line graph in IELTS Task 1, which phrase best describes a sharp increase followed by a plateau?",
+            Difficulty = QuestionDifficulty.Easy,
+            DifficultyParam = -0.9,
+            DiscriminationParam = 0.8,
+            GuessParam = 0.25,
+            Explanation = "'Rose sharply before levelling off' accurately conveys a steep increase followed by stabilisation — key vocabulary for Task 1 descriptions.",
+            AnswerOptions = new List<AnswerOption>
+            {
+                new AnswerOption { Text = "Rose sharply before levelling off", IsCorrect = true },
+                new AnswerOption { Text = "Fluctuated wildly throughout", IsCorrect = false },
+                new AnswerOption { Text = "Declined steadily over the period", IsCorrect = false },
+                new AnswerOption { Text = "Remained constant at all times", IsCorrect = false }
+            }
+        };
+        questions.Add(iq12);
+
+        var iq13 = new Question
+        {
+            TopicId = ieltsTask1.Id,
+            Text = "In a Task 1 report comparing two pie charts, what should the overview paragraph include?",
+            Difficulty = QuestionDifficulty.Medium,
+            DifficultyParam = 0.2,
+            DiscriminationParam = 1.0,
+            GuessParam = 0.25,
+            Explanation = "The overview must identify the most significant trends or differences without specific figures — it's a summary of key patterns.",
+            AnswerOptions = new List<AnswerOption>
+            {
+                new AnswerOption { Text = "All exact percentages from both charts", IsCorrect = false },
+                new AnswerOption { Text = "The most notable overall trends and differences", IsCorrect = true },
+                new AnswerOption { Text = "Your personal opinion on the data", IsCorrect = false },
+                new AnswerOption { Text = "A list of every category shown", IsCorrect = false }
+            }
+        };
+        questions.Add(iq13);
+
+        var iq14 = new Question
+        {
+            TopicId = ieltsTask1.Id,
+            Text = "Which sentence correctly uses data comparison language for IELTS Task 1?",
+            Difficulty = QuestionDifficulty.Hard,
+            DifficultyParam = 1.1,
+            DiscriminationParam = 1.2,
+            GuessParam = 0.25,
+            Explanation = "'Nearly three times as many' is a precise comparative structure appropriate for academic writing in Task 1.",
+            AnswerOptions = new List<AnswerOption>
+            {
+                new AnswerOption { Text = "The USA spent a lot more than France on defence.", IsCorrect = false },
+                new AnswerOption { Text = "Nearly three times as many people chose train travel compared to bus.", IsCorrect = true },
+                new AnswerOption { Text = "I think the graph shows that exports were better.", IsCorrect = false },
+                new AnswerOption { Text = "Obviously, Japan's population is the biggest.", IsCorrect = false }
+            }
+        };
+        questions.Add(iq14);
+
+        // IELTS Task 2: Essay Writing
+        var iq15 = new Question
+        {
+            TopicId = ieltsTask2.Id,
+            Text = "What is the recommended structure for an IELTS Task 2 opinion essay?",
+            Difficulty = QuestionDifficulty.Easy,
+            DifficultyParam = -1.0,
+            DiscriminationParam = 0.7,
+            GuessParam = 0.25,
+            Explanation = "A standard 4-paragraph structure (introduction, 2 body paragraphs, conclusion) is recommended for clarity and coherence in Task 2.",
+            AnswerOptions = new List<AnswerOption>
+            {
+                new AnswerOption { Text = "Introduction, Body 1, Body 2, Conclusion", IsCorrect = true },
+                new AnswerOption { Text = "Three body paragraphs only", IsCorrect = false },
+                new AnswerOption { Text = "Introduction and one long paragraph", IsCorrect = false },
+                new AnswerOption { Text = "Five short paragraphs", IsCorrect = false }
+            }
+        };
+        questions.Add(iq15);
+
+        var iq16 = new Question
+        {
+            TopicId = ieltsTask2.Id,
+            Text = "Which of these is the best thesis statement for a 'discuss both views and give your opinion' essay on remote work?",
+            Difficulty = QuestionDifficulty.Medium,
+            DifficultyParam = 0.4,
+            DiscriminationParam = 1.1,
+            GuessParam = 0.25,
+            Explanation = "An effective thesis for this essay type acknowledges both perspectives and clearly states the writer's own position.",
+            AnswerOptions = new List<AnswerOption>
+            {
+                new AnswerOption { Text = "Remote work is bad.", IsCorrect = false },
+                new AnswerOption { Text = "While remote work offers flexibility, it can reduce collaboration; I believe a hybrid model is most effective.", IsCorrect = true },
+                new AnswerOption { Text = "In this essay I will discuss remote work.", IsCorrect = false },
+                new AnswerOption { Text = "Many people work from home nowadays.", IsCorrect = false }
+            }
+        };
+        questions.Add(iq16);
+
+        // IELTS Speaking Parts 1 & 2
+        var iq17 = new Question
+        {
+            TopicId = ieltsSpeaking12.Id,
+            Text = "In IELTS Speaking Part 1, the examiner asks 'Do you enjoy cooking?' Which response would score highest?",
+            Difficulty = QuestionDifficulty.Easy,
+            DifficultyParam = -0.8,
+            DiscriminationParam = 0.8,
+            GuessParam = 0.25,
+            Explanation = "An extended answer with reasons and examples demonstrates range of vocabulary and fluency, which are key assessment criteria.",
+            AnswerOptions = new List<AnswerOption>
+            {
+                new AnswerOption { Text = "Yes, I do.", IsCorrect = false },
+                new AnswerOption { Text = "Yes, I really enjoy cooking, especially Italian dishes. I find it relaxing after a long day.", IsCorrect = true },
+                new AnswerOption { Text = "Cooking? No.", IsCorrect = false },
+                new AnswerOption { Text = "Sometimes when I have time which is rare.", IsCorrect = false }
+            }
+        };
+        questions.Add(iq17);
+
+        var iq18 = new Question
+        {
+            TopicId = ieltsSpeaking12.Id,
+            Text = "For a Part 2 cue card 'Describe a place you have visited', which preparation strategy is best during the 1-minute prep time?",
+            Difficulty = QuestionDifficulty.Medium,
+            DifficultyParam = 0.1,
+            DiscriminationParam = 1.0,
+            GuessParam = 0.25,
+            Explanation = "Jotting key words for each bullet point ensures you cover all parts of the cue card systematically during your 1–2 minute response.",
+            AnswerOptions = new List<AnswerOption>
+            {
+                new AnswerOption { Text = "Write complete sentences for the entire response", IsCorrect = false },
+                new AnswerOption { Text = "Jot key words for each bullet point on the cue card", IsCorrect = true },
+                new AnswerOption { Text = "Memorise a pre-prepared answer on a different topic", IsCorrect = false },
+                new AnswerOption { Text = "Skip preparation and start speaking immediately", IsCorrect = false }
+            }
+        };
+        questions.Add(iq18);
+
+        // IELTS Speaking Part 3: Discussion
+        var iq19 = new Question
+        {
+            TopicId = ieltsSpeaking3.Id,
+            Text = "In Part 3, the examiner asks 'Why do you think some people prefer living in cities?' Which response best demonstrates critical thinking?",
+            Difficulty = QuestionDifficulty.Medium,
+            DifficultyParam = 0.5,
+            DiscriminationParam = 1.1,
+            GuessParam = 0.25,
+            Explanation = "A Band 7+ response analyses reasons with specific examples and uses complex structures like 'I would argue that…'",
+            AnswerOptions = new List<AnswerOption>
+            {
+                new AnswerOption { Text = "Because cities are nice.", IsCorrect = false },
+                new AnswerOption { Text = "I'd argue it's mainly due to career opportunities and access to amenities, though the pace of life can be stressful.", IsCorrect = true },
+                new AnswerOption { Text = "I don't know, maybe they like it.", IsCorrect = false },
+                new AnswerOption { Text = "Cities have many people.", IsCorrect = false }
+            }
+        };
+        questions.Add(iq19);
+
+        var iq20 = new Question
+        {
+            TopicId = ieltsSpeaking3.Id,
+            Text = "How should you respond if the examiner asks a Part 3 question you find very difficult?",
+            Difficulty = QuestionDifficulty.Hard,
+            DifficultyParam = 1.2,
+            DiscriminationParam = 1.2,
+            GuessParam = 0.25,
+            Explanation = "Paraphrasing the question and offering a tentative answer demonstrates communication strategies and maintains fluency, both positively scored.",
+            AnswerOptions = new List<AnswerOption>
+            {
+                new AnswerOption { Text = "Say 'I don't know' and wait for the next question", IsCorrect = false },
+                new AnswerOption { Text = "Ask the examiner for a different question", IsCorrect = false },
+                new AnswerOption { Text = "Paraphrase the question aloud and give your best tentative answer", IsCorrect = true },
+                new AnswerOption { Text = "Recite an unrelated memorised answer", IsCorrect = false }
+            }
+        };
+        questions.Add(iq20);
+
+        // ================== CSCA Questions ==================
+
+        // Calculus & Analysis
+        var cq1 = new Question
+        {
+            TopicId = calculus.Id,
+            Text = "What is the derivative of $f(x) = 3x^2 + 2x - 5$?",
+            Difficulty = QuestionDifficulty.Easy,
+            DifficultyParam = -1.2,
+            DiscriminationParam = 0.8,
+            GuessParam = 0.25,
+            Explanation = "Using the power rule: d/dx(ax^n) = nax^(n-1). So f'(x) = 6x + 2.",
+            AnswerOptions = new List<AnswerOption>
+            {
+                new AnswerOption { Text = "$6x + 2$", IsCorrect = true },
+                new AnswerOption { Text = "$3x + 2$", IsCorrect = false },
+                new AnswerOption { Text = "$6x^2 + 2$", IsCorrect = false },
+                new AnswerOption { Text = "$6x - 5$", IsCorrect = false }
+            }
+        };
+        questions.Add(cq1);
+
+        var cq2 = new Question
+        {
+            TopicId = calculus.Id,
+            Text = "Evaluate $\\int_0^2 (4x + 1)\\,dx$.",
+            Difficulty = QuestionDifficulty.Medium,
+            DifficultyParam = 0.1,
+            DiscriminationParam = 1.0,
+            GuessParam = 0.25,
+            Explanation = "Integrate: 2x² + x. Evaluate from 0 to 2: (2·4 + 2) − (0) = 10.",
+            AnswerOptions = new List<AnswerOption>
+            {
+                new AnswerOption { Text = "10", IsCorrect = true },
+                new AnswerOption { Text = "8", IsCorrect = false },
+                new AnswerOption { Text = "12", IsCorrect = false },
+                new AnswerOption { Text = "9", IsCorrect = false }
+            }
+        };
+        questions.Add(cq2);
+
+        var cq3 = new Question
+        {
+            TopicId = calculus.Id,
+            Text = "Find the limit: $\\lim_{x \\to 0} \\frac{\\sin x}{x}$",
+            Difficulty = QuestionDifficulty.Medium,
+            DifficultyParam = 0.3,
+            DiscriminationParam = 1.1,
+            GuessParam = 0.25,
+            Explanation = "This is a fundamental limit in calculus. By L'Hôpital's rule or the squeeze theorem, the limit equals 1.",
+            AnswerOptions = new List<AnswerOption>
+            {
+                new AnswerOption { Text = "1", IsCorrect = true },
+                new AnswerOption { Text = "0", IsCorrect = false },
+                new AnswerOption { Text = "∞", IsCorrect = false },
+                new AnswerOption { Text = "Does not exist", IsCorrect = false }
+            }
+        };
+        questions.Add(cq3);
+
+        var cq4 = new Question
+        {
+            TopicId = calculus.Id,
+            Text = "Find the second derivative of $f(x) = x^4 - 3x^2 + x$.",
+            Difficulty = QuestionDifficulty.Hard,
+            DifficultyParam = 1.1,
+            DiscriminationParam = 1.2,
+            GuessParam = 0.25,
+            Explanation = "f'(x) = 4x³ - 6x + 1. f''(x) = 12x² - 6.",
+            AnswerOptions = new List<AnswerOption>
+            {
+                new AnswerOption { Text = "$12x^2 - 6$", IsCorrect = true },
+                new AnswerOption { Text = "$4x^3 - 6x + 1$", IsCorrect = false },
+                new AnswerOption { Text = "$12x^2 - 3$", IsCorrect = false },
+                new AnswerOption { Text = "$24x$", IsCorrect = false }
+            }
+        };
+        questions.Add(cq4);
+
+        // Probability & Statistics
+        var cq5 = new Question
+        {
+            TopicId = probStats.Id,
+            Text = "A fair die is rolled twice. What is the probability of getting a sum of 7?",
+            Difficulty = QuestionDifficulty.Easy,
+            DifficultyParam = -0.8,
+            DiscriminationParam = 0.8,
+            GuessParam = 0.25,
+            Explanation = "There are 6 favourable outcomes (1+6, 2+5, 3+4, 4+3, 5+2, 6+1) out of 36 total. P = 6/36 = 1/6.",
+            AnswerOptions = new List<AnswerOption>
+            {
+                new AnswerOption { Text = "1/6", IsCorrect = true },
+                new AnswerOption { Text = "1/12", IsCorrect = false },
+                new AnswerOption { Text = "7/36", IsCorrect = false },
+                new AnswerOption { Text = "1/36", IsCorrect = false }
+            }
+        };
+        questions.Add(cq5);
+
+        var cq6 = new Question
+        {
+            TopicId = probStats.Id,
+            Text = "The standard deviation of a dataset {2, 4, 4, 4, 5, 5, 7, 9} is closest to:",
+            Difficulty = QuestionDifficulty.Medium,
+            DifficultyParam = 0.4,
+            DiscriminationParam = 1.0,
+            GuessParam = 0.25,
+            Explanation = "Mean = 5. Variance = [(9+1+1+1+0+0+4+16)/8] = 32/8 = 4. SD = √4 = 2.",
+            AnswerOptions = new List<AnswerOption>
+            {
+                new AnswerOption { Text = "2", IsCorrect = true },
+                new AnswerOption { Text = "4", IsCorrect = false },
+                new AnswerOption { Text = "1.5", IsCorrect = false },
+                new AnswerOption { Text = "3", IsCorrect = false }
+            }
+        };
+        questions.Add(cq6);
+
+        var cq7 = new Question
+        {
+            TopicId = probStats.Id,
+            Text = "If events A and B are independent with P(A) = 0.3 and P(B) = 0.5, what is P(A ∩ B)?",
+            Difficulty = QuestionDifficulty.Medium,
+            DifficultyParam = 0.0,
+            DiscriminationParam = 1.1,
+            GuessParam = 0.25,
+            Explanation = "For independent events: P(A ∩ B) = P(A) × P(B) = 0.3 × 0.5 = 0.15.",
+            AnswerOptions = new List<AnswerOption>
+            {
+                new AnswerOption { Text = "0.15", IsCorrect = true },
+                new AnswerOption { Text = "0.80", IsCorrect = false },
+                new AnswerOption { Text = "0.20", IsCorrect = false },
+                new AnswerOption { Text = "0.35", IsCorrect = false }
+            }
+        };
+        questions.Add(cq7);
+
+        var cq8 = new Question
+        {
+            TopicId = probStats.Id,
+            Text = "In a normal distribution, approximately what percentage of data lies within one standard deviation of the mean?",
+            Difficulty = QuestionDifficulty.Hard,
+            DifficultyParam = 1.0,
+            DiscriminationParam = 1.2,
+            GuessParam = 0.25,
+            Explanation = "The empirical rule (68-95-99.7 rule) states that about 68% of data falls within ±1 standard deviation of the mean.",
+            AnswerOptions = new List<AnswerOption>
+            {
+                new AnswerOption { Text = "68%", IsCorrect = true },
+                new AnswerOption { Text = "50%", IsCorrect = false },
+                new AnswerOption { Text = "95%", IsCorrect = false },
+                new AnswerOption { Text = "34%", IsCorrect = false }
+            }
+        };
+        questions.Add(cq8);
+
+        // Discrete Mathematics
+        var cq9 = new Question
+        {
+            TopicId = discreteMath.Id,
+            Text = "How many subsets does a set with 4 elements have?",
+            Difficulty = QuestionDifficulty.Easy,
+            DifficultyParam = -1.0,
+            DiscriminationParam = 0.8,
+            GuessParam = 0.25,
+            Explanation = "A set with n elements has 2^n subsets. 2^4 = 16.",
+            AnswerOptions = new List<AnswerOption>
+            {
+                new AnswerOption { Text = "16", IsCorrect = true },
+                new AnswerOption { Text = "8", IsCorrect = false },
+                new AnswerOption { Text = "4", IsCorrect = false },
+                new AnswerOption { Text = "24", IsCorrect = false }
+            }
+        };
+        questions.Add(cq9);
+
+        var cq10 = new Question
+        {
+            TopicId = discreteMath.Id,
+            Text = "In how many ways can 5 books be arranged on a shelf?",
+            Difficulty = QuestionDifficulty.Easy,
+            DifficultyParam = -0.9,
+            DiscriminationParam = 0.7,
+            GuessParam = 0.25,
+            Explanation = "The number of permutations of 5 items is 5! = 5 × 4 × 3 × 2 × 1 = 120.",
+            AnswerOptions = new List<AnswerOption>
+            {
+                new AnswerOption { Text = "120", IsCorrect = true },
+                new AnswerOption { Text = "25", IsCorrect = false },
+                new AnswerOption { Text = "60", IsCorrect = false },
+                new AnswerOption { Text = "24", IsCorrect = false }
+            }
+        };
+        questions.Add(cq10);
+
+        var cq11 = new Question
+        {
+            TopicId = discreteMath.Id,
+            Text = "What is the value of $\\binom{7}{3}$?",
+            Difficulty = QuestionDifficulty.Medium,
+            DifficultyParam = 0.2,
+            DiscriminationParam = 1.0,
+            GuessParam = 0.25,
+            Explanation = "C(7,3) = 7! / (3! × 4!) = (7 × 6 × 5) / (3 × 2 × 1) = 35.",
+            AnswerOptions = new List<AnswerOption>
+            {
+                new AnswerOption { Text = "35", IsCorrect = true },
+                new AnswerOption { Text = "21", IsCorrect = false },
+                new AnswerOption { Text = "42", IsCorrect = false },
+                new AnswerOption { Text = "210", IsCorrect = false }
+            }
+        };
+        questions.Add(cq11);
+
+        var cq12 = new Question
+        {
+            TopicId = discreteMath.Id,
+            Text = "A graph has 6 vertices and each vertex has degree 2. How many edges does the graph have?",
+            Difficulty = QuestionDifficulty.Hard,
+            DifficultyParam = 1.3,
+            DiscriminationParam = 1.2,
+            GuessParam = 0.25,
+            Explanation = "By the handshaking lemma, the sum of all degrees equals 2 × edges. Sum of degrees = 6 × 2 = 12. So edges = 12/2 = 6.",
+            AnswerOptions = new List<AnswerOption>
+            {
+                new AnswerOption { Text = "6", IsCorrect = true },
+                new AnswerOption { Text = "12", IsCorrect = false },
+                new AnswerOption { Text = "3", IsCorrect = false },
+                new AnswerOption { Text = "9", IsCorrect = false }
+            }
+        };
+        questions.Add(cq12);
+
+        // Formal Logic
+        var cq13 = new Question
+        {
+            TopicId = formalLogic.Id,
+            Text = "If P → Q is true and P is true, what can we conclude?",
+            Difficulty = QuestionDifficulty.Easy,
+            DifficultyParam = -1.3,
+            DiscriminationParam = 0.8,
+            GuessParam = 0.25,
+            Explanation = "This is modus ponens — one of the fundamental rules of inference. If P implies Q, and P is true, then Q must be true.",
+            AnswerOptions = new List<AnswerOption>
+            {
+                new AnswerOption { Text = "Q is true", IsCorrect = true },
+                new AnswerOption { Text = "Q is false", IsCorrect = false },
+                new AnswerOption { Text = "P is false", IsCorrect = false },
+                new AnswerOption { Text = "Cannot be determined", IsCorrect = false }
+            }
+        };
+        questions.Add(cq13);
+
+        var cq14 = new Question
+        {
+            TopicId = formalLogic.Id,
+            Text = "What is the contrapositive of 'If it rains, then the ground is wet'?",
+            Difficulty = QuestionDifficulty.Medium,
+            DifficultyParam = 0.1,
+            DiscriminationParam = 1.0,
+            GuessParam = 0.25,
+            Explanation = "The contrapositive of P → Q is ¬Q → ¬P. So: 'If the ground is NOT wet, then it did NOT rain.' A contrapositive always has the same truth value as the original.",
+            AnswerOptions = new List<AnswerOption>
+            {
+                new AnswerOption { Text = "If the ground is not wet, then it did not rain", IsCorrect = true },
+                new AnswerOption { Text = "If it does not rain, the ground is not wet", IsCorrect = false },
+                new AnswerOption { Text = "If the ground is wet, then it rained", IsCorrect = false },
+                new AnswerOption { Text = "It rains only if the ground is wet", IsCorrect = false }
+            }
+        };
+        questions.Add(cq14);
+
+        var cq15 = new Question
+        {
+            TopicId = formalLogic.Id,
+            Text = "Which logical equivalence is correct?",
+            Difficulty = QuestionDifficulty.Hard,
+            DifficultyParam = 1.4,
+            DiscriminationParam = 1.3,
+            GuessParam = 0.25,
+            Explanation = "De Morgan's Law states that ¬(P ∧ Q) ≡ ¬P ∨ ¬Q. The negation of a conjunction is the disjunction of the negations.",
+            AnswerOptions = new List<AnswerOption>
+            {
+                new AnswerOption { Text = "¬(P ∧ Q) ≡ ¬P ∨ ¬Q", IsCorrect = true },
+                new AnswerOption { Text = "¬(P ∧ Q) ≡ ¬P ∧ ¬Q", IsCorrect = false },
+                new AnswerOption { Text = "¬(P ∨ Q) ≡ ¬P ∨ ¬Q", IsCorrect = false },
+                new AnswerOption { Text = "P → Q ≡ P ∧ ¬Q", IsCorrect = false }
+            }
+        };
+        questions.Add(cq15);
+
+        // Algorithmic Thinking
+        var cq16 = new Question
+        {
+            TopicId = algoThinking.Id,
+            Text = "What is the time complexity of binary search on a sorted array of n elements?",
+            Difficulty = QuestionDifficulty.Easy,
+            DifficultyParam = -0.9,
+            DiscriminationParam = 0.8,
+            GuessParam = 0.25,
+            Explanation = "Binary search halves the search space at each step, giving O(log n) time complexity.",
+            AnswerOptions = new List<AnswerOption>
+            {
+                new AnswerOption { Text = "O(log n)", IsCorrect = true },
+                new AnswerOption { Text = "O(n)", IsCorrect = false },
+                new AnswerOption { Text = "O(n²)", IsCorrect = false },
+                new AnswerOption { Text = "O(1)", IsCorrect = false }
+            }
+        };
+        questions.Add(cq16);
+
+        var cq17 = new Question
+        {
+            TopicId = algoThinking.Id,
+            Text = "A recursive function computes Fibonacci(n). Without memoisation, what is its time complexity?",
+            Difficulty = QuestionDifficulty.Medium,
+            DifficultyParam = 0.5,
+            DiscriminationParam = 1.1,
+            GuessParam = 0.25,
+            Explanation = "Naive recursive Fibonacci makes two recursive calls at each step, leading to an exponential O(2^n) time complexity with many redundant computations.",
+            AnswerOptions = new List<AnswerOption>
+            {
+                new AnswerOption { Text = "O(2^n)", IsCorrect = true },
+                new AnswerOption { Text = "O(n)", IsCorrect = false },
+                new AnswerOption { Text = "O(n²)", IsCorrect = false },
+                new AnswerOption { Text = "O(n log n)", IsCorrect = false }
+            }
+        };
+        questions.Add(cq17);
+
+        var cq18 = new Question
+        {
+            TopicId = algoThinking.Id,
+            Text = "Which sorting algorithm has the best average-case time complexity?",
+            Difficulty = QuestionDifficulty.Hard,
+            DifficultyParam = 1.0,
+            DiscriminationParam = 1.2,
+            GuessParam = 0.25,
+            Explanation = "Merge sort guarantees O(n log n) in all cases (best, average, worst). Bubble sort and insertion sort are O(n²) on average.",
+            AnswerOptions = new List<AnswerOption>
+            {
+                new AnswerOption { Text = "Merge sort — O(n log n)", IsCorrect = true },
+                new AnswerOption { Text = "Bubble sort — O(n²)", IsCorrect = false },
+                new AnswerOption { Text = "Insertion sort — O(n²)", IsCorrect = false },
+                new AnswerOption { Text = "Selection sort — O(n²)", IsCorrect = false }
+            }
+        };
+        questions.Add(cq18);
+
+        // Data Interpretation
+        var cq19 = new Question
+        {
+            TopicId = dataInterp.Id,
+            Text = "A bar chart shows Company A's revenue as $4M and Company B's as $6M. What is B's revenue as a percentage of the total?",
+            Difficulty = QuestionDifficulty.Easy,
+            DifficultyParam = -1.1,
+            DiscriminationParam = 0.7,
+            GuessParam = 0.25,
+            Explanation = "Total = 4 + 6 = 10. B's share = 6/10 = 60%.",
+            AnswerOptions = new List<AnswerOption>
+            {
+                new AnswerOption { Text = "60%", IsCorrect = true },
+                new AnswerOption { Text = "40%", IsCorrect = false },
+                new AnswerOption { Text = "66%", IsCorrect = false },
+                new AnswerOption { Text = "50%", IsCorrect = false }
+            }
+        };
+        questions.Add(cq19);
+
+        var cq20 = new Question
+        {
+            TopicId = dataInterp.Id,
+            Text = "A line graph shows sales rising from 100 to 150 units over 3 years. What is the average annual growth rate?",
+            Difficulty = QuestionDifficulty.Medium,
+            DifficultyParam = 0.3,
+            DiscriminationParam = 1.0,
+            GuessParam = 0.25,
+            Explanation = "Total growth = 50 units over 3 years. Average annual growth = (150 - 100) / 3 ≈ 16.7 units per year.",
+            AnswerOptions = new List<AnswerOption>
+            {
+                new AnswerOption { Text = "≈16.7 units/year", IsCorrect = true },
+                new AnswerOption { Text = "50 units/year", IsCorrect = false },
+                new AnswerOption { Text = "25 units/year", IsCorrect = false },
+                new AnswerOption { Text = "10 units/year", IsCorrect = false }
+            }
+        };
+        questions.Add(cq20);
+
         await _context.Questions.AddRangeAsync(questions);
         await _context.SaveChangesAsync();
     }
@@ -1008,6 +1902,29 @@ public class DatabaseSeeder
             // TOEFL: Integrated Writing needs reading comprehension
             MakeDep("Integrated Writing", "Academic Reading", 0.6),
             MakeDep("Integrated Writing", "Grammar & Sentence Structure", 0.5),
+
+            // IELTS: Reading matching depends on basic reading
+            MakeDep("IELTS Reading: Matching & True/False", "IELTS Academic Reading", 0.7),
+            // IELTS: Task 2 essay benefits from Task 1 data description
+            MakeDep("IELTS Task 2: Essay Writing", "IELTS Task 1: Data Description", 0.4),
+            // IELTS: Speaking Part 3 builds on Parts 1 & 2
+            MakeDep("IELTS Speaking Part 3: Discussion", "IELTS Speaking Parts 1 & 2", 0.8),
+            // IELTS: Note completion depends on comprehension
+            MakeDep("IELTS Note & Form Completion", "IELTS Listening Comprehension", 0.7),
+            // Cross-exam: IELTS Reading builds on TOEFL Academic Reading
+            MakeDep("IELTS Academic Reading", "Academic Reading", 0.4),
+
+            // CSCA: Algorithmic Thinking requires Formal Logic
+            MakeDep("Algorithmic Thinking", "Formal Logic", 0.7),
+            // CSCA: Data Interpretation benefits from Probability & Statistics
+            MakeDep("Data Interpretation", "Probability & Statistics", 0.6),
+            // CSCA: Probability builds on Calculus
+            MakeDep("Probability & Statistics", "Calculus & Analysis", 0.5),
+            // CSCA: Discrete Math builds on Calculus
+            MakeDep("Discrete Mathematics", "Calculus & Analysis", 0.4),
+            // Cross-exam: CSCA Calculus builds on SAT/NUET algebra
+            MakeDep("Calculus & Analysis", "Algebra & Functions", 0.6),
+            MakeDep("Calculus & Analysis", "Quadratic Equations", 0.5),
         };
 
         var validDeps = dependencies.Where(d => d != null).Cast<TopicDependency>().ToList();
@@ -1041,7 +1958,7 @@ public class DatabaseSeeder
             L("Main Idea & Summary", 1,
               "Finding the Main Idea",
               "## What is a Main Idea?\n\nThe **main idea** is the central point the author wants to communicate. It answers the question: *What is this passage mostly about?*\n\n### Strategy\n1. **Read the first and last sentences** of the passage — they often frame the argument.\n2. **Identify the topic** (subject) and **what the author says** about it.\n3. Eliminate answer choices that are too broad, too narrow, or off-topic.\n\n### Common Traps\n- **Too specific**: focuses on one detail instead of the whole passage.\n- **Too general**: could apply to many passages, not this one specifically.\n- **Opposite meaning**: contradicts the author's argument.\n\n### Example\n> \"Government policies shape economic growth by setting tax rates, regulating markets, and funding infrastructure.\"\n\n**Main idea:** Government policies influence economic growth.",
-              "https://www.youtube.com/watch?v=YK6MU_H2msg"),
+              null),
 
             L("Main Idea & Summary", 2,
               "Summarising a Passage",
@@ -1050,7 +1967,7 @@ public class DatabaseSeeder
             L("Grammar & Sentence Structure", 1,
               "Subject-Verb Agreement",
               "## Subject-Verb Agreement\n\nThe verb must agree in number with its subject.\n\n### Rules\n| Subject | Verb |\n|---------|------|\n| Singular (The dog) | runs |\n| Plural (The dogs) | run |\n\n### Tricky Cases\n- **Prepositional phrases**: \"The box *of chocolates* **is** heavy.\" (subject = box)\n- **Compound subjects**: \"Tom **and** Jerry **are** friends.\"\n- **Either/or**: \"Either the cats **or** the dog **is** sleeping.\" (verb matches nearest subject)\n\n### Quick Check\nCross out words between subject and verb to test agreement.",
-              "https://www.youtube.com/watch?v=14fXm4FOMPM"),
+              null),
 
             L("Grammar & Sentence Structure", 2,
               "Sentence Fragments & Run-ons",
@@ -1059,13 +1976,13 @@ public class DatabaseSeeder
             L("Vocabulary in Context", 1,
               "Determining Word Meaning from Context",
               "## Context Clues Strategy\n\nWhen an unfamiliar word appears in a passage, the surrounding words help reveal its meaning.\n\n### Types of Context Clues\n1. **Definition clue**: The word is directly defined. *\"Ubiquitous, meaning everywhere, ...\"*\n2. **Synonym clue**: A similar word is nearby. *\"She was elated — truly joyful.\"*\n3. **Antonym clue**: An opposite word provides contrast. *\"Unlike his timid brother, Jake was audacious.\"*\n4. **Example clue**: Examples illustrate the meaning.\n\n### Technique\n- Substitute each answer choice into the sentence.\n- Choose the one that maintains the **tone** and **logic** of the passage.",
-              "https://www.youtube.com/watch?v=CnlBahcJCeg"),
+              null),
 
             // ──── SAT Math ─────────────────────────────────────
             L("Linear Equations", 1,
               "Solving Linear Equations",
               "## Linear Equations\n\nA linear equation has the form **ax + b = c** where the variable has exponent 1.\n\n### Solving Steps\n1. **Simplify** both sides (combine like terms).\n2. **Isolate** the variable using inverse operations.\n3. **Check** by substituting back.\n\n### Example\n$$2x + 5 = 13$$\n$$2x = 8$$\n$$x = 4$$\n\n### Slope-Intercept Form\n$$y = mx + b$$\n- **m** = slope (rise/run)\n- **b** = y-intercept",
-              "https://www.youtube.com/watch?v=GmMX3-nTWbE"),
+              null),
 
             L("Linear Equations", 2,
               "Systems of Linear Equations",
@@ -1074,23 +1991,23 @@ public class DatabaseSeeder
             L("Geometry", 1,
               "Angles, Triangles & Circles",
               "## Key Geometry Facts\n\n### Angles\n- Supplementary: $a + b = 180°$\n- Complementary: $a + b = 90°$\n- Vertical angles are equal.\n\n### Triangles\n- Interior angles sum to **180°**.\n- **Pythagorean theorem** (right triangle): $a^2 + b^2 = c^2$\n- Area = $\\frac{1}{2} \\times base \\times height$\n\n### Circles\n- Area = $\\pi r^2$\n- Circumference = $2\\pi r$\n- Arc length = $\\frac{\\theta}{360} \\times 2\\pi r$",
-              "https://www.youtube.com/watch?v=mLeNaj2A9_0"),
+              null),
 
             L("Data Analysis", 1,
               "Mean, Median, Mode & Graphs",
               "## Central Tendency\n\n| Measure | Formula |\n|---------|---------|\n| Mean | Sum of values / count |\n| Median | Middle value when sorted |\n| Mode | Most frequent value |\n\n### Reading Graphs\n- **Bar chart**: compare categories.\n- **Line graph**: trends over time.\n- **Scatter plot**: correlation between two variables.\n\n### Tips\n- Watch for **outliers** — they pull the mean but not the median.\n- If the question says \"average,\" it usually means **mean**.",
-              "https://www.youtube.com/watch?v=kn83BA7cRNM"),
+              null),
 
             L("Quadratic Equations", 1,
               "Solving Quadratic Equations",
               "## Quadratic Form\n\n$$ax^2 + bx + c = 0$$\n\n### Three Methods\n1. **Factoring**: $(x - 2)(x + 3) = 0 \\Rightarrow x = 2$ or $x = -3$\n2. **Quadratic Formula**: $x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$\n3. **Completing the square**\n\n### Discriminant $\\Delta = b^2 - 4ac$\n- $\\Delta > 0$: two real solutions\n- $\\Delta = 0$: one real solution (vertex touches x-axis)\n- $\\Delta < 0$: no real solutions\n\n### Vertex Form\n$$y = a(x - h)^2 + k$$\nVertex at $(h, k)$.",
-              "https://www.youtube.com/watch?v=IlNAJl36-10"),
+              null),
 
             // ──── TOEFL ────────────────────────────────────────
             L("Academic Reading", 1,
               "Strategies for Academic Passages",
               "## TOEFL Reading Overview\n\nYou'll encounter 3–4 academic passages (~700 words each) on science, history, or social topics.\n\n### Reading Strategy\n1. **Skim first** — read the title, first sentence of each paragraph.\n2. **Note the structure**: compare/contrast, cause/effect, chronological.\n3. **Read questions first** to know what to look for.\n\n### Question Types\n- **Factual**: stated directly in the passage.\n- **Inference**: implied but not stated.\n- **Vocabulary**: meaning from context.\n- **Summary/Insert**: overall organization.",
-              "https://www.youtube.com/watch?v=PRZepFNXnJk"),
+              null),
 
             L("Lecture Comprehension", 1,
               "Note-taking for Lectures",
@@ -1112,7 +2029,7 @@ public class DatabaseSeeder
             L("Algebra & Functions", 1,
               "Core Algebra Concepts",
               "## NUET Algebra & Functions\n\n### Expressions & Simplification\n- Combine like terms: $3x + 5x = 8x$\n- Distribute: $a(b + c) = ab + ac$\n- Factor: $x^2 - 9 = (x-3)(x+3)$\n\n### Functions\n- $f(x) = 2x + 1$ means \"plug in x and compute.\"\n- **Domain**: all valid inputs.\n- **Range**: all possible outputs.\n- **Composition**: $f(g(x))$ — apply g first, then f.\n\n### Inequalities\n- Flip the sign when multiplying/dividing by a negative:\n$$-2x > 6 \\Rightarrow x < -3$$",
-              "https://www.youtube.com/watch?v=SkMNREVMgJo"),
+              null),
 
             L("Problem Solving", 1,
               "Problem-Solving Strategies",
@@ -1121,11 +2038,93 @@ public class DatabaseSeeder
             L("Logical Reasoning", 1,
               "Logical Arguments & Fallacies",
               "## NUET Logical Reasoning\n\n### Argument Structure\n- **Premise**: a statement assumed to be true.\n- **Conclusion**: what follows from the premises.\n\n### Validity vs. Truth\n- An argument can be **logically valid** even if premises are false.\n- A **sound** argument is valid AND has true premises.\n\n### Common Fallacies\n| Fallacy | Description |\n|---------|-------------|\n| Ad hominem | Attacking the person, not the argument |\n| Straw man | Misrepresenting the opponent's position |\n| False dilemma | Presenting only two options when more exist |\n| Circular reasoning | Conclusion restates the premise |",
-              "https://www.youtube.com/watch?v=q3KSVfkPs7c"),
+              null),
 
             L("Argument Analysis", 1,
               "Evaluating Arguments",
-              "## NUET Argument Analysis\n\n### What to Look For\n1. **Identify the conclusion** — what is being argued?\n2. **Find the evidence** — what supports it?\n3. **Assess the gap** — is the logic strong?\n\n### Strengthen / Weaken Questions\n- To **strengthen**: find evidence that supports the conclusion.\n- To **weaken**: find evidence that challenges the link between premise and conclusion.\n\n### Assumption Questions\nAn assumption is an **unstated premise** the argument depends on.\n- Ask: \"If this were NOT true, would the argument fall apart?\"\n- If yes → it's a necessary assumption.")
+              "## NUET Argument Analysis\n\n### What to Look For\n1. **Identify the conclusion** — what is being argued?\n2. **Find the evidence** — what supports it?\n3. **Assess the gap** — is the logic strong?\n\n### Strengthen / Weaken Questions\n- To **strengthen**: find evidence that supports the conclusion.\n- To **weaken**: find evidence that challenges the link between premise and conclusion.\n\n### Assumption Questions\nAn assumption is an **unstated premise** the argument depends on.\n- Ask: \"If this were NOT true, would the argument fall apart?\"\n- If yes → it's a necessary assumption."),
+
+            // ──── IELTS ────────────────────────────────────────
+            L("IELTS Listening Comprehension", 1,
+              "IELTS Listening Overview",
+              "## IELTS Listening Test\n\nThe listening test lasts approximately **30 minutes** (plus 10 minutes transfer time) and has **4 sections** with 40 questions total.\n\n### Section Breakdown\n| Section | Context | Speakers |\n|---------|---------|----------|\n| 1 | Everyday social context | 2 speakers |\n| 2 | Everyday social context | 1 speaker |\n| 3 | Educational/training context | 2–4 speakers |\n| 4 | Academic lecture | 1 speaker |\n\n### Question Types\n- **Multiple choice**: Choose one or more correct answers.\n- **Matching**: Match items from a list.\n- **Map/plan/diagram labelling**: Label places on a visual.\n- **Note/form completion**: Fill in missing words.\n\n### Key Strategies\n1. **Read ahead** — use the time before each section to preview questions.\n2. **Listen for signpost words**: 'however', 'for example', 'in other words'.\n3. **Write answers as you hear them** — don't rely on memory.\n4. **Spelling counts** — practise common academic words."),
+
+            L("IELTS Listening Comprehension", 2,
+              "Predicting Answers & Distractors",
+              "## Predicting & Avoiding Traps\n\n### Prediction Strategy\nBefore you listen, look at each question and predict:\n- The **type of word** needed (noun, number, name).\n- The **topic area** the answer will relate to.\n\n### Common Distractors\n- **Changed answers**: A speaker says one thing then corrects themselves. *\"The meeting is on Tuesday... actually, sorry, Wednesday.\"*\n- **Multiple speakers**: One person suggests something, another disagrees.\n- **Paraphrasing**: The question uses different words from the audio.\n\n### Practice Tips\n- Listen to BBC podcasts and academic lectures.\n- Practice with the official IELTS listening samples.\n- Time yourself to build stamina for the 30-minute test."),
+
+            L("IELTS Note & Form Completion", 1,
+              "Completing Notes & Forms",
+              "## Note & Form Completion\n\nThese questions appear mainly in Sections 1 and 2.\n\n### How It Works\n- You see a form, table, or set of notes with gaps.\n- Listen and fill in the missing words.\n- Usually **no more than 3 words and/or a number**.\n\n### Strategy\n1. **Read the instructions** — note the word limit.\n2. **Predict the answer type**: name, date, number, or noun.\n3. **Follow the order** — answers come in sequence.\n4. **Check grammar** — your answer must fit grammatically.\n\n### Common Formats\n- Booking forms: name, address, phone number, dates.\n- Class/course information: times, locations, requirements.\n- Notes from a talk: main points summarised."),
+
+            L("IELTS Academic Reading", 1,
+              "IELTS Reading Overview",
+              "## IELTS Academic Reading\n\nThe reading test lasts **60 minutes** with **3 passages** and **40 questions** total.\n\n### Passage Topics\n- Science, technology, history, sociology, education.\n- Passages increase in difficulty from 1 to 3.\n- Each passage is 700–900 words.\n\n### Question Types\n1. **True / False / Not Given**: Does the passage agree, disagree, or not mention this?\n2. **Matching headings**: Choose the best heading for each paragraph.\n3. **Sentence completion**: Complete sentences using words from the passage.\n4. **Multiple choice**: Select the correct answer.\n5. **Summary completion**: Fill gaps in a summary.\n\n### Reading Strategy\n- **Skim first** (2 min): Read the title, first & last sentences.\n- **Scan for answers**: Use keywords from questions to locate relevant parts.\n- **Don't read word-by-word** — you don't have time."),
+
+            L("IELTS Academic Reading", 2,
+              "Identifying the Writer's Views",
+              "## Writer's Views & Claims\n\n### Yes / No / Not Given Questions\nThese test your ability to identify the **writer's opinion** (not just facts).\n\n- **Yes**: The writer clearly agrees with the statement.\n- **No**: The writer clearly disagrees.\n- **Not Given**: The writer doesn't express an opinion on this.\n\n### Tips\n- Look for opinion language: 'I believe', 'it is argued', 'evidence suggests'.\n- **Not Given** means the topic might be mentioned but the specific claim isn't addressed.\n- Don't use your own knowledge — only use what's in the passage."),
+
+            L("IELTS Reading: Matching & True/False", 1,
+              "True/False/Not Given Strategy",
+              "## True / False / Not Given (TFNG)\n\nThis is the most common IELTS Reading question type.\n\n### Definitions\n- **TRUE**: The passage states exactly this (may use different words).\n- **FALSE**: The passage says the opposite.\n- **NOT GIVEN**: The passage doesn't mention this specific point.\n\n### Strategy\n1. Underline **keywords** in the question.\n2. **Locate** the relevant part of the passage.\n3. Compare **carefully** — paraphrasing is common.\n4. If you can't find the information, it's likely NOT GIVEN.\n\n### Common Mistakes\n- Confusing FALSE with NOT GIVEN.\n- Using outside knowledge instead of the passage.\n- Assuming something is TRUE because it *could* be true."),
+
+            L("IELTS Reading: Matching & True/False", 2,
+              "Matching Headings & Information",
+              "## Matching Questions\n\n### Matching Headings\n- Match a heading to each paragraph.\n- Read the **first and last sentence** of each paragraph.\n- Eliminate headings that are too specific or too general.\n\n### Matching Information\n- Match statements to the correct paragraph.\n- You may need to read specific parts more carefully.\n- Answers are NOT in order — scan the text for each statement.\n\n### Matching Features\n- Match researchers/dates/places to findings.\n- Look for **proper nouns** as scanning targets.\n- The answer is usually in the sentence where the name appears."),
+
+            L("IELTS Task 1: Data Description", 1,
+              "Describing Charts & Graphs",
+              "## IELTS Writing Task 1\n\nYou must write **at least 150 words** in **20 minutes** describing visual data.\n\n### Structure\n1. **Introduction** (paraphrase the question): \"The chart illustrates...\"\n2. **Overview** (2 key trends): \"Overall, ... while ...\"\n3. **Body 1**: Describe the first set of data with specific figures.\n4. **Body 2**: Describe the second set, making comparisons.\n\n### Useful Language\n| Trend | Vocabulary |\n|-------|------------|\n| Increase | rose, climbed, surged, grew |\n| Decrease | fell, dropped, declined, plummeted |\n| No change | remained stable, stayed constant |\n| Fluctuation | fluctuated, varied |\n\n### Top Tips\n- **Do NOT** give your opinion.\n- **Always include** an overview paragraph.\n- Use **specific data** (numbers, percentages, years)."),
+
+            L("IELTS Task 2: Essay Writing", 1,
+              "Essay Structure & Planning",
+              "## IELTS Writing Task 2\n\nWrite **at least 250 words** in **40 minutes**. Task 2 is worth **twice as much** as Task 1.\n\n### Common Essay Types\n1. **Opinion (Agree/Disagree)**: State and defend your view.\n2. **Discussion (Both Views)**: Present both sides, then your opinion.\n3. **Problem/Solution**: Outline causes and propose solutions.\n4. **Advantages/Disadvantages**: Weigh pros and cons.\n\n### Planning (5 minutes)\n- Identify the **essay type** from the question.\n- Brainstorm **2 main ideas** for each body paragraph.\n- Plan your **thesis statement**.\n\n### Structure\n- **Introduction**: Hook + paraphrase + thesis (2–3 sentences).\n- **Body 1**: Topic sentence + explanation + example.\n- **Body 2**: Topic sentence + explanation + example.\n- **Conclusion**: Restate thesis + final thought.\n\n### Band 7+ Tips\n- Use **complex sentences**: 'Although..., ...' / 'Not only... but also...'\n- Avoid **repetition** — use synonyms.\n- **Link ideas** clearly: Furthermore, However, Consequently."),
+
+            L("IELTS Speaking Parts 1 & 2", 1,
+              "Speaking Parts 1 & 2 Guide",
+              "## IELTS Speaking: Parts 1 & 2\n\n### Part 1 (4–5 minutes)\nThe examiner asks **general questions** about familiar topics: home, work, studies, hobbies.\n\n**Strategy:**\n- Give **extended answers** (2–3 sentences), not just 'yes' or 'no'.\n- Use a **reason + example** pattern.\n- Be **natural** — don't memorise scripts.\n\n### Part 2 (3–4 minutes)\nYou receive a **cue card** with a topic and 3–4 bullet points. You have **1 minute to prepare** and **1–2 minutes to speak**.\n\n**Strategy:**\n1. **Jot down key words** (not sentences) for each bullet.\n2. **Start with a clear opening**: \"I'd like to talk about...\"\n3. **Cover all bullet points** — examiners check this.\n4. **Extend naturally** — add feelings, opinions, reasons.\n\n### Fluency Tips\n- Use **fillers naturally**: 'Well,', 'Actually,', 'You know,'.\n- **Self-correct** if you make a mistake — this is positive.\n- **Vary your intonation** — don't speak in a monotone."),
+
+            L("IELTS Speaking Part 3: Discussion", 1,
+              "Part 3: Abstract Discussion",
+              "## IELTS Speaking Part 3\n\nThe examiner asks **abstract, analytical questions** related to the Part 2 topic.\n\n### What Examiners Look For\n- **Depth of response**: Can you explain and justify your views?\n- **Complex language**: Conditionals, passives, modals.\n- **Coherence**: Structured, logical answers.\n\n### Response Framework\n1. **State your position**: \"I believe that...\"\n2. **Explain why**: \"The main reason is...\"\n3. **Give an example**: \"For instance, in my country...\"\n4. **Consider the other side**: \"However, some might argue...\"\n5. **Conclude**: \"So overall, I think...\"\n\n### Useful Phrases for Band 7+\n- \"That's an interesting question. I'd say that...\"\n- \"It's a complex issue, but generally speaking...\"\n- \"From my perspective,...\"\n- \"There's a strong argument that...\"\n- \"I'm inclined to think that...\""),
+
+            // ──── CSCA ─────────────────────────────────────────
+            L("Calculus & Analysis", 1,
+              "Derivatives & Differentiation",
+              "## Differentiation\n\nThe derivative measures the **rate of change** of a function.\n\n### Basic Rules\n| Rule | Formula |\n|------|--------|\n| Power Rule | $\\frac{d}{dx} x^n = nx^{n-1}$ |\n| Constant Rule | $\\frac{d}{dx} c = 0$ |\n| Sum Rule | $(f + g)' = f' + g'$ |\n| Product Rule | $(fg)' = f'g + fg'$ |\n| Chain Rule | $(f(g(x)))' = f'(g(x)) \\cdot g'(x)$ |\n\n### Example\n$$f(x) = 3x^4 - 2x^2 + 7$$\n$$f'(x) = 12x^3 - 4x$$\n\n### Applications\n- **Tangent line slope** at a point.\n- **Velocity** from a position function.\n- **Finding maxima/minima** (set f'(x) = 0)."),
+
+            L("Calculus & Analysis", 2,
+              "Integration & Area Under Curves",
+              "## Integration\n\nIntegration is the **reverse of differentiation**.\n\n### Definite Integral\n$$\\int_a^b f(x)\\,dx = F(b) - F(a)$$\n\nwhere $F$ is an antiderivative of $f$.\n\n### Basic Rules\n| Rule | Formula |\n|------|--------|\n| Power Rule | $\\int x^n\\,dx = \\frac{x^{n+1}}{n+1} + C$ |\n| Constant | $\\int c\\,dx = cx + C$ |\n| Sum | $\\int (f+g)\\,dx = \\int f\\,dx + \\int g\\,dx$ |\n\n### Example\n$$\\int_1^3 (2x + 1)\\,dx = [x^2 + x]_1^3 = (9+3) - (1+1) = 10$$\n\n### Applications\n- **Area under a curve**.\n- **Total distance** from velocity.\n- **Accumulation** problems."),
+
+            L("Probability & Statistics", 1,
+              "Probability Fundamentals",
+              "## Probability Basics\n\n### Key Definitions\n- **Experiment**: An action producing measurable outcomes.\n- **Sample space**: Set of all possible outcomes.\n- **Event**: A subset of the sample space.\n\n### Formulas\n$$P(A) = \\frac{|A|}{|S|}$$\n\n$$P(A \\cup B) = P(A) + P(B) - P(A \\cap B)$$\n\n$$P(A | B) = \\frac{P(A \\cap B)}{P(B)}$$\n\n### Independence\nEvents A and B are independent if:\n$$P(A \\cap B) = P(A) \\cdot P(B)$$\n\n### Bayes' Theorem\n$$P(A|B) = \\frac{P(B|A)P(A)}{P(B)}$$"),
+
+            L("Probability & Statistics", 2,
+              "Descriptive Statistics",
+              "## Descriptive Statistics\n\n### Measures of Central Tendency\n- **Mean**: $\\bar{x} = \\frac{\\sum x_i}{n}$\n- **Median**: Middle value when sorted.\n- **Mode**: Most frequent value.\n\n### Measures of Spread\n- **Range**: max − min\n- **Variance**: $\\sigma^2 = \\frac{\\sum(x_i - \\bar{x})^2}{n}$\n- **Standard Deviation**: $\\sigma = \\sqrt{\\sigma^2}$\n\n### Normal Distribution\n- Bell-shaped, symmetric around the mean.\n- **68-95-99.7 Rule**:\n  - 68% within $\\pm 1\\sigma$\n  - 95% within $\\pm 2\\sigma$\n  - 99.7% within $\\pm 3\\sigma$"),
+
+            L("Discrete Mathematics", 1,
+              "Sets, Counting & Combinatorics",
+              "## Sets & Counting\n\n### Set Operations\n- **Union**: $A \\cup B$ — elements in A or B.\n- **Intersection**: $A \\cap B$ — elements in both.\n- **Complement**: $A'$ — elements not in A.\n\n### Counting Principles\n- **Addition principle**: If A has $m$ ways and B has $n$ ways (mutually exclusive), total = $m + n$.\n- **Multiplication principle**: If step 1 has $m$ ways and step 2 has $n$ ways, total = $m \\times n$.\n\n### Permutations & Combinations\n$$P(n, r) = \\frac{n!}{(n-r)!}$$\n$$C(n, r) = \\binom{n}{r} = \\frac{n!}{r!(n-r)!}$$\n\n### Example\nChoosing a committee of 3 from 10 people: $\\binom{10}{3} = 120$."),
+
+            L("Discrete Mathematics", 2,
+              "Graph Theory Basics",
+              "## Graph Theory\n\n### Definitions\n- **Graph**: A set of **vertices** (nodes) connected by **edges**.\n- **Degree**: Number of edges incident to a vertex.\n- **Path**: Sequence of vertices connected by edges.\n- **Cycle**: A path that starts and ends at the same vertex.\n\n### Key Theorems\n- **Handshaking Lemma**: $\\sum \\deg(v) = 2|E|$\n- **Euler's Formula** (planar graphs): $V - E + F = 2$\n\n### Types of Graphs\n| Type | Description |\n|------|------------|\n| Complete ($K_n$) | Every pair of vertices is connected |\n| Bipartite | Vertices split into two sets with edges only between sets |\n| Tree | Connected graph with no cycles |\n\n### Applications\n- Network routing, scheduling, social network analysis."),
+
+            L("Formal Logic", 1,
+              "Propositional Logic",
+              "## Propositional Logic\n\n### Logical Connectives\n| Symbol | Name | Meaning |\n|--------|------|---------|\n| $\\neg$ | Negation | NOT |\n| $\\wedge$ | Conjunction | AND |\n| $\\vee$ | Disjunction | OR |\n| $\\rightarrow$ | Implication | IF...THEN |\n| $\\leftrightarrow$ | Biconditional | IF AND ONLY IF |\n\n### Truth Tables\nFor $P \\rightarrow Q$:\n| P | Q | P → Q |\n|---|---|-------|\n| T | T | T |\n| T | F | F |\n| F | T | T |\n| F | F | T |\n\n### Key Equivalences\n- **Contrapositive**: $P \\rightarrow Q \\equiv \\neg Q \\rightarrow \\neg P$\n- **De Morgan's**: $\\neg(P \\wedge Q) \\equiv \\neg P \\vee \\neg Q$\n- **De Morgan's**: $\\neg(P \\vee Q) \\equiv \\neg P \\wedge \\neg Q$"),
+
+            L("Algorithmic Thinking", 1,
+              "Algorithm Design & Complexity",
+              "## Algorithms & Complexity\n\n### What is an Algorithm?\nA **finite set of instructions** that solves a problem step by step.\n\n### Big-O Notation\nDescribes how an algorithm scales with input size $n$.\n\n| Complexity | Name | Example |\n|-----------|-------|--------|\n| $O(1)$ | Constant | Array access |\n| $O(\\log n)$ | Logarithmic | Binary search |\n| $O(n)$ | Linear | Linear search |\n| $O(n \\log n)$ | Linearithmic | Merge sort |\n| $O(n^2)$ | Quadratic | Bubble sort |\n| $O(2^n)$ | Exponential | Naive Fibonacci |\n\n### Common Patterns\n- **Divide and conquer**: Split problem into sub-problems (merge sort).\n- **Greedy**: Make locally optimal choices (coin change).\n- **Dynamic programming**: Store sub-problem results to avoid recomputation."),
+
+            L("Data Interpretation", 1,
+              "Reading & Analysing Data",
+              "## Data Interpretation\n\n### Chart Types\n| Chart | Best For |\n|-------|----------|\n| Bar chart | Comparing categories |\n| Line graph | Trends over time |\n| Pie chart | Parts of a whole |\n| Scatter plot | Correlation between variables |\n\n### Key Skills\n1. **Read the axes** — understand units and scale.\n2. **Identify trends** — increasing, decreasing, stable.\n3. **Calculate differences** — absolute and percentage.\n4. **Draw conclusions** — what does the data suggest?\n\n### Common Calculations\n- **Percentage change**: $\\frac{\\text{new} - \\text{old}}{\\text{old}} \\times 100\\%$\n- **Average**: Sum / Count\n- **Proportion**: Part / Total")
         };
 
         await _context.TopicLessons.AddRangeAsync(lessons);
@@ -1237,6 +2236,91 @@ public class DatabaseSeeder
                 [QuestionDifficulty.Easy] = "Ask: What is the author's main point? What evidence do they provide?",
                 [QuestionDifficulty.Medium] = "To weaken an argument, find evidence that breaks the link between premise and conclusion. To strengthen, find supporting evidence.",
                 [QuestionDifficulty.Hard] = "Identify the unstated assumption. The argument depends on something not explicitly mentioned — if that assumption fails, the argument collapses."
+            },
+            // IELTS Hints
+            ["IELTS Listening Comprehension"] = new()
+            {
+                [QuestionDifficulty.Easy] = "Listen for specific details like times, names, and numbers — they are usually stated clearly.",
+                [QuestionDifficulty.Medium] = "Pay attention to signal words: 'however', 'actually', 'the most important'. They introduce key information.",
+                [QuestionDifficulty.Hard] = "Watch for distractors — speakers may mention multiple options and then correct themselves. The last stated answer is usually correct."
+            },
+            ["IELTS Note & Form Completion"] = new()
+            {
+                [QuestionDifficulty.Easy] = "Read the form/notes first and predict what type of word is needed (name, number, noun).",
+                [QuestionDifficulty.Medium] = "Follow the order of the audio — answers appear in sequence. Don't get stuck on one answer.",
+                [QuestionDifficulty.Hard] = "Check the word limit carefully. If it says 'no more than two words', three words will be wrong even if correct in meaning."
+            },
+            ["IELTS Academic Reading"] = new()
+            {
+                [QuestionDifficulty.Easy] = "Scan for keywords from the question in the passage. The answer is usually in the same sentence or the next one.",
+                [QuestionDifficulty.Medium] = "Look for paraphrasing — the passage will use different words to express the same idea as the question.",
+                [QuestionDifficulty.Hard] = "For 'tone' and 'attitude' questions, look for adjectives and adverbs that reveal the author's position."
+            },
+            ["IELTS Reading: Matching & True/False"] = new()
+            {
+                [QuestionDifficulty.Easy] = "For TFNG: if the passage says the same thing in different words, it's TRUE. If it says the opposite, it's FALSE.",
+                [QuestionDifficulty.Medium] = "For matching, scan for proper nouns (names, places) first — they're easy to locate in the passage.",
+                [QuestionDifficulty.Hard] = "NOT GIVEN is the trickiest option — the topic might be mentioned, but the specific claim in the question is not addressed."
+            },
+            ["IELTS Task 1: Data Description"] = new()
+            {
+                [QuestionDifficulty.Easy] = "Use clear trend language: 'rose', 'fell', 'remained stable'. Avoid vague words like 'went up'.",
+                [QuestionDifficulty.Medium] = "Always include an overview paragraph identifying the most notable trends and differences.",
+                [QuestionDifficulty.Hard] = "Use precise comparison structures: 'twice as many as', 'three times higher than', 'the majority of'."
+            },
+            ["IELTS Task 2: Essay Writing"] = new()
+            {
+                [QuestionDifficulty.Easy] = "Your thesis statement should clearly state your opinion or position on the question.",
+                [QuestionDifficulty.Medium] = "Each body paragraph needs: topic sentence → explanation → specific example.",
+                [QuestionDifficulty.Hard] = "For Band 7+, use a mix of simple and complex sentences. Include conditionals and relative clauses."
+            },
+            ["IELTS Speaking Parts 1 & 2"] = new()
+            {
+                [QuestionDifficulty.Easy] = "Extend your Part 1 answers with a reason and an example. Don't give one-word answers.",
+                [QuestionDifficulty.Medium] = "In Part 2 preparation, jot key words for each bullet point. Make sure you cover all of them.",
+                [QuestionDifficulty.Hard] = "Use a variety of tenses (past, present, conditional) naturally to demonstrate grammatical range."
+            },
+            ["IELTS Speaking Part 3: Discussion"] = new()
+            {
+                [QuestionDifficulty.Medium] = "Structure your answer: opinion → reason → example → alternative view.",
+                [QuestionDifficulty.Hard] = "If the question is difficult, paraphrase it aloud and give a tentative answer — this shows communication skills."
+            },
+            // CSCA Hints
+            ["Calculus & Analysis"] = new()
+            {
+                [QuestionDifficulty.Easy] = "Apply the power rule: bring down the exponent and subtract 1. d/dx(x^n) = n·x^(n-1).",
+                [QuestionDifficulty.Medium] = "For definite integrals, find the antiderivative first, then evaluate at the upper and lower bounds.",
+                [QuestionDifficulty.Hard] = "For second derivatives, differentiate twice. Check your work at each step."
+            },
+            ["Probability & Statistics"] = new()
+            {
+                [QuestionDifficulty.Easy] = "Count favourable outcomes and total outcomes. P = favourable/total.",
+                [QuestionDifficulty.Medium] = "For standard deviation, first find the mean, then calculate variance (average of squared deviations), then take the square root.",
+                [QuestionDifficulty.Hard] = "Remember the 68-95-99.7 rule for normal distributions."
+            },
+            ["Discrete Mathematics"] = new()
+            {
+                [QuestionDifficulty.Easy] = "A set with n elements has 2^n subsets. Permutations of n items = n!.",
+                [QuestionDifficulty.Medium] = "For combinations, use C(n,r) = n! / (r!(n-r)!). Order doesn't matter.",
+                [QuestionDifficulty.Hard] = "The handshaking lemma: sum of vertex degrees = 2 × number of edges."
+            },
+            ["Formal Logic"] = new()
+            {
+                [QuestionDifficulty.Easy] = "Modus ponens: if P → Q and P is true, then Q is true.",
+                [QuestionDifficulty.Medium] = "The contrapositive of P → Q is ¬Q → ¬P. It always has the same truth value.",
+                [QuestionDifficulty.Hard] = "Use De Morgan's laws: ¬(P ∧ Q) ≡ ¬P ∨ ¬Q, and ¬(P ∨ Q) ≡ ¬P ∧ ¬Q."
+            },
+            ["Algorithmic Thinking"] = new()
+            {
+                [QuestionDifficulty.Easy] = "Binary search is O(log n) because it halves the search space at each step.",
+                [QuestionDifficulty.Medium] = "Naive recursive algorithms often have exponential time complexity due to redundant computations.",
+                [QuestionDifficulty.Hard] = "Compare sorting algorithms by their average-case complexity: O(n log n) beats O(n²)."
+            },
+            ["Data Interpretation"] = new()
+            {
+                [QuestionDifficulty.Easy] = "Read the axis labels first. Calculate proportions as part/total × 100%.",
+                [QuestionDifficulty.Medium] = "For growth rates, use (new − old) / number of periods.",
+                [QuestionDifficulty.Hard] = "Look for misleading scales or cherry-picked data ranges that could distort the picture."
             }
         };
 
@@ -1346,6 +2430,12 @@ The implications of these findings have been profound. In the field of behaviora
         var toeflWriting = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "TOEFL" && s.Name == "Writing");
         var nuetMath = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "NUET" && s.Name == "Math");
         var nuetCritical = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "NUET" && s.Name == "Critical Thinking");
+        var ieltsListeningS = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "IELTS" && s.Name == "Listening");
+        var ieltsReadingS = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "IELTS" && s.Name == "Reading");
+        var ieltsWritingS = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "IELTS" && s.Name == "Writing");
+        var ieltsSpeakingS = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "IELTS" && s.Name == "Speaking");
+        var cscaMathS = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Math Analysis");
+        var cscaLogicS = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Logical Reasoning");
 
         var mockExams = new List<MockExam>
         {
@@ -1456,6 +2546,126 @@ The implications of these findings have been profound. In the field of behaviora
                         Instructions = "This section tests your logical reasoning and argument analysis skills. You will evaluate arguments, identify assumptions, draw conclusions, and analyze reasoning patterns. Time limit: 25 minutes."
                     }
                 }
+            },
+            // ── IELTS Mock Exam ────────────────────────────────
+            new MockExam
+            {
+                ExamTypeCode = "IELTS",
+                Title = "IELTS Academic Practice Test",
+                Description = "IELTS Academic practice test with Listening, Reading, Writing, and Speaking sections. Band scores range from 0 to 9. This practice version uses available question bank content.",
+                TotalTimeMinutes = 60,
+                IsActive = true,
+                Sections = new List<MockExamSection>
+                {
+                    new MockExamSection
+                    {
+                        ExamSectionId = ieltsListeningS?.Id,
+                        Name = "Listening",
+                        TimeLimitMinutes = 15,
+                        SortOrder = 0,
+                        Instructions = "The Listening section tests your ability to understand spoken English in academic and everyday contexts. In this practice version, read the transcript-based questions and select the best answer. Time limit: 15 minutes."
+                    },
+                    new MockExamSection
+                    {
+                        ExamSectionId = ieltsReadingS?.Id,
+                        Name = "Reading",
+                        TimeLimitMinutes = 20,
+                        SortOrder = 1,
+                        Instructions = "The Academic Reading section contains three long texts from books, journals, and newspapers. Texts range from descriptive to analytical. Read carefully and answer the questions. Time limit: 20 minutes."
+                    },
+                    new MockExamSection
+                    {
+                        ExamSectionId = ieltsWritingS?.Id,
+                        Name = "Writing",
+                        TimeLimitMinutes = 15,
+                        SortOrder = 2,
+                        Instructions = "The Writing section has two tasks: Task 1 (describe visual data, 150+ words) and Task 2 (write an essay, 250+ words). In this practice version, answer questions testing writing knowledge. Time limit: 15 minutes."
+                    },
+                    new MockExamSection
+                    {
+                        ExamSectionId = ieltsSpeakingS?.Id,
+                        Name = "Speaking",
+                        TimeLimitMinutes = 10,
+                        SortOrder = 3,
+                        Instructions = "The Speaking section tests your ability to communicate effectively. In this practice version, select the best response strategies for different speaking scenarios. Time limit: 10 minutes."
+                    }
+                }
+            },
+            // ── CSCA Mock Exam ─────────────────────────────────
+            new MockExam
+            {
+                ExamTypeCode = "CSCA",
+                Title = "CSCA Practice Test",
+                Description = "CSCA practice test covering Math Analysis (calculus, probability, discrete math) and Logical Reasoning (formal logic, algorithms, data interpretation). Scores range from 0 to 100 per section.",
+                TotalTimeMinutes = 60,
+                IsActive = true,
+                Sections = new List<MockExamSection>
+                {
+                    new MockExamSection
+                    {
+                        ExamSectionId = cscaMathS?.Id,
+                        Name = "Math Analysis",
+                        TimeLimitMinutes = 30,
+                        SortOrder = 0,
+                        Instructions = "This section tests your knowledge of calculus, probability, statistics, and discrete mathematics. Work through each problem carefully, showing understanding of fundamental concepts. Time limit: 30 minutes."
+                    },
+                    new MockExamSection
+                    {
+                        ExamSectionId = cscaLogicS?.Id,
+                        Name = "Logical Reasoning",
+                        TimeLimitMinutes = 30,
+                        SortOrder = 1,
+                        Instructions = "This section tests formal logic, algorithmic thinking, and data interpretation skills. Analyze each problem systematically and select the best answer. Time limit: 30 minutes."
+                    }
+                }
+            }
+        };
+
+        await _context.MockExams.AddRangeAsync(mockExams);
+        await _context.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Seeds only IELTS and CSCA mock exams (for existing databases that already have SAT/TOEFL/NUET mocks).
+    /// </summary>
+    private async Task SeedIeltsCscaMockExamsAsync()
+    {
+        var ieltsListeningS = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "IELTS" && s.Name == "Listening");
+        var ieltsReadingS = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "IELTS" && s.Name == "Reading");
+        var ieltsWritingS = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "IELTS" && s.Name == "Writing");
+        var ieltsSpeakingS = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "IELTS" && s.Name == "Speaking");
+        var cscaMathS = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Math Analysis");
+        var cscaLogicS = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Logical Reasoning");
+
+        var mockExams = new List<MockExam>
+        {
+            new MockExam
+            {
+                ExamTypeCode = "IELTS",
+                Title = "IELTS Academic Practice Test",
+                Description = "IELTS Academic practice test with Listening, Reading, Writing, and Speaking sections. Band scores range from 0 to 9.",
+                TotalTimeMinutes = 60,
+                IsActive = true,
+                Sections = new List<MockExamSection>
+                {
+                    new MockExamSection { ExamSectionId = ieltsListeningS?.Id, Name = "Listening", TimeLimitMinutes = 15, SortOrder = 0, Instructions = "Listen carefully and answer the questions based on what you hear." },
+                    new MockExamSection { ExamSectionId = ieltsReadingS?.Id, Name = "Reading", TimeLimitMinutes = 20, SortOrder = 1, Instructions = "Read the passages carefully and answer the questions." },
+                    new MockExamSection { ExamSectionId = ieltsWritingS?.Id, Name = "Writing", TimeLimitMinutes = 15, SortOrder = 2, Instructions = "Complete the writing tasks." },
+                    new MockExamSection { ExamSectionId = ieltsSpeakingS?.Id, Name = "Speaking", TimeLimitMinutes = 10, SortOrder = 3, Instructions = "Answer the speaking prompts." }
+                }
+            },
+            new MockExam
+            {
+                ExamTypeCode = "CSCA",
+                Title = "CSCA Practice Test",
+                Description = "CSCA practice test covering Math Analysis and Logical Reasoning. Scores range from 0 to 100 per section.",
+                TotalTimeMinutes = 60,
+                IsActive = true,
+                Sections = new List<MockExamSection>
+                {
+                    new MockExamSection { ExamSectionId = cscaMathS?.Id, Name = "Math Analysis", TimeLimitMinutes = 30, SortOrder = 0, Instructions = "Solve mathematical problems involving calculus, probability, and discrete mathematics." },
+                    new MockExamSection { ExamSectionId = cscaLogicS?.Id, Name = "Logical Reasoning", TimeLimitMinutes = 30, SortOrder = 1, Instructions = "Apply formal logic, algorithmic thinking, and data interpretation skills." }
+                }
             }
         };
 
@@ -1509,10 +2719,10 @@ The implications of these findings have been profound. In the field of behaviora
             new TutorProfile
             {
                 UserId = tutors[0].Id,
-                Headline = "Эксперт ЕГЭ по математике и физике",
-                Bio = "Преподаю математику и физику более 10 лет. Мои ученики стабильно набирают 90+ баллов на ЕГЭ. Индивидуальный подход к каждому студенту.",
-                Experience = "Кандидат физико-математических наук. 12 лет преподавания в МФТИ. Автор учебных пособий по подготовке к ЕГЭ.",
-                Specializations = "EGE,OGE",
+                Headline = "Expert SAT & NUET Math Tutor",
+                Bio = "Преподаю математику и физику более 10 лет. Мои ученики стабильно набирают высокие баллы. Индивидуальный подход к каждому студенту.",
+                Experience = "Кандидат физико-математических наук. 12 лет преподавания. Автор учебных пособий по подготовке к SAT и NUET.",
+                Specializations = "SAT,NUET",
                 HourlyRate = 2500m,
                 IsAvailable = true,
                 IsVerified = true,
@@ -1762,6 +2972,60 @@ The implications of these findings have been profound. In the field of behaviora
             cards.Add(new FormulaCard { TopicId = problemSolving.Id, Title = "Simple Interest", Formula = "I = P * r * t", Description = "P = principal, r = rate, t = time", SortOrder = sort++ });
         }
 
+        // IELTS Writing formula-style templates
+        var ieltsTask1Topic = await _context.Topics.FirstOrDefaultAsync(t => t.Name == "IELTS Task 1: Data Description");
+        var ieltsTask2Topic = await _context.Topics.FirstOrDefaultAsync(t => t.Name == "IELTS Task 2: Essay Writing");
+
+        if (ieltsTask1Topic != null)
+        {
+            cards.Add(new FormulaCard { TopicId = ieltsTask1Topic.Id, Title = "Task 1 Introduction", Formula = "The [chart type] illustrates [what] in [where/when].", Description = "Paraphrase the question — never copy it", SortOrder = sort++ });
+            cards.Add(new FormulaCard { TopicId = ieltsTask1Topic.Id, Title = "Task 1 Overview", Formula = "Overall, [main trend 1], while [main trend 2].", Description = "Summary of 2 key features — no specific numbers", SortOrder = sort++ });
+            cards.Add(new FormulaCard { TopicId = ieltsTask1Topic.Id, Title = "Comparison Phrase", Formula = "X was [approximately/nearly] [N] times higher than Y.", Description = "Use for comparing data points precisely", SortOrder = sort++ });
+        }
+
+        if (ieltsTask2Topic != null)
+        {
+            cards.Add(new FormulaCard { TopicId = ieltsTask2Topic.Id, Title = "Thesis Template", Formula = "While [view A], I believe [your position] because [reason].", Description = "For agree/disagree and discussion essays", SortOrder = sort++ });
+            cards.Add(new FormulaCard { TopicId = ieltsTask2Topic.Id, Title = "Body Paragraph", Formula = "Topic sentence → Explanation → Example → Link back", Description = "Standard PEEL structure for each body paragraph", SortOrder = sort++ });
+            cards.Add(new FormulaCard { TopicId = ieltsTask2Topic.Id, Title = "Band 7 Sentence", Formula = "Although [concession], [main point], which [result].", Description = "Complex sentence with concession clause", SortOrder = sort++ });
+        }
+
+        // CSCA Formula Cards
+        var calculusTopic = await _context.Topics.FirstOrDefaultAsync(t => t.Name == "Calculus & Analysis");
+        var probStatsTopic = await _context.Topics.FirstOrDefaultAsync(t => t.Name == "Probability & Statistics");
+        var discreteMathTopic = await _context.Topics.FirstOrDefaultAsync(t => t.Name == "Discrete Mathematics");
+        var formalLogicTopic = await _context.Topics.FirstOrDefaultAsync(t => t.Name == "Formal Logic");
+
+        if (calculusTopic != null)
+        {
+            cards.Add(new FormulaCard { TopicId = calculusTopic.Id, Title = "Power Rule (Derivative)", Formula = "d/dx(x^n) = n * x^(n-1)", Description = "Fundamental differentiation rule", SortOrder = sort++ });
+            cards.Add(new FormulaCard { TopicId = calculusTopic.Id, Title = "Power Rule (Integral)", Formula = "∫ x^n dx = x^(n+1)/(n+1) + C", Description = "n ≠ -1", SortOrder = sort++ });
+            cards.Add(new FormulaCard { TopicId = calculusTopic.Id, Title = "Chain Rule", Formula = "d/dx[f(g(x))] = f'(g(x)) * g'(x)", Description = "For differentiating composite functions", SortOrder = sort++ });
+            cards.Add(new FormulaCard { TopicId = calculusTopic.Id, Title = "Product Rule", Formula = "(fg)' = f'g + fg'", Description = "For differentiating products of functions", SortOrder = sort++ });
+        }
+
+        if (probStatsTopic != null)
+        {
+            cards.Add(new FormulaCard { TopicId = probStatsTopic.Id, Title = "Bayes' Theorem", Formula = "P(A|B) = P(B|A)*P(A) / P(B)", Description = "Updating probability with new evidence", SortOrder = sort++ });
+            cards.Add(new FormulaCard { TopicId = probStatsTopic.Id, Title = "Variance", Formula = "σ² = Σ(xi - μ)² / n", Description = "Average of squared deviations from mean", SortOrder = sort++ });
+            cards.Add(new FormulaCard { TopicId = probStatsTopic.Id, Title = "Standard Deviation", Formula = "σ = sqrt(σ²)", Description = "Square root of variance — same units as data", SortOrder = sort++ });
+            cards.Add(new FormulaCard { TopicId = probStatsTopic.Id, Title = "Conditional Probability", Formula = "P(A|B) = P(A∩B) / P(B)", Description = "Probability of A given B has occurred", SortOrder = sort++ });
+        }
+
+        if (discreteMathTopic != null)
+        {
+            cards.Add(new FormulaCard { TopicId = discreteMathTopic.Id, Title = "Permutations", Formula = "P(n,r) = n! / (n-r)!", Description = "Ordered arrangements of r items from n", SortOrder = sort++ });
+            cards.Add(new FormulaCard { TopicId = discreteMathTopic.Id, Title = "Combinations", Formula = "C(n,r) = n! / (r!(n-r)!)", Description = "Unordered selections of r items from n", SortOrder = sort++ });
+            cards.Add(new FormulaCard { TopicId = discreteMathTopic.Id, Title = "Handshaking Lemma", Formula = "Σ deg(v) = 2|E|", Description = "Sum of vertex degrees = 2 × edges", SortOrder = sort++ });
+        }
+
+        if (formalLogicTopic != null)
+        {
+            cards.Add(new FormulaCard { TopicId = formalLogicTopic.Id, Title = "Modus Ponens", Formula = "P → Q, P ⊢ Q", Description = "If P implies Q and P is true, then Q is true", SortOrder = sort++ });
+            cards.Add(new FormulaCard { TopicId = formalLogicTopic.Id, Title = "Modus Tollens", Formula = "P → Q, ¬Q ⊢ ¬P", Description = "If P implies Q and Q is false, then P is false", SortOrder = sort++ });
+            cards.Add(new FormulaCard { TopicId = formalLogicTopic.Id, Title = "De Morgan's Laws", Formula = "¬(P∧Q) ≡ ¬P∨¬Q ; ¬(P∨Q) ≡ ¬P∧¬Q", Description = "Negation of conjunctions and disjunctions", SortOrder = sort++ });
+        }
+
         if (cards.Count > 0)
         {
             await _context.FormulaCards.AddRangeAsync(cards);
@@ -1823,6 +3087,42 @@ The implications of these findings have been profound. In the field of behaviora
                     new Flashcard { Front = "What is a 'straw man' fallacy?", Back = "Misrepresenting someone's argument to make it easier to attack.", SortOrder = 4 },
                     new Flashcard { Front = "What is 'correlation vs causation'?", Back = "Correlation means two things occur together; causation means one causes the other. Correlation does not imply causation.", SortOrder = 5 },
                     new Flashcard { Front = "What is a 'premise'?", Back = "A statement or proposition used as a basis for an argument or conclusion.", SortOrder = 6 },
+                },
+            },
+            new FlashcardDeck
+            {
+                Title = "IELTS Academic Vocabulary",
+                Description = "Essential academic vocabulary and phrases for IELTS",
+                ExamTypeCode = "IELTS",
+                IsSystem = true,
+                Cards = new List<Flashcard>
+                {
+                    new Flashcard { Front = "What does 'fluctuate' mean in a graph?", Back = "To rise and fall irregularly — used in Task 1 to describe unstable data trends.", SortOrder = 1 },
+                    new Flashcard { Front = "Distinguish TRUE vs NOT GIVEN", Back = "TRUE: the passage explicitly states this. NOT GIVEN: the passage doesn't mention this specific claim at all.", SortOrder = 2 },
+                    new Flashcard { Front = "What is 'coherence and cohesion'?", Back = "IELTS Writing criterion: how well your ideas are organised and linked using paragraphs, connectors, and referencing.", SortOrder = 3 },
+                    new Flashcard { Front = "Task 1: 'Overview' purpose", Back = "Summarise the main trends/features without specific data. It's the most important paragraph for Band 7+.", SortOrder = 4 },
+                    new Flashcard { Front = "Speaking Part 3 vs Part 1", Back = "Part 1: personal, concrete questions. Part 3: abstract, analytical discussion requiring deeper reasoning.", SortOrder = 5 },
+                    new Flashcard { Front = "What is 'lexical resource'?", Back = "IELTS criterion measuring range and accuracy of vocabulary. Use synonyms, collocations, and topic-specific terms.", SortOrder = 6 },
+                    new Flashcard { Front = "Task 2: Opinion vs Discussion essay", Back = "Opinion: state your view and defend it. Discussion: present BOTH views, then give your opinion.", SortOrder = 7 },
+                    new Flashcard { Front = "Define 'paraphrase'", Back = "To express the same meaning using different words. Essential for IELTS introductions (never copy the question).", SortOrder = 8 },
+                },
+            },
+            new FlashcardDeck
+            {
+                Title = "CSCA Core Concepts",
+                Description = "Key formulas and concepts for CSCA Math Analysis and Logical Reasoning",
+                ExamTypeCode = "CSCA",
+                IsSystem = true,
+                Cards = new List<Flashcard>
+                {
+                    new Flashcard { Front = "What is the derivative of x^n?", Back = "n·x^(n-1) — the power rule of differentiation.", SortOrder = 1 },
+                    new Flashcard { Front = "What is Big-O notation?", Back = "Describes the upper bound of an algorithm's growth rate. O(n) = linear, O(n²) = quadratic, O(log n) = logarithmic.", SortOrder = 2 },
+                    new Flashcard { Front = "State De Morgan's Laws", Back = "¬(P ∧ Q) ≡ ¬P ∨ ¬Q and ¬(P ∨ Q) ≡ ¬P ∧ ¬Q", SortOrder = 3 },
+                    new Flashcard { Front = "What is C(n,r)?", Back = "The number of ways to choose r items from n: n!/(r!(n-r)!). Also written as 'n choose r'.", SortOrder = 4 },
+                    new Flashcard { Front = "What does the integral ∫f(x)dx represent?", Back = "The area under the curve f(x). The antiderivative of f plus a constant C.", SortOrder = 5 },
+                    new Flashcard { Front = "What is modus ponens?", Back = "If P → Q and P is true, then Q must be true. A fundamental rule of deductive logic.", SortOrder = 6 },
+                    new Flashcard { Front = "What is the 68-95-99.7 rule?", Back = "In a normal distribution: 68% within ±1σ, 95% within ±2σ, 99.7% within ±3σ of the mean.", SortOrder = 7 },
+                    new Flashcard { Front = "What is the handshaking lemma?", Back = "The sum of all vertex degrees in a graph equals twice the number of edges: Σdeg(v) = 2|E|.", SortOrder = 8 },
                 },
             },
         };
@@ -2043,6 +3343,418 @@ Number Properties to Remember:
 - If a number ends in 0 or 5, it is divisible by 5
 - Divisibility by 3: sum of digits divisible by 3"
             },
+
+            // IELTS Strategies
+            new StrategyGuide
+            {
+                ExamTypeCode = "IELTS",
+                Title = "IELTS Time Management",
+                Summary = "Practical timing strategy for all four IELTS sections",
+                Category = "time-management",
+                EstimatedReadMinutes = 5,
+                SortOrder = 1,
+                Content = @"IELTS Time Management
+
+Listening (30 min + 10 min transfer):
+- Sections come in order 1-4 — each plays once
+- Use the time before each section to read ahead
+- Transfer your answers carefully during the 10-min window
+
+Reading (60 min, 40 questions):
+- Spend 15 min on Passage 1, 20 min on Passage 2, 25 min on Passage 3
+- Passage 3 is hardest — save the most time for it
+- If stuck on a question, move on and come back
+
+Writing (60 min total):
+- Task 1: 20 minutes (150+ words)
+- Task 2: 40 minutes (250+ words) — worth twice the marks
+- Plan for 5 minutes before writing each task
+
+Speaking (11–14 min):
+- Part 1: 4-5 min (general questions)
+- Part 2: 3-4 min (1 min prep + 1-2 min talk)
+- Part 3: 4-5 min (discussion)
+- You cannot control the timing — focus on quality"
+            },
+            new StrategyGuide
+            {
+                ExamTypeCode = "IELTS",
+                Title = "IELTS Writing Band 7 Strategy",
+                Summary = "Key techniques to achieve Band 7+ in IELTS Writing",
+                Category = "section-specific",
+                EstimatedReadMinutes = 5,
+                SortOrder = 2,
+                Content = @"Achieving Band 7+ in IELTS Writing
+
+Task 1 (Data Description):
+1. Paraphrase the question in your introduction (never copy)
+2. Write an overview identifying 2 main trends
+3. Use specific data to support your observations
+4. Vary your vocabulary: 'increased', 'rose', 'climbed', 'surged'
+5. Use comparison structures: 'twice as many', 'a significantly higher proportion'
+
+Task 2 (Essay):
+1. Address ALL parts of the question
+2. Present a clear position throughout
+3. Use a mix of simple and complex sentences
+4. Include specific examples, not generalisations
+5. Link paragraphs with cohesive devices: 'Furthermore', 'However', 'In contrast'
+
+Common errors to avoid:
+- Copying the question word-for-word
+- Writing less than the minimum word count
+- Not including an overview in Task 1
+- Using informal language ('gonna', 'lots of', 'stuff')
+- Spending too long on Task 1 (it's worth less)"
+            },
+            new StrategyGuide
+            {
+                ExamTypeCode = "IELTS",
+                Title = "IELTS Speaking Confidence",
+                Summary = "How to speak confidently and score higher",
+                Category = "test-taking",
+                EstimatedReadMinutes = 4,
+                SortOrder = 3,
+                Content = @"IELTS Speaking: Building Confidence
+
+Assessment Criteria (each 25%):
+1. Fluency and Coherence
+2. Lexical Resource (vocabulary)
+3. Grammatical Range and Accuracy
+4. Pronunciation
+
+Dos:
+- Extend your answers naturally with reasons and examples
+- Use discourse markers: 'Well', 'Actually', 'To be honest'
+- Self-correct if you make a mistake — examiners view this positively
+- Vary your intonation — show enthusiasm
+- Use idiomatic language where it feels natural
+
+Don'ts:
+- Give one-word answers
+- Memorise entire answers (examiners can tell)
+- Speak too fast — clarity beats speed
+- Panic if you don't understand — ask the examiner to repeat
+
+Part 2 Preparation Strategy:
+- Note down 4 key words (one per bullet point)
+- Start with 'I'd like to talk about...'
+- Use the past tense for experiences, future for plans
+- Aim for 1.5-2 minutes — don't stop too early"
+            },
+
+            // CSCA Strategies
+            new StrategyGuide
+            {
+                ExamTypeCode = "CSCA",
+                Title = "CSCA Math Analysis Strategy",
+                Summary = "Approaches for calculus, probability, and discrete math",
+                Category = "section-specific",
+                EstimatedReadMinutes = 5,
+                SortOrder = 1,
+                Content = @"CSCA Math Analysis Strategy
+
+Calculus Questions:
+- Always check: is this asking for a derivative or integral?
+- For derivatives: apply power rule, chain rule, or product rule
+- For integrals: find the antiderivative, then evaluate bounds
+- Check your answer by differentiating it
+
+Probability & Statistics:
+- Draw a tree diagram or Venn diagram if helpful
+- For conditional probability: use P(A|B) = P(A∩B)/P(B)
+- Remember: independent events → P(A∩B) = P(A)×P(B)
+- For normal distribution: use the 68-95-99.7 rule
+
+Discrete Mathematics:
+- Permutations = order matters; Combinations = order doesn't
+- For graph theory: start with the handshaking lemma
+- Count systematically — don't try to enumerate manually
+- Double-check factorials: 5! = 120, 6! = 720, 7! = 5040"
+            },
+            new StrategyGuide
+            {
+                ExamTypeCode = "CSCA",
+                Title = "CSCA Logical Reasoning Strategy",
+                Summary = "Systematic approach to logic and algorithm questions",
+                Category = "section-specific",
+                EstimatedReadMinutes = 4,
+                SortOrder = 2,
+                Content = @"CSCA Logical Reasoning Strategy
+
+Formal Logic:
+- Identify the logical structure first (P → Q, ¬P ∨ Q, etc.)
+- Use truth tables for complex expressions
+- Remember key equivalences: contrapositive, De Morgan's laws
+- For arguments: find the conclusion, then check if premises support it
+
+Algorithmic Thinking:
+- For time complexity: count the number of operations as a function of n
+- Nested loops → multiply complexities (O(n) × O(n) = O(n²))
+- Binary search halves the problem → O(log n)
+- Compare algorithms by their worst-case or average-case complexity
+
+Data Interpretation:
+- Read all axis labels and legends before analysing
+- Calculate percentage changes: (new - old)/old × 100%
+- Look for trends, outliers, and anomalies
+- Be careful with different scales on dual-axis charts
+
+General Tips:
+- Eliminate obviously wrong answers first
+- Show your working — even for multiple choice, write out steps
+- Manage time: don't spend over 3 minutes on any single question"
+            },
+        };
+
+        await _context.StrategyGuides.AddRangeAsync(guides);
+        await _context.SaveChangesAsync();
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  INCREMENTAL IELTS/CSCA SEED METHODS
+    //  (for existing DBs that already have SAT/TOEFL/NUET data)
+    // ═══════════════════════════════════════════════════════
+
+    private async Task SeedIeltsCscaTopicsAsync()
+    {
+        var ieltsListening = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "IELTS" && s.Name == "Listening");
+        var ieltsReading = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "IELTS" && s.Name == "Reading");
+        var ieltsWriting = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "IELTS" && s.Name == "Writing");
+        var ieltsSpeaking = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "IELTS" && s.Name == "Speaking");
+        var cscaMath = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Math Analysis");
+        var cscaLogic = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Logical Reasoning");
+
+        if (ieltsListening == null || cscaMath == null) return;
+
+        var skillRead = await _context.Skills.FirstAsync(s => s.Code == "SK_READ");
+        var skillWrite = await _context.Skills.FirstAsync(s => s.Code == "SK_WRITE");
+        var skillListen = await _context.Skills.FirstAsync(s => s.Code == "SK_LISTEN");
+        var skillSpeak = await _context.Skills.FirstAsync(s => s.Code == "SK_SPEAK");
+        var skillMath = await _context.Skills.FirstAsync(s => s.Code == "SK_MATH");
+        var skillCrit = await _context.Skills.FirstAsync(s => s.Code == "SK_CRIT");
+
+        var topics = new List<Topic>
+        {
+            new Topic { Name = "IELTS Listening Comprehension", SkillId = skillListen.Id, SectionId = ieltsListening!.Id },
+            new Topic { Name = "IELTS Note & Form Completion", SkillId = skillListen.Id, SectionId = ieltsListening.Id },
+            new Topic { Name = "IELTS Academic Reading", SkillId = skillRead.Id, SectionId = ieltsReading!.Id },
+            new Topic { Name = "IELTS Reading: Matching & True/False", SkillId = skillRead.Id, SectionId = ieltsReading.Id },
+            new Topic { Name = "IELTS Task 1: Data Description", SkillId = skillWrite.Id, SectionId = ieltsWriting!.Id },
+            new Topic { Name = "IELTS Task 2: Essay Writing", SkillId = skillWrite.Id, SectionId = ieltsWriting.Id },
+            new Topic { Name = "IELTS Speaking Parts 1 & 2", SkillId = skillSpeak.Id, SectionId = ieltsSpeaking!.Id },
+            new Topic { Name = "IELTS Speaking Part 3: Discussion", SkillId = skillSpeak.Id, SectionId = ieltsSpeaking.Id },
+            new Topic { Name = "Calculus & Analysis", SkillId = skillMath.Id, SectionId = cscaMath!.Id },
+            new Topic { Name = "Probability & Statistics", SkillId = skillMath.Id, SectionId = cscaMath.Id },
+            new Topic { Name = "Discrete Mathematics", SkillId = skillMath.Id, SectionId = cscaMath.Id },
+            new Topic { Name = "Formal Logic", SkillId = skillCrit.Id, SectionId = cscaLogic!.Id },
+            new Topic { Name = "Algorithmic Thinking", SkillId = skillCrit.Id, SectionId = cscaLogic.Id },
+            new Topic { Name = "Data Interpretation", SkillId = skillCrit.Id, SectionId = cscaLogic.Id }
+        };
+
+        await _context.Topics.AddRangeAsync(topics);
+        await _context.SaveChangesAsync();
+    }
+
+    private async Task SeedIeltsCscaFormulaCardsAsync()
+    {
+        var ieltsWritingTopic = await _context.Topics.FirstOrDefaultAsync(t => t.Name == "IELTS Task 2: Essay Writing");
+        var calculusTopic = await _context.Topics.FirstOrDefaultAsync(t => t.Name == "Calculus & Analysis");
+        var probTopic = await _context.Topics.FirstOrDefaultAsync(t => t.Name == "Probability & Statistics");
+        var discreteTopic = await _context.Topics.FirstOrDefaultAsync(t => t.Name == "Discrete Mathematics");
+        var formalLogicTopic = await _context.Topics.FirstOrDefaultAsync(t => t.Name == "Formal Logic");
+
+        if (ieltsWritingTopic == null || calculusTopic == null) return;
+
+        var cards = new List<FormulaCard>
+        {
+            // IELTS
+            new FormulaCard { TopicId = ieltsWritingTopic.Id, Title = "Essay Introduction Template", Formula = @"\text{Topic sentence} + \text{Thesis} + \text{Outline}", Description = "Introduction = paraphrase question + state position + preview 2 main points", SortOrder = 0 },
+            new FormulaCard { TopicId = ieltsWritingTopic.Id, Title = "Body Paragraph Structure", Formula = @"\text{TS} \to \text{Explain} \to \text{Example} \to \text{Link}", Description = "Topic Sentence -> Explanation -> Example -> Link back to thesis", SortOrder = 1 },
+            new FormulaCard { TopicId = ieltsWritingTopic.Id, Title = "Cohesion Devices", Formula = @"\text{Moreover, Furthermore, However, Nevertheless, In contrast}", Description = "Use linking words to connect ideas across paragraphs", SortOrder = 2 },
+            // CSCA
+            new FormulaCard { TopicId = calculusTopic.Id, Title = "Power Rule", Formula = @"\frac{d}{dx} x^n = n \cdot x^{n-1}", Description = "Differentiate polynomial terms", SortOrder = 0 },
+            new FormulaCard { TopicId = calculusTopic.Id, Title = "Chain Rule", Formula = @"\frac{d}{dx} f(g(x)) = f'(g(x)) \cdot g'(x)", Description = "Differentiate composite functions", SortOrder = 1 },
+            new FormulaCard { TopicId = calculusTopic.Id, Title = "Integration by Parts", Formula = @"\int u\,dv = uv - \int v\,du", Description = "Integrate products of functions", SortOrder = 2 },
+            new FormulaCard { TopicId = probTopic!.Id, Title = "Bayes' Theorem", Formula = @"P(A|B) = \frac{P(B|A) \cdot P(A)}{P(B)}", Description = "Calculate conditional probability", SortOrder = 3 },
+            new FormulaCard { TopicId = probTopic.Id, Title = "Variance", Formula = @"\sigma^2 = \frac{1}{n}\sum_{i=1}^n (x_i - \bar{x})^2", Description = "Measure of spread around the mean", SortOrder = 4 },
+            new FormulaCard { TopicId = discreteTopic!.Id, Title = "Permutations", Formula = @"P(n,r) = \frac{n!}{(n-r)!}", Description = "Number of ordered arrangements", SortOrder = 5 },
+            new FormulaCard { TopicId = discreteTopic.Id, Title = "Combinations", Formula = @"C(n,r) = \frac{n!}{r!(n-r)!}", Description = "Number of unordered selections", SortOrder = 6 },
+            new FormulaCard { TopicId = formalLogicTopic!.Id, Title = "Modus Ponens", Formula = @"(P \to Q) \wedge P \Rightarrow Q", Description = "If P implies Q and P is true, then Q is true", SortOrder = 7 },
+            new FormulaCard { TopicId = formalLogicTopic.Id, Title = "De Morgan's Laws", Formula = @"\neg(P \wedge Q) = \neg P \vee \neg Q", Description = "Negate conjunctions and disjunctions", SortOrder = 8 }
+        };
+
+        await _context.FormulaCards.AddRangeAsync(cards);
+        await _context.SaveChangesAsync();
+    }
+
+    private async Task SeedIeltsCscaFlashcardDecksAsync()
+    {
+        var decks = new List<FlashcardDeck>
+        {
+            new FlashcardDeck
+            {
+                ExamTypeCode = "IELTS",
+                Title = "IELTS Academic Vocabulary",
+                Description = "Essential academic words for IELTS Reading and Writing",
+                Cards = new List<Flashcard>
+                {
+                    new Flashcard { Front = "Ubiquitous", Back = "Present, appearing, or found everywhere. Example: 'Smartphones have become ubiquitous in modern society.'", SortOrder = 0 },
+                    new Flashcard { Front = "Paradigm", Back = "A typical example or model. Example: 'The discovery shifted the paradigm of climate science.'", SortOrder = 1 },
+                    new Flashcard { Front = "Exacerbate", Back = "To make a problem or situation worse. Example: 'Pollution exacerbates respiratory problems.'", SortOrder = 2 },
+                    new Flashcard { Front = "Mitigate", Back = "To make less severe or reduce. Example: 'Green spaces help mitigate urban heat islands.'", SortOrder = 3 },
+                    new Flashcard { Front = "Unprecedented", Back = "Never done or known before. Example: 'The pandemic led to unprecedented remote work adoption.'", SortOrder = 4 },
+                    new Flashcard { Front = "Pragmatic", Back = "Dealing with things in a practical way. Example: 'A pragmatic approach to environmental policy.'", SortOrder = 5 },
+                    new Flashcard { Front = "Subsequently", Back = "After a particular thing has happened. Example: 'The economy grew; subsequently, employment rates rose.'", SortOrder = 6 },
+                    new Flashcard { Front = "Inherent", Back = "Existing as a natural part. Example: 'There are inherent risks in any investment.'", SortOrder = 7 }
+                }
+            },
+            new FlashcardDeck
+            {
+                ExamTypeCode = "CSCA",
+                Title = "CSCA Core Concepts",
+                Description = "Key mathematical and logical concepts for CSCA exam",
+                Cards = new List<Flashcard>
+                {
+                    new Flashcard { Front = "Derivative", Back = "Rate of change of a function. $f'(x) = \\lim_{h \\to 0} \\frac{f(x+h) - f(x)}{h}$", SortOrder = 0 },
+                    new Flashcard { Front = "Integral", Back = "Accumulation of quantity / area under curve. $\\int_a^b f(x)\\,dx = F(b) - F(a)$", SortOrder = 1 },
+                    new Flashcard { Front = "Conditional Probability", Back = "$P(A|B) = \\frac{P(A \\cap B)}{P(B)}$. Probability of A given B occurred.", SortOrder = 2 },
+                    new Flashcard { Front = "Graph Degree Sum", Back = "Handshaking Lemma: $\\sum \\deg(v) = 2|E|$. Sum of all vertex degrees equals twice the edges.", SortOrder = 3 },
+                    new Flashcard { Front = "Modus Tollens", Back = "If $P \\to Q$ and $\\neg Q$, then $\\neg P$. Contrapositive reasoning.", SortOrder = 4 },
+                    new Flashcard { Front = "Big-O Notation", Back = "$f(n) = O(g(n))$ means $f$ grows no faster than $g$. Example: binary search is $O(\\log n)$.", SortOrder = 5 },
+                    new Flashcard { Front = "Normal Distribution", Back = "Bell curve: 68% within $\\pm 1\\sigma$, 95% within $\\pm 2\\sigma$, 99.7% within $\\pm 3\\sigma$.", SortOrder = 6 },
+                    new Flashcard { Front = "Proof by Contradiction", Back = "Assume the negation of the statement, derive a logical contradiction, conclude original statement is true.", SortOrder = 7 }
+                }
+            }
+        };
+
+        await _context.FlashcardDecks.AddRangeAsync(decks);
+        await _context.SaveChangesAsync();
+    }
+
+    private async Task SeedIeltsCscaStrategyGuidesAsync()
+    {
+        var guides = new List<StrategyGuide>
+        {
+            new StrategyGuide
+            {
+                ExamTypeCode = "IELTS",
+                Title = "IELTS Writing Band 7+ Strategy",
+                Summary = "Proven techniques for achieving Band 7 or higher in IELTS Writing",
+                Category = "Writing",
+                EstimatedReadMinutes = 8,
+                Content = @"# IELTS Writing Band 7+ Strategy
+
+## Task 1 (20 minutes)
+- **Paraphrase** the question — never copy it word for word
+- Identify **key trends** (rise, fall, peak, plateau)
+- Use varied vocabulary: *increased → surged, climbed, soared*
+- Include specific data points but don't list every number
+- Structure: Introduction → Overview → Detail paragraph 1 → Detail paragraph 2
+
+## Task 2 (40 minutes)
+- Plan for 5 minutes before writing
+- Clear position in introduction: agree, disagree, or balanced
+- Each body paragraph: Topic sentence → Explain → Example → Link
+- Use cohesive devices: *Moreover, However, In contrast, Consequently*
+- Conclusion: restate your position, do NOT add new ideas
+
+## Band 7 Criteria
+- **Task Achievement**: fully address all parts of the task
+- **Coherence**: logical paragraphing, clear progression
+- **Lexical Resource**: use less common vocabulary accurately
+- **Grammar**: mix of complex and simple sentences, few errors"
+            },
+            new StrategyGuide
+            {
+                ExamTypeCode = "IELTS",
+                Title = "IELTS Reading Time Management",
+                Summary = "How to finish all 40 questions in 60 minutes",
+                Category = "Reading",
+                EstimatedReadMinutes = 5,
+                Content = @"# IELTS Reading Time Management
+
+## Time Allocation
+- Passage 1 (easiest): **15 minutes**
+- Passage 2 (medium): **20 minutes**
+- Passage 3 (hardest): **25 minutes**
+
+## Strategies
+1. **Skim first**: Read title, headings, first sentences — 2 minutes per passage
+2. **Read questions before** re-reading the passage in detail
+3. **Matching headings**: do these first, they give you the passage structure
+4. **True/False/Not Given**: focus on exact wording, not assumptions
+5. **Never leave blanks**: guess if you're running out of time
+
+## Common Traps
+- 'Not Given' ≠ 'False' — if the text doesn't mention it, it's Not Given
+- Synonyms and paraphrasing are key — answers rarely use the same words as the passage
+- Watch for qualifiers: *always, never, some, most* change the meaning"
+            },
+            new StrategyGuide
+            {
+                ExamTypeCode = "CSCA",
+                Title = "CSCA Math Analysis Strategy",
+                Summary = "Techniques for tackling calculus, probability, and discrete math problems",
+                Category = "Math",
+                EstimatedReadMinutes = 7,
+                Content = @"# CSCA Math Analysis Strategy
+
+## Calculus Problems
+- Always check: is this asking for derivative or integral?
+- **Chain rule**: when you see a function inside a function
+- **Product/quotient rules**: when multiplying or dividing functions
+- For definite integrals: find antiderivative, then evaluate at bounds
+
+## Probability
+- Draw a tree diagram or Venn diagram for complex scenarios
+- **Bayes' Theorem**: use when given P(B|A) but need P(A|B)
+- Independent events: P(A ∩ B) = P(A) × P(B)
+- Complement rule: P(not A) = 1 - P(A)
+
+## Discrete Math
+- **Combinations vs Permutations**: does ORDER matter?
+- Graph theory: count vertices, edges, check for Euler/Hamilton paths
+- Modular arithmetic: look for patterns in remainders
+
+## General Tips
+- Show all working — partial credit may apply
+- Check units and dimensions
+- If stuck, try plugging in simple numbers to test"
+            },
+            new StrategyGuide
+            {
+                ExamTypeCode = "CSCA",
+                Title = "CSCA Logical Reasoning Strategy",
+                Summary = "Master formal logic, algorithms, and data interpretation",
+                Category = "Logic",
+                EstimatedReadMinutes = 6,
+                Content = @"# CSCA Logical Reasoning Strategy
+
+## Formal Logic
+- Identify premise → conclusion structure
+- **Modus Ponens**: P→Q, P ∴ Q
+- **Modus Tollens**: P→Q, ¬Q ∴ ¬P
+- Watch for common fallacies: affirming the consequent, denying the antecedent
+- Use truth tables for complex compound statements
+
+## Algorithmic Thinking
+- Count operations as a function of input size n
+- Nested loops → O(n²), binary search → O(log n)
+- Recursion: identify base case and recursive case
+- Compare algorithms by worst-case complexity
+
+## Data Interpretation
+- Read ALL axis labels and legends before answering
+- Calculate percentage change: (new − old) / old × 100%
+- Spot trends, outliers, and anomalies
+- Dual-axis charts: be careful with different scales
+
+## Time Management
+- Don't spend more than 3 minutes on any single question
+- Eliminate obviously wrong answers first
+- If stuck, mark and return — later questions may be easier"
+            }
         };
 
         await _context.StrategyGuides.AddRangeAsync(guides);

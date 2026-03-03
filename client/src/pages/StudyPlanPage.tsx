@@ -644,6 +644,15 @@ function StatsTab({ stats }: { stats: PlanStats }) {
 
 // ─── Modals ───────────────────────────────────────────────
 
+const EXAM_SCORE_CONFIG: Record<string, { min: number; max: number; step: number; default: number }> = {
+  SAT:   { min: 400, max: 1600, step: 10,  default: 1200 },
+  TOEFL: { min: 0,   max: 120,  step: 1,   default: 90 },
+  NUET:  { min: 0,   max: 200,  step: 1,   default: 150 },
+  IELTS: { min: 0,   max: 9,    step: 0.5, default: 7 },
+  CSCA:  { min: 0,   max: 100,  step: 1,   default: 70 },
+};
+const DEFAULT_SCORE_CONFIG = { min: 0, max: 100, step: 1, default: 70 };
+
 function GoalFormModal({
   exams, formExam, formDate, formScore, isSubmitting,
   onChangeExam, onChangeDate, onChangeScore, onSubmit, onClose,
@@ -655,6 +664,13 @@ function GoalFormModal({
   onClose: () => void;
 }) {
   const minDate = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
+  const cfg = EXAM_SCORE_CONFIG[formExam] ?? DEFAULT_SCORE_CONFIG;
+
+  const handleExamChange = (code: string) => {
+    onChangeExam(code);
+    const c = EXAM_SCORE_CONFIG[code] ?? DEFAULT_SCORE_CONFIG;
+    onChangeScore(c.default);
+  };
 
   return (
     <div style={{
@@ -671,7 +687,7 @@ function GoalFormModal({
             </label>
             <select
               value={formExam}
-              onChange={(e) => onChangeExam(e.target.value)}
+              onChange={(e) => handleExamChange(e.target.value)}
               required
               style={{
                 width: '100%', padding: '0.6rem', borderRadius: '8px',
@@ -710,15 +726,16 @@ function GoalFormModal({
             </label>
             <input
               type="range"
-              min="30"
-              max="100"
+              min={cfg.min}
+              max={cfg.max}
+              step={cfg.step}
               value={formScore}
               onChange={(e) => onChangeScore(Number(e.target.value))}
               style={{ width: '100%' }}
             />
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-              <span>30</span>
-              <span>100</span>
+              <span>{cfg.min}</span>
+              <span>{cfg.max}</span>
             </div>
           </div>
 

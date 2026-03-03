@@ -1,10 +1,127 @@
-# UniStart — Статус проекта и план запуска
+# UniStart -- Статус проекта и план запуска
 
-> **Последнее обновление**: 1 марта 2026
+> **Последнее обновление**: 2 марта 2026
 
 ---
 
-## 📊 Текущий статус: MVP+ готов — Подготовка к production-запуску
+## Текущий статус: v2 Learning -- Sprint 2 (polish) ✅ завершён
+
+### Сводка состояния на 2 марта 2026
+
+**Что работает стабильно:**
+- Ядро платформы: IRT 3PL + CAT, адаптивная практика, mock exams (SAT, TOEFL, NUET, IELTS, CSCA)
+- Аналитика, прогноз баллов, study plan, onboarding, монетизация (Free/Pro)
+- Admin-панель, тьюторская система (каталог, профили, чат -- SignalR баги задокументированы)
+- Production: rate limiting, security headers, Serilog, health checks, audit log, soft delete, кэш, Hangfire
+- KaTeX рендеринг формул, GuidedTour, IELTS/CSCA сидер, убраны ненужные экзамены
+
+**Критические проблемы (2 марта, Sprint 2):**
+1. KaTeX иконки / символы в тёмной теме сливаются с фоном (FormulaPage, TimedDrillPage) — нужна контрастная цветовая схема.
+2. Marathon drill — нет таймера обратного отсчёта, только секундомер вверх. Нужен countdown (например 3 мин) + подсчёт вопросов за время.
+3. Мало контента: мало флэшкарточек, стратегий, формул. По IELTS и CSCA контент не загружается (seed есть, но БД не обновлена или фронтенд не фильтрует).
+4. Mock Exams — отображаются только 3 экзамена (SAT, TOEFL, NUET). IELTS и CSCA моки не видны.
+5. Установка цели — максимальный целевой балл (slider max) зафиксирован 100 для всех экзаменов. Должен быть: SAT→1600, TOEFL→120, NUET→200, IELTS→9 (шаг 0.5), CSCA→100.
+6. "Что если" — в dropdown выбора темы все показывают 0%, а в результате расчёта 11% → рассинхрон masteryPercentage vs IRT currentLevel.
+7. История сессий — некоторые сессии показывают 0/0 correct, examTypeName "Gaokao" — незавершённые/пустые сессии не фильтруются.
+
+---
+
+## ПЛАН РАБОТ -- Sprint 2 марта 2026
+
+### FIX-1. Рендеринг теории и формул (KaTeX + Markdown)
+- [x] Установить `katex` и `@types/katex` npm
+- [x] Создать компонент `MathRenderer` -- парсит `$...$` inline и `$$...$$` block, рендерит через KaTeX
+- [x] Обновить `renderContent()` в TopicsPage для корректного рендеринга `**bold**`, `*italic*`, `$math$`, `$$block$$`
+- [x] Обновить FormulaPage -- формулы отображаются через KaTeX вместо monospace
+- [x] Обновить StrategyPage -- контент через MathRenderer
+- [x] Обновить FlashcardPage -- front/back карточек через MathRenderer
+- [x] Обновить TimedDrillPage -- text вопросов и options через MathRenderer
+
+### FIX-2. Убрать видеоссылки
+- [x] TopicsPage: убрать блок "Видео-урок" из lesson view
+- [x] Сидер: убрать videoUrl из SeedTopicLessonsAsync (не удалять поле, просто null)
+
+### FIX-3. Убрать неактуальные экзамены из тьюторов
+- [x] TutorsPage: удалить `<option value="EGE">` и `<option value="OGE">`, добавить NUET, CSCA
+- [x] TutorProfileEditPage: EXAM_OPTIONS = ['SAT', 'TOEFL', 'IELTS', 'NUET', 'CSCA']
+- [x] TutorDashboardPage: placeholder специализаций обновить
+- [x] Seeder: обновить тьюторские специализации
+
+### FIX-4. IELTS -- полная поддержка
+- [x] ExamType: "IELTS" в SeedExamTypesAsync
+- [x] Секции: Listening (0-9), Reading (0-9), Writing (0-9), Speaking (0-9)
+- [x] 8 тем: Listening Comprehension, Reading Academic Texts, Writing Task 1/Task 2, Speaking Part 1/2/3, Vocabulary
+- [x] Скиллы: привязка к SK_READ, SK_WRITE, SK_LISTEN, SK_SPEAK
+- [x] 32 вопроса с IRT параметрами, hints, explanations
+- [x] Уроки (TopicLessons) для всех 8 тем
+- [x] TopicDependencies для IELTS
+- [x] Mock Exam: IELTS Practice Test
+- [x] Формулы: IELTS writing templates, academic vocabulary patterns
+- [x] Стратегии: гайды для IELTS
+- [x] Flashcard deck: IELTS Academic Vocabulary
+
+### FIX-5. CSCA -- полная поддержка
+- [x] ExamType: "CSCA" в SeedExamTypesAsync
+- [x] Секции: Math Analysis (0-100), Logical Reasoning (0-100)
+- [x] 6 тем: Calculus Basics, Probability & Statistics, Logical Deduction, Data Interpretation, Algebra & Functions, Spatial Reasoning
+- [x] 24 вопроса с IRT параметрами, hints, explanations
+- [x] Уроки (TopicLessons) для всех 6 тем
+- [x] TopicDependencies для CSCA
+- [x] Mock Exam: CSCA Practice Test
+- [x] Формулы: CSCA math formulas
+- [x] Стратегии: гайды для CSCA
+
+### FIX-6. Post-registration guided tour
+- [x] Компонент GuidedTour -- overlay с подсветкой элементов, шаги с описанием
+- [x] 6 шагов: "Выбранные экзамены", "Обучение", "Практика", "Прогресс", "План", "Профиль"
+- [x] Сохранение в localStorage (guidedTourCompleted)
+- [x] Запускается один раз после первого входа / завершения онбординга
+
+### FIX-7. Доработка Learning v2 компонентов
+- [x] FlashcardPage: добавить возможность добавлять карточки в деку, пустое состояние
+- [x] TimedDrillPage: обработка пустого состояния когда нет вопросов
+- [x] MistakeJournalPage: обработка пустого examCode
+- [x] FormulaPage: пустое состояние без экзамена
+- [x] StrategyPage: пустое состояние без экзамена
+
+---
+
+## ПЛАН РАБОТ -- Sprint 2 (Polish) 2 марта 2026
+
+### FIX-8. KaTeX / иконки в тёмной теме
+- [x] Добавить CSS override для KaTeX цветов в `[data-theme="dark"]` — `.katex { color: var(--text-primary) }`
+- [x] Bookmark иконки в FormulaPage — контрастный цвет для dark mode (★/☆ Unicode stars)
+- [x] TimedDrillPage — проверить видимость текста ответов
+
+### FIX-9. Marathon drill — countdown таймер
+- [x] Добавить timeLimitSeconds для Marathon (180 секунд = 3 минуты)
+- [x] Frontend: countdown вместо секундомера, auto-complete при timeLeft=0
+- [x] Backend: не требуется — таймер на фронтенде
+
+### FIX-10. Mock Exams — показ всех 5 экзаменов
+- [x] Incremental seed: SeedIeltsCscaMockExamsAsync, SeedIeltsCscaSectionsAsync, SeedIeltsCscaTopicsAsync
+- [x] Фронтенд MockExamPage не фильтрует — бэкенд теперь возвращает все 5 active mock exams
+
+### FIX-11. Целевой балл по экзамену
+- [x] GoalFormModal: EXAM_SCORE_CONFIG map с min/max/step/default по коду экзамена
+- [x] SAT: 400–1600 (шаг 10), TOEFL: 0–120 (шаг 1), NUET: 0–200 (шаг 1), IELTS: 0–9 (шаг 0.5), CSCA: 0–100 (шаг 1)
+- [x] Score сбрасывается на default при смене экзамена
+
+### FIX-12. "Что если" — корректный % в dropdown
+- [x] Добавлен IrtLevel в TopicProgressDto (backend: из UserSkillProfile.Theta через IrtMath.ThetaToLevel)
+- [x] Frontend TopicProgress.irtLevel — dropdown показывает IRT level вместо masteryPercentage
+- [x] Теперь dropdown и результат WhatIf используют одну систему уровней
+
+### FIX-13. История сессий — фильтрация пустых
+- [x] Backend: GetSessionsAsync фильтрует TotalQuestions > 0
+- [x] examTypeName "Gaokao" — корректное имя для CSCA, не баг
+
+### FIX-14. Больше контента (seed)
+- [x] Incremental seed: SeedIeltsCscaFormulaCardsAsync (3 IELTS + 8 CSCA)
+- [x] Incremental seed: SeedIeltsCscaFlashcardDecksAsync (IELTS 8 cards + CSCA 8 cards)
+- [x] Incremental seed: SeedIeltsCscaStrategyGuidesAsync (2 IELTS + 2 CSCA)
+
+---
 
 ### Масштаб проекта
 
@@ -21,7 +138,7 @@
 | **Страниц (React)** | 26 |
 | **API-эндпоинтов** | ~60+ |
 | **Миграций БД** | 10 |
-| **Вопросов в базе** | 97 (16 тем, 3 экзамена) |
+| **Вопросов в базе** | 137 (30 тем, 5 экзаменов: SAT, TOEFL, NUET, IELTS, CSCA) |
 
 ---
 
@@ -1471,15 +1588,22 @@ UserMistakeNote
 
 | ID | Задача | Тип | Сложность | Зависимости | Статус |
 |----|--------|-----|-----------|-------------|--------|
-| **EX-1** | IELTS Academic (вопросы + mock + θ→band) | Экзамен | 🔴 Сложно | — | ⬜ |
-| **EX-2** | CSCA / Gaokao (Math + English) | Экзамен | 🔴 Сложно | — | ⬜ |
-| **TH-1** | Структурированные уроки с шагами | Теория | 🟡 Средне | — | ⬜ |
-| **TH-2** | Формульный справочник | Теория | 🟢 Лёгко | — | ⬜ |
-| **TH-3** | Flashcards + SM-2 | Методика | 🟡 Средне | — | ⬜ |
-| **TH-4** | Timed Drills (speed/marathon/streak) | Методика | 🟡 Средне | — | ⬜ |
-| **TH-5** | Strategy Guides | Контент | 🟢 Лёгко | — | ⬜ |
-| **TH-6** | Mistake Journal (дневник ошибок) | UX | 🟡 Средне | — | ⬜ |
-| **TH-C** | Обновлённая навигация LearnPage | UI | 🟢 Лёгко | TH-1..TH-6 | ⬜ |
+| **EX-1** | IELTS Academic (вопросы + mock + sections) | Экзамен | Сложно | -- | Done |
+| **EX-2** | CSCA (Math Analysis + Logical Reasoning) | Экзамен | Сложно | -- | Done |
+| **TH-1** | Структурированные уроки с шагами | Теория | Средне | -- | Done |
+| **TH-2** | Формульный справочник + KaTeX рендеринг | Теория | Средне | -- | Done |
+| **TH-3** | Flashcards + SM-2 | Методика | Средне | -- | Done |
+| **TH-4** | Timed Drills (speed/marathon/streak) | Методика | Средне | -- | Done |
+| **TH-5** | Strategy Guides | Контент | Лёгко | -- | Done |
+| **TH-6** | Mistake Journal (дневник ошибок) | UX | Средне | -- | Done |
+| **TH-C** | Обновлённая навигация LearnPage | UI | Лёгко | TH-1..TH-6 | Done |
+| **FIX-1** | KaTeX рендеринг теории и формул | Рендеринг | Средне | -- | Done |
+| **FIX-2** | Убрать видеоссылки | Cleanup | Лёгко | -- | Done |
+| **FIX-3** | Убрать неакт. экзамены из тьюторов | Cleanup | Лёгко | -- | Done |
+| **FIX-6** | Post-registration guided tour | UX | Средне | -- | Done |
+| **FIX-7** | Доработка Learning v2 компонентов | Исправления | Средне | TH-1..TH-6 | Done |
+| **FIX-4** | IELTS полная поддержка | Контент/Seed | Сложно | -- | Done |
+| **FIX-5** | CSCA полная поддержка | Контент/Seed | Сложно | -- | Done |
 
 ### Порядок реализации
 

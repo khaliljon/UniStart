@@ -2,22 +2,29 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAppSelector } from '../hooks/useAppSelector';
 import { drillService } from '../services/drillService';
 import type { DrillQuestion, DrillAnswerResult, DrillResult, PersonalBest, StartDrillRequest } from '../types';
+import MathText from '../components/MathRenderer';
 
 type DrillView = 'menu' | 'playing' | 'result' | 'history';
+
+const MARATHON_TIME_LIMIT = 180; // 3 minutes
 
 function TimedDrillPage() {
   const { selectedExams } = useAppSelector((state) => state.exam);
   const [view, setView] = useState<DrillView>('menu');
   const [activeDrill, setActiveDrill] = useState<DrillResult | null>(null);
+  const [activeDrillType, setActiveDrillType] = useState<string>('');
   const [question, setQuestion] = useState<DrillQuestion | null>(null);
   const [answerResult, setAnswerResult] = useState<DrillAnswerResult | null>(null);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [timer, setTimer] = useState(0);
+  const [marathonTimeLeft, setMarathonTimeLeft] = useState(MARATHON_TIME_LIMIT);
   const [personalBests, setPersonalBests] = useState<PersonalBest[]>([]);
   const [history, setHistory] = useState<DrillResult[]>([]);
   const [finalResult, setFinalResult] = useState<DrillResult | null>(null);
   const [loading, setLoading] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const marathonTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const activeDrillRef = useRef<DrillResult | null>(null);
 
   const loadPersonalBests = useCallback(async () => {
     try {
@@ -31,7 +38,25 @@ function TimedDrillPage() {
   useEffect(() => { loadPersonalBests(); }, [loadPersonalBests]);
 
   useEffect(() => {
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+      if (marathonTimerRef.current) clearInterval(marathonTimerRef.current);
+    };
+  }, []);
+
+  // Auto-complete marathon when time runs out
+  const completeMarathon = useCallback(async () => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    if (marathonTimerRef.current) clearInterval(marathonTimerRef.current);
+    const drill = activeDrillRef.current;
+    if (!drill) return;
+    try {
+      const final = await drillService.completeDrill(drill.id);
+      setFinalResult(final);
+      setView('result');
+    } catch (err) {
+      console.error('Failed to complete marathon:', err);
+    }
   }, []);
 
   const startDrill = async (drillType: 'Speed' | 'Marathon' | 'Streak') => {
@@ -43,6 +68,24 @@ function TimedDrillPage() {
       };
       const result = await drillService.startDrill(request);
       setActiveDrill(result);
+      setActiveDrillType(drillType);
+      activeDrillRef.current = result;
+
+      // Start marathon countdown
+      if (drillType === 'Marathon') {
+        setMarathonTimeLeft(MARATHON_TIME_LIMIT);
+        if (marathonTimerRef.current) clearInterval(marathonTimerRef.current);
+        marathonTimerRef.current = setInterval(() => {
+          setMarathonTimeLeft(prev => {
+            if (prev <= 1) {
+              completeMarathon();
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 1000);
+      }
+
       await loadNextQuestion(result.id);
       setView('playing');
     } catch (err) {
@@ -120,8 +163,18 @@ function TimedDrillPage() {
             {answerResult ? `${answerResult.totalCorrect} / ${answerResult.totalAnswered}` : '...'}
             {answerResult && answerResult.currentStreak > 1 && ` | Streak: ${answerResult.currentStreak}`}
           </div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
-            {timer}s
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            {activeDrillType === 'Marathon' && (
+              <div style={{
+                fontSize: '1.5rem', fontWeight: 700, fontVariantNumeric: 'tabular-nums',
+                color: marathonTimeLeft < 30 ? 'var(--error-color)' : marathonTimeLeft < 60 ? 'var(--warning-color)' : 'var(--success-color)'
+              }}>
+                {Math.floor(marathonTimeLeft / 60)}:{(marathonTimeLeft % 60).toString().padStart(2, '0')}
+              </div>
+            )}
+            <div style={{ fontSize: activeDrillType === 'Marathon' ? '0.85rem' : '1.5rem', fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary)' }}>
+              {timer}s
+            </div>
           </div>
         </div>
 
@@ -131,7 +184,7 @@ function TimedDrillPage() {
               {question.topicName} / {question.difficulty}
             </p>
           )}
-          <p style={{ margin: 0, fontSize: '1.05rem', lineHeight: 1.6 }}>{question.text}</p>
+          <p style={{ margin: 0, fontSize: '1.05rem', lineHeight: 1.6 }}><MathText text={question.text} as="span" /></p>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
@@ -154,7 +207,7 @@ function TimedDrillPage() {
                 onClick={() => handleAnswer(opt.id)}
                 disabled={!!answerResult}
               >
-                {opt.text}
+                <MathText text={opt.text} as="span" />
               </button>
             );
           })}
@@ -236,7 +289,7 @@ function TimedDrillPage() {
   // Menu view
   const drillModes = [
     { type: 'Speed' as const, title: 'Speed Round', desc: '10 questions, answer as fast as you can' },
-    { type: 'Marathon' as const, title: 'Marathon', desc: 'Answer as many as possible in a time limit' },
+    { type: 'Marathon' as const, title: 'Marathon', desc: `Answer as many questions as possible in ${MARATHON_TIME_LIMIT / 60} minutes` },
     { type: 'Streak' as const, title: 'Streak Challenge', desc: 'Keep answering correctly until you miss' },
   ];
 

@@ -54,5 +54,6 @@ public record TopicProgressDto(
     int IncorrectAnswers,
     double MasteryPercentage,
     int LessonCount = 0,
-    bool HasVideoLessons = false
+    bool HasVideoLessons = false,
+    int IrtLevel = 50
 );

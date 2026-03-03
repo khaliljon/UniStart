@@ -1,9 +1,11 @@
 import { Outlet, NavLink } from 'react-router-dom';
 import ProfileDropdown from './ProfileDropdown';
+import GuidedTour from './GuidedTour';
 
 function Layout() {
   return (
     <div className="layout">
+      <GuidedTour />
       <nav className="navbar">
         <div className="container navbar-content">
           <NavLink to="/" className="navbar-brand">

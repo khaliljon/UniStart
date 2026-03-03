@@ -132,6 +132,7 @@ export interface TopicProgress {
   masteryPercentage: number;
   lessonCount?: number;
   hasVideoLessons?: boolean;
+  irtLevel?: number;
 }
 
 // ─── Stage 4: Enhanced Analytics Types ───────────────────────────

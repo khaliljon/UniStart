@@ -17,7 +17,7 @@ function TutorProfileEditPage() {
   const [isAvailable, setIsAvailable] = useState(true);
   const [contactPreference, setContactPreference] = useState('Chat');
 
-  const EXAM_OPTIONS = ['SAT', 'TOEFL', 'IELTS', 'NUET', 'GRE', 'GMAT', 'ЕНТ'];
+  const EXAM_OPTIONS = ['SAT', 'TOEFL', 'IELTS', 'NUET', 'CSCA'];
 
   const loadProfile = useCallback(async () => {
     try {
