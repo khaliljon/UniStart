@@ -80,7 +80,8 @@ public record QuestionStatsDto(
     Dictionary<string, int> ByDifficulty,
     Dictionary<string, int> ByTopic,
     int TopicsWithQuestions,
-    int TopicsWithoutQuestions
+    int TopicsWithoutQuestions,
+    List<string> TopicsWithoutQuestionsList
 );
 
 // ─── Admin User Management ──────────────────────────

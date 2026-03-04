@@ -184,6 +184,23 @@ public class QuestionImportController : ControllerBase
         return Ok(new { approved, message = $"{approved} questions approved and created" });
     }
 
+    /// <summary>Delete a single import job and all its drafts</summary>
+    [HttpDelete("jobs/{jobId:int}")]
+    public async Task<IActionResult> DeleteJob(int jobId)
+    {
+        var ok = await _importService.DeleteJobAsync(jobId);
+        if (!ok) return NotFound();
+        return Ok(new { message = "Job deleted" });
+    }
+
+    /// <summary>Delete ALL import jobs (clear history)</summary>
+    [HttpDelete("jobs")]
+    public async Task<IActionResult> DeleteAllJobs()
+    {
+        var deleted = await _importService.DeleteAllJobsAsync();
+        return Ok(new { deleted, message = $"{deleted} jobs deleted" });
+    }
+
     private int GetAdminId()
     {
         var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value

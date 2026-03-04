@@ -64,17 +64,22 @@ function AdminLayout() {
                 Пользователи
               </NavLink>
             </li>
+            <li>
+              <NavLink to="/tutors">
+                Тьюторы
+              </NavLink>
+            </li>
             <li ref={moreRef} style={{ position: 'relative' }}>
-              <button
-                onClick={() => setMoreOpen(!moreOpen)}
+              <NavLink
+                to="#"
+                onClick={(e) => { e.preventDefault(); setMoreOpen(!moreOpen); }}
+                className={({ isActive: _unused }) => ''}
                 style={{
-                  background: 'none', border: 'none', cursor: 'pointer',
-                  color: 'var(--text-primary)', fontSize: 'inherit', fontFamily: 'inherit',
-                  padding: '0.5rem 0.75rem', display: 'flex', alignItems: 'center', gap: '0.25rem',
+                  gap: '0.25rem',
                 }}
               >
                 Ещё <span style={{ fontSize: '0.55rem', opacity: 0.6 }}>▼</span>
-              </button>
+              </NavLink>
               {moreOpen && (
                 <div style={{
                   position: 'absolute', top: '100%', right: 0, minWidth: '170px',
@@ -83,7 +88,6 @@ function AdminLayout() {
                   zIndex: 100, padding: '0.35rem 0', marginTop: '0.25rem',
                 }}>
                   {[
-                    { label: 'Тьюторы', path: '/tutors' },
                     { label: 'Импорт JSON', path: '/import' },
                     { label: 'Импорт файлов', path: '/question-import' },
                     { label: 'Аудит', path: '/audit' },

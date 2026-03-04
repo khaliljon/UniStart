@@ -19,6 +19,8 @@ export default defineConfig({
         target: 'http://localhost:5009',
         changeOrigin: true,
         secure: false,
+        timeout: 600000, // 10 minutes — OCR + LLM extraction can take 6+ minutes
+        proxyTimeout: 600000,
       },
       '/hubs': {
         target: 'http://localhost:5009',

@@ -1,12 +1,12 @@
 # UniStart -- Статус проекта и план запуска
 
-> **Последнее обновление**: 3 марта 2026
+> **Последнее обновление**: 4 марта 2026
 
 ---
 
 ## Текущий статус: v2 Learning -- Sprint 3 🔄 в работе
 
-### Сводка состояния на 2 марта 2026
+### Сводка состояния на 4 марта 2026
 
 **Что работает стабильно:**
 - Ядро платформы: IRT 3PL + CAT, адаптивная практика, mock exams (SAT, TOEFL, NUET, IELTS, CSCA)
@@ -196,23 +196,23 @@
 
 **Backend задачи:**
 
-- [ ] **FIX-17.1** Сущность `QuestionImportJob` (Id, AdminUserId, FileName, FileType, Status, CreatedAt, CompletedAt, TotalExtracted, TotalApproved, ExamTypeCode)
-- [ ] **FIX-17.2** Сущность `ImportedQuestionDraft` (Id, ImportJobId, QuestionText, Options JSON, CorrectOptionIndex, Explanation, TopicId?, Difficulty, IrtA, IrtB, IrtC, Status: Pending/Approved/Rejected, Source: Exact/Analog)
-- [ ] **FIX-17.3** Миграция EF Core: AddQuestionImport
-- [ ] **FIX-17.4** `IFileParserService` + реализации:
+- [x] **FIX-17.1** Сущность `QuestionImportJob` (Id, AdminUserId, FileName, FileType, Status, CreatedAt, CompletedAt, TotalExtracted, TotalApproved, ExamTypeCode)
+- [x] **FIX-17.2** Сущность `ImportedQuestionDraft` (Id, ImportJobId, QuestionText, Options JSON, CorrectOptionIndex, Explanation, TopicId?, Difficulty, IrtA, IrtB, IrtC, Status: Pending/Approved/Rejected, Source: Exact/Analog)
+- [x] **FIX-17.3** Миграция EF Core: AddQuestionImport
+- [x] **FIX-17.4** `IFileParserService` + реализации:
   - `PdfParserService` — парсинг PDF через библиотеку (iTextSharp / PdfPig)
   - `DocxParserService` — парсинг DOCX через OpenXML SDK
   - `ExcelParserService` — парсинг XLSX через ClosedXML / EPPlus
-- [ ] **FIX-17.5** `IQuestionExtractorService` — извлечение Q/A пар из текста:
+- [x] **FIX-17.5** `IQuestionExtractorService` — извлечение Q/A пар из текста:
   - Regex шаблоны: "1. Question text\nA) ... B) ... C) ... D) ...\nAnswer: A"
   - Поддержка форматов: нумерованные, lettered options, tabular (Excel rows)
   - Извлечение explanations если есть
-- [ ] **FIX-17.6** `IQuestionGeneratorService` — иопциональная генерация аналогов:
+- [x] **FIX-17.6** `IQuestionGeneratorService` — иопциональная генерация аналогов:
   - Перемешивание вариантов ответов
   - Замена чисел / имён (для math/reading)
   - Перефразирование (если подключить LLM — OpenAI / local)
   - Автоматический расчёт IRT параметров: a=1.0, b по difficulty, c=0.25
-- [ ] **FIX-17.7** `QuestionImportController`:
+- [x] **FIX-17.7** `QuestionImportController`:
   - `POST /api/admin/question-import/upload` — загрузка файла + запуск парсинга (Hangfire job)
   - `GET /api/admin/question-import/jobs` — список импортов
   - `GET /api/admin/question-import/jobs/{id}/drafts` — черновики вопросов
@@ -220,22 +220,22 @@
   - `PUT /api/admin/question-import/drafts/{id}/reject` — отклонить
   - `PUT /api/admin/question-import/drafts/{id}` — редактировать черновик
   - `POST /api/admin/question-import/jobs/{id}/approve-all` — одобрить все pending
-- [ ] **FIX-17.8** Background job (Hangfire): ProcessQuestionImportJob — парсинг файла, извлечение, сохранение drafts
+- [x] **FIX-17.8** Background job (Hangfire): ProcessQuestionImportJob — парсинг файла, извлечение, сохранение drafts
 
 **Frontend задачи:**
 
-- [ ] **FIX-17.9** `AdminQuestionImportPage.tsx` — страница загрузки:
+- [x] **FIX-17.9** `AdminQuestionImportPage.tsx` — страница загрузки:
   - Drag-and-drop zone для файлов (PDF/DOCX/XLSX)
   - Выбор экзамена и секции для привязки
   - Прогресс загрузки и парсинга
-- [ ] **FIX-17.10** `AdminImportReviewPage.tsx` — страница ревью:
+- [x] **FIX-17.10** `AdminImportReviewPage.tsx` — страница ревью:
   - Таблица с извлечёнными вопросами
   - Inline-редактирование текста, вариантов, объяснения
   - Approve / Reject / Edit на каждый вопрос
   - Bulk approve / reject
   - Предпросмотр вопроса (как будет выглядеть в тесте)
-- [ ] **FIX-17.11** Роутинг: `/admin/question-import`, `/admin/question-import/:jobId/review`
-- [ ] **FIX-17.12** `questionImportService.ts` — API сервис
+- [x] **FIX-17.11** Роутинг: `/admin/question-import`, `/admin/question-import/:jobId/review`
+- [x] **FIX-17.12** `questionImportService.ts` — API сервис
 
 **NuGet пакеты (backend):**
 
@@ -271,6 +271,84 @@
 
 > **Итого**: ~6–7 дней. Ключевой risk — качество парсинга PDF (сложная структура).
 > Рекомендация: начать с Excel (самый предсказуемый формат), затем DOCX, потом PDF.
+
+### FIX-18. Статистика — показ непокрытых тем
+- [x] Backend: `QuestionStatsDto.TopicsWithoutQuestionsList` — список непокрытых тем в формате `"ExamCode: TopicName"`
+- [x] Backend: `AdminService.GetStatsAsync()` — вычисление uncovered topics через JOIN с ExamSections
+- [x] Frontend: карточка "Без вопросов" теперь кликабельна — раскрывает список непокрытых тем
+- [x] Стилизация: красная левая граница, компактный скроллируемый список
+
+### FIX-19. Пагинация в разделе "По темам"
+- [x] Frontend: `AdminStatsPage.tsx` — добавлены `topicPage` / `setTopicPage` state
+- [x] Отображение 20 тем на страницу с кнопками "← Назад" / "Вперёд →" и счётчиком страниц
+- [x] Стилизация кнопок пагинации с hover-эффектами
+
+### FIX-20. Навигация — Тьюторы в основное меню + стиль "Ещё"
+- [x] `AdminLayout.tsx`: "Тьюторы" перенесён из dropdown "Ещё" в основной navbar как `<NavLink to="/tutors">`
+- [x] "Ещё" заменён с `<button>` на `<NavLink>` с идентичным стилем `.navbar-nav a` (цвет, font-weight, padding, border-radius)
+- [x] Dropdown сокращён с 6 до 5 пунктов
+
+### FIX-21. Удаление истории импорта
+- [x] Backend: `IQuestionImportService.DeleteJobAsync(int jobId)` — каскадное удаление (Drafts → Files → Job)
+- [x] Backend: `IQuestionImportService.DeleteAllJobsAsync()` — удаление всех jobs с каскадом
+- [x] Controller: `DELETE /api/admin/question-import/jobs/{jobId}` и `DELETE /api/admin/question-import/jobs`
+- [x] Frontend: кнопка "×" для удаления каждого job с `confirm()` диалогом
+- [x] Frontend: кнопка "Очистить всё" в заголовке списка jobs (красная outline, с подтверждением)
+- [x] `questionImportService.ts`: методы `deleteJob()`, `deleteAllJobs()`
+
+### FIX-22. Парсер — авто-генерация дистракторов для Solution-only вопросов
+- [x] `QuestionExtractorService.ParseQuestionBlock()` — при отсутствии MCQ-опций (A/B/C/D), но наличии строки "Solution:" или "Answer:", извлекает решение как правильный ответ и генерирует 3 неверных варианта
+- [x] `ExtractSolutionValue()` — извлечение значения из строки Solution/Answer/Explanation (отделяет от одиночных букв-ссылок)
+- [x] `GenerateDistractors()` — основной метод генерации:
+  - **Числовые ответы** (`TryGenerateNumericDistractors`): вариации ±1–4 для малых чисел, ±20% для больших, смена знака, удвоение/деление
+  - **Множества/наборы** (`TryGenerateSetDistractors`): удаление элемента, добавление лишнего, замена одного элемента, сдвиг порядка
+  - **Текстовые ответы** (`GenerateGenericDistractors`): реверс слов, усечение, "Not X", "None of the above"
+- [x] Детерминированная рандомизация (seed = `GetHashCode()` правильного ответа) для воспроизводимости
+- [x] Объяснение вопроса автоматически содержит `"Solution: {value}"` если explanation отсутствует
+
+### FIX-23. Улучшения парсера (Sprint 3, накопительные)
+
+**Ранее реализованные улучшения:**
+- [x] Inline options: `"A. value B. value C. value D. value"` на одной строке → разбивка в отдельные строки
+- [x] Fill-in-the-blank (Strategy 3): вопросы без вариантов ответов (____) → пустой список опций
+- [x] Составные задания с подпунктами: `(1)`, `(2)`, `(3)` → отдельные вопросы с контекстом родителя
+- [x] Кириллическая поддержка: А/Б/В/Г варианты + Ответ/Решение/Объяснение ключевые слова
+- [x] Мульти-файловый импорт с контекстом: раздельные файлы вопросов и ответов, answer key cross-matching
+- [x] Авто-детекция тем по секциям файла (`Exercises X.Y`, `Chapter X`, `Раздел X`)
+- [x] Роли файлов: Questions / Answers / Mixed — гибкая структура загрузки
+- [x] Инструкции администратора — текстовое поле с подсказками парсеру
+
+### FIX-24. Китайский язык — полная поддержка парсера (3 марта 2026)
+- [x] Regex: 甲/乙/丙/丁 как варианты ответов (китайские буквы вместо A/B/C/D)
+- [x] Regex: 答案/解析/解答 как ключевые слова ответа/объяснения
+- [x] Regex: 第X章/第X节 как заголовки глав/разделов (авто-детекция тем)
+- [x] Excel: китайские названия колонок (题目, 选项A, 答案, 解析, 难度, 主题)
+- [x] Нормализация сложности: 简单→Easy, 中等→Medium, 困难→Hard
+- [x] `Program.cs`: Kestrel MaxRequestBodySize = 100MB, FormOptions = 100MB
+
+### FIX-25. PDF парсер — пространственная реконструкция текста + CJK регулярные выражения (4 марта 2026)
+
+**Проблема**: Китайские математические PDF (华留学生预科教材《数学》) — 0 извлечённых вопросов. Две причины:
+1. `page.Text` в PdfPig возвращает символы в порядке PDF-потока (не визуальном) → гарбледж для CJK
+2. Regex-шаблоны требовали `\s` после пунктуации, но в китайском "1.设集合" — нет пробела
+
+**Решения:**
+- [x] `FileParserService.ParsePdf()` — полная перезапись: пространственное извлечение слов через `page.GetWords()`
+  - Группировка слов по Y-координате (строки) с допуском `avgHeight * 0.5`
+  - Сортировка слева направо внутри строк
+  - Умный пробел: gap > charWidth * 0.3 → добавить пробел (для CJK минимальные пробелы)
+  - Fallback на `page.Text` если `GetWords()` возвращает пустой результат
+- [x] `QuestionExtractorService.IsOptionLine()`: `)\s` → `)(?:\s|(?=[\u4e00-\u9fff\uff00-\uffef]))` — разрешает CJK символ сразу после скобки
+- [x] `QuestionExtractorService.SplitIntoQuestionBlocks()`: добавлена CJK-ветка для номеров вопросов `\d+[\.\)\、]\s*(?=[\u4e00-\u9fff])` + ключевые слова 题目/问题
+- [x] `QuestionExtractorService.ContainsOptionSet()`: `\s` → `(?:\s|[\u4e00-\u9fff])` для опций
+- [x] Добавлен `IsCjkQuestionStart()` хелпер — детекция "1.设集合..." стиля китайских вопросов
+- [x] `QuestionImportService.ProcessMultiFileImportAsync()` — per-file try/catch (один плохой PDF не убивает весь batch)
+- [x] `vite.config.ts` — timeout proxy 300 секунд (5 мин) для больших batch загрузок
+
+### FIX-26. Навигация — вертикальное выравнивание (4 марта 2026)
+- [x] CSS: `.navbar-nav` — `align-items: center`
+- [x] CSS: `.navbar-nav a` — `display: flex; align-items: center` (единообразно для всех ссылок)
+- [x] `AdminLayout.tsx` — удалены избыточные inline-стили у NavLink "Ещё" (color, textDecoration, fontWeight и др.), CSS теперь управляет всем
 
 | Метрика | Значение |
 |---------|----------|

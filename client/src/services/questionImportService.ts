@@ -99,6 +99,7 @@ export const questionImportService = {
     if (instructions) formData.append('instructions', instructions);
     const resp = await api.post<QuestionImportJob>('/admin/question-import/upload-batch', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 600000, // 10 minutes — OCR on image-based PDFs can be slow
     });
     return resp.data;
   },
@@ -140,6 +141,15 @@ export const questionImportService = {
 
   async approveAll(jobId: number): Promise<{ approved: number }> {
     const resp = await api.post<{ approved: number }>(`/admin/question-import/jobs/${jobId}/approve-all`);
+    return resp.data;
+  },
+
+  async deleteJob(jobId: number): Promise<void> {
+    await api.delete(`/admin/question-import/jobs/${jobId}`);
+  },
+
+  async deleteAllJobs(): Promise<{ deleted: number }> {
+    const resp = await api.delete<{ deleted: number }>('/admin/question-import/jobs');
     return resp.data;
   },
 };

@@ -157,6 +157,30 @@ function AdminQuestionImportPage() {
     }
   };
 
+  const handleDeleteJob = async (jobId: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!confirm('Удалить этот импорт и все связанные черновики?')) return;
+    try {
+      await questionImportService.deleteJob(jobId);
+      if (selectedJob?.id === jobId) { setSelectedJob(null); setDrafts([]); }
+      await loadJobs();
+    } catch {
+      setError('Failed to delete job');
+    }
+  };
+
+  const handleDeleteAllJobs = async () => {
+    if (!confirm('Удалить ВСЮ историю импортов? Это действие необратимо.')) return;
+    try {
+      await questionImportService.deleteAllJobs();
+      setSelectedJob(null);
+      setDrafts([]);
+      await loadJobs();
+    } catch {
+      setError('Failed to delete all jobs');
+    }
+  };
+
   const handleSaveEdit = async (draftId: number) => {
     try {
       await questionImportService.updateDraft(draftId, editForm);
@@ -410,7 +434,19 @@ function AdminQuestionImportPage() {
       {/* Jobs List */}
       {jobs.length > 0 && (
         <div className="card" style={{ padding: '1.5rem', marginBottom: '2rem' }}>
-          <h2 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '1rem' }}>История импортов</h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h2 style={{ fontSize: '1.1rem', fontWeight: 600 }}>История импортов</h2>
+            <button
+              onClick={handleDeleteAllJobs}
+              style={{
+                background: 'transparent', border: '1px solid var(--error-color)',
+                color: 'var(--error-color)', borderRadius: '0.375rem',
+                fontSize: '0.8rem', padding: '0.3rem 0.75rem', cursor: 'pointer',
+              }}
+            >
+              Очистить всё
+            </button>
+          </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             {jobs.map(job => (
               <div
@@ -451,6 +487,19 @@ function AdminQuestionImportPage() {
                   <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
                     {new Date(job.createdAt).toLocaleDateString()}
                   </span>
+                  <button
+                    onClick={(e) => handleDeleteJob(job.id, e)}
+                    title="Удалить"
+                    style={{
+                      background: 'transparent', border: 'none', cursor: 'pointer',
+                      color: 'var(--error-color)', fontSize: '1rem', padding: '0 0.25rem',
+                      opacity: 0.6,
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
+                    onMouseLeave={e => (e.currentTarget.style.opacity = '0.6')}
+                  >
+                    x
+                  </button>
                 </div>
               </div>
             ))}

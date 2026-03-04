@@ -462,6 +462,7 @@ export interface QuestionStats {
   byTopic: Record<string, number>;
   topicsWithQuestions: number;
   topicsWithoutQuestions: number;
+  topicsWithoutQuestionsList: string[];
 }
 
 export interface BulkImportResult {

@@ -51,6 +51,18 @@ try
     builder.Host.UseSerilog();
 
     // ═══════════════════════════════════════════════════════
+    //  KESTREL — Large file upload support (100 MB)
+    // ═══════════════════════════════════════════════════════
+    builder.WebHost.ConfigureKestrel(options =>
+    {
+        options.Limits.MaxRequestBodySize = 100_000_000; // 100 MB
+    });
+    builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>
+    {
+        options.MultipartBodyLengthLimit = 100_000_000; // 100 MB
+    });
+
+    // ═══════════════════════════════════════════════════════
     //  DATABASE (OP-1: connection string from env var if set)
     // ═══════════════════════════════════════════════════════
     var connectionString = Environment.GetEnvironmentVariable("UNISTART_DB_CONNECTION")
@@ -97,6 +109,7 @@ try
     builder.Services.AddScoped<IFileParserService, FileParserService>();
     builder.Services.AddScoped<IQuestionExtractorService, QuestionExtractorService>();
     builder.Services.AddScoped<IQuestionImportService, QuestionImportService>();
+    builder.Services.AddSingleton<ILlmExtractionService, LlmExtractionService>();
 
     // ═══════════════════════════════════════════════════════
     //  PRESENCE TRACKER — Singleton (T-9)

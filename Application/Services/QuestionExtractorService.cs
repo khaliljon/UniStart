@@ -77,18 +77,18 @@ public class QuestionExtractorService : IQuestionExtractorService
 
         foreach (var row in rows)
         {
-            var questionText = GetValue(row, "question", "questiontext", "q", "text", "вопрос");
+            var questionText = GetValue(row, "question", "questiontext", "q", "text", "вопрос", "题目", "问题", "试题");
             if (string.IsNullOrWhiteSpace(questionText))
                 continue;
 
-            var optionA = GetValue(row, "optiona", "a", "option_a", "option1", "вариант_а", "варианта");
-            var optionB = GetValue(row, "optionb", "b", "option_b", "option2", "вариант_б", "вариантб");
-            var optionC = GetValue(row, "optionc", "c", "option_c", "option3", "вариант_в", "вариантв");
-            var optionD = GetValue(row, "optiond", "d", "option_d", "option4", "вариант_г", "вариантг");
-            var answer = GetValue(row, "answer", "correctanswer", "correct", "ответ", "правильный");
-            var explanation = GetValue(row, "explanation", "explain", "rationale", "объяснение", "пояснение");
-            var hint = GetValue(row, "hint", "подсказка");
-            var difficulty = GetValue(row, "difficulty", "level", "сложность", "уровень");
+            var optionA = GetValue(row, "optiona", "a", "option_a", "option1", "вариант_а", "варианта", "选项a", "甲");
+            var optionB = GetValue(row, "optionb", "b", "option_b", "option2", "вариант_б", "вариантб", "选项b", "乙");
+            var optionC = GetValue(row, "optionc", "c", "option_c", "option3", "вариант_в", "вариантв", "选项c", "丙");
+            var optionD = GetValue(row, "optiond", "d", "option_d", "option4", "вариант_г", "вариантг", "选项d", "丁");
+            var answer = GetValue(row, "answer", "correctanswer", "correct", "ответ", "правильный", "答案", "正确答案");
+            var explanation = GetValue(row, "explanation", "explain", "rationale", "объяснение", "пояснение", "解析", "详解");
+            var hint = GetValue(row, "hint", "подсказка", "提示");
+            var difficulty = GetValue(row, "difficulty", "level", "сложность", "уровень", "难度");
 
             var options = new List<DraftOptionDto>();
             var optionTexts = new[] { optionA ?? "", optionB ?? "", optionC ?? "", optionD ?? "" };
@@ -129,16 +129,20 @@ public class QuestionExtractorService : IQuestionExtractorService
 
         // Broad pattern to detect question starts:
         //   1. "1." / "1)" / "1:" — standard numbering
-        //   2. "Question 1:" / "Q1:" / "Вопрос 1:"
+        //   2. "Question 1:" / "Q1:" / "Вопрос 1:" / "第1题"
         //   3. "#1" — hash numbering
         //   4. Roman numerals: "I." / "II."
+        //   5. Chinese circled/parenthesized numbers: （1）
         // NOTE: (1)/(2) pattern intentionally excluded — it matches sub-parts,
         //       not top-level questions. Sub-parts are handled in fill-in parsing.
         var pattern = @"(?:^|\n)\s*(?:" +
-            @"\d{1,4}\s*[\.\)\:]\s" +                       // 1. / 1) / 1:
-            @"|(?:Question|Q|Вопрос|Задание|Задача|Упражнение)\s*\d+[:\.\)]\s*" +  // Question 1:
+            @"\d{1,4}\s*[\.\)\:\、](?:\s|(?=[\u4e00-\u9fff]))" +  // 1. / 1) / 1、(+CJK)
+            @"|(?:Question|Q|Вопрос|Задание|Задача|Упражнение|题目|问题)\s*\d+[:\.\)：、]\s*" +
             @"|#\s*\d{1,4}[\.\:\s]" +                       // #1.
             @"|(?=[IVXLC]{1,6}[\.\)]\s)[IVXLC]+[\.\)]\s" +  // I. / II. (Roman)
+            @"|第\s*\d{1,4}\s*题[\.\:\、：]?\s*" +         // 第1题 / 第2题：
+            @"|（\d{1,4}）\s*" +                        // （1）(fullwidth parenthesized)
+            @"|\d{1,4}\s*[\.\)\、]\s*(?=[\u4e00-\u9fff(\(（$])" + // CJK: 1.设 / 1、若
             @")";
 
         var matches = Regex.Matches(text, pattern, RegexOptions.IgnoreCase | RegexOptions.Multiline);
@@ -148,7 +152,7 @@ public class QuestionExtractorService : IQuestionExtractorService
             var start = matches[i].Index;
             var end = i + 1 < matches.Count ? matches[i + 1].Index : text.Length;
             var block = text.Substring(start, end - start).Trim();
-            if (block.Length > 10)
+            if (block.Length > 10 && !IsTextbookContent(block))
             {
                 blocks.Add(block);
             }
@@ -320,8 +324,27 @@ public class QuestionExtractorService : IQuestionExtractorService
         }
 
         var questionText = string.Join(" ", questionLines).Trim();
-        if (string.IsNullOrWhiteSpace(questionText) || optionLines.Count < 2)
+        if (string.IsNullOrWhiteSpace(questionText))
             return null;
+
+        // If no MCQ options but we have a solution/answer line, generate distractors
+        if (optionLines.Count < 2)
+        {
+            var solutionText = ExtractSolutionValue(answerLine) ?? ExtractSolutionValue(explanationLine);
+            if (!string.IsNullOrEmpty(solutionText))
+            {
+                var generatedOptions = GenerateDistractors(solutionText);
+                var solExplanation = CleanExplanationText(explanationLine);
+                return new ExtractedQuestion(
+                    questionText,
+                    generatedOptions,
+                    string.IsNullOrWhiteSpace(solExplanation) ? $"Solution: {solutionText}" : solExplanation,
+                    null,
+                    null
+                );
+            }
+            return null;
+        }
 
         var options = ParseOptionLines(optionLines, answerLine);
         if (options.Count < 2)
@@ -344,47 +367,132 @@ public class QuestionExtractorService : IQuestionExtractorService
 
     private static bool IsOptionLine(string line)
     {
-        // Matches:  A. / A) / A: / A、/ (A) / А. (Cyrillic А/Б/В/Г)
+        // Matches:  A. / A) / A: / A、/ (A) / А. (Cyrillic А/Б/В/Г) / 甲/乙/丙/丁 (Chinese)
+        // Trailing: \s or CJK char (Chinese text has no space after punctuation)
         return Regex.IsMatch(line,
             @"^(?:" +
             @"[A-Ea-e]\s*[\.\)\:\、]" +          // A. / A) / A: / A、
             @"|[\(（][A-Ea-e][\)）]" +            // (A) / （A）
             @"|[А-Га-г]\s*[\.\)\:\、]" +          // А. / Б) (Cyrillic)
             @"|[\(（][А-Га-г][\)）]" +            // (А) (Cyrillic parenthesized)
-            @")\s",
+            @"|[甲乙丙丁]\s*[\.\)\:\、．）]" +     // 甲. / 乙) / 丙、(Chinese traditional)
+            @"|[\(（][甲乙丙丁][\)）]" +           // (甲) / （乙）
+            @")(?:\s|(?=[\u4e00-\u9fff\uff00-\uffef]))",
             RegexOptions.None);
     }
 
     private static bool IsAnswerLine(string line)
     {
         return Regex.IsMatch(line,
-            @"^(?:Answer|Correct\s*(?:answer)?|Key|Ответ|Правильный(?:\s*ответ)?)[:\s]",
+            @"^(?:Answer|Correct\s*(?:answer)?|Key|Ответ|Правильный(?:\s*ответ)?|答案|正确答案|参考答案)[：:\s]",
             RegexOptions.IgnoreCase);
     }
 
     private static bool IsExplanationLine(string line)
     {
         return Regex.IsMatch(line,
-            @"^(?:Explanation|Explain|Solution|Решение|Объяснение|Пояснение|Rationale|Hint)[:\s]",
+            @"^(?:Explanation|Explain|Solution|Решение|Объяснение|Пояснение|Rationale|Hint|解析|解答|解题思路|详解|提示)[：:\s]",
             RegexOptions.IgnoreCase);
+    }
+
+    /// <summary>
+    /// Check if the line looks like a Chinese-format question number (e.g. "1.设集合..." or "3、若...")
+    /// where there is no whitespace between the number/punctuation and the CJK text.
+    /// </summary>
+    private static bool IsCjkQuestionStart(string line)
+    {
+        return Regex.IsMatch(line,
+            @"^\d{1,4}\s*[\.\)\、．）]\s*[\u4e00-\u9fff(\(（$\\]");
     }
 
     private static bool IsSectionHeader(string line)
     {
         // Matches: "Exercises 1.1", "Exercise 1:", "Self-Test 1", "Section 1.2",
         //          "Chapter 1", "Раздел 1.1", "Упражнения 1.1"
+        //          "第一章", "第1节", "第三单元"
         return Regex.IsMatch(line,
             @"^(?:Exercise[s]?|Self[- ]Test|Section|Chapter|Part|" +
             @"Раздел|Глава|Упражнени[ея]|Тест|Контрольн)" +
             @"\s*\d",
-            RegexOptions.IgnoreCase);
+            RegexOptions.IgnoreCase)
+            || Regex.IsMatch(line, @"^第[一二三四五六七八九十百\d]+[章节单元部分课]");
+    }
+
+    /// <summary>
+    /// Detect text blocks that are textbook content (definitions, examples, notes)
+    /// rather than actual test questions. Used to filter out false positives from OCR text.
+    /// </summary>
+    private static bool IsTextbookContent(string block)
+    {
+        var lines = block.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        var firstLine = lines.FirstOrDefault()?.Trim() ?? "";
+        var stripped = StripLeadingNumber(firstLine);
+
+        // If block has answer options (A/B/C/D), it's likely a real question — keep it
+        if (ContainsOptionSet(block)) return false;
+
+        // ── Chinese textbook patterns ──
+
+        // Definitions, examples, notes, theorems, proofs, summaries
+        if (Regex.IsMatch(stripped, @"^(?:定义|例\s*\d|注\s*\d|性质|定理|推论|小结|证明|解[题答：:]|我们把|由所有|即)",
+            RegexOptions.IgnoreCase))
+            return true;
+
+        // Chapter/section headers: "第X章", "第X节", chapter titles with numbers
+        if (Regex.IsMatch(stripped, @"第\s*\d+\s*章|第\s*\d+\s*节|空间\S+的\S+|平面向量|空间向量|导数|排列|组合|随机变量|概率分布",
+            RegexOptions.None))
+            return true;
+
+        // Content starting with explanation keywords
+        if (Regex.IsMatch(stripped, @"^(?:我们|由|即|例如|因为|所以|由此|综上|特别地|一般地|显然|关于|用符号|写出集合)",
+            RegexOptions.None))
+            return true;
+
+        // Textbook summary items: "集合的特点", "元素和集合之间的关系"
+        if (Regex.IsMatch(stripped, @"^(?:集合|元素|自然数|整数|有理数|实数|不等式|区间|向量)",
+            RegexOptions.None) && !Regex.IsMatch(block, @"\(\s*\)", RegexOptions.None))
+            return true;
+
+        // Fill-in-the-blank exercises from textbook (not test): "用符号…填空"
+        if (Regex.IsMatch(block, @"填空|填入", RegexOptions.None))
+            return true;
+
+        // Block contains "definition" in English or Chinese
+        if (Regex.IsMatch(block, @"\(definition\)|\(subset\)|\(union set\)|\(empty set\)|\(equality\)|\(interval\)|\(inequality\)",
+            RegexOptions.IgnoreCase))
+            return true;
+
+        // ── Russian textbook patterns ──
+        if (Regex.IsMatch(stripped, @"^(?:Определение|Пример|Примечание|Свойство|Теорема|Доказательство|Следствие|Замечание)",
+            RegexOptions.IgnoreCase))
+            return true;
+
+        // ── Universal heuristics ──
+
+        // Block is long (>800 chars) without answer options → likely textbook paragraph
+        if (block.Length > 800 && !ContainsOptionSet(block))
+            return true;
+
+        // Block has no question-like pattern (no ( ) placeholder, no 则, no 求, no ?/？)
+        // and is just a statement → textbook content
+        if (!Regex.IsMatch(block, @"[?？]|\(\s*\)|则下列|下列.*正确|等于|求|解不等式", RegexOptions.None)
+            && !ContainsOptionSet(block)
+            && block.Length > 100)
+            return true;
+
+        // Table of contents: multiple chapter references
+        if (Regex.IsMatch(block, @"第\d+章.*第\d+章", RegexOptions.Singleline))
+            return true;
+
+        return false;
     }
 
     private static bool ContainsOptionSet(string text)
     {
         // Check that text contains at least A and B options (on separate lines OR inline)
-        var hasA = Regex.IsMatch(text, @"(?:^|\n)\s*(?:[Aa][\.\)\:\、]|[\(（][Aa][\)）])\s", RegexOptions.Multiline);
-        var hasB = Regex.IsMatch(text, @"(?:^|\n|\s{2,})(?:[Bb][\.\)\:\、]|[\(（][Bb][\)）])\s", RegexOptions.Multiline);
+        // Allow CJK character to follow directly (no space needed)
+        var hasA = Regex.IsMatch(text, @"(?:^|\n)\s*(?:[Aa][\.\)\:\、]|[\(（][Aa][\)）]|甲\s*[\.\)\:\、．）])(?:\s|[\u4e00-\u9fff])", RegexOptions.Multiline);
+        var hasB = Regex.IsMatch(text, @"(?:^|\n|\s{2,})(?:[Bb][\.\)\:\、]|[\(（][Bb][\)）]|乙\s*[\.\)\:\、．）])(?:\s|[\u4e00-\u9fff])", RegexOptions.Multiline);
         return hasA && hasB;
     }
 
@@ -414,8 +522,8 @@ public class QuestionExtractorService : IQuestionExtractorService
             yield break;
         }
 
-        // Split before each option letter (B, C, D, E) that follows whitespace
-        var parts = Regex.Split(line, @"\s+(?=[B-Eb-eБ-Гб-г]\s*[\.\)\:\、])");
+        // Split before each option letter (B, C, D, E or 乙, 丙, 丁) that follows whitespace
+        var parts = Regex.Split(line, @"\s+(?=[B-Eb-eБ-Гб-г乙丙丁]\s*[\.\)\:\、．）])");
         if (parts.Length >= 2)
         {
             foreach (var part in parts)
@@ -536,42 +644,47 @@ public class QuestionExtractorService : IQuestionExtractorService
 
     private static string StripLeadingNumber(string line)
     {
-        // Strip: "1. ", "1) ", "(1) ", "（1）", "#1 ", "Q1: ", "Question 1: "
+        // Strip: "1. ", "1) ", "(1) ", "（1）", "#1 ", "Q1: ", "Question 1: ", "第1题"
         return Regex.Replace(line,
             @"^(?:" +
-            @"\d{1,4}\s*[\.\)\:]\s*" +
+            @"\d{1,4}\s*[\.\)\:\、]\s*" +
             @"|[\(（]\s*\d{1,4}\s*[\)）]\s*" +
             @"|#\s*\d{1,4}[\.\:\s]\s*" +
-            @"|(?:Question|Q|Вопрос|Задание|Задача)\s*\d+[:\.\)]\s*" +
+            @"|(?:Question|Q|Вопрос|Задание|Задача|题目|问题)\s*\d+[:\.\)\:\、：]\s*" +
+            @"|第\s*\d{1,4}\s*题[\.\:\、：]?\s*" +
             @")",
             "", RegexOptions.IgnoreCase).Trim();
     }
 
     private static string CleanOptionText(string line)
     {
-        // Remove option letter prefix: A. / A) / (A) / А. etc.
+        // Remove option letter prefix: A. / A) / (A) / А. / 甲. etc.
         return Regex.Replace(line,
             @"^(?:" +
             @"[A-Ea-e]\s*[\.\)\:\、]\s*" +
             @"|[\(（][A-Ea-e][\)）]\s*" +
             @"|[А-Га-г]\s*[\.\)\:\、]\s*" +
             @"|[\(（][А-Га-г][\)）]\s*" +
+            @"|[甲乙丙丁]\s*[\.\)\:\、．）]\s*" +
+            @"|[\(（][甲乙丙丁][\)）]\s*" +
             @")",
             "").Trim();
     }
 
     private static string GetOptionLetter(string line)
     {
-        // Extract the letter from option line
+        // Extract the letter from option line (Latin, Cyrillic, or Chinese)
         var match = Regex.Match(line,
-            @"^(?:[\(（]?\s*([A-Ea-eА-Га-г])\s*[\.\)\:\、）]?)");
+            @"^(?:[\(（]?\s*([A-Ea-eА-Га-г甲乙丙丁])\s*[\.\)\:\、．）]?)");
         if (match.Success)
         {
             var letter = match.Groups[1].Value.ToUpper();
             // Normalize Cyrillic: А→A, Б→B, В→C, Г→D
+            // Normalize Chinese: 甲→A, 乙→B, 丙→C, 丁→D
             return letter switch
             {
                 "А" => "A", "Б" => "B", "В" => "C", "Г" => "D",
+                "甲" => "A", "乙" => "B", "丙" => "C", "丁" => "D",
                 _ => letter
             };
         }
@@ -582,7 +695,7 @@ public class QuestionExtractorService : IQuestionExtractorService
     {
         if (string.IsNullOrWhiteSpace(line)) return "";
         var match = Regex.Match(line,
-            @"(?:Answer|Correct|Key|Ответ|Правильный)[:\s]+([A-Ea-eА-Га-г])",
+            @"(?:Answer|Correct|Key|Ответ|Правильный|答案|正确答案|参考答案)[：:\s]+([A-Ea-eА-Га-г甲乙丙丁])",
             RegexOptions.IgnoreCase);
         if (match.Success)
         {
@@ -590,6 +703,7 @@ public class QuestionExtractorService : IQuestionExtractorService
             return letter switch
             {
                 "А" => "A", "Б" => "B", "В" => "C", "Г" => "D",
+                "甲" => "A", "乙" => "B", "丙" => "C", "丁" => "D",
                 _ => letter
             };
         }
@@ -600,8 +714,242 @@ public class QuestionExtractorService : IQuestionExtractorService
     {
         if (string.IsNullOrWhiteSpace(line)) return "";
         return Regex.Replace(line,
-            @"^(?:Explanation|Explain|Solution|Решение|Объяснение|Пояснение|Rationale|Hint)[:\s]*",
+            @"^(?:Explanation|Explain|Solution|Решение|Объяснение|Пояснение|Rationale|Hint|解析|解答|解题思路|详解|提示)[：:\s]*",
             "", RegexOptions.IgnoreCase).Trim();
+    }
+
+    /// <summary>
+    /// Extract the value from a Solution/Explanation/Answer line.
+    /// Returns the portion after the prefix keyword, or null if empty.
+    /// </summary>
+    private static string? ExtractSolutionValue(string? line)
+    {
+        if (string.IsNullOrWhiteSpace(line)) return null;
+
+        // If the line is an answer line like "Answer: B", skip — that's a letter reference, not a value
+        if (IsAnswerLine(line))
+        {
+            // But if the answer is more than just a letter, extract it as a value
+            var letterOnly = Regex.Match(line,
+                @"(?:Answer|Correct|Key|Ответ|Правильный|答案|正确答案|参考答案)[：:\s]+([A-Ea-eА-Га-г甲乙丙丁])\s*$",
+                RegexOptions.IgnoreCase);
+            if (letterOnly.Success) return null; // Just a letter like "Answer: B"
+        }
+
+        // Strip the prefix keyword to get the actual solution content
+        var value = Regex.Replace(line,
+            @"^(?:Explanation|Explain|Solution|Решение|Объяснение|Пояснение|Rationale|Hint|Answer|Correct\s*(?:answer)?|Key|Ответ|Правильный(?:\s*ответ)?|答案|正确答案|参考答案|解析|解答|解题思路|详解|提示)[：:\s]*",
+            "", RegexOptions.IgnoreCase).Trim();
+
+        return string.IsNullOrWhiteSpace(value) ? null : value;
+    }
+
+    /// <summary>
+    /// Generate 3 plausible wrong answer options + the correct one (marked IsCorrect).
+    /// Handles numeric answers with arithmetic variations and text answers with structural alterations.
+    /// </summary>
+    private static List<DraftOptionDto> GenerateDistractors(string correctAnswer)
+    {
+        var options = new List<DraftOptionDto>();
+        var rng = new Random(correctAnswer.GetHashCode()); // deterministic seed for consistency
+
+        // Try numeric distractor generation
+        if (TryGenerateNumericDistractors(correctAnswer, rng, out var numericOptions))
+        {
+            options = numericOptions;
+        }
+        // Try set/collection distractor generation (e.g., "{1,2,3}")
+        else if (TryGenerateSetDistractors(correctAnswer, rng, out var setOptions))
+        {
+            options = setOptions;
+        }
+        // Fallback: generic labeled distractors
+        else
+        {
+            options = GenerateGenericDistractors(correctAnswer);
+        }
+
+        // Shuffle options deterministically
+        return options.OrderBy(o => rng.Next()).ToList();
+    }
+
+    private static bool TryGenerateNumericDistractors(string answer, Random rng, out List<DraftOptionDto> options)
+    {
+        options = new List<DraftOptionDto>();
+
+        // Check if the answer is a simple number (integer or decimal)
+        var numMatch = Regex.Match(answer.Trim(), @"^[-−]?\s*(\d+(?:[.,]\d+)?)\s*$");
+        if (!numMatch.Success) return false;
+
+        var numStr = answer.Trim().Replace(",", ".").Replace("−", "-");
+        if (!double.TryParse(numStr, System.Globalization.NumberStyles.Any,
+            System.Globalization.CultureInfo.InvariantCulture, out var value))
+            return false;
+
+        var distractors = new HashSet<string> { answer.Trim() };
+        var attempts = 0;
+
+        while (distractors.Count < 4 && attempts < 20)
+        {
+            attempts++;
+            double variation;
+            var strategy = rng.Next(4);
+
+            if (value == 0)
+            {
+                // Special case for zero
+                variation = strategy switch
+                {
+                    0 => rng.Next(1, 5),
+                    1 => -rng.Next(1, 5),
+                    2 => rng.Next(1, 10) * 0.5,
+                    _ => -rng.Next(1, 10) * 0.5
+                };
+            }
+            else if (Math.Abs(value) < 20 && value == Math.Floor(value))
+            {
+                // Small integers: ±1, ±2, ±3 variations
+                variation = value + (strategy switch
+                {
+                    0 => rng.Next(1, 4),
+                    1 => -rng.Next(1, 4),
+                    2 => rng.Next(1, 3) * 2,
+                    _ => -rng.Next(1, 3) * 2
+                });
+            }
+            else
+            {
+                // Larger numbers or decimals: percentage-based variations
+                var factor = 1 + (rng.NextDouble() * 0.4 - 0.2); // ±20%
+                variation = strategy switch
+                {
+                    0 => value * factor,
+                    1 => value + (value > 0 ? rng.Next(1, (int)Math.Max(2, Math.Abs(value) * 0.3)) : -rng.Next(1, (int)Math.Max(2, Math.Abs(value) * 0.3))),
+                    2 => value * (strategy % 2 == 0 ? 2 : 0.5),
+                    _ => -value
+                };
+            }
+
+            // Format distractor the same way as the original
+            string formatted;
+            if (value == Math.Floor(value) && !answer.Contains(".") && !answer.Contains(","))
+                formatted = ((int)Math.Round(variation)).ToString();
+            else
+                formatted = Math.Round(variation, 2).ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+            distractors.Add(formatted);
+        }
+
+        // If we couldn't generate enough unique distractors, pad with simple offsets
+        var offset = 1;
+        while (distractors.Count < 4)
+        {
+            if (value == Math.Floor(value))
+                distractors.Add(((int)(value + offset * (distractors.Count % 2 == 0 ? 1 : -1))).ToString());
+            else
+                distractors.Add((value + offset * 0.5 * (distractors.Count % 2 == 0 ? 1 : -1))
+                    .ToString(System.Globalization.CultureInfo.InvariantCulture));
+            offset++;
+        }
+
+        options = distractors.Select(d => new DraftOptionDto(d, d == answer.Trim())).ToList();
+        return true;
+    }
+
+    private static bool TryGenerateSetDistractors(string answer, Random rng, out List<DraftOptionDto> options)
+    {
+        options = new List<DraftOptionDto>();
+
+        // Match set-like answers: {1,2,3}, {a,b,c}, (1,2,3)
+        var setMatch = Regex.Match(answer.Trim(), @"^[\{\(\[](.+)[\}\)\]]$");
+        if (!setMatch.Success) return false;
+
+        var elements = setMatch.Groups[1].Value
+            .Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries)
+            .Select(e => e.Trim())
+            .ToList();
+
+        if (elements.Count < 2) return false;
+
+        var bracket = answer.Trim()[0] switch
+        {
+            '{' => (open: "{", close: "}"),
+            '(' => (open: "(", close: ")"),
+            '[' => (open: "[", close: "]"),
+            _ => (open: "{", close: "}")
+        };
+
+        var distractors = new HashSet<string> { answer.Trim() };
+
+        // Strategy 1: Remove one element
+        if (elements.Count > 2)
+        {
+            var reduced = elements.ToList();
+            reduced.RemoveAt(rng.Next(reduced.Count));
+            distractors.Add($"{bracket.open}{string.Join(",", reduced)}{bracket.close}");
+        }
+
+        // Strategy 2: Add an extra element
+        if (elements.All(e => int.TryParse(e, out _)))
+        {
+            var nums = elements.Select(int.Parse).ToList();
+            var extra = nums.Max() + rng.Next(1, 4);
+            var expanded = nums.Append(extra).OrderBy(n => n).Select(n => n.ToString());
+            distractors.Add($"{bracket.open}{string.Join(",", expanded)}{bracket.close}");
+        }
+
+        // Strategy 3: Swap one element
+        if (elements.All(e => int.TryParse(e, out _)))
+        {
+            var nums = elements.Select(int.Parse).ToList();
+            var idx = rng.Next(nums.Count);
+            nums[idx] = nums[idx] + rng.Next(1, 4);
+            distractors.Add($"{bracket.open}{string.Join(",", nums.OrderBy(n => n))}{bracket.close}");
+        }
+
+        // Strategy 4: Reverse order or shift
+        var shifted = elements.Skip(1).Concat(elements.Take(1));
+        distractors.Add($"{bracket.open}{string.Join(",", shifted)}{bracket.close}");
+
+        // Pad if needed
+        while (distractors.Count < 4 && elements.All(e => int.TryParse(e, out _)))
+        {
+            var nums = elements.Select(int.Parse).ToList();
+            nums[rng.Next(nums.Count)] += rng.Next(-3, 4);
+            distractors.Add($"{bracket.open}{string.Join(",", nums.OrderBy(n => n))}{bracket.close}");
+        }
+
+        if (distractors.Count < 4) return false; // fallback to generic
+
+        options = distractors.Take(4).Select(d => new DraftOptionDto(d, d == answer.Trim())).ToList();
+        return true;
+    }
+
+    private static List<DraftOptionDto> GenerateGenericDistractors(string correctAnswer)
+    {
+        // For text answers, generate variations that look plausible
+        var options = new List<DraftOptionDto>
+        {
+            new(correctAnswer, true),
+            new($"Not {correctAnswer}", false),
+        };
+
+        // Try to create variations by word manipulation
+        var words = correctAnswer.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (words.Length >= 2)
+        {
+            // Reverse word order
+            options.Add(new DraftOptionDto(string.Join(" ", words.Reverse()), false));
+            // Drop last word
+            options.Add(new DraftOptionDto(string.Join(" ", words.Take(words.Length - 1)), false));
+        }
+        else
+        {
+            options.Add(new DraftOptionDto($"{correctAnswer} (approx.)", false));
+            options.Add(new DraftOptionDto($"None of the above", false));
+        }
+
+        return options.Take(4).ToList();
     }
 
     private static bool IsSimilarText(string a, string b)
@@ -632,6 +980,13 @@ public class QuestionExtractorService : IQuestionExtractorService
             if (idx >= 0) return idx;
         }
 
+        // Chinese: 甲, 乙, 丙, 丁
+        if (trimmed.Length == 1)
+        {
+            var idx = "甲乙丙丁".IndexOf(trimmed[0]);
+            if (idx >= 0) return idx;
+        }
+
         // Number: 1, 2, 3, 4
         if (int.TryParse(trimmed, out var num) && num >= 1 && num <= 5)
             return num - 1;
@@ -653,9 +1008,9 @@ public class QuestionExtractorService : IQuestionExtractorService
         var d = difficulty.Trim().ToLower();
         return d switch
         {
-            "easy" or "1" or "лёгкий" or "легкий" or "лёгко" or "легко" => "Easy",
-            "medium" or "2" or "средний" or "средне" => "Medium",
-            "hard" or "3" or "difficult" or "сложный" or "сложно" or "трудный" => "Hard",
+            "easy" or "1" or "лёгкий" or "легкий" or "лёгко" or "легко" or "简单" or "容易" => "Easy",
+            "medium" or "2" or "средний" or "средне" or "中等" or "一般" => "Medium",
+            "hard" or "3" or "difficult" or "сложный" or "сложно" or "трудный" or "困难" or "难" => "Hard",
             _ => null
         };
     }
@@ -685,7 +1040,7 @@ public class QuestionExtractorService : IQuestionExtractorService
     /// Handles formats like:
     ///   "1. C", "1) A", "1 - B", "1.C", "#1: D"
     ///   "1-C 2-A 3-B" (inline), "1C 2A 3B" (compact)
-    ///   Russian: "1. В", "1) Б"
+    ///   Russian: "1. В", "1) Б"  Chinese: "1. 甲", "1、丙"
     /// Returns dictionary: questionNumber → answerLetter (normalized to Latin A/B/C/D)
     /// </summary>
     public Dictionary<int, string> ExtractAnswerKeys(string text)
@@ -696,9 +1051,9 @@ public class QuestionExtractorService : IQuestionExtractorService
         text = text.Replace("\r\n", "\n").Replace("\r", "\n");
 
         // Pattern: number followed by separator and a single letter answer
-        // Matches: "1. C", "1) A", "1-B", "1: D", "1.C", "#1 C"
+        // Matches: "1. C", "1) A", "1-B", "1: D", "1.C", "#1 C", "1、甲"
         var linePattern = new Regex(
-            @"#?\s*(\d{1,4})\s*[\.\)\:\-–—]\s*([A-DА-Гa-dа-г])\b",
+            @"#?\s*(\d{1,4})\s*[\.\)\:\-–—、：]\s*([A-DА-Гa-dа-г甲乙丙丁])\b",
             RegexOptions.Multiline | RegexOptions.IgnoreCase);
 
         foreach (Match m in linePattern.Matches(text))
@@ -713,7 +1068,7 @@ public class QuestionExtractorService : IQuestionExtractorService
         // Also try compact format: "1C 2A 3B" or "1C, 2A, 3B"
         if (keys.Count < 3)
         {
-            var compactPattern = new Regex(@"\b(\d{1,4})([A-DА-Гa-dа-г])\b", RegexOptions.IgnoreCase);
+            var compactPattern = new Regex(@"\b(\d{1,4})([A-DА-Гa-dа-г甲乙丙丁])\b", RegexOptions.IgnoreCase);
             foreach (Match m in compactPattern.Matches(text))
             {
                 if (int.TryParse(m.Groups[1].Value, out var num) && num > 0)
@@ -748,12 +1103,13 @@ public class QuestionExtractorService : IQuestionExtractorService
             @"^\s*(?:" +
             @"(?:Chapter|Section|Topic|Unit|Part|Lesson)\s+[\d\.]+[:\.\-–—]\s*(.+)" +  // English
             @"|(?:Глава|Раздел|Тема|Часть|Урок|Модуль)\s+[\d\.]+[:\.\-–—]\s*(.+)" +   // Russian
+            @"|第[\d一二三四五六七八九十百]+[章节单元部分课][:\.\-–—：]?\s*(.+)" +  // Chinese: 第X章/节
             @")\s*$",
             RegexOptions.IgnoreCase);
 
-        // Also detect numbered chapter titles (e.g. "1. Sets and Logic")
+        // Also detect numbered chapter titles (e.g. "1. Sets and Logic", "第一章 集合")
         var numberedHeaderPattern = new Regex(
-            @"^\s*(?:(?:Chapter|Глава|Раздел|Тема)\s+)?(\d+(?:\.\d+)?)\s*[:\.\-–—]\s*([A-ZА-Я].{3,80})\s*$",
+            @"^\s*(?:(?:Chapter|Глава|Раздел|Тема)\s+)?(\d+(?:\.\d+)?)\s*[:\.\-–—]\s*([A-ZА-Я\u4e00-\u9fff].{3,80})\s*$",
             RegexOptions.IgnoreCase);
 
         for (int i = 0; i < lines.Length; i++)
@@ -764,7 +1120,9 @@ public class QuestionExtractorService : IQuestionExtractorService
             var m = headerPattern.Match(line);
             if (m.Success)
             {
-                var title = (m.Groups[1].Success ? m.Groups[1].Value : m.Groups[2].Value).Trim();
+                var title = (m.Groups[1].Success ? m.Groups[1].Value
+                    : m.Groups[2].Success ? m.Groups[2].Value
+                    : m.Groups[3].Value).Trim();
                 sections.Add((title, i));
                 continue;
             }
@@ -809,7 +1167,7 @@ public class QuestionExtractorService : IQuestionExtractorService
         return result;
     }
 
-    /// <summary>Convert Cyrillic answer letters to Latin equivalents</summary>
+    /// <summary>Convert Cyrillic/Chinese answer letters to Latin equivalents</summary>
     private static string NormalizeCyrillicAnswer(string letter)
     {
         return letter switch
@@ -818,6 +1176,10 @@ public class QuestionExtractorService : IQuestionExtractorService
             "Б" => "B",
             "В" => "C",  // В (Cyrillic) → C (3rd option)
             "Г" => "D",
+            "甲" => "A",
+            "乙" => "B",
+            "丙" => "C",
+            "丁" => "D",
             _ => letter
         };
     }

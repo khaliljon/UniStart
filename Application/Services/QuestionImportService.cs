@@ -12,17 +12,20 @@ public class QuestionImportService : IQuestionImportService
     private readonly UniStartDbContext _db;
     private readonly IFileParserService _parser;
     private readonly IQuestionExtractorService _extractor;
+    private readonly ILlmExtractionService _llm;
     private readonly ILogger<QuestionImportService> _logger;
 
     public QuestionImportService(
         UniStartDbContext db,
         IFileParserService parser,
         IQuestionExtractorService extractor,
+        ILlmExtractionService llm,
         ILogger<QuestionImportService> logger)
     {
         _db = db;
         _parser = parser;
         _extractor = extractor;
+        _llm = llm;
         _logger = logger;
     }
 
@@ -60,6 +63,19 @@ public class QuestionImportService : IQuestionImportService
                 case "PDF":
                     var pdfText = _parser.ParsePdf(fileStream);
                     extracted = _extractor.ExtractFromText(pdfText);
+                    // LLM fallback: if regex extraction yields poor results on CJK/OCR text
+                    if (ShouldTryLlmExtraction(extracted, pdfText))
+                    {
+                        _logger.LogInformation("Regex extraction quality is low ({Count} questions, {WithOptions} with options). Trying LLM extraction...",
+                            extracted.Count, extracted.Count(q => q.Options.Count >= 2));
+                        var llmExtracted = await _llm.ExtractQuestionsAsync(pdfText);
+                        if (llmExtracted.Count > 0 && QualityScore(llmExtracted) > QualityScore(extracted))
+                        {
+                            _logger.LogInformation("LLM extraction is better: {LlmCount} vs {RegexCount} questions. Using LLM results.",
+                                llmExtracted.Count, extracted.Count);
+                            extracted = llmExtracted;
+                        }
+                    }
                     break;
                 case "DOCX":
                     var docxText = _parser.ParseDocx(fileStream);
@@ -318,6 +334,38 @@ public class QuestionImportService : IQuestionImportService
         return approved;
     }
 
+    public async Task<bool> DeleteJobAsync(int jobId)
+    {
+        var job = await _db.QuestionImportJobs
+            .Include(j => j.Drafts)
+            .Include(j => j.Files)
+            .FirstOrDefaultAsync(j => j.Id == jobId);
+        if (job == null) return false;
+
+        _db.ImportedQuestionDrafts.RemoveRange(job.Drafts);
+        _db.ImportJobFiles.RemoveRange(job.Files);
+        _db.QuestionImportJobs.Remove(job);
+        await _db.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<int> DeleteAllJobsAsync()
+    {
+        var jobs = await _db.QuestionImportJobs
+            .Include(j => j.Drafts)
+            .Include(j => j.Files)
+            .ToListAsync();
+
+        foreach (var job in jobs)
+        {
+            _db.ImportedQuestionDrafts.RemoveRange(job.Drafts);
+            _db.ImportJobFiles.RemoveRange(job.Files);
+        }
+        _db.QuestionImportJobs.RemoveRange(jobs);
+        await _db.SaveChangesAsync();
+        return jobs.Count;
+    }
+
     // ── Mapping helpers ──────────────────────────────────────
 
     private QuestionImportJobDto MapJob(QuestionImportJob j) => new(
@@ -395,27 +443,35 @@ public class QuestionImportService : IQuestionImportService
                 _db.ImportJobFiles.Add(importFile);
                 fileNames.Add(entry.FileName);
 
-                // Parse file content
+                // Parse file content (per-file error handling)
                 string text;
                 List<Dictionary<string, string>>? rows = null;
 
-                switch (entry.FileType.ToUpper())
+                try
                 {
-                    case "PDF":
-                        text = _parser.ParsePdf(entry.Stream);
-                        break;
-                    case "DOCX":
-                        text = _parser.ParseDocx(entry.Stream);
-                        break;
-                    case "XLSX":
-                    case "CSV":
-                        rows = _parser.ParseExcel(entry.Stream);
-                        text = "";
-                        break;
-                    default:
-                        _logger.LogWarning("Skipping unsupported file type: {FileType} for {FileName}",
-                            entry.FileType, entry.FileName);
-                        continue;
+                    switch (entry.FileType.ToUpper())
+                    {
+                        case "PDF":
+                            text = _parser.ParsePdf(entry.Stream);
+                            break;
+                        case "DOCX":
+                            text = _parser.ParseDocx(entry.Stream);
+                            break;
+                        case "XLSX":
+                        case "CSV":
+                            rows = _parser.ParseExcel(entry.Stream);
+                            text = "";
+                            break;
+                        default:
+                            _logger.LogWarning("Skipping unsupported file type: {FileType} for {FileName}",
+                                entry.FileType, entry.FileName);
+                            continue;
+                    }
+                }
+                catch (Exception fileEx)
+                {
+                    _logger.LogWarning(fileEx, "Failed to parse file {FileName}, skipping", entry.FileName);
+                    continue;
                 }
 
                 switch (importFile.Role)
@@ -424,7 +480,26 @@ public class QuestionImportService : IQuestionImportService
                         if (rows != null)
                             allQuestions.AddRange(_extractor.ExtractFromRows(rows));
                         else
-                            allQuestions.AddRange(_extractor.ExtractFromText(text));
+                        {
+                            var regexQuestions = _extractor.ExtractFromText(text);
+                            // LLM fallback for individual files with poor regex results
+                            if (ShouldTryLlmExtraction(regexQuestions, text))
+                            {
+                                _logger.LogInformation("Low quality regex extraction for '{FileName}' ({Count} questions, {WithOpts} with options). Trying LLM...",
+                                    entry.FileName, regexQuestions.Count, regexQuestions.Count(q => q.Options.Count >= 2));
+                                var llmResult = await _llm.ExtractQuestionsAsync(text);
+                                if (llmResult.Count > 0 && QualityScore(llmResult) > QualityScore(regexQuestions))
+                                {
+                                    _logger.LogInformation("LLM result better for '{FileName}': {LlmCount} vs {RegexCount}. Using LLM.",
+                                        entry.FileName, llmResult.Count, regexQuestions.Count);
+                                    allQuestions.AddRange(llmResult);
+                                }
+                                else
+                                    allQuestions.AddRange(regexQuestions);
+                            }
+                            else
+                                allQuestions.AddRange(regexQuestions);
+                        }
                         // Also try topic detection from question files
                         if (!string.IsNullOrEmpty(text))
                             topicSections.AddRange(_extractor.DetectTopicSections(text));
@@ -458,7 +533,26 @@ public class QuestionImportService : IQuestionImportService
                             allQuestions.AddRange(_extractor.ExtractFromRows(rows));
                         else
                         {
-                            allQuestions.AddRange(_extractor.ExtractFromText(text));
+                            var mixedRegex = _extractor.ExtractFromText(text);
+                            // LLM fallback for mixed files with poor regex
+                            if (ShouldTryLlmExtraction(mixedRegex, text))
+                            {
+                                var llmMixed = await _llm.ExtractQuestionsAsync(text);
+                                if (llmMixed.Count > 0 && QualityScore(llmMixed) > QualityScore(mixedRegex))
+                                {
+                                    _logger.LogInformation("LLM result better for mixed '{FileName}': {LlmCount} vs {RegexCount}",
+                                        entry.FileName, llmMixed.Count, mixedRegex.Count);
+                                    allQuestions.AddRange(llmMixed);
+                                }
+                                else
+                                {
+                                    allQuestions.AddRange(mixedRegex);
+                                }
+                            }
+                            else
+                            {
+                                allQuestions.AddRange(mixedRegex);
+                            }
                             var mixedKeys = _extractor.ExtractAnswerKeys(text);
                             foreach (var kv in mixedKeys)
                                 answerKeys.TryAdd(kv.Key, kv.Value);
@@ -620,5 +714,94 @@ public class QuestionImportService : IQuestionImportService
             job.CompletedAt = DateTime.UtcNow;
             await _db.SaveChangesAsync();
         }
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  LLM QUALITY EVALUATION HELPERS
+    // ═══════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Decide whether to try LLM extraction as a fallback.
+    /// Returns true when regex extraction quality appears poor (OCR-garbled text, many items without options).
+    /// </summary>
+    private bool ShouldTryLlmExtraction(List<ExtractedQuestion> regexResults, string text)
+    {
+        if (!_llm.IsConfigured) return false;
+        if (string.IsNullOrWhiteSpace(text) || text.Length < 100) return false;
+
+        // Check if text has significant CJK content (likely OCR from Chinese PDF)
+        var cjkChars = text.Count(c => c >= '\u4e00' && c <= '\u9fff');
+        var cjkRatio = (double)cjkChars / text.Length;
+        var isCjkText = cjkRatio > 0.05; // lower threshold — even 5% CJK triggers
+
+        // Count questions with actual MCQ options (≥2 options)
+        var withOptions = regexResults.Count(q => q.Options.Count >= 2);
+        var withFullOptions = regexResults.Count(q => q.Options.Count >= 4);
+        var withCorrectAnswer = regexResults.Count(q => q.Options.Any(o => o.IsCorrect));
+
+        // ALWAYS use LLM for CJK/OCR text — regex can't handle OCR artifacts reliably
+        if (isCjkText)
+        {
+            _logger.LogInformation("LLM trigger: CJK text detected ({CjkRatio:P1}), {WithOptions} MCQ / {Total} total",
+                cjkRatio, withOptions, regexResults.Count);
+            return true;
+        }
+
+        // Non-CJK: use LLM when regex quality is clearly poor
+        if (text.Length > 5000 && regexResults.Count < 3)
+        {
+            _logger.LogInformation("LLM trigger: long text ({Length} chars) with only {Count} questions", text.Length, regexResults.Count);
+            return true;
+        }
+
+        if (regexResults.Count > 5 && withOptions < regexResults.Count * 0.3)
+        {
+            _logger.LogInformation("LLM trigger: {WithOptions}/{Total} questions have options (low ratio)", withOptions, regexResults.Count);
+            return true;
+        }
+
+        // Many questions but few with 4 options and few correct answers
+        if (regexResults.Count > 5 && withFullOptions < 3 && withCorrectAnswer < 2)
+        {
+            _logger.LogInformation("LLM trigger: {FullOpts} with 4 options, {Correct} with correct answer — quality too low",
+                withFullOptions, withCorrectAnswer);
+            return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Compute a quality score for a set of extracted questions.
+    /// Higher is better. Prioritizes: number of MCQ questions, correct answers marked, reasonable option counts.
+    /// </summary>
+    private static double QualityScore(List<ExtractedQuestion> questions)
+    {
+        if (questions.Count == 0) return 0;
+
+        double score = 0;
+        foreach (var q in questions)
+        {
+            // Base score for having a question with content
+            score += 1;
+
+            // Bonus for having MCQ options
+            if (q.Options.Count >= 2) score += 3;
+            if (q.Options.Count >= 4) score += 1;
+
+            // Bonus for having a correct answer marked
+            if (q.Options.Any(o => o.IsCorrect)) score += 2;
+
+            // Bonus for having explanation
+            if (!string.IsNullOrWhiteSpace(q.Explanation)) score += 0.5;
+
+            // Penalty for very short question text (likely garbage)
+            if (q.QuestionText.Length < 10) score -= 2;
+
+            // Penalty for very long question text (likely textbook paragraph)
+            if (q.QuestionText.Length > 500) score -= 1;
+        }
+
+        return score;
     }
 }

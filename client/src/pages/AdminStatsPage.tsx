@@ -18,6 +18,9 @@ function AdminStatsPage() {
   const [stats, setStats] = useState<QuestionStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showUncovered, setShowUncovered] = useState(false);
+  const [topicPage, setTopicPage] = useState(0);
+  const TOPICS_PER_PAGE = 20;
 
   useEffect(() => {
     const load = async () => {
@@ -62,8 +65,37 @@ function AdminStatsPage() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
         <StatCard label="Всего вопросов" value={stats.totalQuestions} icon="" />
         <StatCard label="Тем покрыто" value={`${stats.topicsWithQuestions}/${stats.topicsWithQuestions + stats.topicsWithoutQuestions}`} icon="" />
-        <StatCard label="Без вопросов" value={stats.topicsWithoutQuestions} icon="" />
+        <div
+          className="card"
+          onClick={() => stats.topicsWithoutQuestions > 0 && setShowUncovered(!showUncovered)}
+          style={{ padding: '1.25rem', textAlign: 'center', cursor: stats.topicsWithoutQuestions > 0 ? 'pointer' : 'default' }}
+        >
+          <div style={{ fontSize: '1.75rem', fontWeight: 700, color: stats.topicsWithoutQuestions > 0 ? 'var(--error-color)' : 'var(--success-color)' }}>
+            {stats.topicsWithoutQuestions}
+          </div>
+          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+            Без вопросов {stats.topicsWithoutQuestions > 0 ? (showUncovered ? '▲' : '▼') : ''}
+          </div>
+        </div>
       </div>
+
+      {/* Uncovered topics list */}
+      {showUncovered && stats.topicsWithoutQuestionsList.length > 0 && (
+        <div className="card" style={{ padding: '1.25rem', marginBottom: '1rem' }}>
+          <h3 style={{ marginBottom: '0.75rem' }}>Темы без вопросов ({stats.topicsWithoutQuestionsList.length})</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '0.4rem' }}>
+            {stats.topicsWithoutQuestionsList.map(name => (
+              <div key={name} style={{
+                padding: '0.4rem 0.75rem', borderRadius: '0.375rem',
+                background: 'var(--background-color)', fontSize: '0.85rem',
+                color: 'var(--text-secondary)', borderLeft: '3px solid var(--error-color)',
+              }}>
+                {name}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* By exam */}
       <div className="card" style={{ padding: '1.25rem', marginBottom: '1rem' }}>
@@ -95,23 +127,53 @@ function AdminStatsPage() {
       {/* By topic */}
       <div className="card" style={{ padding: '1.25rem' }}>
         <h3 style={{ marginBottom: '1rem' }}>По темам</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '0.5rem' }}>
-          {Object.entries(stats.byTopic)
-            .sort((a, b) => b[1] - a[1])
-            .map(([topic, count]) => (
-              <div key={topic} style={{
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                padding: '0.5rem 0.75rem', borderRadius: '0.5rem',
-                background: 'var(--background-color)', fontSize: '0.9rem'
-              }}>
-                <span style={{ color: 'var(--text-primary)' }}>{topic}</span>
-                <span style={{
-                  fontWeight: 700,
-                  color: count >= 7 ? 'var(--success-color)' : count >= 4 ? 'var(--warning-color)' : 'var(--error-color)'
-                }}>{count}</span>
+        {(() => {
+          const sorted = Object.entries(stats.byTopic).sort((a, b) => b[1] - a[1]);
+          const totalPages = Math.ceil(sorted.length / TOPICS_PER_PAGE);
+          const page = sorted.slice(topicPage * TOPICS_PER_PAGE, (topicPage + 1) * TOPICS_PER_PAGE);
+          return (
+            <>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '0.5rem' }}>
+                {page.map(([topic, count]) => (
+                  <div key={topic} style={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    padding: '0.5rem 0.75rem', borderRadius: '0.5rem',
+                    background: 'var(--background-color)', fontSize: '0.9rem'
+                  }}>
+                    <span style={{ color: 'var(--text-primary)' }}>{topic}</span>
+                    <span style={{
+                      fontWeight: 700,
+                      color: count >= 7 ? 'var(--success-color)' : count >= 4 ? 'var(--warning-color)' : 'var(--error-color)'
+                    }}>{count}</span>
+                  </div>
+                ))}
               </div>
-            ))}
-        </div>
+              {totalPages > 1 && (
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', marginTop: '1rem' }}>
+                  <button
+                    className="btn btn-secondary"
+                    disabled={topicPage === 0}
+                    onClick={() => setTopicPage(p => p - 1)}
+                    style={{ fontSize: '0.8rem', padding: '0.3rem 0.75rem' }}
+                  >
+                    &larr; Назад
+                  </button>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                    {topicPage + 1} / {totalPages}
+                  </span>
+                  <button
+                    className="btn btn-secondary"
+                    disabled={topicPage >= totalPages - 1}
+                    onClick={() => setTopicPage(p => p + 1)}
+                    style={{ fontSize: '0.8rem', padding: '0.3rem 0.75rem' }}
+                  >
+                    Вперёд &rarr;
+                  </button>
+                </div>
+              )}
+            </>
+          );
+        })()}
       </div>
     </div>
   );

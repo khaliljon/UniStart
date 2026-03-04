@@ -293,8 +293,13 @@ public class AdminService : IAdminService
                 .ThenInclude(t => t.Section!)
             .ToListAsync();
 
-        var allTopics = await _db.Topics.CountAsync();
-        var topicsWithQ = questions.Select(q => q.TopicId).Distinct().Count();
+        var allTopics = await _db.Topics.Include(t => t.Section).ToListAsync();
+        var topicIdsWithQ = questions.Select(q => q.TopicId).Distinct().ToHashSet();
+        var uncoveredTopics = allTopics
+            .Where(t => !topicIdsWithQ.Contains(t.Id))
+            .Select(t => $"{t.Section?.ExamTypeCode ?? "?"}: {t.Name}")
+            .OrderBy(n => n)
+            .ToList();
 
         return new QuestionStatsDto(
             TotalQuestions: questions.Count,
@@ -304,8 +309,9 @@ public class AdminService : IAdminService
                 .ToDictionary(g => g.Key, g => g.Count()),
             ByTopic: questions.GroupBy(q => q.Topic.Name)
                 .ToDictionary(g => g.Key, g => g.Count()),
-            TopicsWithQuestions: topicsWithQ,
-            TopicsWithoutQuestions: allTopics - topicsWithQ
+            TopicsWithQuestions: topicIdsWithQ.Count,
+            TopicsWithoutQuestions: uncoveredTopics.Count,
+            TopicsWithoutQuestionsList: uncoveredTopics
         );
     }
 

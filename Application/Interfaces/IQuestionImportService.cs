@@ -54,4 +54,6 @@ public interface IQuestionImportService
     Task<bool> ApproveDraftAsync(int draftId, int reviewerUserId);
     Task<bool> RejectDraftAsync(int draftId, int reviewerUserId);
     Task<int> ApproveAllPendingAsync(int jobId, int reviewerUserId);
+    Task<bool> DeleteJobAsync(int jobId);
+    Task<int> DeleteAllJobsAsync();
 }
