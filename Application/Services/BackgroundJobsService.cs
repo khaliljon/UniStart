@@ -72,9 +72,14 @@ public class BackgroundJobsService : IBackgroundJobsService
                 }
             }
 
+            // Calculate actual days of inactivity
+            var inactiveDays = lastAnswerDate != default
+                ? (int)(DateTime.UtcNow.Date - lastAnswerDate.Date).TotalDays
+                : 2; // default if no activity ever
+
             try
             {
-                await _emailService.SendStreakReminderAsync(user.Email, user.Name, streak);
+                await _emailService.SendStreakReminderAsync(user.Email, user.Name, streak, inactiveDays);
                 user.NotificationPreferences!.LastStreakReminderSentAt = DateTime.UtcNow;
                 sentCount++;
             }

@@ -21,6 +21,7 @@ import AdminAuditLogsPage from './pages/AdminAuditLogsPage'
 import AdminSystemHealthPage from './pages/AdminSystemHealthPage'
 import AdminUserActivityPage from './pages/AdminUserActivityPage'
 import AdminTutorsPage from './pages/AdminTutorsPage'
+import AdminQuestionImportPage from './pages/AdminQuestionImportPage'
 import LandingPage from './pages/LandingPage'
 import TutorsPage from './pages/TutorsPage'
 import TutorProfilePage from './pages/TutorProfilePage'
@@ -71,6 +72,7 @@ function AdminRoutes() {
       <Route path="health" element={<AdminSystemHealthPage />} />
       <Route path="activity" element={<AdminUserActivityPage />} />
       <Route path="import" element={<AdminImportPage />} />
+      <Route path="question-import" element={<AdminQuestionImportPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Route>
   )

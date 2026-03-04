@@ -202,7 +202,7 @@ function TimedDrillPage() {
                 className="card"
                 style={{
                   padding: '0.75rem 1rem', textAlign: 'left', cursor: answerResult ? 'default' : 'pointer',
-                  background: bg, border: 'none', width: '100%'
+                  background: bg, border: 'none', width: '100%', color: 'var(--text-primary)'
                 }}
                 onClick={() => handleAnswer(opt.id)}
                 disabled={!!answerResult}

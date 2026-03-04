@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using UniStart.Infrastructure.Data;
@@ -11,9 +12,11 @@ using UniStart.Infrastructure.Data;
 namespace UniStart.Migrations
 {
     [DbContext(typeof(UniStartDbContext))]
-    partial class UniStartDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260303171400_AddQuestionImport")]
+    partial class AddQuestionImport
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -363,40 +366,6 @@ namespace UniStart.Migrations
                     b.HasIndex("TopicId");
 
                     b.ToTable("FormulaCards", (string)null);
-                });
-
-            modelBuilder.Entity("UniStart.Domain.Entities.ImportJobFile", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("FileName")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<string>("FileType")
-                        .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("character varying(10)");
-
-                    b.Property<int>("ImportJobId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("OrderIndex")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Role")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ImportJobId");
-
-                    b.ToTable("ImportJobFiles");
                 });
 
             modelBuilder.Entity("UniStart.Domain.Entities.ImportedQuestionDraft", b =>
@@ -875,10 +844,6 @@ namespace UniStart.Migrations
                         .IsRequired()
                         .HasMaxLength(10)
                         .HasColumnType("character varying(10)");
-
-                    b.Property<string>("Instructions")
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)");
 
                     b.Property<int?>("SectionId")
                         .HasColumnType("integer");
@@ -1944,17 +1909,6 @@ namespace UniStart.Migrations
                     b.Navigation("Topic");
                 });
 
-            modelBuilder.Entity("UniStart.Domain.Entities.ImportJobFile", b =>
-                {
-                    b.HasOne("UniStart.Domain.Entities.QuestionImportJob", "ImportJob")
-                        .WithMany("Files")
-                        .HasForeignKey("ImportJobId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("ImportJob");
-                });
-
             modelBuilder.Entity("UniStart.Domain.Entities.ImportedQuestionDraft", b =>
                 {
                     b.HasOne("UniStart.Domain.Entities.QuestionImportJob", "ImportJob")
@@ -2557,8 +2511,6 @@ namespace UniStart.Migrations
             modelBuilder.Entity("UniStart.Domain.Entities.QuestionImportJob", b =>
                 {
                     b.Navigation("Drafts");
-
-                    b.Navigation("Files");
                 });
 
             modelBuilder.Entity("UniStart.Domain.Entities.ReadingPassage", b =>

@@ -84,7 +84,8 @@ function AdminLayout() {
                 }}>
                   {[
                     { label: 'Тьюторы', path: '/tutors' },
-                    { label: 'Импорт', path: '/import' },
+                    { label: 'Импорт JSON', path: '/import' },
+                    { label: 'Импорт файлов', path: '/question-import' },
                     { label: 'Аудит', path: '/audit' },
                     { label: 'Здоровье', path: '/health' },
                     { label: 'Активность', path: '/activity' },

@@ -93,7 +93,12 @@ public class StreakReminderBackgroundService : BackgroundService
                 }
             }
 
-            await emailService.SendStreakReminderAsync(user.Email, user.Name, streak);
+            // Calculate actual days of inactivity
+            var inactiveDays = lastAnswerDate != default
+                ? (int)(DateTime.UtcNow.Date - lastAnswerDate.Date).TotalDays
+                : 2; // default if no activity ever
+
+            await emailService.SendStreakReminderAsync(user.Email, user.Name, streak, inactiveDays);
 
             // Update last sent timestamp
             user.NotificationPreferences!.LastStreakReminderSentAt = DateTime.UtcNow;

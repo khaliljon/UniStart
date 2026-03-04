@@ -51,6 +51,11 @@ public class UniStartDbContext : DbContext
     public DbSet<UserGuideProgress> UserGuideProgress => Set<UserGuideProgress>();
     public DbSet<UserMistakeNote> UserMistakeNotes => Set<UserMistakeNote>();
 
+    // Question Import entities
+    public DbSet<QuestionImportJob> QuestionImportJobs => Set<QuestionImportJob>();
+    public DbSet<ImportedQuestionDraft> ImportedQuestionDrafts => Set<ImportedQuestionDraft>();
+    public DbSet<ImportJobFile> ImportJobFiles => Set<ImportJobFile>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -746,6 +751,53 @@ public class UniStartDbContext : DbContext
             entity.HasIndex(e => new { e.UserId, e.UserAnswerId })
                   .IsUnique()
                   .HasDatabaseName("IX_UserMistakeNotes_User_Answer");
+        });
+
+        // ─── Question Import ───────────────────────────────────────────
+        modelBuilder.Entity<QuestionImportJob>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.FileName).HasMaxLength(500).IsRequired();
+            entity.Property(e => e.FileType).HasMaxLength(10).IsRequired();
+            entity.Property(e => e.ExamTypeCode).HasMaxLength(20).IsRequired();
+            entity.Property(e => e.Status).HasConversion<int>();
+            entity.Property(e => e.Instructions).HasMaxLength(2000);
+            entity.HasOne(e => e.AdminUser)
+                  .WithMany()
+                  .HasForeignKey(e => e.AdminUserId)
+                  .OnDelete(DeleteBehavior.Restrict);
+            entity.HasMany(e => e.Drafts)
+                  .WithOne(d => d.ImportJob)
+                  .HasForeignKey(d => d.ImportJobId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasMany(e => e.Files)
+                  .WithOne(f => f.ImportJob)
+                  .HasForeignKey(f => f.ImportJobId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ImportJobFile>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.FileName).HasMaxLength(500).IsRequired();
+            entity.Property(e => e.FileType).HasMaxLength(10).IsRequired();
+            entity.Property(e => e.Role).HasConversion<int>();
+        });
+
+        modelBuilder.Entity<ImportedQuestionDraft>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.QuestionText).IsRequired();
+            entity.Property(e => e.OptionsJson).IsRequired().HasDefaultValue("[]");
+            entity.Property(e => e.Status).HasConversion<int>();
+            entity.Property(e => e.Source).HasConversion<int>();
+            entity.Property(e => e.Difficulty).HasConversion<int>();
+            entity.HasOne(e => e.Topic)
+                  .WithMany()
+                  .HasForeignKey(e => e.TopicId)
+                  .OnDelete(DeleteBehavior.SetNull);
+            entity.HasIndex(e => new { e.ImportJobId, e.Status })
+                  .HasDatabaseName("IX_ImportedQuestionDrafts_Job_Status");
         });
 
         // Seed exam types

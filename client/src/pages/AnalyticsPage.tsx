@@ -31,10 +31,28 @@ const DIFFICULTY_COLORS: Record<string, string> = {
   Hard: '#ef4444',
 };
 
+// Maps each exam to the skill codes it uses
+const EXAM_SKILL_MAP: Record<string, string[]> = {
+  SAT: ['SK_READ', 'SK_WRITE', 'SK_MATH'],
+  TOEFL: ['SK_READ', 'SK_WRITE', 'SK_LISTEN', 'SK_SPEAK'],
+  NUET: ['SK_MATH', 'SK_CRIT'],
+  IELTS: ['SK_READ', 'SK_WRITE', 'SK_LISTEN', 'SK_SPEAK'],
+  CSCA: ['SK_MATH', 'SK_CRIT'],
+};
+
+const EXAM_LABELS: Record<string, string> = {
+  SAT: 'SAT',
+  TOEFL: 'TOEFL',
+  NUET: 'NUET',
+  IELTS: 'IELTS',
+  CSCA: 'CSCA',
+};
+
 function AnalyticsPage() {
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedExam, setSelectedExam] = useState<string>('ALL');
 
   useEffect(() => {
     const fetchDashboard = async () => {
@@ -61,10 +79,19 @@ function AnalyticsPage() {
     return 'var(--error-color)';
   };
 
+  // Filter skill profiles and history by selected exam
+  const allowedSkillCodes = selectedExam === 'ALL' ? null : EXAM_SKILL_MAP[selectedExam] ?? null;
+  const filteredProfiles = allowedSkillCodes
+    ? dashboard.skillProfiles.filter((s) => allowedSkillCodes.includes(s.skillCode))
+    : dashboard.skillProfiles;
+  const filteredHistory = allowedSkillCodes
+    ? dashboard.skillHistory.filter((p) => allowedSkillCodes.includes(p.skillCode))
+    : dashboard.skillHistory;
+
   // Prepare line chart data — pivot skill history into { date, skill1, skill2, ... }
   const lineChartData = (() => {
     const byDate: Record<string, Record<string, number>> = {};
-    dashboard.skillHistory.forEach((p) => {
+    filteredHistory.forEach((p) => {
       const d = new Date(p.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
       if (!byDate[d]) byDate[d] = {};
       byDate[d][p.skillName] = p.level;
@@ -72,10 +99,10 @@ function AnalyticsPage() {
     return Object.entries(byDate).map(([date, skills]) => ({ date, ...skills }));
   })();
 
-  const uniqueSkills = [...new Set(dashboard.skillHistory.map((p) => p.skillName))];
+  const uniqueSkills = [...new Set(filteredHistory.map((p) => p.skillName))];
 
   // Radar chart data
-  const radarData = dashboard.skillProfiles.map((s) => ({
+  const radarData = filteredProfiles.map((s) => ({
     skill: s.skillName,
     level: s.level,
     fullMark: 100,
@@ -140,6 +167,20 @@ function AnalyticsPage() {
           </div>
           <div className="stat-label">Day Streak (Best: {dashboard.bestStreak})</div>
         </div>
+      </div>
+
+      {/* Exam Filter Tabs */}
+      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '2rem' }}>
+        {['ALL', ...Object.keys(EXAM_LABELS)].map((code) => (
+          <button
+            key={code}
+            className={selectedExam === code ? 'btn btn-primary' : 'btn btn-secondary'}
+            style={{ padding: '0.4rem 0.9rem', fontSize: '0.85rem' }}
+            onClick={() => setSelectedExam(code)}
+          >
+            {code === 'ALL' ? 'All Skills' : EXAM_LABELS[code]}
+          </button>
+        ))}
       </div>
 
       {/* Skill Levels — Radar Chart */}
@@ -269,13 +310,13 @@ function AnalyticsPage() {
         <h2 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1.5rem' }}>
           Skill Levels
         </h2>
-        {dashboard.skillProfiles.length === 0 ? (
+        {filteredProfiles.length === 0 ? (
           <p style={{ color: 'var(--text-secondary)' }}>
             No skill data yet. Start taking tests to see your progress!
           </p>
         ) : (
           <div className="skills-list">
-            {dashboard.skillProfiles.map((skill, index) => {
+            {filteredProfiles.map((skill, index) => {
               const hasConfidence = skill.confidenceLow != null && skill.confidenceHigh != null;
               return (
                 <div

@@ -93,6 +93,11 @@ try
     builder.Services.AddScoped<IStrategyService, StrategyService>();
     builder.Services.AddScoped<IMistakeService, MistakeService>();
 
+    // Question Import services (FIX-17)
+    builder.Services.AddScoped<IFileParserService, FileParserService>();
+    builder.Services.AddScoped<IQuestionExtractorService, QuestionExtractorService>();
+    builder.Services.AddScoped<IQuestionImportService, QuestionImportService>();
+
     // ═══════════════════════════════════════════════════════
     //  PRESENCE TRACKER — Singleton (T-9)
     // ═══════════════════════════════════════════════════════

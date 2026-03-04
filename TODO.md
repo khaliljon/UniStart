@@ -1,10 +1,10 @@
 # UniStart -- Статус проекта и план запуска
 
-> **Последнее обновление**: 2 марта 2026
+> **Последнее обновление**: 3 марта 2026
 
 ---
 
-## Текущий статус: v2 Learning -- Sprint 2 (polish) ✅ завершён
+## Текущий статус: v2 Learning -- Sprint 3 🔄 в работе
 
 ### Сводка состояния на 2 марта 2026
 
@@ -123,7 +123,154 @@
 
 ---
 
-### Масштаб проекта
+## ПЛАН РАБОТ -- Sprint 3 (UX + Admin) 3 марта 2026
+
+### FIX-15. Шрифт ответов в Drills сливается с фоном (тёмная тема)
+- [x] TimedDrillPage: добавить `color: 'var(--text-primary)'` к inline-стилю кнопок ответов
+- [x] Причина: `<button>` не наследует CSS custom property цвет текста, использует браузерный default (чёрный)
+
+### FIX-16. Фильтр скиллов по экзамену в аналитике
+- [x] Добавлен `EXAM_SKILL_MAP` — маппинг экзамен → коды скиллов (SAT: READ/WRITE/MATH, TOEFL: READ/WRITE/LISTEN/SPEAK, и т.д.)
+- [x] Табы-кнопки вверху страницы: All Skills / SAT / TOEFL / NUET / IELTS / CSCA
+- [x] Radar chart, линейный график и Skill Levels — все фильтруются по выбранному экзамену
+- [x] Фронтенд-only решение, бэкенд не затронут
+
+### FIX-17. Admin: загрузка баз вопросов (PDF, Word, Excel) — авто-генерация вопросов (FEATURE)
+
+**Описание:**
+Администратор должен иметь возможность загружать файлы с базами вопросов (PDF, DOCX, XLSX/CSV)
+и система автоматически парсит контент и генерирует готовые вопросы с вариантами ответов,
+объяснениями, IRT-параметрами и привязкой к темам/секциям/экзаменам.
+Вопросы могут быть **точными копиями** из исходного файла или **аналогичными** (перефразированными).
+
+**Архитектура:**
+
+```
+                      ┌──────────────────┐
+   Admin Portal  ───► │  Upload Endpoint │
+   (PDF/DOCX/XLSX)    │  POST /api/admin │
+                      │  /question-import│
+                      └────────┬─────────┘
+                               │
+                      ┌────────▼─────────┐
+                      │  File Parser     │
+                      │  Service         │
+                      │  ──────────────  │
+                      │  PDF → text      │
+                      │  DOCX → text     │
+                      │  XLSX → rows     │
+                      └────────┬─────────┘
+                               │
+                      ┌────────▼─────────┐
+                      │  Question        │
+                      │  Extractor       │
+                      │  ──────────────  │
+                      │  NLP / regex     │
+                      │  pattern matching│
+                      │  → raw Q/A pairs │
+                      └────────┬─────────┘
+                               │
+                      ┌────────▼─────────┐
+                      │  Question        │
+                      │  Generator       │
+                      │  ──────────────  │
+                      │  Normalize format│
+                      │  Assign IRT      │
+                      │  Generate analogs│
+                      │  AI (optional)   │
+                      └────────┬─────────┘
+                               │
+                      ┌────────▼─────────┐
+                      │  Review Queue    │
+                      │  ──────────────  │
+                      │  Admin reviews   │
+                      │  approves/edits  │
+                      │  before publish  │
+                      └────────┬─────────┘
+                               │
+                      ┌────────▼─────────┐
+                      │  Questions DB    │
+                      │  (production)    │
+                      └──────────────────┘
+```
+
+**Backend задачи:**
+
+- [ ] **FIX-17.1** Сущность `QuestionImportJob` (Id, AdminUserId, FileName, FileType, Status, CreatedAt, CompletedAt, TotalExtracted, TotalApproved, ExamTypeCode)
+- [ ] **FIX-17.2** Сущность `ImportedQuestionDraft` (Id, ImportJobId, QuestionText, Options JSON, CorrectOptionIndex, Explanation, TopicId?, Difficulty, IrtA, IrtB, IrtC, Status: Pending/Approved/Rejected, Source: Exact/Analog)
+- [ ] **FIX-17.3** Миграция EF Core: AddQuestionImport
+- [ ] **FIX-17.4** `IFileParserService` + реализации:
+  - `PdfParserService` — парсинг PDF через библиотеку (iTextSharp / PdfPig)
+  - `DocxParserService` — парсинг DOCX через OpenXML SDK
+  - `ExcelParserService` — парсинг XLSX через ClosedXML / EPPlus
+- [ ] **FIX-17.5** `IQuestionExtractorService` — извлечение Q/A пар из текста:
+  - Regex шаблоны: "1. Question text\nA) ... B) ... C) ... D) ...\nAnswer: A"
+  - Поддержка форматов: нумерованные, lettered options, tabular (Excel rows)
+  - Извлечение explanations если есть
+- [ ] **FIX-17.6** `IQuestionGeneratorService` — иопциональная генерация аналогов:
+  - Перемешивание вариантов ответов
+  - Замена чисел / имён (для math/reading)
+  - Перефразирование (если подключить LLM — OpenAI / local)
+  - Автоматический расчёт IRT параметров: a=1.0, b по difficulty, c=0.25
+- [ ] **FIX-17.7** `QuestionImportController`:
+  - `POST /api/admin/question-import/upload` — загрузка файла + запуск парсинга (Hangfire job)
+  - `GET /api/admin/question-import/jobs` — список импортов
+  - `GET /api/admin/question-import/jobs/{id}/drafts` — черновики вопросов
+  - `PUT /api/admin/question-import/drafts/{id}/approve` — одобрить → создать Question в БД
+  - `PUT /api/admin/question-import/drafts/{id}/reject` — отклонить
+  - `PUT /api/admin/question-import/drafts/{id}` — редактировать черновик
+  - `POST /api/admin/question-import/jobs/{id}/approve-all` — одобрить все pending
+- [ ] **FIX-17.8** Background job (Hangfire): ProcessQuestionImportJob — парсинг файла, извлечение, сохранение drafts
+
+**Frontend задачи:**
+
+- [ ] **FIX-17.9** `AdminQuestionImportPage.tsx` — страница загрузки:
+  - Drag-and-drop zone для файлов (PDF/DOCX/XLSX)
+  - Выбор экзамена и секции для привязки
+  - Прогресс загрузки и парсинга
+- [ ] **FIX-17.10** `AdminImportReviewPage.tsx` — страница ревью:
+  - Таблица с извлечёнными вопросами
+  - Inline-редактирование текста, вариантов, объяснения
+  - Approve / Reject / Edit на каждый вопрос
+  - Bulk approve / reject
+  - Предпросмотр вопроса (как будет выглядеть в тесте)
+- [ ] **FIX-17.11** Роутинг: `/admin/question-import`, `/admin/question-import/:jobId/review`
+- [ ] **FIX-17.12** `questionImportService.ts` — API сервис
+
+**NuGet пакеты (backend):**
+
+- `UglyToad.PdfPig` — парсинг PDF (MIT, лёгкий)
+- `DocumentFormat.OpenXml` — парсинг DOCX (Microsoft, MIT)
+- `ClosedXML` — парсинг XLSX (MIT)
+
+**Поддерживаемые форматы файлов:**
+
+| Формат | Парсер | Ожидаемая структура |
+|--------|--------|---------------------|
+| PDF | PdfPig | Нумерованные вопросы с вариантами A/B/C/D и ответами |
+| DOCX | OpenXML | Аналогично PDF, но в Word-документе |
+| XLSX/CSV | ClosedXML | Колонки: Question, OptionA, OptionB, OptionC, OptionD, CorrectAnswer, Explanation, Topic, Difficulty |
+
+**Пример Excel-структуры:**
+
+| Question | OptionA | OptionB | OptionC | OptionD | Answer | Explanation | Topic | Difficulty |
+|----------|---------|---------|---------|---------|--------|-------------|-------|------------|
+| What is 2+2? | 3 | 4 | 5 | 6 | B | 2+2=4 by definition | Algebra | Easy |
+
+**Порядок реализации:**
+
+```
+  Фаза 1 (модели + парсеры)       Фаза 2 (бэкенд)           Фаза 3 (фронтенд)
+  ─────────────────────────       ──────────────             ──────────────────
+  FIX-17.1 Сущности           →  FIX-17.5 Extractor     →  FIX-17.9  Upload page
+  FIX-17.2 Draft entity        →  FIX-17.6 Generator     →  FIX-17.10 Review page
+  FIX-17.3 Миграция            →  FIX-17.7 Controller    →  FIX-17.11 Роутинг
+  FIX-17.4 File parsers        →  FIX-17.8 Hangfire job  →  FIX-17.12 API сервис
+       ~2–3 дня                        ~2 дня                     ~2 дня
+```
+
+> **Итого**: ~6–7 дней. Ключевой risk — качество парсинга PDF (сложная структура).
+> Рекомендация: начать с Excel (самый предсказуемый формат), затем DOCX, потом PDF.
 
 | Метрика | Значение |
 |---------|----------|
