@@ -33,4 +33,7 @@ public interface IMockExamService
 
     /// <summary>Abandon an in-progress attempt</summary>
     Task<bool> AbandonAttemptAsync(int userId, int attemptId);
+
+    /// <summary>Get the user's active (in_progress) attempt, if any</summary>
+    Task<MockExamAttemptDto?> GetActiveAttemptAsync(int userId);
 }

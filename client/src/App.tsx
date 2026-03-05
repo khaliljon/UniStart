@@ -1,36 +1,44 @@
+import { lazy, Suspense } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAppSelector } from './hooks/useAppSelector'
 import Layout from './components/Layout'
 import AdminLayout from './components/AdminLayout'
 import TutorLayout from './components/TutorLayout'
-import LoginPage from './pages/LoginPage'
-import RegisterPage from './pages/RegisterPage'
-import OnboardingPage from './pages/OnboardingPage'
-import DashboardPage from './pages/DashboardPage'
-import LearnPage from './pages/LearnPage'
-import ProgressPage from './pages/ProgressPage'
-import StudyPlanPage from './pages/StudyPlanPage'
-import ProfilePage from './pages/ProfilePage'
-import NotificationSettingsPage from './pages/NotificationSettingsPage'
-import DiagnosticTestPage from './pages/DiagnosticTestPage'
-import AdminStatsPage from './pages/AdminStatsPage'
-import AdminQuestionsPage from './pages/AdminQuestionsPage'
-import AdminImportPage from './pages/AdminImportPage'
-import AdminUsersPage from './pages/AdminUsersPage'
-import AdminAuditLogsPage from './pages/AdminAuditLogsPage'
-import AdminSystemHealthPage from './pages/AdminSystemHealthPage'
-import AdminUserActivityPage from './pages/AdminUserActivityPage'
-import AdminTutorsPage from './pages/AdminTutorsPage'
-import AdminQuestionImportPage from './pages/AdminQuestionImportPage'
-import LandingPage from './pages/LandingPage'
-import TutorsPage from './pages/TutorsPage'
-import TutorProfilePage from './pages/TutorProfilePage'
-import MessagesPage from './pages/MessagesPage'
-import TutorHomePage from './pages/TutorHomePage'
-import TutorStudentsPage from './pages/TutorStudentsPage'
-import TutorSchedulePage from './pages/TutorSchedulePage'
-import TutorProfileEditPage from './pages/TutorProfileEditPage'
-import TutorReviewsPage from './pages/TutorReviewsPage'
+
+// ── Lazy-loaded pages (code splitting) ──────────────────
+const LoginPage = lazy(() => import('./pages/LoginPage'))
+const RegisterPage = lazy(() => import('./pages/RegisterPage'))
+const OnboardingPage = lazy(() => import('./pages/OnboardingPage'))
+const DashboardPage = lazy(() => import('./pages/DashboardPage'))
+const LearnPage = lazy(() => import('./pages/LearnPage'))
+const ProgressPage = lazy(() => import('./pages/ProgressPage'))
+const StudyPlanPage = lazy(() => import('./pages/StudyPlanPage'))
+const ProfilePage = lazy(() => import('./pages/ProfilePage'))
+const NotificationSettingsPage = lazy(() => import('./pages/NotificationSettingsPage'))
+const DiagnosticTestPage = lazy(() => import('./pages/DiagnosticTestPage'))
+const AdminStatsPage = lazy(() => import('./pages/AdminStatsPage'))
+const AdminQuestionsPage = lazy(() => import('./pages/AdminQuestionsPage'))
+const AdminImportPage = lazy(() => import('./pages/AdminImportPage'))
+const AdminUsersPage = lazy(() => import('./pages/AdminUsersPage'))
+const AdminAuditLogsPage = lazy(() => import('./pages/AdminAuditLogsPage'))
+const AdminSystemHealthPage = lazy(() => import('./pages/AdminSystemHealthPage'))
+const AdminUserActivityPage = lazy(() => import('./pages/AdminUserActivityPage'))
+const AdminTutorsPage = lazy(() => import('./pages/AdminTutorsPage'))
+const AdminQuestionImportPage = lazy(() => import('./pages/AdminQuestionImportPage'))
+const LandingPage = lazy(() => import('./pages/LandingPage'))
+const TutorsPage = lazy(() => import('./pages/TutorsPage'))
+const TutorProfilePage = lazy(() => import('./pages/TutorProfilePage'))
+const MessagesPage = lazy(() => import('./pages/MessagesPage'))
+const TutorHomePage = lazy(() => import('./pages/TutorHomePage'))
+const TutorStudentsPage = lazy(() => import('./pages/TutorStudentsPage'))
+const TutorSchedulePage = lazy(() => import('./pages/TutorSchedulePage'))
+const TutorProfileEditPage = lazy(() => import('./pages/TutorProfileEditPage'))
+const TutorReviewsPage = lazy(() => import('./pages/TutorReviewsPage'))
+
+// ── Suspense fallback ───────────────────────────────────
+const PageLoader = () => (
+  <div className="loading"><div className="spinner" /></div>
+)
 
 function StudentRoutes() {
   return (
@@ -101,6 +109,7 @@ function App() {
   const needsOnboarding = isAuthenticated && !isAdmin && !isTutor && !user?.hasCompletedOnboarding
 
   return (
+    <Suspense fallback={<PageLoader />}>
     <Routes>
       <Route path="/landing" element={!isAuthenticated ? <LandingPage /> : <Navigate to="/" replace />} />
       <Route path="/login" element={!isAuthenticated ? <LoginPage /> : <Navigate to={needsOnboarding ? '/onboarding' : '/'} />} />
@@ -117,6 +126,7 @@ function App() {
         <Route path="*" element={<Navigate to="/landing" />} />
       )}
     </Routes>
+    </Suspense>
   )
 }
 

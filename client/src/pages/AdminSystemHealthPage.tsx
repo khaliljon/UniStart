@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import adminService from '../services/adminService';
 
 type SystemHealth = Awaited<ReturnType<typeof adminService.getSystemHealth>>;
@@ -56,11 +56,18 @@ export default function AdminSystemHealthPage() {
     return () => clearInterval(timer);
   }, [load]);
 
+  const triggerTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  useEffect(() => {
+    return () => { clearTimeout(triggerTimerRef.current); };
+  }, []);
+
   const handleTrigger = async (jobId: string) => {
     setTriggering(jobId);
     try {
       await adminService.triggerJob(jobId);
-      setTimeout(load, 2000); // reload after 2s
+      clearTimeout(triggerTimerRef.current);
+      triggerTimerRef.current = setTimeout(load, 2000);
     } catch { /* ignore */ }
     setTriggering(null);
   };

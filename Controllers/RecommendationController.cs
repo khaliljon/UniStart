@@ -21,8 +21,13 @@ public class RecommendationController : ControllerBase
         _svc = svc;
     }
 
-    private int GetCurrentUserId() =>
-        int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+    private int GetCurrentUserId()
+    {
+        var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                 ?? User.FindFirst("sub")?.Value;
+        if (int.TryParse(claim, out var id) && id > 0) return id;
+        throw new UnauthorizedAccessException("Invalid user identity");
+    }
 
     /// <summary>Daily briefing: streak, recommendations, milestones, yesterday summary</summary>
     [HttpGet("daily")]

@@ -240,4 +240,48 @@ public class BackgroundJobsService : IBackgroundJobsService
         await _context.SaveChangesAsync();
         _logger.LogInformation("Weekly digests sent to {Count} users.", sentCount);
     }
+
+    // ───────────────────────────────────────────────────────
+    //  SOFT-DELETE PURGE (daily at 02:00 UTC) — OP-9
+    // ───────────────────────────────────────────────────────
+    public async Task PurgeSoftDeletedRecordsAsync()
+    {
+        _logger.LogInformation("Hangfire: Purging soft-deleted records older than 30 days...");
+
+        var cutoff = DateTime.UtcNow.AddDays(-30);
+        var totalPurged = 0;
+
+        // Purge soft-deleted Questions (+ cascade to AnswerOptions via DB FK)
+        var deletedQuestions = await _context.Questions
+            .IgnoreQueryFilters()
+            .Where(q => q.IsDeleted && q.DeletedAt != null && q.DeletedAt < cutoff)
+            .ToListAsync();
+
+        if (deletedQuestions.Any())
+        {
+            _context.Questions.RemoveRange(deletedQuestions);
+            totalPurged += deletedQuestions.Count;
+            _logger.LogInformation("Purging {Count} soft-deleted questions.", deletedQuestions.Count);
+        }
+
+        // Purge soft-deleted Users (+ cascade to related records via DB FK)
+        var deletedUsers = await _context.Users
+            .IgnoreQueryFilters()
+            .Where(u => u.IsDeleted && u.DeletedAt != null && u.DeletedAt < cutoff)
+            .ToListAsync();
+
+        if (deletedUsers.Any())
+        {
+            _context.Users.RemoveRange(deletedUsers);
+            totalPurged += deletedUsers.Count;
+            _logger.LogInformation("Purging {Count} soft-deleted users.", deletedUsers.Count);
+        }
+
+        if (totalPurged > 0)
+        {
+            await _context.SaveChangesAsync();
+        }
+
+        _logger.LogInformation("Soft-delete purge complete. {Count} records permanently removed.", totalPurged);
+    }
 }

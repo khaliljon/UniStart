@@ -39,6 +39,9 @@ function MockExamPage() {
   const [sectionState, setSectionState] = useState<MockExamSectionState | null>(null);
   const [currentQIndex, setCurrentQIndex] = useState(0);
 
+  // Active attempt (resume support)
+  const [activeAttempt, setActiveAttempt] = useState<MockExamAttempt | null>(null);
+
   // Timer
   const [timeLeft, setTimeLeft] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -52,12 +55,14 @@ function MockExamPage() {
   const loadExams = useCallback(async () => {
     setLoading(true);
     try {
-      const [exams, hist] = await Promise.all([
+      const [exams, hist, active] = await Promise.all([
         mockExamService.getAvailableMockExams(),
         mockExamService.getHistory(),
+        mockExamService.getActiveAttempt(),
       ]);
       setMockExams(exams);
       setHistory(hist);
+      setActiveAttempt(active);
     } catch (e) { console.error(e); }
     setLoading(false);
   }, []);
@@ -86,6 +91,34 @@ function MockExamPage() {
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
     return `${m}:${s.toString().padStart(2, '0')}`;
+  };
+
+  // ── Resume an in-progress attempt ─────────────────────
+  const handleResume = async (att: MockExamAttempt) => {
+    setLoading(true);
+    try {
+      setAttempt(att);
+      const section = await mockExamService.getCurrentSection(att.attemptId);
+      if (!section) {
+        // Attempt was auto-completed by server (time expired) — load results
+        const res = await mockExamService.getResults(att.attemptId);
+        if (res) { setResults(res); setPhase('results'); }
+        else { resetToList(); }
+        setLoading(false);
+        return;
+      }
+      setSectionState(section);
+      setCurrentQIndex(0);
+      // Calculate remaining time from attempt start
+      const examDetail = await mockExamService.getMockExamDetail(att.mockExamId);
+      const elapsed = Math.floor((Date.now() - new Date(att.startedAt).getTime()) / 1000);
+      const totalSec = (examDetail?.totalTimeMinutes ?? section.timeLimitMinutes) * 60;
+      const remaining = Math.max(0, totalSec - elapsed);
+      setTimeLeft(remaining > 0 ? remaining : section.timeLimitMinutes * 60);
+      setActiveAttempt(null);
+      setPhase('section');
+    } catch (e) { console.error(e); }
+    setLoading(false);
   };
 
   // ── Select exam to view detail ────────────────────────
@@ -184,6 +217,7 @@ function MockExamPage() {
     setResults(null);
     setShowReview(false);
     setCurrentQIndex(0);
+    setActiveAttempt(null);
     await loadExams();
   };
 
@@ -209,6 +243,32 @@ function MockExamPage() {
         <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>
           Take a full-length practice test under real exam conditions with timed sections
         </p>
+
+        {/* Resume banner — active in-progress attempt */}
+        {activeAttempt && (
+          <div className="card" style={{ marginBottom: '1.5rem', border: '2px solid var(--primary-color)', background: 'var(--bg-secondary)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '0.25rem' }}>
+                  Exam in progress
+                </div>
+                <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                  {activeAttempt.examTitle} — Section {activeAttempt.currentSectionIndex + 1}/{activeAttempt.totalSections} — started {new Date(activeAttempt.startedAt).toLocaleString()}
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button className="btn btn-outline" style={{ fontSize: '0.85rem' }}
+                        onClick={async () => { await mockExamService.abandonAttempt(activeAttempt.attemptId); setActiveAttempt(null); await loadExams(); }}>
+                  Abandon
+                </button>
+                <button className="btn btn-primary" style={{ fontSize: '0.85rem' }}
+                        onClick={() => handleResume(activeAttempt)}>
+                  ▶ Resume Exam
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Exam cards */}
         <div style={{ display: 'grid', gap: '1rem', marginBottom: '2rem' }}>
@@ -279,6 +339,12 @@ function MockExamPage() {
                           <button className="btn btn-outline" style={{ padding: '2px 12px', fontSize: '0.75rem' }}
                                   onClick={async (e) => { e.stopPropagation(); const r = await mockExamService.getResults(h.attemptId); setResults(r); setShowReview(false); setPhase('results'); }}>
                             View
+                          </button>
+                        )}
+                        {h.status === 'in_progress' && (
+                          <button className="btn btn-primary" style={{ padding: '2px 12px', fontSize: '0.75rem' }}
+                                  onClick={(e) => { e.stopPropagation(); handleResume({ attemptId: h.attemptId, mockExamId: h.mockExamId, examTitle: h.examTitle, status: h.status, currentSectionIndex: 0, totalSections: 0, startedAt: h.startedAt }); }}>
+                            Resume
                           </button>
                         )}
                       </td>

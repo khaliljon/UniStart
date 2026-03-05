@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { subscriptionService } from '../services/subscriptionService';
 import { useAppDispatch } from '../hooks/useAppDispatch';
 import { setSubscription } from '../store/slices/authSlice';
@@ -31,6 +31,11 @@ export function PricingModal({ isOpen, onClose }: PricingModalProps) {
   const dispatch = useAppDispatch();
   const [isUpgrading, setIsUpgrading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  useEffect(() => {
+    return () => { clearTimeout(closeTimerRef.current); };
+  }, []);
 
   if (!isOpen) return null;
 
@@ -41,7 +46,8 @@ export function PricingModal({ isOpen, onClose }: PricingModalProps) {
       if (res.success) {
         dispatch(setSubscription({ tier: res.tier, expiresAt: res.expiresAt }));
         setResult(res.message);
-        setTimeout(() => {
+        clearTimeout(closeTimerRef.current);
+        closeTimerRef.current = setTimeout(() => {
           onClose();
           setResult(null);
         }, 2000);

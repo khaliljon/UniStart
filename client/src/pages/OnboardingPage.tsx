@@ -4,6 +4,7 @@ import { useAppDispatch } from '../hooks/useAppDispatch';
 import { useAppSelector } from '../hooks/useAppSelector';
 import { setOnboardingComplete } from '../store/slices/authSlice';
 import { onboardingService } from '../services/onboardingService';
+import axios from 'axios';
 import type { ExamTypeInfo } from '../types';
 
 type Step = 'welcome' | 'exam' | 'target' | 'ready';
@@ -29,13 +30,27 @@ function OnboardingPage() {
   const navigate = useNavigate();
   const { user } = useAppSelector((state) => state.auth);
 
-  const [step, setStep] = useState<Step>('welcome');
+  // ── Restore wizard state from sessionStorage ──────────
+  const saved = sessionStorage.getItem('onboarding');
+  const restored = saved ? JSON.parse(saved) as { step?: Step; exam?: ExamTypeInfo; date?: string; score?: number } : null;
+
+  const [step, _setStep] = useState<Step>(restored?.step ?? 'welcome');
   const [examTypes, setExamTypes] = useState<ExamTypeInfo[]>([]);
-  const [selectedExam, setSelectedExam] = useState<ExamTypeInfo | null>(null);
-  const [targetDate, setTargetDate] = useState('');
-  const [targetScore, setTargetScore] = useState(0);
+  const [selectedExam, _setSelectedExam] = useState<ExamTypeInfo | null>(restored?.exam ?? null);
+  const [targetDate, _setTargetDate] = useState(restored?.date ?? '');
+  const [targetScore, _setTargetScore] = useState(restored?.score ?? 0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Wrapped setters that also persist to sessionStorage
+  const persist = (patch: Partial<{ step: Step; exam: ExamTypeInfo | null; date: string; score: number }>) => {
+    const prev = JSON.parse(sessionStorage.getItem('onboarding') ?? '{}');
+    sessionStorage.setItem('onboarding', JSON.stringify({ ...prev, ...patch }));
+  };
+  const setStep = (s: Step) => { _setStep(s); persist({ step: s }); };
+  const setSelectedExam = (e: ExamTypeInfo | null) => { _setSelectedExam(e); persist({ exam: e }); };
+  const setTargetDate = (d: string) => { _setTargetDate(d); persist({ date: d }); };
+  const setTargetScore = (s: number) => { _setTargetScore(s); persist({ score: s }); };
 
   // Redirect if already onboarded
   useEffect(() => {
@@ -80,10 +95,11 @@ function OnboardingPage() {
         targetDate: targetDate,
         targetScore: targetScore,
       });
+      sessionStorage.removeItem('onboarding');
       dispatch(setOnboardingComplete());
       setStep('ready');
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Произошла ошибка');
+    } catch (err: unknown) {
+      setError(axios.isAxiosError(err) ? err.response?.data?.error || 'Произошла ошибка' : 'Произошла ошибка');
     } finally {
       setIsLoading(false);
     }

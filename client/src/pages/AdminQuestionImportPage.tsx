@@ -601,7 +601,7 @@ function AdminQuestionImportPage() {
                               }}
                             />
                           ) : (
-                            <>💡 {draft.explanation}</>
+                            <>{draft.explanation}</>
                           )}
                         </p>
                       )}

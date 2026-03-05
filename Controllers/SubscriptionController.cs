@@ -20,8 +20,13 @@ public class SubscriptionController : ControllerBase
         _subscriptionService = subscriptionService;
     }
 
-    private int GetUserId() =>
-        int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+    private int GetUserId()
+    {
+        var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                 ?? User.FindFirst("sub")?.Value;
+        if (int.TryParse(claim, out var id) && id > 0) return id;
+        throw new UnauthorizedAccessException("Invalid user identity");
+    }
 
     /// <summary>Full subscription status including tier, limits, daily usage</summary>
     [HttpGet("status")]

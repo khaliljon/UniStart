@@ -393,8 +393,6 @@ public class AdaptiveEngineService : IAdaptiveEngineService
     public async Task<int> GetTotalQuestionsCountAsync(string[] examTypeCodes, int? sectionId = null, int? topicId = null)
     {
         var query = _context.Questions
-            .Include(q => q.Topic)
-                .ThenInclude(t => t.Section)
             .Where(q => q.Topic.Section != null && examTypeCodes.Contains(q.Topic.Section.ExamTypeCode));
 
         if (topicId.HasValue)
@@ -411,9 +409,6 @@ public class AdaptiveEngineService : IAdaptiveEngineService
     public async Task<int> GetAnsweredQuestionsCountAsync(int userId, string[] examTypeCodes, int? sectionId = null, int? topicId = null)
     {
         var query = _context.UserAnswers
-            .Include(ua => ua.Question)
-                .ThenInclude(q => q.Topic)
-                    .ThenInclude(t => t.Section)
             .Where(ua => ua.UserId == userId && ua.Question.Topic.Section != null && examTypeCodes.Contains(ua.Question.Topic.Section.ExamTypeCode));
 
         if (topicId.HasValue)

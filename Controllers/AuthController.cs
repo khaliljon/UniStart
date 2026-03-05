@@ -1,3 +1,5 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using UniStart.Application.DTOs;
@@ -68,6 +70,32 @@ public class AuthController : ControllerBase
         {
             _logger.LogError(ex, "Unexpected error during login for {Email}", dto.Email);
             return StatusCode(500, new { error = "An unexpected error occurred" });
+        }
+    }
+
+    /// <summary>
+    /// Refresh JWT token for authenticated user.
+    /// Call this when the current token is about to expire.
+    /// </summary>
+    [HttpPost("refresh")]
+    [Authorize]
+    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Refresh()
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)
+                          ?? User.FindFirst("sub");
+        if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var userId))
+            return Unauthorized();
+
+        try
+        {
+            var result = await _authService.RefreshTokenAsync(userId);
+            return Ok(result);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Unauthorized();
         }
     }
 }

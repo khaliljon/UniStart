@@ -112,11 +112,19 @@ public class StudyPlanService : IStudyPlanService
             .FirstOrDefaultAsync(g => g.Id == goalId && g.UserId == userId)
             ?? throw new InvalidOperationException("Goal not found");
 
-        // Deactivate old plans for this goal
+        // Deactivate old plans for this goal and remove their entries
         var oldPlans = await _db.StudyPlans
             .Where(p => p.UserId == userId && p.IsActive)
             .ToListAsync();
-        foreach (var p in oldPlans) p.IsActive = false;
+        if (oldPlans.Count > 0)
+        {
+            var oldPlanIds = oldPlans.Select(p => p.Id).ToList();
+            var orphanedEntries = await _db.StudyPlanEntries
+                .Where(e => oldPlanIds.Contains(e.PlanId))
+                .ToListAsync();
+            _db.StudyPlanEntries.RemoveRange(orphanedEntries);
+            foreach (var p in oldPlans) p.IsActive = false;
+        }
 
         // ─── 1. Load topics for this exam ────────────────────
         var topics = await _db.Topics

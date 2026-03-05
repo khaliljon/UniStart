@@ -18,10 +18,12 @@ function DashboardPage() {
   const [yesterday, setYesterday] = useState<DailySummary | null>(null);
   const [usage, setUsage] = useState<DailyUsage | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
       setIsLoading(true);
+      setError(null);
       const [briefing, dailyUsage] = await Promise.all([
         recommendationService.getDailyBriefing(),
         subscriptionService.getDailyUsage().catch(() => null),
@@ -31,7 +33,7 @@ function DashboardPage() {
       setYesterday(briefing.yesterdaySummary);
       setUsage(dailyUsage);
     } catch {
-      // silent
+      setError('Не удалось загрузить данные. Проверьте подключение к серверу.');
     } finally {
       setIsLoading(false);
     }
@@ -65,6 +67,21 @@ function DashboardPage() {
           </div>
         )}
       </div>
+
+      {/* ─── Error Banner ─── */}
+      {error && (
+        <div className="card" style={{
+          padding: '0.75rem 1rem', marginBottom: '1rem',
+          borderLeft: '3px solid var(--error-color)',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          background: 'var(--bg-secondary)',
+        }}>
+          <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{error}</span>
+          <button className="btn btn-outline" style={{ padding: '0.25rem 0.75rem', fontSize: '0.8rem' }} onClick={load}>
+            Повторить
+          </button>
+        </div>
+      )}
 
       {/* ─── Stats Row ─── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem', marginBottom: '1.5rem' }}>

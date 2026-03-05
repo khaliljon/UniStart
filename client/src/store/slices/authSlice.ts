@@ -12,11 +12,30 @@ interface AuthState {
 
 const storedUser = localStorage.getItem('user');
 const storedToken = localStorage.getItem('token');
+const storedExpiresAt = localStorage.getItem('tokenExpiresAt');
+
+// Check if the stored token is expired
+const isTokenValid = (() => {
+  if (!storedToken || !storedExpiresAt) return false;
+  try {
+    const expiresAt = new Date(storedExpiresAt).getTime();
+    return expiresAt > Date.now();
+  } catch {
+    return false;
+  }
+})();
+
+// Clear stale auth data if token expired
+if (storedToken && !isTokenValid) {
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+  localStorage.removeItem('tokenExpiresAt');
+}
 
 const initialState: AuthState = {
-  user: storedUser ? JSON.parse(storedUser) : null,
-  token: storedToken,
-  isAuthenticated: !!storedToken,
+  user: isTokenValid && storedUser ? JSON.parse(storedUser) : null,
+  token: isTokenValid ? storedToken : null,
+  isAuthenticated: isTokenValid,
   isLoading: false,
   error: null,
 };
@@ -56,6 +75,7 @@ const authSlice = createSlice({
       state.token = null;
       state.isAuthenticated = false;
       authService.removeToken();
+      localStorage.removeItem('tokenExpiresAt');
     },
     clearError: (state) => {
       state.error = null;
@@ -97,6 +117,7 @@ const authSlice = createSlice({
         state.isAuthenticated = true;
         authService.saveToken(action.payload.token);
         localStorage.setItem('user', JSON.stringify(state.user));
+        localStorage.setItem('tokenExpiresAt', action.payload.expiresAt);
       })
       .addCase(login.rejected, (state, action) => {
         state.isLoading = false;
@@ -123,6 +144,7 @@ const authSlice = createSlice({
         state.isAuthenticated = true;
         authService.saveToken(action.payload.token);
         localStorage.setItem('user', JSON.stringify(state.user));
+        localStorage.setItem('tokenExpiresAt', action.payload.expiresAt);
       })
       .addCase(register.rejected, (state, action) => {
         state.isLoading = false;

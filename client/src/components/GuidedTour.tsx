@@ -10,7 +10,7 @@ interface TourStep {
 const TOUR_STEPS: TourStep[] = [
   {
     target: '.navbar-brand',
-    title: 'Welcome to UniStart! 🎓',
+    title: 'Welcome to UniStart!',
     description: 'This is your exam preparation platform. Let us give you a quick tour of the key features.',
     placement: 'bottom',
   },

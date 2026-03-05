@@ -115,7 +115,8 @@ public class AnalyticsController : ControllerBase
     [ProducesResponseType(typeof(TestSessionSummaryDto), StatusCodes.Status200OK)]
     public async Task<IActionResult> CompleteSession(int sessionId)
     {
-        var session = await _analyticsService.CompleteSessionAsync(sessionId);
+        var userId = GetCurrentUserId();
+        var session = await _analyticsService.CompleteSessionAsync(userId, sessionId);
         return Ok(session);
     }
 

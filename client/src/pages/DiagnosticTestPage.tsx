@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { diagnosticService } from '../services/diagnosticService';
+import axios from 'axios';
 import type {
   DiagnosticSession,
   DiagnosticQuestion,
@@ -51,8 +52,8 @@ function DiagnosticTestPage() {
       setQuestion(q);
       questionStartRef.current = Date.now();
       setPhase('testing');
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Не удалось начать диагностику');
+    } catch (err: unknown) {
+      setError(axios.isAxiosError(err) ? err.response?.data?.error || 'Не удалось начать диагностику' : 'Не удалось начать диагностику');
     } finally {
       setIsLoading(false);
     }
@@ -85,8 +86,8 @@ function DiagnosticTestPage() {
           setPhase('results');
         }, 1500);
       }
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Ошибка при отправке ответа');
+    } catch (err: unknown) {
+      setError(axios.isAxiosError(err) ? err.response?.data?.error || 'Ошибка при отправке ответа' : 'Ошибка при отправке ответа');
     } finally {
       setIsLoading(false);
     }
@@ -109,8 +110,8 @@ function DiagnosticTestPage() {
         setResults(res);
         setPhase('results');
       }
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Ошибка загрузки вопроса');
+    } catch (err: unknown) {
+      setError(axios.isAxiosError(err) ? err.response?.data?.error || 'Ошибка загрузки вопроса' : 'Ошибка загрузки вопроса');
     } finally {
       setIsLoading(false);
     }

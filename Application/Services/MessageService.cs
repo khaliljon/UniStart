@@ -246,4 +246,14 @@ public class MessageService : IMessageService
         await _db.SaveChangesAsync();
         return true;
     }
+
+    public async Task<int?> GetOtherParticipantIdAsync(int conversationId, int userId)
+    {
+        var conv = await _db.Conversations
+            .Where(c => c.Id == conversationId && (c.StudentId == userId || c.TutorId == userId))
+            .Select(c => new { c.StudentId, c.TutorId })
+            .FirstOrDefaultAsync();
+        if (conv == null) return null;
+        return conv.StudentId == userId ? conv.TutorId : conv.StudentId;
+    }
 }

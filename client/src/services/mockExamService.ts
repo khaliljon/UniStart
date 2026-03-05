@@ -60,4 +60,9 @@ export const mockExamService = {
   async abandonAttempt(attemptId: number): Promise<void> {
     await api.post(`/mock-exams/attempts/${attemptId}/abandon`);
   },
+
+  async getActiveAttempt(): Promise<MockExamAttempt | null> {
+    const response = await api.get('/mock-exams/active-attempt', { validateStatus: s => s === 200 || s === 204 });
+    return response.status === 204 ? null : response.data;
+  },
 };

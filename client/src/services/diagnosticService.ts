@@ -1,4 +1,5 @@
 import api from './api';
+import axios from 'axios';
 import type {
   DiagnosticSession,
   DiagnosticQuestion,
@@ -16,8 +17,8 @@ export const diagnosticService = {
     try {
       const response = await api.get<DiagnosticQuestion>(`/diagnostic/${sessionId}/current`);
       return response.data;
-    } catch (err: any) {
-      if (err.response?.status === 404) return null;
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err) && err.response?.status === 404) return null;
       throw err;
     }
   },

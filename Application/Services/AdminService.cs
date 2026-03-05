@@ -512,7 +512,13 @@ public class AdminService : IAdminService
 
     public async Task<AdminUserStatsDto> GetUserStatsAsync()
     {
-        var users = await _db.Users.ToListAsync();
+        var roleCounts = await _db.Users
+            .GroupBy(u => u.Role)
+            .Select(g => new { Role = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.Role, x => x.Count);
+
+        var proCount = await _db.Users.CountAsync(u => u.SubscriptionTier == SubscriptionTier.Pro);
+
         var sevenDaysAgo = DateTime.UtcNow.AddDays(-7);
         var activeUserIds = await _db.UserAnswers
             .Where(a => a.AnsweredAt >= sevenDaysAgo)
@@ -520,12 +526,14 @@ public class AdminService : IAdminService
             .Distinct()
             .CountAsync();
 
+        var total = roleCounts.Values.Sum();
+
         return new AdminUserStatsDto(
-            TotalUsers: users.Count,
-            Students: users.Count(u => u.Role == UserRole.Student),
-            Tutors: users.Count(u => u.Role == UserRole.Tutor),
-            Admins: users.Count(u => u.Role == UserRole.Admin),
-            ProUsers: users.Count(u => u.SubscriptionTier == SubscriptionTier.Pro),
+            TotalUsers: total,
+            Students: roleCounts.GetValueOrDefault(UserRole.Student),
+            Tutors: roleCounts.GetValueOrDefault(UserRole.Tutor),
+            Admins: roleCounts.GetValueOrDefault(UserRole.Admin),
+            ProUsers: proCount,
             ActiveLast7Days: activeUserIds
         );
     }
@@ -536,14 +544,16 @@ public class AdminService : IAdminService
 
     public async Task<AdminDashboardDto> GetDashboardAsync()
     {
-        var questionStats = await GetStatsAsync();
-        var userStats = await GetUserStatsAsync();
-        var topics = await GetTopicsAsync();
+        var questionStatsTask = GetStatsAsync();
+        var userStatsTask = GetUserStatsAsync();
+        var topicsTask = GetTopicsAsync();
+
+        await Task.WhenAll(questionStatsTask, userStatsTask, topicsTask);
 
         return new AdminDashboardDto(
-            QuestionStats: questionStats,
-            UserStats: userStats,
-            Topics: topics
+            QuestionStats: questionStatsTask.Result,
+            UserStats: userStatsTask.Result,
+            Topics: topicsTask.Result
         );
     }
 

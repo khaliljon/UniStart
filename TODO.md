@@ -352,15 +352,15 @@
 
 | Метрика | Значение |
 |---------|----------|
-| **C# файлов** | 118 |
-| **C# строк кода** | ~19 000 |
-| **TypeScript/TSX файлов** | 58 |
-| **Frontend строк кода** | ~10 800 |
-| **Всего строк кода** | **~30 000** |
+| **C# файлов** | ~120 |
+| **C# строк кода** | ~19 500 |
+| **TypeScript/TSX файлов** | ~60 |
+| **Frontend строк кода** | ~11 000 |
+| **Всего строк кода** | **~30 500** |
 | **Контроллеров (API)** | 15 |
 | **Сервисов (backend)** | 19 (включая 2 background) |
 | **Domain-сущностей** | 22 |
-| **Страниц (React)** | 26 |
+| **Страниц (React)** | 26 (все lazy-loaded) |
 | **API-эндпоинтов** | ~60+ |
 | **Миграций БД** | 10 |
 | **Вопросов в базе** | 137 (30 тем, 5 экзаменов: SAT, TOEFL, NUET, IELTS, CSCA) |
@@ -551,10 +551,10 @@
 - **Где**: `TestController`, `StudyPlanController`, `AnalyticsController`
 - **Фикс**: возвращает 401 вместо fallback — реализовано
 
-#### 8. Race condition: auto-start + redirect при пустых экзаменах
+#### 8. ✅ Race condition: auto-start + redirect при пустых экзаменах
 - **Где**: `TestPage.tsx` — два `useEffect` запускаются параллельно: redirect (no exams) и auto-start (topicId)
 - **Последствия**: при переходе из плана, если `selectedExams = []` (после F5), запускается API-вызов с пустым массивом экзаменов + одновременный redirect на `/`. Вопрос может прийти из чужого экзамена
-- **Фикс**: проверять `selectedExams.length > 0` перед auto-start; или передавать `examTypeCode` из плана
+- **Фикс**: проверять `selectedExams.length > 0 || topicId` перед auto-start — реализовано
 
 #### 9. ✅ Прогресс-бар игнорирует topicId-фильтр
 - **Где**: `AdaptiveEngineService.GetTotalQuestionsCountAsync`
@@ -568,28 +568,28 @@
 - **Где**: `main.tsx` → `<App />` без обёртки
 - **Фикс**: `<ErrorBoundary>` обёртка с кнопкой «Обновить страницу» — реализовано
 
-#### 12. JWT: нет refresh tokens, expiresAt не проверяется
+#### 12. ✅ JWT: нет refresh tokens, expiresAt не проверяется
 - **Где**: backend — только access token (24ч), нет refresh. Frontend — `authSlice` не проверяет срок годности при restore
-- **Последствия**: через 24ч токен протухает → пользователь выкидывается на `/login` прямо посреди работы. При восстановлении с протухшим токеном — мелькание авторизованного UI, потом выброс
-- **Фикс**: проверять `expiresAt` при restore, добавить refresh token
+- **Последствия**: через 24ч токен протухает → пользователь выкидывается на `/login` прямо посреди работы
+- **Фикс**: `POST /api/auth/refresh` добавлен (backend), `expiresAt` проверяется при restore (authSlice), proactive refresh interceptor (api.ts) — реализовано
 
 ### 🟡 Минорные (косметические, edge-cases)
 
-#### 13. Mock Exam: нет Resume после ухода со страницы
+#### 13. ✅ Mock Exam: нет Resume после ухода со страницы
 - **Где**: `MockExamService.StartMockExamAsync` — автоматически abandon старых попыток. Нет UI для возврата к in_progress
-- **Последствия**: случайный уход со страницы = потеря всего прогресса mock-экзамена
+- **Фикс**: `GET /api/mock-exams/active-attempt` (backend), resume banner + history Resume button (MockExamPage) — реализовано
 
-#### 14. Онбординг: wizard теряет прогресс при F5
+#### 14. ✅ Онбординг: wizard теряет прогресс при F5
 - **Где**: `OnboardingPage.tsx` — все `useState`, ничего не в `sessionStorage`
-- **Последствия**: обновление страницы на шаге 3 → возврат на шаг 1
+- **Фикс**: все состояние (step, exams, date, score) персистится в `sessionStorage`, очищается при завершении — реализовано
 
-#### 15. Dashboard: silent catch на все API-ошибки
+#### 15. ✅ Dashboard: silent catch на все API-ошибки
 - **Где**: `DashboardPage.tsx` — `catch {}` без UI-ошибки
-- **Последствия**: при падении сервера Dashboard показывает `—` без объяснения
+- **Фикс**: добавлены error state + UI-баннер с кнопкой «Повторить» — реализовано
 
-#### 16. Orphaned StudyPlanEntries при регенерации плана
+#### 16. ✅ Orphaned StudyPlanEntries при регенерации плана
 - **Где**: `StudyPlanService.GeneratePlanAsync` — ставит `IsActive = false` на план, но не удаляет entries
-- **Последствия**: каждая регенерация оставляет старые записи в БД. Со временем — раздувание таблиц
+- **Фикс**: `RemoveRange` старых entries перед деактивацией плана — реализовано
 
 #### 17. ✅ `new Random()` → `Random.Shared`
 - **Где**: `IrtMath.cs` — заменено на `Random.Shared` для thread-safety
@@ -598,9 +598,9 @@
 - **Где**: `GetAvailableMockExamsAsync`, `GetMockExamDetailAsync`
 - **Фикс**: заменены O(N) циклов с `CountAsync()` на единый batch `GroupBy` + `ToDictionaryAsync` → 1 SQL-запрос вместо N
 
-#### 19. Целевая дата плана — нет серверной валидации
-- **Где**: `StudyPlanController` / `StudyPlanService.CreateGoalAsync` — принимает любую дату, даже прошлую
-- **Последствия**: дата в прошлом → молча создаёт 7-дневный план. Frontend защищает `min={date}`, но обходится через API
+#### 19. ✅ Целевая дата плана — нет серверной валидации
+- **Где**: FluentValidation `CreateStudyGoalDtoValidator` — `TargetDate > DateTime.UtcNow`
+- **Фикс**: уже реализовано через FluentValidation (OP-11)
 
 #### 20. ✅ Exception details утекают в 500-ответах
 - **Где**: `AuthController.cs`
@@ -678,7 +678,7 @@
     - `InvalidOperationException` → 409
     - Всё остальное → 500 (stack trace только в Development)
   - [x] `ILogger.LogError` для всех необработанных исключений (через Serilog)
-  - [ ] Correlation ID (`X-Request-Id`) в каждом ответе и логе
+  - [x] Correlation ID (`X-Request-Id`) в каждом ответе и логе — middleware пропагирует или генерирует X-Request-Id
 
 ---
 
@@ -735,7 +735,7 @@
   - [x] Admin API: `POST /api/admin/questions/{id}/restore`, `POST /api/admin/users/{id}/restore` с аудит-логом
   - [x] `RestoreQuestionAsync` / `RestoreUserAsync` с `IgnoreQueryFilters()`
   - [x] Миграция `20260227200430_AddAuditLogAndSoftDelete`: +3 колонки на Users, +3 на Questions
-  - [ ] Реальное физическое удаление — только через scheduled job (через 30 дней, позже)
+  - [x] Реальное физическое удаление — Hangfire recurring job `soft-delete-purge` (daily 02:00 UTC, удаляет записи старше 30 дней)
 
 #### OP-10. ✅ Нет кэширования — каждый запрос в БД
 - **Сейчас**: никакого кэша. Статичные данные (ExamTypes, Sections, Topics, Skills) загружаются из БД при каждом запросе
@@ -923,8 +923,8 @@
 | **P2** | OP-23 | Admin-панель доп. страницы | 🔴 Сложно | 🟡 Желательно | 🔶 Partial |
 | **P2** | OP-24 | Тесты (unit + integration) | 🔴 Сложно | 🟠 Важно | 🔶 Partial |
 
-> **Прогресс**: 22/24 выполнено + 2 частично (все P0, все P1, все P2 кроме OP-21). 5/5 критических + 8 важных багов исправлены. 40 unit-тестов.
-> **Осталось**: OP-21 (OpenTelemetry, опционально) + доп. тесты + доп. admin-страницы
+> **Прогресс**: 22/24 выполнено + 2 частично (все P0, все P1, все P2 кроме OP-21). Все 20 критических багов исправлены. 40 unit-тестов. Docker + Correlation ID + soft-delete purge добавлены.
+> **Осталось**: OP-21 (OpenTelemetry, опционально) + доп. тесты + доп. admin-страницы + CI/CD + SSL
 
 ---
 
@@ -1163,22 +1163,22 @@ T-6 (баг-фиксы)  ──→  T-7 (enrollment)  ──→  T-8 (tutor UI) 
 > **Без этого запускаться нельзя**
 
 #### 1.1 Безопасность 🔒
-- [ ] Вынести секреты в переменные окружения (JWT SecretKey, SMTP Password, DB ConnectionString)
-- [ ] Создать `appsettings.Production.json` (без секретов, всё через env vars)
-- [ ] Rate limiting на API (`AspNetCoreRateLimit` или встроенный .NET 8 `RateLimiter`)
-- [ ] Input validation (FluentValidation на DTO)
-- [ ] CORS — ограничить origins для production-домена
+- [x] Вынести секреты в переменные окружения (JWT SecretKey, SMTP Password, DB ConnectionString) — OP-1
+- [x] Создать `appsettings.Production.json` (без секретов, всё через env vars) — OP-1
+- [x] Rate limiting на API (.NET 8 `RateLimiter`) — OP-2
+- [x] Input validation (FluentValidation на DTO) — OP-11
+- [x] CORS — ограничить origins для production-домена — OP-19
 - [ ] HTTPS обязательно (Let's Encrypt)
-- [ ] Сменить JWT SecretKey на криптографически стойкий (≥64 символа)
-- [ ] Добавить refresh tokens (текущий JWT живёт 24ч без обновления)
+- [x] JWT SecretKey — читается из env var JwtSettings__SecretKey — OP-1
+- [x] Refresh tokens добавлены (POST /api/auth/refresh) — Bug #12 fix
 
 #### 1.2 Контейнеризация и деплой 🐳
-- [ ] Dockerfile для .NET 8 backend (`mcr.microsoft.com/dotnet/aspnet:8.0`, multi-stage build)
-- [ ] Dockerfile для frontend (Vite build → nginx для раздачи статики)
-- [ ] `docker-compose.yml` (API + PostgreSQL + frontend + nginx reverse proxy)
-- [ ] `.env.production` с переменными окружения
-- [ ] Health check endpoint (`/health`)
-- [ ] Автоматические миграции при старте
+- [x] Dockerfile для .NET 8 backend (`mcr.microsoft.com/dotnet/aspnet:8.0`, multi-stage build)
+- [x] Dockerfile для frontend (Vite build → nginx для раздачи статики)
+- [x] `docker-compose.yml` (API + PostgreSQL + frontend nginx reverse proxy)
+- [x] `.env.example` с переменными окружения
+- [x] Health check endpoint (`/health`) — реализовано (OP-6)
+- [x] Автоматические миграции при старте (dev mode)
 
 #### 1.3 CI/CD 🔄
 - [ ] GitHub Actions workflow: build → lint → type-check → test → docker push → deploy
@@ -1201,18 +1201,18 @@ T-6 (баг-фиксы)  ──→  T-7 (enrollment)  ──→  T-8 (tutor UI) 
 - [ ] Покрытие ≥ 60% для бизнес-логики
 
 #### 2.2 Логирование и мониторинг 📋
-- [ ] Serilog → structured JSON logging (файл + console)
-- [ ] Global exception middleware (единый формат ошибок API)
+- [x] Serilog → structured logging (файл + console) — OP-5
+- [x] Global exception middleware (единый формат ошибок API) — OP-4
 - [ ] Uptime monitoring (UptimeRobot / Healthchecks.io — бесплатно)
 - [ ] Application Insights или Seq для production
 
 #### 2.3 Производительность ⚡
-- [ ] Индексы БД: `UserAnswers(UserId, AnsweredAt)`, `Questions(TopicId)`, `StudyPlanEntries(PlanId, Date)`
-- [ ] Кэширование: IMemoryCache для экзаменов/тем (TTL 5–15 мин)
-- [ ] Пагинация на всех list-эндпоинтах
-- [ ] Gzip/Brotli compression (middleware)
-- [ ] Frontend: React.lazy + Suspense для lazy-loading страниц
-- [ ] Frontend: Vite chunk splitting и tree shaking
+- [x] Индексы БД: `UserAnswers(UserId, AnsweredAt)`, `Questions(TopicId)`, `StudyPlanEntries(PlanId, Date)` — OP-8
+- [x] Кэширование: IMemoryCache для экзаменов/тем (TTL 15 мин) — OP-10
+- [x] Пагинация на всех list-эндпоинтах — OP-13
+- [x] Gzip/Brotli compression (middleware) — OP-17
+- [x] Frontend: React.lazy + Suspense для lazy-loading страниц (26 страниц)
+- [x] Frontend: Vite chunk splitting и tree shaking
 
 ### Фаза 3: Рост (после запуска)
 
@@ -1487,14 +1487,14 @@ UniStart/
 | Мини-уроки | По 1–2 урока на тему (стратегии IELTS Reading, Listening tips) | 🟡 |
 
 **Задачи:**
-- [ ] **EX-1.1** Seeder: ExamType `IELTS`, 4 ExamSection, 8–10 Topic, Skills, TopicDependencies
-- [ ] **EX-1.2** Seeder: 30+ Reading вопросов с IRT-параметрами + 3 Reading Passages
-- [ ] **EX-1.3** Seeder: 20+ Listening вопросов (текстовое описание аудио-контекста)
-- [ ] **EX-1.4** Mock Exam definition: IELTS Practice Test (80 вопросов, 165 мин, 4 секции)
-- [ ] **EX-1.5** ScorePredictionService: маппинг θ → IELTS Band Score (0–9, шаг 0.5)
-- [ ] **EX-1.6** Frontend: карточка IELTS в онбординге, профиле, dashboard
-- [ ] **EX-1.7** Мини-уроки: 10+ уроков по стратегиям IELTS (Reading skimming, T/F/NG technique, Listening note-taking)
-- [ ] **EX-1.8** Уникальные типы вопросов: True/False/Not Given (новый UI-компонент вместо MCQ)
+- [x] **EX-1.1** Seeder: ExamType `IELTS`, 4 ExamSection, 8–10 Topic, Skills, TopicDependencies
+- [x] **EX-1.2** Seeder: 30+ Reading вопросов с IRT-параметрами + 3 Reading Passages
+- [x] **EX-1.3** Seeder: 20+ Listening вопросов (текстовое описание аудио-контекста)
+- [x] **EX-1.4** Mock Exam definition: IELTS Practice Test (80 вопросов, 165 мин, 4 секции)
+- [x] **EX-1.5** ScorePredictionService: маппинг θ → IELTS Band Score (0–9, шаг 0.5)
+- [x] **EX-1.6** Frontend: карточка IELTS в онбординге, профиле, dashboard
+- [x] **EX-1.7** Мини-уроки: 10+ уроков по стратегиям IELTS (Reading skimming, T/F/NG technique, Listening note-taking)
+- [x] **EX-1.8** Уникальные типы вопросов: True/False/Not Given (новый UI-компонент вместо MCQ)
 
 ---
 
@@ -1522,14 +1522,14 @@ UniStart/
 | Мини-уроки | Формулы + стратегии по каждой теме | 🟡 |
 
 **Задачи:**
-- [ ] **EX-2.1** Seeder: ExamType `CSCA`, 2 ExamSection, 10–12 Topic, Skills, TopicDependencies
-- [ ] **EX-2.2** Seeder: 25+ Math вопросов (включая производные и тригонометрию)
-- [ ] **EX-2.3** Seeder: 20+ English вопросов (cloze test — новый формат)
-- [ ] **EX-2.4** Mock Exam definition: Gaokao Practice Test (45 вопросов, 240 мин, 2 секции)
-- [ ] **EX-2.5** ScorePredictionService: маппинг θ → Gaokao Score (0–150)
-- [ ] **EX-2.6** Frontend: карточка CSCA в онбординге, профиле, dashboard
-- [ ] **EX-2.7** Мини-уроки: 12+ уроков (формулы тригонометрии, производные, грамматика Gaokao English)
-- [ ] **EX-2.8** Cloze test UI: текст с пропусками, выбор слова из вариантов (новый компонент)
+- [x] **EX-2.1** Seeder: ExamType `CSCA`, 2 ExamSection, 10–12 Topic, Skills, TopicDependencies
+- [x] **EX-2.2** Seeder: 25+ Math вопросов (включая производные и тригонометрию)
+- [x] **EX-2.3** Seeder: 20+ English вопросов (cloze test — новый формат)
+- [x] **EX-2.4** Mock Exam definition: Gaokao Practice Test (45 вопросов, 240 мин, 2 секции)
+- [x] **EX-2.5** ScorePredictionService: маппинг θ → Gaokao Score (0–150)
+- [x] **EX-2.6** Frontend: карточка CSCA в онбординге, профиле, dashboard
+- [x] **EX-2.7** Мини-уроки: 12+ уроков (формулы тригонометрии, производные, грамматика Gaokao English)
+- [x] **EX-2.8** Cloze test UI: текст с пропусками, выбор слова из вариантов (новый компонент)
 
 ---
 
@@ -1569,15 +1569,15 @@ TopicLesson (существует)
 6. Прогресс-бар урока, бейджи "📗 Прочитано" на карточке темы
 
 **Задачи:**
-- [ ] **TH-1.1** Domain: сущность `LessonStep` (Id, LessonId, StepType, Title, Content, QuizQuestionId, SortOrder)
-- [ ] **TH-1.2** Domain: сущность `UserLessonProgress` (UserId, LessonStepId, CompletedAt)
-- [ ] **TH-1.3** EF миграция: таблицы `LessonSteps`, `UserLessonProgress`
-- [ ] **TH-1.4** LessonService: `GetLessonWithStepsAsync`, `MarkStepCompletedAsync`, `GetLessonProgressAsync`
-- [ ] **TH-1.5** API: `GET /api/lessons/{id}/steps`, `POST /api/lessons/steps/{stepId}/complete`, `GET /api/lessons/{id}/progress`
-- [ ] **TH-1.6** Frontend: `LessonViewer.tsx` — пошаговый wizard с прогресс-баром, навигацией "Назад/Далее"
-- [ ] **TH-1.7** Frontend: inline quiz-компонент (вопрос прямо в уроке, без перехода на отдельную страницу)
-- [ ] **TH-1.8** TopicsPage: бейдж "✓ Пройдено" / "3/5 шагов" на карточке темы
-- [ ] **TH-1.9** Seeder: переработать 19 существующих уроков в step-формат (theory → example → quiz → summary)
+- [x] **TH-1.1** Domain: сущность `LessonStep` (Id, LessonId, StepType, Title, Content, QuizQuestionId, SortOrder)
+- [x] **TH-1.2** Domain: сущность `UserLessonProgress` (UserId, LessonStepId, CompletedAt)
+- [x] **TH-1.3** EF миграция: таблицы `LessonSteps`, `UserLessonProgress`
+- [x] **TH-1.4** LessonService: `GetLessonWithStepsAsync`, `MarkStepCompletedAsync`, `GetLessonProgressAsync`
+- [x] **TH-1.5** API: `GET /api/lessons/{id}/steps`, `POST /api/lessons/steps/{stepId}/complete`, `GET /api/lessons/{id}/progress`
+- [x] **TH-1.6** Frontend: `LessonViewer.tsx` — пошаговый wizard с прогресс-баром, навигацией "Назад/Далее"
+- [x] **TH-1.7** Frontend: inline quiz-компонент (вопрос прямо в уроке, без перехода на отдельную страницу)
+- [x] **TH-1.8** TopicsPage: бейдж "✓ Пройдено" / "3/5 шагов" на карточке темы
+- [x] **TH-1.9** Seeder: переработать 19 существующих уроков в step-формат (theory → example → quiz → summary)
 
 ---
 
@@ -1601,14 +1601,14 @@ FormulaCard
 ```
 
 **Задачи:**
-- [ ] **TH-2.1** Domain: сущность `FormulaCard` (Id, TopicId, Title, Formula, Description, SortOrder)
-- [ ] **TH-2.2** Domain: сущность `UserFormulaBookmark` (UserId, FormulaCardId, CreatedAt)
-- [ ] **TH-2.3** EF миграция
-- [ ] **TH-2.4** FormulaService: `GetFormulasByExamAsync`, `ToggleBookmarkAsync`, `GetBookmarkedAsync`
-- [ ] **TH-2.5** API: `GET /api/formulas?examTypeCode=SAT`, `POST /api/formulas/{id}/bookmark`, `GET /api/formulas/bookmarks`
-- [ ] **TH-2.6** Frontend: новая вкладка "📐 Формулы" в LearnPage (или отдельная страница)
-- [ ] **TH-2.7** Frontend: карточки формул с KaTeX, поиск, фильтр по теме, кнопка закладки
-- [ ] **TH-2.8** Seeder: 40+ формул для SAT Math, 20+ для NUET Math, 15+ для CSCA Math
+- [x] **TH-2.1** Domain: сущность `FormulaCard` (Id, TopicId, Title, Formula, Description, SortOrder)
+- [x] **TH-2.2** Domain: сущность `UserFormulaBookmark` (UserId, FormulaCardId, CreatedAt)
+- [x] **TH-2.3** EF миграция
+- [x] **TH-2.4** FormulaService: `GetFormulasByExamAsync`, `ToggleBookmarkAsync`, `GetBookmarkedAsync`
+- [x] **TH-2.5** API: `GET /api/formulas?examTypeCode=SAT`, `POST /api/formulas/{id}/bookmark`, `GET /api/formulas/bookmarks`
+- [x] **TH-2.6** Frontend: новая вкладка "📐 Формулы" в LearnPage (или отдельная страница)
+- [x] **TH-2.7** Frontend: карточки формул с KaTeX, поиск, фильтр по теме, кнопка закладки
+- [x] **TH-2.8** Seeder: 40+ формул для SAT Math, 20+ для NUET Math, 15+ для CSCA Math
 
 ---
 
@@ -1652,17 +1652,17 @@ FlashcardDeck
 5. Аналитика: % запоминания, streak повторений
 
 **Задачи:**
-- [ ] **TH-3.1** Domain: сущности `FlashcardDeck`, `Flashcard`, `UserFlashcardProgress`
-- [ ] **TH-3.2** EF миграция
-- [ ] **TH-3.3** FlashcardService: SM-2 алгоритм, `GetDueCardsAsync`, `ReviewCardAsync`, `GetDeckProgressAsync`
-- [ ] **TH-3.4** FlashcardService: `CreateDeckAsync`, `AddCardAsync` (пользовательские колоды)
-- [ ] **TH-3.5** API: `GET /api/flashcards/decks`, `GET /api/flashcards/decks/{id}/due`, `POST /api/flashcards/review`, `POST /api/flashcards/decks` (CRUD)
-- [ ] **TH-3.6** Frontend: новая вкладка "🃏 Карточки" в LearnPage
-- [ ] **TH-3.7** Frontend: `FlashcardStudy.tsx` — flipcard-анимация, кнопки оценки, прогресс-бар
-- [ ] **TH-3.8** Frontend: `FlashcardDecks.tsx` — список колод с прогрессом (new/learning/review/mastered)
-- [ ] **TH-3.9** Frontend: создание своих колод и карточек
-- [ ] **TH-3.10** Seeder: системные колоды (SAT Vocabulary 50 слов, TOEFL Academic Words 50, Math Formulas 30, IELTS Key Phrases 30)
-- [ ] **TH-3.11** Рекомендация на Dashboard: "У вас 15 карточек на повторение" → ссылка
+- [x] **TH-3.1** Domain: сущности `FlashcardDeck`, `Flashcard`, `UserFlashcardProgress`
+- [x] **TH-3.2** EF миграция
+- [x] **TH-3.3** FlashcardService: SM-2 алгоритм, `GetDueCardsAsync`, `ReviewCardAsync`, `GetDeckProgressAsync`
+- [x] **TH-3.4** FlashcardService: `CreateDeckAsync`, `AddCardAsync` (пользовательские колоды)
+- [x] **TH-3.5** API: `GET /api/flashcards/decks`, `GET /api/flashcards/decks/{id}/due`, `POST /api/flashcards/review`, `POST /api/flashcards/decks` (CRUD)
+- [x] **TH-3.6** Frontend: новая вкладка "🃏 Карточки" в LearnPage
+- [x] **TH-3.7** Frontend: `FlashcardStudy.tsx` — flipcard-анимация, кнопки оценки, прогресс-бар
+- [x] **TH-3.8** Frontend: `FlashcardDecks.tsx` — список колод с прогрессом (new/learning/review/mastered)
+- [x] **TH-3.9** Frontend: создание своих колод и карточек
+- [x] **TH-3.10** Seeder: системные колоды (SAT Vocabulary 50 слов, TOEFL Academic Words 50, Math Formulas 30, IELTS Key Phrases 30)
+- [x] **TH-3.11** Рекомендация на Dashboard: "У вас 15 карточек на повторение" → ссылка
 
 ---
 
@@ -1693,14 +1693,14 @@ TimedDrillResult
 4. Мини-лидерборд (личный): лучшие результаты по каждому режиму
 
 **Задачи:**
-- [ ] **TH-4.1** Domain: сущность `TimedDrillResult`
-- [ ] **TH-4.2** EF миграция
-- [ ] **TH-4.3** TimedDrillService: `StartDrillAsync`, `GetPersonalBestsAsync`, `SaveResultAsync`
-- [ ] **TH-4.4** API: `POST /api/drills/start`, `POST /api/drills/complete`, `GET /api/drills/personal-bests`
-- [ ] **TH-4.5** Frontend: новая вкладка "⏱️ Блиц" в LearnPage
-- [ ] **TH-4.6** Frontend: `TimedDrill.tsx` — таймер, вопрос, мгновенный feedback, streak-counter
-- [ ] **TH-4.7** Frontend: экран результатов с comparison vs personal best
-- [ ] **TH-4.8** Рекомендация: "Пройдите блиц по Algebra — ваш рекорд: 8/10"
+- [x] **TH-4.1** Domain: сущность `TimedDrillResult`
+- [x] **TH-4.2** EF миграция
+- [x] **TH-4.3** TimedDrillService: `StartDrillAsync`, `GetPersonalBestsAsync`, `SaveResultAsync`
+- [x] **TH-4.4** API: `POST /api/drills/start`, `POST /api/drills/complete`, `GET /api/drills/personal-bests`
+- [x] **TH-4.5** Frontend: новая вкладка "⏱️ Блиц" в LearnPage
+- [x] **TH-4.6** Frontend: `TimedDrill.tsx` — таймер, вопрос, мгновенный feedback, streak-counter
+- [x] **TH-4.7** Frontend: экран результатов с comparison vs personal best
+- [x] **TH-4.8** Рекомендация: "Пройдите блиц по Algebra — ваш рекорд: 8/10"
 
 ---
 
@@ -1726,15 +1726,15 @@ StrategyGuide
 ```
 
 **Задачи:**
-- [ ] **TH-5.1** Domain: сущности `StrategyGuide`, `UserGuideProgress`
-- [ ] **TH-5.2** EF миграция
-- [ ] **TH-5.3** StrategyService: `GetGuidesByExamAsync`, `MarkReadAsync`
-- [ ] **TH-5.4** API: `GET /api/strategies?examTypeCode=SAT`, `POST /api/strategies/{id}/read`
-- [ ] **TH-5.5** Frontend: новая вкладка "🎯 Стратегии" в LearnPage
-- [ ] **TH-5.6** Frontend: `StrategyList.tsx` — карточки по категориям, бейдж "✓ Прочитано"
-- [ ] **TH-5.7** Frontend: `StrategyViewer.tsx` — чтение с markdown, estimated time, прогресс-чекбокс
-- [ ] **TH-5.8** Seeder: 5+ стратегий на каждый экзамен (25+ всего)
-- [ ] **TH-5.9** Рекомендация: "Изучите стратегию 'Process of Elimination' для SAT" → ссылка
+- [x] **TH-5.1** Domain: сущности `StrategyGuide`, `UserGuideProgress`
+- [x] **TH-5.2** EF миграция
+- [x] **TH-5.3** StrategyService: `GetGuidesByExamAsync`, `MarkReadAsync`
+- [x] **TH-5.4** API: `GET /api/strategies?examTypeCode=SAT`, `POST /api/strategies/{id}/read`
+- [x] **TH-5.5** Frontend: новая вкладка "🎯 Стратегии" в LearnPage
+- [x] **TH-5.6** Frontend: `StrategyList.tsx` — карточки по категориям, бейдж "✓ Прочитано"
+- [x] **TH-5.7** Frontend: `StrategyViewer.tsx` — чтение с markdown, estimated time, прогресс-чекбокс
+- [x] **TH-5.8** Seeder: 5+ стратегий на каждый экзамен (25+ всего)
+- [x] **TH-5.9** Рекомендация: "Изучите стратегию 'Process of Elimination' для SAT" → ссылка
 
 ---
 
@@ -1759,13 +1759,13 @@ UserMistakeNote
 ```
 
 **Задачи:**
-- [ ] **TH-6.1** Domain: сущность `UserMistakeNote`
-- [ ] **TH-6.2** EF миграция
-- [ ] **TH-6.3** MistakeService: `GetMistakesWithNotesAsync`, `AddNoteAsync`, `SetErrorTypeAsync`, `GetErrorPatternAnalysisAsync`
-- [ ] **TH-6.4** API: `GET /api/mistakes?examTypeCode=&topicId=&errorType=`, `POST /api/mistakes/{userAnswerId}/note`, `PUT /api/mistakes/{userAnswerId}/error-type`
-- [ ] **TH-6.5** Frontend: переделать ReviewPage → полноценный MistakeJournal с фильтрами, заметками, тег-классификацией
-- [ ] **TH-6.6** Frontend: паттерн-анализ (bar chart типов ошибок, топ-3 слабых паттерна)
-- [ ] **TH-6.7** Рекомендация: "У вас 70% ошибок — невнимательность. Попробуйте Timed Drill для тренировки внимания"
+- [x] **TH-6.1** Domain: сущность `UserMistakeNote`
+- [x] **TH-6.2** EF миграция
+- [x] **TH-6.3** MistakeService: `GetMistakesWithNotesAsync`, `AddNoteAsync`, `SetErrorTypeAsync`, `GetErrorPatternAnalysisAsync`
+- [x] **TH-6.4** API: `GET /api/mistakes?examTypeCode=&topicId=&errorType=`, `POST /api/mistakes/{userAnswerId}/note`, `PUT /api/mistakes/{userAnswerId}/error-type`
+- [x] **TH-6.5** Frontend: переделать ReviewPage → полноценный MistakeJournal с фильтрами, заметками, тег-классификацией
+- [x] **TH-6.6** Frontend: паттерн-анализ (bar chart типов ошибок, топ-3 слабых паттерна)
+- [x] **TH-6.7** Рекомендация: "У вас 70% ошибок — невнимательность. Попробуйте Timed Drill для тренировки внимания"
 
 ---
 
@@ -1803,9 +1803,9 @@ UserMistakeNote
 **Вариант B**: Плоский список из 8 вкладок с горизонтальным скроллом (как сейчас, но больше).
 
 **Задачи:**
-- [ ] **TH-C.1** LearnPage.tsx: переделать навигацию на двухуровневую (группы + вкладки)
-- [ ] **TH-C.2** Роутинг: `/learn?tab=lessons`, `/learn?tab=formulas`, `/learn?tab=strategies`, `/learn?tab=flashcards`, `/learn?tab=drills`, `/learn?tab=mistakes`
-- [ ] **TH-C.3** Mobile-адаптация: collapsible группы или horizontal scroll
+- [x] **TH-C.1** LearnPage.tsx: переделать навигацию на двухуровневую (группы + вкладки)
+- [x] **TH-C.2** Роутинг: `/learn?tab=lessons`, `/learn?tab=formulas`, `/learn?tab=strategies`, `/learn?tab=flashcards`, `/learn?tab=drills`, `/learn?tab=mistakes`
+- [x] **TH-C.3** Mobile-адаптация: collapsible группы или horizontal scroll
 
 ---
 

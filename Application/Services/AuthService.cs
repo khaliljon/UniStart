@@ -110,6 +110,27 @@ public class AuthService : IAuthService
         );
     }
 
+    public async Task<AuthResponseDto> RefreshTokenAsync(int userId)
+    {
+        var user = await _context.Users.FindAsync(userId)
+            ?? throw new UnauthorizedAccessException("User not found");
+
+        var token = _jwtService.GenerateToken(user);
+        var expiresAt = DateTime.UtcNow.AddHours(24);
+
+        return new AuthResponseDto(
+            user.Id,
+            user.Email,
+            user.Name,
+            user.Role.ToString(),
+            user.HasCompletedOnboarding,
+            user.SubscriptionTier.ToString(),
+            user.SubscriptionExpiresAt,
+            token,
+            expiresAt
+        );
+    }
+
     public async Task<UserDto?> GetUserByIdAsync(int userId)
     {
         var user = await _context.Users.FindAsync(userId);

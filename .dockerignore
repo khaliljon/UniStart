@@ -1,0 +1,13 @@
+bin/
+obj/
+node_modules/
+client/node_modules/
+client/dist/
+*.user
+*.suo
+.vs/
+.vscode/
+*.md
+docs/
+Migrations/
+**/*.Designer.cs

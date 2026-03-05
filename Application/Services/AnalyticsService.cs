@@ -237,13 +237,13 @@ public class AnalyticsService : IAnalyticsService
         );
     }
 
-    public async Task<TestSessionSummaryDto> CompleteSessionAsync(int sessionId)
+    public async Task<TestSessionSummaryDto> CompleteSessionAsync(int userId, int sessionId)
     {
         var session = await _context.TestSessions
             .Include(s => s.ExamType)
             .Include(s => s.Answers)
                 .ThenInclude(a => a.AnswerOption)
-            .FirstOrDefaultAsync(s => s.Id == sessionId)
+            .FirstOrDefaultAsync(s => s.Id == sessionId && s.UserId == userId)
             ?? throw new ArgumentException("Session not found");
 
         session.CompletedAt = DateTime.UtcNow;

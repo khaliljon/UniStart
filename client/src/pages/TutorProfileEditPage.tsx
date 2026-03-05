@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { tutorService } from '../services/tutorService';
 import type { TutorProfileDetail, UpdateTutorProfile } from '../types';
 
@@ -45,6 +45,12 @@ function TutorProfileEditPage() {
     loadProfile();
   }, [loadProfile]);
 
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  useEffect(() => {
+    return () => { clearTimeout(savedTimerRef.current); };
+  }, []);
+
   const handleSave = async () => {
     setSaving(true);
     try {
@@ -59,7 +65,8 @@ function TutorProfileEditPage() {
       };
       await tutorService.updateProfile(data);
       setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
+      clearTimeout(savedTimerRef.current);
+      savedTimerRef.current = setTimeout(() => setSaved(false), 3000);
     } catch {
       alert('Не удалось сохранить профиль');
     } finally {

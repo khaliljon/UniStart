@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAppSelector } from '../hooks/useAppSelector';
 import { tutorService } from '../services/tutorService';
 import type { TutorProfileDetail, UpdateTutorProfile, ScheduleSlotInput } from '../types';
@@ -58,9 +58,16 @@ function TutorDashboardPage() {
     loadProfile();
   }, [loadProfile]);
 
+  const successTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  useEffect(() => {
+    return () => { clearTimeout(successTimerRef.current); };
+  }, []);
+
   const showSuccess = (msg: string) => {
     setSuccessMsg(msg);
-    setTimeout(() => setSuccessMsg(''), 3000);
+    clearTimeout(successTimerRef.current);
+    successTimerRef.current = setTimeout(() => setSuccessMsg(''), 3000);
   };
 
   const handleSaveProfile = async (e: React.FormEvent) => {

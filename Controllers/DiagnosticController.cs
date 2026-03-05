@@ -22,7 +22,13 @@ public class DiagnosticController : ControllerBase
         _logger = logger;
     }
 
-    private int GetUserId() => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+    private int GetUserId()
+    {
+        var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                 ?? User.FindFirst("sub")?.Value;
+        if (int.TryParse(claim, out var id) && id > 0) return id;
+        throw new UnauthorizedAccessException("Invalid user identity");
+    }
 
     /// <summary>
     /// Start a diagnostic test for a specific exam type
@@ -40,11 +46,6 @@ public class DiagnosticController : ControllerBase
         catch (InvalidOperationException ex)
         {
             return BadRequest(new { error = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error starting diagnostic");
-            return StatusCode(500, new { error = ex.Message });
         }
     }
 
@@ -67,11 +68,6 @@ public class DiagnosticController : ControllerBase
         {
             return BadRequest(new { error = ex.Message });
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error getting diagnostic question");
-            return StatusCode(500, new { error = ex.Message });
-        }
     }
 
     /// <summary>
@@ -91,11 +87,6 @@ public class DiagnosticController : ControllerBase
         {
             return BadRequest(new { error = ex.Message });
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error submitting diagnostic answer");
-            return StatusCode(500, new { error = ex.Message });
-        }
     }
 
     /// <summary>
@@ -114,11 +105,6 @@ public class DiagnosticController : ControllerBase
         catch (InvalidOperationException ex)
         {
             return BadRequest(new { error = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error getting diagnostic results");
-            return StatusCode(500, new { error = ex.Message });
         }
     }
 }

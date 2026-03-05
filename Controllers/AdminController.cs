@@ -567,7 +567,6 @@ public class AdminController : ControllerBase
         // Summary stats
         var totalAnswers = await _db.UserAnswers.CountAsync(a => a.UserId == id);
         var correctAnswers = await _db.UserAnswers
-            .Include(a => a.AnswerOption)
             .CountAsync(a => a.UserId == id && a.AnswerOption.IsCorrect);
 
         var lastActivity = await _db.UserAnswers
@@ -590,14 +589,19 @@ public class AdminController : ControllerBase
             })
             .ToListAsync();
 
-        // Streak
+        // Streak — single query instead of per-day loop
+        var activityDates = await _db.UserAnswers
+            .Where(a => a.UserId == id)
+            .Select(a => a.AnsweredAt.Date)
+            .Distinct()
+            .OrderByDescending(d => d)
+            .ToListAsync();
+
         var streak = 0;
         var checkDate = DateTime.UtcNow.Date.AddDays(-1);
-        while (true)
+        foreach (var d in activityDates)
         {
-            var hasActivity = await _db.UserAnswers
-                .AnyAsync(a => a.UserId == id && a.AnsweredAt.Date == checkDate);
-            if (!hasActivity) break;
+            if (d != checkDate) break;
             streak++;
             checkDate = checkDate.AddDays(-1);
         }

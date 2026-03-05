@@ -82,12 +82,9 @@ public class ChatHub : Hub
 
         var message = await _messageService.SendMessageAsync(userId, conversationId, text);
 
-        // Get conversation to find recipient
-        var conversations = await _messageService.GetConversationsAsync(userId);
-        var conv = conversations.FirstOrDefault(c => c.Id == conversationId);
-        if (conv == null) return;
-
-        var recipientId = conv.OtherUserId;
+        // Get recipient via lightweight query
+        var recipientId = await _messageService.GetOtherParticipantIdAsync(conversationId, userId);
+        if (recipientId == null) return;
 
         // Send with correct IsMine flag for each participant
         // Use Clients.Caller for sender to prevent duplication if orphaned connections exist
@@ -101,7 +98,7 @@ public class ChatHub : Hub
         await Clients.Group($"user_{recipientId}").SendAsync("ReceiveMessage", recipientMessage);
 
         // Update unread count for recipient
-        var unread = await _messageService.GetUnreadCountAsync(recipientId);
+        var unread = await _messageService.GetUnreadCountAsync(recipientId.Value);
         await Clients.Group($"user_{recipientId}").SendAsync("UnreadCountUpdate", unread);
     }
 
@@ -116,11 +113,10 @@ public class ChatHub : Hub
         await _messageService.MarkAsReadAsync(conversationId, userId);
 
         // Notify sender that messages were read
-        var conversations = await _messageService.GetConversationsAsync(userId);
-        var conv = conversations.FirstOrDefault(c => c.Id == conversationId);
-        if (conv != null)
+        var otherUserId = await _messageService.GetOtherParticipantIdAsync(conversationId, userId);
+        if (otherUserId != null)
         {
-            await Clients.Group($"user_{conv.OtherUserId}").SendAsync("MessagesRead", conversationId);
+            await Clients.Group($"user_{otherUserId}").SendAsync("MessagesRead", conversationId);
         }
 
         // Update own unread count
@@ -136,13 +132,12 @@ public class ChatHub : Hub
         var userId = GetUserId();
         if (userId <= 0) return;
 
-        var conversations = await _messageService.GetConversationsAsync(userId);
-        var conv = conversations.FirstOrDefault(c => c.Id == conversationId);
-        if (conv != null)
+        var recipientId = await _messageService.GetOtherParticipantIdAsync(conversationId, userId);
+        if (recipientId != null)
         {
             // Send userName (not userId) so clients can display a name
             var user = await _messageService.GetUserNameAsync(userId);
-            await Clients.Group($"user_{conv.OtherUserId}").SendAsync("UserTyping", conversationId, user);
+            await Clients.Group($"user_{recipientId}").SendAsync("UserTyping", conversationId, user);
         }
     }
 

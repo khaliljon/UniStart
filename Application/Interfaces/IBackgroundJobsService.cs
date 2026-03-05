@@ -16,4 +16,10 @@ public interface IBackgroundJobsService
     /// Scheduled every Monday at 08:00 UTC via Hangfire.
     /// </summary>
     Task ProcessWeeklyDigestsAsync();
+
+    /// <summary>
+    /// Permanently deletes soft-deleted records (IsDeleted = true) older than 30 days.
+    /// Scheduled daily at 02:00 UTC via Hangfire (OP-9 completion).
+    /// </summary>
+    Task PurgeSoftDeletedRecordsAsync();
 }

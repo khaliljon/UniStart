@@ -66,12 +66,12 @@ function TestPage() {
     }
   }, [isPro, questionsAnswered]);
 
-  // Redirect if no exams selected
+  // Redirect if no exams selected and no topicId in URL (topicId means we came from a specific link)
   useEffect(() => {
-    if (selectedExams.length === 0) {
+    if (selectedExams.length === 0 && !topicId) {
       navigate('/');
     }
-  }, [selectedExams, navigate]);
+  }, [selectedExams, navigate, topicId]);
 
   const handleStartPractice = async () => {
     // Check daily limit for free users
@@ -209,7 +209,7 @@ function TestPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [topicId]);
 
-  if (selectedExams.length === 0) {
+  if (selectedExams.length === 0 && !topicId) {
     return null;
   }
 

@@ -285,7 +285,7 @@ try
     //  CORS (OP-19: origins from config)
     // ═══════════════════════════════════════════════════════
     var corsOrigins = builder.Configuration.GetSection("CorsOrigins").Get<string[]>()
-                      ?? new[] { "http://localhost:3000", "http://localhost:5173" };
+                      ?? Array.Empty<string>();
 
     builder.Services.AddCors(options =>
     {
@@ -397,6 +397,21 @@ try
     // Response compression (before everything)
     app.UseResponseCompression();
 
+    // Correlation ID (OP-4 completion) — propagate or generate X-Request-Id
+    app.Use(async (context, next) =>
+    {
+        if (context.Request.Headers.TryGetValue("X-Request-Id", out var incoming) && !string.IsNullOrWhiteSpace(incoming))
+        {
+            context.TraceIdentifier = incoming!;
+        }
+        context.Response.OnStarting(() =>
+        {
+            context.Response.Headers["X-Request-Id"] = context.TraceIdentifier;
+            return Task.CompletedTask;
+        });
+        await next();
+    });
+
     // Serilog request logging (OP-5)
     app.UseSerilogRequestLogging(opts =>
     {
@@ -446,7 +461,7 @@ try
     app.UseAuthorization();
 
     // ═══════════════════════════════════════════════════════
-    //  BLOCKED USER CHECK (OP-14)
+    //  BLOCKED USER CHECK (OP-14) — with IMemoryCache
     // ═══════════════════════════════════════════════════════
     app.Use(async (context, next) =>
     {
@@ -455,9 +470,38 @@ try
             var userIdClaim = context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             if (int.TryParse(userIdClaim, out var userId))
             {
-                var db = context.RequestServices.GetRequiredService<UniStart.Infrastructure.Data.UniStartDbContext>();
-                var user = await db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId);
-                if (user is { IsBlocked: true })
+                var cache = context.RequestServices.GetRequiredService<Microsoft.Extensions.Caching.Memory.IMemoryCache>();
+                var cacheKey = $"blocked:{userId}";
+
+                if (!cache.TryGetValue(cacheKey, out object? cached) || cached is not bool isBlocked)
+                {
+                    var db = context.RequestServices.GetRequiredService<UniStart.Infrastructure.Data.UniStartDbContext>();
+                    var user = await db.Users.AsNoTracking()
+                        .Where(u => u.Id == userId)
+                        .Select(u => new { u.IsBlocked, u.BlockReason })
+                        .FirstOrDefaultAsync();
+
+                    isBlocked = user?.IsBlocked == true;
+
+                    using var entry = cache.CreateEntry(cacheKey);
+                    entry.Value = isBlocked;
+                    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(60);
+
+                    if (isBlocked)
+                    {
+                        context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                        context.Response.ContentType = "application/json";
+                        await context.Response.WriteAsJsonAsync(new
+                        {
+                            type = "https://tools.ietf.org/html/rfc7231#section-6.5.3",
+                            title = "Account Blocked",
+                            status = 403,
+                            detail = user?.BlockReason ?? "Your account has been blocked. Contact support."
+                        });
+                        return;
+                    }
+                }
+                else if (isBlocked)
                 {
                     context.Response.StatusCode = StatusCodes.Status403Forbidden;
                     context.Response.ContentType = "application/json";
@@ -466,7 +510,7 @@ try
                         type = "https://tools.ietf.org/html/rfc7231#section-6.5.3",
                         title = "Account Blocked",
                         status = 403,
-                        detail = user.BlockReason ?? "Your account has been blocked. Contact support."
+                        detail = "Your account has been blocked. Contact support."
                     });
                     return;
                 }
@@ -530,6 +574,11 @@ try
         "weekly-digest",
         service => service.ProcessWeeklyDigestsAsync(),
         "0 8 * * 1"); // Mondays at 08:00 UTC
+
+    RecurringJob.AddOrUpdate<IBackgroundJobsService>(
+        "soft-delete-purge",
+        service => service.PurgeSoftDeletedRecordsAsync(),
+        "0 2 * * *"); // daily at 02:00 UTC
 
     // ═══════════════════════════════════════════════════════
     //  AUTO-MIGRATE & SEED (dev only)

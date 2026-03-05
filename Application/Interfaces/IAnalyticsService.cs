@@ -15,7 +15,7 @@ public interface IAnalyticsService
     
     // Test sessions
     Task<TestSessionSummaryDto> StartSessionAsync(int userId, string examTypeCode, string mode);
-    Task<TestSessionSummaryDto> CompleteSessionAsync(int sessionId);
+    Task<TestSessionSummaryDto> CompleteSessionAsync(int userId, int sessionId);
     Task<IEnumerable<TestSessionSummaryDto>> GetSessionsAsync(int userId, int page = 1, int pageSize = 10);
     Task<TestSessionDetailDto?> GetSessionDetailAsync(int userId, int sessionId);
 }

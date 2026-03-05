@@ -22,7 +22,13 @@ public class OnboardingController : ControllerBase
         _logger = logger;
     }
 
-    private int GetUserId() => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+    private int GetUserId()
+    {
+        var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                 ?? User.FindFirst("sub")?.Value;
+        if (int.TryParse(claim, out var id) && id > 0) return id;
+        throw new UnauthorizedAccessException("Invalid user identity");
+    }
 
     /// <summary>
     /// Get onboarding status for the current user
@@ -31,16 +37,8 @@ public class OnboardingController : ControllerBase
     [ProducesResponseType(typeof(OnboardingStatusDto), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetStatus()
     {
-        try
-        {
-            var status = await _onboardingService.GetStatusAsync(GetUserId());
-            return Ok(status);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error getting onboarding status");
-            return StatusCode(500, new { error = ex.Message });
-        }
+        var status = await _onboardingService.GetStatusAsync(GetUserId());
+        return Ok(status);
     }
 
     /// <summary>
@@ -50,16 +48,8 @@ public class OnboardingController : ControllerBase
     [ProducesResponseType(typeof(IEnumerable<ExamTypeInfoDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetExamTypes()
     {
-        try
-        {
-            var examTypes = await _onboardingService.GetExamTypesInfoAsync();
-            return Ok(examTypes);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error getting exam types");
-            return StatusCode(500, new { error = ex.Message });
-        }
+        var examTypes = await _onboardingService.GetExamTypesInfoAsync();
+        return Ok(examTypes);
     }
 
     /// <summary>
@@ -78,11 +68,6 @@ public class OnboardingController : ControllerBase
         catch (InvalidOperationException ex)
         {
             return BadRequest(new { error = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error completing onboarding");
-            return StatusCode(500, new { error = ex.Message });
         }
     }
 }

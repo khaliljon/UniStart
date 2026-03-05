@@ -487,4 +487,34 @@ public class MockExamService : IMockExamService
         await _context.SaveChangesAsync();
         return true;
     }
+
+    public async Task<MockExamAttemptDto?> GetActiveAttemptAsync(int userId)
+    {
+        var attempt = await _context.MockExamAttempts
+            .Include(a => a.MockExam).ThenInclude(m => m.Sections)
+            .Where(a => a.UserId == userId && a.Status == "in_progress")
+            .OrderByDescending(a => a.StartedAt)
+            .FirstOrDefaultAsync();
+
+        if (attempt == null) return null;
+
+        // Auto-complete if total exam time expired
+        var totalTimeLimit = attempt.MockExam.TotalTimeMinutes;
+        if (totalTimeLimit > 0 && DateTime.UtcNow > attempt.StartedAt.AddMinutes(totalTimeLimit))
+        {
+            await CompleteExamInternalAsync(attempt);
+            await _context.SaveChangesAsync();
+            return null; // No longer active
+        }
+
+        return new MockExamAttemptDto(
+            attempt.Id,
+            attempt.MockExamId,
+            attempt.MockExam.Title,
+            attempt.Status,
+            attempt.CurrentSectionIndex,
+            attempt.MockExam.Sections.Count,
+            attempt.StartedAt
+        );
+    }
 }

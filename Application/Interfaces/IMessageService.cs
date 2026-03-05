@@ -12,4 +12,5 @@ public interface IMessageService
     Task<int> GetUnreadCountAsync(int userId);
     Task<string> GetUserNameAsync(int userId);
     Task<bool> ArchiveConversationAsync(int conversationId, int userId);
+    Task<int?> GetOtherParticipantIdAsync(int conversationId, int userId);
 }

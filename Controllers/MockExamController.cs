@@ -116,6 +116,16 @@ public class MockExamController : ControllerBase
         return Ok(history);
     }
 
+    /// <summary>Get user's active (in_progress) attempt, if any</summary>
+    [HttpGet("active-attempt")]
+    public async Task<IActionResult> GetActiveAttempt()
+    {
+        var userId = GetUserId();
+        var attempt = await _mockExamService.GetActiveAttemptAsync(userId);
+        if (attempt == null) return NoContent();
+        return Ok(attempt);
+    }
+
     /// <summary>Abandon an in-progress attempt</summary>
     [HttpPost("attempts/{attemptId}/abandon")]
     public async Task<IActionResult> AbandonAttempt(int attemptId)
