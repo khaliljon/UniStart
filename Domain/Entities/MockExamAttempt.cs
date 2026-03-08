@@ -14,6 +14,7 @@ public class MockExamAttempt
     public int CurrentSectionIndex { get; set; } // 0-based
     public double? TotalScore { get; set; }
     public string? SectionScoresJson { get; set; } // JSON: [{ sectionName, correct, total, score }]
+    public string? SelectedSectionIdsJson { get; set; } // JSON: [1,2,5] — subset of MockExamSection IDs (null = all)
 
     // Navigation properties
     public virtual User User { get; set; } = null!;

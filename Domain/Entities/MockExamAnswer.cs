@@ -10,6 +10,7 @@ public class MockExamAnswer
     public int QuestionId { get; set; }
     public int? SelectedOptionId { get; set; }
     public int SectionIndex { get; set; }
+    public int SortOrder { get; set; }
     public int? TimeSpentSeconds { get; set; }
     public bool IsCorrect { get; set; }
 

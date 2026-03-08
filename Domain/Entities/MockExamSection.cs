@@ -10,6 +10,7 @@ public class MockExamSection
     public int? ExamSectionId { get; set; }
     public string Name { get; set; } = string.Empty;
     public int TimeLimitMinutes { get; set; }
+    public int QuestionCount { get; set; }
     public int SortOrder { get; set; }
     public string? Instructions { get; set; }
 

@@ -48,11 +48,12 @@ public class AdminService : IAdminService
             query = query.Where(q => q.Difficulty == diff);
 
         var orderedQuery = query.OrderBy(q => q.Topic.Section!.ExamTypeCode)
-            .ThenBy(q => q.Topic.Name)
+            .ThenBy(q => q.Topic.SectionId)
+            .ThenBy(q => q.TopicId)
             .ThenBy(q => q.Difficulty);
 
         page = Math.Max(1, page);
-        pageSize = Math.Clamp(pageSize, 1, 200);
+        pageSize = Math.Clamp(pageSize, 1, 1000);
 
         var totalCount = await orderedQuery.CountAsync();
         var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
@@ -567,7 +568,8 @@ public class AdminService : IAdminService
             .Include(t => t.Section!)
             .Include(t => t.Questions)
             .OrderBy(t => t.Section!.ExamTypeCode)
-            .ThenBy(t => t.Name)
+            .ThenBy(t => t.SectionId)
+            .ThenBy(t => t.Id)
             .ToListAsync();
 
         return topics.Select(t => new AdminTopicSummaryDto(

@@ -33,6 +33,7 @@ function MockExamPage() {
 
   // Detail phase
   const [examDetail, setExamDetail] = useState<MockExamDetail | null>(null);
+  const [selectedSectionIds, setSelectedSectionIds] = useState<number[]>([]);
 
   // Active attempt
   const [attempt, setAttempt] = useState<MockExamAttempt | null>(null);
@@ -97,11 +98,14 @@ function MockExamPage() {
   const handleResume = async (att: MockExamAttempt) => {
     setLoading(true);
     try {
-      setAttempt(att);
-      const section = await mockExamService.getCurrentSection(att.attemptId);
+      // Re-fetch to get accurate totalTimeMinutes (may differ from inline construction)
+      const freshAttempt = await mockExamService.getActiveAttempt();
+      const effectiveAtt = (freshAttempt && freshAttempt.attemptId === att.attemptId) ? freshAttempt : att;
+      setAttempt(effectiveAtt);
+      const section = await mockExamService.getCurrentSection(effectiveAtt.attemptId);
       if (!section) {
         // Attempt was auto-completed by server (time expired) — load results
-        const res = await mockExamService.getResults(att.attemptId);
+        const res = await mockExamService.getResults(effectiveAtt.attemptId);
         if (res) { setResults(res); setPhase('results'); }
         else { resetToList(); }
         setLoading(false);
@@ -110,9 +114,8 @@ function MockExamPage() {
       setSectionState(section);
       setCurrentQIndex(0);
       // Calculate remaining time from attempt start
-      const examDetail = await mockExamService.getMockExamDetail(att.mockExamId);
-      const elapsed = Math.floor((Date.now() - new Date(att.startedAt).getTime()) / 1000);
-      const totalSec = (examDetail?.totalTimeMinutes ?? section.timeLimitMinutes) * 60;
+      const elapsed = Math.floor((Date.now() - new Date(effectiveAtt.startedAt).getTime()) / 1000);
+      const totalSec = effectiveAtt.totalTimeMinutes * 60;
       const remaining = Math.max(0, totalSec - elapsed);
       setTimeLeft(remaining > 0 ? remaining : section.timeLimitMinutes * 60);
       setActiveAttempt(null);
@@ -127,6 +130,7 @@ function MockExamPage() {
     try {
       const detail = await mockExamService.getMockExamDetail(examId);
       setExamDetail(detail);
+      setSelectedSectionIds([]);
       setPhase('detail');
     } catch (e) { console.error(e); }
     setLoading(false);
@@ -135,15 +139,20 @@ function MockExamPage() {
   // ── Start exam ────────────────────────────────────────
   const handleStartExam = async () => {
     if (!examDetail) return;
+    const isCsca = examDetail.examTypeCode === 'CSCA';
+    if (isCsca && selectedSectionIds.length === 0) return;
     setLoading(true);
     try {
-      const att = await mockExamService.startMockExam(examDetail.id);
+      const att = await mockExamService.startMockExam(
+        examDetail.id,
+        isCsca ? selectedSectionIds : undefined
+      );
       setAttempt(att);
       // Load first section
       const section = await mockExamService.getCurrentSection(att.attemptId);
       setSectionState(section);
       setCurrentQIndex(0);
-      setTimeLeft(section.timeLimitMinutes * 60);
+      setTimeLeft(att.totalTimeMinutes * 60);
       setPhase('instructions');
     } catch (e) { console.error(e); }
     setLoading(false);
@@ -152,6 +161,19 @@ function MockExamPage() {
   // ── Begin section (after instructions) ────────────────
   const handleBeginSection = () => {
     setPhase('section');
+  };
+
+  // ── Switch to a different section ─────────────────────
+  const handleSwitchSection = async (sectionIndex: number) => {
+    if (!attempt) return;
+    if (sectionState && sectionState.sectionIndex === sectionIndex) return;
+    setLoading(true);
+    try {
+      const section = await mockExamService.getSection(attempt.attemptId, sectionIndex);
+      setSectionState(section);
+      setCurrentQIndex(0);
+    } catch (e) { console.error(e); }
+    setLoading(false);
   };
 
   // ── Select answer ─────────────────────────────────────
@@ -177,22 +199,11 @@ function MockExamPage() {
     if (timerRef.current) clearInterval(timerRef.current);
     setLoading(true);
     try {
-      const updated = await mockExamService.completeSection(attempt.attemptId);
+      const updated = await mockExamService.completeExam(attempt.attemptId);
       setAttempt(updated);
-
-      if (updated.status === 'completed') {
-        // Exam is done — load results
-        const res = await mockExamService.getResults(updated.attemptId);
-        setResults(res);
-        setPhase('results');
-      } else {
-        // Move to next section
-        const nextSection = await mockExamService.getCurrentSection(updated.attemptId);
-        setSectionState(nextSection);
-        setCurrentQIndex(0);
-        setTimeLeft(nextSection.timeLimitMinutes * 60);
-        setPhase('instructions');
-      }
+      const res = await mockExamService.getResults(updated.attemptId);
+      setResults(res);
+      setPhase('results');
     } catch (e) { console.error(e); }
     setLoading(false);
   };
@@ -343,7 +354,7 @@ function MockExamPage() {
                         )}
                         {h.status === 'in_progress' && (
                           <button className="btn btn-primary" style={{ padding: '2px 12px', fontSize: '0.75rem' }}
-                                  onClick={(e) => { e.stopPropagation(); handleResume({ attemptId: h.attemptId, mockExamId: h.mockExamId, examTitle: h.examTitle, status: h.status, currentSectionIndex: 0, totalSections: 0, startedAt: h.startedAt }); }}>
+                                  onClick={(e) => { e.stopPropagation(); handleResume({ attemptId: h.attemptId, mockExamId: h.mockExamId, examTitle: h.examTitle, status: h.status, currentSectionIndex: 0, totalSections: 0, startedAt: h.startedAt, totalTimeMinutes: 0 }); }}>
                             Resume
                           </button>
                         )}
@@ -364,6 +375,19 @@ function MockExamPage() {
   //  RENDER PHASE: DETAIL (exam info before starting)
   // ══════════════════════════════════════════════════════
   if (phase === 'detail' && examDetail) {
+    const isCsca = examDetail.examTypeCode === 'CSCA';
+    const toggleSection = (id: number) => {
+      setSelectedSectionIds(prev =>
+        prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+      );
+    };
+    const selectedSections = isCsca
+      ? examDetail.sections.filter(s => selectedSectionIds.includes(s.id))
+      : examDetail.sections;
+    const totalTime = selectedSections.reduce((sum, s) => sum + s.timeLimitMinutes, 0);
+    const totalQuestions = selectedSections.reduce((sum, s) => sum + s.questionCount, 0);
+    const canStart = isCsca ? selectedSectionIds.length > 0 : true;
+
     return (
       <div style={{ maxWidth: 700, margin: '0 auto' }}>
         <button className="btn btn-outline" style={{ marginBottom: '1rem' }} onClick={() => setPhase('list')}>
@@ -377,35 +401,74 @@ function MockExamPage() {
           <h1 style={{ fontSize: '1.5rem', margin: '0.75rem 0 0.25rem' }}>{examDetail.title}</h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{examDetail.description}</p>
           <div style={{ display: 'flex', justifyContent: 'center', gap: '2rem', marginTop: '1rem' }}>
-            <Stat label="Total Time" value={`${examDetail.totalTimeMinutes} min`} />
-            <Stat label="Sections" value={examDetail.sections.length} />
+            <Stat label="Total Time" value={`${totalTime} min`} />
+            <Stat label={isCsca ? 'Selected' : 'Sections'} value={isCsca ? `${selectedSectionIds.length} / ${examDetail.sections.length}` : examDetail.sections.length} />
+            {isCsca && <Stat label="Questions" value={totalQuestions} />}
           </div>
         </div>
 
-        <h2 style={{ fontSize: '1.1rem', marginBottom: '0.75rem' }}>Sections</h2>
-        {examDetail.sections.map((s, i) => (
-          <div key={s.id} className="card" style={{ marginBottom: '0.75rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>Section {i + 1}</span>
-                <h3 style={{ margin: '0.25rem 0', fontSize: '1rem' }}>{s.name}</h3>
+        <h2 style={{ fontSize: '1.1rem', marginBottom: '0.75rem' }}>
+          {isCsca ? 'Choose Subjects' : 'Sections'}
+        </h2>
+        {isCsca && (
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1rem' }}>
+            Select any combination of subjects for your practice test. Time and questions adjust automatically.
+          </p>
+        )}
+        {examDetail.sections.map((s, i) => {
+          const isSelected = selectedSectionIds.includes(s.id);
+          return (
+            <div
+              key={s.id}
+              className="card"
+              style={{
+                marginBottom: '0.75rem',
+                cursor: isCsca ? 'pointer' : 'default',
+                border: isCsca && isSelected ? '2px solid var(--accent)' : undefined,
+                opacity: isCsca && !isSelected ? 0.7 : 1,
+              }}
+              onClick={isCsca ? () => toggleSection(s.id) : undefined}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  {isCsca && (
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => toggleSection(s.id)}
+                      onClick={e => e.stopPropagation()}
+                      style={{ width: 18, height: 18, accentColor: 'var(--accent)' }}
+                    />
+                  )}
+                  <div>
+                    <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
+                      {isCsca ? '' : `Section ${i + 1}`}
+                    </span>
+                    <h3 style={{ margin: '0.25rem 0', fontSize: '1rem' }}>{s.name}</h3>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: '1.5rem' }}>
+                  <Stat label="Questions" value={s.questionCount} />
+                  <Stat label="Time" value={`${s.timeLimitMinutes}m`} />
+                </div>
               </div>
-              <div style={{ display: 'flex', gap: '1.5rem' }}>
-                <Stat label="Questions" value={s.questionCount} />
-                <Stat label="Time" value={`${s.timeLimitMinutes}m`} />
-              </div>
+              {s.instructions && (
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginTop: '0.5rem', lineHeight: 1.5 }}>
+                  {s.instructions}
+                </p>
+              )}
             </div>
-            {s.instructions && (
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginTop: '0.5rem', lineHeight: 1.5 }}>
-                {s.instructions}
-              </p>
-            )}
-          </div>
-        ))}
+          );
+        })}
 
         <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
-          <button className="btn btn-primary" style={{ padding: '0.75rem 3rem', fontSize: '1rem' }} onClick={handleStartExam} disabled={loading}>
-            {loading ? 'Starting...' : 'Start Exam'}
+          <button
+            className="btn btn-primary"
+            style={{ padding: '0.75rem 3rem', fontSize: '1rem' }}
+            onClick={handleStartExam}
+            disabled={loading || !canStart}
+          >
+            {loading ? 'Starting...' : !canStart ? 'Select at least 1 subject' : 'Start Exam'}
           </button>
         </div>
       </div>
@@ -416,18 +479,26 @@ function MockExamPage() {
   //  RENDER PHASE: INSTRUCTIONS (before each section)
   // ══════════════════════════════════════════════════════
   if (phase === 'instructions' && sectionState && attempt) {
+    const sectionNames = attempt.sectionNames ?? [];
     return (
       <div style={{ maxWidth: 600, margin: '0 auto', textAlign: 'center' }}>
         <div className="card" style={{ padding: '2rem' }}>
-          <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-            Section {sectionState.sectionIndex + 1} of {attempt.totalSections}
-          </span>
-          <h1 style={{ fontSize: '1.5rem', margin: '0.5rem 0' }}>{sectionState.sectionName}</h1>
+          <h1 style={{ fontSize: '1.5rem', margin: '0.5rem 0' }}>{attempt.examTitle}</h1>
 
           <div style={{ display: 'flex', justifyContent: 'center', gap: '2rem', margin: '1.5rem 0' }}>
-            <Stat label="Questions" value={sectionState.totalQuestions} />
-            <Stat label="Time Limit" value={`${sectionState.timeLimitMinutes} min`} />
+            <Stat label="Sections" value={attempt.totalSections} />
+            <Stat label="Total Time" value={`${attempt.totalTimeMinutes} min`} />
           </div>
+
+          {sectionNames.length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', justifyContent: 'center', margin: '1rem 0' }}>
+              {sectionNames.map((name, i) => (
+                <span key={i} style={{ background: 'var(--bg-secondary)', padding: '4px 12px', borderRadius: 8, fontSize: '0.8rem' }}>
+                  {name}
+                </span>
+              ))}
+            </div>
+          )}
 
           {sectionState.instructions && (
             <div style={{ background: 'var(--bg-secondary)', borderRadius: 8, padding: '1rem', margin: '1rem 0', textAlign: 'left', lineHeight: 1.6, fontSize: '0.9rem' }}>
@@ -435,12 +506,16 @@ function MockExamPage() {
             </div>
           )}
 
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: '1rem 0' }}>
+            You can freely switch between sections during the exam.
+          </p>
+
           <div style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem', justifyContent: 'center' }}>
             <button className="btn btn-outline" onClick={handleAbandon}>
               Abandon Exam
             </button>
             <button className="btn btn-primary" style={{ padding: '0.75rem 2.5rem' }} onClick={handleBeginSection}>
-              ▶ Begin Section
+              ▶ Begin Exam
             </button>
           </div>
         </div>
@@ -454,9 +529,32 @@ function MockExamPage() {
   if (phase === 'section' && sectionState && currentQuestion && attempt) {
     const questions = sectionState.questions;
     const hasPassage = !!currentQuestion.passageContent;
+    const sectionNames = attempt.sectionNames ?? [];
 
     return (
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+        {/* Section tabs */}
+        {sectionNames.length > 1 && (
+          <div style={{ display: 'flex', gap: '0.25rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
+            {sectionNames.map((name, i) => (
+              <button
+                key={i}
+                onClick={() => handleSwitchSection(i)}
+                style={{
+                  padding: '6px 14px', borderRadius: 8, border: '2px solid',
+                  borderColor: i === sectionState.sectionIndex ? 'var(--primary-color)' : 'var(--border-color)',
+                  background: i === sectionState.sectionIndex ? 'var(--primary-color)' : 'transparent',
+                  color: i === sectionState.sectionIndex ? '#fff' : 'var(--text-secondary)',
+                  cursor: 'pointer', fontSize: '0.8rem', fontWeight: i === sectionState.sectionIndex ? 600 : 400,
+                  transition: 'all 0.15s',
+                }}
+              >
+                {name}
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Header bar: timer + section info + progress */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -464,14 +562,23 @@ function MockExamPage() {
               {sectionState.sectionName}
             </span>
             <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-              Section {sectionState.sectionIndex + 1}/{attempt.totalSections}
+              {sectionState.answeredCount}/{sectionState.totalQuestions} answered
             </span>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-            <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-              {sectionState.answeredCount}/{sectionState.totalQuestions} answered
-            </span>
+            {/* Finish Exam button */}
+            <button
+              className="btn btn-primary"
+              style={{ background: 'var(--success-color)', fontSize: '0.8rem', padding: '6px 16px' }}
+              onClick={() => {
+                if (window.confirm('Finish the exam? Unanswered questions will count as skipped.')) {
+                  handleCompleteSection();
+                }
+              }}
+            >
+              Finish Exam
+            </button>
             {/* Timer */}
             <div style={{ background: 'var(--bg-secondary)', padding: '6px 16px', borderRadius: 8, fontWeight: 700, fontSize: '1.1rem', fontFamily: 'monospace', color: timerColor, minWidth: 80, textAlign: 'center' }}>
               {formatTime(timeLeft)}
@@ -578,24 +685,13 @@ function MockExamPage() {
                 ← Previous
               </button>
 
-              {currentQIndex < questions.length - 1 ? (
-                <button
-                  className="btn btn-primary"
-                  onClick={() => setCurrentQIndex(currentQIndex + 1)}
-                >
-                  Next →
-                </button>
-              ) : (
-                <button
-                  className="btn btn-primary"
-                  style={{ background: 'var(--success-color)' }}
-                  onClick={handleCompleteSection}
-                >
-                  {sectionState.sectionIndex + 1 < attempt.totalSections
-                    ? 'Complete Section'
-                    : 'Finish Exam'}
-                </button>
-              )}
+              <button
+                className="btn btn-primary"
+                onClick={() => setCurrentQIndex(Math.min(questions.length - 1, currentQIndex + 1))}
+                disabled={currentQIndex >= questions.length - 1}
+              >
+                Next →
+              </button>
             </div>
           </div>
         </div>
@@ -763,6 +859,8 @@ function examBadgeColor(code: string): string {
     case 'SAT': return '#3498db';
     case 'TOEFL': return '#9b59b6';
     case 'NUET': return '#e67e22';
+    case 'IELTS': return '#e74c3c';
+    case 'CSCA': return '#10b981';
     default: return '#95a5a6';
   }
 }

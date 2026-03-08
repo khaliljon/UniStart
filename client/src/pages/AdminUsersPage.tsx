@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import adminService from '../services/adminService';
 import type { AdminUser, AdminUserStats } from '../types';
 
@@ -14,12 +15,18 @@ const TIER_COLORS: Record<string, string> = {
 };
 
 function AdminUsersPage() {
+  const navigate = useNavigate();
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [stats, setStats] = useState<AdminUserStats | null>(null);
   const [selected, setSelected] = useState<AdminUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  // Tutor profile cache
+  type TutorInfo = { averageRating: number; totalReviews: number; totalStudents: number; isVerified: boolean; specializations: string; hourlyRate: number | null };
+  const [tutorCache, setTutorCache] = useState<Map<number, TutorInfo>>(new Map());
+  const [tutorLoading, setTutorLoading] = useState(false);
 
   // Filters
   const [filterRole, setFilterRole] = useState('');
@@ -82,6 +89,24 @@ function AdminUsersPage() {
     setSelected(user);
     setEditMode(false);
     setSuccess(null);
+    // Load tutor data if user is a Tutor and not cached
+    if (user.role === 'Tutor' && !tutorCache.has(user.id)) {
+      setTutorLoading(true);
+      adminService.getTutors().then(tutors => {
+        const map = new Map(tutorCache);
+        for (const t of tutors) {
+          map.set(t.userId, {
+            averageRating: t.averageRating,
+            totalReviews: t.totalReviews,
+            totalStudents: t.totalStudents,
+            isVerified: t.isVerified,
+            specializations: t.specializations,
+            hourlyRate: t.hourlyRate,
+          });
+        }
+        setTutorCache(map);
+      }).catch(() => { /* ignore */ }).finally(() => setTutorLoading(false));
+    }
   };
 
   const startEdit = () => {
@@ -392,20 +417,68 @@ function AdminUsersPage() {
 
                 <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem' }}>
                   <h3 style={{ fontSize: '1rem', margin: '0 0 0.5rem' }}>Статистика</h3>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
-                    <StatCard label="Ответов" value={selected.totalAnswers} color="var(--primary-color)" small />
-                    <StatCard label="Верных" value={selected.correctAnswers} color="var(--success-color)" small />
-                    <StatCard label="Сессий" value={selected.testSessions} color="var(--info-color, #3b82f6)" small />
-                  </div>
-                  {selected.totalAnswers > 0 && (
-                    <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                      Точность: {Math.round((selected.correctAnswers / selected.totalAnswers) * 100)}%
-                    </div>
+                  {selected.role === 'Tutor' ? (
+                    /* Tutor-specific stats */
+                    tutorLoading ? (
+                      <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Загрузка...</div>
+                    ) : (() => {
+                      const tutor = tutorCache.get(selected.id);
+                      if (!tutor) return <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Нет профиля тьютора</div>;
+                      return (
+                        <>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
+                            <StatCard label="Студентов" value={tutor.totalStudents} color="var(--primary-color)" small />
+                            <StatCard label="Отзывов" value={tutor.totalReviews} color="var(--warning-color)" small />
+                            <StatCard label="Рейтинг" value={tutor.averageRating} color="var(--success-color)" small />
+                          </div>
+                          <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
+                            <span style={{
+                              padding: '0.2rem 0.6rem', borderRadius: '999px', fontSize: '0.75rem', fontWeight: 600,
+                              background: tutor.isVerified ? 'var(--success-color)' : 'var(--text-muted)',
+                              color: '#fff',
+                            }}>
+                              {tutor.isVerified ? 'Верифицирован' : 'Не верифицирован'}
+                            </span>
+                            {tutor.hourlyRate != null && (
+                              <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                                {tutor.hourlyRate} $/час
+                              </span>
+                            )}
+                          </div>
+                          {tutor.specializations && (
+                            <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                              Специализации: {tutor.specializations}
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()
+                  ) : (
+                    /* Student / Admin stats */
+                    <>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
+                        <StatCard label="Ответов" value={selected.totalAnswers} color="var(--primary-color)" small />
+                        <StatCard label="Верных" value={selected.correctAnswers} color="var(--success-color)" small />
+                        <StatCard label="Сессий" value={selected.testSessions} color="var(--info-color, #3b82f6)" small />
+                      </div>
+                      {selected.totalAnswers > 0 && (
+                        <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                          Точность: {Math.round((selected.correctAnswers / selected.totalAnswers) * 100)}%
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
 
-                <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
+                <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
                   <button className="btn btn-primary" onClick={startEdit} style={{ flex: 1 }}>Редактировать</button>
+                  <button
+                    className="btn btn-outline"
+                    onClick={() => navigate(`/activity?id=${selected.id}`)}
+                    style={{ flex: 1 }}
+                  >
+                    Активность
+                  </button>
                   {selected.role !== 'Admin' && (
                     selected.isBlocked ? (
                       <button

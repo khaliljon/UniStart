@@ -54,7 +54,7 @@ public class DatabaseSeeder
             }
             if (!await _context.ExamTypes.AnyAsync(e => e.Code == "CSCA"))
             {
-                _context.ExamTypes.Add(new ExamType { Code = "CSCA", Name = "CSCA (Math Analysis + Logical Reasoning)" });
+                _context.ExamTypes.Add(new ExamType { Code = "CSCA", Name = "CSCA \u2014 China Scholastic Competency Assessment" });
                 await _context.SaveChangesAsync();
             }
         }
@@ -87,6 +87,24 @@ public class DatabaseSeeder
         {
             await SeedSkillsAsync();
         }
+        // Add Physics/Chemistry skills if missing
+        if (!await _context.Skills.AnyAsync(s => s.Code == "SK_PHYS"))
+        {
+            _context.Skills.AddRange(
+                new Skill { Code = "SK_PHYS", Name = "Физика (Physics)", Description = "Механика, электричество, оптика, термодинамика" },
+                new Skill { Code = "SK_CHEM", Name = "Химия (Chemistry)", Description = "Неорганическая, органическая, аналитическая химия" }
+            );
+            await _context.SaveChangesAsync();
+        }
+        // Add Chinese Technical/Humanitarian skills if missing
+        if (!await _context.Skills.AnyAsync(s => s.Code == "SK_CN_TECH"))
+        {
+            _context.Skills.AddRange(
+                new Skill { Code = "SK_CN_TECH", Name = "Китайский технический (Chinese Technical)", Description = "Техническая лексика, научные тексты на китайском языке" },
+                new Skill { Code = "SK_CN_HUM", Name = "Китайский гуманитарный (Chinese Humanitarian)", Description = "Литература, история, культура на китайском языке" }
+            );
+            await _context.SaveChangesAsync();
+        }
 
         // Seed Topics
         if (!await _context.Topics.AnyAsync())
@@ -99,11 +117,23 @@ public class DatabaseSeeder
             await SeedIeltsCscaTopicsAsync();
         }
 
+        // Restructure CSCA: replace old 2-section structure with 3-subject hierarchy
+        if (!await _context.ExamSections.AnyAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Mathematics"))
+        {
+            await SeedCscaRestructureAsync();
+        }
+
         // Seed Questions with AnswerOptions
         if (!await _context.Questions.AnyAsync())
         {
             await SeedQuestionsAsync();
         }
+
+        // Seed CSCA Mathematics questions (20 chapters, ~250 questions)
+        await new CscaMathQuestionSeeder(_context).SeedAsync();
+
+        // Seed CSCA Physics questions (12 chapters, ~200 questions)
+        await new CscaPhysicsQuestionSeeder(_context).SeedAsync();
 
         // Update IRT parameters on existing questions that still have defaults
         await UpdateIrtParametersAsync();
@@ -142,6 +172,9 @@ public class DatabaseSeeder
         {
             await SeedIeltsCscaMockExamsAsync();
         }
+
+        // Fix existing CSCA mock exam: ensure it has 5 sections matching actual ExamSections
+        await FixCscaMockExamSectionsAsync();
 
         // Seed tutor profiles, reviews, and conversations
         if (!await _context.TutorProfiles.AnyAsync())
@@ -241,7 +274,7 @@ public class DatabaseSeeder
             new ExamType { Code = "TOEFL", Name = "TOEFL (Чтение/Аудирование/Говорение/Письмо)" },
             new ExamType { Code = "NUET", Name = "NUET (Математика + Критическое мышление)" },
             new ExamType { Code = "IELTS", Name = "IELTS Academic (Listening/Reading/Writing/Speaking)" },
-            new ExamType { Code = "CSCA", Name = "CSCA (Math Analysis + Logical Reasoning)" }
+            new ExamType { Code = "CSCA", Name = "CSCA (Mathematics + Physics + Chemistry)" }
         };
 
         await _context.ExamTypes.AddRangeAsync(examTypes);
@@ -273,9 +306,12 @@ public class DatabaseSeeder
             new ExamSection { ExamTypeCode = "IELTS", Name = "Writing", MinScore = 0, MaxScore = 9 },
             new ExamSection { ExamTypeCode = "IELTS", Name = "Speaking", MinScore = 0, MaxScore = 9 },
 
-            // CSCA Sections
-            new ExamSection { ExamTypeCode = "CSCA", Name = "Math Analysis", MinScore = 0, MaxScore = 100 },
-            new ExamSection { ExamTypeCode = "CSCA", Name = "Logical Reasoning", MinScore = 0, MaxScore = 100 }
+            // CSCA Sections (5 subjects, 0–100 each per official spec)
+            new ExamSection { ExamTypeCode = "CSCA", Name = "Mathematics", MinScore = 0, MaxScore = 100 },
+            new ExamSection { ExamTypeCode = "CSCA", Name = "Physics", MinScore = 0, MaxScore = 100 },
+            new ExamSection { ExamTypeCode = "CSCA", Name = "Chemistry", MinScore = 0, MaxScore = 100 },
+            new ExamSection { ExamTypeCode = "CSCA", Name = "Chinese Technical", MinScore = 0, MaxScore = 100 },
+            new ExamSection { ExamTypeCode = "CSCA", Name = "Chinese Humanitarian", MinScore = 0, MaxScore = 100 }
         };
 
         await _context.ExamSections.AddRangeAsync(sections);
@@ -295,9 +331,12 @@ public class DatabaseSeeder
             new ExamSection { ExamTypeCode = "IELTS", Name = "Writing", MinScore = 0, MaxScore = 9 },
             new ExamSection { ExamTypeCode = "IELTS", Name = "Speaking", MinScore = 0, MaxScore = 9 },
 
-            // CSCA Sections
-            new ExamSection { ExamTypeCode = "CSCA", Name = "Math Analysis", MinScore = 0, MaxScore = 100 },
-            new ExamSection { ExamTypeCode = "CSCA", Name = "Logical Reasoning", MinScore = 0, MaxScore = 100 }
+            // CSCA Sections (5 subjects, 0–100 each per official spec)
+            new ExamSection { ExamTypeCode = "CSCA", Name = "Mathematics", MinScore = 0, MaxScore = 100 },
+            new ExamSection { ExamTypeCode = "CSCA", Name = "Physics", MinScore = 0, MaxScore = 100 },
+            new ExamSection { ExamTypeCode = "CSCA", Name = "Chemistry", MinScore = 0, MaxScore = 100 },
+            new ExamSection { ExamTypeCode = "CSCA", Name = "Chinese Technical", MinScore = 0, MaxScore = 100 },
+            new ExamSection { ExamTypeCode = "CSCA", Name = "Chinese Humanitarian", MinScore = 0, MaxScore = 100 }
         };
 
         await _context.ExamSections.AddRangeAsync(sections);
@@ -313,7 +352,11 @@ public class DatabaseSeeder
             new Skill { Code = "SK_LISTEN", Name = "Аудирование (Listening)", Description = "Понимание устной речи" },
             new Skill { Code = "SK_SPEAK", Name = "Говорение (Speaking)", Description = "Устная речь и произношение" },
             new Skill { Code = "SK_MATH", Name = "Математика (Mathematics)", Description = "Алгебра, геометрия, анализ данных" },
-            new Skill { Code = "SK_CRIT", Name = "Критическое мышление (Critical Thinking)", Description = "Логика, анализ аргументов, решение проблем" }
+            new Skill { Code = "SK_CRIT", Name = "Критическое мышление (Critical Thinking)", Description = "Логика, анализ аргументов, решение проблем" },
+            new Skill { Code = "SK_PHYS", Name = "Физика (Physics)", Description = "Механика, электричество, оптика, термодинамика" },
+            new Skill { Code = "SK_CHEM", Name = "Химия (Chemistry)", Description = "Неорганическая, органическая, аналитическая химия" },
+            new Skill { Code = "SK_CN_TECH", Name = "Китайский технический (Chinese Technical)", Description = "Техническая лексика, научные тексты на китайском языке" },
+            new Skill { Code = "SK_CN_HUM", Name = "Китайский гуманитарный (Chinese Humanitarian)", Description = "Литература, история, культура на китайском языке" }
         };
 
         await _context.Skills.AddRangeAsync(skills);
@@ -336,8 +379,8 @@ public class DatabaseSeeder
         var ieltsReading = await _context.ExamSections.FirstAsync(s => s.ExamTypeCode == "IELTS" && s.Name == "Reading");
         var ieltsWriting = await _context.ExamSections.FirstAsync(s => s.ExamTypeCode == "IELTS" && s.Name == "Writing");
         var ieltsSpeaking = await _context.ExamSections.FirstAsync(s => s.ExamTypeCode == "IELTS" && s.Name == "Speaking");
-        var cscaMath = await _context.ExamSections.FirstAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Math Analysis");
-        var cscaLogic = await _context.ExamSections.FirstAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Logical Reasoning");
+        var cscaMath = await _context.ExamSections.FirstAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Mathematics");
+        var cscaPhys = await _context.ExamSections.FirstAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Physics");
 
         var skillRead = await _context.Skills.FirstAsync(s => s.Code == "SK_READ");
         var skillWrite = await _context.Skills.FirstAsync(s => s.Code == "SK_WRITE");
@@ -345,6 +388,7 @@ public class DatabaseSeeder
         var skillSpeak = await _context.Skills.FirstAsync(s => s.Code == "SK_SPEAK");
         var skillMath = await _context.Skills.FirstAsync(s => s.Code == "SK_MATH");
         var skillCrit = await _context.Skills.FirstAsync(s => s.Code == "SK_CRIT");
+        var skillPhys = await _context.Skills.FirstAsync(s => s.Code == "SK_PHYS");
 
         var topics = new List<Topic>
         {
@@ -382,13 +426,16 @@ public class DatabaseSeeder
             new Topic { Name = "IELTS Speaking Parts 1 & 2", SkillId = skillSpeak.Id, SectionId = ieltsSpeaking.Id },
             new Topic { Name = "IELTS Speaking Part 3: Discussion", SkillId = skillSpeak.Id, SectionId = ieltsSpeaking.Id },
 
-            // CSCA Topics
-            new Topic { Name = "Calculus & Analysis", SkillId = skillMath.Id, SectionId = cscaMath.Id },
-            new Topic { Name = "Probability & Statistics", SkillId = skillMath.Id, SectionId = cscaMath.Id },
-            new Topic { Name = "Discrete Mathematics", SkillId = skillMath.Id, SectionId = cscaMath.Id },
-            new Topic { Name = "Formal Logic", SkillId = skillCrit.Id, SectionId = cscaLogic.Id },
-            new Topic { Name = "Algorithmic Thinking", SkillId = skillCrit.Id, SectionId = cscaLogic.Id },
-            new Topic { Name = "Data Interpretation", SkillId = skillCrit.Id, SectionId = cscaLogic.Id }
+            // CSCA Topics — Math Ch.1 (detailed; remaining chapters seeded by SeedCscaRestructureAsync)
+            new Topic { Name = "1.1.1 Elements of Sets", SkillId = skillMath.Id, SectionId = cscaMath.Id },
+            new Topic { Name = "1.1.2 Common Number Sets", SkillId = skillMath.Id, SectionId = cscaMath.Id },
+            new Topic { Name = "1.2.1 Intersection of Sets", SkillId = skillMath.Id, SectionId = cscaMath.Id },
+            new Topic { Name = "1.2.2 Union of Sets", SkillId = skillMath.Id, SectionId = cscaMath.Id },
+            new Topic { Name = "1.3.1 Necessary and Sufficient Conditions", SkillId = skillCrit.Id, SectionId = cscaMath.Id },
+
+            // CSCA Topics — Physics placeholder
+            new Topic { Name = "P1.1 Types of Forces", SkillId = skillPhys.Id, SectionId = cscaPhys.Id },
+            new Topic { Name = "P1.2 Force Analysis", SkillId = skillPhys.Id, SectionId = cscaPhys.Id }
         };
 
         await _context.Topics.AddRangeAsync(topics);
@@ -2434,8 +2481,11 @@ The implications of these findings have been profound. In the field of behaviora
         var ieltsReadingS = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "IELTS" && s.Name == "Reading");
         var ieltsWritingS = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "IELTS" && s.Name == "Writing");
         var ieltsSpeakingS = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "IELTS" && s.Name == "Speaking");
-        var cscaMathS = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Math Analysis");
-        var cscaLogicS = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Logical Reasoning");
+        var cscaMathS = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Mathematics");
+        var cscaPhysS = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Physics");
+        var cscaChemS = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Chemistry");
+        var cscaCnTechS = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Chinese Technical");
+        var cscaCnHumS = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Chinese Humanitarian");
 
         var mockExams = new List<MockExam>
         {
@@ -2454,6 +2504,7 @@ The implications of these findings have been profound. In the field of behaviora
                         ExamSectionId = satRW?.Id,
                         Name = "Reading & Writing",
                         TimeLimitMinutes = 15,
+                        QuestionCount = 54,
                         SortOrder = 0,
                         Instructions = "This section measures your ability to comprehend, analyze, and use information and ideas presented in texts. Read each passage and question carefully, then select the best answer. You may refer back to the passage as often as needed. Time limit: 15 minutes."
                     },
@@ -2462,6 +2513,7 @@ The implications of these findings have been profound. In the field of behaviora
                         ExamSectionId = satMathNC?.Id,
                         Name = "Math (No Calculator)",
                         TimeLimitMinutes = 15,
+                        QuestionCount = 20,
                         SortOrder = 1,
                         Instructions = "This section tests your mathematical reasoning without the use of a calculator. You must show your understanding of concepts and perform calculations by hand. Focus on accuracy and efficient problem-solving. Time limit: 15 minutes."
                     },
@@ -2470,6 +2522,7 @@ The implications of these findings have been profound. In the field of behaviora
                         ExamSectionId = satMathC?.Id,
                         Name = "Math (Calculator)",
                         TimeLimitMinutes = 15,
+                        QuestionCount = 38,
                         SortOrder = 2,
                         Instructions = "This section tests your mathematical reasoning. A calculator is permitted for this section. Problems may involve more complex computations and data interpretation. Time limit: 15 minutes."
                     }
@@ -2490,6 +2543,7 @@ The implications of these findings have been profound. In the field of behaviora
                         ExamSectionId = toeflReading?.Id,
                         Name = "Reading",
                         TimeLimitMinutes = 18,
+                        QuestionCount = 20,
                         SortOrder = 0,
                         Instructions = "Read the academic passages carefully and answer the questions that follow. Each passage is followed by a set of questions. You can navigate between questions within this section and change your answers. Time limit: 18 minutes."
                     },
@@ -2498,6 +2552,7 @@ The implications of these findings have been profound. In the field of behaviora
                         ExamSectionId = toeflListening?.Id,
                         Name = "Listening",
                         TimeLimitMinutes = 12,
+                        QuestionCount = 28,
                         SortOrder = 1,
                         Instructions = "Answer questions about academic lectures and campus conversations. In a real TOEFL test, you would listen to audio recordings. In this practice version, you will read transcribed excerpts. Time limit: 12 minutes."
                     },
@@ -2506,6 +2561,7 @@ The implications of these findings have been profound. In the field of behaviora
                         ExamSectionId = toeflSpeaking?.Id,
                         Name = "Speaking",
                         TimeLimitMinutes = 10,
+                        QuestionCount = 4,
                         SortOrder = 2,
                         Instructions = "Answer questions that test your ability to speak about familiar topics and synthesize information. In this practice version, select the best response option. Time limit: 10 minutes."
                     },
@@ -2514,6 +2570,7 @@ The implications of these findings have been profound. In the field of behaviora
                         ExamSectionId = toeflWriting?.Id,
                         Name = "Writing",
                         TimeLimitMinutes = 10,
+                        QuestionCount = 2,
                         SortOrder = 3,
                         Instructions = "Answer questions that test your ability to write in English in an academic context. In this practice version, select the best response option. Time limit: 10 minutes."
                     }
@@ -2534,6 +2591,7 @@ The implications of these findings have been profound. In the field of behaviora
                         ExamSectionId = nuetMath?.Id,
                         Name = "Quantitative Reasoning",
                         TimeLimitMinutes = 25,
+                        QuestionCount = 40,
                         SortOrder = 0,
                         Instructions = "This section tests your mathematical knowledge and problem-solving skills. Topics include algebra, functions, geometry, and applied mathematics. Work through each problem carefully. Time limit: 25 minutes."
                     },
@@ -2542,6 +2600,7 @@ The implications of these findings have been profound. In the field of behaviora
                         ExamSectionId = nuetCritical?.Id,
                         Name = "Critical Thinking",
                         TimeLimitMinutes = 25,
+                        QuestionCount = 40,
                         SortOrder = 1,
                         Instructions = "This section tests your logical reasoning and argument analysis skills. You will evaluate arguments, identify assumptions, draw conclusions, and analyze reasoning patterns. Time limit: 25 minutes."
                     }
@@ -2562,6 +2621,7 @@ The implications of these findings have been profound. In the field of behaviora
                         ExamSectionId = ieltsListeningS?.Id,
                         Name = "Listening",
                         TimeLimitMinutes = 15,
+                        QuestionCount = 40,
                         SortOrder = 0,
                         Instructions = "The Listening section tests your ability to understand spoken English in academic and everyday contexts. In this practice version, read the transcript-based questions and select the best answer. Time limit: 15 minutes."
                     },
@@ -2570,6 +2630,7 @@ The implications of these findings have been profound. In the field of behaviora
                         ExamSectionId = ieltsReadingS?.Id,
                         Name = "Reading",
                         TimeLimitMinutes = 20,
+                        QuestionCount = 40,
                         SortOrder = 1,
                         Instructions = "The Academic Reading section contains three long texts from books, journals, and newspapers. Texts range from descriptive to analytical. Read carefully and answer the questions. Time limit: 20 minutes."
                     },
@@ -2578,6 +2639,7 @@ The implications of these findings have been profound. In the field of behaviora
                         ExamSectionId = ieltsWritingS?.Id,
                         Name = "Writing",
                         TimeLimitMinutes = 15,
+                        QuestionCount = 2,
                         SortOrder = 2,
                         Instructions = "The Writing section has two tasks: Task 1 (describe visual data, 150+ words) and Task 2 (write an essay, 250+ words). In this practice version, answer questions testing writing knowledge. Time limit: 15 minutes."
                     },
@@ -2586,37 +2648,30 @@ The implications of these findings have been profound. In the field of behaviora
                         ExamSectionId = ieltsSpeakingS?.Id,
                         Name = "Speaking",
                         TimeLimitMinutes = 10,
+                        QuestionCount = 3,
                         SortOrder = 3,
                         Instructions = "The Speaking section tests your ability to communicate effectively. In this practice version, select the best response strategies for different speaking scenarios. Time limit: 10 minutes."
                     }
                 }
             },
-            // ── CSCA Mock Exam ─────────────────────────────────
+            // ── CSCA Mock Exam — configurable: student picks subjects before starting ─────
             new MockExam
             {
                 ExamTypeCode = "CSCA",
                 Title = "CSCA Practice Test",
-                Description = "CSCA practice test covering Math Analysis (calculus, probability, discrete math) and Logical Reasoning (formal logic, algorithms, data interpretation). Scores range from 0 to 100 per section.",
-                TotalTimeMinutes = 60,
+                Description = "Configurable CSCA practice test. Choose any combination of 8 subjects (EN/CN) before starting.",
+                TotalTimeMinutes = 540,
                 IsActive = true,
                 Sections = new List<MockExamSection>
                 {
-                    new MockExamSection
-                    {
-                        ExamSectionId = cscaMathS?.Id,
-                        Name = "Math Analysis",
-                        TimeLimitMinutes = 30,
-                        SortOrder = 0,
-                        Instructions = "This section tests your knowledge of calculus, probability, statistics, and discrete mathematics. Work through each problem carefully, showing understanding of fundamental concepts. Time limit: 30 minutes."
-                    },
-                    new MockExamSection
-                    {
-                        ExamSectionId = cscaLogicS?.Id,
-                        Name = "Logical Reasoning",
-                        TimeLimitMinutes = 30,
-                        SortOrder = 1,
-                        Instructions = "This section tests formal logic, algorithmic thinking, and data interpretation skills. Analyze each problem systematically and select the best answer. Time limit: 30 minutes."
-                    }
+                    new MockExamSection { ExamSectionId = cscaMathS?.Id, Name = "Mathematics (EN)", TimeLimitMinutes = 60, QuestionCount = 48, SortOrder = 0, Instructions = "48 multiple-choice questions covering algebra, calculus, geometry, probability, and statistics. 60 minutes." },
+                    new MockExamSection { ExamSectionId = cscaPhysS?.Id, Name = "Physics (EN)", TimeLimitMinutes = 60, QuestionCount = 48, SortOrder = 1, Instructions = "48 multiple-choice questions on mechanics, thermodynamics, electromagnetism, and optics. 60 minutes." },
+                    new MockExamSection { ExamSectionId = cscaChemS?.Id, Name = "Chemistry (EN)", TimeLimitMinutes = 60, QuestionCount = 48, SortOrder = 2, Instructions = "48 multiple-choice questions on general, organic, and inorganic chemistry. 60 minutes." },
+                    new MockExamSection { ExamSectionId = cscaMathS?.Id, Name = "Mathematics (CN)", TimeLimitMinutes = 60, QuestionCount = 48, SortOrder = 3, Instructions = "48 вопросов по математике: алгебра, геометрия, анализ, вероятность и статистика. 60 минут." },
+                    new MockExamSection { ExamSectionId = cscaPhysS?.Id, Name = "Physics (CN)", TimeLimitMinutes = 60, QuestionCount = 48, SortOrder = 4, Instructions = "48 вопросов по физике: механика, термодинамика, электромагнетизм, оптика. 60 минут." },
+                    new MockExamSection { ExamSectionId = cscaChemS?.Id, Name = "Chemistry (CN)", TimeLimitMinutes = 60, QuestionCount = 48, SortOrder = 5, Instructions = "48 вопросов по химии: общая, органическая и неорганическая химия. 60 минут." },
+                    new MockExamSection { ExamSectionId = cscaCnTechS?.Id, Name = "Chinese Technical", TimeLimitMinutes = 90, QuestionCount = 80, SortOrder = 6, Instructions = "80 вопросов: научная терминология, чтение технических текстов на китайском. 90 минут." },
+                    new MockExamSection { ExamSectionId = cscaCnHumS?.Id, Name = "Chinese Humanitarian", TimeLimitMinutes = 90, QuestionCount = 80, SortOrder = 7, Instructions = "80 вопросов: литература, история, культура, философия Китая. 90 минут." }
                 }
             }
         };
@@ -2634,8 +2689,11 @@ The implications of these findings have been profound. In the field of behaviora
         var ieltsReadingS = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "IELTS" && s.Name == "Reading");
         var ieltsWritingS = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "IELTS" && s.Name == "Writing");
         var ieltsSpeakingS = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "IELTS" && s.Name == "Speaking");
-        var cscaMathS = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Math Analysis");
-        var cscaLogicS = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Logical Reasoning");
+        var cscaMathS2 = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Mathematics");
+        var cscaPhysS2 = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Physics");
+        var cscaChemS2 = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Chemistry");
+        var cscaCnTechS2 = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Chinese Technical");
+        var cscaCnHumS2 = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Chinese Humanitarian");
 
         var mockExams = new List<MockExam>
         {
@@ -2648,28 +2706,175 @@ The implications of these findings have been profound. In the field of behaviora
                 IsActive = true,
                 Sections = new List<MockExamSection>
                 {
-                    new MockExamSection { ExamSectionId = ieltsListeningS?.Id, Name = "Listening", TimeLimitMinutes = 15, SortOrder = 0, Instructions = "Listen carefully and answer the questions based on what you hear." },
-                    new MockExamSection { ExamSectionId = ieltsReadingS?.Id, Name = "Reading", TimeLimitMinutes = 20, SortOrder = 1, Instructions = "Read the passages carefully and answer the questions." },
-                    new MockExamSection { ExamSectionId = ieltsWritingS?.Id, Name = "Writing", TimeLimitMinutes = 15, SortOrder = 2, Instructions = "Complete the writing tasks." },
-                    new MockExamSection { ExamSectionId = ieltsSpeakingS?.Id, Name = "Speaking", TimeLimitMinutes = 10, SortOrder = 3, Instructions = "Answer the speaking prompts." }
+                    new MockExamSection { ExamSectionId = ieltsListeningS?.Id, Name = "Listening", TimeLimitMinutes = 15, QuestionCount = 40, SortOrder = 0, Instructions = "Listen carefully and answer the questions based on what you hear." },
+                    new MockExamSection { ExamSectionId = ieltsReadingS?.Id, Name = "Reading", TimeLimitMinutes = 20, QuestionCount = 40, SortOrder = 1, Instructions = "Read the passages carefully and answer the questions." },
+                    new MockExamSection { ExamSectionId = ieltsWritingS?.Id, Name = "Writing", TimeLimitMinutes = 15, QuestionCount = 2, SortOrder = 2, Instructions = "Complete the writing tasks." },
+                    new MockExamSection { ExamSectionId = ieltsSpeakingS?.Id, Name = "Speaking", TimeLimitMinutes = 10, QuestionCount = 3, SortOrder = 3, Instructions = "Answer the speaking prompts." }
                 }
             },
+            // ── CSCA Mock Exam — configurable: student picks subjects before starting ─────
             new MockExam
             {
                 ExamTypeCode = "CSCA",
                 Title = "CSCA Practice Test",
-                Description = "CSCA practice test covering Math Analysis and Logical Reasoning. Scores range from 0 to 100 per section.",
-                TotalTimeMinutes = 60,
+                Description = "Configurable CSCA practice test. Choose any combination of 8 subjects (EN/CN) before starting.",
+                TotalTimeMinutes = 540,
                 IsActive = true,
                 Sections = new List<MockExamSection>
                 {
-                    new MockExamSection { ExamSectionId = cscaMathS?.Id, Name = "Math Analysis", TimeLimitMinutes = 30, SortOrder = 0, Instructions = "Solve mathematical problems involving calculus, probability, and discrete mathematics." },
-                    new MockExamSection { ExamSectionId = cscaLogicS?.Id, Name = "Logical Reasoning", TimeLimitMinutes = 30, SortOrder = 1, Instructions = "Apply formal logic, algorithmic thinking, and data interpretation skills." }
+                    new MockExamSection { ExamSectionId = cscaMathS2?.Id, Name = "Mathematics (EN)", TimeLimitMinutes = 60, QuestionCount = 48, SortOrder = 0, Instructions = "48 multiple-choice questions covering algebra, calculus, geometry, probability, and statistics. 60 minutes." },
+                    new MockExamSection { ExamSectionId = cscaPhysS2?.Id, Name = "Physics (EN)", TimeLimitMinutes = 60, QuestionCount = 48, SortOrder = 1, Instructions = "48 multiple-choice questions on mechanics, thermodynamics, electromagnetism, and optics. 60 minutes." },
+                    new MockExamSection { ExamSectionId = cscaChemS2?.Id, Name = "Chemistry (EN)", TimeLimitMinutes = 60, QuestionCount = 48, SortOrder = 2, Instructions = "48 multiple-choice questions on general, organic, and inorganic chemistry. 60 minutes." },
+                    new MockExamSection { ExamSectionId = cscaMathS2?.Id, Name = "Mathematics (CN)", TimeLimitMinutes = 60, QuestionCount = 48, SortOrder = 3, Instructions = "48 вопросов по математике: алгебра, геометрия, анализ, вероятность и статистика. 60 минут." },
+                    new MockExamSection { ExamSectionId = cscaPhysS2?.Id, Name = "Physics (CN)", TimeLimitMinutes = 60, QuestionCount = 48, SortOrder = 4, Instructions = "48 вопросов по физике: механика, термодинамика, электромагнетизм, оптика. 60 минут." },
+                    new MockExamSection { ExamSectionId = cscaChemS2?.Id, Name = "Chemistry (CN)", TimeLimitMinutes = 60, QuestionCount = 48, SortOrder = 5, Instructions = "48 вопросов по химии: общая, органическая и неорганическая химия. 60 минут." },
+                    new MockExamSection { ExamSectionId = cscaCnTechS2?.Id, Name = "Chinese Technical", TimeLimitMinutes = 90, QuestionCount = 80, SortOrder = 6, Instructions = "80 вопросов: научная терминология, чтение технических текстов на китайском. 90 минут." },
+                    new MockExamSection { ExamSectionId = cscaCnHumS2?.Id, Name = "Chinese Humanitarian", TimeLimitMinutes = 90, QuestionCount = 80, SortOrder = 7, Instructions = "80 вопросов: литература, история, культура, философия Китая. 90 минут." }
                 }
             }
         };
 
         await _context.MockExams.AddRangeAsync(mockExams);
+        await _context.SaveChangesAsync();
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  FIX: Migrate existing CSCA data to correct structure
+    // ═══════════════════════════════════════════════════════
+    private async Task FixCscaMockExamSectionsAsync()
+    {
+        // 1. Fix MaxScores on existing CSCA ExamSections (should all be 100 per official spec)
+        var cscaSections = await _context.ExamSections.Where(s => s.ExamTypeCode == "CSCA").ToListAsync();
+        foreach (var sec in cscaSections)
+        {
+            if (sec.MaxScore != 100) sec.MaxScore = 100;
+        }
+
+        // 2. Fix ExamType name
+        var cscaExamType = await _context.ExamTypes.FirstOrDefaultAsync(e => e.Code == "CSCA");
+        if (cscaExamType != null && !cscaExamType.Name.Contains("China"))
+            cscaExamType.Name = "CSCA \u2014 China Scholastic Competency Assessment";
+
+        await _context.SaveChangesAsync();
+
+        // 3. Migrate to single configurable CSCA mock (replaces old 7-track or single-mock approach)
+        var cscaMocks = await _context.MockExams
+            .Include(m => m.Sections)
+            .Where(m => m.ExamTypeCode == "CSCA")
+            .ToListAsync();
+
+        // Already have exactly 1 mock with 8 sections — just fix QuestionCount if needed
+        if (cscaMocks.Count == 1 && cscaMocks[0].Sections.Count == 8 && cscaMocks[0].Title == "CSCA Practice Test")
+        {
+            await FixMockExamSectionQuestionCountsAsync();
+            return;
+        }
+
+        // 4. Delete old CSCA mocks (7 track-based or any incorrect mocks)
+        foreach (var oldMock in cscaMocks)
+        {
+            // Delete related attempts and answers first
+            var attempts = await _context.MockExamAttempts.Where(a => a.MockExamId == oldMock.Id).ToListAsync();
+            foreach (var attempt in attempts)
+            {
+                var answers = await _context.MockExamAnswers.Where(a => a.AttemptId == attempt.Id).ToListAsync();
+                _context.MockExamAnswers.RemoveRange(answers);
+            }
+            _context.MockExamAttempts.RemoveRange(attempts);
+            _context.MockExamSections.RemoveRange(oldMock.Sections);
+            _context.MockExams.Remove(oldMock);
+        }
+        await _context.SaveChangesAsync();
+
+        // 5. Create single configurable CSCA mock with all 8 subject options
+        var mathS = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Mathematics");
+        var physS = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Physics");
+        var chemS = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Chemistry");
+        var cnTechS = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Chinese Technical");
+        var cnHumS = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Chinese Humanitarian");
+
+        var newMock = new MockExam
+        {
+            ExamTypeCode = "CSCA",
+            Title = "CSCA Practice Test",
+            Description = "Configurable CSCA practice test. Choose any combination of 8 subjects (EN/CN) before starting.",
+            TotalTimeMinutes = 540,
+            IsActive = true,
+            Sections = new List<MockExamSection>
+            {
+                new MockExamSection { ExamSectionId = mathS?.Id, Name = "Mathematics (EN)", TimeLimitMinutes = 60, QuestionCount = 48, SortOrder = 0, Instructions = "48 multiple-choice questions covering algebra, calculus, geometry, probability, and statistics. 60 minutes." },
+                new MockExamSection { ExamSectionId = physS?.Id, Name = "Physics (EN)", TimeLimitMinutes = 60, QuestionCount = 48, SortOrder = 1, Instructions = "48 multiple-choice questions on mechanics, thermodynamics, electromagnetism, and optics. 60 minutes." },
+                new MockExamSection { ExamSectionId = chemS?.Id, Name = "Chemistry (EN)", TimeLimitMinutes = 60, QuestionCount = 48, SortOrder = 2, Instructions = "48 multiple-choice questions on general, organic, and inorganic chemistry. 60 minutes." },
+                new MockExamSection { ExamSectionId = mathS?.Id, Name = "Mathematics (CN)", TimeLimitMinutes = 60, QuestionCount = 48, SortOrder = 3, Instructions = "48 вопросов по математике: алгебра, геометрия, анализ, вероятность и статистика. 60 минут." },
+                new MockExamSection { ExamSectionId = physS?.Id, Name = "Physics (CN)", TimeLimitMinutes = 60, QuestionCount = 48, SortOrder = 4, Instructions = "48 вопросов по физике: механика, термодинамика, электромагнетизм, оптика. 60 минут." },
+                new MockExamSection { ExamSectionId = chemS?.Id, Name = "Chemistry (CN)", TimeLimitMinutes = 60, QuestionCount = 48, SortOrder = 5, Instructions = "48 вопросов по химии: общая, органическая и неорганическая химия. 60 минут." },
+                new MockExamSection { ExamSectionId = cnTechS?.Id, Name = "Chinese Technical", TimeLimitMinutes = 90, QuestionCount = 80, SortOrder = 6, Instructions = "80 вопросов: научная терминология, чтение технических текстов на китайском. 90 минут." },
+                new MockExamSection { ExamSectionId = cnHumS?.Id, Name = "Chinese Humanitarian", TimeLimitMinutes = 90, QuestionCount = 80, SortOrder = 7, Instructions = "80 вопросов: литература, история, культура, философия Китая. 90 минут." }
+            }
+        };
+
+        await _context.MockExams.AddAsync(newMock);
+        await _context.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Fills QuestionCount on existing MockExamSections that still have 0 (after migration added the column).
+    /// </summary>
+    private async Task FixMockExamSectionQuestionCountsAsync()
+    {
+        var sections = await _context.MockExamSections.Where(s => s.QuestionCount == 0).ToListAsync();
+        if (sections.Count == 0) return;
+
+        foreach (var s in sections)
+        {
+            s.QuestionCount = s.Name switch
+            {
+                // SAT
+                "Reading & Writing" => 54,
+                "Math (No Calculator)" => 20,
+                "Math (Calculator)" => 38,
+                // TOEFL
+                "Reading" when s.MockExam == null => 0, // loaded below
+                "Listening" when s.MockExam == null => 0,
+                // NUET
+                "Quantitative Reasoning" => 40,
+                "Critical Thinking" => 40,
+                // CSCA
+                "Mathematics (EN)" or "Mathematics (CN)" => 48,
+                "Physics (EN)" or "Physics (CN)" => 48,
+                "Chemistry (EN)" or "Chemistry (CN)" => 48,
+                "Chinese Technical" => 80,
+                "Chinese Humanitarian" => 80,
+                _ => 0
+            };
+        }
+
+        // Resolve exam type for ambiguous names (Reading/Listening/Writing/Speaking used by both TOEFL and IELTS)
+        var ambiguous = sections.Where(s => s.QuestionCount == 0 && s.Name is "Reading" or "Listening" or "Writing" or "Speaking").ToList();
+        if (ambiguous.Count > 0)
+        {
+            var mockExamTypes = await _context.MockExams
+                .Where(m => ambiguous.Select(a => a.MockExamId).Contains(m.Id))
+                .ToDictionaryAsync(m => m.Id, m => m.ExamTypeCode);
+
+            foreach (var s in ambiguous)
+            {
+                var examType = mockExamTypes.GetValueOrDefault(s.MockExamId, "");
+                s.QuestionCount = (examType, s.Name) switch
+                {
+                    ("TOEFL", "Reading") => 20,
+                    ("TOEFL", "Listening") => 28,
+                    ("TOEFL", "Speaking") => 4,
+                    ("TOEFL", "Writing") => 2,
+                    ("IELTS", "Listening") => 40,
+                    ("IELTS", "Reading") => 40,
+                    ("IELTS", "Writing") => 2,
+                    ("IELTS", "Speaking") => 3,
+                    _ => 0
+                };
+            }
+        }
+
         await _context.SaveChangesAsync();
     }
 
@@ -3760,4 +3965,534 @@ General Tips:
         await _context.StrategyGuides.AddRangeAsync(guides);
         await _context.SaveChangesAsync();
     }
+
+    // ═══════════════════════════════════════════════════════
+    //  CSCA RESTRUCTURE: 3 subjects × deep chapter hierarchy
+    //  Subject → Chapter → Section → Topic (encoded in topic names)
+    //  ExamSection = Subject, Topic = leaf with numbered prefix
+    // ═══════════════════════════════════════════════════════
+
+    private async Task SeedCscaRestructureAsync()
+    {
+        // 1. Remove old CSCA sections, topics, and related data
+        var oldSections = await _context.ExamSections
+            .Where(s => s.ExamTypeCode == "CSCA" && s.Name != "Mathematics" && s.Name != "Physics" && s.Name != "Chemistry"
+                        && s.Name != "Chinese Technical" && s.Name != "Chinese Humanitarian")
+            .ToListAsync();
+
+        if (oldSections.Any())
+        {
+            var oldSectionIds = oldSections.Select(s => s.Id).ToList();
+            var oldTopics = await _context.Topics.Where(t => t.SectionId != null && oldSectionIds.Contains(t.SectionId.Value)).ToListAsync();
+            if (oldTopics.Any())
+            {
+                var oldTopicIds = oldTopics.Select(t => t.Id).ToList();
+                var oldQuestions = await _context.Questions.Where(q => oldTopicIds.Contains(q.TopicId)).ToListAsync();
+                if (oldQuestions.Any())
+                {
+                    var qIds = oldQuestions.Select(q => q.Id).ToList();
+                    _context.UserAnswers.RemoveRange(await _context.UserAnswers.Where(a => qIds.Contains(a.QuestionId)).ToListAsync());
+                    _context.AnswerOptions.RemoveRange(await _context.AnswerOptions.Where(a => qIds.Contains(a.QuestionId)).ToListAsync());
+                    _context.Questions.RemoveRange(oldQuestions);
+                }
+                _context.FormulaCards.RemoveRange(await _context.FormulaCards.Where(f => oldTopicIds.Contains(f.TopicId)).ToListAsync());
+                _context.TopicLessons.RemoveRange(await _context.TopicLessons.Where(l => oldTopicIds.Contains(l.TopicId)).ToListAsync());
+                _context.TopicDependencies.RemoveRange(await _context.TopicDependencies
+                    .Where(d => oldTopicIds.Contains(d.TopicId) || oldTopicIds.Contains(d.PrerequisiteTopicId)).ToListAsync());
+                _context.Topics.RemoveRange(oldTopics);
+            }
+            _context.ExamSections.RemoveRange(oldSections);
+            await _context.SaveChangesAsync();
+        }
+
+        // 2. Add new CSCA sections if not yet present
+        if (!await _context.ExamSections.AnyAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Mathematics"))
+        {
+            _context.ExamSections.AddRange(
+                new ExamSection { ExamTypeCode = "CSCA", Name = "Mathematics", MinScore = 0, MaxScore = 100 },
+                new ExamSection { ExamTypeCode = "CSCA", Name = "Physics", MinScore = 0, MaxScore = 100 },
+                new ExamSection { ExamTypeCode = "CSCA", Name = "Chemistry", MinScore = 0, MaxScore = 100 }
+            );
+            await _context.SaveChangesAsync();
+        }
+        // Add Chinese Technical and Chinese Humanitarian sections if not yet present
+        if (!await _context.ExamSections.AnyAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Chinese Technical"))
+        {
+            _context.ExamSections.AddRange(
+                new ExamSection { ExamTypeCode = "CSCA", Name = "Chinese Technical", MinScore = 0, MaxScore = 100 },
+                new ExamSection { ExamTypeCode = "CSCA", Name = "Chinese Humanitarian", MinScore = 0, MaxScore = 100 }
+            );
+            await _context.SaveChangesAsync();
+        }
+
+        // Update CSCA exam type name
+        var cscaExam = await _context.ExamTypes.FirstOrDefaultAsync(e => e.Code == "CSCA");
+        if (cscaExam != null && !cscaExam.Name.Contains("China"))
+        {
+            cscaExam.Name = "CSCA \u2014 China Scholastic Competency Assessment";
+            await _context.SaveChangesAsync();
+        }
+
+        // 3. Resolve section & skill IDs
+        var mathSection = await _context.ExamSections.FirstAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Mathematics");
+        var physSection = await _context.ExamSections.FirstAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Physics");
+        var chemSection = await _context.ExamSections.FirstAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Chemistry");
+        var cnTechSection = await _context.ExamSections.FirstAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Chinese Technical");
+        var cnHumSection = await _context.ExamSections.FirstAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Chinese Humanitarian");
+        var skillMath = await _context.Skills.FirstAsync(s => s.Code == "SK_MATH");
+        var skillPhys = await _context.Skills.FirstAsync(s => s.Code == "SK_PHYS");
+        var skillChem = await _context.Skills.FirstAsync(s => s.Code == "SK_CHEM");
+        var skillCnTech = await _context.Skills.FirstAsync(s => s.Code == "SK_CN_TECH");
+        var skillCnHum = await _context.Skills.FirstAsync(s => s.Code == "SK_CN_HUM");
+        var skillCrit = await _context.Skills.FirstAsync(s => s.Code == "SK_CRIT");
+
+        // 4. Skip if topics already seeded
+        if (await _context.Topics.AnyAsync(t => t.SectionId == mathSection.Id && t.Name.StartsWith("1.1.1")))
+            return;
+
+        // ── MATHEMATICS — 20 Chapters ──
+        var mathTopics = new List<Topic>
+        {
+            // Ch.1 Sets
+            T("1.1.1 Elements of Sets", skillMath.Id, mathSection.Id),
+            T("1.1.2 Common Number Sets", skillMath.Id, mathSection.Id),
+            T("1.1.3 Element-Set Membership", skillMath.Id, mathSection.Id),
+            T("1.1.4 Set Representations (roster, set-builder, Venn)", skillMath.Id, mathSection.Id),
+            T("1.2.1 Intersection of Sets", skillMath.Id, mathSection.Id),
+            T("1.2.2 Union of Sets", skillMath.Id, mathSection.Id),
+            T("1.2.3 Complement (Difference) of Sets", skillMath.Id, mathSection.Id),
+            T("1.3.1 Necessary and Sufficient Conditions", skillCrit.Id, mathSection.Id),
+            T("1.3.2 Negation of Compound Statements", skillCrit.Id, mathSection.Id),
+            T("1.3.3 Sets and Logical Conditions", skillCrit.Id, mathSection.Id),
+            T("1.4.1 Universal Set and Properties", skillMath.Id, mathSection.Id),
+            T("1.4.2 Operation Properties (commutativity, associativity)", skillMath.Id, mathSection.Id),
+            T("1.4.3 De Morgan's Laws", skillMath.Id, mathSection.Id),
+            T("1.4.4 Applied Set Problems", skillMath.Id, mathSection.Id),
+
+            // Ch.2 Inequalities
+            T("2.1.1 Linear Inequalities", skillMath.Id, mathSection.Id),
+            T("2.1.2 Quadratic Inequalities", skillMath.Id, mathSection.Id),
+            T("2.1.3 Rational Inequalities", skillMath.Id, mathSection.Id),
+            T("2.2.1 Absolute Value Inequalities", skillMath.Id, mathSection.Id),
+            T("2.2.2 AM-GM and Cauchy-Schwarz", skillMath.Id, mathSection.Id),
+            T("2.3.1 Systems of Inequalities", skillMath.Id, mathSection.Id),
+            T("2.3.2 Parametric Inequalities", skillMath.Id, mathSection.Id),
+
+            // Ch.3 Functions
+            T("3.1.1 Domain, Range, and Mapping", skillMath.Id, mathSection.Id),
+            T("3.1.2 Piecewise Functions", skillMath.Id, mathSection.Id),
+            T("3.2.1 Monotonicity and Extrema", skillMath.Id, mathSection.Id),
+            T("3.2.2 Even and Odd Functions", skillMath.Id, mathSection.Id),
+            T("3.2.3 Periodicity", skillMath.Id, mathSection.Id),
+            T("3.3.1 Exponential Functions", skillMath.Id, mathSection.Id),
+            T("3.3.2 Logarithmic Functions", skillMath.Id, mathSection.Id),
+            T("3.3.3 Power Functions", skillMath.Id, mathSection.Id),
+            T("3.4.1 Composite Functions", skillMath.Id, mathSection.Id),
+            T("3.4.2 Inverse Functions", skillMath.Id, mathSection.Id),
+
+            // Ch.4 Trigonometric Functions
+            T("4.1.1 Radian Measure and Arc Length", skillMath.Id, mathSection.Id),
+            T("4.1.2 Unit Circle Definition", skillMath.Id, mathSection.Id),
+            T("4.2.1 Graphs of sin, cos, tan", skillMath.Id, mathSection.Id),
+            T("4.2.2 Amplitude, Period, Phase Shift", skillMath.Id, mathSection.Id),
+            T("4.3.1 Fundamental Trig Identities", skillMath.Id, mathSection.Id),
+            T("4.3.2 Simplification with Identities", skillMath.Id, mathSection.Id),
+
+            // Ch.5 Inverse Trigonometric Functions
+            T("5.1.1 arcsin, arccos, arctan Definitions", skillMath.Id, mathSection.Id),
+            T("5.1.2 Domains and Ranges of Inverse Trig", skillMath.Id, mathSection.Id),
+            T("5.2.1 Evaluating Inverse Trig Expressions", skillMath.Id, mathSection.Id),
+            T("5.2.2 Composite Inverse Trig Problems", skillMath.Id, mathSection.Id),
+
+            // Ch.6 Trig Sum/Difference Formulas
+            T("6.1.1 Sum and Difference Formulas", skillMath.Id, mathSection.Id),
+            T("6.1.2 Double Angle Formulas", skillMath.Id, mathSection.Id),
+            T("6.1.3 Half Angle Formulas", skillMath.Id, mathSection.Id),
+            T("6.2.1 Product-to-Sum Transformations", skillMath.Id, mathSection.Id),
+            T("6.2.2 Sum-to-Product Transformations", skillMath.Id, mathSection.Id),
+            T("6.3.1 Trigonometric Equations", skillMath.Id, mathSection.Id),
+
+            // Ch.7 Sequences
+            T("7.1.1 Arithmetic Sequences", skillMath.Id, mathSection.Id),
+            T("7.1.2 Arithmetic Series (Sum Formulas)", skillMath.Id, mathSection.Id),
+            T("7.2.1 Geometric Sequences", skillMath.Id, mathSection.Id),
+            T("7.2.2 Geometric Series (Sum Formulas)", skillMath.Id, mathSection.Id),
+            T("7.3.1 Recursive Sequences", skillMath.Id, mathSection.Id),
+            T("7.3.2 Summation Techniques (telescoping, partial fractions)", skillMath.Id, mathSection.Id),
+
+            // Ch.8 Complex Numbers
+            T("8.1.1 Imaginary Unit and Algebraic Form", skillMath.Id, mathSection.Id),
+            T("8.1.2 Operations with Complex Numbers", skillMath.Id, mathSection.Id),
+            T("8.2.1 Modulus and Conjugate", skillMath.Id, mathSection.Id),
+            T("8.2.2 Trigonometric (Polar) Form", skillMath.Id, mathSection.Id),
+            T("8.3.1 De Moivre's Theorem", skillMath.Id, mathSection.Id),
+
+            // Ch.9 Lines in Plane
+            T("9.1.1 Slope and Equation of a Line", skillMath.Id, mathSection.Id),
+            T("9.1.2 Forms: slope-intercept, point-slope, general", skillMath.Id, mathSection.Id),
+            T("9.2.1 Parallel and Perpendicular Lines", skillMath.Id, mathSection.Id),
+            T("9.2.2 Distance from Point to Line", skillMath.Id, mathSection.Id),
+            T("9.3.1 Systems of Linear Equations (2D)", skillMath.Id, mathSection.Id),
+
+            // Ch.10 Conic Sections
+            T("10.1.1 Circle: Standard and General Form", skillMath.Id, mathSection.Id),
+            T("10.2.1 Ellipse: Definition and Equation", skillMath.Id, mathSection.Id),
+            T("10.2.2 Ellipse: Eccentricity and Properties", skillMath.Id, mathSection.Id),
+            T("10.3.1 Hyperbola: Definition and Equation", skillMath.Id, mathSection.Id),
+            T("10.3.2 Hyperbola: Asymptotes and Properties", skillMath.Id, mathSection.Id),
+            T("10.4.1 Parabola: Definition and Equation", skillMath.Id, mathSection.Id),
+            T("10.5.1 Line-Conic Intersection Problems", skillMath.Id, mathSection.Id),
+
+            // Ch.11 Plane Vectors
+            T("11.1.1 Vector Concepts and Notation", skillMath.Id, mathSection.Id),
+            T("11.1.2 Vector Addition and Scalar Multiplication", skillMath.Id, mathSection.Id),
+            T("11.2.1 Dot Product and Angle Between Vectors", skillMath.Id, mathSection.Id),
+            T("11.2.2 Projection and Decomposition", skillMath.Id, mathSection.Id),
+            T("11.3.1 Coordinate Form of Vectors", skillMath.Id, mathSection.Id),
+
+            // Ch.12 Space Vectors
+            T("12.1.1 Vectors in 3D Space", skillMath.Id, mathSection.Id),
+            T("12.1.2 Cross Product", skillMath.Id, mathSection.Id),
+            T("12.2.1 Spatial Coordinate Systems", skillMath.Id, mathSection.Id),
+            T("12.2.2 Distance and Angle in Space", skillMath.Id, mathSection.Id),
+
+            // Ch.13 Space Planes & Lines
+            T("13.1.1 Equation of a Plane", skillMath.Id, mathSection.Id),
+            T("13.1.2 Line-Plane Relationships", skillMath.Id, mathSection.Id),
+            T("13.2.1 Dihedral Angles", skillMath.Id, mathSection.Id),
+            T("13.2.2 Distance Between Skew Lines", skillMath.Id, mathSection.Id),
+
+            // Ch.14 Limits
+            T("14.1.1 Concept of a Limit", skillMath.Id, mathSection.Id),
+            T("14.1.2 Properties and Computation of Limits", skillMath.Id, mathSection.Id),
+            T("14.2.1 Limits at Infinity", skillMath.Id, mathSection.Id),
+            T("14.2.2 Continuity of Functions", skillMath.Id, mathSection.Id),
+            T("14.3.1 Squeeze Theorem", skillMath.Id, mathSection.Id),
+
+            // Ch.15 Derivatives
+            T("15.1.1 Definition of a Derivative", skillMath.Id, mathSection.Id),
+            T("15.1.2 Geometric Meaning (Tangent Line)", skillMath.Id, mathSection.Id),
+            T("15.2.1 Basic Differentiation Rules", skillMath.Id, mathSection.Id),
+            T("15.2.2 Chain Rule", skillMath.Id, mathSection.Id),
+            T("15.2.3 Derivatives of Trig and Log Functions", skillMath.Id, mathSection.Id),
+
+            // Ch.16 Applications of Derivatives
+            T("16.1.1 Finding Monotonic Intervals", skillMath.Id, mathSection.Id),
+            T("16.1.2 Local and Global Extrema", skillMath.Id, mathSection.Id),
+            T("16.2.1 Optimization Problems", skillMath.Id, mathSection.Id),
+            T("16.2.2 Second Derivative Test", skillMath.Id, mathSection.Id),
+            T("16.3.1 Curve Sketching with Derivatives", skillMath.Id, mathSection.Id),
+
+            // Ch.17 Permutations & Combinations
+            T("17.1.1 Counting Principles (Addition & Multiplication)", skillMath.Id, mathSection.Id),
+            T("17.1.2 Permutations", skillMath.Id, mathSection.Id),
+            T("17.1.3 Combinations", skillMath.Id, mathSection.Id),
+            T("17.2.1 Binomial Theorem", skillMath.Id, mathSection.Id),
+            T("17.2.2 Pascal's Triangle Properties", skillMath.Id, mathSection.Id),
+
+            // Ch.18 Random Events & Probability
+            T("18.1.1 Sample Space and Events", skillMath.Id, mathSection.Id),
+            T("18.1.2 Classical Probability", skillMath.Id, mathSection.Id),
+            T("18.2.1 Conditional Probability", skillMath.Id, mathSection.Id),
+            T("18.2.2 Independent Events", skillMath.Id, mathSection.Id),
+            T("18.3.1 Bayes' Theorem", skillMath.Id, mathSection.Id),
+
+            // Ch.19 Random Variables
+            T("19.1.1 Discrete Random Variables", skillMath.Id, mathSection.Id),
+            T("19.1.2 Probability Distribution Tables", skillMath.Id, mathSection.Id),
+            T("19.2.1 Expectation (Mean)", skillMath.Id, mathSection.Id),
+            T("19.2.2 Variance and Standard Deviation", skillMath.Id, mathSection.Id),
+            T("19.3.1 Binomial Distribution", skillMath.Id, mathSection.Id),
+            T("19.3.2 Normal Distribution Basics", skillMath.Id, mathSection.Id),
+
+            // Ch.20 Statistics
+            T("20.1.1 Sampling Methods", skillMath.Id, mathSection.Id),
+            T("20.1.2 Frequency Distributions and Histograms", skillMath.Id, mathSection.Id),
+            T("20.2.1 Measures of Central Tendency", skillMath.Id, mathSection.Id),
+            T("20.2.2 Measures of Dispersion", skillMath.Id, mathSection.Id),
+            T("20.3.1 Linear Regression", skillMath.Id, mathSection.Id),
+            T("20.3.2 Correlation Coefficient", skillMath.Id, mathSection.Id),
+        };
+
+        // ── PHYSICS — 12 Chapters ──
+        var physTopics = new List<Topic>
+        {
+            // Ch.1 Force
+            T("P1.1.1 Types of Forces (gravity, tension, friction, normal)", skillPhys.Id, physSection.Id),
+            T("P1.1.2 Force Analysis and Free Body Diagrams", skillPhys.Id, physSection.Id),
+            T("P1.2.1 Vector Addition of Forces", skillPhys.Id, physSection.Id),
+            T("P1.2.2 Equilibrium Conditions", skillPhys.Id, physSection.Id),
+            T("P1.3.1 Hooke's Law (Spring Force)", skillPhys.Id, physSection.Id),
+
+            // Ch.2 Motion
+            T("P2.1.1 Displacement, Velocity, Acceleration", skillPhys.Id, physSection.Id),
+            T("P2.1.2 Uniform Motion", skillPhys.Id, physSection.Id),
+            T("P2.2.1 Uniformly Accelerated Motion", skillPhys.Id, physSection.Id),
+            T("P2.2.2 Free Fall", skillPhys.Id, physSection.Id),
+            T("P2.3.1 Projectile Motion", skillPhys.Id, physSection.Id),
+            T("P2.3.2 Circular Motion", skillPhys.Id, physSection.Id),
+
+            // Ch.3 Newton's Laws
+            T("P3.1.1 Newton's First Law (Inertia)", skillPhys.Id, physSection.Id),
+            T("P3.1.2 Newton's Second Law (F=ma)", skillPhys.Id, physSection.Id),
+            T("P3.1.3 Newton's Third Law (Action-Reaction)", skillPhys.Id, physSection.Id),
+            T("P3.2.1 Applications on Inclined Planes", skillPhys.Id, physSection.Id),
+            T("P3.2.2 Connected Bodies and Pulley Systems", skillPhys.Id, physSection.Id),
+
+            // Ch.4 Momentum
+            T("P4.1.1 Impulse and Momentum", skillPhys.Id, physSection.Id),
+            T("P4.1.2 Impulse-Momentum Theorem", skillPhys.Id, physSection.Id),
+            T("P4.2.1 Conservation of Momentum", skillPhys.Id, physSection.Id),
+            T("P4.2.2 Elastic and Inelastic Collisions", skillPhys.Id, physSection.Id),
+
+            // Ch.5 Mechanical Energy
+            T("P5.1.1 Work Done by a Force", skillPhys.Id, physSection.Id),
+            T("P5.1.2 Work-Energy Theorem", skillPhys.Id, physSection.Id),
+            T("P5.2.1 Kinetic and Potential Energy", skillPhys.Id, physSection.Id),
+            T("P5.2.2 Conservation of Mechanical Energy", skillPhys.Id, physSection.Id),
+            T("P5.3.1 Power", skillPhys.Id, physSection.Id),
+
+            // Ch.6 Electric Field
+            T("P6.1.1 Electric Charge and Coulomb's Law", skillPhys.Id, physSection.Id),
+            T("P6.1.2 Electric Field Intensity", skillPhys.Id, physSection.Id),
+            T("P6.2.1 Electric Potential and Potential Difference", skillPhys.Id, physSection.Id),
+            T("P6.2.2 Capacitance and Capacitors", skillPhys.Id, physSection.Id),
+            T("P6.3.1 Electric Field Lines and Equipotential Surfaces", skillPhys.Id, physSection.Id),
+
+            // Ch.7 DC Circuits
+            T("P7.1.1 Ohm's Law", skillPhys.Id, physSection.Id),
+            T("P7.1.2 Resistors in Series and Parallel", skillPhys.Id, physSection.Id),
+            T("P7.2.1 EMF and Internal Resistance", skillPhys.Id, physSection.Id),
+            T("P7.2.2 Kirchhoff's Laws", skillPhys.Id, physSection.Id),
+            T("P7.3.1 Electrical Power and Energy", skillPhys.Id, physSection.Id),
+
+            // Ch.8 Magnetic Field
+            T("P8.1.1 Magnetic Field and Magnetic Force", skillPhys.Id, physSection.Id),
+            T("P8.1.2 Force on a Current-Carrying Conductor", skillPhys.Id, physSection.Id),
+            T("P8.2.1 Lorentz Force and Charged Particle Motion", skillPhys.Id, physSection.Id),
+            T("P8.2.2 Applications (mass spectrometer, cyclotron)", skillPhys.Id, physSection.Id),
+
+            // Ch.9 Electromagnetic Induction
+            T("P9.1.1 Magnetic Flux", skillPhys.Id, physSection.Id),
+            T("P9.1.2 Faraday's Law of Induction", skillPhys.Id, physSection.Id),
+            T("P9.2.1 Lenz's Law", skillPhys.Id, physSection.Id),
+            T("P9.2.2 Self-Inductance", skillPhys.Id, physSection.Id),
+
+            // Ch.10 Vibrations & Waves
+            T("P10.1.1 Simple Harmonic Motion", skillPhys.Id, physSection.Id),
+            T("P10.1.2 Pendulum and Spring Oscillator", skillPhys.Id, physSection.Id),
+            T("P10.2.1 Transverse and Longitudinal Waves", skillPhys.Id, physSection.Id),
+            T("P10.2.2 Wave Speed, Frequency, Wavelength", skillPhys.Id, physSection.Id),
+            T("P10.3.1 Superposition and Interference", skillPhys.Id, physSection.Id),
+            T("P10.3.2 Standing Waves and Resonance", skillPhys.Id, physSection.Id),
+            T("P10.4.1 Sound Waves and Doppler Effect", skillPhys.Id, physSection.Id),
+
+            // Ch.11 Heat
+            T("P11.1.1 Temperature and Thermometers", skillPhys.Id, physSection.Id),
+            T("P11.1.2 Ideal Gas Law", skillPhys.Id, physSection.Id),
+            T("P11.2.1 Internal Energy and Heat Transfer", skillPhys.Id, physSection.Id),
+            T("P11.2.2 First Law of Thermodynamics", skillPhys.Id, physSection.Id),
+            T("P11.3.1 Phase Changes and Latent Heat", skillPhys.Id, physSection.Id),
+
+            // Ch.12 Geometrical Optics
+            T("P12.1.1 Reflection and Plane Mirrors", skillPhys.Id, physSection.Id),
+            T("P12.1.2 Refraction and Snell's Law", skillPhys.Id, physSection.Id),
+            T("P12.2.1 Total Internal Reflection", skillPhys.Id, physSection.Id),
+            T("P12.2.2 Thin Lens Equation", skillPhys.Id, physSection.Id),
+            T("P12.3.1 Image Formation (convex/concave lenses)", skillPhys.Id, physSection.Id),
+        };
+
+        // ── CHEMISTRY — 14 Chapters ──
+        var chemTopics = new List<Topic>
+        {
+            // Ch.1 Chemical Fundamentals
+            T("C1.1.1 Atoms, Molecules, and Ions", skillChem.Id, chemSection.Id),
+            T("C1.1.2 Relative Atomic and Molecular Mass", skillChem.Id, chemSection.Id),
+            T("C1.2.1 Chemical Formulas and Naming", skillChem.Id, chemSection.Id),
+            T("C1.2.2 Valence and Oxidation States", skillChem.Id, chemSection.Id),
+
+            // Ch.2 Chemical Reactions and Equations
+            T("C2.1.1 Balancing Chemical Equations", skillChem.Id, chemSection.Id),
+            T("C2.1.2 Types of Chemical Reactions", skillChem.Id, chemSection.Id),
+            T("C2.2.1 Oxidation-Reduction (Redox) Reactions", skillChem.Id, chemSection.Id),
+            T("C2.2.2 Identifying Oxidizing and Reducing Agents", skillChem.Id, chemSection.Id),
+
+            // Ch.3 The Mole and Chemical Calculations
+            T("C3.1.1 Mole Concept and Avogadro's Number", skillChem.Id, chemSection.Id),
+            T("C3.1.2 Molar Mass Calculations", skillChem.Id, chemSection.Id),
+            T("C3.2.1 Molar Volume of Gases (STP)", skillChem.Id, chemSection.Id),
+            T("C3.2.2 Stoichiometric Calculations", skillChem.Id, chemSection.Id),
+            T("C3.3.1 Solution Concentration (Molarity)", skillChem.Id, chemSection.Id),
+            T("C3.3.2 Dilution Calculations", skillChem.Id, chemSection.Id),
+
+            // Ch.4 Alkali Metals and Their Compounds
+            T("C4.1.1 Properties of Sodium and Potassium", skillChem.Id, chemSection.Id),
+            T("C4.1.2 Sodium Compounds (Na2O, NaOH, Na2CO3, NaHCO3)", skillChem.Id, chemSection.Id),
+            T("C4.2.1 Flame Tests and Identification", skillChem.Id, chemSection.Id),
+
+            // Ch.5 Halogens
+            T("C5.1.1 Properties of Chlorine, Bromine, Iodine", skillChem.Id, chemSection.Id),
+            T("C5.1.2 Halogen Reactivity Trends", skillChem.Id, chemSection.Id),
+            T("C5.2.1 Hydrogen Halides and Halide Ions", skillChem.Id, chemSection.Id),
+            T("C5.2.2 Halogen Displacement Reactions", skillChem.Id, chemSection.Id),
+
+            // Ch.6 Sulfur, Nitrogen, and Their Compounds
+            T("C6.1.1 Sulfuric Acid and Sulfur Oxides", skillChem.Id, chemSection.Id),
+            T("C6.1.2 Industrial Synthesis of H2SO4 (Contact Process)", skillChem.Id, chemSection.Id),
+            T("C6.2.1 Ammonia and Ammonium Compounds", skillChem.Id, chemSection.Id),
+            T("C6.2.2 Nitric Acid and Nitrogen Oxides", skillChem.Id, chemSection.Id),
+            T("C6.3.1 Industrial Synthesis of NH3 (Haber Process)", skillChem.Id, chemSection.Id),
+
+            // Ch.7 The Periodic Table and Periodic Law
+            T("C7.1.1 Structure of the Periodic Table", skillChem.Id, chemSection.Id),
+            T("C7.1.2 Periodic Trends (atomic radius, ionization energy, electronegativity)", skillChem.Id, chemSection.Id),
+            T("C7.2.1 Metallic vs Non-metallic Character", skillChem.Id, chemSection.Id),
+            T("C7.2.2 Predicting Properties from Position", skillChem.Id, chemSection.Id),
+
+            // Ch.8 Chemical Bonding
+            T("C8.1.1 Ionic Bonding", skillChem.Id, chemSection.Id),
+            T("C8.1.2 Covalent Bonding (polar/non-polar)", skillChem.Id, chemSection.Id),
+            T("C8.2.1 Metallic Bonding", skillChem.Id, chemSection.Id),
+            T("C8.2.2 Lewis Structures and VSEPR", skillChem.Id, chemSection.Id),
+            T("C8.3.1 Intermolecular Forces (van der Waals, H-bonding)", skillChem.Id, chemSection.Id),
+
+            // Ch.9 Chemical Reaction Rates
+            T("C9.1.1 Factors Affecting Reaction Rate", skillChem.Id, chemSection.Id),
+            T("C9.1.2 Collision Theory", skillChem.Id, chemSection.Id),
+            T("C9.2.1 Catalysts and Activation Energy", skillChem.Id, chemSection.Id),
+
+            // Ch.10 Chemical Equilibrium
+            T("C10.1.1 Reversible Reactions and Dynamic Equilibrium", skillChem.Id, chemSection.Id),
+            T("C10.1.2 Equilibrium Constant (Kc, Kp)", skillChem.Id, chemSection.Id),
+            T("C10.2.1 Le Chatelier's Principle", skillChem.Id, chemSection.Id),
+            T("C10.2.2 Equilibrium Calculations", skillChem.Id, chemSection.Id),
+
+            // Ch.11 Solutions and Ionic Reactions
+            T("C11.1.1 Electrolytes and Non-Electrolytes", skillChem.Id, chemSection.Id),
+            T("C11.1.2 Ionic Equations", skillChem.Id, chemSection.Id),
+            T("C11.2.1 Acid-Base Reactions and pH", skillChem.Id, chemSection.Id),
+            T("C11.2.2 Hydrolysis of Salts", skillChem.Id, chemSection.Id),
+            T("C11.3.1 Precipitation Reactions and Solubility Rules", skillChem.Id, chemSection.Id),
+
+            // Ch.12 Electrochemistry
+            T("C12.1.1 Galvanic (Voltaic) Cells", skillChem.Id, chemSection.Id),
+            T("C12.1.2 Electrode Potentials and EMF", skillChem.Id, chemSection.Id),
+            T("C12.2.1 Electrolysis (Faraday's Laws)", skillChem.Id, chemSection.Id),
+            T("C12.2.2 Applications (electroplating, refining)", skillChem.Id, chemSection.Id),
+
+            // Ch.13 Organic Chemistry Basics
+            T("C13.1.1 Alkanes (nomenclature, isomerism)", skillChem.Id, chemSection.Id),
+            T("C13.1.2 Alkenes (addition reactions)", skillChem.Id, chemSection.Id),
+            T("C13.2.1 Alcohols and Ethers", skillChem.Id, chemSection.Id),
+            T("C13.2.2 Carboxylic Acids and Esters", skillChem.Id, chemSection.Id),
+            T("C13.3.1 Polymers and Polymerization", skillChem.Id, chemSection.Id),
+
+            // Ch.14 Chemistry Experiments
+            T("C14.1.1 Common Lab Apparatus and Techniques", skillChem.Id, chemSection.Id),
+            T("C14.1.2 Gas Collection Methods", skillChem.Id, chemSection.Id),
+            T("C14.2.1 Titration (acid-base, redox)", skillChem.Id, chemSection.Id),
+            T("C14.2.2 Qualitative Analysis (ion identification)", skillChem.Id, chemSection.Id),
+        };
+
+        // ── CHINESE TECHNICAL (Professional Chinese STEM) — 8 Chapters ──
+        var cnTechTopics = new List<Topic>
+        {
+            // Ch.1 Scientific Vocabulary
+            T("CT1.1.1 Mathematics Terminology (数学术语)", skillCnTech.Id, cnTechSection.Id),
+            T("CT1.1.2 Physics Terminology (物理术语)", skillCnTech.Id, cnTechSection.Id),
+            T("CT1.1.3 Chemistry Terminology (化学术语)", skillCnTech.Id, cnTechSection.Id),
+            T("CT1.2.1 Units and Measurements in Chinese (单位与测量)", skillCnTech.Id, cnTechSection.Id),
+
+            // Ch.2 Reading Scientific Texts
+            T("CT2.1.1 Reading Formulas and Equations (公式阅读)", skillCnTech.Id, cnTechSection.Id),
+            T("CT2.1.2 Understanding Graphs and Tables (图表理解)", skillCnTech.Id, cnTechSection.Id),
+            T("CT2.2.1 Scientific Article Structure (科技文章结构)", skillCnTech.Id, cnTechSection.Id),
+            T("CT2.2.2 Abstract and Conclusion Comprehension (摘要与结论)", skillCnTech.Id, cnTechSection.Id),
+
+            // Ch.3 Engineering and Technology
+            T("CT3.1.1 Computer Science Terms (计算机科学)", skillCnTech.Id, cnTechSection.Id),
+            T("CT3.1.2 Engineering Vocabulary (工程术语)", skillCnTech.Id, cnTechSection.Id),
+            T("CT3.2.1 Environmental Science Terms (环境科学)", skillCnTech.Id, cnTechSection.Id),
+            T("CT3.2.2 Medical and Biological Terms (医学与生物)", skillCnTech.Id, cnTechSection.Id),
+
+            // Ch.4 Academic Writing (STEM)
+            T("CT4.1.1 Writing Lab Reports (实验报告写作)", skillCnTech.Id, cnTechSection.Id),
+            T("CT4.1.2 Technical Descriptions (技术描述)", skillCnTech.Id, cnTechSection.Id),
+            T("CT4.2.1 Data Analysis Writing (数据分析写作)", skillCnTech.Id, cnTechSection.Id),
+
+            // Ch.5 Listening Comprehension (STEM)
+            T("CT5.1.1 Understanding Lectures (课堂听力)", skillCnTech.Id, cnTechSection.Id),
+            T("CT5.1.2 Lab Instructions and Safety (实验指导)", skillCnTech.Id, cnTechSection.Id),
+            T("CT5.2.1 Scientific Presentations (学术报告听力)", skillCnTech.Id, cnTechSection.Id),
+
+            // Ch.6 Grammar for STEM Texts
+            T("CT6.1.1 Passive Voice in Scientific Chinese (被动语态)", skillCnTech.Id, cnTechSection.Id),
+            T("CT6.1.2 Conditional and Hypothetical Sentences (假设句)", skillCnTech.Id, cnTechSection.Id),
+            T("CT6.2.1 Comparison and Contrast Structures (比较结构)", skillCnTech.Id, cnTechSection.Id),
+
+            // Ch.7 Practice Sets
+            T("CT7.1.1 Cloze Tests (STEM passages)", skillCnTech.Id, cnTechSection.Id),
+            T("CT7.1.2 Reading Comprehension (STEM)", skillCnTech.Id, cnTechSection.Id),
+            T("CT7.2.1 Vocabulary in Context", skillCnTech.Id, cnTechSection.Id),
+
+            // Ch.8 Exam Strategies
+            T("CT8.1.1 Time Management for 80 Questions in 90 Minutes", skillCnTech.Id, cnTechSection.Id),
+            T("CT8.1.2 Elimination and Guessing Techniques", skillCnTech.Id, cnTechSection.Id),
+        };
+
+        // ── CHINESE HUMANITARIAN (Professional Chinese Humanities) — 8 Chapters ──
+        var cnHumTopics = new List<Topic>
+        {
+            // Ch.1 Chinese Literature
+            T("CH1.1.1 Classical Chinese Poetry (古诗词)", skillCnHum.Id, cnHumSection.Id),
+            T("CH1.1.2 Modern Chinese Literature (现代文学)", skillCnHum.Id, cnHumSection.Id),
+            T("CH1.2.1 Idioms and Proverbs (成语与谚语)", skillCnHum.Id, cnHumSection.Id),
+            T("CH1.2.2 Literary Analysis Techniques (文学分析)", skillCnHum.Id, cnHumSection.Id),
+
+            // Ch.2 Chinese History
+            T("CH2.1.1 Ancient Chinese History (古代史)", skillCnHum.Id, cnHumSection.Id),
+            T("CH2.1.2 Modern Chinese History (近现代史)", skillCnHum.Id, cnHumSection.Id),
+            T("CH2.2.1 Historical Figures and Events (历史人物与事件)", skillCnHum.Id, cnHumSection.Id),
+
+            // Ch.3 Chinese Philosophy and Thought
+            T("CH3.1.1 Confucianism (儒家思想)", skillCnHum.Id, cnHumSection.Id),
+            T("CH3.1.2 Taoism and Buddhism (道家与佛教)", skillCnHum.Id, cnHumSection.Id),
+            T("CH3.2.1 Modern Chinese Thought (现代思想)", skillCnHum.Id, cnHumSection.Id),
+
+            // Ch.4 Chinese Culture and Art
+            T("CH4.1.1 Traditional Art Forms (传统艺术)", skillCnHum.Id, cnHumSection.Id),
+            T("CH4.1.2 Festivals and Customs (节日与风俗)", skillCnHum.Id, cnHumSection.Id),
+            T("CH4.2.1 Chinese Cinema and Music (电影与音乐)", skillCnHum.Id, cnHumSection.Id),
+
+            // Ch.5 Chinese Society
+            T("CH5.1.1 Chinese Education System (教育体系)", skillCnHum.Id, cnHumSection.Id),
+            T("CH5.1.2 Social Issues and Current Events (社会问题)", skillCnHum.Id, cnHumSection.Id),
+            T("CH5.2.1 Chinese Geography and Regions (地理与区域)", skillCnHum.Id, cnHumSection.Id),
+
+            // Ch.6 Academic Writing (Humanities)
+            T("CH6.1.1 Essay Structure in Chinese (论文结构)", skillCnHum.Id, cnHumSection.Id),
+            T("CH6.1.2 Argumentative Writing (议论文写作)", skillCnHum.Id, cnHumSection.Id),
+            T("CH6.2.1 Formal and Informal Register (正式与非正式用语)", skillCnHum.Id, cnHumSection.Id),
+
+            // Ch.7 Reading Comprehension (Humanities)
+            T("CH7.1.1 News and Media Articles (新闻阅读)", skillCnHum.Id, cnHumSection.Id),
+            T("CH7.1.2 Academic Texts (学术文本)", skillCnHum.Id, cnHumSection.Id),
+            T("CH7.2.1 Opinion and Editorial Analysis (评论分析)", skillCnHum.Id, cnHumSection.Id),
+
+            // Ch.8 Exam Strategies
+            T("CH8.1.1 Time Management for 80 Questions in 90 Minutes", skillCnHum.Id, cnHumSection.Id),
+            T("CH8.1.2 Elimination and Guessing Techniques", skillCnHum.Id, cnHumSection.Id),
+        };
+
+        await _context.Topics.AddRangeAsync(mathTopics);
+        await _context.Topics.AddRangeAsync(physTopics);
+        await _context.Topics.AddRangeAsync(chemTopics);
+        await _context.Topics.AddRangeAsync(cnTechTopics);
+        await _context.Topics.AddRangeAsync(cnHumTopics);
+        await _context.SaveChangesAsync();
+    }
+
+    /// <summary>Helper to create a Topic with less boilerplate.</summary>
+    private static Topic T(string name, int skillId, int sectionId) =>
+        new Topic { Name = name, SkillId = skillId, SectionId = sectionId };
 }

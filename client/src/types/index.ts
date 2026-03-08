@@ -595,6 +595,8 @@ export interface MockExamAttempt {
   currentSectionIndex: number;
   totalSections: number;
   startedAt: string;
+  totalTimeMinutes: number;
+  sectionNames?: string[];
 }
 
 export interface MockExamSectionState {

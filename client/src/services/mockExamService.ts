@@ -19,8 +19,9 @@ export const mockExamService = {
     return response.data;
   },
 
-  async startMockExam(id: number): Promise<MockExamAttempt> {
-    const response = await api.post<MockExamAttempt>(`/mock-exams/${id}/start`);
+  async startMockExam(id: number, selectedSectionIds?: number[]): Promise<MockExamAttempt> {
+    const body = selectedSectionIds ? { selectedSectionIds } : undefined;
+    const response = await api.post<MockExamAttempt>(`/mock-exams/${id}/start`, body);
     return response.data;
   },
 
@@ -44,6 +45,11 @@ export const mockExamService = {
 
   async completeSection(attemptId: number): Promise<MockExamAttempt> {
     const response = await api.post<MockExamAttempt>(`/mock-exams/attempts/${attemptId}/complete-section`);
+    return response.data;
+  },
+
+  async completeExam(attemptId: number): Promise<MockExamAttempt> {
+    const response = await api.post<MockExamAttempt>(`/mock-exams/attempts/${attemptId}/complete-exam`);
     return response.data;
   },
 

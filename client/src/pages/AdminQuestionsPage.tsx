@@ -6,6 +6,8 @@ const EXAM_COLORS: Record<string, string> = {
   SAT: '#4f46e5',
   TOEFL: '#0891b2',
   NUET: '#7c3aed',
+  IELTS: '#059669',
+  CSCA: '#dc2626',
 };
 
 const DIFF_COLORS: Record<string, string> = {
@@ -51,6 +53,14 @@ function AdminQuestionsPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
 
+  // Topic view — independent state
+  const [topicPage, setTopicPage] = useState(1);
+  const TOPICS_PER_PAGE = 10;
+  const [topicViewQuestions, setTopicViewQuestions] = useState<QuestionListItem[]>([]);
+  const [topicViewLoading, setTopicViewLoading] = useState(false);
+  const [topicFilterExam, setTopicFilterExam] = useState('');
+  const [topicFilterTopic, setTopicFilterTopic] = useState('');
+
   // Topic creation
   const [showTopicModal, setShowTopicModal] = useState(false);
   const [sections, setSections] = useState<AdminSection[]>([]);
@@ -91,6 +101,21 @@ function AdminQuestionsPage() {
 
   useEffect(() => { loadQuestions(); }, [loadQuestions]);
   useEffect(() => { loadTopics(); }, []);
+
+  // Load topic view questions independently
+  const loadTopicViewQuestions = useCallback(async () => {
+    try {
+      setTopicViewLoading(true);
+      const result = await adminService.getQuestions(topicFilterExam || undefined, topicFilterTopic || undefined, undefined, 1, 1000);
+      setTopicViewQuestions(result.items);
+    } catch { /* ignore */ } finally {
+      setTopicViewLoading(false);
+    }
+  }, [topicFilterExam, topicFilterTopic]);
+
+  useEffect(() => {
+    if (viewMode === 'topics') loadTopicViewQuestions();
+  }, [viewMode, loadTopicViewQuestions]);
 
   // ─── Topic Actions ───────────
 
@@ -174,6 +199,7 @@ function AdminQuestionsPage() {
       setModalMode('view');
       setSuccess('Вопрос обновлён');
       loadQuestions();
+      if (viewMode === 'topics') loadTopicViewQuestions();
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Ошибка сохранения';
       setError(msg);
@@ -201,6 +227,7 @@ function AdminQuestionsPage() {
       setSuccess('Вопрос создан');
       loadQuestions();
       loadTopics();
+      if (viewMode === 'topics') loadTopicViewQuestions();
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Ошибка создания';
       setError(msg);
@@ -216,6 +243,7 @@ function AdminQuestionsPage() {
       setSuccess('Вопрос удалён');
       loadQuestions();
       loadTopics();
+      if (viewMode === 'topics') loadTopicViewQuestions();
     } catch {
       setError('Ошибка удаления');
     }
@@ -259,16 +287,44 @@ function AdminQuestionsPage() {
     }));
   };
 
-  // ─── Group by topic ──────────
+  // ─── Group by topic (from full topics list, not just questions) ──────────
 
   const groupedByTopic = (() => {
-    const map = new Map<string, { exam: string; section: string; questions: QuestionListItem[] }>();
-    for (const q of questions) {
-      const key = `${q.examTypeCode}|${q.sectionName}|${q.topicName}`;
-      if (!map.has(key)) map.set(key, { exam: q.examTypeCode, section: q.sectionName, questions: [] });
-      map.get(key)!.questions.push(q);
+    // Use all topics (including those with 0 questions)
+    let filtered = topics;
+    if (topicFilterExam) filtered = filtered.filter(t => t.examTypeCode === topicFilterExam);
+    if (topicFilterTopic) {
+      const q = topicFilterTopic.toLowerCase();
+      filtered = filtered.filter(t => t.name.toLowerCase().includes(q));
     }
-    return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b));
+
+    // Build questions lookup by topic name + exam
+    const qMap = new Map<string, QuestionListItem[]>();
+    for (const q of topicViewQuestions) {
+      const key = `${q.examTypeCode}|${q.topicName}`;
+      if (!qMap.has(key)) qMap.set(key, []);
+      qMap.get(key)!.push(q);
+    }
+
+    // Natural numeric sort: "1.1.1" < "1.1.2" < "2.1.1" < "10.1.1", "P1.1.1" groups after numbers
+    return filtered
+      .map(t => ({
+        topic: t,
+        questions: qMap.get(`${t.examTypeCode}|${t.name}`) ?? [],
+      }))
+      .sort((a, b) => {
+        // Sort by exam first
+        const examCmp = a.topic.examTypeCode.localeCompare(b.topic.examTypeCode);
+        if (examCmp !== 0) return examCmp;
+        // Natural numeric sort on topic name
+        const na = a.topic.name.match(/^[P]?(\d+)/);
+        const nb = b.topic.name.match(/^[P]?(\d+)/);
+        if (na && nb) {
+          const diff = parseInt(na[1]) - parseInt(nb[1]);
+          if (diff !== 0) return diff;
+        }
+        return a.topic.name.localeCompare(b.topic.name);
+      });
   })();
 
   // ─── Render ──────────────────
@@ -317,27 +373,8 @@ function AdminQuestionsPage() {
         </div>
       )}
 
-      {/* Toolbar: Filters + View Toggle */}
-      <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', flexWrap: 'wrap', alignItems: 'center' }}>
-        <select value={filterExam} onChange={e => { setFilterExam(e.target.value); setPage(1); }} style={{ padding: '0.5rem' }}>
-          <option value="">Все экзамены</option>
-          <option value="SAT">SAT</option>
-          <option value="TOEFL">TOEFL</option>
-          <option value="NUET">NUET</option>
-        </select>
-        <select value={filterDiff} onChange={e => { setFilterDiff(e.target.value); setPage(1); }} style={{ padding: '0.5rem' }}>
-          <option value="">Все уровни</option>
-          <option value="Easy">Easy</option>
-          <option value="Medium">Medium</option>
-          <option value="Hard">Hard</option>
-        </select>
-        <input
-          placeholder="Поиск по теме…"
-          value={filterTopic}
-          onChange={e => { setFilterTopic(e.target.value); setPage(1); }}
-          className="form-input"
-          style={{ flex: 1, minWidth: '140px' }}
-        />
+      {/* View Toggle */}
+      <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
         <div style={{ display: 'flex', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
           <button
             onClick={() => setViewMode('table')}
@@ -358,6 +395,54 @@ function AdminQuestionsPage() {
           >По темам</button>
         </div>
       </div>
+
+      {/* Table Filters */}
+      {viewMode === 'table' && (
+        <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', flexWrap: 'wrap', alignItems: 'center' }}>
+          <select value={filterExam} onChange={e => { setFilterExam(e.target.value); setPage(1); }} style={{ padding: '0.5rem' }}>
+            <option value="">Все экзамены</option>
+            <option value="SAT">SAT</option>
+            <option value="TOEFL">TOEFL</option>
+            <option value="NUET">NUET</option>
+            <option value="IELTS">IELTS</option>
+            <option value="CSCA">CSCA</option>
+          </select>
+          <select value={filterDiff} onChange={e => { setFilterDiff(e.target.value); setPage(1); }} style={{ padding: '0.5rem' }}>
+            <option value="">Все уровни</option>
+            <option value="Easy">Easy</option>
+            <option value="Medium">Medium</option>
+            <option value="Hard">Hard</option>
+          </select>
+          <input
+            placeholder="Поиск по теме…"
+            value={filterTopic}
+            onChange={e => { setFilterTopic(e.target.value); setPage(1); }}
+            className="form-input"
+            style={{ flex: 1, minWidth: '140px' }}
+          />
+        </div>
+      )}
+
+      {/* Topic View Filters */}
+      {viewMode === 'topics' && (
+        <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', flexWrap: 'wrap', alignItems: 'center' }}>
+          <select value={topicFilterExam} onChange={e => { setTopicFilterExam(e.target.value); setTopicPage(1); }} style={{ padding: '0.5rem' }}>
+            <option value="">Все экзамены</option>
+            <option value="SAT">SAT</option>
+            <option value="TOEFL">TOEFL</option>
+            <option value="NUET">NUET</option>
+            <option value="IELTS">IELTS</option>
+            <option value="CSCA">CSCA</option>
+          </select>
+          <input
+            placeholder="Поиск по теме…"
+            value={topicFilterTopic}
+            onChange={e => { setTopicFilterTopic(e.target.value); setTopicPage(1); }}
+            className="form-input"
+            style={{ flex: 1, minWidth: '140px' }}
+          />
+        </div>
+      )}
 
       {/* ─── TABLE VIEW ─── */}
       {viewMode === 'table' && (
@@ -425,61 +510,93 @@ function AdminQuestionsPage() {
       {/* ─── TOPICS VIEW ─── */}
       {viewMode === 'topics' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          {groupedByTopic.length === 0 && !isLoading && (
-            <div style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--text-secondary)' }}>
-              Нет вопросов по выбранным фильтрам
+          {topicViewLoading && (
+            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>
+              <div className="loading-spinner" style={{ margin: '0 auto 0.5rem' }} />
+              Загрузка тем…
             </div>
           )}
-          {groupedByTopic.map(([key, group]) => {
-            const topicName = key.split('|')[2];
-            const topicObj = topics.find(t => t.name === topicName && t.examTypeCode === group.exam);
-            return (
-              <div key={key} className="card" style={{ padding: '1rem 1.25rem' }}>
-                {/* Topic header */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                    <Badge bg={EXAM_COLORS[group.exam]}>{group.exam}</Badge>
-                    <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{group.section} →</span>
-                    <span style={{ fontWeight: 600, fontSize: '1rem' }}>{topicName}</span>
-                    <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>({group.questions.length})</span>
-                  </div>
-                  {topicObj && (
-                    <button
-                      className="btn btn-outline"
-                      style={{ fontSize: '0.8rem', padding: '0.3rem 0.7rem' }}
-                      onClick={() => startCreate(topicObj.id)}
-                    >
-                      Добавить
-                    </button>
-                  )}
-                </div>
-                {/* Questions list */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                  {group.questions.map(q => (
-                    <div
-                      key={q.id}
-                      onClick={() => openDetail(q.id)}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: '0.6rem',
-                        padding: '0.5rem 0.6rem', borderRadius: '6px', cursor: 'pointer',
-                        transition: 'background 0.15s',
-                        border: '1px solid var(--border-color)',
-                      }}
-                      onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-secondary)'}
-                      onMouseLeave={e => e.currentTarget.style.background = ''}
-                    >
-                      <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', minWidth: '2.5rem' }}>#{q.id}</span>
-                      <DiffDot diff={q.difficulty} />
-                      <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.9rem' }}>
-                        {q.text}
-                      </span>
-                      <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{q.answerCount} вар.</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+          {groupedByTopic.length === 0 && !topicViewLoading && (
+            <div style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--text-secondary)' }}>
+              Нет тем по выбранным фильтрам
+            </div>
+          )}
+          {(() => {
+            const topicTotalPages = Math.ceil(groupedByTopic.length / TOPICS_PER_PAGE);
+            const sliced = groupedByTopic.slice(
+              (topicPage - 1) * TOPICS_PER_PAGE,
+              topicPage * TOPICS_PER_PAGE
             );
-          })}
+            return (
+              <>
+                {groupedByTopic.length > 0 && (
+                  <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                    Показано {sliced.length} из {groupedByTopic.length} тем (стр. {topicPage}/{topicTotalPages})
+                  </div>
+                )}
+                {sliced.map(({ topic: t, questions: qs }) => (
+                    <div key={`${t.examTypeCode}-${t.id}`} className="card" style={{ padding: '1rem 1.25rem' }}>
+                      {/* Topic header */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: qs.length > 0 ? '0.75rem' : 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                          <Badge bg={EXAM_COLORS[t.examTypeCode]}>{t.examTypeCode}</Badge>
+                          <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{t.sectionName} →</span>
+                          <span style={{ fontWeight: 600, fontSize: '1rem' }}>{t.name}</span>
+                          <span style={{ color: t.questionCount > 0 ? 'var(--text-secondary)' : 'var(--error-color)', fontSize: '0.8rem' }}>
+                            ({t.questionCount} {t.questionCount === 0 ? 'нет вопросов' : `вопр.`})
+                          </span>
+                        </div>
+                        <button
+                          className="btn btn-outline"
+                          style={{ fontSize: '0.8rem', padding: '0.3rem 0.7rem' }}
+                          onClick={() => startCreate(t.id)}
+                        >
+                          Добавить
+                        </button>
+                      </div>
+                      {/* Questions list */}
+                      {qs.length > 0 && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                          {qs.map(q => (
+                          <div
+                            key={q.id}
+                            onClick={() => openDetail(q.id)}
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: '0.6rem',
+                              padding: '0.5rem 0.6rem', borderRadius: '6px', cursor: 'pointer',
+                              transition: 'background 0.15s',
+                              border: '1px solid var(--border-color)',
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-secondary)'}
+                            onMouseLeave={e => e.currentTarget.style.background = ''}
+                          >
+                            <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', minWidth: '2.5rem' }}>#{q.id}</span>
+                            <DiffDot diff={q.difficulty} />
+                            <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.9rem' }}>
+                              {q.text}
+                            </span>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{q.answerCount} вар.</span>
+                          </div>
+                        ))}
+                      </div>
+                      )}
+                    </div>
+                ))}
+                {/* Topic Pagination */}
+                {topicTotalPages > 1 && (
+                  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', padding: '1rem 0' }}>
+                    <button className="btn btn-outline" disabled={topicPage <= 1} onClick={() => setTopicPage(1)} style={{ fontSize: '0.85rem' }}>«</button>
+                    <button className="btn btn-outline" disabled={topicPage <= 1} onClick={() => setTopicPage(p => p - 1)} style={{ fontSize: '0.85rem' }}>‹</button>
+                    <span style={{ padding: '0 0.75rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                      {topicPage} / {topicTotalPages}
+                    </span>
+                    <button className="btn btn-outline" disabled={topicPage >= topicTotalPages} onClick={() => setTopicPage(p => p + 1)} style={{ fontSize: '0.85rem' }}>›</button>
+                    <button className="btn btn-outline" disabled={topicPage >= topicTotalPages} onClick={() => setTopicPage(topicTotalPages)} style={{ fontSize: '0.85rem' }}>»</button>
+                  </div>
+                )}
+              </>
+            );
+          })()}
         </div>
       )}
 

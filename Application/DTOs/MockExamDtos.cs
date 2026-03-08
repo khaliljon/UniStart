@@ -47,7 +47,9 @@ public record MockExamAttemptDto(
     string Status,
     int CurrentSectionIndex,
     int TotalSections,
-    DateTime StartedAt
+    DateTime StartedAt,
+    int TotalTimeMinutes,
+    IEnumerable<string>? SectionNames = null
 );
 
 /// <summary>Section state during an active attempt</summary>

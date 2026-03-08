@@ -423,7 +423,149 @@ public class StudyPlanService : IStudyPlanService
                     autoCompleted, userId);
         }
 
+        // ─── Adaptive redistribution check ───────────────
+        // When today's entries are all done and there are future entries,
+        // redistribute remaining work based on actual performance
+        if (autoCompleted > 0)
+            await AdaptPlanAsync(userId, plan.Id, today);
+
         return await GetTodayPlanAsync(userId);
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  ADAPTIVE PLAN REDISTRIBUTION
+    // ═══════════════════════════════════════════════════════
+
+    private async Task AdaptPlanAsync(int userId, int planId, DateTime today)
+    {
+        var goal = await _db.StudyGoals
+            .FirstOrDefaultAsync(g => g.UserId == userId && g.IsActive);
+        if (goal == null) return;
+
+        // Get all entries for this plan
+        var allEntries = await _db.StudyPlanEntries
+            .Include(e => e.Topic)
+            .Where(e => e.PlanId == planId)
+            .ToListAsync();
+
+        var futureIncomplete = allEntries
+            .Where(e => e.Date > today && !e.IsCompleted)
+            .ToList();
+
+        if (!futureIncomplete.Any()) return;
+
+        // Collect actual accuracy per topic from completed entries
+        var completedWithAnswers = allEntries
+            .Where(e => e.IsCompleted && e.QuestionsAnswered > 0)
+            .ToList();
+
+        var topicAccuracy = completedWithAnswers
+            .GroupBy(e => e.TopicId)
+            .ToDictionary(
+                g => g.Key,
+                g => g.Average(e => (double)e.CorrectAnswers / e.QuestionsAnswered));
+
+        // Identify weak topics (accuracy < 50%) that need more review
+        var weakTopicIds = topicAccuracy
+            .Where(kv => kv.Value < 0.5)
+            .Select(kv => kv.Key)
+            .ToHashSet();
+
+        // Strong topics (accuracy >= 80%) — can drop some review entries
+        var strongTopicIds = topicAccuracy
+            .Where(kv => kv.Value >= 0.8)
+            .Select(kv => kv.Key)
+            .ToHashSet();
+
+        // Remove redundant review entries for strong topics
+        var droppedCount = 0;
+        var futureReviews = futureIncomplete
+            .Where(e => e.Type == StudyEntryType.Review && strongTopicIds.Contains(e.TopicId))
+            .OrderByDescending(e => e.Date)
+            .ToList();
+
+        // Keep at most 1 future review for strong topics
+        var reviewsByTopic = futureReviews.GroupBy(e => e.TopicId);
+        foreach (var group in reviewsByTopic)
+        {
+            foreach (var extra in group.Skip(1))
+            {
+                _db.StudyPlanEntries.Remove(extra);
+                futureIncomplete.Remove(extra);
+                droppedCount++;
+            }
+        }
+
+        // Redistribute remaining entries evenly across remaining days
+        var daysUntilExam = Math.Max(1, (int)(goal.TargetDate.Date - today).TotalDays);
+        var remainingDays = daysUntilExam;
+
+        if (futureIncomplete.Any())
+        {
+            // Sort: weakness first, then new, then review, then practice
+            var sorted = futureIncomplete
+                .OrderBy(e => e.Type == StudyEntryType.Weakness ? 0 :
+                              e.Type == StudyEntryType.New ? 1 :
+                              e.Type == StudyEntryType.Review ? 2 : 3)
+                .ThenBy(e => weakTopicIds.Contains(e.TopicId) ? 0 : 1)
+                .ToList();
+
+            var dailyLoad = new Dictionary<int, int>();
+            for (int d = 0; d < remainingDays; d++)
+                dailyLoad[d] = 0;
+
+            var targetDaily = Math.Clamp(
+                sorted.Sum(e => e.RecommendedMinutes) / Math.Max(remainingDays, 1),
+                MinDailyMinutes, MaxDailyMinutes);
+
+            int dayIdx = 0;
+            foreach (var entry in sorted)
+            {
+                var day = FindAvailableDay(dailyLoad, dayIdx, remainingDays, targetDaily);
+                entry.Date = DateTime.SpecifyKind(today.AddDays(day + 1).Date, DateTimeKind.Utc);
+                dailyLoad[day] += entry.RecommendedMinutes;
+                dayIdx = day;
+            }
+        }
+
+        // Add extra weakness practice entries for low-accuracy topics
+        var topicQCounts = await _db.Questions
+            .Where(q => weakTopicIds.Contains(q.TopicId))
+            .GroupBy(q => q.TopicId)
+            .Select(g => new { TopicId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.TopicId, x => x.Count);
+
+        var addedCount = 0;
+        foreach (var weakId in weakTopicIds)
+        {
+            // Only add if there aren't already 2+ future entries for this topic
+            var existingFutureCount = futureIncomplete.Count(e => e.TopicId == weakId);
+            if (existingFutureCount >= 2) continue;
+
+            var maxQ = topicQCounts.GetValueOrDefault(weakId, 5);
+            if (maxQ == 0) continue;
+
+            // Schedule weakness practice within the first third of remaining days
+            var targetDay = Math.Min(remainingDays / 3, remainingDays - 1);
+            _db.StudyPlanEntries.Add(new StudyPlanEntry
+            {
+                PlanId = planId,
+                TopicId = weakId,
+                Date = DateTime.SpecifyKind(today.AddDays(targetDay + 1).Date, DateTimeKind.Utc),
+                RecommendedMinutes = (int)(DefaultTopicMinutes * 1.5),
+                Type = StudyEntryType.Weakness,
+                RecommendedQuestions = Math.Min(8, maxQ)
+            });
+            addedCount++;
+        }
+
+        if (droppedCount > 0 || addedCount > 0)
+        {
+            await _db.SaveChangesAsync();
+            _logger.LogInformation(
+                "Adapted plan for user {UserId}: dropped {Dropped} strong reviews, added {Added} weakness entries",
+                userId, droppedCount, addedCount);
+        }
     }
 
     // ═══════════════════════════════════════════════════════
@@ -730,6 +872,7 @@ public class StudyPlanService : IStudyPlanService
 
     /// <summary>
     /// Find the next available day that hasn't exceeded the daily minutes target.
+    /// Falls back to the globally least-loaded day to prevent piling on the last day.
     /// </summary>
     private static int FindAvailableDay(
         Dictionary<int, int> dailyLoad, int startDay, int totalDays, int targetMinutes)
@@ -741,10 +884,11 @@ public class StudyPlanService : IStudyPlanService
                 return d;
         }
 
-        // If all days are full, find the least loaded day from startDay
-        return Enumerable.Range(startDay, Math.Max(1, totalDays - startDay))
+        // All forward days are at target — find the globally least-loaded day
+        // This prevents everything piling onto the last day
+        return Enumerable.Range(0, totalDays)
             .OrderBy(d => dailyLoad.GetValueOrDefault(d, 0))
-            .FirstOrDefault(startDay);
+            .First();
     }
 
     // ═══════════════════════════════════════════════════════

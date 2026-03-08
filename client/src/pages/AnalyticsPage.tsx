@@ -37,7 +37,7 @@ const EXAM_SKILL_MAP: Record<string, string[]> = {
   TOEFL: ['SK_READ', 'SK_WRITE', 'SK_LISTEN', 'SK_SPEAK'],
   NUET: ['SK_MATH', 'SK_CRIT'],
   IELTS: ['SK_READ', 'SK_WRITE', 'SK_LISTEN', 'SK_SPEAK'],
-  CSCA: ['SK_MATH', 'SK_CRIT'],
+  CSCA: ['SK_MATH', 'SK_PHYS', 'SK_CHEM', 'SK_CN_TECH', 'SK_CN_HUM'],
 };
 
 const EXAM_LABELS: Record<string, string> = {
@@ -47,6 +47,15 @@ const EXAM_LABELS: Record<string, string> = {
   IELTS: 'IELTS',
   CSCA: 'CSCA',
 };
+
+// Reverse map: skillCode → list of exam labels
+const SKILL_EXAM_LABELS: Record<string, string[]> = {};
+for (const [exam, codes] of Object.entries(EXAM_SKILL_MAP)) {
+  for (const code of codes) {
+    if (!SKILL_EXAM_LABELS[code]) SKILL_EXAM_LABELS[code] = [];
+    SKILL_EXAM_LABELS[code].push(EXAM_LABELS[exam]);
+  }
+}
 
 function AnalyticsPage() {
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
@@ -79,6 +88,14 @@ function AnalyticsPage() {
     return 'var(--error-color)';
   };
 
+  // Format skill name with exam type prefix when showing all skills
+  const getSkillLabel = (skillName: string, skillCode: string) => {
+    if (selectedExam !== 'ALL') return skillName;
+    const exams = SKILL_EXAM_LABELS[skillCode];
+    if (!exams || exams.length === 0) return skillName;
+    return `${exams.join('/')} — ${skillName}`;
+  };
+
   // Filter skill profiles and history by selected exam
   const allowedSkillCodes = selectedExam === 'ALL' ? null : EXAM_SKILL_MAP[selectedExam] ?? null;
   const filteredProfiles = allowedSkillCodes
@@ -94,16 +111,17 @@ function AnalyticsPage() {
     filteredHistory.forEach((p) => {
       const d = new Date(p.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
       if (!byDate[d]) byDate[d] = {};
-      byDate[d][p.skillName] = p.level;
+      const label = getSkillLabel(p.skillName, p.skillCode);
+      byDate[d][label] = p.level;
     });
     return Object.entries(byDate).map(([date, skills]) => ({ date, ...skills }));
   })();
 
-  const uniqueSkills = [...new Set(filteredHistory.map((p) => p.skillName))];
+  const uniqueSkills = [...new Set(filteredHistory.map((p) => getSkillLabel(p.skillName, p.skillCode)))];
 
   // Radar chart data
   const radarData = filteredProfiles.map((s) => ({
-    skill: s.skillName,
+    skill: getSkillLabel(s.skillName, s.skillCode),
     level: s.level,
     fullMark: 100,
   }));
@@ -324,7 +342,7 @@ function AnalyticsPage() {
                   className="skill-item animate-slide-in"
                   style={{ animationDelay: `${1.0 + index * 0.1}s` }}
                 >
-                  <span className="skill-name">{skill.skillName}</span>
+                  <span className="skill-name">{getSkillLabel(skill.skillName, skill.skillCode)}</span>
                   <div className="skill-bar" style={{ position: 'relative' }}>
                     {/* Confidence interval band */}
                     {hasConfidence && (

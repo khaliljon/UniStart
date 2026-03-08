@@ -48,7 +48,20 @@ public class AnalyticsService : IAnalyticsService
             .OrderByDescending(p => p.Level)
             .ToListAsync();
 
-        return profiles.Select(p =>
+        var existingSkillIds = profiles.Select(p => p.SkillId).ToHashSet();
+
+        // Include all skills (even unpracticed) so the dashboard shows the full picture
+        var allSkills = await _context.Skills.ToListAsync();
+        var placeholders = allSkills
+            .Where(s => !existingSkillIds.Contains(s.Id))
+            .Select(s => new UserSkillProfileDto(
+                s.Id, s.Name, s.Code,
+                Level: 0, LastUpdated: DateTime.UtcNow,
+                Theta: 0, ThetaSE: 1,
+                ConfidenceLow: 0, ConfidenceHigh: 0
+            ));
+
+        var mapped = profiles.Select(p =>
         {
             var confLow = IrtMath.ThetaToLevel(p.Theta - 1.96 * p.ThetaSE);
             var confHigh = IrtMath.ThetaToLevel(p.Theta + 1.96 * p.ThetaSE);
@@ -64,6 +77,8 @@ public class AnalyticsService : IAnalyticsService
                 confHigh
             );
         });
+
+        return mapped.Concat(placeholders).OrderByDescending(p => p.Level);
     }
 
     // ─── Stage 4: Enhanced Analytics ───────────────────────────────

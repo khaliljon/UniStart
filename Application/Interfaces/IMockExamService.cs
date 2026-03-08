@@ -10,8 +10,8 @@ public interface IMockExamService
     /// <summary>Get full mock exam details with sections</summary>
     Task<MockExamDetailDto?> GetMockExamDetailAsync(int mockExamId);
 
-    /// <summary>Start a new mock exam attempt</summary>
-    Task<MockExamAttemptDto> StartMockExamAsync(int userId, int mockExamId);
+    /// <summary>Start a new mock exam attempt (optionally with selected section IDs for configurable exams like CSCA)</summary>
+    Task<MockExamAttemptDto> StartMockExamAsync(int userId, int mockExamId, List<int>? selectedSectionIds = null);
 
     /// <summary>Get the current section's questions for an active attempt</summary>
     Task<MockExamSectionStateDto?> GetCurrentSectionAsync(int userId, int attemptId);
@@ -24,6 +24,9 @@ public interface IMockExamService
 
     /// <summary>Complete current section and move to next (or complete exam if last section)</summary>
     Task<MockExamAttemptDto?> CompleteSectionAsync(int userId, int attemptId);
+
+    /// <summary>Complete the entire exam immediately</summary>
+    Task<MockExamAttemptDto?> CompleteExamAsync(int userId, int attemptId);
 
     /// <summary>Get mock exam results after completion</summary>
     Task<MockExamResultDto?> GetResultsAsync(int userId, int attemptId);

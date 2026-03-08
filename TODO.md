@@ -1156,97 +1156,689 @@ T-6 (баг-фиксы)  ──→  T-7 (enrollment)  ──→  T-8 (tutor UI) 
 
 ---
 
-## 🚀 Что нужно для полноценного запуска
+## 🚀 ПОЛНЫЙ ПЛАН ДЕПЛОЯ И ПОДДЕРЖКИ ПЛАТФОРМЫ
 
-### Фаза 1: Критический путь (1–2 недели)
+> **Последнее обновление**: 6 марта 2026
+> **Статус**: Docker-инфраструктура готова, нужно развернуть на хостинге, настроить домен, SSL, CI/CD, мониторинг.
 
-> **Без этого запускаться нельзя**
+---
 
-#### 1.1 Безопасность 🔒
-- [x] Вынести секреты в переменные окружения (JWT SecretKey, SMTP Password, DB ConnectionString) — OP-1
-- [x] Создать `appsettings.Production.json` (без секретов, всё через env vars) — OP-1
-- [x] Rate limiting на API (.NET 8 `RateLimiter`) — OP-2
-- [x] Input validation (FluentValidation на DTO) — OP-11
-- [x] CORS — ограничить origins для production-домена — OP-19
-- [ ] HTTPS обязательно (Let's Encrypt)
-- [x] JWT SecretKey — читается из env var JwtSettings__SecretKey — OP-1
-- [x] Refresh tokens добавлены (POST /api/auth/refresh) — Bug #12 fix
+### ЭТАП 0: Что уже готово (не нужно делать заново)
 
-#### 1.2 Контейнеризация и деплой 🐳
-- [x] Dockerfile для .NET 8 backend (`mcr.microsoft.com/dotnet/aspnet:8.0`, multi-stage build)
-- [x] Dockerfile для frontend (Vite build → nginx для раздачи статики)
-- [x] `docker-compose.yml` (API + PostgreSQL + frontend nginx reverse proxy)
-- [x] `.env.example` с переменными окружения
-- [x] Health check endpoint (`/health`) — реализовано (OP-6)
-- [x] Автоматические миграции при старте (dev mode)
+| Компонент | Статус | Файл |
+|-----------|--------|------|
+| Dockerfile backend (.NET 8 multi-stage) | ✅ | `Dockerfile` |
+| Dockerfile frontend (Vite → nginx) | ✅ | `client/Dockerfile` |
+| docker-compose.yml (API + PostgreSQL + nginx) | ✅ | `docker-compose.yml` |
+| nginx reverse proxy + SPA fallback + WebSocket | ✅ | `client/nginx.conf` |
+| .env.example (все переменные задокументированы) | ✅ | `.env.example` |
+| Health checks (/health, /health/ready, /health/live) | ✅ | `Program.cs` |
+| Секреты через env vars (JWT, DB, SMTP) | ✅ | `Program.cs`, `appsettings.Production.json` |
+| Rate limiting (auth 10/мин, API 120/мин) | ✅ | `Program.cs` |
+| Security headers (HSTS, CSP, X-Frame) | ✅ | `Program.cs`, `nginx.conf` |
+| CORS из конфигурации (не захардкожен) | ✅ | `appsettings.Production.json` |
+| Бэкап-скрипты (pg_dump + cron) | ✅ | `scripts/backup.sh`, `scripts/restore.sh` |
+| Serilog structured logging | ✅ | `Program.cs` |
+| Hangfire (background jobs + dashboard) | ✅ | `Program.cs` |
+| Response compression (Brotli + Gzip) | ✅ | `Program.cs` |
+| API versioning (header + query string) | ✅ | Все контроллеры |
 
-#### 1.3 CI/CD 🔄
-- [ ] GitHub Actions workflow: build → lint → type-check → test → docker push → deploy
-- [ ] Автосборка при push в `main`
-- [ ] Docker image registry (GitHub Container Registry — бесплатно)
+---
 
-#### 1.4 Хостинг
-- [ ] Выбрать: VPS (Hetzner/DigitalOcean) или PaaS (Railway/Render) или Azure
-- [ ] Настроить домен и DNS
-- [ ] SSL-сертификат (Let's Encrypt автообновление через certbot/nginx)
+### ЭТАП 1: Регистрация домена и DNS
 
-### Фаза 2: Качество (2–3 недели)
+#### 1.1 Выбор и покупка домена
 
-> **Для стабильной работы и уверенности**
+- [ ] **Зарегистрировать домен `unistart.kz`**
+  - Регистратор: [ps.kz](https://ps.kz) или [hoster.kz](https://hoster.kz) (~5 000 ₸/год)
+  - Проверить доступность: `whois unistart.kz`
+  - Альтернативы: `unistart.app` (Google Domains, ~$14/год), `unistart.io`, `unistart.edu.kz`
+  - Зарегистрировать **оба** `.kz` и `.app` если бюджет позволяет
 
-#### 2.1 Тестирование 🧪
-- [ ] Unit-тесты: `AdaptiveEngineService`, `StudyPlanService`, `ScorePredictionService` (xUnit + Moq)
-- [ ] Integration-тесты: ключевые API flows (WebApplicationFactory + TestContainers)
-- [ ] Frontend-тесты: Vitest + React Testing Library (основные пользовательские сценарии)
-- [ ] Покрытие ≥ 60% для бизнес-логики
+- [ ] **Подключить DNS к Cloudflare** (бесплатно)
+  - Создать аккаунт на [cloudflare.com](https://cloudflare.com)
+  - Добавить домен → получить nameservers (`xxx.ns.cloudflare.com`)
+  - В регистраторе (ps.kz): заменить NS-записи на Cloudflare's
+  - Дождаться пропагации DNS (до 24ч, обычно 1–2ч)
 
-#### 2.2 Логирование и мониторинг 📋
-- [x] Serilog → structured logging (файл + console) — OP-5
-- [x] Global exception middleware (единый формат ошибок API) — OP-4
-- [ ] Uptime monitoring (UptimeRobot / Healthchecks.io — бесплатно)
-- [ ] Application Insights или Seq для production
+- [ ] **Настроить DNS-записи в Cloudflare**
+  ```
+  Type    Name             Content              Proxy
+  ──────  ──────────────   ──────────────────   ──────
+  A       unistart.kz      <IP сервера>         ✅ Proxied
+  A       www              <IP сервера>         ✅ Proxied
+  A       api              <IP сервера>         ✅ Proxied  (если отдельный субдомен)
+  CNAME   www              unistart.kz          ✅ Proxied  (альтернатива A-записи)
+  MX      @                smtp.gmail.com       ❌ DNS only (если свои email)
+  TXT     @                v=spf1 include:_spf.google.com ~all  ❌ DNS only
+  ```
 
-#### 2.3 Производительность ⚡
-- [x] Индексы БД: `UserAnswers(UserId, AnsweredAt)`, `Questions(TopicId)`, `StudyPlanEntries(PlanId, Date)` — OP-8
-- [x] Кэширование: IMemoryCache для экзаменов/тем (TTL 15 мин) — OP-10
-- [x] Пагинация на всех list-эндпоинтах — OP-13
-- [x] Gzip/Brotli compression (middleware) — OP-17
-- [x] Frontend: React.lazy + Suspense для lazy-loading страниц (26 страниц)
-- [x] Frontend: Vite chunk splitting и tree shaking
+- [ ] **Cloudflare: включить полезные настройки** (бесплатно)
+  - SSL/TLS → Full (Strict) — шифрование между Cloudflare и сервером
+  - Always Use HTTPS → ON
+  - Auto Minify → JS, CSS, HTML
+  - Brotli → ON
+  - Speed → Caching → Browser Cache TTL: 1 month
+  - Security → WAF → Managed Rules → ON (бесплатная защита от ботов)
+  - Page Rules: `http://*unistart.kz/*` → Always Use HTTPS
 
-### Фаза 3: Рост (после запуска)
+---
 
-> **Для масштабирования и выхода в прибыль**
+### ЭТАП 2: Аренда VPS-сервера
 
-#### 3.1 Расширение контента 📚
-- [ ] Довести базу до 300+ вопросов (минимум 15–20 на тему)
-- [ ] Реальные форматы SAT Digital (из College Board practice)
+#### 2.1 Выбор хостинга
+
+| Провайдер | Тариф | CPU | RAM | SSD | Цена | Подходит для |
+|-----------|-------|-----|-----|-----|------|-------------|
+| **Hetzner** (рекомендуется) | CX22 | 2 vCPU | 4 GB | 40 GB | **€4.35/мес** (~$5) | Старт, до 500 юзеров |
+| **Hetzner** | CX32 | 4 vCPU | 8 GB | 80 GB | **€8.45/мес** (~$10) | 500–2000 юзеров |
+| DigitalOcean | Basic | 2 vCPU | 4 GB | 80 GB | $24/мес | Дороже, но удобнее |
+| Timeweb Cloud (RU) | S2 | 2 vCPU | 4 GB | 40 GB | ₽700/мес (~$8) | Если нужен RU дата-центр |
+| Aeza.net | — | 2 vCPU | 4 GB | 40 GB | €3.99/мес | Бюджетный вариант |
+
+> **Рекомендация**: Hetzner CX22 (Falkenstein или Helsinki дата-центр) — лучшее соотношение цена/производительность для Казахстана.
+
+- [ ] **Зарегистрироваться на [hetzner.com](https://hetzner.com)**
+- [ ] **Создать Cloud сервер:**
+  - Image: **Ubuntu 24.04 LTS**
+  - Type: CX22 (shared vCPU, 2 core, 4 GB RAM, 40 GB SSD)
+  - Location: Helsinki (HEL1) — ближайший к KZ
+  - Network: Public IPv4 + IPv6
+  - SSH Key: загрузить свой публичный ключ (не использовать пароль)
+  - Firewall: создать правило (22 SSH, 80 HTTP, 443 HTTPS)
+- [ ] **Записать IP сервера** → вписать в DNS (Этап 1.3)
+
+#### 2.2 Первоначальная настройка сервера
+
+```bash
+# Подключение
+ssh root@<IP>
+
+# 1. Обновление системы
+apt update && apt upgrade -y
+
+# 2. Создать пользователя (не работать под root)
+adduser deploy
+usermod -aG sudo deploy
+# Скопировать SSH-ключ
+rsync --archive --chown=deploy:deploy ~/.ssh /home/deploy
+
+# 3. Отключить root SSH и пароли
+nano /etc/ssh/sshd_config
+#   PermitRootLogin no
+#   PasswordAuthentication no
+systemctl restart sshd
+
+# 4. Настроить UFW firewall
+ufw allow OpenSSH
+ufw allow 80/tcp
+ufw allow 443/tcp
+ufw enable
+
+# 5. Установить Docker + Docker Compose
+curl -fsSL https://get.docker.com | sh
+usermod -aG docker deploy
+# Перелогиниться
+su - deploy
+docker --version  # 27.x
+docker compose version  # v2.x
+
+# 6. Установить fail2ban (защита от brute-force SSH)
+apt install -y fail2ban
+systemctl enable fail2ban
+
+# 7. Настроить swap (для 4GB RAM серверов)
+fallocate -l 2G /swapfile
+chmod 600 /swapfile
+mkswap /swapfile
+swapon /swapfile
+echo '/swapfile none swap sw 0 0' >> /etc/fstab
+
+# 8. Автообновление безопасности
+apt install -y unattended-upgrades
+dpkg-reconfigure -plow unattended-upgrades
+```
+
+- [ ] Создать пользователя `deploy`, отключить root SSH
+- [ ] Настроить UFW (22, 80, 443)
+- [ ] Установить Docker + Docker Compose
+- [ ] Установить fail2ban
+- [ ] Настроить swap 2 GB
+- [ ] Включить unattended-upgrades
+
+---
+
+### ЭТАП 3: SSL-сертификат (HTTPS)
+
+#### Вариант A: Cloudflare (рекомендуется — без certbot)
+
+Если DNS через Cloudflare с Proxy ON → SSL уже работает автоматически:
+- Cloudflare ↔ пользователь: их сертификат (автоматический)
+- Cloudflare ↔ сервер: Origin Certificate (15 лет, бесплатный)
+
+- [ ] **Cloudflare SSL → Full (Strict)**
+- [ ] **Создать Origin Certificate** (Cloudflare Dashboard → SSL/TLS → Origin Server → Create Certificate)
+  - Key type: RSA 2048
+  - Hostnames: `unistart.kz`, `*.unistart.kz`
+  - Validity: 15 years
+  - Скачать `.pem` (cert) и `.key` (private key)
+- [ ] **Положить сертификат на сервер:**
+  ```bash
+  mkdir -p /home/deploy/ssl
+  # Загрузить файлы через scp
+  scp origin.pem deploy@<IP>:/home/deploy/ssl/cert.pem
+  scp origin.key deploy@<IP>:/home/deploy/ssl/key.pem
+  chmod 600 /home/deploy/ssl/key.pem
+  ```
+- [ ] **Обновить nginx.conf — добавить 443:**
+  ```nginx
+  server {
+      listen 80;
+      server_name unistart.kz www.unistart.kz;
+      return 301 https://$host$request_uri;
+  }
+
+  server {
+      listen 443 ssl;
+      server_name unistart.kz www.unistart.kz;
+
+      ssl_certificate     /etc/nginx/ssl/cert.pem;
+      ssl_certificate_key /etc/nginx/ssl/key.pem;
+
+      # ... все существующие location блоки ...
+  }
+  ```
+- [ ] **docker-compose.yml — пробросить SSL и 443:**
+  ```yaml
+  client:
+    volumes:
+      - /home/deploy/ssl:/etc/nginx/ssl:ro
+    ports:
+      - "80:80"
+      - "443:443"
+  ```
+
+#### Вариант B: Let's Encrypt (если без Cloudflare Proxy)
+
+- [ ] Установить certbot:
+  ```bash
+  apt install -y certbot
+  certbot certonly --standalone -d unistart.kz -d www.unistart.kz
+  ```
+- [ ] Настроить автообновление: `certbot renew` (cron автоматически добавляется)
+- [ ] Пробросить `/etc/letsencrypt/live/` в docker-compose
+
+---
+
+### ЭТАП 4: Деплой приложения на сервер
+
+#### 4.1 Подготовка на сервере
+
+```bash
+# Под пользователем deploy
+ssh deploy@<IP>
+
+# Создать директорию проекта
+mkdir -p ~/unistart
+cd ~/unistart
+```
+
+- [ ] **Вариант A: Git clone (рекомендуется)**
+  ```bash
+  # Если репозиторий приватный — добавить deploy key
+  ssh-keygen -t ed25519 -C "deploy@unistart" -f ~/.ssh/deploy_key
+  # Добавить ~/.ssh/deploy_key.pub в GitHub → Settings → Deploy Keys (read-only)
+
+  git clone git@github.com:<user>/UniStart.git .
+  ```
+
+- [ ] **Вариант B: SCP/rsync (без Git на сервере)**
+  ```bash
+  # С локальной машины
+  rsync -avz --exclude='node_modules' --exclude='bin' --exclude='obj' \
+    ./ deploy@<IP>:~/unistart/
+  ```
+
+#### 4.2 Настройка .env
+
+```bash
+cd ~/unistart
+cp .env.example .env
+nano .env
+```
+
+- [ ] **Заполнить `.env` на сервере:**
+  ```env
+  # ── PostgreSQL ──
+  POSTGRES_PASSWORD=<сгенерировать: openssl rand -base64 32>
+
+  # ── JWT ──
+  JWT_SECRET_KEY=<сгенерировать: openssl rand -base64 64>
+
+  # ── SMTP ──
+  SMTP_SENDER_EMAIL=noreply@unistart.kz
+  SMTP_USERNAME=<gmail или service email>
+  SMTP_PASSWORD=<app password из Google>
+  SMTP_ENABLED=true
+
+  # ── CORS ──
+  CORS_ORIGIN=https://unistart.kz
+
+  # ── LLM (если используется OCR-импорт) ──
+  LLM_API_KEY=<deepseek API key>
+  ```
+
+> **Генерация безопасных секретов:**
+> ```bash
+> # Пароль БД
+> openssl rand -base64 32
+> # JWT SecretKey (минимум 64 символа для HMAC-SHA256)
+> openssl rand -base64 64
+> ```
+
+#### 4.3 Первый запуск
+
+```bash
+cd ~/unistart
+
+# Собрать и запустить все контейнеры
+docker compose up -d --build
+
+# Проверить статус
+docker compose ps
+# Ожидаемо: postgres (healthy), api (healthy), client (healthy)
+
+# Проверить логи
+docker compose logs api --tail 50
+docker compose logs client --tail 20
+
+# Проверить здоровье
+curl http://localhost:5009/health
+curl http://localhost/health
+
+# Проверить из интернета (после DNS-настройки)
+curl https://unistart.kz/health
+curl https://unistart.kz/api/exams
+```
+
+- [ ] `docker compose up -d --build` — все 3 контейнера запущены
+- [ ] `docker compose ps` — все healthy
+- [ ] `curl https://unistart.kz` — лендинг открывается
+- [ ] `curl https://unistart.kz/api/exams` — API отвечает JSON
+- [ ] `curl https://unistart.kz/health` — ok
+- [ ] Проверить регистрацию, логин, практику, mock exam через браузер
+
+#### 4.4 Миграции и начальные данные
+
+```bash
+# EF Core миграции запускаются автоматически при старте API (в dev mode)
+# Для production — запуск вручную или через entrypoint:
+docker compose exec api dotnet ef database update
+
+# Или через SQL напрямую:
+docker compose exec postgres psql -U postgres -d UniStart -c "\dt"
+```
+
+- [ ] Убедиться что все таблицы созданы
+- [ ] Seeder отработал (экзамены, вопросы, тьюторы, стратегии заполнены)
+- [ ] Тестовые аккаунты работают: `test@unistart.kz / test123`, `admin@unistart.kz / admin123`
+
+---
+
+### ЭТАП 5: CI/CD — Автоматический деплой
+
+#### 5.1 GitHub Actions Workflow
+
+- [ ] **Создать `.github/workflows/deploy.yml`:**
+
+```yaml
+name: Build & Deploy
+
+on:
+  push:
+    branches: [main]
+
+env:
+  REGISTRY: ghcr.io
+  API_IMAGE: ghcr.io/${{ github.repository }}/api
+  CLIENT_IMAGE: ghcr.io/${{ github.repository }}/client
+
+jobs:
+  # ── 1. Проверки ────────────────────────────────────
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Backend: build + test
+      - uses: actions/setup-dotnet@v4
+        with: { dotnet-version: '8.0.x' }
+      - run: dotnet build --no-restore
+      - run: dotnet test --no-build --verbosity normal
+
+      # Frontend: type-check
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: cd client && npm ci && npx tsc --noEmit
+
+  # ── 2. Build Docker images ─────────────────────────
+  build:
+    needs: check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ env.API_IMAGE }}:latest,${{ env.API_IMAGE }}:${{ github.sha }}
+
+      - uses: docker/build-push-action@v5
+        with:
+          context: ./client
+          push: true
+          tags: ${{ env.CLIENT_IMAGE }}:latest,${{ env.CLIENT_IMAGE }}:${{ github.sha }}
+
+  # ── 3. Deploy to server ─────────────────────────────
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: deploy
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd ~/unistart
+            docker compose pull
+            docker compose up -d --remove-orphans
+            docker image prune -f
+```
+
+- [ ] **Добавить GitHub Secrets** (Settings → Secrets → Actions):
+  - `SERVER_HOST` — IP сервера
+  - `SSH_PRIVATE_KEY` — приватный SSH-ключ для пользователя `deploy`
+
+- [ ] **Обновить docker-compose.yml для production** (использовать registry images вместо build):
+  ```yaml
+  # docker-compose.prod.yml (оверлайд)
+  services:
+    api:
+      image: ghcr.io/<user>/unistart/api:latest
+      build: !reset null
+    client:
+      image: ghcr.io/<user>/unistart/client:latest
+      build: !reset null
+  ```
+
+- [ ] Тестовый push в `main` → проверить что pipeline зелёный → сервер обновился
+
+#### 5.2 Rollback
+
+```bash
+# Откатить на предыдущую версию
+docker compose pull  # если нужно
+docker compose up -d --remove-orphans
+
+# Или конкретный SHA:
+# API_IMAGE=ghcr.io/<user>/unistart/api:<prev-sha>
+# docker compose up -d
+```
+
+---
+
+### ЭТАП 6: Бэкапы и восстановление
+
+#### 6.1 Автоматические бэкапы PostgreSQL
+
+- [ ] **Настроить cron на сервере:**
+  ```bash
+  # Скопировать скрипт
+  cp scripts/backup.sh ~/unistart/backup.sh
+  chmod +x ~/unistart/backup.sh
+
+  # Crontab
+  crontab -e
+  # Ежедневно 03:00 UTC
+  0 3 * * * /home/deploy/unistart/backup.sh daily >> /home/deploy/unistart/logs/backup.log 2>&1
+  # Еженедельно Вс 04:00 UTC
+  0 4 * * 0 /home/deploy/unistart/backup.sh weekly >> /home/deploy/unistart/logs/backup.log 2>&1
+  ```
+
+- [ ] **Off-site бэкапы** (хотя бы один из вариантов):
+  - Cloudflare R2 ($0.015/GB/мес, 10 GB бесплатно) — `rclone` или `aws s3 cp`
+  - Hetzner Storage Box (1 TB за €3.81/мес)
+  - Backblaze B2 ($0.005/GB/мес, 10 GB бесплатно)
+
+- [ ] **Retention:** 7 daily + 4 weekly + 2 monthly
+- [ ] **Протестировать восстановление** (1 раз перед запуском):
+  ```bash
+  # Создать тестовый бэкап
+  ./backup.sh test
+  # Восстановить в тестовую БД
+  docker compose exec postgres createdb -U postgres UniStart_test
+  gunzip -c backups/test_*.sql.gz | docker compose exec -T postgres psql -U postgres UniStart_test
+  # Проверить данные
+  docker compose exec postgres psql -U postgres UniStart_test -c "SELECT count(*) FROM \"Questions\";"
+  ```
+
+---
+
+### ЭТАП 7: Мониторинг и алерты
+
+#### 7.1 Uptime & Health monitoring (бесплатно)
+
+- [ ] **UptimeRobot** ([uptimerobot.com](https://uptimerobot.com)) — 50 мониторов бесплатно
+  - Monitor 1: `https://unistart.kz` (HTTP keyword: `UniStart`)
+  - Monitor 2: `https://unistart.kz/health` (HTTP keyword: `Healthy`)
+  - Monitor 3: `https://unistart.kz/api/exams` (HTTP 200)
+  - Alert: email + Telegram бот при downtime
+  - Check interval: 5 минут
+
+- [ ] **Healthchecks.io** ([healthchecks.io](https://healthchecks.io)) — для cron-мониторинга
+  - Мониторить backup cron (пинг после каждого бэкапа)
+  - Мониторить Hangfire jobs (streak-reminder, weekly-digest)
+
+#### 7.2 Логирование (production)
+
+- [ ] **Serilog → File** (уже настроено, rolling 14 дней)
+  - Примонтировать volume: `- ./logs:/app/logs` в docker-compose
+  - Логи доступны: `~/unistart/logs/unistart-*.txt`
+
+- [ ] **Опционально: централизованные логи**
+  - **Seq** (self-hosted, бесплатно для 1 юзера): Docker + `Serilog.Sinks.Seq`
+  - **Grafana Loki** (self-hosted, бесплатно): если нужна визуализация
+  - **Betterstack Logs** (100 MB/мес бесплатно): облачное решение
+
+#### 7.3 Error tracking
+
+- [ ] **Sentry** ([sentry.io](https://sentry.io)) — 5K events/мес бесплатно
+  - Backend: `Sentry.AspNetCore` NuGet
+  - Frontend: `@sentry/react` npm
+  - Автоматический capture exceptions + breadcrumbs
+  - Alert при новых ошибках → email / Telegram
+
+#### 7.4 Server-level мониторинг
+
+- [ ] **Netdata** (self-hosted, бесплатно): красивый dashboard для CPU/RAM/disk/network
+  ```bash
+  docker run -d --name netdata \
+    -p 19999:19999 \
+    -v /proc:/host/proc:ro \
+    -v /sys:/host/sys:ro \
+    netdata/netdata
+  ```
+  - Доступ: `http://<IP>:19999` (закрыть через firewall, открыть только для своего IP)
+
+---
+
+### ЭТАП 8: Email (Production SMTP)
+
+#### Текущее состояние
+- MailKit + Gmail SMTP (лимит 500 писем/день) — подходит для старта
+
+#### 8.1 Gmail App Password (для старта)
+
+- [ ] **Включить 2FA на Gmail аккаунте** ([myaccount.google.com/security](https://myaccount.google.com/security))
+- [ ] **Создать App Password**: Security → 2-Step Verification → App Passwords → "UniStart SMTP"
+- [ ] **Вписать в .env:**
+  ```env
+  SMTP_HOST=smtp.gmail.com
+  SMTP_PORT=587
+  SMTP_USERNAME=your.email@gmail.com
+  SMTP_PASSWORD=<app-password-16-chars>
+  SMTP_SENDER_EMAIL=noreply@unistart.kz
+  SMTP_ENABLED=true
+  ```
+
+#### 8.2 Масштабирование email (при росте)
+
+- [ ] **Resend** ([resend.com](https://resend.com)) — 3K emails/мес бесплатно, API + SMTP
+- [ ] **Mailgun** — 5K emails/мес бесплатно (3 месяца), потом $35/мес
+- [ ] **Brevo** (ex-Sendinblue) — 300 emails/день бесплатно
+- [ ] Настроить SPF + DKIM + DMARC для домена (чтобы письма не попадали в спам)
+
+---
+
+### ЭТАП 9: Безопасность production
+
+#### 9.1 Чеклист перед запуском
+
+- [x] Секреты через env vars (не в коде)
+- [x] Rate limiting на auth эндпоинтах
+- [x] Security headers (HSTS, X-Frame-Options, etc.)
+- [x] Input validation (FluentValidation)
+- [x] Global exception handler (ProblemDetails, без утечки стека)
+- [x] Refresh tokens
+- [x] Soft delete (данные не теряются)
+- [x] Audit logging (действия админов отслеживаются)
+- [ ] **HTTPS обязательно** (Cloudflare SSL или Let's Encrypt)
+- [ ] **Сменить тестовые пароли** (`test123`, `admin123` → уникальные для production)
+- [ ] **Удалить или защитить Swagger** (включён только в Development, проверить)
+- [ ] **Hangfire dashboard** — проверить что закрыт от анонимов в production
+- [ ] **Проверить что Cloudflare WAF включён** (базовая защита от SQL injection, XSS)
+
+#### 9.2 Регулярные действия
+
+- [ ] Обновлять Docker images раз в месяц (security patches)
+- [ ] Проверять GitHub Security Alerts (Dependabot)
+- [ ] Менять JWT SecretKey раз в 6 месяцев
+- [ ] Проверять логи на подозрительную активность (failed logins, rate limit hits)
+
+---
+
+### ЭТАП 10: Post-Launch — поддержка и рост
+
+#### 10.1 Первая неделя после запуска
+
+- [ ] Мониторить логи 2 раза в день (`docker compose logs api --tail 100`)
+- [ ] Проверять UptimeRobot алерты
+- [ ] Отвечать на feedback первых пользователей
+- [ ] Проверить что бэкапы реально создаются: `ls -la ~/unistart/backups/`
+- [ ] Проверить что email-уведомления доходят (welcome email, streak reminder)
+
+#### 10.2 Еженедельная поддержка
+
+- [ ] Проверить дисковое пространство: `df -h`
+- [ ] Очистить Docker мусор: `docker system prune -f`
+- [ ] Проверить логи ошибок: `grep -i "error\|exception" logs/unistart-*.txt | tail -20`
+- [ ] Проверить Hangfire dashboard: `/hangfire` — нет ли зависших jobs
+- [ ] Обновить docker images (если есть security updates):
+  ```bash
+  docker compose pull
+  docker compose up -d --remove-orphans
+  ```
+
+#### 10.3 Ежемесячная поддержка
+
+- [ ] `apt update && apt upgrade -y` на сервере
+- [ ] Протестировать восстановление из бэкапа
+- [ ] Проверить размер БД: `docker compose exec postgres psql -U postgres -d UniStart -c "SELECT pg_database_size('UniStart');"`
+- [ ] Осмотреть Sentry на хронические ошибки
+- [ ] Проверить SSL-сертификат (если Let's Encrypt — certbot renew авто)
+- [ ] Обновить .NET / Node.js images если вышли LTS-патчи
+
+#### 10.4 Расширение контента
+
+- [ ] Довести базу до 500+ вопросов (минимум 20 на тему)
+- [ ] CSCA: добавить вопросы по Физике, Химии, Китайскому (из учебников)
 - [ ] Больше Reading Passages для TOEFL
 - [ ] Собственные видео-уроки или партнёрские
-- [ ] Локализация: казахский язык
+- [ ] Локализация: казахский язык (UI + контент)
 
-#### 3.2 Платёжная система 💳
-- [ ] Интеграция Kaspi Pay (для KZ рынка) + Stripe (международный)
-- [ ] Webhook обработка платежей → автоактивация Pro
-- [ ] Пробный период (7 дней Pro бесплатно)
+#### 10.5 Платёжная система (когда появятся пользователи)
+
+- [ ] **Kaspi Pay** (KZ рынок): интеграция через Kaspi API
+  - Webhook: `POST /api/payments/kaspi/webhook` → автоактивация Pro
+  - Подписка: 2 990–4 990 ₸/мес
+- [ ] **Stripe** (международный): `Stripe.net` NuGet
+  - Checkout Session → callback → Pro
+  - Subscription с автопродлением
+- [ ] Пробный период (7 дней Pro бесплатно при регистрации)
 - [ ] Промокоды и реферальная система
 
-#### 3.3 Маркетинг и SEO 🌐
-- [ ] SSR/SSG для лендинга (Next.js или prerender)
-- [ ] Open Graph + meta теги
+#### 10.6 SEO и маркетинг
+
+- [ ] Open Graph meta теги (`og:title`, `og:description`, `og:image`) на лендинге
+- [ ] `robots.txt` + `sitemap.xml`
+- [ ] Google Search Console: подтвердить домен, отправить sitemap
 - [ ] Google Analytics / Yandex Metrika
 - [ ] Реферальная программа ("пригласи друга — получи неделю Pro")
 
-#### 3.4 Мобильное приложение 📱
-- [ ] PWA (Service Worker + manifest.json) — быстрый и дешёвый путь
-- [ ] React Native (если нужен App Store / Google Play)
-- [ ] Push-уведомления
-- [ ] Офлайн-режим с синхронизацией
+#### 10.7 PWA (мобильный доступ, бесплатно)
 
-#### 3.5 Collaborative Features 👥
-- [ ] Collaborative filtering (при 100+ пользователях, паттерны успешных студентов)
-- [ ] Leaderboard (streak, accuracy, вопросы)
-- [ ] Форум / чат поддержки
+- [ ] `manifest.json` (app name, icons, theme color)
+- [ ] Service Worker (caching static assets)
+- [ ] "Добавить на главный экран" подсказка
+- [ ] Offline fallback page
+
+---
+
+### ЭТАП 11: Масштабирование (когда нужно)
+
+> **Делать только если** нагрузка растёт и текущий сервер не справляется.
+
+#### При 500+ concurrent пользователях:
+- [ ] Перенести PostgreSQL на отдельный VPS или managed (Hetzner Managed DB, ~€10/мес)
+- [ ] Redis для кэша + SignalR backplane (вместо IMemoryCache)
+- [ ] Horizontal scaling: 2 инстанса API за load balancer
+
+#### При 2000+ пользователях:
+- [ ] CDN для статики (Cloudflare Workers / R2)
+- [ ] Managed PostgreSQL с read replicas
+- [ ] Kubernetes или Docker Swarm (если нужен auto-scaling)
+- [ ] OpenTelemetry → Grafana для метрик и трейсов
+
+---
+
+### Сводная таблица — порядок действий
+
+| # | Этап | Что делаем | Стоимость | Время |
+|---|------|-----------|-----------|-------|
+| 1 | Домен | Регистрация `unistart.kz`, DNS через Cloudflare | ~$5/год | 1ч + 24ч DNS |
+| 2 | Сервер | Hetzner CX22, Ubuntu 24.04, Docker, firewall, fail2ban | €4.35/мес | 2ч |
+| 3 | SSL | Cloudflare Full Strict + Origin Certificate | $0 | 30мин |
+| 4 | Деплой | Git clone → .env → `docker compose up -d` | $0 | 1ч |
+| 5 | CI/CD | GitHub Actions: check → build → push → SSH deploy | $0 | 2ч |
+| 6 | Бэкапы | Cron + pg_dump daily, off-site на R2/Backblaze | $0–3/мес | 1ч |
+| 7 | Мониторинг | UptimeRobot + Sentry Free + Netdata | $0 | 1ч |
+| 8 | Email | Gmail App Password (или Resend бесплатно) | $0 | 30мин |
+| 9 | Безопасность | Чеклист, смена паролей, проверка WAF | $0 | 30мин |
+| 10 | Пост-запуск | Мониторинг, бэкапы, контент, маркетинг | ongoing | ongoing |
+| | | | | |
+| | **Итого до запуска** | | **~$7/мес + $5/год** | **~8–10ч** |
+
+> **Минимальный бюджет первого запуска**: ~3 000 ₸/мес (Hetzner) + ~5 000 ₸/год (домен) = **~42 000 ₸/год (~$85)**. Всё остальное (SSL, CDN, мониторинг, CI/CD) — **бесплатно**.
 
 ---
 

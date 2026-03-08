@@ -43,18 +43,23 @@ public class MockExamController : ControllerBase
 
     /// <summary>Start a new mock exam attempt</summary>
     [HttpPost("{id}/start")]
-    public async Task<IActionResult> StartMockExam(int id)
+    public async Task<IActionResult> StartMockExam(int id, [FromBody] StartMockExamRequest? request = null)
     {
         try
         {
             var userId = GetUserId();
-            var attempt = await _mockExamService.StartMockExamAsync(userId, id);
+            var attempt = await _mockExamService.StartMockExamAsync(userId, id, request?.SelectedSectionIds);
             return Ok(attempt);
         }
         catch (ArgumentException ex)
         {
             return BadRequest(new { error = ex.Message });
         }
+    }
+
+    public class StartMockExamRequest
+    {
+        public List<int>? SelectedSectionIds { get; set; }
     }
 
     /// <summary>Get current section state (questions + answers)</summary>
@@ -96,6 +101,15 @@ public class MockExamController : ControllerBase
         var userId = GetUserId();
         var attempt = await _mockExamService.CompleteSectionAsync(userId, attemptId);
         return attempt == null ? BadRequest(new { error = "Cannot complete section" }) : Ok(attempt);
+    }
+
+    /// <summary>Complete the entire exam</summary>
+    [HttpPost("attempts/{attemptId}/complete-exam")]
+    public async Task<IActionResult> CompleteExam(int attemptId)
+    {
+        var userId = GetUserId();
+        var attempt = await _mockExamService.CompleteExamAsync(userId, attemptId);
+        return attempt == null ? BadRequest(new { error = "Cannot complete exam" }) : Ok(attempt);
     }
 
     /// <summary>Get mock exam results (after completion)</summary>

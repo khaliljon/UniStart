@@ -16,6 +16,21 @@ public class MockExamService : IMockExamService
         _context = context;
     }
 
+    /// <summary>
+    /// Returns the effective sections for an attempt, respecting SelectedSectionIdsJson.
+    /// If null/empty, returns all sections ordered by SortOrder.
+    /// </summary>
+    private static List<MockExamSection> GetEffectiveSections(MockExamAttempt attempt)
+    {
+        var all = attempt.MockExam.Sections.OrderBy(s => s.SortOrder).ToList();
+        if (string.IsNullOrEmpty(attempt.SelectedSectionIdsJson)) return all;
+
+        var selectedIds = JsonSerializer.Deserialize<List<int>>(attempt.SelectedSectionIdsJson);
+        if (selectedIds == null || selectedIds.Count == 0) return all;
+
+        return all.Where(s => selectedIds.Contains(s.Id)).OrderBy(s => s.SortOrder).ToList();
+    }
+
     public async Task<IEnumerable<MockExamListDto>> GetAvailableMockExamsAsync(int userId)
     {
         var exams = await _context.MockExams
@@ -28,29 +43,10 @@ public class MockExamService : IMockExamService
             .Where(a => a.UserId == userId)
             .ToListAsync();
 
-        // Batch: get question counts per section in a single query (fix N+1)
-        var allSectionIds = exams
-            .SelectMany(e => e.Sections)
-            .Where(s => s.ExamSectionId.HasValue)
-            .Select(s => s.ExamSectionId!.Value)
-            .Distinct()
-            .ToList();
-
-        var questionCountsBySection = await _context.Questions
-            .Where(q => q.Topic.SectionId.HasValue && allSectionIds.Contains(q.Topic.SectionId.Value))
-            .GroupBy(q => q.Topic.SectionId!.Value)
-            .Select(g => new { SectionId = g.Key, Count = g.Count() })
-            .ToDictionaryAsync(x => x.SectionId, x => x.Count);
-
         var result = new List<MockExamListDto>();
         foreach (var exam in exams)
         {
-            var sectionIds = exam.Sections
-                .Where(s => s.ExamSectionId.HasValue)
-                .Select(s => s.ExamSectionId!.Value)
-                .ToList();
-            var questionCount = sectionIds
-                .Sum(sid => questionCountsBySection.GetValueOrDefault(sid, 0));
+            var questionCount = exam.Sections.Sum(s => s.QuestionCount);
 
             var examAttempts = attempts.Where(a => a.MockExamId == exam.Id).ToList();
             var bestScore = examAttempts
@@ -84,27 +80,12 @@ public class MockExamService : IMockExamService
 
         if (exam == null) return null;
 
-        // Batch: get question counts per section in a single query (fix N+1)
-        var sectionIds = exam.Sections
-            .Where(s => s.ExamSectionId.HasValue)
-            .Select(s => s.ExamSectionId!.Value)
-            .Distinct()
-            .ToList();
-
-        var questionCountsBySection = await _context.Questions
-            .Where(q => q.Topic.SectionId.HasValue && sectionIds.Contains(q.Topic.SectionId.Value))
-            .GroupBy(q => q.Topic.SectionId!.Value)
-            .Select(g => new { SectionId = g.Key, Count = g.Count() })
-            .ToDictionaryAsync(x => x.SectionId, x => x.Count);
-
         var sectionDtos = exam.Sections.OrderBy(s => s.SortOrder).Select(section =>
             new MockExamSectionDto(
                 section.Id,
                 section.Name,
                 section.TimeLimitMinutes,
-                section.ExamSectionId.HasValue
-                    ? questionCountsBySection.GetValueOrDefault(section.ExamSectionId.Value, 0)
-                    : 0,
+                section.QuestionCount,
                 section.SortOrder,
                 section.Instructions
             )).ToList();
@@ -120,7 +101,7 @@ public class MockExamService : IMockExamService
         );
     }
 
-    public async Task<MockExamAttemptDto> StartMockExamAsync(int userId, int mockExamId)
+    public async Task<MockExamAttemptDto> StartMockExamAsync(int userId, int mockExamId, List<int>? selectedSectionIds = null)
     {
         var exam = await _context.MockExams
             .Include(m => m.Sections)
@@ -137,19 +118,31 @@ public class MockExamService : IMockExamService
             old.CompletedAt = DateTime.UtcNow;
         }
 
+        // Filter sections if selectedSectionIds provided (for configurable exams like CSCA)
+        var allSections = exam.Sections.OrderBy(s => s.SortOrder).ToList();
+        var sections = selectedSectionIds != null && selectedSectionIds.Count > 0
+            ? allSections.Where(s => selectedSectionIds.Contains(s.Id)).OrderBy(s => s.SortOrder).ToList()
+            : allSections;
+
+        if (sections.Count == 0)
+            throw new ArgumentException("No valid sections selected");
+
         var attempt = new MockExamAttempt
         {
             UserId = userId,
             MockExamId = mockExamId,
             StartedAt = DateTime.UtcNow,
             Status = "in_progress",
-            CurrentSectionIndex = 0
+            CurrentSectionIndex = 0,
+            SelectedSectionIdsJson = selectedSectionIds != null && selectedSectionIds.Count > 0
+                ? JsonSerializer.Serialize(selectedSectionIds)
+                : null
         };
 
         _context.MockExamAttempts.Add(attempt);
 
-        // Pre-populate answers for all sections
-        var sections = exam.Sections.OrderBy(s => s.SortOrder).ToList();
+        // Pre-populate answers for selected sections only
+        var rng = Random.Shared;
         for (int si = 0; si < sections.Count; si++)
         {
             var section = sections[si];
@@ -157,16 +150,28 @@ public class MockExamService : IMockExamService
 
             var questions = await _context.Questions
                 .Where(q => q.Topic.SectionId == section.ExamSectionId.Value)
-                .OrderBy(q => q.Id) // Deterministic order
                 .ToListAsync();
 
-            foreach (var q in questions)
+            // Shuffle questions randomly (Fisher-Yates)
+            for (int i = questions.Count - 1; i > 0; i--)
+            {
+                int j = rng.Next(i + 1);
+                (questions[i], questions[j]) = (questions[j], questions[i]);
+            }
+
+            // Limit to regulation question count if set
+            var count = section.QuestionCount > 0 && section.QuestionCount < questions.Count
+                ? section.QuestionCount
+                : questions.Count;
+
+            for (int qi = 0; qi < count; qi++)
             {
                 _context.MockExamAnswers.Add(new MockExamAnswer
                 {
                     Attempt = attempt,
-                    QuestionId = q.Id,
+                    QuestionId = questions[qi].Id,
                     SectionIndex = si,
+                    SortOrder = qi,
                     SelectedOptionId = null,
                     IsCorrect = false
                 });
@@ -182,7 +187,9 @@ public class MockExamService : IMockExamService
             attempt.Status,
             attempt.CurrentSectionIndex,
             sections.Count,
-            attempt.StartedAt
+            attempt.StartedAt,
+            sections.Sum(s => s.TimeLimitMinutes),
+            sections.Select(s => s.Name)
         );
     }
 
@@ -195,7 +202,8 @@ public class MockExamService : IMockExamService
         if (attempt == null || attempt.Status != "in_progress") return null;
 
         // Server-side timer enforcement: auto-complete if total exam time expired
-        var totalTimeLimit = attempt.MockExam.TotalTimeMinutes;
+        var effectiveSections = GetEffectiveSections(attempt);
+        var totalTimeLimit = effectiveSections.Sum(s => s.TimeLimitMinutes);
         if (totalTimeLimit > 0 && DateTime.UtcNow > attempt.StartedAt.AddMinutes(totalTimeLimit))
         {
             await CompleteExamInternalAsync(attempt);
@@ -214,15 +222,12 @@ public class MockExamService : IMockExamService
 
         if (attempt == null) return null;
 
-        // Only allow viewing current or past sections (not future ones unless completed)
-        if (attempt.Status == "in_progress" && sectionIndex > attempt.CurrentSectionIndex) return null;
-
         return await GetSectionStateAsync(attempt, sectionIndex);
     }
 
     private async Task<MockExamSectionStateDto?> GetSectionStateAsync(MockExamAttempt attempt, int sectionIndex)
     {
-        var sections = attempt.MockExam.Sections.OrderBy(s => s.SortOrder).ToList();
+        var sections = GetEffectiveSections(attempt);
         if (sectionIndex < 0 || sectionIndex >= sections.Count) return null;
 
         var section = sections[sectionIndex];
@@ -233,20 +238,33 @@ public class MockExamService : IMockExamService
             .Include(a => a.Question).ThenInclude(q => q.Topic)
             .Include(a => a.Question).ThenInclude(q => q.ReadingPassage)
             .Where(a => a.AttemptId == attempt.Id && a.SectionIndex == sectionIndex)
-            .OrderBy(a => a.Question.Id)
+            .OrderBy(a => a.SortOrder)
             .ToListAsync();
 
-        var questionDtos = answers.Select(a => new MockExamQuestionDto(
-            a.QuestionId,
-            a.Question.Text,
-            a.Question.Difficulty.ToString(),
-            a.Question.Topic.Name,
-            a.Question.AnswerOptions.Select(o => new MockExamOptionDto(o.Id, o.Text)),
-            a.SelectedOptionId,
-            a.Question.ReadingPassageId,
-            a.Question.ReadingPassage?.Title,
-            a.Question.ReadingPassage?.Content
-        ));
+        var questionDtos = answers.Select(a =>
+        {
+            // Deterministic shuffle of answer options per attempt+question
+            var optionsList = a.Question.AnswerOptions.ToList();
+            var seed = unchecked(attempt.Id * 31 + a.QuestionId);
+            var optRng = new Random(seed);
+            for (int i = optionsList.Count - 1; i > 0; i--)
+            {
+                int j = optRng.Next(i + 1);
+                (optionsList[i], optionsList[j]) = (optionsList[j], optionsList[i]);
+            }
+
+            return new MockExamQuestionDto(
+                a.QuestionId,
+                a.Question.Text,
+                a.Question.Difficulty.ToString(),
+                a.Question.Topic.Name,
+                optionsList.Select(o => new MockExamOptionDto(o.Id, o.Text)),
+                a.SelectedOptionId,
+                a.Question.ReadingPassageId,
+                a.Question.ReadingPassage?.Title,
+                a.Question.ReadingPassage?.Content
+            );
+        });
 
         return new MockExamSectionStateDto(
             sectionIndex,
@@ -262,12 +280,13 @@ public class MockExamService : IMockExamService
     public async Task<bool> SubmitAnswerAsync(int userId, int attemptId, MockExamSubmitAnswerDto dto)
     {
         var attempt = await _context.MockExamAttempts
-            .Include(a => a.MockExam)
+            .Include(a => a.MockExam).ThenInclude(m => m.Sections)
             .FirstOrDefaultAsync(a => a.Id == attemptId && a.UserId == userId && a.Status == "in_progress");
         if (attempt == null) return false;
 
         // Server-side timer enforcement: reject answers after total exam time expires
-        var totalTimeLimit = attempt.MockExam.TotalTimeMinutes;
+        var effectiveSections = GetEffectiveSections(attempt);
+        var totalTimeLimit = effectiveSections.Sum(s => s.TimeLimitMinutes);
         if (totalTimeLimit > 0 && DateTime.UtcNow > attempt.StartedAt.AddMinutes(totalTimeLimit))
         {
             // Auto-complete the exam since time expired
@@ -280,9 +299,6 @@ public class MockExamService : IMockExamService
             .Include(a => a.Question).ThenInclude(q => q.AnswerOptions)
             .FirstOrDefaultAsync(a => a.AttemptId == attemptId && a.QuestionId == dto.QuestionId);
         if (answer == null) return false;
-
-        // Only allow answering current section
-        if (answer.SectionIndex != attempt.CurrentSectionIndex) return false;
 
         answer.SelectedOptionId = dto.SelectedOptionId;
         answer.TimeSpentSeconds = dto.TimeSpentSeconds;
@@ -300,8 +316,10 @@ public class MockExamService : IMockExamService
             .FirstOrDefaultAsync(a => a.Id == attemptId && a.UserId == userId && a.Status == "in_progress");
         if (attempt == null) return null;
 
+        var sections = GetEffectiveSections(attempt);
+
         // Server-side timer enforcement: auto-complete if total exam time expired
-        var totalTimeLimit = attempt.MockExam.TotalTimeMinutes;
+        var totalTimeLimit = sections.Sum(s => s.TimeLimitMinutes);
         if (totalTimeLimit > 0 && DateTime.UtcNow > attempt.StartedAt.AddMinutes(totalTimeLimit))
         {
             await CompleteExamInternalAsync(attempt);
@@ -309,11 +327,12 @@ public class MockExamService : IMockExamService
             return new MockExamAttemptDto(
                 attempt.Id, attempt.MockExamId, attempt.MockExam.Title,
                 attempt.Status, attempt.CurrentSectionIndex,
-                attempt.MockExam.Sections.Count, attempt.StartedAt
+                sections.Count, attempt.StartedAt,
+                totalTimeLimit,
+                sections.Select(s => s.Name)
             );
         }
 
-        var sections = attempt.MockExam.Sections.OrderBy(s => s.SortOrder).ToList();
         var nextIndex = attempt.CurrentSectionIndex + 1;
 
         if (nextIndex >= sections.Count)
@@ -335,7 +354,33 @@ public class MockExamService : IMockExamService
             attempt.Status,
             attempt.CurrentSectionIndex,
             sections.Count,
-            attempt.StartedAt
+            attempt.StartedAt,
+            sections.Sum(s => s.TimeLimitMinutes),
+            sections.Select(s => s.Name)
+        );
+    }
+
+    public async Task<MockExamAttemptDto?> CompleteExamAsync(int userId, int attemptId)
+    {
+        var attempt = await _context.MockExamAttempts
+            .Include(a => a.MockExam).ThenInclude(m => m.Sections)
+            .FirstOrDefaultAsync(a => a.Id == attemptId && a.UserId == userId && a.Status == "in_progress");
+        if (attempt == null) return null;
+
+        var sections = GetEffectiveSections(attempt);
+        await CompleteExamInternalAsync(attempt);
+        await _context.SaveChangesAsync();
+
+        return new MockExamAttemptDto(
+            attempt.Id,
+            attempt.MockExamId,
+            attempt.MockExam.Title,
+            attempt.Status,
+            attempt.CurrentSectionIndex,
+            sections.Count,
+            attempt.StartedAt,
+            sections.Sum(s => s.TimeLimitMinutes),
+            sections.Select(s => s.Name)
         );
     }
 
@@ -348,10 +393,13 @@ public class MockExamService : IMockExamService
             .Where(a => a.AttemptId == attempt.Id)
             .ToListAsync();
 
-        var sections = await _context.MockExamSections
-            .Where(s => s.MockExamId == attempt.MockExamId)
-            .OrderBy(s => s.SortOrder)
-            .ToListAsync();
+        // Load sections if not already loaded
+        if (attempt.MockExam?.Sections == null || !attempt.MockExam.Sections.Any())
+        {
+            await _context.Entry(attempt).Reference(a => a.MockExam).Query()
+                .Include(m => m.Sections).LoadAsync();
+        }
+        var sections = GetEffectiveSections(attempt);
 
         var sectionScores = new List<object>();
         var totalCorrect = 0;
@@ -393,7 +441,7 @@ public class MockExamService : IMockExamService
             .OrderBy(a => a.SectionIndex).ThenBy(a => a.QuestionId)
             .ToListAsync();
 
-        var sections = attempt.MockExam.Sections.OrderBy(s => s.SortOrder).ToList();
+        var sections = GetEffectiveSections(attempt);
 
         // Section results
         var sectionResults = new List<MockExamSectionResultDto>();
@@ -449,7 +497,7 @@ public class MockExamService : IMockExamService
             totalCorrect,
             allAnswers.Count,
             allAnswers.Count > 0 ? Math.Round(100.0 * totalCorrect / allAnswers.Count, 1) : 0,
-            attempt.MockExam.TotalTimeMinutes,
+            sections.Sum(s => s.TimeLimitMinutes),
             attempt.StartedAt,
             attempt.CompletedAt,
             sectionResults,
@@ -499,7 +547,8 @@ public class MockExamService : IMockExamService
         if (attempt == null) return null;
 
         // Auto-complete if total exam time expired
-        var totalTimeLimit = attempt.MockExam.TotalTimeMinutes;
+        var effectiveSections = GetEffectiveSections(attempt);
+        var totalTimeLimit = effectiveSections.Sum(s => s.TimeLimitMinutes);
         if (totalTimeLimit > 0 && DateTime.UtcNow > attempt.StartedAt.AddMinutes(totalTimeLimit))
         {
             await CompleteExamInternalAsync(attempt);
@@ -513,8 +562,10 @@ public class MockExamService : IMockExamService
             attempt.MockExam.Title,
             attempt.Status,
             attempt.CurrentSectionIndex,
-            attempt.MockExam.Sections.Count,
-            attempt.StartedAt
+            effectiveSections.Count,
+            attempt.StartedAt,
+            totalTimeLimit,
+            effectiveSections.Select(s => s.Name)
         );
     }
 }

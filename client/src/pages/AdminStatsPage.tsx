@@ -6,6 +6,8 @@ const EXAM_COLORS: Record<string, string> = {
   SAT: '#4f46e5',
   TOEFL: '#0891b2',
   NUET: '#7c3aed',
+  IELTS: '#059669',
+  CSCA: '#dc2626',
 };
 
 const DIFF_COLORS: Record<string, string> = {

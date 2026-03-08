@@ -7,12 +7,16 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UniStart", "UniStart.csproj
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{7FDF7A4A-57AB-40FC-950F-37264D91A95D}"
 	ProjectSection(SolutionItems) = preProject
+		AnswersCscaMath.md = AnswersCscaMath.md
+		AnswersCscaPhysics.md = AnswersCscaPhysics.md
 		API.md = API.md
 		API_EXAMPLES.md = API_EXAMPLES.md
 		ARCHITECTURE.md = ARCHITECTURE.md
 		DB_SCHEMA.md = DB_SCHEMA.md
 		DOMAIN_MODEL.md = DOMAIN_MODEL.md
 		FRONTEND_STRUCTURE.md = FRONTEND_STRUCTURE.md
+		QuestionsCscaMath.md = QuestionsCscaMath.md
+		QuestionsCscaPhysics.md = QuestionsCscaPhysics.md
 		README.md = README.md
 		RULES.md = RULES.md
 		SEEDER.md = SEEDER.md

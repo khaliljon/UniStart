@@ -92,7 +92,6 @@ function AdminLayout() {
                     { label: 'Импорт файлов', path: '/question-import' },
                     { label: 'Аудит', path: '/audit' },
                     { label: 'Здоровье', path: '/health' },
-                    { label: 'Активность', path: '/activity' },
                   ].map(item => (
                     <NavLink
                       key={item.path}
