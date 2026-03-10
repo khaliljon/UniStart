@@ -48,6 +48,7 @@ public class UniStartDbContext : DbContext
     public DbSet<Flashcard> Flashcards => Set<Flashcard>();
     public DbSet<UserFlashcardProgress> UserFlashcardProgress => Set<UserFlashcardProgress>();
     public DbSet<TimedDrillResult> TimedDrillResults => Set<TimedDrillResult>();
+    public DbSet<DrillTemplate> DrillTemplates => Set<DrillTemplate>();
     public DbSet<StrategyGuide> StrategyGuides => Set<StrategyGuide>();
     public DbSet<UserGuideProgress> UserGuideProgress => Set<UserGuideProgress>();
     public DbSet<UserMistakeNote> UserMistakeNotes => Set<UserMistakeNote>();
@@ -720,6 +721,24 @@ public class UniStartDbContext : DbContext
                   .OnDelete(DeleteBehavior.SetNull);
             entity.HasIndex(e => new { e.UserId, e.DrillType })
                   .HasDatabaseName("IX_TimedDrillResults_User_Type");
+        });
+
+        // ─── Drill Template ────────────────────────────────
+        modelBuilder.Entity<DrillTemplate>(entity =>
+        {
+            entity.ToTable("DrillTemplates");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Description).HasMaxLength(1000);
+            entity.Property(e => e.DrillType).HasConversion<string>().HasMaxLength(20);
+            entity.HasOne(e => e.ExamType)
+                  .WithMany()
+                  .HasForeignKey(e => e.ExamTypeCode)
+                  .OnDelete(DeleteBehavior.SetNull);
+            entity.HasOne(e => e.Topic)
+                  .WithMany()
+                  .HasForeignKey(e => e.TopicId)
+                  .OnDelete(DeleteBehavior.SetNull);
         });
 
         // ─── Strategy Guide (TH-5) ─────────────────────────

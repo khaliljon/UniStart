@@ -25,10 +25,10 @@ public class StrategyController : ControllerBase
     /// </summary>
     [HttpGet]
     [ProducesResponseType(typeof(IEnumerable<StrategyGuideSummaryDto>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetGuides([FromQuery] string examTypeCode)
+    public async Task<IActionResult> GetGuides([FromQuery] string[]? examTypeCodes = null)
     {
         var userId = GetCurrentUserId();
-        var result = await _strategyService.GetGuidesByExamAsync(userId, examTypeCode);
+        var result = await _strategyService.GetGuidesByExamAsync(userId, examTypeCodes);
         return Ok(result);
     }
 

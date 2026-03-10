@@ -15,10 +15,14 @@ public class StrategyService : IStrategyService
         _context = context;
     }
 
-    public async Task<IEnumerable<StrategyGuideSummaryDto>> GetGuidesByExamAsync(int userId, string examTypeCode)
+    public async Task<IEnumerable<StrategyGuideSummaryDto>> GetGuidesByExamAsync(int userId, string[]? examTypeCodes = null)
     {
-        var guides = await _context.StrategyGuides
-            .Where(g => g.ExamTypeCode == examTypeCode)
+        var query = _context.StrategyGuides.AsQueryable();
+
+        if (examTypeCodes != null && examTypeCodes.Length > 0)
+            query = query.Where(g => examTypeCodes.Contains(g.ExamTypeCode));
+
+        var guides = await query
             .OrderBy(g => g.SortOrder)
             .ToListAsync();
 

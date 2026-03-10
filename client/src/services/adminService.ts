@@ -3,11 +3,12 @@ import type { QuestionListItem, QuestionDetail, QuestionStats, BulkImportResult,
 
 const adminService = {
   // ─── Questions ───────────────────────────────────────────
-  getQuestions: (examTypeCode?: string, topic?: string, difficulty?: string, page: number = 1, pageSize: number = 50) => {
+  getQuestions: (examTypeCode?: string, topic?: string, difficulty?: string, page: number = 1, pageSize: number = 50, section?: string) => {
     const params = new URLSearchParams();
     if (examTypeCode) params.set('examTypeCode', examTypeCode);
     if (topic) params.set('topic', topic);
     if (difficulty) params.set('difficulty', difficulty);
+    if (section) params.set('section', section);
     params.set('page', String(page));
     params.set('pageSize', String(pageSize));
     const qs = params.toString();
@@ -329,6 +330,16 @@ const adminService = {
     api.put(`/admin/content/strategies/${id}`, data).then(r => r.data),
   deleteStrategy: (id: number) =>
     api.delete(`/admin/content/strategies/${id}`).then(r => r.data),
+
+  // Drill Templates
+  getDrills: () =>
+    api.get<Array<{ id: number; title: string; description: string | null; drillType: string; examTypeCode: string | null; topicId: number | null; topicName: string | null; questionCount: number; timeLimitMinutes: number | null; isActive: boolean; sortOrder: number }>>('/admin/content/drills').then(r => r.data),
+  createDrill: (data: { title: string; description?: string; drillType: string; examTypeCode?: string; topicId?: number; questionCount?: number; timeLimitMinutes?: number; isActive?: boolean; sortOrder?: number }) =>
+    api.post('/admin/content/drills', data).then(r => r.data),
+  updateDrill: (id: number, data: { title?: string; description?: string; drillType?: string; examTypeCode?: string; topicId?: number; questionCount?: number; timeLimitMinutes?: number; isActive?: boolean; sortOrder?: number }) =>
+    api.put(`/admin/content/drills/${id}`, data).then(r => r.data),
+  deleteDrill: (id: number) =>
+    api.delete(`/admin/content/drills/${id}`).then(r => r.data),
 };
 
 export default adminService;

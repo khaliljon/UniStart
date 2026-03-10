@@ -4,7 +4,7 @@ namespace UniStart.Application.Interfaces;
 
 public interface IStrategyService
 {
-    Task<IEnumerable<StrategyGuideSummaryDto>> GetGuidesByExamAsync(int userId, string examTypeCode);
+    Task<IEnumerable<StrategyGuideSummaryDto>> GetGuidesByExamAsync(int userId, string[]? examTypeCodes = null);
     Task<StrategyGuideDto?> GetGuideAsync(int userId, int guideId);
     Task MarkReadAsync(int userId, int guideId);
 }

@@ -29,7 +29,7 @@ public class AdminService : IAdminService
 
     public async Task<PagedResult<QuestionListDto>> GetQuestionsAsync(
         string? examTypeCode = null, string? topicName = null, string? difficulty = null,
-        int page = 1, int pageSize = 50)
+        string? sectionName = null, int page = 1, int pageSize = 50)
     {
         var query = _db.Questions
             .Include(q => q.Topic)
@@ -40,6 +40,9 @@ public class AdminService : IAdminService
 
         if (!string.IsNullOrEmpty(examTypeCode))
             query = query.Where(q => q.Topic.Section!.ExamTypeCode == examTypeCode);
+
+        if (!string.IsNullOrEmpty(sectionName))
+            query = query.Where(q => q.Topic.Section!.Name == sectionName);
 
         if (!string.IsNullOrEmpty(topicName))
             query = query.Where(q => q.Topic.Name.Contains(topicName));

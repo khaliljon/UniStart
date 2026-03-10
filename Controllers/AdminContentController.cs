@@ -354,4 +354,89 @@ public class AdminContentController : ControllerBase
         await _db.SaveChangesAsync();
         return Ok(new { deleted = true });
     }
+
+    // ═══════════════════════════════════════════════
+    //  DRILL TEMPLATES
+    // ═══════════════════════════════════════════════
+
+    [HttpGet("drills")]
+    public async Task<IActionResult> GetDrills()
+    {
+        var items = await _db.DrillTemplates
+            .Include(d => d.Topic)
+            .AsNoTracking()
+            .OrderBy(d => d.SortOrder).ThenBy(d => d.Title)
+            .ToListAsync();
+
+        return Ok(items.Select(d => new AdminDrillTemplateListDto(
+            d.Id, d.Title, d.Description, d.DrillType.ToString(),
+            d.ExamTypeCode, d.TopicId, d.Topic?.Name,
+            d.QuestionCount, d.TimeLimitMinutes, d.IsActive, d.SortOrder
+        )));
+    }
+
+    [HttpPost("drills")]
+    public async Task<IActionResult> CreateDrill([FromBody] AdminCreateDrillTemplateDto dto)
+    {
+        if (!Enum.TryParse<DrillType>(dto.DrillType, true, out var drillType))
+            return BadRequest(new { error = "Неверный тип дрилла" });
+
+        var drill = new DrillTemplate
+        {
+            Title = dto.Title,
+            Description = dto.Description,
+            DrillType = drillType,
+            ExamTypeCode = dto.ExamTypeCode,
+            TopicId = dto.TopicId,
+            QuestionCount = dto.QuestionCount,
+            TimeLimitMinutes = dto.TimeLimitMinutes,
+            IsActive = dto.IsActive,
+            SortOrder = dto.SortOrder,
+        };
+        _db.DrillTemplates.Add(drill);
+        await _db.SaveChangesAsync();
+
+        return Ok(new AdminDrillTemplateListDto(
+            drill.Id, drill.Title, drill.Description, drill.DrillType.ToString(),
+            drill.ExamTypeCode, drill.TopicId, null,
+            drill.QuestionCount, drill.TimeLimitMinutes, drill.IsActive, drill.SortOrder
+        ));
+    }
+
+    [HttpPut("drills/{id}")]
+    public async Task<IActionResult> UpdateDrill(int id, [FromBody] AdminUpdateDrillTemplateDto dto)
+    {
+        var drill = await _db.DrillTemplates.FindAsync(id);
+        if (drill == null) return NotFound();
+
+        if (dto.Title != null) drill.Title = dto.Title;
+        if (dto.Description != null) drill.Description = dto.Description;
+        if (dto.DrillType != null)
+        {
+            if (!Enum.TryParse<DrillType>(dto.DrillType, true, out var drillType))
+                return BadRequest(new { error = "Неверный тип дрилла" });
+            drill.DrillType = drillType;
+        }
+        if (dto.ExamTypeCode != null) drill.ExamTypeCode = dto.ExamTypeCode == "" ? null : dto.ExamTypeCode;
+        if (dto.TopicId.HasValue) drill.TopicId = dto.TopicId.Value == 0 ? null : dto.TopicId.Value;
+        if (dto.QuestionCount.HasValue) drill.QuestionCount = dto.QuestionCount.Value;
+        if (dto.TimeLimitMinutes.HasValue) drill.TimeLimitMinutes = dto.TimeLimitMinutes.Value == 0 ? null : dto.TimeLimitMinutes.Value;
+        if (dto.IsActive.HasValue) drill.IsActive = dto.IsActive.Value;
+        if (dto.SortOrder.HasValue) drill.SortOrder = dto.SortOrder.Value;
+        drill.UpdatedAt = DateTime.UtcNow;
+
+        await _db.SaveChangesAsync();
+        return Ok(new { id = drill.Id });
+    }
+
+    [HttpDelete("drills/{id}")]
+    public async Task<IActionResult> DeleteDrill(int id)
+    {
+        var drill = await _db.DrillTemplates.FindAsync(id);
+        if (drill == null) return NotFound();
+
+        _db.DrillTemplates.Remove(drill);
+        await _db.SaveChangesAsync();
+        return Ok(new { deleted = true });
+    }
 }

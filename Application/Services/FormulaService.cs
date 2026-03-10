@@ -14,17 +14,22 @@ public class FormulaService : IFormulaService
         _context = context;
     }
 
-    public async Task<IEnumerable<FormulaCardDto>> GetFormulasByExamAsync(int userId, string examTypeCode)
+    public async Task<IEnumerable<FormulaCardDto>> GetFormulasByExamAsync(int userId, string[]? examTypeCodes = null)
     {
         var bookmarkedIds = await _context.UserFormulaBookmarks
             .Where(b => b.UserId == userId)
             .Select(b => b.FormulaCardId)
             .ToListAsync();
 
-        var formulas = await _context.FormulaCards
+        var query = _context.FormulaCards
             .Include(f => f.Topic)
                 .ThenInclude(t => t.Section)
-            .Where(f => f.Topic.Section != null && f.Topic.Section.ExamTypeCode == examTypeCode)
+            .AsQueryable();
+
+        if (examTypeCodes != null && examTypeCodes.Length > 0)
+            query = query.Where(f => f.Topic.Section != null && examTypeCodes.Contains(f.Topic.Section.ExamTypeCode));
+
+        var formulas = await query
             .OrderBy(f => f.Topic.Name)
             .ThenBy(f => f.SortOrder)
             .Select(f => new FormulaCardDto(

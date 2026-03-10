@@ -10,20 +10,19 @@ function StrategyPage() {
   const [activeGuide, setActiveGuide] = useState<StrategyGuide | null>(null);
   const [loading, setLoading] = useState(true);
   const [filterCategory, setFilterCategory] = useState<string>('all');
-  const examCode = selectedExams[0] || '';
 
   const loadGuides = useCallback(async () => {
-    if (!examCode) return;
+    if (selectedExams.length === 0) return;
     setLoading(true);
     try {
-      const data = await strategyService.getGuides(examCode);
+      const data = await strategyService.getGuides(selectedExams);
       setGuides(data);
     } catch (err) {
       console.error('Failed to load guides:', err);
     } finally {
       setLoading(false);
     }
-  }, [examCode]);
+  }, [selectedExams]);
 
   useEffect(() => { loadGuides(); }, [loadGuides]);
 

@@ -25,10 +25,10 @@ public class FlashcardController : ControllerBase
     /// </summary>
     [HttpGet("decks")]
     [ProducesResponseType(typeof(IEnumerable<FlashcardDeckDto>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetDecks([FromQuery] string? examTypeCode = null)
+    public async Task<IActionResult> GetDecks([FromQuery] string[]? examTypeCodes = null)
     {
         var userId = GetCurrentUserId();
-        var result = await _flashcardService.GetDecksAsync(userId, examTypeCode);
+        var result = await _flashcardService.GetDecksAsync(userId, examTypeCodes);
         return Ok(result);
     }
 

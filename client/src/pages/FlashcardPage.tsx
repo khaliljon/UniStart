@@ -21,9 +21,10 @@ function FlashcardPage() {
   const [newDesc, setNewDesc] = useState('');
 
   const loadDecks = useCallback(async () => {
+    if (selectedExams.length === 0) return;
     setLoading(true);
     try {
-      const data = await flashcardService.getDecks(selectedExams[0]);
+      const data = await flashcardService.getDecks(selectedExams);
       setDecks(data);
     } catch (err) {
       console.error('Failed to load decks:', err);
@@ -73,7 +74,7 @@ function FlashcardPage() {
       await flashcardService.createDeck({
         title: newTitle.trim(),
         description: newDesc.trim() || undefined,
-        examTypeCode: selectedExams[0],
+        examTypeCode: selectedExams[0] || undefined,
       });
       setNewTitle('');
       setNewDesc('');

@@ -25,10 +25,10 @@ public class FormulaController : ControllerBase
     /// </summary>
     [HttpGet]
     [ProducesResponseType(typeof(IEnumerable<FormulaCardDto>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetFormulas([FromQuery] string examTypeCode)
+    public async Task<IActionResult> GetFormulas([FromQuery] string[]? examTypeCodes = null)
     {
         var userId = GetCurrentUserId();
-        var result = await _formulaService.GetFormulasByExamAsync(userId, examTypeCode);
+        var result = await _formulaService.GetFormulasByExamAsync(userId, examTypeCodes);
         return Ok(result);
     }
 

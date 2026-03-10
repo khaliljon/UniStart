@@ -39,10 +39,11 @@ public class AdminController : ControllerBase
         [FromQuery] string? examTypeCode = null,
         [FromQuery] string? topic = null,
         [FromQuery] string? difficulty = null,
+        [FromQuery] string? section = null,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 50)
     {
-        var result = await _svc.GetQuestionsAsync(examTypeCode, topic, difficulty, page, pageSize);
+        var result = await _svc.GetQuestionsAsync(examTypeCode, topic, difficulty, section, page, pageSize);
         return Ok(result);
     }
 
@@ -345,7 +346,7 @@ public class AdminController : ControllerBase
         [FromQuery] string? examTypeCode = null,
         [FromQuery] string? difficulty = null)
     {
-        var result = await _svc.GetQuestionsAsync(examTypeCode, null, difficulty, 1, 10000);
+        var result = await _svc.GetQuestionsAsync(examTypeCode, null, difficulty, null, 1, 10000);
         var csv = BuildCsv(result.Items, new[]
         {
             ("ID", (Func<QuestionListDto, string>)(q => q.Id.ToString())),

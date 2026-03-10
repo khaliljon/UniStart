@@ -15,14 +15,14 @@ public class FlashcardService : IFlashcardService
         _context = context;
     }
 
-    public async Task<IEnumerable<FlashcardDeckDto>> GetDecksAsync(int userId, string? examTypeCode = null)
+    public async Task<IEnumerable<FlashcardDeckDto>> GetDecksAsync(int userId, string[]? examTypeCodes = null)
     {
         var query = _context.FlashcardDecks
             .Include(d => d.Cards)
             .Where(d => d.IsSystem || d.CreatedByUserId == userId);
 
-        if (!string.IsNullOrEmpty(examTypeCode))
-            query = query.Where(d => d.ExamTypeCode == examTypeCode || d.ExamTypeCode == null);
+        if (examTypeCodes != null && examTypeCodes.Length > 0)
+            query = query.Where(d => d.ExamTypeCode == null || examTypeCodes.Contains(d.ExamTypeCode));
 
         var decks = await query.OrderByDescending(d => d.IsSystem).ThenBy(d => d.Title).ToListAsync();
 

@@ -5,8 +5,9 @@ import type {
 } from '../types';
 
 export const flashcardService = {
-  async getDecks(examTypeCode?: string): Promise<FlashcardDeck[]> {
-    const params = examTypeCode ? { examTypeCode } : {};
+  async getDecks(examTypeCodes?: string[]): Promise<FlashcardDeck[]> {
+    const params = new URLSearchParams();
+    examTypeCodes?.forEach(c => params.append('examTypeCodes', c));
     const response = await api.get<FlashcardDeck[]>('/flashcards/decks', { params });
     return response.data;
   },

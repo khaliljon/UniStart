@@ -75,7 +75,7 @@ function AdminQuestionsPage() {
     try {
       setIsLoading(true);
       setError(null);
-      const result = await adminService.getQuestions(filterExam || undefined, filterTopic || undefined, filterDiff || undefined, page, 50);
+      const result = await adminService.getQuestions(filterExam || undefined, filterTopic || undefined, filterDiff || undefined, page, 50, filterSection || undefined);
       setQuestions(result.items);
       setTotalPages(result.totalPages);
       setTotalCount(result.totalCount);
@@ -84,7 +84,7 @@ function AdminQuestionsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [filterExam, filterDiff, filterTopic, page]);
+  }, [filterExam, filterDiff, filterTopic, filterSection, page]);
 
   const loadTopics = async () => {
     try {
@@ -475,7 +475,7 @@ function AdminQuestionsPage() {
               </tr>
             </thead>
             <tbody>
-              {(filterSection ? questions.filter(q => q.sectionName === filterSection) : questions).map(q => (
+              {questions.map(q => (
                 <tr key={q.id}
                   onClick={() => openDetail(q.id)}
                   style={{ borderBottom: '1px solid var(--border-color)', cursor: 'pointer', transition: 'background 0.15s' }}

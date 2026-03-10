@@ -10,22 +10,21 @@ function FormulaPage() {
   const [loading, setLoading] = useState(true);
   const [showBookmarksOnly, setShowBookmarksOnly] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const examCode = selectedExams[0] || '';
 
   const loadFormulas = useCallback(async () => {
-    if (!examCode) return;
+    if (selectedExams.length === 0) return;
     setLoading(true);
     try {
       const data = showBookmarksOnly
         ? await formulaService.getBookmarks()
-        : await formulaService.getFormulas(examCode);
+        : await formulaService.getFormulas(selectedExams);
       setFormulas(data);
     } catch (err) {
       console.error('Failed to load formulas:', err);
     } finally {
       setLoading(false);
     }
-  }, [examCode, showBookmarksOnly]);
+  }, [selectedExams, showBookmarksOnly]);
 
   useEffect(() => { loadFormulas(); }, [loadFormulas]);
 

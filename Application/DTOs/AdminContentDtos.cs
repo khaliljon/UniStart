@@ -132,3 +132,42 @@ public record AdminUpdateStrategyDto(
     int? EstimatedReadMinutes,
     int? SortOrder
 );
+
+// Drill Templates
+public record AdminDrillTemplateListDto(
+    int Id,
+    string Title,
+    string? Description,
+    string DrillType,
+    string? ExamTypeCode,
+    int? TopicId,
+    string? TopicName,
+    int QuestionCount,
+    int? TimeLimitMinutes,
+    bool IsActive,
+    int SortOrder
+);
+
+public record AdminCreateDrillTemplateDto(
+    string Title,
+    string? Description,
+    string DrillType,
+    string? ExamTypeCode,
+    int? TopicId,
+    int QuestionCount = 10,
+    int? TimeLimitMinutes = null,
+    bool IsActive = true,
+    int SortOrder = 0
+);
+
+public record AdminUpdateDrillTemplateDto(
+    string? Title,
+    string? Description,
+    string? DrillType,
+    string? ExamTypeCode,
+    int? TopicId,
+    int? QuestionCount,
+    int? TimeLimitMinutes,
+    bool? IsActive,
+    int? SortOrder
+);

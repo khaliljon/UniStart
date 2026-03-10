@@ -2,8 +2,10 @@ import api from './api';
 import type { StrategyGuide, StrategyGuideSummary } from '../types';
 
 export const strategyService = {
-  async getGuides(examTypeCode: string): Promise<StrategyGuideSummary[]> {
-    const response = await api.get<StrategyGuideSummary[]>('/strategies', { params: { examTypeCode } });
+  async getGuides(examTypeCodes: string[]): Promise<StrategyGuideSummary[]> {
+    const params = new URLSearchParams();
+    examTypeCodes.forEach(c => params.append('examTypeCodes', c));
+    const response = await api.get<StrategyGuideSummary[]>('/strategies', { params });
     return response.data;
   },
 
