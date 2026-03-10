@@ -1046,6 +1046,10 @@ namespace UniStart.Migrations
                         .HasColumnType("boolean")
                         .HasDefaultValue(true);
 
+                    b.Property<string>("SelectedSectionIds")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
                     b.Property<DateTime>("TargetDate")
                         .HasColumnType("timestamp with time zone");
 
@@ -1400,6 +1404,9 @@ namespace UniStart.Migrations
                         .HasColumnType("boolean")
                         .HasDefaultValue(false);
 
+                    b.Property<int?>("SchoolId")
+                        .HasColumnType("integer");
+
                     b.Property<string>("Specializations")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -1421,6 +1428,8 @@ namespace UniStart.Migrations
 
                     b.HasIndex("IsAvailable")
                         .HasDatabaseName("IX_TutorProfiles_IsAvailable");
+
+                    b.HasIndex("SchoolId");
 
                     b.HasIndex("UserId")
                         .IsUnique();
@@ -1488,6 +1497,71 @@ namespace UniStart.Migrations
                     b.HasIndex("TutorProfileId");
 
                     b.ToTable("TutorScheduleSlots", (string)null);
+                });
+
+            modelBuilder.Entity("UniStart.Domain.Entities.TutorSchool", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("InstagramUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
+
+                    b.Property<bool>("IsPartner")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("LogoUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Specializations")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("TelegramUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("WebsiteUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Slug")
+                        .IsUnique();
+
+                    b.ToTable("TutorSchools", (string)null);
                 });
 
             modelBuilder.Entity("UniStart.Domain.Entities.User", b =>
@@ -2306,11 +2380,18 @@ namespace UniStart.Migrations
 
             modelBuilder.Entity("UniStart.Domain.Entities.TutorProfile", b =>
                 {
+                    b.HasOne("UniStart.Domain.Entities.TutorSchool", "School")
+                        .WithMany("Tutors")
+                        .HasForeignKey("SchoolId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("UniStart.Domain.Entities.User", "User")
                         .WithOne("TutorProfile")
                         .HasForeignKey("UniStart.Domain.Entities.TutorProfile", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("School");
 
                     b.Navigation("User");
                 });
@@ -2623,6 +2704,11 @@ namespace UniStart.Migrations
                     b.Navigation("Reviews");
 
                     b.Navigation("Schedule");
+                });
+
+            modelBuilder.Entity("UniStart.Domain.Entities.TutorSchool", b =>
+                {
+                    b.Navigation("Tutors");
                 });
 
             modelBuilder.Entity("UniStart.Domain.Entities.User", b =>

@@ -91,8 +91,8 @@ public class DatabaseSeeder
         if (!await _context.Skills.AnyAsync(s => s.Code == "SK_PHYS"))
         {
             _context.Skills.AddRange(
-                new Skill { Code = "SK_PHYS", Name = "Физика (Physics)", Description = "Механика, электричество, оптика, термодинамика" },
-                new Skill { Code = "SK_CHEM", Name = "Химия (Chemistry)", Description = "Неорганическая, органическая, аналитическая химия" }
+                new Skill { Code = "SK_PHYS", Name = "Физика EN (Physics EN)", Description = "Механика, электричество, оптика, термодинамика" },
+                new Skill { Code = "SK_CHEM", Name = "Химия EN (Chemistry EN)", Description = "Неорганическая, органическая, аналитическая химия" }
             );
             await _context.SaveChangesAsync();
         }
@@ -102,6 +102,16 @@ public class DatabaseSeeder
             _context.Skills.AddRange(
                 new Skill { Code = "SK_CN_TECH", Name = "Китайский технический (Chinese Technical)", Description = "Техническая лексика, научные тексты на китайском языке" },
                 new Skill { Code = "SK_CN_HUM", Name = "Китайский гуманитарный (Chinese Humanitarian)", Description = "Литература, история, культура на китайском языке" }
+            );
+            await _context.SaveChangesAsync();
+        }
+        // Add CN variant skills if missing (for 8-section CSCA)
+        if (!await _context.Skills.AnyAsync(s => s.Code == "SK_MATH_CN"))
+        {
+            _context.Skills.AddRange(
+                new Skill { Code = "SK_MATH_CN", Name = "Математика CN (Mathematics CN)", Description = "Алгебра, геометрия, анализ данных — на китайском языке" },
+                new Skill { Code = "SK_PHYS_CN", Name = "Физика CN (Physics CN)", Description = "Механика, электричество, оптика, термодинамика — на китайском языке" },
+                new Skill { Code = "SK_CHEM_CN", Name = "Химия CN (Chemistry CN)", Description = "Неорганическая, органическая, аналитическая химия — на китайском языке" }
             );
             await _context.SaveChangesAsync();
         }
@@ -118,7 +128,8 @@ public class DatabaseSeeder
         }
 
         // Restructure CSCA: replace old 2-section structure with 3-subject hierarchy
-        if (!await _context.ExamSections.AnyAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Mathematics"))
+        if (!await _context.ExamSections.AnyAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Mathematics")
+            && !await _context.ExamSections.AnyAsync(s => s.ExamTypeCode == "CSCA" && s.Name.Contains("Mathematics")))
         {
             await SeedCscaRestructureAsync();
         }
@@ -212,6 +223,12 @@ public class DatabaseSeeder
         {
             await SeedIeltsCscaStrategyGuidesAsync();
         }
+
+        // Expand CSCA from 5 to 8 sections (EN/CN split) — must run last, after all name-based lookups
+        await ExpandCscaTo8SectionsAsync();
+
+        // Seed partner schools
+        await SeedTutorSchoolsAsync();
 
         await _context.SaveChangesAsync();
     }
@@ -351,12 +368,15 @@ public class DatabaseSeeder
             new Skill { Code = "SK_WRITE", Name = "Письмо (Writing)", Description = "Грамматика, структура предложений, эссе" },
             new Skill { Code = "SK_LISTEN", Name = "Аудирование (Listening)", Description = "Понимание устной речи" },
             new Skill { Code = "SK_SPEAK", Name = "Говорение (Speaking)", Description = "Устная речь и произношение" },
-            new Skill { Code = "SK_MATH", Name = "Математика (Mathematics)", Description = "Алгебра, геометрия, анализ данных" },
+            new Skill { Code = "SK_MATH", Name = "Математика EN (Mathematics EN)", Description = "Алгебра, геометрия, анализ данных" },
             new Skill { Code = "SK_CRIT", Name = "Критическое мышление (Critical Thinking)", Description = "Логика, анализ аргументов, решение проблем" },
-            new Skill { Code = "SK_PHYS", Name = "Физика (Physics)", Description = "Механика, электричество, оптика, термодинамика" },
-            new Skill { Code = "SK_CHEM", Name = "Химия (Chemistry)", Description = "Неорганическая, органическая, аналитическая химия" },
+            new Skill { Code = "SK_PHYS", Name = "Физика EN (Physics EN)", Description = "Механика, электричество, оптика, термодинамика" },
+            new Skill { Code = "SK_CHEM", Name = "Химия EN (Chemistry EN)", Description = "Неорганическая, органическая, аналитическая химия" },
             new Skill { Code = "SK_CN_TECH", Name = "Китайский технический (Chinese Technical)", Description = "Техническая лексика, научные тексты на китайском языке" },
-            new Skill { Code = "SK_CN_HUM", Name = "Китайский гуманитарный (Chinese Humanitarian)", Description = "Литература, история, культура на китайском языке" }
+            new Skill { Code = "SK_CN_HUM", Name = "Китайский гуманитарный (Chinese Humanitarian)", Description = "Литература, история, культура на китайском языке" },
+            new Skill { Code = "SK_MATH_CN", Name = "Математика CN (Mathematics CN)", Description = "Алгебра, геометрия, анализ данных — на китайском языке" },
+            new Skill { Code = "SK_PHYS_CN", Name = "Физика CN (Physics CN)", Description = "Механика, электричество, оптика, термодинамика — на китайском языке" },
+            new Skill { Code = "SK_CHEM_CN", Name = "Химия CN (Chemistry CN)", Description = "Неорганическая, органическая, аналитическая химия — на китайском языке" }
         };
 
         await _context.Skills.AddRangeAsync(skills);
@@ -2481,11 +2501,11 @@ The implications of these findings have been profound. In the field of behaviora
         var ieltsReadingS = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "IELTS" && s.Name == "Reading");
         var ieltsWritingS = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "IELTS" && s.Name == "Writing");
         var ieltsSpeakingS = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "IELTS" && s.Name == "Speaking");
-        var cscaMathS = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Mathematics");
-        var cscaPhysS = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Physics");
-        var cscaChemS = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Chemistry");
-        var cscaCnTechS = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Chinese Technical");
-        var cscaCnHumS = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Chinese Humanitarian");
+        var cscaMathS = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "CSCA" && s.Name.Contains("Mathematics") && !s.Name.Contains("(CN)"));
+        var cscaPhysS = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "CSCA" && s.Name.Contains("Physics") && !s.Name.Contains("(CN)"));
+        var cscaChemS = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "CSCA" && s.Name.Contains("Chemistry") && !s.Name.Contains("(CN)"));
+        var cscaCnTechS = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "CSCA" && s.Name.Contains("Chinese Technical"));
+        var cscaCnHumS = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "CSCA" && s.Name.Contains("Chinese Humanitarian"));
 
         var mockExams = new List<MockExam>
         {
@@ -2689,11 +2709,11 @@ The implications of these findings have been profound. In the field of behaviora
         var ieltsReadingS = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "IELTS" && s.Name == "Reading");
         var ieltsWritingS = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "IELTS" && s.Name == "Writing");
         var ieltsSpeakingS = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "IELTS" && s.Name == "Speaking");
-        var cscaMathS2 = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Mathematics");
-        var cscaPhysS2 = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Physics");
-        var cscaChemS2 = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Chemistry");
-        var cscaCnTechS2 = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Chinese Technical");
-        var cscaCnHumS2 = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Chinese Humanitarian");
+        var cscaMathS2 = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "CSCA" && s.Name.Contains("Mathematics") && !s.Name.Contains("(CN)"));
+        var cscaPhysS2 = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "CSCA" && s.Name.Contains("Physics") && !s.Name.Contains("(CN)"));
+        var cscaChemS2 = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "CSCA" && s.Name.Contains("Chemistry") && !s.Name.Contains("(CN)"));
+        var cscaCnTechS2 = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "CSCA" && s.Name.Contains("Chinese Technical"));
+        var cscaCnHumS2 = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "CSCA" && s.Name.Contains("Chinese Humanitarian"));
 
         var mockExams = new List<MockExam>
         {
@@ -2787,11 +2807,11 @@ The implications of these findings have been profound. In the field of behaviora
         await _context.SaveChangesAsync();
 
         // 5. Create single configurable CSCA mock with all 8 subject options
-        var mathS = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Mathematics");
-        var physS = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Physics");
-        var chemS = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Chemistry");
-        var cnTechS = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Chinese Technical");
-        var cnHumS = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Chinese Humanitarian");
+        var mathS = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "CSCA" && s.Name.Contains("Mathematics") && !s.Name.Contains("(CN)"));
+        var physS = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "CSCA" && s.Name.Contains("Physics") && !s.Name.Contains("(CN)"));
+        var chemS = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "CSCA" && s.Name.Contains("Chemistry") && !s.Name.Contains("(CN)"));
+        var cnTechS = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "CSCA" && s.Name.Contains("Chinese Technical"));
+        var cnHumS = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "CSCA" && s.Name.Contains("Chinese Humanitarian"));
 
         var newMock = new MockExam
         {
@@ -2808,8 +2828,8 @@ The implications of these findings have been profound. In the field of behaviora
                 new MockExamSection { ExamSectionId = mathS?.Id, Name = "Mathematics (CN)", TimeLimitMinutes = 60, QuestionCount = 48, SortOrder = 3, Instructions = "48 вопросов по математике: алгебра, геометрия, анализ, вероятность и статистика. 60 минут." },
                 new MockExamSection { ExamSectionId = physS?.Id, Name = "Physics (CN)", TimeLimitMinutes = 60, QuestionCount = 48, SortOrder = 4, Instructions = "48 вопросов по физике: механика, термодинамика, электромагнетизм, оптика. 60 минут." },
                 new MockExamSection { ExamSectionId = chemS?.Id, Name = "Chemistry (CN)", TimeLimitMinutes = 60, QuestionCount = 48, SortOrder = 5, Instructions = "48 вопросов по химии: общая, органическая и неорганическая химия. 60 минут." },
-                new MockExamSection { ExamSectionId = cnTechS?.Id, Name = "Chinese Technical", TimeLimitMinutes = 90, QuestionCount = 80, SortOrder = 6, Instructions = "80 вопросов: научная терминология, чтение технических текстов на китайском. 90 минут." },
-                new MockExamSection { ExamSectionId = cnHumS?.Id, Name = "Chinese Humanitarian", TimeLimitMinutes = 90, QuestionCount = 80, SortOrder = 7, Instructions = "80 вопросов: литература, история, культура, философия Китая. 90 минут." }
+                new MockExamSection { ExamSectionId = cnTechS?.Id, Name = "中文技术 (Chinese Technical)", TimeLimitMinutes = 90, QuestionCount = 80, SortOrder = 6, Instructions = "80 вопросов: научная терминология, чтение технических текстов на китайском. 90 минут." },
+                new MockExamSection { ExamSectionId = cnHumS?.Id, Name = "中文人文 (Chinese Humanitarian)", TimeLimitMinutes = 90, QuestionCount = 80, SortOrder = 7, Instructions = "80 вопросов: литература, история, культура, философия Китая. 90 минут." }
             }
         };
 
@@ -3976,8 +3996,9 @@ General Tips:
     {
         // 1. Remove old CSCA sections, topics, and related data
         var oldSections = await _context.ExamSections
-            .Where(s => s.ExamTypeCode == "CSCA" && s.Name != "Mathematics" && s.Name != "Physics" && s.Name != "Chemistry"
-                        && s.Name != "Chinese Technical" && s.Name != "Chinese Humanitarian")
+            .Where(s => s.ExamTypeCode == "CSCA"
+                        && !s.Name.Contains("Mathematics") && !s.Name.Contains("Physics") && !s.Name.Contains("Chemistry")
+                        && !s.Name.Contains("Chinese Technical") && !s.Name.Contains("Chinese Humanitarian"))
             .ToListAsync();
 
         if (oldSections.Any())
@@ -4006,7 +4027,7 @@ General Tips:
         }
 
         // 2. Add new CSCA sections if not yet present
-        if (!await _context.ExamSections.AnyAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Mathematics"))
+        if (!await _context.ExamSections.AnyAsync(s => s.ExamTypeCode == "CSCA" && s.Name.Contains("Mathematics")))
         {
             _context.ExamSections.AddRange(
                 new ExamSection { ExamTypeCode = "CSCA", Name = "Mathematics", MinScore = 0, MaxScore = 100 },
@@ -4016,7 +4037,7 @@ General Tips:
             await _context.SaveChangesAsync();
         }
         // Add Chinese Technical and Chinese Humanitarian sections if not yet present
-        if (!await _context.ExamSections.AnyAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Chinese Technical"))
+        if (!await _context.ExamSections.AnyAsync(s => s.ExamTypeCode == "CSCA" && s.Name.Contains("Chinese Technical")))
         {
             _context.ExamSections.AddRange(
                 new ExamSection { ExamTypeCode = "CSCA", Name = "Chinese Technical", MinScore = 0, MaxScore = 100 },
@@ -4033,12 +4054,12 @@ General Tips:
             await _context.SaveChangesAsync();
         }
 
-        // 3. Resolve section & skill IDs
-        var mathSection = await _context.ExamSections.FirstAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Mathematics");
-        var physSection = await _context.ExamSections.FirstAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Physics");
-        var chemSection = await _context.ExamSections.FirstAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Chemistry");
-        var cnTechSection = await _context.ExamSections.FirstAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Chinese Technical");
-        var cnHumSection = await _context.ExamSections.FirstAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Chinese Humanitarian");
+        // 3. Resolve section & skill IDs (handle both old and renamed names)
+        var mathSection = await _context.ExamSections.FirstAsync(s => s.ExamTypeCode == "CSCA" && s.Name.Contains("Mathematics") && !s.Name.Contains("(CN)"));
+        var physSection = await _context.ExamSections.FirstAsync(s => s.ExamTypeCode == "CSCA" && s.Name.Contains("Physics") && !s.Name.Contains("(CN)"));
+        var chemSection = await _context.ExamSections.FirstAsync(s => s.ExamTypeCode == "CSCA" && s.Name.Contains("Chemistry") && !s.Name.Contains("(CN)"));
+        var cnTechSection = await _context.ExamSections.FirstAsync(s => s.ExamTypeCode == "CSCA" && s.Name.Contains("Chinese Technical"));
+        var cnHumSection = await _context.ExamSections.FirstAsync(s => s.ExamTypeCode == "CSCA" && s.Name.Contains("Chinese Humanitarian"));
         var skillMath = await _context.Skills.FirstAsync(s => s.Code == "SK_MATH");
         var skillPhys = await _context.Skills.FirstAsync(s => s.Code == "SK_PHYS");
         var skillChem = await _context.Skills.FirstAsync(s => s.Code == "SK_CHEM");
@@ -4495,4 +4516,315 @@ General Tips:
     /// <summary>Helper to create a Topic with less boilerplate.</summary>
     private static Topic T(string name, int skillId, int sectionId) =>
         new Topic { Name = name, SkillId = skillId, SectionId = sectionId };
+
+    private async Task SeedTutorSchoolsAsync()
+    {
+        if (await _context.TutorSchools.AnyAsync()) return;
+
+        var linhao = new TutorSchool
+        {
+            Name = "Linhao Chinese",
+            Slug = "linhao-chinese",
+            Description = "Первая онлайн-школа в СНГ по подготовке студентов в Китай к экзамену CSCA. Авторский курс «Мандарин» с 0 до 1 HSK за 8 уроков.",
+            LogoUrl = null,
+            WebsiteUrl = null,
+            InstagramUrl = "https://www.instagram.com/linhao.chinese/",
+            TelegramUrl = "https://t.me/linhao_chinese",
+            Specializations = "CSCA",
+            IsPartner = true,
+            IsActive = true,
+        };
+        _context.TutorSchools.Add(linhao);
+        await _context.SaveChangesAsync();
+
+        // Create tutors inside the school
+        var tutorUsers = new[]
+        {
+            new User { Email = "teacher1@linhao.cn", Name = "Ли Вэй (李伟)", PasswordHash = BCrypt.Net.BCrypt.HashPassword("LinhaoTutor1!"), Role = UserRole.Tutor },
+            new User { Email = "teacher2@linhao.cn", Name = "Чжан Мин (张明)", PasswordHash = BCrypt.Net.BCrypt.HashPassword("LinhaoTutor2!"), Role = UserRole.Tutor },
+        };
+        _context.Users.AddRange(tutorUsers);
+        await _context.SaveChangesAsync();
+
+        var profiles = new[]
+        {
+            new TutorProfile
+            {
+                UserId = tutorUsers[0].Id,
+                SchoolId = linhao.Id,
+                Headline = "Преподаватель CSCA математики и физики",
+                Bio = "5 лет опыта подготовки к CSCA. Выпускники поступили в топ-10 университетов Китая.",
+                Experience = "Пекинский университет, магистр педагогики. Сертифицированный преподаватель HSK.",
+                Specializations = "CSCA",
+                HourlyRate = 35,
+                IsAvailable = true,
+                IsVerified = true,
+                AverageRating = 4.8m,
+                TotalReviews = 12,
+                TotalStudents = 45,
+                ContactPreference = ContactPreference.Chat,
+            },
+            new TutorProfile
+            {
+                UserId = tutorUsers[1].Id,
+                SchoolId = linhao.Id,
+                Headline = "Преподаватель китайского языка и CSCA химии",
+                Bio = "Носитель китайского языка. Помогаю студентам из СНГ освоить технический и гуманитарный китайский для CSCA.",
+                Experience = "Шанхайский университет, бакалавр химии. 3 года преподавания HSK и CSCA.",
+                Specializations = "CSCA",
+                HourlyRate = 30,
+                IsAvailable = true,
+                IsVerified = true,
+                AverageRating = 4.9m,
+                TotalReviews = 8,
+                TotalStudents = 30,
+                ContactPreference = ContactPreference.Both,
+            },
+        };
+        _context.TutorProfiles.AddRange(profiles);
+        await _context.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Expands CSCA from 5 sections to 8 by splitting Math/Physics/Chemistry into EN and CN variants.
+    /// Also creates CN skills, topics, and updates MockExamSection references.
+    /// Safe to call multiple times — skips if already expanded.
+    /// </summary>
+    private async Task ExpandCscaTo8SectionsAsync()
+    {
+        var sections = await _context.ExamSections
+            .Where(s => s.ExamTypeCode == "CSCA")
+            .ToListAsync();
+
+        if (!sections.Any()) return;
+
+        // 1. Rename existing EN sections (idempotent — only renames if old name found)
+        var renameMap = new Dictionary<string, string>
+        {
+            ["Mathematics"] = "Mathematics (EN)",
+            ["Physics"] = "Physics (EN)",
+            ["Chemistry"] = "Chemistry (EN)",
+            ["Chinese Technical"] = "中文技术 (Chinese Technical)",
+            ["Chinese Humanitarian"] = "中文人文 (Chinese Humanitarian)",
+        };
+        var legacyRenameMap = new Dictionary<string, string>
+        {
+            ["数学 (Mathematics)"] = "Mathematics (EN)",
+            ["物理 (Physics)"] = "Physics (EN)",
+            ["化学 (Chemistry)"] = "Chemistry (EN)",
+            ["Математика (Mathematics)"] = "Mathematics (EN)",
+            ["Физика (Physics)"] = "Physics (EN)",
+            ["Химия (Chemistry)"] = "Chemistry (EN)",
+            ["Китайский технический (Chinese Technical)"] = "中文技术 (Chinese Technical)",
+            ["Китайский гуманитарный (Chinese Humanitarian)"] = "中文人文 (Chinese Humanitarian)",
+        };
+
+        bool renamed = false;
+        foreach (var section in sections)
+        {
+            if (renameMap.TryGetValue(section.Name, out var newName))
+            { section.Name = newName; renamed = true; }
+            else if (legacyRenameMap.TryGetValue(section.Name, out var legacyName))
+            { section.Name = legacyName; renamed = true; }
+        }
+        if (renamed) await _context.SaveChangesAsync();
+
+        // 2. Ensure Chinese Technical and Chinese Humanitarian exist (always checked, even on re-runs)
+        bool added = false;
+        if (!sections.Any(s => s.Name.Contains("Chinese Technical")))
+        {
+            var cnTech = new ExamSection { ExamTypeCode = "CSCA", Name = "中文技术 (Chinese Technical)", MinScore = 0, MaxScore = 100 };
+            _context.ExamSections.Add(cnTech);
+            sections.Add(cnTech);
+            added = true;
+        }
+        if (!sections.Any(s => s.Name.Contains("Chinese Humanitarian")))
+        {
+            var cnHum = new ExamSection { ExamTypeCode = "CSCA", Name = "中文人文 (Chinese Humanitarian)", MinScore = 0, MaxScore = 100 };
+            _context.ExamSections.Add(cnHum);
+            sections.Add(cnHum);
+            added = true;
+        }
+        if (added)
+        {
+            await _context.SaveChangesAsync();
+            // Reload sections to include newly created ones
+            sections = await _context.ExamSections
+                .Where(s => s.ExamTypeCode == "CSCA")
+                .ToListAsync();
+        }
+
+        // 2b. Rename EN skill names to include (EN) suffix (idempotent)
+        var skillRenameMap = new Dictionary<string, string>
+        {
+            ["Математика (Mathematics)"] = "Математика EN (Mathematics EN)",
+            ["Физика (Physics)"] = "Физика EN (Physics EN)",
+            ["Химия (Chemistry)"] = "Химия EN (Chemistry EN)",
+        };
+        var enSkills = await _context.Skills
+            .Where(s => s.Code == "SK_MATH" || s.Code == "SK_PHYS" || s.Code == "SK_CHEM")
+            .ToListAsync();
+        bool skillRenamed = false;
+        foreach (var sk in enSkills)
+        {
+            if (skillRenameMap.TryGetValue(sk.Name, out var newSkillName))
+            { sk.Name = newSkillName; skillRenamed = true; }
+        }
+        if (skillRenamed) await _context.SaveChangesAsync();
+
+        // 3. Create 3 CN ExamSections (Math/Phys/Chem) if not yet created
+        var alreadyExpanded = await _context.ExamSections.AnyAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Mathematics (CN)");
+
+        ExamSection? mathCn, physCn, chemCn;
+        if (!alreadyExpanded)
+        {
+            mathCn = new ExamSection { ExamTypeCode = "CSCA", Name = "Mathematics (CN)", MinScore = 0, MaxScore = 100 };
+            physCn = new ExamSection { ExamTypeCode = "CSCA", Name = "Physics (CN)", MinScore = 0, MaxScore = 100 };
+            chemCn = new ExamSection { ExamTypeCode = "CSCA", Name = "Chemistry (CN)", MinScore = 0, MaxScore = 100 };
+            _context.ExamSections.AddRange(mathCn, physCn, chemCn);
+            await _context.SaveChangesAsync();
+        }
+        else
+        {
+            mathCn = sections.FirstOrDefault(s => s.Name == "Mathematics (CN)");
+            physCn = sections.FirstOrDefault(s => s.Name == "Physics (CN)");
+            chemCn = sections.FirstOrDefault(s => s.Name == "Chemistry (CN)");
+        }
+
+        // 4. Create CN skills if they don't exist
+        if (!await _context.Skills.AnyAsync(s => s.Code == "SK_MATH_CN"))
+        {
+            _context.Skills.AddRange(
+                new Skill { Code = "SK_MATH_CN", Name = "Математика CN (Mathematics CN)", Description = "Алгебра, геометрия, анализ данных — на китайском языке" },
+                new Skill { Code = "SK_PHYS_CN", Name = "Физика CN (Physics CN)", Description = "Механика, электричество, оптика, термодинамика — на китайском языке" },
+                new Skill { Code = "SK_CHEM_CN", Name = "Химия CN (Chemistry CN)", Description = "Неорганическая, органическая, аналитическая химия — на китайском языке" }
+            );
+            await _context.SaveChangesAsync();
+        }
+
+        var skMathCn = await _context.Skills.FirstAsync(s => s.Code == "SK_MATH_CN");
+        var skPhysCn = await _context.Skills.FirstAsync(s => s.Code == "SK_PHYS_CN");
+        var skChemCn = await _context.Skills.FirstAsync(s => s.Code == "SK_CHEM_CN");
+
+        // 5. Create CN topics (mirroring EN chapter structure)
+        if (mathCn != null && !await _context.Topics.AnyAsync(t => t.SectionId == mathCn.Id))
+        {
+            var cnTopics = new List<Topic>
+            {
+                // Mathematics (CN) — основные разделы
+                T("CN-M1 集合 (Sets)", skMathCn.Id, mathCn.Id),
+                T("CN-M2 函数 (Functions)", skMathCn.Id, mathCn.Id),
+                T("CN-M3 指数与对数 (Exponents & Logarithms)", skMathCn.Id, mathCn.Id),
+                T("CN-M4 三角函数 (Trigonometry)", skMathCn.Id, mathCn.Id),
+                T("CN-M5 平面向量 (Plane Vectors)", skMathCn.Id, mathCn.Id),
+                T("CN-M6 数列 (Sequences & Series)", skMathCn.Id, mathCn.Id),
+                T("CN-M7 不等式 (Inequalities)", skMathCn.Id, mathCn.Id),
+                T("CN-M8 立体几何 (Solid Geometry)", skMathCn.Id, mathCn.Id),
+                T("CN-M9 解析几何 (Analytic Geometry)", skMathCn.Id, mathCn.Id),
+                T("CN-M10 概率与统计 (Probability & Statistics)", skMathCn.Id, mathCn.Id),
+
+                // Physics (CN) — основные разделы
+                T("CN-P1 力学 (Mechanics)", skPhysCn.Id, physCn!.Id),
+                T("CN-P2 运动学 (Kinematics)", skPhysCn.Id, physCn.Id),
+                T("CN-P3 牛顿定律 (Newton's Laws)", skPhysCn.Id, physCn.Id),
+                T("CN-P4 功和能 (Work & Energy)", skPhysCn.Id, physCn.Id),
+                T("CN-P5 电场 (Electric Fields)", skPhysCn.Id, physCn.Id),
+                T("CN-P6 电路 (Circuits)", skPhysCn.Id, physCn.Id),
+                T("CN-P7 磁场 (Magnetic Fields)", skPhysCn.Id, physCn.Id),
+                T("CN-P8 电磁感应 (Electromagnetic Induction)", skPhysCn.Id, physCn.Id),
+                T("CN-P9 光学 (Optics)", skPhysCn.Id, physCn.Id),
+                T("CN-P10 热学 (Thermodynamics)", skPhysCn.Id, physCn.Id),
+
+                // Chemistry (CN) — основные разделы
+                T("CN-C1 原子结构 (Atomic Structure)", skChemCn.Id, chemCn!.Id),
+                T("CN-C2 化学反应 (Chemical Reactions)", skChemCn.Id, chemCn.Id),
+                T("CN-C3 化学计量 (Stoichiometry)", skChemCn.Id, chemCn.Id),
+                T("CN-C4 碱金属 (Alkali Metals)", skChemCn.Id, chemCn.Id),
+                T("CN-C5 卤素 (Halogens)", skChemCn.Id, chemCn.Id),
+                T("CN-C6 金属及化合物 (Metals & Compounds)", skChemCn.Id, chemCn.Id),
+                T("CN-C7 非金属及化合物 (Non-metals & Compounds)", skChemCn.Id, chemCn.Id),
+                T("CN-C8 有机化学基础 (Organic Chemistry)", skChemCn.Id, chemCn.Id),
+                T("CN-C9 化学平衡 (Chemical Equilibrium)", skChemCn.Id, chemCn.Id),
+                T("CN-C10 电化学 (Electrochemistry)", skChemCn.Id, chemCn.Id),
+            };
+            await _context.Topics.AddRangeAsync(cnTopics);
+            await _context.SaveChangesAsync();
+        }
+
+        // 6. Ensure Chinese Technical / Humanitarian sections have topics
+        var cnTechSection = sections.FirstOrDefault(s => s.Name.Contains("Chinese Technical"));
+        var cnHumSection = sections.FirstOrDefault(s => s.Name.Contains("Chinese Humanitarian"));
+        var skCnTech = await _context.Skills.FirstOrDefaultAsync(s => s.Code == "SK_CN_TECH");
+        var skCnHum = await _context.Skills.FirstOrDefaultAsync(s => s.Code == "SK_CN_HUM");
+
+        if (cnTechSection != null && skCnTech != null
+            && !await _context.Topics.AnyAsync(t => t.SectionId == cnTechSection.Id))
+        {
+            var cnTechTopics = new List<Topic>
+            {
+                T("CT1.1.1 Mathematics Terminology (数学术语)", skCnTech.Id, cnTechSection.Id),
+                T("CT1.1.2 Physics Terminology (物理术语)", skCnTech.Id, cnTechSection.Id),
+                T("CT1.1.3 Chemistry Terminology (化学术语)", skCnTech.Id, cnTechSection.Id),
+                T("CT1.2.1 Units and Measurements in Chinese (单位与测量)", skCnTech.Id, cnTechSection.Id),
+                T("CT2.1.1 Reading Formulas and Equations (公式阅读)", skCnTech.Id, cnTechSection.Id),
+                T("CT2.1.2 Understanding Graphs and Tables (图表理解)", skCnTech.Id, cnTechSection.Id),
+                T("CT2.2.1 Scientific Article Structure (科技文章结构)", skCnTech.Id, cnTechSection.Id),
+                T("CT2.2.2 Abstract and Conclusion Comprehension (摘要与结论)", skCnTech.Id, cnTechSection.Id),
+                T("CT3.1.1 Computer Science Terms (计算机科学)", skCnTech.Id, cnTechSection.Id),
+                T("CT3.1.2 Engineering Vocabulary (工程术语)", skCnTech.Id, cnTechSection.Id),
+            };
+            await _context.Topics.AddRangeAsync(cnTechTopics);
+            await _context.SaveChangesAsync();
+        }
+
+        if (cnHumSection != null && skCnHum != null
+            && !await _context.Topics.AnyAsync(t => t.SectionId == cnHumSection.Id))
+        {
+            var cnHumTopics = new List<Topic>
+            {
+                T("CH1.1.1 Classical Chinese Poetry (古诗词)", skCnHum.Id, cnHumSection.Id),
+                T("CH1.1.2 Modern Chinese Literature (现代文学)", skCnHum.Id, cnHumSection.Id),
+                T("CH1.2.1 Idioms and Proverbs (成语与谚语)", skCnHum.Id, cnHumSection.Id),
+                T("CH2.1.1 Ancient Chinese History (古代史)", skCnHum.Id, cnHumSection.Id),
+                T("CH2.1.2 Modern Chinese History (近现代史)", skCnHum.Id, cnHumSection.Id),
+                T("CH3.1.1 Confucianism (儒家思想)", skCnHum.Id, cnHumSection.Id),
+                T("CH3.1.2 Taoism and Buddhism (道家与佛教)", skCnHum.Id, cnHumSection.Id),
+                T("CH4.1.1 Traditional Art Forms (传统艺术)", skCnHum.Id, cnHumSection.Id),
+                T("CH4.1.2 Festivals and Customs (节日与风俗)", skCnHum.Id, cnHumSection.Id),
+                T("CH5.1.1 Chinese Education System (教育体系)", skCnHum.Id, cnHumSection.Id),
+            };
+            await _context.Topics.AddRangeAsync(cnHumTopics);
+            await _context.SaveChangesAsync();
+        }
+
+        // 7. Update MockExamSection ExamSectionIds for CN variants
+        var cscaMockSections = await _context.MockExamSections
+            .Where(ms => ms.MockExam.ExamTypeCode == "CSCA")
+            .ToListAsync();
+
+        foreach (var ms in cscaMockSections)
+        {
+            if (ms.Name == "Mathematics (CN)" && mathCn != null)
+                ms.ExamSectionId = mathCn.Id;
+            else if (ms.Name == "Physics (CN)" && physCn != null)
+                ms.ExamSectionId = physCn.Id;
+            else if (ms.Name == "Chemistry (CN)" && chemCn != null)
+                ms.ExamSectionId = chemCn.Id;
+            else if (ms.Name.Contains("Chinese Technical") && cnTechSection != null)
+                ms.ExamSectionId = cnTechSection.Id;
+            else if (ms.Name.Contains("Chinese Humanitarian") && cnHumSection != null)
+                ms.ExamSectionId = cnHumSection.Id;
+        }
+
+        // 8. Also rename MockExamSection names for Chinese sections if still old names
+        foreach (var ms in cscaMockSections)
+        {
+            if (ms.Name == "Chinese Technical")
+                ms.Name = "中文技术 (Chinese Technical)";
+            else if (ms.Name == "Chinese Humanitarian")
+                ms.Name = "中文人文 (Chinese Humanitarian)";
+        }
+
+        await _context.SaveChangesAsync();
+    }
 }

@@ -43,6 +43,7 @@ function AdminQuestionsPage() {
   const [filterExam, setFilterExam] = useState('');
   const [filterDiff, setFilterDiff] = useState('');
   const [filterTopic, setFilterTopic] = useState('');
+  const [filterSection, setFilterSection] = useState('');
 
   const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [modalMode, setModalMode] = useState<ModalMode>('view');
@@ -60,6 +61,7 @@ function AdminQuestionsPage() {
   const [topicViewLoading, setTopicViewLoading] = useState(false);
   const [topicFilterExam, setTopicFilterExam] = useState('');
   const [topicFilterTopic, setTopicFilterTopic] = useState('');
+  const [topicFilterSection, setTopicFilterSection] = useState('');
 
   // Topic creation
   const [showTopicModal, setShowTopicModal] = useState(false);
@@ -100,7 +102,7 @@ function AdminQuestionsPage() {
   };
 
   useEffect(() => { loadQuestions(); }, [loadQuestions]);
-  useEffect(() => { loadTopics(); }, []);
+  useEffect(() => { loadTopics(); loadSectionsAndSkills(); }, []);
 
   // Load topic view questions independently
   const loadTopicViewQuestions = useCallback(async () => {
@@ -293,6 +295,7 @@ function AdminQuestionsPage() {
     // Use all topics (including those with 0 questions)
     let filtered = topics;
     if (topicFilterExam) filtered = filtered.filter(t => t.examTypeCode === topicFilterExam);
+    if (topicFilterSection) filtered = filtered.filter(t => t.sectionName === topicFilterSection);
     if (topicFilterTopic) {
       const q = topicFilterTopic.toLowerCase();
       filtered = filtered.filter(t => t.name.toLowerCase().includes(q));
@@ -399,13 +402,19 @@ function AdminQuestionsPage() {
       {/* Table Filters */}
       {viewMode === 'table' && (
         <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', flexWrap: 'wrap', alignItems: 'center' }}>
-          <select value={filterExam} onChange={e => { setFilterExam(e.target.value); setPage(1); }} style={{ padding: '0.5rem' }}>
+          <select value={filterExam} onChange={e => { setFilterExam(e.target.value); setFilterSection(''); setPage(1); }} style={{ padding: '0.5rem' }}>
             <option value="">Все экзамены</option>
             <option value="SAT">SAT</option>
             <option value="TOEFL">TOEFL</option>
             <option value="NUET">NUET</option>
             <option value="IELTS">IELTS</option>
             <option value="CSCA">CSCA</option>
+          </select>
+          <select value={filterSection} onChange={e => { setFilterSection(e.target.value); setPage(1); }} style={{ padding: '0.5rem' }}>
+            <option value="">Все секции</option>
+            {sections
+              .filter(s => !filterExam || s.examTypeCode === filterExam)
+              .map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
           </select>
           <select value={filterDiff} onChange={e => { setFilterDiff(e.target.value); setPage(1); }} style={{ padding: '0.5rem' }}>
             <option value="">Все уровни</option>
@@ -426,13 +435,19 @@ function AdminQuestionsPage() {
       {/* Topic View Filters */}
       {viewMode === 'topics' && (
         <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', flexWrap: 'wrap', alignItems: 'center' }}>
-          <select value={topicFilterExam} onChange={e => { setTopicFilterExam(e.target.value); setTopicPage(1); }} style={{ padding: '0.5rem' }}>
+          <select value={topicFilterExam} onChange={e => { setTopicFilterExam(e.target.value); setTopicFilterSection(''); setTopicPage(1); }} style={{ padding: '0.5rem' }}>
             <option value="">Все экзамены</option>
             <option value="SAT">SAT</option>
             <option value="TOEFL">TOEFL</option>
             <option value="NUET">NUET</option>
             <option value="IELTS">IELTS</option>
             <option value="CSCA">CSCA</option>
+          </select>
+          <select value={topicFilterSection} onChange={e => { setTopicFilterSection(e.target.value); setTopicPage(1); }} style={{ padding: '0.5rem' }}>
+            <option value="">Все секции</option>
+            {sections
+              .filter(s => !topicFilterExam || s.examTypeCode === topicFilterExam)
+              .map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
           </select>
           <input
             placeholder="Поиск по теме…"
@@ -460,7 +475,7 @@ function AdminQuestionsPage() {
               </tr>
             </thead>
             <tbody>
-              {questions.map(q => (
+              {(filterSection ? questions.filter(q => q.sectionName === filterSection) : questions).map(q => (
                 <tr key={q.id}
                   onClick={() => openDetail(q.id)}
                   style={{ borderBottom: '1px solid var(--border-color)', cursor: 'pointer', transition: 'background 0.15s' }}

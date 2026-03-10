@@ -15,4 +15,6 @@ public interface ITutorService
     Task<AcceptDeclineResultDto> DeclineStudentAsync(int tutorUserId, int conversationId, string? reason);
     Task<int> GetStudentIdByConversationAsync(int conversationId);
     Task EnsureTutorProfileAsync(int userId);
+    Task<List<TutorSchoolCardDto>> GetSchoolsAsync();
+    Task<TutorSchoolDetailDto?> GetSchoolAsync(string slug);
 }

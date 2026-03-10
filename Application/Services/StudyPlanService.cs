@@ -48,6 +48,9 @@ public class StudyPlanService : IStudyPlanService
             ExamTypeCode = dto.ExamTypeCode,
             TargetDate = DateTime.SpecifyKind(dto.TargetDate.Date, DateTimeKind.Utc),
             TargetScore = dto.TargetScore,
+            SelectedSectionIds = dto.SectionIds != null && dto.SectionIds.Count > 0
+                ? string.Join(",", dto.SectionIds)
+                : null,
             IsActive = true,
             CreatedAt = DateTime.UtcNow
         };
@@ -127,10 +130,19 @@ public class StudyPlanService : IStudyPlanService
         }
 
         // ─── 1. Load topics for this exam ────────────────────
-        var topics = await _db.Topics
+        var selectedSectionIds = goal.SelectedSectionIds?
+            .Split(',', StringSplitOptions.RemoveEmptyEntries)
+            .Select(int.Parse)
+            .ToHashSet();
+
+        var topicQuery = _db.Topics
             .Include(t => t.Skill)
-            .Where(t => t.Section != null && t.Section.ExamTypeCode == goal.ExamTypeCode)
-            .ToListAsync();
+            .Where(t => t.Section != null && t.Section.ExamTypeCode == goal.ExamTypeCode);
+
+        if (selectedSectionIds != null && selectedSectionIds.Count > 0)
+            topicQuery = topicQuery.Where(t => t.SectionId != null && selectedSectionIds.Contains(t.SectionId.Value));
+
+        var topics = await topicQuery.ToListAsync();
 
         if (!topics.Any())
         {
@@ -927,7 +939,11 @@ public class StudyPlanService : IStudyPlanService
             IsActive: goal.IsActive,
             DaysUntilExam: Math.Max(0, daysUntilExam),
             RecommendedHoursPerDay: hoursPerDay,
-            CreatedAt: goal.CreatedAt
+            CreatedAt: goal.CreatedAt,
+            SectionIds: goal.SelectedSectionIds?
+                .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                .Select(int.Parse)
+                .ToList()
         );
     }
 

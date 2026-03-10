@@ -563,7 +563,10 @@ public class AdaptiveEngineService : IAdaptiveEngineService
                 Math.Round(mastery, 1),
                 LessonCount: topic.Lessons.Count,
                 HasVideoLessons: topic.Lessons.Any(l => l.VideoUrl != null),
-                IrtLevel: irtLevel
+                IrtLevel: irtLevel,
+                SectionId: topic.SectionId,
+                SectionName: topic.Section?.Name,
+                ExamTypeCode: topic.Section?.ExamTypeCode
             );
         });
 

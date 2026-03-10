@@ -133,6 +133,9 @@ export interface TopicProgress {
   lessonCount?: number;
   hasVideoLessons?: boolean;
   irtLevel?: number;
+  sectionId?: number;
+  sectionName?: string;
+  examTypeCode?: string;
 }
 
 // ─── Stage 4: Enhanced Analytics Types ───────────────────────────
@@ -217,12 +220,14 @@ export interface StudyGoal {
   daysUntilExam: number;
   recommendedHoursPerDay: number;
   createdAt: string;
+  sectionIds?: number[];
 }
 
 export interface CreateStudyGoalRequest {
   examTypeCode: string;
   targetDate: string;
   targetScore: number;
+  sectionIds?: number[];
 }
 
 export interface UpdateStudyGoalRequest {
@@ -1159,4 +1164,33 @@ export interface MistakeAnalysis {
   totalMistakes: number;
   errorPatterns: ErrorPattern[];
   topicBreakdown: TopicMistake[];
+}
+
+// ─── Tutor Schools ──────────────────────────────────────
+export interface TutorSchoolCard {
+  id: number;
+  name: string;
+  slug: string;
+  description: string;
+  logoUrl: string | null;
+  instagramUrl: string | null;
+  telegramUrl: string | null;
+  websiteUrl: string | null;
+  specializations: string[];
+  isPartner: boolean;
+  tutorCount: number;
+}
+
+export interface TutorSchoolDetail {
+  id: number;
+  name: string;
+  slug: string;
+  description: string;
+  logoUrl: string | null;
+  instagramUrl: string | null;
+  telegramUrl: string | null;
+  websiteUrl: string | null;
+  specializations: string[];
+  isPartner: boolean;
+  tutors: TutorCard[];
 }

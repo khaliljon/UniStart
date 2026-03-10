@@ -5,7 +5,8 @@ namespace UniStart.Application.DTOs;
 public record CreateStudyGoalDto(
     string ExamTypeCode,
     DateTime TargetDate,
-    int TargetScore
+    int TargetScore,
+    List<int>? SectionIds = null
 );
 
 public record UpdateStudyGoalDto(
@@ -30,7 +31,8 @@ public record StudyGoalDto(
     bool IsActive,
     int DaysUntilExam,
     double RecommendedHoursPerDay,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    List<int>? SectionIds = null
 );
 
 public record StudyPlanDto(

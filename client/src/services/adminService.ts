@@ -275,6 +275,60 @@ const adminService = {
 
   unverifyTutor: (tutorProfileId: number) =>
     api.post<{ verified: boolean; tutorProfileId: number }>(`/admin/tutors/${tutorProfileId}/unverify`).then(r => r.data),
+
+  // ─── Content Management ──────────────────────────────
+
+  // Lessons
+  getLessons: (topicId?: number) =>
+    api.get<Array<{ id: number; topicId: number; topicName: string; title: string; videoUrl: string | null; sortOrder: number; stepCount: number }>>('/admin/content/lessons', { params: topicId ? { topicId } : {} }).then(r => r.data),
+  createLesson: (data: { topicId: number; title: string; content: string; videoUrl?: string; sortOrder?: number }) =>
+    api.post('/admin/content/lessons', data).then(r => r.data),
+  updateLesson: (id: number, data: { title?: string; content?: string; videoUrl?: string; sortOrder?: number }) =>
+    api.put(`/admin/content/lessons/${id}`, data).then(r => r.data),
+  deleteLesson: (id: number) =>
+    api.delete(`/admin/content/lessons/${id}`).then(r => r.data),
+
+  // Flashcard Decks
+  getDecks: (examTypeCode?: string) =>
+    api.get<Array<{ id: number; title: string; description: string | null; examTypeCode: string | null; topicId: number | null; topicName: string | null; isSystem: boolean; cardCount: number; createdAt: string }>>('/admin/content/decks', { params: examTypeCode ? { examTypeCode } : {} }).then(r => r.data),
+  createDeck: (data: { title: string; description?: string; examTypeCode?: string; topicId?: number }) =>
+    api.post('/admin/content/decks', data).then(r => r.data),
+  updateDeck: (id: number, data: { title?: string; description?: string; examTypeCode?: string; topicId?: number }) =>
+    api.put(`/admin/content/decks/${id}`, data).then(r => r.data),
+  deleteDeck: (id: number) =>
+    api.delete(`/admin/content/decks/${id}`).then(r => r.data),
+
+  // Flashcards
+  getCards: (deckId: number) =>
+    api.get<Array<{ id: number; deckId: number; front: string; back: string; sortOrder: number }>>(`/admin/content/decks/${deckId}/cards`).then(r => r.data),
+  createCard: (data: { deckId: number; front: string; back: string; sortOrder?: number }) =>
+    api.post('/admin/content/cards', data).then(r => r.data),
+  updateCard: (id: number, data: { front?: string; back?: string; sortOrder?: number }) =>
+    api.put(`/admin/content/cards/${id}`, data).then(r => r.data),
+  deleteCard: (id: number) =>
+    api.delete(`/admin/content/cards/${id}`).then(r => r.data),
+
+  // Formulas
+  getFormulas: (topicId?: number) =>
+    api.get<Array<{ id: number; topicId: number; topicName: string; title: string; formula: string; description: string | null; sortOrder: number }>>('/admin/content/formulas', { params: topicId ? { topicId } : {} }).then(r => r.data),
+  createFormula: (data: { topicId: number; title: string; formula: string; description?: string; sortOrder?: number }) =>
+    api.post('/admin/content/formulas', data).then(r => r.data),
+  updateFormula: (id: number, data: { title?: string; formula?: string; description?: string; sortOrder?: number }) =>
+    api.put(`/admin/content/formulas/${id}`, data).then(r => r.data),
+  deleteFormula: (id: number) =>
+    api.delete(`/admin/content/formulas/${id}`).then(r => r.data),
+
+  // Strategies
+  getStrategies: (examTypeCode?: string) =>
+    api.get<Array<{ id: number; examTypeCode: string; title: string; summary: string; category: string; estimatedReadMinutes: number; sortOrder: number }>>('/admin/content/strategies', { params: examTypeCode ? { examTypeCode } : {} }).then(r => r.data),
+  getStrategy: (id: number) =>
+    api.get<{ id: number; examTypeCode: string; title: string; summary: string; content: string; category: string; estimatedReadMinutes: number; sortOrder: number }>(`/admin/content/strategies/${id}`).then(r => r.data),
+  createStrategy: (data: { examTypeCode: string; title: string; summary: string; content: string; category: string; estimatedReadMinutes?: number; sortOrder?: number }) =>
+    api.post('/admin/content/strategies', data).then(r => r.data),
+  updateStrategy: (id: number, data: { title?: string; summary?: string; content?: string; category?: string; estimatedReadMinutes?: number; sortOrder?: number }) =>
+    api.put(`/admin/content/strategies/${id}`, data).then(r => r.data),
+  deleteStrategy: (id: number) =>
+    api.delete(`/admin/content/strategies/${id}`).then(r => r.data),
 };
 
 export default adminService;

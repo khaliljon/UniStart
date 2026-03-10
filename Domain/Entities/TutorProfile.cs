@@ -29,8 +29,12 @@ public class TutorProfile : IAuditable
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
 
+    // School affiliation (optional)
+    public int? SchoolId { get; set; }
+
     // Navigation
     public virtual User User { get; set; } = null!;
+    public virtual TutorSchool? School { get; set; }
     public virtual ICollection<TutorScheduleSlot> Schedule { get; set; } = new List<TutorScheduleSlot>();
     public virtual ICollection<TutorReview> Reviews { get; set; } = new List<TutorReview>();
 }

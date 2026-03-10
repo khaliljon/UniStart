@@ -11,11 +11,6 @@ import {
   Line,
   Area,
   AreaChart,
-  RadarChart,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
-  Radar,
 } from 'recharts';
 import { predictionService } from '../services/predictionService';
 import { examService } from '../services/examService';
@@ -167,9 +162,8 @@ function PredictionPage() {
           <ScoreCard prediction={prediction} />
 
           {/* ─── Section Breakdown ─── */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
+          <div style={{ marginTop: '1rem' }}>
             <SectionsBarChart sections={prediction.sections} />
-            <SectionsRadar sections={prediction.sections} />
           </div>
 
           {/* ─── Section Details ─── */}
@@ -300,52 +294,45 @@ function ScoreCard({ prediction }: { prediction: ScorePrediction }) {
 
 function SectionsBarChart({ sections }: { sections: SectionPrediction[] }) {
   const data = sections.map((s) => ({
-    name: s.sectionName.length > 15 ? s.sectionName.slice(0, 14) + '…' : s.sectionName,
+    name: s.sectionName.length > 18 ? s.sectionName.slice(0, 17) + '…' : s.sectionName,
+    fullName: s.sectionName,
     score: s.predictedScore,
     max: s.maxScore - s.predictedScore,
+    maxScore: s.maxScore,
     confLow: s.confidenceLow,
     confHigh: s.confidenceHigh,
   }));
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const renderTooltip = ({ active, payload }: any) => {
+    if (!active || !payload?.length) return null;
+    const d = payload[0].payload;
+    return (
+      <div style={{
+        background: 'var(--card-bg)', border: '1px solid var(--border-color)',
+        borderRadius: '8px', padding: '0.5rem 0.75rem', whiteSpace: 'nowrap',
+      }}>
+        <div style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: '0.25rem' }}>
+          {d.fullName}
+        </div>
+        <div style={{ color: '#6366f1' }}>Прогноз : {d.score}</div>
+        <div style={{ color: 'var(--text-primary)' }}>До макс. : {d.max}</div>
+      </div>
+    );
+  };
+
   return (
     <div className="card card-static animate-fade-in-up" style={{ padding: '1.25rem' }}>
       <h3 style={{ margin: '0 0 1rem' }}>Прогноз по секциям</h3>
-      <ResponsiveContainer width="100%" height={220}>
+      <ResponsiveContainer width="100%" height={Math.max(180, data.length * 44)}>
         <BarChart data={data} layout="vertical">
           <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
           <XAxis type="number" tick={{ fill: 'var(--text-secondary)', fontSize: 11 }} />
-          <YAxis type="category" dataKey="name" width={110} tick={{ fill: 'var(--text-secondary)', fontSize: 11 }} />
-          <Tooltip
-            contentStyle={{
-              background: 'var(--card-bg)', border: '1px solid var(--border-color)',
-              borderRadius: '8px', color: 'var(--text-primary)',
-            }}
-          />
+          <YAxis type="category" dataKey="name" width={140} tick={{ fill: 'var(--text-secondary)', fontSize: 11 }} />
+          <Tooltip content={renderTooltip} />
           <Bar dataKey="score" name="Прогноз" stackId="a" fill="#6366f1" radius={[0, 4, 4, 0]} />
           <Bar dataKey="max" name="До макс." stackId="a" fill="var(--border-color)" radius={[0, 4, 4, 0]} />
         </BarChart>
-      </ResponsiveContainer>
-    </div>
-  );
-}
-
-function SectionsRadar({ sections }: { sections: SectionPrediction[] }) {
-  const radarData = sections.map((s) => ({
-    section: s.sectionName.length > 12 ? s.sectionName.slice(0, 11) + '…' : s.sectionName,
-    level: Math.round(((s.predictedScore - s.minScore) / (s.maxScore - s.minScore)) * 100),
-    fullMark: 100,
-  }));
-
-  return (
-    <div className="card card-static animate-fade-in-up" style={{ padding: '1.25rem' }}>
-      <h3 style={{ margin: '0 0 1rem' }}>Профиль по секциям</h3>
-      <ResponsiveContainer width="100%" height={220}>
-        <RadarChart data={radarData}>
-          <PolarGrid stroke="var(--border-color)" />
-          <PolarAngleAxis dataKey="section" tick={{ fill: 'var(--text-secondary)', fontSize: 10 }} />
-          <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fontSize: 9 }} />
-          <Radar name="Уровень" dataKey="level" stroke="#6366f1" fill="#6366f1" fillOpacity={0.3} />
-        </RadarChart>
       </ResponsiveContainer>
     </div>
   );

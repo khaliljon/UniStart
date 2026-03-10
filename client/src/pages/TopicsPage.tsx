@@ -266,11 +266,31 @@ export default function TopicsPage() {
 
   // ───────────── TOPICS LIST VIEW ─────────────
   if (viewMode === 'topics') {
+    // Group topics by section
+    const sectionGroups: { sectionName: string; sectionId: number | null; topics: TopicProgress[] }[] = [];
+    const sectionMap = new Map<string, TopicProgress[]>();
+    const sectionIdMap = new Map<string, number | null>();
+    
+    topics.forEach(t => {
+      const key = t.sectionName || 'Другое';
+      if (!sectionMap.has(key)) {
+        sectionMap.set(key, []);
+        sectionIdMap.set(key, t.sectionId ?? null);
+      }
+      sectionMap.get(key)!.push(t);
+    });
+    
+    sectionMap.forEach((sectionTopics, name) => {
+      sectionGroups.push({ sectionName: name, sectionId: sectionIdMap.get(name) ?? null, topics: sectionTopics });
+    });
+
+    const hasSections = sectionGroups.length > 1 || (sectionGroups.length === 1 && sectionGroups[0].sectionName !== 'Другое');
+
     return (
       <div className="animate-fade-in" style={{ maxWidth: '800px', margin: '0 auto' }}>
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-primary)' }}>Темы</h1>
+          <h1 style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-primary)' }}>Обучение</h1>
           <button onClick={() => navigate('/test')} className="btn btn-outline">
             ← Назад
           </button>
@@ -296,7 +316,13 @@ export default function TopicsPage() {
 
         {/* Stats Summary */}
         <div className="card animate-fade-in-up" style={{ marginBottom: '1.5rem', padding: '1.5rem' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', textAlign: 'center' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: hasSections ? 'repeat(4, 1fr)' : 'repeat(3, 1fr)', gap: '1rem', textAlign: 'center' }}>
+            {hasSections && (
+              <div>
+                <div style={{ fontSize: '1.75rem', fontWeight: '700', color: 'var(--text-primary)' }}>{sectionGroups.length}</div>
+                <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Секций</div>
+              </div>
+            )}
             <div>
               <div style={{ fontSize: '1.75rem', fontWeight: '700', color: 'var(--primary-color)' }}>{topics.length}</div>
               <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Всего тем</div>
@@ -316,77 +342,147 @@ export default function TopicsPage() {
           </div>
         </div>
 
-        {/* Topics Grid */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          {topics.map((topic, index) => (
-            <div
-              key={topic.topicId}
-              className="card animate-fade-in-up"
-              style={{ 
-                padding: '1.25rem',
-                borderLeft: `4px solid ${getMasteryColor(topic.masteryPercentage)}`,
-                animationDelay: `${index * 0.05}s`
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
-                <div>
-                  <h3 style={{ fontWeight: '600', color: 'var(--text-primary)', marginBottom: '0.25rem' }}>{topic.topicName}</h3>
-                  <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                    {topic.totalQuestions} {topic.totalQuestions === 1 ? 'вопрос' : 'вопросов'} в теме
-                    {(topic.lessonCount ?? 0) > 0 && (
-                      <span style={{ marginLeft: '0.5rem' }}>• {topic.lessonCount} {topic.lessonCount === 1 ? 'урок' : 'уроков'}</span>
-                    )}
-                  </p>
-                </div>
-                <span style={{ 
-                  padding: '0.25rem 0.75rem', 
-                  borderRadius: '9999px', 
-                  fontSize: '0.875rem', 
-                  fontWeight: '500',
-                  ...getMasteryBadgeStyle(topic.masteryPercentage)
+        {/* Section-grouped Topics */}
+        {sectionGroups.map((section, sIdx) => {
+          const sectionMastery = section.topics.length > 0
+            ? Math.round(section.topics.reduce((sum, t) => sum + t.masteryPercentage, 0) / section.topics.length)
+            : 0;
+
+          return (
+            <div key={section.sectionName} className="animate-fade-in-up" style={{ marginBottom: '2rem', animationDelay: `${sIdx * 0.08}s` }}>
+              {/* Section Header */}
+              {hasSections && (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: '0.75rem',
+                  padding: '0.75rem 1rem',
+                  borderRadius: '0.75rem',
+                  backgroundColor: 'var(--card-background)',
+                  border: '1px solid var(--border-color)'
                 }}>
-                  {topic.masteryPercentage}%
-                </span>
-              </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <span style={{
+                      width: '2.25rem',
+                      height: '2.25rem',
+                      borderRadius: '0.5rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '1rem',
+                      fontWeight: '700',
+                      backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                      color: 'var(--primary-color)'
+                    }}>
+                      {sIdx + 1}
+                    </span>
+                    <div>
+                      <h2 style={{ fontSize: '1rem', fontWeight: '600', color: 'var(--text-primary)', margin: 0 }}>
+                        {section.sectionName}
+                      </h2>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                        {section.topics.length} {section.topics.length === 1 ? 'тема' : section.topics.length < 5 ? 'темы' : 'тем'}
+                      </span>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <div style={{ width: '80px', backgroundColor: 'var(--border-color)', borderRadius: '9999px', height: '0.375rem' }}>
+                      <div style={{
+                        width: `${Math.min(sectionMastery, 100)}%`,
+                        backgroundColor: getMasteryColor(sectionMastery),
+                        height: '0.375rem',
+                        borderRadius: '9999px',
+                        transition: 'width 0.3s ease'
+                      }} />
+                    </div>
+                    <span style={{
+                      padding: '0.25rem 0.5rem',
+                      borderRadius: '9999px',
+                      fontSize: '0.75rem',
+                      fontWeight: '500',
+                      ...getMasteryBadgeStyle(sectionMastery)
+                    }}>
+                      {sectionMastery}%
+                    </span>
+                  </div>
+                </div>
+              )}
 
-              {/* Progress Bar */}
-              <div style={{ width: '100%', backgroundColor: 'var(--border-color)', borderRadius: '9999px', height: '0.5rem' }}>
-                <div style={{ 
-                  width: `${Math.min(topic.masteryPercentage, 100)}%`,
-                  backgroundColor: getMasteryColor(topic.masteryPercentage),
-                  height: '0.5rem',
-                  borderRadius: '9999px',
-                  transition: 'width 0.3s ease'
-                }} />
-              </div>
-
-              <div style={{ marginTop: '0.5rem', display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                <span>✓ {topic.correctAnswers} верных ответов</span>
-                <span>✕ {topic.incorrectAnswers} ошибок</span>
-              </div>
-
-              {/* Action Buttons */}
-              <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.5rem' }}>
-                {(topic.lessonCount ?? 0) > 0 && (
-                  <button
-                    onClick={() => startTopicLesson(topic)}
-                    className="btn btn-outline"
-                    style={{ flex: 1, fontSize: '0.8rem', padding: '0.5rem' }}
+              {/* Topics inside section */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', paddingLeft: hasSections ? '0.5rem' : '0' }}>
+                {section.topics.map((topic, index) => (
+                  <div
+                    key={topic.topicId}
+                    className="card animate-fade-in-up"
+                    style={{
+                      padding: '1.25rem',
+                      borderLeft: `4px solid ${getMasteryColor(topic.masteryPercentage)}`,
+                      animationDelay: `${(sIdx * section.topics.length + index) * 0.03}s`
+                    }}
                   >
-                    Урок
-                  </button>
-                )}
-                <button
-                  onClick={() => startTopicPractice(topic)}
-                  className="btn btn-primary"
-                  style={{ flex: 1, fontSize: '0.8rem', padding: '0.5rem' }}
-                >
-                  Практика
-                </button>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
+                      <div>
+                        <h3 style={{ fontWeight: '600', color: 'var(--text-primary)', marginBottom: '0.25rem' }}>{topic.topicName}</h3>
+                        <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                          {topic.totalQuestions} {topic.totalQuestions === 1 ? 'вопрос' : 'вопросов'} в теме
+                          {(topic.lessonCount ?? 0) > 0 && (
+                            <span style={{ marginLeft: '0.5rem' }}>• {topic.lessonCount} {topic.lessonCount === 1 ? 'урок' : 'уроков'}</span>
+                          )}
+                        </p>
+                      </div>
+                      <span style={{
+                        padding: '0.25rem 0.75rem',
+                        borderRadius: '9999px',
+                        fontSize: '0.875rem',
+                        fontWeight: '500',
+                        ...getMasteryBadgeStyle(topic.masteryPercentage)
+                      }}>
+                        {topic.masteryPercentage}%
+                      </span>
+                    </div>
+
+                    {/* Progress Bar */}
+                    <div style={{ width: '100%', backgroundColor: 'var(--border-color)', borderRadius: '9999px', height: '0.5rem' }}>
+                      <div style={{
+                        width: `${Math.min(topic.masteryPercentage, 100)}%`,
+                        backgroundColor: getMasteryColor(topic.masteryPercentage),
+                        height: '0.5rem',
+                        borderRadius: '9999px',
+                        transition: 'width 0.3s ease'
+                      }} />
+                    </div>
+
+                    <div style={{ marginTop: '0.5rem', display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                      <span>✓ {topic.correctAnswers} верных ответов</span>
+                      <span>✕ {topic.incorrectAnswers} ошибок</span>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.5rem' }}>
+                      {(topic.lessonCount ?? 0) > 0 && (
+                        <button
+                          onClick={() => startTopicLesson(topic)}
+                          className="btn btn-outline"
+                          style={{ flex: 1, fontSize: '0.8rem', padding: '0.5rem' }}
+                        >
+                          Урок
+                        </button>
+                      )}
+                      <button
+                        onClick={() => startTopicPractice(topic)}
+                        className="btn btn-primary"
+                        style={{ flex: 1, fontSize: '0.8rem', padding: '0.5rem' }}
+                      >
+                        Практика
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
-          ))}
-        </div>
+          );
+        })}
 
         {topics.length === 0 && (
           <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>

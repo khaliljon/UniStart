@@ -37,7 +37,7 @@ const EXAM_SKILL_MAP: Record<string, string[]> = {
   TOEFL: ['SK_READ', 'SK_WRITE', 'SK_LISTEN', 'SK_SPEAK'],
   NUET: ['SK_MATH', 'SK_CRIT'],
   IELTS: ['SK_READ', 'SK_WRITE', 'SK_LISTEN', 'SK_SPEAK'],
-  CSCA: ['SK_MATH', 'SK_PHYS', 'SK_CHEM', 'SK_CN_TECH', 'SK_CN_HUM'],
+  CSCA: ['SK_MATH', 'SK_PHYS', 'SK_CHEM', 'SK_MATH_CN', 'SK_PHYS_CN', 'SK_CHEM_CN', 'SK_CN_TECH', 'SK_CN_HUM'],
 };
 
 const EXAM_LABELS: Record<string, string> = {
@@ -48,20 +48,11 @@ const EXAM_LABELS: Record<string, string> = {
   CSCA: 'CSCA',
 };
 
-// Reverse map: skillCode → list of exam labels
-const SKILL_EXAM_LABELS: Record<string, string[]> = {};
-for (const [exam, codes] of Object.entries(EXAM_SKILL_MAP)) {
-  for (const code of codes) {
-    if (!SKILL_EXAM_LABELS[code]) SKILL_EXAM_LABELS[code] = [];
-    SKILL_EXAM_LABELS[code].push(EXAM_LABELS[exam]);
-  }
-}
-
 function AnalyticsPage() {
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedExam, setSelectedExam] = useState<string>('ALL');
+  const [selectedExam, setSelectedExam] = useState<string>('SAT');
 
   useEffect(() => {
     const fetchDashboard = async () => {
@@ -88,22 +79,16 @@ function AnalyticsPage() {
     return 'var(--error-color)';
   };
 
-  // Format skill name with exam type prefix when showing all skills
-  const getSkillLabel = (skillName: string, skillCode: string) => {
-    if (selectedExam !== 'ALL') return skillName;
-    const exams = SKILL_EXAM_LABELS[skillCode];
-    if (!exams || exams.length === 0) return skillName;
-    return `${exams.join('/')} — ${skillName}`;
+  // Format skill name with exam type prefix
+  const getSkillLabel = (skillName: string, _skillCode: string) => {
+    const label = EXAM_LABELS[selectedExam];
+    return label ? `${label} — ${skillName}` : skillName;
   };
 
   // Filter skill profiles and history by selected exam
-  const allowedSkillCodes = selectedExam === 'ALL' ? null : EXAM_SKILL_MAP[selectedExam] ?? null;
-  const filteredProfiles = allowedSkillCodes
-    ? dashboard.skillProfiles.filter((s) => allowedSkillCodes.includes(s.skillCode))
-    : dashboard.skillProfiles;
-  const filteredHistory = allowedSkillCodes
-    ? dashboard.skillHistory.filter((p) => allowedSkillCodes.includes(p.skillCode))
-    : dashboard.skillHistory;
+  const allowedSkillCodes = EXAM_SKILL_MAP[selectedExam] ?? [];
+  const filteredProfiles = dashboard.skillProfiles.filter((s) => allowedSkillCodes.includes(s.skillCode));
+  const filteredHistory = dashboard.skillHistory.filter((p) => allowedSkillCodes.includes(p.skillCode));
 
   // Prepare line chart data — pivot skill history into { date, skill1, skill2, ... }
   const lineChartData = (() => {
@@ -189,32 +174,61 @@ function AnalyticsPage() {
 
       {/* Exam Filter Tabs */}
       <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '2rem' }}>
-        {['ALL', ...Object.keys(EXAM_LABELS)].map((code) => (
+        {Object.keys(EXAM_LABELS).map((code) => (
           <button
             key={code}
             className={selectedExam === code ? 'btn btn-primary' : 'btn btn-secondary'}
             style={{ padding: '0.4rem 0.9rem', fontSize: '0.85rem' }}
             onClick={() => setSelectedExam(code)}
           >
-            {code === 'ALL' ? 'All Skills' : EXAM_LABELS[code]}
+            {EXAM_LABELS[code]}
           </button>
         ))}
       </div>
 
-      {/* Skill Levels — Radar Chart */}
+      {/* Skill Levels — Radar Chart (or Bar Chart for ≤2 skills) */}
       {radarData.length > 0 && (
         <div className="card card-static animate-fade-in-up" style={{ marginTop: '2rem', animationDelay: '0.5s' }}>
           <h2 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1rem' }}>
             Skill Profile
           </h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="75%">
-              <PolarGrid stroke="var(--border-color)" />
-              <PolarAngleAxis dataKey="skill" tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} />
-              <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: 'var(--text-secondary)', fontSize: 10 }} />
-              <Radar name="Skill Level" dataKey="level" stroke="#6366f1" fill="#6366f1" fillOpacity={0.3} />
-            </RadarChart>
-          </ResponsiveContainer>
+          {radarData.length <= 2 ? (
+            <ResponsiveContainer width="100%" height={160}>
+              <BarChart data={radarData} layout="vertical" barSize={24}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
+                <XAxis type="number" domain={[0, 100]} tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} />
+                <YAxis type="category" dataKey="skill" width={180} tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'var(--card-background)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '0.5rem',
+                  }}
+                  itemStyle={{ color: 'var(--text-primary)' }}
+                  labelStyle={{ color: 'var(--text-primary)', fontWeight: 600 }}
+                />
+                <Bar dataKey="level" name="Skill Level" fill="#6366f1" radius={[0, 6, 6, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <ResponsiveContainer width="100%" height={380}>
+              <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="70%">
+                <PolarGrid stroke="var(--text-secondary)" strokeOpacity={0.4} />
+                <PolarAngleAxis dataKey="skill" tick={{ fill: 'var(--text-secondary)', fontSize: 13 }} />
+                <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: 'var(--text-secondary)', fontSize: 10 }} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'var(--card-background)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '0.5rem',
+                  }}
+                  itemStyle={{ color: 'var(--text-primary)' }}
+                  labelStyle={{ color: 'var(--text-primary)', fontWeight: 600 }}
+                />
+                <Radar name="Skill Level" dataKey="level" stroke="#6366f1" fill="#6366f1" fillOpacity={0.3} />
+              </RadarChart>
+            </ResponsiveContainer>
+          )}
         </div>
       )}
 

@@ -8,6 +8,8 @@ import type {
   StudentInfo,
   PendingRequest,
   AcceptDeclineResult,
+  TutorSchoolCard,
+  TutorSchoolDetail,
 } from '../types';
 
 export interface TutorListParams {
@@ -59,6 +61,16 @@ export const tutorService = {
 
   async declineStudent(conversationId: number, reason?: string): Promise<AcceptDeclineResult> {
     const response = await api.post<AcceptDeclineResult>(`/tutors/requests/${conversationId}/decline`, { reason });
+    return response.data;
+  },
+
+  async getSchools(): Promise<TutorSchoolCard[]> {
+    const response = await api.get<TutorSchoolCard[]>('/tutors/schools');
+    return response.data;
+  },
+
+  async getSchool(slug: string): Promise<TutorSchoolDetail> {
+    const response = await api.get<TutorSchoolDetail>(`/tutors/schools/${encodeURIComponent(slug)}`);
     return response.data;
   },
 };

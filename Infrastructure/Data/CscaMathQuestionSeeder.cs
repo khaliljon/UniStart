@@ -20,7 +20,7 @@ public class CscaMathQuestionSeeder
     {
         // Skip if CSCA math questions already seeded (check for a known question)
         var mathSection = await _context.ExamSections
-            .FirstOrDefaultAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Mathematics");
+            .FirstOrDefaultAsync(s => s.ExamTypeCode == "CSCA" && s.Name.Contains("Mathematics") && !s.Name.Contains("(CN)"));
         if (mathSection == null) return;
 
         var existingCscaMathQuestions = await _context.Questions

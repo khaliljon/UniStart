@@ -60,6 +60,11 @@ function AdminLayout() {
               </NavLink>
             </li>
             <li>
+              <NavLink to="/content">
+                Контент
+              </NavLink>
+            </li>
+            <li>
               <NavLink to="/users">
                 Пользователи
               </NavLink>

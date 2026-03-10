@@ -7,6 +7,7 @@ public class StudyGoal : IAuditable
     public string ExamTypeCode { get; set; } = string.Empty;
     public DateTime TargetDate { get; set; }
     public int TargetScore { get; set; }
+    public string? SelectedSectionIds { get; set; } // Comma-separated section IDs; null = all sections
     public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }

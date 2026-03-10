@@ -150,6 +150,25 @@ public class TutorController : ControllerBase
         return Ok(result);
     }
 
+    /// <summary>Список партнёрских школ</summary>
+    [HttpGet("schools")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetSchools()
+    {
+        var schools = await _tutorService.GetSchoolsAsync();
+        return Ok(schools);
+    }
+
+    /// <summary>Школа с тьюторами</summary>
+    [HttpGet("schools/{slug}")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetSchool(string slug)
+    {
+        var school = await _tutorService.GetSchoolAsync(slug);
+        if (school == null) return NotFound();
+        return Ok(school);
+    }
+
     private int GetUserId()
     {
         var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value

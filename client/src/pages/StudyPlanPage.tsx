@@ -20,6 +20,7 @@ import type {
   PlanStats,
   StudyPlanEntry,
   ExamType,
+  ExamSection,
 } from '../types';
 
 type Tab = 'today' | 'plan' | 'stats';
@@ -55,6 +56,8 @@ function StudyPlanPage() {
   const [formDate, setFormDate] = useState('');
   const [formScore, setFormScore] = useState(80);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formSections, setFormSections] = useState<ExamSection[]>([]);
+  const [selectedSectionIds, setSelectedSectionIds] = useState<number[]>([]);
 
   // Delete confirmation
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -96,6 +99,19 @@ function StudyPlanPage() {
     loadData();
   }, [loadData]);
 
+  // Load sections when exam changes in goal form
+  useEffect(() => {
+    if (!formExam) { setFormSections([]); setSelectedSectionIds([]); return; }
+    let cancelled = false;
+    examService.getExamSections(formExam).then((sections) => {
+      if (!cancelled) {
+        setFormSections(sections);
+        setSelectedSectionIds(sections.map((s) => s.id)); // all selected by default
+      }
+    }).catch(() => { if (!cancelled) setFormSections([]); });
+    return () => { cancelled = true; };
+  }, [formExam]);
+
   // ─── Handlers ──────────────────────────────────────────
 
   const handleCreateGoal = async (e: React.FormEvent) => {
@@ -108,6 +124,9 @@ function StudyPlanPage() {
         examTypeCode: formExam,
         targetDate: formDate,
         targetScore: formScore,
+        sectionIds: selectedSectionIds.length > 0 && selectedSectionIds.length < formSections.length
+          ? selectedSectionIds
+          : undefined,
       });
       setGoal(newGoal);
       setShowGoalForm(false);
@@ -232,9 +251,12 @@ function StudyPlanPage() {
           formDate={formDate}
           formScore={formScore}
           isSubmitting={isSubmitting}
+          sections={formSections}
+          selectedSectionIds={selectedSectionIds}
           onChangeExam={setFormExam}
           onChangeDate={setFormDate}
           onChangeScore={setFormScore}
+          onChangeSections={setSelectedSectionIds}
           onSubmit={handleCreateGoal}
           onClose={() => setShowGoalForm(false)}
         />
@@ -655,22 +677,49 @@ const DEFAULT_SCORE_CONFIG = { min: 0, max: 100, step: 1, default: 70 };
 
 function GoalFormModal({
   exams, formExam, formDate, formScore, isSubmitting,
-  onChangeExam, onChangeDate, onChangeScore, onSubmit, onClose,
+  sections, selectedSectionIds,
+  onChangeExam, onChangeDate, onChangeScore, onChangeSections, onSubmit, onClose,
 }: {
   exams: ExamType[];
   formExam: string; formDate: string; formScore: number; isSubmitting: boolean;
+  sections: ExamSection[]; selectedSectionIds: number[];
   onChangeExam: (v: string) => void; onChangeDate: (v: string) => void;
-  onChangeScore: (v: number) => void; onSubmit: (e: React.FormEvent) => void;
-  onClose: () => void;
+  onChangeScore: (v: number) => void; onChangeSections: (ids: number[]) => void;
+  onSubmit: (e: React.FormEvent) => void; onClose: () => void;
 }) {
   const minDate = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
   const cfg = EXAM_SCORE_CONFIG[formExam] ?? DEFAULT_SCORE_CONFIG;
+
+  // Dynamic max based on selected sections (if sections have maxScore)
+  const selectedSections = sections.filter((s) => selectedSectionIds.includes(s.id));
+  const hasSectionScores = sections.length > 0 && sections.some((s) => s.maxScore > 0);
+  const dynamicMax = hasSectionScores && selectedSections.length > 0
+    ? selectedSections.reduce((sum, s) => sum + s.maxScore, 0)
+    : cfg.max;
+  const dynamicMin = hasSectionScores && selectedSections.length > 0
+    ? selectedSections.reduce((sum, s) => sum + s.minScore, 0)
+    : cfg.min;
 
   const handleExamChange = (code: string) => {
     onChangeExam(code);
     const c = EXAM_SCORE_CONFIG[code] ?? DEFAULT_SCORE_CONFIG;
     onChangeScore(c.default);
   };
+
+  const toggleSection = (id: number) => {
+    const next = selectedSectionIds.includes(id)
+      ? selectedSectionIds.filter((x) => x !== id)
+      : [...selectedSectionIds, id];
+    onChangeSections(next);
+    // Clamp score to new range
+    if (hasSectionScores && next.length > 0) {
+      const newMax = sections.filter((s) => next.includes(s.id)).reduce((sum, s) => sum + s.maxScore, 0);
+      if (formScore > newMax) onChangeScore(newMax);
+    }
+  };
+
+  const effectiveMax = dynamicMax;
+  const effectiveMin = dynamicMin;
 
   return (
     <div style={{
@@ -702,6 +751,35 @@ function GoalFormModal({
             </select>
           </div>
 
+          {sections.length > 1 && (
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: 600, fontSize: '0.9rem' }}>
+                Секции
+              </label>
+              <div style={{
+                display: 'flex', flexDirection: 'column', gap: '0.35rem',
+                padding: '0.6rem', borderRadius: '8px', border: '1px solid var(--border-color)',
+                background: 'var(--card-bg)', maxHeight: '160px', overflowY: 'auto',
+              }}>
+                {sections.map((s) => (
+                  <label key={s.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem' }}>
+                    <input
+                      type="checkbox"
+                      checked={selectedSectionIds.includes(s.id)}
+                      onChange={() => toggleSection(s.id)}
+                    />
+                    <span>{s.name}</span>
+                    {s.maxScore > 0 && (
+                      <span style={{ marginLeft: 'auto', color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
+                        {s.minScore}–{s.maxScore}
+                      </span>
+                    )}
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div style={{ marginBottom: '1rem' }}>
             <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: 600, fontSize: '0.9rem' }}>
               Дата экзамена
@@ -726,16 +804,16 @@ function GoalFormModal({
             </label>
             <input
               type="range"
-              min={cfg.min}
-              max={cfg.max}
+              min={effectiveMin}
+              max={effectiveMax}
               step={cfg.step}
               value={formScore}
               onChange={(e) => onChangeScore(Number(e.target.value))}
               style={{ width: '100%' }}
             />
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-              <span>{cfg.min}</span>
-              <span>{cfg.max}</span>
+              <span>{effectiveMin}</span>
+              <span>{effectiveMax}</span>
             </div>
           </div>
 

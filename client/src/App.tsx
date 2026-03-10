@@ -25,9 +25,11 @@ const AdminSystemHealthPage = lazy(() => import('./pages/AdminSystemHealthPage')
 const AdminUserActivityPage = lazy(() => import('./pages/AdminUserActivityPage'))
 const AdminTutorsPage = lazy(() => import('./pages/AdminTutorsPage'))
 const AdminQuestionImportPage = lazy(() => import('./pages/AdminQuestionImportPage'))
+const AdminContentPage = lazy(() => import('./pages/AdminContentPage'))
 const LandingPage = lazy(() => import('./pages/LandingPage'))
 const TutorsPage = lazy(() => import('./pages/TutorsPage'))
 const TutorProfilePage = lazy(() => import('./pages/TutorProfilePage'))
+const SchoolDetailPage = lazy(() => import('./pages/SchoolDetailPage'))
 const MessagesPage = lazy(() => import('./pages/MessagesPage'))
 const TutorHomePage = lazy(() => import('./pages/TutorHomePage'))
 const TutorStudentsPage = lazy(() => import('./pages/TutorStudentsPage'))
@@ -51,6 +53,7 @@ function StudentRoutes() {
       <Route path="profile/notifications" element={<NotificationSettingsPage />} />
       <Route path="diagnostic" element={<DiagnosticTestPage />} />
       <Route path="tutors" element={<TutorsPage />} />
+      <Route path="tutors/schools/:slug" element={<SchoolDetailPage />} />
       <Route path="tutors/:userId" element={<TutorProfilePage />} />
       <Route path="messages" element={<MessagesPage />} />
       {/* Legacy redirects */}
@@ -74,6 +77,7 @@ function AdminRoutes() {
     <Route path="/" element={<AdminLayout />}>
       <Route index element={<AdminStatsPage />} />
       <Route path="questions" element={<AdminQuestionsPage />} />
+      <Route path="content" element={<AdminContentPage />} />
       <Route path="users" element={<AdminUsersPage />} />
       <Route path="tutors" element={<AdminTutorsPage />} />
       <Route path="audit" element={<AdminAuditLogsPage />} />

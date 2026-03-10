@@ -161,3 +161,32 @@ public record MessagesPageDto(
     int TotalCount,
     bool HasMore
 );
+
+// ─── Tutor School DTOs ───────────────────────────────────
+public record TutorSchoolCardDto(
+    int Id,
+    string Name,
+    string Slug,
+    string Description,
+    string? LogoUrl,
+    string? InstagramUrl,
+    string? TelegramUrl,
+    string? WebsiteUrl,
+    string[] Specializations,
+    bool IsPartner,
+    int TutorCount
+);
+
+public record TutorSchoolDetailDto(
+    int Id,
+    string Name,
+    string Slug,
+    string Description,
+    string? LogoUrl,
+    string? InstagramUrl,
+    string? TelegramUrl,
+    string? WebsiteUrl,
+    string[] Specializations,
+    bool IsPartner,
+    List<TutorCardDto> Tutors
+);

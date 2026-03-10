@@ -364,4 +364,51 @@ public class TutorService : ITutorService
             )).ToList()
         );
     }
+
+    // ─── Schools ────────────────────────────────────────
+    public async Task<List<TutorSchoolCardDto>> GetSchoolsAsync()
+    {
+        return await _db.TutorSchools
+            .Where(s => s.IsActive)
+            .Select(s => new TutorSchoolCardDto(
+                s.Id, s.Name, s.Slug, s.Description, s.LogoUrl,
+                s.InstagramUrl, s.TelegramUrl, s.WebsiteUrl,
+                s.Specializations.Length > 0
+                    ? s.Specializations.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                    : Array.Empty<string>(),
+                s.IsPartner,
+                s.Tutors.Count(t => t.User.Role == UserRole.Tutor && !t.User.IsDeleted)
+            ))
+            .ToListAsync();
+    }
+
+    public async Task<TutorSchoolDetailDto?> GetSchoolAsync(string slug)
+    {
+        var school = await _db.TutorSchools
+            .Include(s => s.Tutors).ThenInclude(t => t.User)
+            .FirstOrDefaultAsync(s => s.Slug == slug && s.IsActive);
+
+        if (school == null) return null;
+
+        var tutorCards = school.Tutors
+            .Where(t => t.User.Role == UserRole.Tutor && !t.User.IsDeleted && !t.User.IsBlocked)
+            .Select(t => new TutorCardDto(
+                t.UserId, t.User.Name, t.Headline, t.Bio,
+                t.Specializations.Length > 0
+                    ? t.Specializations.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                    : Array.Empty<string>(),
+                t.AverageRating, t.TotalReviews, t.TotalStudents,
+                t.IsAvailable, t.IsVerified, t.HourlyRate, t.AvatarUrl
+            ))
+            .ToList();
+
+        return new TutorSchoolDetailDto(
+            school.Id, school.Name, school.Slug, school.Description, school.LogoUrl,
+            school.InstagramUrl, school.TelegramUrl, school.WebsiteUrl,
+            school.Specializations.Length > 0
+                ? school.Specializations.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                : Array.Empty<string>(),
+            school.IsPartner, tutorCards
+        );
+    }
 }

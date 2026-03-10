@@ -33,6 +33,7 @@ public class UniStartDbContext : DbContext
     public DbSet<NotificationPreferences> NotificationPreferences => Set<NotificationPreferences>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<TutorProfile> TutorProfiles => Set<TutorProfile>();
+    public DbSet<TutorSchool> TutorSchools => Set<TutorSchool>();
     public DbSet<TutorScheduleSlot> TutorScheduleSlots => Set<TutorScheduleSlot>();
     public DbSet<TutorReview> TutorReviews => Set<TutorReview>();
     public DbSet<Conversation> Conversations => Set<Conversation>();
@@ -251,6 +252,7 @@ public class UniStartDbContext : DbContext
                   .HasForeignKey(e => e.ExamTypeCode)
                   .OnDelete(DeleteBehavior.Restrict);
             entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.SelectedSectionIds).HasMaxLength(200);
         });
 
         // ─── Study Plan ─────────────────────────────────────────
@@ -469,6 +471,28 @@ public class UniStartDbContext : DbContext
                   .OnDelete(DeleteBehavior.Cascade);
             entity.HasIndex(e => e.UserId).IsUnique();
             entity.HasIndex(e => e.IsAvailable).HasDatabaseName("IX_TutorProfiles_IsAvailable");
+            entity.HasOne(e => e.School)
+                  .WithMany(s => s.Tutors)
+                  .HasForeignKey(e => e.SchoolId)
+                  .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // ─── Tutor School ──────────────────────────────────
+        modelBuilder.Entity<TutorSchool>(entity =>
+        {
+            entity.ToTable("TutorSchools");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Slug).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Description).HasMaxLength(2000);
+            entity.Property(e => e.LogoUrl).HasMaxLength(500);
+            entity.Property(e => e.WebsiteUrl).HasMaxLength(500);
+            entity.Property(e => e.InstagramUrl).HasMaxLength(500);
+            entity.Property(e => e.TelegramUrl).HasMaxLength(500);
+            entity.Property(e => e.Specializations).HasMaxLength(100);
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.IsPartner).HasDefaultValue(true);
+            entity.HasIndex(e => e.Slug).IsUnique();
         });
 
         // ─── Tutor Schedule Slot ────────────────────────────

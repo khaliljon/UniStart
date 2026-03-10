@@ -19,7 +19,7 @@ public class CscaPhysicsQuestionSeeder
     public async Task SeedAsync()
     {
         var physicsSection = await _context.ExamSections
-            .FirstOrDefaultAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Physics");
+            .FirstOrDefaultAsync(s => s.ExamTypeCode == "CSCA" && s.Name.Contains("Physics") && !s.Name.Contains("(CN)"));
         if (physicsSection == null) return;
 
         var existing = await _context.Questions
