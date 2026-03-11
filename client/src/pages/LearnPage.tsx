@@ -1,5 +1,7 @@
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useMemo } from 'react';
 import { useAppSelector } from '../hooks/useAppSelector';
+import { useTranslation } from '../hooks/useTranslation';
 import TestPage from './TestPage';
 import MockExamPage from './MockExamPage';
 import TopicsPage from './TopicsPage';
@@ -17,35 +19,36 @@ interface TabGroup {
   tabs: { id: LearnTab; label: string; desc: string }[];
 }
 
-const TAB_GROUPS: TabGroup[] = [
-  {
-    label: 'Learn',
-    tabs: [
-      { id: 'topics', label: 'Lessons', desc: 'Structured lessons by topic' },
-      { id: 'formulas', label: 'Formulas', desc: 'Formula reference cards' },
-      { id: 'flashcards', label: 'Flashcards', desc: 'Spaced repetition cards' },
-      { id: 'strategies', label: 'Strategies', desc: 'Exam strategy guides' },
-    ],
-  },
-  {
-    label: 'Train',
-    tabs: [
-      { id: 'practice', label: 'Practice', desc: 'Adaptive practice' },
-      { id: 'mock', label: 'Mock Exam', desc: 'Full exam format' },
-      { id: 'drills', label: 'Drills', desc: 'Timed drill challenges' },
-      { id: 'review', label: 'Review', desc: 'Review wrong answers' },
-      { id: 'mistakes', label: 'Journal', desc: 'Mistake analysis' },
-    ],
-  },
-];
-
-const ALL_TAB_IDS = TAB_GROUPS.flatMap(g => g.tabs.map(t => t.id));
+const ALL_TAB_IDS: LearnTab[] = ['topics', 'formulas', 'flashcards', 'strategies', 'practice', 'mock', 'drills', 'review', 'mistakes'];
 const isValidTab = (v: string | null): v is LearnTab => ALL_TAB_IDS.includes(v as LearnTab);
 
 function LearnPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { selectedExams } = useAppSelector((state) => state.exam);
+  const { t } = useTranslation();
+
+  const TAB_GROUPS: TabGroup[] = useMemo(() => [
+    {
+      label: t.learn.groupLearn,
+      tabs: [
+        { id: 'topics', label: t.learn.lessons, desc: t.learn.lessonsDesc },
+        { id: 'formulas', label: t.learn.formulas, desc: t.learn.formulasDesc },
+        { id: 'flashcards', label: t.learn.flashcards, desc: t.learn.flashcardsDesc },
+        { id: 'strategies', label: t.learn.strategies, desc: t.learn.strategiesDesc },
+      ],
+    },
+    {
+      label: t.learn.groupTrain,
+      tabs: [
+        { id: 'practice', label: t.learn.practice, desc: t.learn.practiceDesc },
+        { id: 'mock', label: t.learn.mockExam, desc: t.learn.mockExamDesc },
+        { id: 'drills', label: t.learn.drills, desc: t.learn.drillsDesc },
+        { id: 'review', label: t.learn.review, desc: t.learn.reviewDesc },
+        { id: 'mistakes', label: t.learn.journal, desc: t.learn.journalDesc },
+      ],
+    },
+  ], [t]);
 
   const tabParam = searchParams.get('tab');
   const activeTab: LearnTab = isValidTab(tabParam) ? tabParam : 'practice';
@@ -58,12 +61,12 @@ function LearnPage() {
   if (selectedExams.length === 0) {
     return (
       <div className="animate-fade-in" style={{ textAlign: 'center', padding: '4rem 1rem' }}>
-        <h2>Select an Exam</h2>
+        <h2>{t.learn.selectExam}</h2>
         <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
-          Choose at least one exam to start learning
+          {t.learn.selectExamDesc}
         </p>
         <button className="btn btn-primary" onClick={() => navigate('/profile')}>
-          Select Exam
+          {t.learn.selectExam}
         </button>
       </div>
     );

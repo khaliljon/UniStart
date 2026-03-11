@@ -15,6 +15,7 @@ import {
 import { predictionService } from '../services/predictionService';
 import { examService } from '../services/examService';
 import { testService } from '../services/testService';
+import { useTranslation } from '../i18n';
 import type {
   ScorePrediction,
   SectionPrediction,
@@ -24,14 +25,22 @@ import type {
   TopicProgress,
 } from '../types';
 
-const STRENGTH_CONFIG: Record<string, { label: string; color: string; emoji: string }> = {
-  strong: { label: 'Сильная', color: '#10b981', emoji: '' },
-  average: { label: 'Средняя', color: '#f59e0b', emoji: '' },
-  weak: { label: 'Слабая', color: '#ef4444', emoji: '' },
-  critical: { label: 'Критическая', color: '#dc2626', emoji: '' },
+const STRENGTH_COLORS: Record<string, { color: string; emoji: string }> = {
+  strong: { color: '#10b981', emoji: '' },
+  average: { color: '#f59e0b', emoji: '' },
+  weak: { color: '#ef4444', emoji: '' },
+  critical: { color: '#dc2626', emoji: '' },
 };
 
 function PredictionPage() {
+  const { t } = useTranslation();
+
+  const STRENGTH_CONFIG: Record<string, { label: string; color: string; emoji: string }> = {
+    strong: { label: t.prediction.strong, ...STRENGTH_COLORS.strong },
+    average: { label: t.prediction.average, ...STRENGTH_COLORS.average },
+    weak: { label: t.prediction.weak, ...STRENGTH_COLORS.weak },
+    critical: { label: t.prediction.critical, ...STRENGTH_COLORS.critical },
+  };
   const [exams, setExams] = useState<ExamType[]>([]);
   const [selectedExam, setSelectedExam] = useState<string>('');
   const [prediction, setPrediction] = useState<ScorePrediction | null>(null);
@@ -56,7 +65,7 @@ function PredictionPage() {
           setSelectedExam(data[0].code);
         }
       } catch {
-        setError('Ошибка загрузки экзаменов');
+        setError(t.prediction.examLoadError);
       } finally {
         setIsLoading(false);
       }
@@ -81,7 +90,7 @@ function PredictionPage() {
       setWhatIfTopic(topicsData.length > 0 ? topicsData[0].topicId : null);
     } catch (err) {
       console.error(err);
-      setError('Ошибка загрузки прогноза');
+      setError(t.prediction.loadError);
     } finally {
       setIsLoading(false);
     }
@@ -116,7 +125,7 @@ function PredictionPage() {
       <div className="animate-fade-in" style={{ padding: '2rem 0' }}>
         <div className="card" style={{ padding: '3rem', textAlign: 'center' }}>
           <div className="animate-pulse" style={{ fontSize: '1.2rem', color: 'var(--text-secondary)' }}>
-            Загрузка прогноза...
+            {t.prediction.loading}
           </div>
         </div>
       </div>
@@ -129,7 +138,7 @@ function PredictionPage() {
         <div className="card" style={{ padding: '2rem', textAlign: 'center', color: 'var(--error-color)' }}>
           {error}
           <button className="btn btn-primary" style={{ marginTop: '1rem' }} onClick={loadPrediction}>
-            Попробовать снова
+            {t.prediction.tryAgain}
           </button>
         </div>
       </div>
@@ -140,7 +149,7 @@ function PredictionPage() {
     <div className="animate-fade-in" style={{ padding: '1.5rem 0' }}>
       {/* Header with exam selector */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
-        <h1 style={{ margin: 0 }}>Прогноз результата</h1>
+        <h1 style={{ margin: 0 }}>{t.prediction.title}</h1>
         <select
           value={selectedExam}
           onChange={(e) => setSelectedExam(e.target.value)}
@@ -167,7 +176,7 @@ function PredictionPage() {
           </div>
 
           {/* ─── Section Details ─── */}
-          <SectionDetails sections={prediction.sections} />
+          <SectionDetails sections={prediction.sections} strengthConfig={STRENGTH_CONFIG} />
 
           {/* ─── Improvement Tips ─── */}
           {prediction.improvementTips.length > 0 && (
@@ -199,6 +208,7 @@ function PredictionPage() {
 // ═══════════════════════════════════════════════════════════
 
 function ScoreCard({ prediction }: { prediction: ScorePrediction }) {
+  const { t } = useTranslation();
   const scorePercent = ((prediction.predictedScore - prediction.minPossibleScore) /
     (prediction.maxPossibleScore - prediction.minPossibleScore)) * 100;
 
@@ -211,7 +221,7 @@ function ScoreCard({ prediction }: { prediction: ScorePrediction }) {
             {prediction.predictedScore}
           </div>
           <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
-            из {prediction.maxPossibleScore}
+            {t.prediction.ofMax} {prediction.maxPossibleScore}
           </div>
           <div style={{
             fontSize: '0.8rem', marginTop: '0.5rem', padding: '0.2rem 0.8rem',
@@ -279,7 +289,7 @@ function ScoreCard({ prediction }: { prediction: ScorePrediction }) {
               {prediction.gapToTarget === 0 ? '✓' : `−${prediction.gapToTarget}`}
             </div>
             <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-              {prediction.gapToTarget === 0 ? 'Цель достигнута!' : 'до цели'}
+              {prediction.gapToTarget === 0 ? t.prediction.targetReached : t.prediction.toTarget}
             </div>
           </div>
         )}
@@ -293,6 +303,7 @@ function ScoreCard({ prediction }: { prediction: ScorePrediction }) {
 // ═══════════════════════════════════════════════════════════
 
 function SectionsBarChart({ sections }: { sections: SectionPrediction[] }) {
+  const { t } = useTranslation();
   const data = sections.map((s) => ({
     name: s.sectionName.length > 18 ? s.sectionName.slice(0, 17) + '…' : s.sectionName,
     fullName: s.sectionName,
@@ -315,23 +326,23 @@ function SectionsBarChart({ sections }: { sections: SectionPrediction[] }) {
         <div style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: '0.25rem' }}>
           {d.fullName}
         </div>
-        <div style={{ color: '#6366f1' }}>Прогноз : {d.score}</div>
-        <div style={{ color: 'var(--text-primary)' }}>До макс. : {d.max}</div>
+        <div style={{ color: '#6366f1' }}>{t.prediction.predicted} : {d.score}</div>
+        <div style={{ color: 'var(--text-primary)' }}>{t.prediction.toMax} : {d.max}</div>
       </div>
     );
   };
 
   return (
     <div className="card card-static animate-fade-in-up" style={{ padding: '1.25rem' }}>
-      <h3 style={{ margin: '0 0 1rem' }}>Прогноз по секциям</h3>
+      <h3 style={{ margin: '0 0 1rem' }}>{t.prediction.sectionForecast}</h3>
       <ResponsiveContainer width="100%" height={Math.max(180, data.length * 44)}>
         <BarChart data={data} layout="vertical">
           <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
           <XAxis type="number" tick={{ fill: 'var(--text-secondary)', fontSize: 11 }} />
           <YAxis type="category" dataKey="name" width={140} tick={{ fill: 'var(--text-secondary)', fontSize: 11 }} />
           <Tooltip content={renderTooltip} />
-          <Bar dataKey="score" name="Прогноз" stackId="a" fill="#6366f1" radius={[0, 4, 4, 0]} />
-          <Bar dataKey="max" name="До макс." stackId="a" fill="var(--border-color)" radius={[0, 4, 4, 0]} />
+          <Bar dataKey="score" name={t.prediction.predicted} stackId="a" fill="#6366f1" radius={[0, 4, 4, 0]} />
+          <Bar dataKey="max" name={t.prediction.toMax} stackId="a" fill="var(--border-color)" radius={[0, 4, 4, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </div>
@@ -342,13 +353,14 @@ function SectionsBarChart({ sections }: { sections: SectionPrediction[] }) {
 //  SECTION DETAIL CARDS
 // ═══════════════════════════════════════════════════════════
 
-function SectionDetails({ sections }: { sections: SectionPrediction[] }) {
+function SectionDetails({ sections, strengthConfig }: { sections: SectionPrediction[]; strengthConfig: Record<string, { label: string; color: string; emoji: string }> }) {
+  const { t } = useTranslation();
   return (
     <div style={{ marginTop: '1rem' }}>
-      <h3 style={{ marginBottom: '0.75rem' }}>Детали по секциям</h3>
+      <h3 style={{ marginBottom: '0.75rem' }}>{t.prediction.sectionDetails}</h3>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '0.75rem' }}>
         {sections.map((s) => {
-          const cfg = STRENGTH_CONFIG[s.strength] || STRENGTH_CONFIG.average;
+          const cfg = strengthConfig[s.strength] || strengthConfig.average;
           const percent = ((s.predictedScore - s.minScore) / (s.maxScore - s.minScore)) * 100;
 
           return (
@@ -390,7 +402,7 @@ function SectionDetails({ sections }: { sections: SectionPrediction[] }) {
 
               {s.accuracy > 0 && (
                 <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.3rem' }}>
-                  Точность ответов: {s.accuracy}%
+                  {t.prediction.accuracyLabel}: {s.accuracy}%
                 </div>
               )}
             </div>
@@ -407,9 +419,10 @@ function SectionDetails({ sections }: { sections: SectionPrediction[] }) {
 
 function ImprovementTips({ tips }: { tips: ScorePrediction['improvementTips'] }) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   return (
     <div className="card card-static animate-fade-in-up" style={{ padding: '1.25rem', marginTop: '1rem' }}>
-      <h3 style={{ margin: '0 0 1rem' }}>Рекомендации по улучшению</h3>
+      <h3 style={{ margin: '0 0 1rem' }}>{t.prediction.improvementTips}</h3>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
         {tips.map((tip, i) => (
           <div key={i} style={{
@@ -435,7 +448,7 @@ function ImprovementTips({ tips }: { tips: ScorePrediction['improvementTips'] })
                 {tip.recommendation}
               </div>
               <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
-                Текущий уровень: {tip.currentLevel}% | theta = {tip.currentTheta}
+                {t.prediction.currentLevel}: {tip.currentLevel}% | theta = {tip.currentTheta}
               </div>
             </div>
             {tip.topicId > 0 && (
@@ -444,7 +457,7 @@ function ImprovementTips({ tips }: { tips: ScorePrediction['improvementTips'] })
                 style={{ padding: '0.35rem 0.75rem', fontSize: '0.78rem', whiteSpace: 'nowrap' }}
                 onClick={() => navigate(`/learn?tab=practice&topicId=${tip.topicId}`)}
               >
-                Практика
+                {t.prediction.practice}
               </button>
             )}
           </div>
@@ -471,17 +484,18 @@ function WhatIfSection({
   onChangeLevel: (level: number) => void;
   onCalculate: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="card card-static animate-fade-in-up" style={{ padding: '1.25rem', marginTop: '1rem' }}>
-      <h3 style={{ margin: '0 0 1rem' }}>Что если...?</h3>
+      <h3 style={{ margin: '0 0 1rem' }}>{t.prediction.whatIf}</h3>
       <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1rem' }}>
-        Узнайте, как улучшение конкретной темы повлияет на прогнозируемый балл
+        {t.prediction.whatIfDesc}
       </p>
 
       <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
         <div style={{ flex: '1 1 200px' }}>
           <label style={{ display: 'block', marginBottom: '0.3rem', fontWeight: 600, fontSize: '0.85rem' }}>
-            Тема
+            {t.prediction.topic}
           </label>
           <select
             value={whatIfTopic ?? ''}
@@ -502,7 +516,7 @@ function WhatIfSection({
 
         <div style={{ flex: '0 0 160px' }}>
           <label style={{ display: 'block', marginBottom: '0.3rem', fontWeight: 600, fontSize: '0.85rem' }}>
-            Уровень: {whatIfLevel}%
+            {t.prediction.level}: {whatIfLevel}%
           </label>
           <input
             type="range" min="10" max="99" value={whatIfLevel}
@@ -517,7 +531,7 @@ function WhatIfSection({
           disabled={!whatIfTopic || whatIfLoading}
           style={{ height: '38px' }}
         >
-          {whatIfLoading ? '...' : 'Рассчитать'}
+          {whatIfLoading ? '...' : t.prediction.calculate}
         </button>
       </div>
 
@@ -529,17 +543,17 @@ function WhatIfSection({
           display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap',
         }}>
           <div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Тема</div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{t.prediction.topic}</div>
             <div style={{ fontWeight: 600 }}>{whatIfResult.topicName}</div>
           </div>
           <div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Уровень</div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{t.prediction.level}</div>
             <div style={{ fontWeight: 600 }}>
               {whatIfResult.currentLevel}% → {whatIfResult.improvedLevel}%
             </div>
           </div>
           <div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Прогноз</div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{t.prediction.forecast}</div>
             <div style={{ fontWeight: 600 }}>
               {whatIfResult.currentPredictedTotal} → {whatIfResult.improvedPredictedTotal}
             </div>
@@ -561,6 +575,7 @@ function WhatIfSection({
 // ═══════════════════════════════════════════════════════════
 
 function HistoryChart({ history, prediction }: { history: PredictionHistory[]; prediction: ScorePrediction }) {
+  const { t } = useTranslation();
   const data = history.map((h) => ({
     date: new Date(h.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }),
     score: h.predictedScore,
@@ -571,7 +586,7 @@ function HistoryChart({ history, prediction }: { history: PredictionHistory[]; p
 
   return (
     <div className="card card-static animate-fade-in-up" style={{ padding: '1.25rem', marginTop: '1rem' }}>
-      <h3 style={{ margin: '0 0 1rem' }}>История прогноза</h3>
+      <h3 style={{ margin: '0 0 1rem' }}>{t.prediction.forecastHistory}</h3>
       <ResponsiveContainer width="100%" height={280}>
         <AreaChart data={data}>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
@@ -587,13 +602,13 @@ function HistoryChart({ history, prediction }: { history: PredictionHistory[]; p
             }}
           />
           {/* Confidence band */}
-          <Area type="monotone" dataKey="high" stackId="ci" stroke="none" fill="#6366f1" fillOpacity={0.1} name="Верхняя граница" />
-          <Area type="monotone" dataKey="low" stackId="ci" stroke="none" fill="#fff" fillOpacity={0} name="Нижняя граница" />
+          <Area type="monotone" dataKey="high" stackId="ci" stroke="none" fill="#6366f1" fillOpacity={0.1} name={t.prediction.upperBound} />
+          <Area type="monotone" dataKey="low" stackId="ci" stroke="none" fill="#fff" fillOpacity={0} name={t.prediction.lowerBound} />
           {/* Main prediction line */}
-          <Line type="monotone" dataKey="score" stroke="#6366f1" strokeWidth={2.5} dot={{ r: 3 }} name="Прогноз" />
+          <Line type="monotone" dataKey="score" stroke="#6366f1" strokeWidth={2.5} dot={{ r: 3 }} name={t.prediction.predicted} />
           {/* Target line */}
           {prediction.targetScore && (
-            <Line type="monotone" dataKey="target" stroke="#ef4444" strokeWidth={1.5} strokeDasharray="5 5" dot={false} name="Цель" />
+            <Line type="monotone" dataKey="target" stroke="#ef4444" strokeWidth={1.5} strokeDasharray="5 5" dot={false} name={t.prediction.target} />
           )}
         </AreaChart>
       </ResponsiveContainer>

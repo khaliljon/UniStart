@@ -224,6 +224,12 @@ public class DatabaseSeeder
             await SeedIeltsCscaStrategyGuidesAsync();
         }
 
+        // Seed default drill templates
+        if (!await _context.DrillTemplates.AnyAsync())
+        {
+            await SeedDrillTemplatesAsync();
+        }
+
         // Expand CSCA from 5 to 8 sections (EN/CN split) — must run last, after all name-based lookups
         await ExpandCscaTo8SectionsAsync();
 
@@ -4825,6 +4831,44 @@ General Tips:
                 ms.Name = "中文人文 (Chinese Humanitarian)";
         }
 
+        await _context.SaveChangesAsync();
+    }
+
+    private async Task SeedDrillTemplatesAsync()
+    {
+        var templates = new[]
+        {
+            new DrillTemplate
+            {
+                Title = "Speed Round",
+                Description = "Answer 10 questions as fast as you can",
+                DrillType = DrillType.Speed,
+                QuestionCount = 10,
+                IsActive = true,
+                SortOrder = 1,
+            },
+            new DrillTemplate
+            {
+                Title = "Marathon",
+                Description = "Answer as many questions as possible in 3 minutes",
+                DrillType = DrillType.Marathon,
+                QuestionCount = 100,
+                TimeLimitMinutes = 3,
+                IsActive = true,
+                SortOrder = 2,
+            },
+            new DrillTemplate
+            {
+                Title = "Streak Challenge",
+                Description = "Keep answering correctly until you miss",
+                DrillType = DrillType.Streak,
+                QuestionCount = 999,
+                IsActive = true,
+                SortOrder = 3,
+            },
+        };
+
+        await _context.DrillTemplates.AddRangeAsync(templates);
         await _context.SaveChangesAsync();
     }
 }

@@ -77,6 +77,15 @@ function StrategyPage() {
   const filtered = filterCategory === 'all' ? guides : guides.filter(g => g.category === filterCategory);
   const readCount = guides.filter(g => g.isRead).length;
 
+  // Group by exam → list
+  const groupedByExam = filtered.reduce<Record<string, StrategyGuideSummary[]>>((acc, g) => {
+    (acc[g.examTypeCode] ??= []).push(g);
+    return acc;
+  }, {});
+
+  const examKeys = Object.keys(groupedByExam).sort();
+  const hasMultipleExams = examKeys.length > 1;
+
   // Guide list view
   return (
     <div className="animate-fade-in">
@@ -106,31 +115,40 @@ function StrategyPage() {
           <p style={{ color: 'var(--text-secondary)' }}>No strategy guides available for this exam</p>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          {filtered.map(g => (
-            <div
-              key={g.id}
-              className="card"
-              style={{ padding: '1rem 1.25rem', cursor: 'pointer', opacity: g.isRead ? 0.7 : 1 }}
-              onClick={() => openGuide(g.id)}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div>
-                  <h4 style={{ margin: '0 0 0.25rem' }}>
-                    {g.isRead && <span style={{ color: 'var(--success)', marginRight: '0.5rem' }}>[done]</span>}
-                    {g.title}
-                  </h4>
-                  <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{g.summary}</p>
+        examKeys.map(examCode => (
+          <div key={examCode} style={{ marginBottom: hasMultipleExams ? '2rem' : 0 }}>
+            {hasMultipleExams && (
+              <h3 style={{ marginBottom: '0.75rem', fontSize: '1rem', borderBottom: '2px solid var(--primary-color)', paddingBottom: '0.5rem' }}>
+                {examCode}
+              </h3>
+            )}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {groupedByExam[examCode].map(g => (
+                <div
+                  key={g.id}
+                  className="card"
+                  style={{ padding: '1rem 1.25rem', cursor: 'pointer', opacity: g.isRead ? 0.7 : 1 }}
+                  onClick={() => openGuide(g.id)}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div>
+                      <h4 style={{ margin: '0 0 0.25rem' }}>
+                        {g.isRead && <span style={{ color: 'var(--success)', marginRight: '0.5rem' }}>[done]</span>}
+                        {g.title}
+                      </h4>
+                      <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{g.summary}</p>
+                    </div>
+                    <div style={{ textAlign: 'right', whiteSpace: 'nowrap', marginLeft: '1rem' }}>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{g.category}</span>
+                      <br />
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>~{g.estimatedReadMinutes} min</span>
+                    </div>
+                  </div>
                 </div>
-                <div style={{ textAlign: 'right', whiteSpace: 'nowrap', marginLeft: '1rem' }}>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{g.category}</span>
-                  <br />
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>~{g.estimatedReadMinutes} min</span>
-                </div>
-              </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </div>
+        ))
       )}
     </div>
   );

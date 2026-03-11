@@ -1,16 +1,14 @@
 import { useState } from 'react';
 import { PricingModal } from './PricingModal';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface UpgradeBannerProps {
   questionsRemaining?: number;
   questionsLimit?: number;
 }
 
-/**
- * Non-intrusive banner encouraging Free users to upgrade.
- * Shows remaining question count if provided.
- */
 export function UpgradeBanner({ questionsRemaining, questionsLimit }: UpgradeBannerProps) {
+  const { t } = useTranslation();
   const [showPricing, setShowPricing] = useState(false);
 
   const isLow = questionsRemaining !== undefined && questionsRemaining <= 5;
@@ -43,10 +41,10 @@ export function UpgradeBanner({ questionsRemaining, questionsLimit }: UpgradeBan
               color: isExhausted ? '#991b1b' : isLow ? '#92400e' : '#3730a3',
             }}>
               {isExhausted
-                ? 'Лимит на сегодня исчерпан'
+                ? t.limits.exhausted
                 : questionsRemaining !== undefined
-                  ? `Осталось ${questionsRemaining} из ${questionsLimit} вопросов`
-                  : 'Разблокируйте все возможности'}
+                  ? t.limits.remaining.replace('{n}', String(questionsRemaining)).replace('{total}', String(questionsLimit))
+                  : t.limits.unlockAll}
             </div>
             <div style={{
               fontSize: '0.75rem',
@@ -54,10 +52,10 @@ export function UpgradeBanner({ questionsRemaining, questionsLimit }: UpgradeBan
               opacity: 0.8,
             }}>
               {isExhausted
-                ? 'Перейдите на Pro для безлимитных вопросов'
+                ? t.limits.exhaustedDesc
                 : isLow
-                  ? 'Скоро закончатся — Pro даёт безлимитный доступ'
-                  : 'Безлимитные вопросы, mock exams и полная аналитика'}
+                  ? t.limits.lowDesc.replace('{n}', String(questionsRemaining))
+                  : t.limits.unlockDesc}
             </div>
           </div>
         </div>
@@ -76,7 +74,7 @@ export function UpgradeBanner({ questionsRemaining, questionsLimit }: UpgradeBan
             whiteSpace: 'nowrap',
           }}
         >
-          {isExhausted ? 'Обновить' : 'Pro'}
+          {isExhausted ? t.limits.upgrade : 'Pro'}
         </button>
       </div>
 

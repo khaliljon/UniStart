@@ -5,12 +5,14 @@ import type { DrillQuestion, DrillAnswerResult, DrillResult, PersonalBest, Start
 import MathText from '../components/MathRenderer';
 
 type DrillView = 'menu' | 'playing' | 'result' | 'history';
+type DrillTemplate = { id: number; title: string; description: string | null; drillType: string; examTypeCode: string | null; topicId: number | null; questionCount: number; timeLimitMinutes: number | null; sortOrder: number };
 
-const MARATHON_TIME_LIMIT = 180; // 3 minutes
+const MARATHON_TIME_LIMIT = 180; // 3 minutes fallback
 
 function TimedDrillPage() {
   const { selectedExams } = useAppSelector((state) => state.exam);
   const [view, setView] = useState<DrillView>('menu');
+  const [templates, setTemplates] = useState<DrillTemplate[]>([]);
   const [activeDrill, setActiveDrill] = useState<DrillResult | null>(null);
   const [activeDrillType, setActiveDrillType] = useState<string>('');
   const [question, setQuestion] = useState<DrillQuestion | null>(null);
@@ -19,6 +21,20 @@ function TimedDrillPage() {
   const [timer, setTimer] = useState(0);
   const [marathonTimeLeft, setMarathonTimeLeft] = useState(MARATHON_TIME_LIMIT);
   const [personalBests, setPersonalBests] = useState<PersonalBest[]>([]);
+
+  const loadTemplates = useCallback(async () => {
+    try {
+      const data = await drillService.getTemplates();
+      setTemplates(data);
+    } catch {
+      // Fallback: use hardcoded defaults if API fails
+      setTemplates([
+        { id: 0, title: 'Speed Round', description: '10 questions, answer as fast as you can', drillType: 'Speed', examTypeCode: null, topicId: null, questionCount: 10, timeLimitMinutes: null, sortOrder: 1 },
+        { id: 0, title: 'Marathon', description: `Answer as many questions as possible in 3 minutes`, drillType: 'Marathon', examTypeCode: null, topicId: null, questionCount: 100, timeLimitMinutes: 3, sortOrder: 2 },
+        { id: 0, title: 'Streak Challenge', description: 'Keep answering correctly until you miss', drillType: 'Streak', examTypeCode: null, topicId: null, questionCount: 999, timeLimitMinutes: null, sortOrder: 3 },
+      ]);
+    }
+  }, []);
   const [history, setHistory] = useState<DrillResult[]>([]);
   const [finalResult, setFinalResult] = useState<DrillResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -35,7 +51,7 @@ function TimedDrillPage() {
     }
   }, []);
 
-  useEffect(() => { loadPersonalBests(); }, [loadPersonalBests]);
+  useEffect(() => { loadPersonalBests(); loadTemplates(); }, [loadPersonalBests, loadTemplates]);
 
   useEffect(() => {
     return () => {
@@ -59,7 +75,7 @@ function TimedDrillPage() {
     }
   }, []);
 
-  const startDrill = async (drillType: 'Speed' | 'Marathon' | 'Streak') => {
+  const startDrill = async (drillType: 'Speed' | 'Marathon' | 'Streak', template?: DrillTemplate) => {
     setLoading(true);
     try {
       const request: StartDrillRequest = {
@@ -73,7 +89,8 @@ function TimedDrillPage() {
 
       // Start marathon countdown
       if (drillType === 'Marathon') {
-        setMarathonTimeLeft(MARATHON_TIME_LIMIT);
+        const timeLimitSec = (template?.timeLimitMinutes ?? 3) * 60;
+        setMarathonTimeLeft(timeLimitSec);
         if (marathonTimerRef.current) clearInterval(marathonTimerRef.current);
         marathonTimerRef.current = setInterval(() => {
           setMarathonTimeLeft(prev => {
@@ -247,7 +264,7 @@ function TimedDrillPage() {
           <button className="btn btn-primary" onClick={() => { setView('menu'); loadPersonalBests(); }}>
             Back to Menu
           </button>
-          <button className="btn btn-secondary" onClick={() => startDrill(finalResult.drillType as 'Speed' | 'Marathon' | 'Streak')}>
+          <button className="btn btn-secondary" onClick={() => startDrill(finalResult.drillType as 'Speed' | 'Marathon' | 'Streak', templates.find(t => t.drillType === finalResult.drillType))}>
             Try Again
           </button>
         </div>
@@ -286,12 +303,10 @@ function TimedDrillPage() {
     );
   }
 
-  // Menu view
-  const drillModes = [
-    { type: 'Speed' as const, title: 'Speed Round', desc: '10 questions, answer as fast as you can' },
-    { type: 'Marathon' as const, title: 'Marathon', desc: `Answer as many questions as possible in ${MARATHON_TIME_LIMIT / 60} minutes` },
-    { type: 'Streak' as const, title: 'Streak Challenge', desc: 'Keep answering correctly until you miss' },
-  ];
+  // Menu view — filter templates by selected exams
+  const visibleTemplates = templates.filter(t =>
+    !t.examTypeCode || selectedExams.includes(t.examTypeCode)
+  );
 
   return (
     <div className="animate-fade-in">
@@ -302,11 +317,14 @@ function TimedDrillPage() {
 
       {/* Drill modes */}
       <div style={{ display: 'grid', gap: '0.75rem', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', marginBottom: '2rem' }}>
-        {drillModes.map(mode => (
-          <div key={mode.type} className="card" style={{ padding: '1.25rem' }}>
-            <h4 style={{ margin: '0 0 0.5rem' }}>{mode.title}</h4>
-            <p style={{ margin: '0 0 1rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{mode.desc}</p>
-            <button className="btn btn-primary" onClick={() => startDrill(mode.type)} disabled={loading} style={{ width: '100%' }}>
+        {visibleTemplates.map(tmpl => (
+          <div key={tmpl.id || tmpl.drillType} className="card" style={{ padding: '1.25rem' }}>
+            <h4 style={{ margin: '0 0 0.5rem' }}>{tmpl.title}</h4>
+            <p style={{ margin: '0 0 1rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{tmpl.description}</p>
+            {tmpl.examTypeCode && (
+              <span style={{ fontSize: '0.7rem', padding: '2px 6px', background: 'var(--primary-color)', color: '#fff', borderRadius: '4px', marginBottom: '0.5rem', display: 'inline-block' }}>{tmpl.examTypeCode}</span>
+            )}
+            <button className="btn btn-primary" onClick={() => startDrill(tmpl.drillType as 'Speed' | 'Marathon' | 'Streak', tmpl)} disabled={loading} style={{ width: '100%' }}>
               Start
             </button>
           </div>

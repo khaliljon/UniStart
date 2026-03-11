@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { PricingModal } from './PricingModal';
+import { useTranslation } from '../hooks/useTranslation';
 
 /**
  * Modal shown when daily question limit is reached.
@@ -10,6 +11,7 @@ interface DailyLimitModalProps {
 }
 
 export function DailyLimitModal({ isOpen, onClose }: DailyLimitModalProps) {
+  const { t } = useTranslation();
   const [showPricing, setShowPricing] = useState(false);
 
   if (!isOpen) return null;
@@ -40,7 +42,7 @@ export function DailyLimitModal({ isOpen, onClose }: DailyLimitModalProps) {
         }}>
           <div style={{ fontSize: '3.5rem', marginBottom: '1rem' }}></div>
           <h2 style={{ fontSize: '1.5rem', marginBottom: '0.75rem', color: 'var(--text-primary)' }}>
-            Лимит на сегодня исчерпан
+            {t.limits.limitReachedTitle}
           </h2>
           <p style={{
             color: 'var(--text-secondary)',
@@ -48,8 +50,7 @@ export function DailyLimitModal({ isOpen, onClose }: DailyLimitModalProps) {
             lineHeight: 1.6,
             marginBottom: '2rem',
           }}>
-            Вы использовали все 15 бесплатных вопросов на сегодня.
-            Возвращайтесь завтра или перейдите на Pro для безлимитной подготовки.
+            {t.limits.exhaustedDesc}
           </p>
 
           <button
@@ -63,7 +64,7 @@ export function DailyLimitModal({ isOpen, onClose }: DailyLimitModalProps) {
               marginBottom: '0.75rem',
             }}
           >
-            Перейти на Pro
+            {t.limits.upgradePro}
           </button>
 
           <button
@@ -79,7 +80,7 @@ export function DailyLimitModal({ isOpen, onClose }: DailyLimitModalProps) {
               fontSize: '0.9rem',
             }}
           >
-            Вернусь завтра
+            {t.limits.comeBackTomorrow}
           </button>
         </div>
       </div>

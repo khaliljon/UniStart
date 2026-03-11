@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppSelector } from '../hooks/useAppSelector';
 import { useAppDispatch } from '../hooks/useAppDispatch';
+import { useTranslation } from '../hooks/useTranslation';
 import { fetchExams } from '../store/slices/examSlice';
 import recommendationService from '../services/recommendationService';
 import { subscriptionService } from '../services/subscriptionService';
@@ -12,6 +13,7 @@ function DashboardPage() {
   const dispatch = useAppDispatch();
   const { user } = useAppSelector((state) => state.auth);
   const { selectedExams } = useAppSelector((state) => state.exam);
+  const { t } = useTranslation();
 
   const [streak, setStreak] = useState<Streak | null>(null);
   const [recs, setRecs] = useState<Recommendation[]>([]);
@@ -33,7 +35,7 @@ function DashboardPage() {
       setYesterday(briefing.yesterdaySummary);
       setUsage(dailyUsage);
     } catch {
-      setError('Не удалось загрузить данные. Проверьте подключение к серверу.');
+      setError(t.dashboard.loadError);
     } finally {
       setIsLoading(false);
     }
@@ -43,10 +45,10 @@ function DashboardPage() {
 
   const greeting = (() => {
     const h = new Date().getHours();
-    if (h < 6) return 'Доброй ночи';
-    if (h < 12) return 'Доброе утро';
-    if (h < 18) return 'Добрый день';
-    return 'Добрый вечер';
+    if (h < 6) return t.dashboard.greetingNight;
+    if (h < 12) return t.dashboard.greetingMorning;
+    if (h < 18) return t.dashboard.greetingAfternoon;
+    return t.dashboard.greetingEvening;
   })();
 
   return (
@@ -78,7 +80,7 @@ function DashboardPage() {
         }}>
           <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{error}</span>
           <button className="btn btn-outline" style={{ padding: '0.25rem 0.75rem', fontSize: '0.8rem' }} onClick={load}>
-            Повторить
+            {t.dashboard.retry}
           </button>
         </div>
       )}
@@ -87,46 +89,46 @@ function DashboardPage() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem', marginBottom: '1.5rem' }}>
         <StatCard
           icon=""
-          label="Серия"
-          value={streak ? `${streak.currentStreak} дн.` : '—'}
+          label={t.dashboard.streak}
+          value={streak ? `${streak.currentStreak} ${t.dashboard.daysShort}` : '—'}
           accent={streak && streak.currentStreak >= 7 ? 'var(--error-color)' : streak && streak.currentStreak >= 3 ? 'var(--warning-color)' : undefined}
           loading={isLoading}
         />
         <StatCard
           icon=""
-          label="Сегодня"
+          label={t.dashboard.today}
           value={usage ? `${usage.questionsAnswered}` : '—'}
-          sub={usage ? (usage.questionsLimit === -1 ? 'Безлимит' : `из ${usage.questionsLimit}`) : ''}
+          sub={usage ? (usage.questionsLimit === -1 ? t.dashboard.unlimited : `${t.dashboard.of} ${usage.questionsLimit}`) : ''}
           loading={isLoading}
         />
         {yesterday && (
           <StatCard
             icon=""
-            label="Вчера"
+            label={t.dashboard.yesterday}
             value={`${yesterday.accuracy}%`}
-            sub={`${yesterday.questionsAnswered} вопр.`}
+            sub={`${yesterday.questionsAnswered} ${t.dashboard.questionsShort}`}
           />
         )}
         <StatCard
           icon=""
-          label="Рекорд"
-          value={streak ? `${streak.longestStreak} дн.` : '—'}
+          label={t.dashboard.bestStreak}
+          value={streak ? `${streak.longestStreak} ${t.dashboard.daysShort}` : '—'}
           loading={isLoading}
         />
       </div>
 
       {/* ─── Quick Actions ─── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem', marginBottom: '1.5rem' }}>
-        <ActionCard icon="▶" title="Практика" desc="Адаптивный тест" onClick={() => navigate('/learn')} primary />
-        <ActionCard icon="" title="Mock Exam" desc="Полный формат" onClick={() => navigate('/learn?tab=mock')} />
-        <ActionCard icon="" title="Повторение" desc="Работа над ошибками" onClick={() => navigate('/learn?tab=review')} />
-        <ActionCard icon="" title="Прогресс" desc="Аналитика и прогноз" onClick={() => navigate('/progress')} />
+        <ActionCard icon="▶" title={t.dashboard.practice} desc={t.dashboard.practiceDesc} onClick={() => navigate('/learn')} primary />
+        <ActionCard icon="" title={t.dashboard.mockExam} desc={t.dashboard.mockExamDesc} onClick={() => navigate('/learn?tab=mock')} />
+        <ActionCard icon="" title={t.dashboard.review} desc={t.dashboard.reviewDesc} onClick={() => navigate('/learn?tab=review')} />
+        <ActionCard icon="" title={t.dashboard.progress} desc={t.dashboard.progressDesc} onClick={() => navigate('/progress')} />
       </div>
 
       {/* ─── Recommendations ─── */}
       {recs.length > 0 && (
         <div style={{ marginBottom: '1.5rem' }}>
-          <h2 style={{ fontSize: '1.1rem', marginBottom: '0.75rem' }}>Рекомендации</h2>
+          <h2 style={{ fontSize: '1.1rem', marginBottom: '0.75rem' }}>{t.dashboard.recommendations}</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             {recs.map((r, i) => (
               <div
@@ -158,12 +160,12 @@ function DashboardPage() {
       {/* ─── No exams selected prompt ─── */}
       {selectedExams.length === 0 && (
         <div className="card" style={{ padding: '2rem', textAlign: 'center' }}>
-          <h3 style={{ marginBottom: '0.5rem' }}>Выберите экзамены</h3>
+          <h3 style={{ marginBottom: '0.5rem' }}>{t.dashboard.selectExams}</h3>
           <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-            Перейдите в профиль и выберите экзамены для подготовки
+            {t.dashboard.selectExamsHelp}
           </p>
           <button className="btn btn-primary" onClick={() => navigate('/profile')}>
-            Выбрать экзамены
+            {t.dashboard.selectExamsBtn}
           </button>
         </div>
       )}

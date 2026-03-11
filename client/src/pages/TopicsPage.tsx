@@ -7,11 +7,13 @@ import { testService } from '../services/testService';
 import { lessonService } from '../services/lessonService';
 import { TopicsSkeleton, QuestionSkeleton } from '../components/Skeleton';
 import { ContentRenderer } from '../components/MathRenderer';
+import { useTranslation } from '../hooks/useTranslation';
 
 type ViewMode = 'topics' | 'practice' | 'lesson';
 
 export default function TopicsPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { selectedExams } = useSelector((state: RootState) => state.exam);
   
   const [topics, setTopics] = useState<TopicProgress[]>([]);
@@ -198,10 +200,10 @@ export default function TopicsPage() {
             fontSize: '0.875rem',
             fontWeight: '500'
           }}>
-            Урок • {currentTopic?.topicName}
+            {t.topics.lessonLabel} • {currentTopic?.topicName}
           </span>
           <button onClick={() => { setViewMode('topics'); loadTopics(); }} className="btn btn-outline">
-            ← К темам
+            {t.topics.backToTopics}
           </button>
         </div>
 
@@ -249,7 +251,7 @@ export default function TopicsPage() {
               className="btn btn-primary"
               style={{ flex: 1 }}
             >
-              Следующий урок →
+              {t.topics.nextLesson}
             </button>
           ) : (
             <button
@@ -257,7 +259,7 @@ export default function TopicsPage() {
               className="btn btn-primary"
               style={{ flex: 1 }}
             >
-              Начать практику
+              {t.topics.startPractice}
             </button>
           )}
         </div>
@@ -272,20 +274,20 @@ export default function TopicsPage() {
     const sectionMap = new Map<string, TopicProgress[]>();
     const sectionIdMap = new Map<string, number | null>();
     
-    topics.forEach(t => {
-      const key = t.sectionName || 'Другое';
+    topics.forEach(tp => {
+      const key = tp.sectionName || t.topics.other;
       if (!sectionMap.has(key)) {
         sectionMap.set(key, []);
-        sectionIdMap.set(key, t.sectionId ?? null);
+        sectionIdMap.set(key, tp.sectionId ?? null);
       }
-      sectionMap.get(key)!.push(t);
+      sectionMap.get(key)!.push(tp);
     });
     
     sectionMap.forEach((sectionTopics, name) => {
       sectionGroups.push({ sectionName: name, sectionId: sectionIdMap.get(name) ?? null, topics: sectionTopics });
     });
 
-    const hasSections = sectionGroups.length > 1 || (sectionGroups.length === 1 && sectionGroups[0].sectionName !== 'Другое');
+    const hasSections = sectionGroups.length > 1 || (sectionGroups.length === 1 && sectionGroups[0].sectionName !== t.topics.other);
 
     // Find currently selected section group
     const activeSection = selectedSection ? sectionGroups.find(s => s.sectionName === selectedSection) : null;
@@ -294,9 +296,9 @@ export default function TopicsPage() {
       <div className="animate-fade-in" style={{ maxWidth: '800px', margin: '0 auto' }}>
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-primary)' }}>Обучение</h1>
+          <h1 style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-primary)' }}>{t.topics.learning}</h1>
           <button onClick={() => navigate('/test')} className="btn btn-outline">
-            ← Назад
+            ← {t.topics.back}
           </button>
         </div>
 
@@ -324,24 +326,24 @@ export default function TopicsPage() {
             {hasSections && (
               <div>
                 <div style={{ fontSize: '1.75rem', fontWeight: '700', color: 'var(--text-primary)' }}>{sectionGroups.length}</div>
-                <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Секций</div>
+                <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>{t.topics.sections}</div>
               </div>
             )}
             <div>
               <div style={{ fontSize: '1.75rem', fontWeight: '700', color: 'var(--primary-color)' }}>{topics.length}</div>
-              <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Всего тем</div>
+              <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>{t.topics.totalTopics}</div>
             </div>
             <div>
               <div style={{ fontSize: '1.75rem', fontWeight: '700', color: 'var(--success-color)' }}>
-                {topics.filter(t => t.masteryPercentage >= 80).length}
+                {topics.filter(tp => tp.masteryPercentage >= 80).length}
               </div>
-              <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Освоено</div>
+              <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>{t.topics.mastered}</div>
             </div>
             <div>
               <div style={{ fontSize: '1.75rem', fontWeight: '700', color: 'var(--warning-color)' }}>
-                {topics.filter(t => t.masteryPercentage < 50).length}
+                {topics.filter(tp => tp.masteryPercentage < 50).length}
               </div>
-              <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Требуют внимания</div>
+              <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>{t.topics.needsWork}</div>
             </div>
           </div>
         </div>
@@ -353,7 +355,7 @@ export default function TopicsPage() {
               const sectionMastery = section.topics.length > 0
                 ? Math.round(section.topics.reduce((sum, t) => sum + t.masteryPercentage, 0) / section.topics.length)
                 : 0;
-              const masteredCount = section.topics.filter(t => t.masteryPercentage >= 80).length;
+              const masteredCount = section.topics.filter(tp => tp.masteryPercentage >= 80).length;
 
               return (
                 <div
@@ -385,8 +387,8 @@ export default function TopicsPage() {
                           {section.sectionName}
                         </h2>
                         <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                          {section.topics.length} {section.topics.length === 1 ? 'тема' : section.topics.length < 5 ? 'темы' : 'тем'}
-                          {masteredCount > 0 && <span> • {masteredCount} освоено</span>}
+                          {section.topics.length} {t.topics.topics}
+                          {masteredCount > 0 && <span> • {masteredCount} {t.topics.topicsMastered}</span>}
                         </span>
                       </div>
                     </div>
@@ -427,7 +429,7 @@ export default function TopicsPage() {
                   marginBottom: '1rem', padding: '0.25rem 0'
                 }}
               >
-                ← Все секции
+                ← {t.topics.allSections}
               </button>
             )}
 
@@ -447,7 +449,7 @@ export default function TopicsPage() {
                   </h2>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                      {activeSection.topics.length} {activeSection.topics.length === 1 ? 'тема' : activeSection.topics.length < 5 ? 'темы' : 'тем'}
+                      {activeSection.topics.length} {t.topics.topics}
                     </span>
                     <span style={{ ...getMasteryBadgeStyle(sectionMastery), padding: '0.2rem 0.5rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: '600' }}>
                       {sectionMastery}%
@@ -473,9 +475,9 @@ export default function TopicsPage() {
                     <div>
                       <h3 style={{ fontWeight: '600', color: 'var(--text-primary)', marginBottom: '0.25rem' }}>{topic.topicName}</h3>
                       <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                        {topic.totalQuestions} {topic.totalQuestions === 1 ? 'вопрос' : 'вопросов'} в теме
+                        {topic.totalQuestions} {t.topics.questionsInTopic}
                         {(topic.lessonCount ?? 0) > 0 && (
-                          <span style={{ marginLeft: '0.5rem' }}>• {topic.lessonCount} {topic.lessonCount === 1 ? 'урок' : 'уроков'}</span>
+                          <span style={{ marginLeft: '0.5rem' }}>• {topic.lessonCount} {t.topics.lessonsCount}</span>
                         )}
                       </p>
                     </div>
@@ -500,8 +502,8 @@ export default function TopicsPage() {
                   </div>
 
                   <div style={{ marginTop: '0.5rem', display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                    <span>✓ {topic.correctAnswers} верных ответов</span>
-                    <span>✕ {topic.incorrectAnswers} ошибок</span>
+                    <span>✓ {topic.correctAnswers} {t.topics.correctAnswers}</span>
+                    <span>✕ {topic.incorrectAnswers} {t.topics.errors}</span>
                   </div>
 
                   {/* Action Buttons */}
@@ -512,7 +514,7 @@ export default function TopicsPage() {
                         className="btn btn-outline"
                         style={{ flex: 1, fontSize: '0.8rem', padding: '0.5rem' }}
                       >
-                        Урок
+                        {t.topics.lessonLabel}
                       </button>
                     )}
                     <button
@@ -520,7 +522,7 @@ export default function TopicsPage() {
                       className="btn btn-primary"
                       style={{ flex: 1, fontSize: '0.8rem', padding: '0.5rem' }}
                     >
-                      Практика
+                      {t.topics.practiceLabel}
                     </button>
                   </div>
                 </div>
@@ -531,7 +533,7 @@ export default function TopicsPage() {
 
         {topics.length === 0 && (
           <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
-            <p style={{ color: 'var(--text-secondary)' }}>Темы не найдены для выбранных экзаменов</p>
+            <p style={{ color: 'var(--text-secondary)' }}>{t.topics.noTopics}</p>
           </div>
         )}
       </div>
@@ -556,14 +558,14 @@ export default function TopicsPage() {
           {currentTopic?.topicName}
         </span>
         <button onClick={() => setViewMode('topics')} className="btn btn-outline">
-          ← К темам
+          {t.topics.backToTopics}
         </button>
       </div>
 
       {/* Progress */}
       <div className="card" style={{ padding: '1rem', marginBottom: '1.5rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
-          <span>Вопрос {currentIndex + 1} из {questions.length}</span>
+          <span>{t.topics.questionOf.replace('{n}', String(currentIndex + 1)).replace('{total}', String(questions.length))}</span>
         </div>
         <div style={{ width: '100%', backgroundColor: 'var(--border-color)', borderRadius: '9999px', height: '0.5rem' }}>
           <div style={{ 
@@ -586,8 +588,8 @@ export default function TopicsPage() {
             fontWeight: '500',
             ...getDifficultyStyle(currentQuestion.difficulty)
           }}>
-            {currentQuestion.difficulty === 'Easy' ? 'Легкий' :
-             currentQuestion.difficulty === 'Medium' ? 'Средний' : 'Сложный'}
+            {currentQuestion.difficulty === 'Easy' ? t.practice.easy :
+             currentQuestion.difficulty === 'Medium' ? t.practice.medium : t.practice.hard}
           </span>
 
           {/* Hint Button */}
@@ -607,7 +609,7 @@ export default function TopicsPage() {
                 transition: 'all 0.2s ease'
               }}
             >
-              {hintLoading ? '...' : showHint ? 'Скрыть подсказку' : 'Подсказка'}
+              {hintLoading ? '...' : showHint ? t.practice.hideHint : t.practice.hint}
             </button>
           )}
         </div>
@@ -624,7 +626,7 @@ export default function TopicsPage() {
             color: 'var(--text-secondary)',
             lineHeight: '1.5'
           }}>
-            <span style={{ fontWeight: '600', color: 'var(--warning-color)' }}>Подсказка: </span>
+            <span style={{ fontWeight: '600', color: 'var(--warning-color)' }}>{t.practice.hint}: </span>
             {hintText}
           </div>
         )}
@@ -685,13 +687,13 @@ export default function TopicsPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
               <span style={{ fontSize: '1.5rem' }}>{answerResult.isCorrect ? '✓' : '✕'}</span>
               <span style={{ fontWeight: '600', color: answerResult.isCorrect ? 'var(--success-color)' : 'var(--error-color)' }}>
-                {answerResult.isCorrect ? 'Правильно!' : 'Неправильно'}
+                {answerResult.isCorrect ? t.practice.correct : t.practice.incorrect}
               </span>
             </div>
             
             {!answerResult.isCorrect && (
               <p style={{ color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
-                <span style={{ fontWeight: '500' }}>Правильный ответ: </span>
+                <span style={{ fontWeight: '500' }}>{t.practice.correctAnswer}: </span>
                 {answerResult.correctOptionText}
               </p>
             )}
@@ -699,7 +701,7 @@ export default function TopicsPage() {
             {answerResult.explanation && (
               <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid var(--border-color)' }}>
                 <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                  <span style={{ fontWeight: '500' }}>Объяснение: </span>
+                  <span style={{ fontWeight: '500' }}>{t.practice.explanation}: </span>
                   {answerResult.explanation}
                 </p>
               </div>
@@ -716,7 +718,7 @@ export default function TopicsPage() {
               className="btn btn-primary"
               style={{ width: '100%' }}
             >
-              {submitting ? 'Проверка...' : 'Ответить'}
+              {submitting ? t.topics.checking : t.topics.answer}
             </button>
           ) : (
             <button
@@ -724,7 +726,7 @@ export default function TopicsPage() {
               className="btn btn-primary"
               style={{ width: '100%' }}
             >
-              {currentIndex < questions.length - 1 ? 'Следующий вопрос' : 'Завершить тему'}
+              {currentIndex < questions.length - 1 ? t.topics.nextQ : t.topics.finish}
             </button>
           )}
         </div>

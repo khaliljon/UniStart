@@ -11,6 +11,7 @@ import {
   LineChart,
   Line,
 } from 'recharts';
+import { useTranslation } from '../hooks/useTranslation';
 import { studyPlanService } from '../services/studyPlanService';
 import { examService } from '../services/examService';
 import type {
@@ -25,13 +26,6 @@ import type {
 
 type Tab = 'today' | 'plan' | 'stats';
 
-const TYPE_LABELS: Record<string, string> = {
-  New: 'Новая тема',
-  Review: 'Повторение',
-  Practice: 'Практика',
-  Weakness: 'Слабая тема',
-};
-
 const TYPE_COLORS: Record<string, string> = {
   New: '#6366f1',
   Review: '#10b981',
@@ -41,6 +35,7 @@ const TYPE_COLORS: Record<string, string> = {
 
 function StudyPlanPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [tab, setTab] = useState<Tab>('today');
   const [goal, setGoal] = useState<StudyGoal | null>(null);
   const [todayPlan, setTodayPlan] = useState<TodayPlan | null>(null);
@@ -88,7 +83,7 @@ function StudyPlanPage() {
         setStats(statsData);
       }
     } catch (err) {
-      setError('Ошибка загрузки данных');
+      setError(t.studyPlan.loadError);
       console.error(err);
     } finally {
       setIsLoading(false);
@@ -142,7 +137,7 @@ function StudyPlanPage() {
       const statsData = await studyPlanService.getPlanStats();
       setStats(statsData);
     } catch (err) {
-      setError('Ошибка создания цели');
+      setError(t.studyPlan.createError);
       console.error(err);
     } finally {
       setIsSubmitting(false);
@@ -159,7 +154,7 @@ function StudyPlanPage() {
       const statsData = await studyPlanService.getPlanStats();
       setStats(statsData);
     } catch (err) {
-      setError('Ошибка перегенерации плана');
+      setError(t.studyPlan.regenError);
       console.error(err);
     } finally {
       setIsSubmitting(false);
@@ -192,7 +187,7 @@ function StudyPlanPage() {
       <div className="animate-fade-in" style={{ padding: '2rem 0' }}>
         <div className="card" style={{ padding: '3rem', textAlign: 'center' }}>
           <div className="animate-pulse" style={{ fontSize: '1.2rem', color: 'var(--text-secondary)' }}>
-            Загрузка плана обучения...
+            {t.studyPlan.loading}
           </div>
         </div>
       </div>
@@ -205,7 +200,7 @@ function StudyPlanPage() {
         <div className="card" style={{ padding: '2rem', textAlign: 'center', color: 'var(--error-color)' }}>
           {error}
           <button className="btn btn-primary" style={{ marginTop: '1rem' }} onClick={loadData}>
-            Попробовать снова
+            {t.studyPlan.tryAgain}
           </button>
         </div>
       </div>
@@ -215,14 +210,14 @@ function StudyPlanPage() {
   return (
     <div className="animate-fade-in" style={{ padding: '1.5rem 0' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-        <h1 style={{ margin: 0 }}>Учебный план</h1>
+        <h1 style={{ margin: 0 }}>{t.studyPlan.title}</h1>
         {goal && (
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <button className="btn btn-outline" onClick={handleRegenerate} disabled={isSubmitting}>
-              Перегенерировать
+              {t.studyPlan.regenerate}
             </button>
             <button className="btn btn-outline" onClick={() => setShowGoalForm(true)}>
-              Изменить цель
+              {t.studyPlan.changeGoal}
             </button>
           </div>
         )}
@@ -233,12 +228,12 @@ function StudyPlanPage() {
         <GoalCard goal={goal} onDelete={() => setShowDeleteConfirm(true)} />
       ) : (
         <div className="card animate-fade-in-up" style={{ padding: '2rem', textAlign: 'center' }}>
-          <h2 style={{ marginBottom: '0.5rem' }}>Установите цель обучения</h2>
+          <h2 style={{ marginBottom: '0.5rem' }}>{t.studyPlan.setGoal}</h2>
           <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
-            Выберите экзамен, дедлайн и целевой балл — мы составим персональный план
+            {t.studyPlan.setGoalDesc}
           </p>
           <button className="btn btn-primary" onClick={() => setShowGoalForm(true)}>
-            Создать цель
+            {t.studyPlan.createGoal}
           </button>
         </div>
       )}
@@ -269,7 +264,7 @@ function StudyPlanPage() {
             display: 'flex', gap: '0.5rem', marginTop: '1.5rem', marginBottom: '1rem',
             borderBottom: '2px solid var(--border-color)', paddingBottom: '0.5rem'
           }}>
-            {([['today', 'Сегодня'], ['plan', 'Весь план'], ['stats', 'Статистика']] as [Tab, string][]).map(
+            {([['today', t.studyPlan.tabToday], ['plan', t.studyPlan.tabPlan], ['stats', t.studyPlan.tabStats]] as [Tab, string][]).map(
               ([key, label]) => (
                 <button
                   key={key}
@@ -305,21 +300,20 @@ function StudyPlanPage() {
         }} onClick={() => setShowDeleteConfirm(false)}>
           <div className="card animate-fade-in-scale" style={{ padding: '2rem', maxWidth: '400px', width: '90%' }}
             onClick={(e) => e.stopPropagation()}>
-            <h2 style={{ margin: '0 0 0.5rem' }}>Удалить цель?</h2>
+            <h2 style={{ margin: '0 0 0.5rem' }}>{t.studyPlan.deleteGoalTitle}</h2>
             <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', lineHeight: 1.5 }}>
-              Это действие удалит текущую цель и весь учебный план безвозвратно.
-              Ваш прогресс по ответам сохранится, но план нужно будет создать заново.
+              {t.studyPlan.deleteGoalDesc}
             </p>
             <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
               <button className="btn btn-outline" onClick={() => setShowDeleteConfirm(false)}>
-                Отмена
+                {t.common.cancel}
               </button>
               <button
                 className="btn"
                 style={{ background: 'var(--error-color)', color: '#fff' }}
                 onClick={handleDeleteGoal}
               >
-                Удалить цель
+                {t.studyPlan.deleteGoal}
               </button>
             </div>
           </div>
@@ -334,6 +328,7 @@ function StudyPlanPage() {
 // ═══════════════════════════════════════════════════════════
 
 function GoalCard({ goal, onDelete }: { goal: StudyGoal; onDelete: () => void }) {
+  const { t } = useTranslation();
   const [showMenu, setShowMenu] = useState(false);
 
   return (
@@ -353,14 +348,14 @@ function GoalCard({ goal, onDelete }: { goal: StudyGoal; onDelete: () => void })
             display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
             gap: '1rem', marginTop: '0.75rem'
           }}>
-            <StatBox label="Дней до экзамена" value={goal.daysUntilExam} color={
+            <StatBox label={t.studyPlan.daysToExam} value={goal.daysUntilExam} color={
               goal.daysUntilExam < 14 ? 'var(--error-color)' :
               goal.daysUntilExam < 30 ? 'var(--warning-color)' :
               'var(--success-color)'
             } />
-            <StatBox label="Целевой балл" value={goal.targetScore} />
-            <StatBox label="Рек. часов / день" value={goal.recommendedHoursPerDay} />
-            <StatBox label="Дедлайн" value={new Date(goal.targetDate).toLocaleDateString('ru-RU')} />
+            <StatBox label={t.studyPlan.targetScoreLabel} value={goal.targetScore} />
+            <StatBox label={t.studyPlan.recHoursPerDay} value={goal.recommendedHoursPerDay} />
+            <StatBox label={t.studyPlan.deadline} value={new Date(goal.targetDate).toLocaleDateString('ru-RU')} />
           </div>
         </div>
         {/* Three-dot menu instead of dangerous X */}
@@ -392,7 +387,7 @@ function GoalCard({ goal, onDelete }: { goal: StudyGoal; onDelete: () => void })
                   onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--primary-bg)')}
                   onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
                 >
-                  Удалить цель
+                  {t.studyPlan.deleteGoal}
                 </button>
               </div>
             </>
@@ -415,6 +410,7 @@ function StatBox({ label, value, color }: { label: string; value: string | numbe
 // ─── Today Tab ────────────────────────────────────────────
 
 function TodayTab({ todayPlan, onStart }: { todayPlan: TodayPlan; onStart: (entry: StudyPlanEntry) => void }) {
+  const { t } = useTranslation();
   const completedCount = todayPlan.entries.filter(e => e.isCompleted).length;
   const totalCount = todayPlan.entries.length;
   const progress = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
@@ -427,7 +423,7 @@ function TodayTab({ todayPlan, onStart }: { todayPlan: TodayPlan; onStart: (entr
           <div>
             <div style={{ fontWeight: 600, marginBottom: '0.2rem' }}>{todayPlan.recommendation}</div>
             <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-              ~{todayPlan.totalMinutesToday} мин осталось • {completedCount}/{totalCount} заданий выполнено
+              ~{todayPlan.totalMinutesToday} {t.studyPlan.minLeft} • {completedCount}/{totalCount} {t.studyPlan.tasksDone}
             </div>
           </div>
         </div>
@@ -445,7 +441,7 @@ function TodayTab({ todayPlan, onStart }: { todayPlan: TodayPlan; onStart: (entr
       {/* Entries */}
       {todayPlan.entries.length === 0 ? (
         <div className="card card-static" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
-          На сегодня заданий нет
+          {t.studyPlan.noTasksToday}
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
@@ -459,6 +455,13 @@ function TodayTab({ todayPlan, onStart }: { todayPlan: TodayPlan; onStart: (entr
 }
 
 function EntryCard({ entry, onStart }: { entry: StudyPlanEntry; onStart: () => void }) {
+  const { t } = useTranslation();
+  const TYPE_LABELS: Record<string, string> = {
+    New: t.studyPlan.typeNew,
+    Review: t.studyPlan.typeReview,
+    Practice: t.studyPlan.typePractice,
+    Weakness: t.studyPlan.typeWeakness,
+  };
   const typeColor = TYPE_COLORS[entry.type] || '#6366f1';
   const accuracy = entry.questionsAnswered > 0
     ? Math.round((entry.correctAnswers / entry.questionsAnswered) * 100)
@@ -479,13 +482,13 @@ function EntryCard({ entry, onStart }: { entry: StudyPlanEntry; onStart: () => v
             }}>
               {TYPE_LABELS[entry.type] || entry.type}
             </span>
-            {entry.isCompleted && <span style={{ color: 'var(--success-color)', fontWeight: 600 }}>✓ Выполнено</span>}
+            {entry.isCompleted && <span style={{ color: 'var(--success-color)', fontWeight: 600 }}>✓ {t.studyPlan.done}</span>}
           </div>
           <div style={{ fontWeight: 600, fontSize: '1rem' }}>{entry.topicName}</div>
           <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
-            {entry.recommendedMinutes} мин • {entry.recommendedQuestions} вопросов
+            {entry.recommendedMinutes} {t.studyPlan.min} • {entry.recommendedQuestions} {t.studyPlan.questions}
             {entry.isCompleted && entry.questionsAnswered > 0 && (
-              <> • Результат: <span style={{
+              <> • {t.studyPlan.result}: <span style={{
                 color: accuracy >= 70 ? 'var(--success-color)' : accuracy >= 40 ? 'var(--warning-color)' : 'var(--error-color)',
                 fontWeight: 600
               }}>{entry.correctAnswers}/{entry.questionsAnswered} ({accuracy}%)</span></>
@@ -494,11 +497,11 @@ function EntryCard({ entry, onStart }: { entry: StudyPlanEntry; onStart: () => v
         </div>
         {!entry.isCompleted ? (
           <button className="btn btn-primary" style={{ fontSize: '0.85rem', whiteSpace: 'nowrap' }} onClick={onStart}>
-            ▶ Начать
+            ▶ {t.studyPlan.start}
           </button>
         ) : (
           <button className="btn btn-outline" style={{ fontSize: '0.8rem', whiteSpace: 'nowrap' }} onClick={onStart}>
-            Ещё
+            {t.studyPlan.more}
           </button>
         )}
       </div>
@@ -509,6 +512,7 @@ function EntryCard({ entry, onStart }: { entry: StudyPlanEntry; onStart: () => v
 // ─── Plan Tab ─────────────────────────────────────────────
 
 function PlanTab({ plan }: { plan: StudyPlan }) {
+  const { t } = useTranslation();
   // Group entries by date
   const groupedEntries = new Map<string, StudyPlanEntry[]>();
   for (const entry of plan.entries) {
@@ -525,10 +529,10 @@ function PlanTab({ plan }: { plan: StudyPlan }) {
       {/* Plan overview */}
       <div className="card card-static" style={{ padding: '1rem', marginBottom: '1rem' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '1rem' }}>
-          <StatBox label="Всего заданий" value={plan.totalEntries} />
-          <StatBox label="Выполнено" value={plan.completedEntries} color="var(--success-color)" />
-          <StatBox label="Прогресс" value={`${plan.completionPercent}%`} color="var(--primary-color)" />
-          <StatBox label="Дней в плане" value={sortedDates.length} />
+          <StatBox label={t.studyPlan.totalTasks} value={plan.totalEntries} />
+          <StatBox label={t.studyPlan.completedTasks} value={plan.completedEntries} color="var(--success-color)" />
+          <StatBox label={t.studyPlan.progressLabel} value={`${plan.completionPercent}%`} color="var(--primary-color)" />
+          <StatBox label={t.studyPlan.daysInPlan} value={sortedDates.length} />
         </div>
         <div style={{ marginTop: '0.75rem', background: 'var(--border-color)', borderRadius: '8px', height: '8px', overflow: 'hidden' }}>
           <div style={{
@@ -558,11 +562,11 @@ function PlanTab({ plan }: { plan: StudyPlan }) {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                 <div style={{ fontWeight: 600 }}>
                   {new Date(dateStr).toLocaleDateString('ru-RU', { weekday: 'short', day: 'numeric', month: 'short' })}
-                  {isToday && ' (Сегодня)'}
+                  {isToday && ` (${t.studyPlan.todayLabel})`}
                 </div>
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
                   {entries.filter(e => e.isCompleted).length}/{entries.length} • 
-                  {entries.reduce((s, e) => s + e.recommendedMinutes, 0)} мин
+                  {entries.reduce((s, e) => s + e.recommendedMinutes, 0)} {t.studyPlan.min}
                 </div>
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
@@ -589,6 +593,7 @@ function PlanTab({ plan }: { plan: StudyPlan }) {
 // ─── Stats Tab ────────────────────────────────────────────
 
 function StatsTab({ stats }: { stats: PlanStats }) {
+  const { t } = useTranslation();
   const weeklyChartData = stats.weeklySummary.map(w => ({
     week: new Date(w.weekStart).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }),
     planned: w.plannedEntries,
@@ -600,18 +605,18 @@ function StatsTab({ stats }: { stats: PlanStats }) {
     <div className="animate-fade-in-up">
       {/* Summary stats */}
       <div className="card card-static" style={{ padding: '1.25rem', marginBottom: '1rem' }}>
-        <h3 style={{ margin: '0 0 1rem' }}>Общая статистика</h3>
+        <h3 style={{ margin: '0 0 1rem' }}>{t.studyPlan.generalStats}</h3>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '1rem' }}>
-          <StatBox label="Дней активности" value={stats.completedDays} color="var(--success-color)" />
-          <StatBox label="Пропущено дней" value={stats.skippedDays} color="var(--error-color)" />
-          <StatBox label="Вопросов отвечено" value={stats.totalQuestionsAnswered} />
+          <StatBox label={t.studyPlan.activeDays} value={stats.completedDays} color="var(--success-color)" />
+          <StatBox label={t.studyPlan.skippedDays} value={stats.skippedDays} color="var(--error-color)" />
+          <StatBox label={t.studyPlan.questionsAnswered} value={stats.totalQuestionsAnswered} />
           <StatBox
-            label="Точность"
+            label={t.studyPlan.accuracyLabel}
             value={`${stats.averageAccuracy}%`}
             color={stats.averageAccuracy >= 70 ? 'var(--success-color)' : 'var(--warning-color)'}
           />
           <StatBox
-            label="Приверженность"
+            label={t.studyPlan.adherence}
             value={`${stats.adherencePercent}%`}
             color={stats.adherencePercent >= 70 ? 'var(--success-color)' : 'var(--warning-color)'}
           />
@@ -621,7 +626,7 @@ function StatsTab({ stats }: { stats: PlanStats }) {
       {/* Weekly completion chart */}
       {weeklyChartData.length > 0 && (
         <div className="card card-static" style={{ padding: '1.25rem', marginBottom: '1rem' }}>
-          <h3 style={{ margin: '0 0 1rem' }}>Еженедельный прогресс</h3>
+          <h3 style={{ margin: '0 0 1rem' }}>{t.studyPlan.weeklyProgress}</h3>
           <ResponsiveContainer width="100%" height={260}>
             <BarChart data={weeklyChartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
@@ -633,8 +638,8 @@ function StatsTab({ stats }: { stats: PlanStats }) {
                   borderRadius: '8px', color: 'var(--text-primary)'
                 }}
               />
-              <Bar dataKey="planned" name="Запланировано" fill="#6366f1" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="completed" name="Выполнено" fill="#10b981" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="planned" name={t.studyPlan.planned} fill="#6366f1" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="completed" name={t.studyPlan.completed} fill="#10b981" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -643,7 +648,7 @@ function StatsTab({ stats }: { stats: PlanStats }) {
       {/* Accuracy trend */}
       {weeklyChartData.length > 1 && (
         <div className="card card-static" style={{ padding: '1.25rem' }}>
-          <h3 style={{ margin: '0 0 1rem' }}>Динамика точности</h3>
+          <h3 style={{ margin: '0 0 1rem' }}>{t.studyPlan.accuracyTrend}</h3>
           <ResponsiveContainer width="100%" height={220}>
             <LineChart data={weeklyChartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
@@ -655,7 +660,7 @@ function StatsTab({ stats }: { stats: PlanStats }) {
                   borderRadius: '8px', color: 'var(--text-primary)'
                 }}
               />
-              <Line type="monotone" dataKey="accuracy" name="Точность %" stroke="#f59e0b" strokeWidth={2} dot={{ r: 4 }} />
+              <Line type="monotone" dataKey="accuracy" name={t.studyPlan.accuracyPercent} stroke="#f59e0b" strokeWidth={2} dot={{ r: 4 }} />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -688,6 +693,7 @@ function GoalFormModal({
   onSubmit: (e: React.FormEvent) => void; onClose: () => void;
 }) {
   const minDate = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
+  const { t } = useTranslation();
   const cfg = EXAM_SCORE_CONFIG[formExam] ?? DEFAULT_SCORE_CONFIG;
 
   // Dynamic max based on selected sections (if sections have maxScore)
@@ -728,11 +734,11 @@ function GoalFormModal({
     }} onClick={onClose}>
       <div className="card animate-fade-in-scale" style={{ padding: '2rem', maxWidth: '450px', width: '90%' }}
         onClick={(e) => e.stopPropagation()}>
-        <h2 style={{ margin: '0 0 1.5rem' }}>Установить цель</h2>
+        <h2 style={{ margin: '0 0 1.5rem' }}>{t.studyPlan.goalFormTitle}</h2>
         <form onSubmit={onSubmit}>
           <div style={{ marginBottom: '1rem' }}>
             <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: 600, fontSize: '0.9rem' }}>
-              Экзамен
+              {t.studyPlan.exam}
             </label>
             <select
               value={formExam}
@@ -744,7 +750,7 @@ function GoalFormModal({
                 color: 'var(--text-primary)', fontSize: '0.95rem'
               }}
             >
-              <option value="">Выберите экзамен...</option>
+              <option value="">{t.studyPlan.selectExam}...</option>
               {exams.map((e) => (
                 <option key={e.code} value={e.code}>{e.name}</option>
               ))}
@@ -754,7 +760,7 @@ function GoalFormModal({
           {sections.length > 1 && (
             <div style={{ marginBottom: '1rem' }}>
               <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: 600, fontSize: '0.9rem' }}>
-                Секции
+                {t.studyPlan.sections}
               </label>
               <div style={{
                 display: 'flex', flexDirection: 'column', gap: '0.35rem',
@@ -782,7 +788,7 @@ function GoalFormModal({
 
           <div style={{ marginBottom: '1rem' }}>
             <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: 600, fontSize: '0.9rem' }}>
-              Дата экзамена
+              {t.studyPlan.examDate}
             </label>
             <input
               type="date"
@@ -800,7 +806,7 @@ function GoalFormModal({
 
           <div style={{ marginBottom: '1.5rem' }}>
             <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: 600, fontSize: '0.9rem' }}>
-              Целевой балл: {formScore}
+              {t.studyPlan.targetScoreValue}: {formScore}
             </label>
             <input
               type="range"
@@ -818,9 +824,9 @@ function GoalFormModal({
           </div>
 
           <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-            <button type="button" className="btn btn-outline" onClick={onClose}>Отмена</button>
+            <button type="button" className="btn btn-outline" onClick={onClose}>{t.common.cancel}</button>
             <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
-              {isSubmitting ? 'Создание...' : 'Создать и сгенерировать план'}
+              {isSubmitting ? t.studyPlan.creating : t.studyPlan.createAndGenerate}
             </button>
           </div>
         </form>

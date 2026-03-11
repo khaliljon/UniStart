@@ -28,10 +28,38 @@ public class AuthService : IAuthService
 
     public async Task<AuthResponseDto> RegisterAsync(RegisterDto dto)
     {
-        // Check if user already exists
-        var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
+        // Check if user already exists (including soft-deleted)
+        var existingUser = await _context.Users
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(u => u.Email == dto.Email);
         if (existingUser != null)
         {
+            if (existingUser.IsDeleted)
+            {
+                // Restore soft-deleted user with new credentials
+                existingUser.IsDeleted = false;
+                existingUser.DeletedAt = null;
+                existingUser.DeletedBy = null;
+                existingUser.Name = dto.Name;
+                existingUser.PasswordHash = BC.HashPassword(dto.Password);
+                existingUser.HasCompletedOnboarding = false;
+                existingUser.CreatedAt = DateTime.UtcNow;
+                await _unitOfWork.SaveChangesAsync();
+
+                var restoredToken = _jwtService.GenerateToken(existingUser);
+                var restoredExpiresAt = DateTime.UtcNow.AddHours(24);
+                return new AuthResponseDto(
+                    existingUser.Id,
+                    existingUser.Email,
+                    existingUser.Name,
+                    existingUser.Role.ToString(),
+                    existingUser.HasCompletedOnboarding,
+                    existingUser.SubscriptionTier.ToString(),
+                    existingUser.SubscriptionExpiresAt,
+                    restoredToken,
+                    restoredExpiresAt
+                );
+            }
             throw new InvalidOperationException("User with this email already exists");
         }
 

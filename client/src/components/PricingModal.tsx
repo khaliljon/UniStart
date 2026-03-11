@@ -2,36 +2,38 @@ import { useState, useEffect, useRef } from 'react';
 import { subscriptionService } from '../services/subscriptionService';
 import { useAppDispatch } from '../hooks/useAppDispatch';
 import { setSubscription } from '../store/slices/authSlice';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface PricingModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-const FREE_FEATURES = [
-  '15 вопросов в день',
-  '1 урок в день',
-  'Базовая аналитика',
-  'Недельный прогноз',
-  'Диагностический тест',
-  'Персональный план (базовый)',
-];
-
-const PRO_FEATURES = [
-  'Безлимитные вопросы',
-  'Все уроки',
-  'Mock Exams (пробные экзамены)',
-  'Полная аналитика (radar, heatmap)',
-  'Полный план подготовки',
-  'Real-time прогноз балла',
-  'Приоритетная поддержка',
-];
-
 export function PricingModal({ isOpen, onClose }: PricingModalProps) {
+  const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const [isUpgrading, setIsUpgrading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  const FREE_FEATURES = [
+    t.limits.freeQuestions,
+    t.limits.freeLesson,
+    t.limits.freeAnalytics,
+    t.limits.freeWeeklyForecast,
+    t.limits.freeDiagnostic,
+    t.limits.freeBasicPlan,
+  ];
+
+  const PRO_FEATURES = [
+    t.limits.proUnlimited,
+    t.limits.proAllLessons,
+    t.limits.proMockExams,
+    t.limits.proFullAnalytics,
+    t.limits.proFullPlan,
+    t.limits.proRealtimePrediction,
+    t.limits.proPriority,
+  ];
 
   useEffect(() => {
     return () => { clearTimeout(closeTimerRef.current); };
@@ -53,7 +55,7 @@ export function PricingModal({ isOpen, onClose }: PricingModalProps) {
         }, 2000);
       }
     } catch {
-      setResult('Ошибка при обновлении тарифа');
+      setResult(t.limits.errorUpgrade);
     } finally {
       setIsUpgrading(false);
     }
@@ -85,10 +87,10 @@ export function PricingModal({ isOpen, onClose }: PricingModalProps) {
       }}>
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <h2 style={{ fontSize: '1.5rem', marginBottom: '0.5rem', color: 'var(--text-primary)' }}>
-            Выберите тариф
+            {t.limits.choosePlan}
           </h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
-            Разблокируйте все возможности для максимальной подготовки
+            {t.limits.choosePlanDesc}
           </p>
         </div>
 
@@ -120,7 +122,7 @@ export function PricingModal({ isOpen, onClose }: PricingModalProps) {
               $0
             </div>
             <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1.25rem' }}>
-              навсегда
+              {t.limits.forever}
             </div>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               {FREE_FEATURES.map((f) => (
@@ -150,7 +152,7 @@ export function PricingModal({ isOpen, onClose }: PricingModalProps) {
               fontSize: '0.7rem',
               fontWeight: 600,
             }}>
-              Рекомендуем
+              {t.limits.recommended}
             </div>
             <div style={{ fontWeight: 700, fontSize: '1.2rem', marginBottom: '0.25rem', color: 'var(--primary-color)' }}>
               Pro
@@ -159,7 +161,7 @@ export function PricingModal({ isOpen, onClose }: PricingModalProps) {
               $9.99
             </div>
             <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1.25rem' }}>
-              / месяц
+              {t.limits.perMonth}
             </div>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               {PRO_FEATURES.map((f) => (
@@ -179,7 +181,7 @@ export function PricingModal({ isOpen, onClose }: PricingModalProps) {
                 borderRadius: '0.75rem',
               }}
             >
-              {isUpgrading ? 'Обновление...' : 'Перейти на Pro'}
+              {isUpgrading ? t.limits.upgrading : t.limits.upgradePro}
             </button>
           </div>
         </div>
@@ -196,7 +198,7 @@ export function PricingModal({ isOpen, onClose }: PricingModalProps) {
             fontSize: '0.9rem',
           }}
         >
-          Закрыть
+          {t.common.close}
         </button>
       </div>
     </div>

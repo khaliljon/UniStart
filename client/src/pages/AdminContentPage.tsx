@@ -25,6 +25,7 @@ export default function AdminContentPage() {
   const [topics, setTopics] = useState<AdminTopicSummary[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [filterExam, setFilterExam] = useState<string>('all');
 
   // Lessons
   const [lessons, setLessons] = useState<Lesson[]>([]);
@@ -377,6 +378,16 @@ export default function AdminContentPage() {
     catch { setError('Ошибка удаления'); }
   };
 
+  // ─── Exam filter logic ────────────────
+  const examCodes = [...new Set(topics.map(t => t.examTypeCode))].sort();
+  const topicExamMap = new Map(topics.map(t => [t.id, t.examTypeCode]));
+
+  const filteredLessons = filterExam === 'all' ? lessons : lessons.filter(l => topicExamMap.get(l.topicId) === filterExam);
+  const filteredFormulas = filterExam === 'all' ? formulas : formulas.filter(f => topicExamMap.get(f.topicId) === filterExam);
+  const filteredStrategies = filterExam === 'all' ? strategies : strategies.filter(s => s.examTypeCode === filterExam);
+  const filteredDecks = filterExam === 'all' ? decks : decks.filter(d => d.examTypeCode === filterExam);
+  const filteredDrills = filterExam === 'all' ? drills : drills.filter(d => d.examTypeCode === filterExam);
+
   // ─── Common styles ───────────────────────
   const formRow: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '0.75rem' };
   const label: React.CSSProperties = { fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-secondary)' };
@@ -400,28 +411,38 @@ export default function AdminContentPage() {
       )}
 
       {/* Tabs */}
-      <div style={{ display: 'flex', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-color)', marginBottom: '1.5rem', width: 'fit-content' }}>
-        {TABS.map((t, i) => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            style={{
-              padding: '0.5rem 1rem', border: 'none', cursor: 'pointer', fontSize: '0.85rem',
-              background: tab === t.key ? 'var(--primary-color)' : 'var(--card-background)',
-              color: tab === t.key ? '#fff' : 'var(--text-secondary)',
-              borderLeft: i > 0 ? '1px solid var(--border-color)' : 'none',
-            }}
-          >
-            {t.label}
-          </button>
-        ))}
+      <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-color)', width: 'fit-content' }}>
+          {TABS.map((t, i) => (
+            <button
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              style={{
+                padding: '0.5rem 1rem', border: 'none', cursor: 'pointer', fontSize: '0.85rem',
+                background: tab === t.key ? 'var(--primary-color)' : 'var(--card-background)',
+                color: tab === t.key ? '#fff' : 'var(--text-secondary)',
+                borderLeft: i > 0 ? '1px solid var(--border-color)' : 'none',
+              }}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+        <select
+          value={filterExam}
+          onChange={e => setFilterExam(e.target.value)}
+          style={{ padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid var(--border-color)', fontSize: '0.85rem', background: 'var(--card-background)', color: 'var(--text-primary)' }}
+        >
+          <option value="all">Все экзамены</option>
+          {examCodes.map(code => <option key={code} value={code}>{code}</option>)}
+        </select>
       </div>
 
       {/* ═══════ LESSONS TAB ═══════ */}
       {tab === 'lessons' && (
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{lessons.length} уроков</span>
+            <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{filteredLessons.length} уроков</span>
             <button className="btn btn-primary" onClick={openLessonCreate}>+ Урок</button>
           </div>
 
@@ -463,6 +484,7 @@ export default function AdminContentPage() {
               <thead>
                 <tr style={{ borderBottom: '2px solid var(--border-color)', textAlign: 'left' }}>
                   <th style={{ padding: '0.5rem' }}>ID</th>
+                  <th style={{ padding: '0.5rem' }}>Экзамен</th>
                   <th style={{ padding: '0.5rem' }}>Тема</th>
                   <th style={{ padding: '0.5rem' }}>Название</th>
                   <th style={{ padding: '0.5rem' }}>Шагов</th>
@@ -470,9 +492,10 @@ export default function AdminContentPage() {
                 </tr>
               </thead>
               <tbody>
-                {lessons.map(l => (
+                {filteredLessons.map(l => (
                   <tr key={l.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
                     <td style={{ padding: '0.5rem', color: 'var(--text-secondary)' }}>#{l.id}</td>
+                    <td style={{ padding: '0.5rem', fontSize: '0.8rem' }}>{topicExamMap.get(l.topicId) || '—'}</td>
                     <td style={{ padding: '0.5rem' }}>{l.topicName}</td>
                     <td style={{ padding: '0.5rem', fontWeight: 500 }}>{l.title}</td>
                     <td style={{ padding: '0.5rem' }}>{l.stepCount}</td>
@@ -492,7 +515,7 @@ export default function AdminContentPage() {
       {tab === 'flashcards' && (
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{decks.length} колод</span>
+            <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{filteredDecks.length} колод</span>
             <button className="btn btn-primary" onClick={openDeckCreate}>+ Колода</button>
           </div>
 
@@ -529,7 +552,7 @@ export default function AdminContentPage() {
             <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>Загрузка...</div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              {decks.map(d => (
+              {filteredDecks.map(d => (
                 <div key={d.id} className="card" style={{ padding: '1rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }} onClick={() => toggleDeck(d.id)}>
                     <div>
@@ -602,7 +625,7 @@ export default function AdminContentPage() {
       {tab === 'formulas' && (
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{formulas.length} формул</span>
+            <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{filteredFormulas.length} формул</span>
             <button className="btn btn-primary" onClick={openFormulaCreate}>+ Формула</button>
           </div>
 
@@ -644,6 +667,7 @@ export default function AdminContentPage() {
               <thead>
                 <tr style={{ borderBottom: '2px solid var(--border-color)', textAlign: 'left' }}>
                   <th style={{ padding: '0.5rem' }}>ID</th>
+                  <th style={{ padding: '0.5rem' }}>Экзамен</th>
                   <th style={{ padding: '0.5rem' }}>Тема</th>
                   <th style={{ padding: '0.5rem' }}>Название</th>
                   <th style={{ padding: '0.5rem' }}>Формула</th>
@@ -651,9 +675,10 @@ export default function AdminContentPage() {
                 </tr>
               </thead>
               <tbody>
-                {formulas.map(f => (
+                {filteredFormulas.map(f => (
                   <tr key={f.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
                     <td style={{ padding: '0.5rem', color: 'var(--text-secondary)' }}>#{f.id}</td>
+                    <td style={{ padding: '0.5rem', fontSize: '0.8rem' }}>{topicExamMap.get(f.topicId) || '—'}</td>
                     <td style={{ padding: '0.5rem' }}>{f.topicName}</td>
                     <td style={{ padding: '0.5rem', fontWeight: 500 }}>{f.title}</td>
                     <td style={{ padding: '0.5rem', fontFamily: 'monospace', fontSize: '0.8rem' }}>{f.formula}</td>
@@ -675,7 +700,7 @@ export default function AdminContentPage() {
       {tab === 'strategies' && (
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{strategies.length} стратегий</span>
+            <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{filteredStrategies.length} стратегий</span>
             <button className="btn btn-primary" onClick={openStrategyCreate}>+ Стратегия</button>
           </div>
 
@@ -741,7 +766,7 @@ export default function AdminContentPage() {
                 </tr>
               </thead>
               <tbody>
-                {strategies.map(s => (
+                {filteredStrategies.map(s => (
                   <tr key={s.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
                     <td style={{ padding: '0.5rem', color: 'var(--text-secondary)' }}>#{s.id}</td>
                     <td style={{ padding: '0.5rem' }}>{s.examTypeCode}</td>
@@ -766,7 +791,7 @@ export default function AdminContentPage() {
       {tab === 'drills' && (
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{drills.length} дриллов</span>
+            <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{filteredDrills.length} дриллов</span>
             <button className="btn btn-primary" onClick={openDrillCreate}>+ Дрилл</button>
           </div>
 
@@ -853,7 +878,7 @@ export default function AdminContentPage() {
                 </tr>
               </thead>
               <tbody>
-                {drills.map(d => (
+                {filteredDrills.map(d => (
                   <tr key={d.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
                     <td style={{ padding: '0.5rem', color: 'var(--text-secondary)' }}>#{d.id}</td>
                     <td style={{ padding: '0.5rem', fontWeight: 500 }}>{d.title}</td>

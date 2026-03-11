@@ -34,4 +34,9 @@ export const drillService = {
     const response = await api.get<DrillResult[]>('/drills/history', { params: { limit } });
     return response.data;
   },
+
+  async getTemplates(): Promise<Array<{ id: number; title: string; description: string | null; drillType: string; examTypeCode: string | null; topicId: number | null; questionCount: number; timeLimitMinutes: number | null; sortOrder: number }>> {
+    const response = await api.get('/drills/templates');
+    return response.data;
+  },
 };

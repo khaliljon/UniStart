@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { tutorService } from '../services/tutorService';
+import { useTranslation } from '../i18n';
 import type { TutorCard, TutorListResult, TutorSchoolCard } from '../types';
 
 function TutorsPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { t } = useTranslation();
 
   const [result, setResult] = useState<TutorListResult | null>(null);
   const [schools, setSchools] = useState<TutorSchoolCard[]>([]);
@@ -104,11 +106,11 @@ function TutorsPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
             <span style={{ fontWeight: 700, fontSize: '1.05rem' }}>{tutor.name}</span>
             {tutor.isVerified && (
-              <span title="Верифицирован" style={{ color: '#3b82f6', fontSize: '1rem' }}>✓</span>
+              <span title={t.tutor.verified} style={{ color: '#3b82f6', fontSize: '1rem' }}>✓</span>
             )}
           </div>
           <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {tutor.headline || 'Тьютор'}
+            {tutor.headline || t.tutor.defaultHeadline}
           </div>
         </div>
       </div>
@@ -148,7 +150,7 @@ function TutorsPage() {
         <span>{tutor.totalStudents}</span>
         {tutor.hourlyRate != null && (
           <span style={{ marginLeft: 'auto', fontWeight: 600, color: 'var(--primary-color)' }}>
-            {tutor.hourlyRate}₽/ч
+            {tutor.hourlyRate}{t.tutor.perHourShort}
           </span>
         )}
       </div>
@@ -158,7 +160,7 @@ function TutorsPage() {
         fontSize: '0.75rem', fontWeight: 600,
         color: tutor.isAvailable ? '#10b981' : '#ef4444',
       }}>
-        {tutor.isAvailable ? '● Доступен' : '○ Не доступен'}
+        {tutor.isAvailable ? `● ${t.tutor.available}` : `○ ${t.tutor.unavailable}`}
       </div>
     </div>
   );
@@ -166,9 +168,9 @@ function TutorsPage() {
   return (
     <div className="animate-fade-in">
       <div style={{ marginBottom: '1.5rem' }}>
-        <h1 style={{ margin: '0 0 0.25rem' }}>Тьюторы</h1>
+        <h1 style={{ margin: '0 0 0.25rem' }}>{t.tutor.title}</h1>
         <p style={{ margin: 0, color: 'var(--text-secondary)' }}>
-          Найдите опытного тьютора для подготовки к экзаменам
+          {t.tutor.subtitle}
         </p>
       </div>
 
@@ -176,7 +178,7 @@ function TutorsPage() {
       {schools.length > 0 && (
         <div style={{ marginBottom: '2rem' }}>
           <h2 style={{ fontSize: '1.15rem', fontWeight: '600', marginBottom: '0.75rem', color: 'var(--text-primary)' }}>
-            Партнёрские школы
+            {t.tutor.partnerSchools}
           </h2>
           <div style={{
             display: 'grid',
@@ -222,14 +224,14 @@ function TutorsPage() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                       <span style={{ fontWeight: 700, fontSize: '1.05rem' }}>{school.name}</span>
                       {school.isPartner && (
-                        <span title="Партнёр UniStart" style={{
+                        <span title={t.tutor.partner} style={{
                           fontSize: '0.65rem',
                           fontWeight: 600,
                           padding: '0.1rem 0.4rem',
                           borderRadius: '999px',
                           backgroundColor: 'rgba(79, 70, 229, 0.1)',
                           color: 'var(--primary-color)',
-                        }}>Партнёр</span>
+                        }}>{t.tutor.partner}</span>
                       )}
                     </div>
                     <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
@@ -290,7 +292,7 @@ function TutorsPage() {
                       onClick={(e) => e.stopPropagation()}
                       style={{ color: 'var(--primary-color)', textDecoration: 'none' }}
                     >
-                      Сайт
+                      {t.tutor.website}
                     </a>
                   )}
                 </div>
@@ -305,14 +307,14 @@ function TutorsPage() {
         <form onSubmit={handleSearch} style={{ flex: '1 1 200px', display: 'flex', gap: '0.5rem' }}>
           <input
             type="text"
-            placeholder="Поиск по имени..."
+            placeholder={t.tutor.searchPlaceholder}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="form-input"
             style={{ flex: 1, padding: '0.5rem 0.75rem', fontSize: '0.9rem' }}
           />
           <button type="submit" className="btn btn-primary" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
-            Поиск
+            {t.tutor.searchBtn}
           </button>
         </form>
 
@@ -322,7 +324,7 @@ function TutorsPage() {
           className="form-input"
           style={{ padding: '0.5rem 0.75rem', fontSize: '0.85rem', minWidth: '150px' }}
         >
-          <option value="">All exams</option>
+          <option value="">{t.tutor.allExams}</option>
           <option value="SAT">SAT</option>
           <option value="TOEFL">TOEFL</option>
           <option value="IELTS">IELTS</option>
@@ -336,12 +338,12 @@ function TutorsPage() {
           className="form-input"
           style={{ padding: '0.5rem 0.75rem', fontSize: '0.85rem', minWidth: '150px' }}
         >
-          <option value="rating">По рейтингу</option>
-          <option value="reviews">По отзывам</option>
-          <option value="students">По ученикам</option>
-          <option value="price_asc">Цена ↑</option>
-          <option value="price_desc">Цена ↓</option>
-          <option value="newest">Новые</option>
+          <option value="rating">{t.tutor.byRating}</option>
+          <option value="reviews">{t.tutor.byReviews}</option>
+          <option value="students">{t.tutor.byStudents}</option>
+          <option value="price_asc">{t.tutor.priceAsc}</option>
+          <option value="price_desc">{t.tutor.priceDesc}</option>
+          <option value="newest">{t.tutor.newest}</option>
         </select>
 
         <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.85rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>
@@ -350,25 +352,25 @@ function TutorsPage() {
             checked={onlyAvailable}
             onChange={(e) => { setOnlyAvailable(e.target.checked); setPage(1); }}
           />
-          Только доступные
+          {t.tutor.onlyAvailable}
         </label>
       </div>
 
       {/* Results */}
       {loading ? (
         <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
-          Загрузка тьюторов...
+          {t.tutor.loadingTutors}
         </div>
       ) : !result || result.items.length === 0 ? (
         <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
           <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}></div>
-          <h3>Тьюторы не найдены</h3>
-          <p style={{ color: 'var(--text-secondary)' }}>Попробуйте изменить параметры поиска</p>
+          <h3>{t.tutor.noTutors}</h3>
+          <p style={{ color: 'var(--text-secondary)' }}>{t.tutor.noTutorsDesc}</p>
         </div>
       ) : (
         <>
           <div style={{ marginBottom: '0.75rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-            Найдено: {result.totalCount} тьютор(ов)
+            {t.tutor.found}: {result.totalCount}
           </div>
 
           <div style={{
@@ -389,7 +391,7 @@ function TutorsPage() {
                 onClick={() => setPage(p => p - 1)}
                 style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}
               >
-                ← Назад
+                ← {t.tutor.prev}
               </button>
               <span style={{ display: 'flex', alignItems: 'center', fontSize: '0.9rem' }}>
                 {page} / {result.totalPages}
@@ -400,7 +402,7 @@ function TutorsPage() {
                 onClick={() => setPage(p => p + 1)}
                 style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}
               >
-                Вперёд →
+                {t.tutor.next} →
               </button>
             </div>
           )}

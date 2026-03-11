@@ -1,87 +1,66 @@
 import { useNavigate } from 'react-router-dom';
-
-const FEATURES = [
-  {
-    icon: '',
-    title: 'Адаптивные тесты',
-    desc: 'IRT-алгоритм подбирает вопросы точно под ваш уровень. Каждый следующий вопрос — именно то, что нужно для роста.',
-  },
-  {
-    icon: '',
-    title: 'Прогноз балла',
-    desc: 'Система прогнозирует ваш результат на экзамене в реальном времени с доверительным интервалом.',
-  },
-  {
-    icon: '',
-    title: 'Персональный план',
-    desc: 'Автоматически генерируемый план подготовки с учётом даты экзамена, целевого балла и слабых мест.',
-  },
-  {
-    icon: '',
-    title: 'Mock Exams',
-    desc: 'Полноценные пробные экзамены с таймером по секциям — точная симуляция реального тестирования.',
-  },
-  {
-    icon: '',
-    title: 'Диагностический тест',
-    desc: '10 вопросов для определения начального уровня и прогноза. Занимает ~5 минут.',
-  },
-  {
-    icon: '',
-    title: 'Объяснения и уроки',
-    desc: 'Подробные объяснения к каждому вопросу и мини-уроки по темам для устранения пробелов.',
-  },
-];
-
-const PLANS = [
-  {
-    name: 'Free',
-    price: '$0',
-    period: 'навсегда',
-    highlight: false,
-    features: [
-      '15 вопросов в день',
-      '1 урок в день',
-      'Базовая аналитика',
-      'Диагностический тест',
-      'Недельный прогноз',
-      'Базовый план подготовки',
-    ],
-    cta: 'Начать бесплатно',
-  },
-  {
-    name: 'Pro',
-    price: '$9.99',
-    period: '/ месяц',
-    highlight: true,
-    features: [
-      'Безлимитные вопросы',
-      'Все уроки без ограничений',
-      'Mock Exams (пробные экзамены)',
-      'Полная аналитика (radar, heatmap)',
-      'Real-time прогноз балла',
-      'Полный план подготовки',
-      'Приоритетная поддержка',
-    ],
-    cta: 'Начать с Pro',
-  },
-];
-
-const TESTIMONIALS = [
-  { name: 'Айдана К.', exam: 'SAT', score: '1480', text: 'За 2 месяца подготовки на UniStart мой балл вырос с 1200 до 1480. Адаптивные тесты — это совсем другой уровень.' },
-  { name: 'Тимур Б.', exam: 'TOEFL', score: '108', text: 'Удобный план подготовки и прогноз балла мотивировали заниматься каждый день. Получил 108 при цели 100.' },
-  { name: 'Дана М.', exam: 'NUET', score: '156', text: 'UniStart идеально подготовил к NUET. Mock exams были максимально близки к реальному экзамену.' },
-];
-
-const STATS = [
-  { value: '10 000+', label: 'вопросов' },
-  { value: '3', label: 'экзамена' },
-  { value: '95%', label: 'точность прогноза' },
-  { value: '~30%', label: 'рост балла' },
-];
+import { useTranslation } from '../i18n';
+import LanguageSwitcher from '../components/LanguageSwitcher';
 
 function LandingPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
+
+  const FEATURES = [
+    { icon: '', title: t.landing.featureAdaptiveTitle, desc: t.landing.featureAdaptiveDesc },
+    { icon: '', title: t.landing.featurePredictionTitle, desc: t.landing.featurePredictionDesc },
+    { icon: '', title: t.landing.featurePlanTitle, desc: t.landing.featurePlanDesc },
+    { icon: '', title: t.landing.featureMockTitle, desc: t.landing.featureMockDesc },
+    { icon: '', title: t.landing.featureDiagnosticTitle, desc: t.landing.featureDiagnosticDesc },
+    { icon: '', title: t.landing.featureExplanationsTitle, desc: t.landing.featureExplanationsDesc },
+  ];
+
+  const PLANS = [
+    {
+      name: 'Free',
+      price: '$0',
+      period: t.landing.forever,
+      highlight: false,
+      features: [
+        t.landing.freeQuestions,
+        t.landing.freeLesson,
+        t.landing.freeAnalytics,
+        t.landing.freeDiagnostic,
+        t.landing.freeWeeklyForecast,
+        t.landing.freeBasicPlan,
+      ],
+      cta: t.landing.startWithFree,
+    },
+    {
+      name: 'Pro',
+      price: '$9.99',
+      period: t.landing.perMonth,
+      highlight: true,
+      features: [
+        t.landing.proUnlimited,
+        t.landing.proAllLessons,
+        t.landing.proMockExams,
+        t.landing.proFullAnalytics,
+        t.landing.proRealtimePrediction,
+        t.landing.proFullPlan,
+        t.landing.proPriority,
+      ],
+      cta: t.landing.startWithPro,
+    },
+  ];
+
+  const TESTIMONIALS = [
+    { name: 'Айдана К.', exam: 'SAT', score: '1480', text: 'За 2 месяца подготовки на UniStart мой балл вырос с 1200 до 1480. Адаптивные тесты — это совсем другой уровень.' },
+    { name: 'Тимур Б.', exam: 'TOEFL', score: '108', text: 'Удобный план подготовки и прогноз балла мотивировали заниматься каждый день. Получил 108 при цели 100.' },
+    { name: 'Дана М.', exam: 'NUET', score: '156', text: 'UniStart идеально подготовил к NUET. Mock exams были максимально близки к реальному экзамену.' },
+  ];
+
+  const STATS = [
+    { value: '10 000+', label: t.landing.statsQuestions },
+    { value: '3', label: t.landing.statsExams },
+    { value: '95%', label: t.landing.statsAccuracy },
+    { value: '~30%', label: t.landing.statsGrowth },
+  ];
 
   return (
     <div style={{ background: 'var(--background-color)', color: 'var(--text-primary)', minHeight: '100vh' }}>
@@ -98,7 +77,8 @@ function LandingPage() {
         <div style={{ fontWeight: 800, fontSize: '1.5rem', color: '#6366f1' }}>
           UniStart
         </div>
-        <div style={{ display: 'flex', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          <LanguageSwitcher />
           <button
             onClick={() => navigate('/login')}
             style={{
@@ -111,7 +91,7 @@ function LandingPage() {
               color: 'var(--text-primary)',
             }}
           >
-            Войти
+            {t.landing.login}
           </button>
           <button
             onClick={() => navigate('/register')}
@@ -125,7 +105,7 @@ function LandingPage() {
               fontWeight: 600,
             }}
           >
-            Регистрация
+            {t.landing.register}
           </button>
         </div>
       </nav>
@@ -158,7 +138,7 @@ function LandingPage() {
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent',
         }}>
-          Подготовка к экзамену,{'\n'}которая адаптируется под вас
+          {t.landing.heroTitle}
         </h1>
         <p style={{
           fontSize: '1.2rem',
@@ -167,8 +147,7 @@ function LandingPage() {
           maxWidth: '600px',
           margin: '0 auto 2.5rem',
         }}>
-          Адаптивные тесты на основе IRT, персональный план подготовки, 
-          прогноз балла и пробные экзамены — всё в одной платформе.
+          {t.landing.heroSubtitle}
         </p>
         <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
           <button
@@ -185,7 +164,7 @@ function LandingPage() {
               boxShadow: '0 4px 15px rgba(99,102,241,0.35)',
             }}
           >
-            Начать бесплатно →
+            {t.landing.startFree}
           </button>
           <button
             onClick={() => {
@@ -202,7 +181,7 @@ function LandingPage() {
               cursor: 'pointer',
             }}
           >
-            Узнать больше
+            {t.landing.learnMore}
           </button>
         </div>
       </section>
@@ -237,10 +216,10 @@ function LandingPage() {
       }}>
         <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
           <h2 style={{ fontSize: '2rem', fontWeight: 700, marginBottom: '0.75rem' }}>
-            Всё для эффективной подготовки
+            {t.landing.featuresTitle}
           </h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: '1.05rem', maxWidth: '550px', margin: '0 auto' }}>
-            Научно обоснованные методы адаптивного обучения, объединённые в удобной платформе
+            {t.landing.featuresDesc}
           </p>
         </div>
 
@@ -282,10 +261,10 @@ function LandingPage() {
         <div style={{ maxWidth: '800px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
             <h2 style={{ fontSize: '2rem', fontWeight: 700, marginBottom: '0.75rem' }}>
-              Простые и понятные тарифы
+              {t.landing.pricingTitle}
             </h2>
             <p style={{ color: 'var(--text-secondary)', fontSize: '1.05rem' }}>
-              Начните бесплатно — обновитесь когда будете готовы
+              {t.landing.pricingDesc}
             </p>
           </div>
 
@@ -311,7 +290,7 @@ function LandingPage() {
                     fontSize: '0.75rem',
                     fontWeight: 600,
                   }}>
-                    Популярный
+                    {t.landing.popular}
                   </div>
                 )}
                 <div style={{ fontWeight: 700, fontSize: '1.25rem', marginBottom: '0.25rem', color: plan.highlight ? '#6366f1' : 'var(--text-primary)' }}>
@@ -361,7 +340,7 @@ function LandingPage() {
       }}>
         <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
           <h2 style={{ fontSize: '2rem', fontWeight: 700, marginBottom: '0.75rem' }}>
-            Отзывы студентов
+            {t.landing.testimonialsTitle}
           </h2>
         </div>
 
@@ -370,8 +349,8 @@ function LandingPage() {
           gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
           gap: '1.5rem',
         }}>
-          {TESTIMONIALS.map((t) => (
-            <div key={t.name} style={{
+          {TESTIMONIALS.map((item) => (
+            <div key={item.name} style={{
               padding: '1.5rem',
               borderRadius: '1rem',
               border: '1px solid var(--border-color)',
@@ -379,8 +358,8 @@ function LandingPage() {
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                 <div>
-                  <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>{t.name}</div>
-                  <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>{t.exam}</div>
+                  <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>{item.name}</div>
+                  <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>{item.exam}</div>
                 </div>
                 <div style={{
                   background: '#6366f115',
@@ -390,11 +369,11 @@ function LandingPage() {
                   borderRadius: '0.5rem',
                   fontSize: '0.9rem',
                 }}>
-                  {t.score}
+                  {item.score}
                 </div>
               </div>
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: 1.6, margin: 0 }}>
-                "{t.text}"
+                "{item.text}"
               </p>
             </div>
           ))}
@@ -409,10 +388,10 @@ function LandingPage() {
         color: '#fff',
       }}>
         <h2 style={{ fontSize: '2rem', fontWeight: 700, marginBottom: '0.75rem' }}>
-          Начните подготовку прямо сейчас
+          {t.landing.ctaTitle}
         </h2>
         <p style={{ opacity: 0.9, fontSize: '1.05rem', marginBottom: '2rem', maxWidth: '500px', margin: '0 auto 2rem' }}>
-          Бесплатная регистрация, диагностический тест за 5 минут и персональный план подготовки.
+          {t.landing.ctaDesc}
         </p>
         <button
           onClick={() => navigate('/register')}
@@ -428,7 +407,7 @@ function LandingPage() {
             boxShadow: '0 4px 15px rgba(0,0,0,0.15)',
           }}
         >
-          Создать аккаунт бесплатно →
+          {t.landing.createAccountFree}
         </button>
       </section>
 
@@ -452,36 +431,36 @@ function LandingPage() {
               UniStart
             </div>
             <p style={{ fontSize: '0.85rem', maxWidth: '300px', lineHeight: 1.6 }}>
-              Адаптивная платформа подготовки к SAT, TOEFL и NUET на основе Item Response Theory.
+              {t.landing.footerDesc}
             </p>
           </div>
 
           <div>
             <div style={{ fontWeight: 600, color: '#fff', marginBottom: '0.75rem', fontSize: '0.9rem' }}>
-              Платформа
+              {t.landing.platform}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.85rem' }}>
-              <span style={{ cursor: 'pointer' }} onClick={() => navigate('/register')}>Регистрация</span>
-              <span style={{ cursor: 'pointer' }} onClick={() => navigate('/login')}>Войти</span>
-              <span style={{ cursor: 'pointer' }} onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}>Возможности</span>
+              <span style={{ cursor: 'pointer' }} onClick={() => navigate('/register')}>{t.landing.register}</span>
+              <span style={{ cursor: 'pointer' }} onClick={() => navigate('/login')}>{t.landing.login}</span>
+              <span style={{ cursor: 'pointer' }} onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}>{t.landing.capabilities}</span>
             </div>
           </div>
 
           <div>
             <div style={{ fontWeight: 600, color: '#fff', marginBottom: '0.75rem', fontSize: '0.9rem' }}>
-              FAQ
+              {t.landing.faq}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.85rem' }}>
-              <span>Какие экзамены поддерживаются?</span>
-              <span>SAT, TOEFL iBT, NUET</span>
-              <span>Сколько стоит?</span>
-              <span>Бесплатно, Pro от $9.99/мес</span>
+              <span>{t.landing.faqExams}</span>
+              <span>{t.landing.faqExamsAnswer}</span>
+              <span>{t.landing.faqPrice}</span>
+              <span>{t.landing.faqPriceAnswer}</span>
             </div>
           </div>
 
           <div>
             <div style={{ fontWeight: 600, color: '#fff', marginBottom: '0.75rem', fontSize: '0.9rem' }}>
-              Контакты
+              {t.landing.contacts}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.85rem' }}>
               <span>support@unistart.kz</span>
@@ -498,7 +477,7 @@ function LandingPage() {
           textAlign: 'center',
           fontSize: '0.8rem',
         }}>
-          © {new Date().getFullYear()} UniStart. Все права защищены.
+          © {new Date().getFullYear()} UniStart. {t.landing.allRights}
         </div>
       </footer>
     </div>

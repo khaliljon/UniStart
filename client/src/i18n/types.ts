@@ -1,0 +1,757 @@
+export type Locale = 'ru' | 'kz' | 'en';
+
+export interface Translations {
+  // ─── Common ───
+  common: {
+    loading: string;
+    error: string;
+    success: string;
+    save: string;
+    cancel: string;
+    delete: string;
+    edit: string;
+    create: string;
+    back: string;
+    next: string;
+    confirm: string;
+    search: string;
+    filter: string;
+    all: string;
+    noData: string;
+    yes: string;
+    no: string;
+    close: string;
+    submit: string;
+    reset: string;
+    export: string;
+    import: string;
+    actions: string;
+  };
+
+  // ─── Navigation ───
+  nav: {
+    home: string;
+    learn: string;
+    progress: string;
+    plan: string;
+    profile: string;
+    messages: string;
+    tutors: string;
+    settings: string;
+    logout: string;
+    darkMode: string;
+    lightMode: string;
+    language: string;
+    notifications: string;
+  };
+
+  // ─── Auth ───
+  auth: {
+    login: string;
+    register: string;
+    email: string;
+    password: string;
+    confirmPassword: string;
+    firstName: string;
+    lastName: string;
+    forgotPassword: string;
+    noAccount: string;
+    hasAccount: string;
+    loginTitle: string;
+    registerTitle: string;
+    loginSubtitle: string;
+    registerSubtitle: string;
+  };
+
+  // ─── Dashboard ───
+  dashboard: {
+    welcome: string;
+    quickStats: string;
+    questionsAnswered: string;
+    correctAnswers: string;
+    accuracy: string;
+    dayStreak: string;
+    selectedExams: string;
+    continueStudying: string;
+    startPractice: string;
+    dueFlashcards: string;
+    studyPlan: string;
+    recommendations: string;
+    noExamsSelected: string;
+    selectExamPrompt: string;
+    greetingNight: string;
+    greetingMorning: string;
+    greetingAfternoon: string;
+    greetingEvening: string;
+    streak: string;
+    today: string;
+    unlimited: string;
+    yesterday: string;
+    bestStreak: string;
+    practice: string;
+    practiceDesc: string;
+    mockExam: string;
+    mockExamDesc: string;
+    review: string;
+    reviewDesc: string;
+    progress: string;
+    progressDesc: string;
+    selectExams: string;
+    selectExamsHelp: string;
+    selectExamsBtn: string;
+    retry: string;
+    loadError: string;
+    daysShort: string;
+    questionsShort: string;
+    of: string;
+  };
+
+  // ─── Learn page tabs ───
+  learn: {
+    title: string;
+    groupLearn: string;
+    groupTrain: string;
+    lessons: string;
+    formulas: string;
+    flashcards: string;
+    strategies: string;
+    practice: string;
+    mockExam: string;
+    drills: string;
+    review: string;
+    journal: string;
+    lessonsDesc: string;
+    formulasDesc: string;
+    flashcardsDesc: string;
+    strategiesDesc: string;
+    practiceDesc: string;
+    mockExamDesc: string;
+    drillsDesc: string;
+    reviewDesc: string;
+    journalDesc: string;
+    selectExam: string;
+    selectExamDesc: string;
+  };
+
+  // ─── Flashcards ───
+  flashcards: {
+    decks: string;
+    newDeck: string;
+    createDeck: string;
+    deckTitle: string;
+    description: string;
+    review: string;
+    due: string;
+    mastered: string;
+    cards: string;
+    noDecks: string;
+    noDueCards: string;
+    question: string;
+    answer: string;
+    clickToFlip: string;
+    forgot: string;
+    hard: string;
+    ok: string;
+    good: string;
+    easy: string;
+    deleteDeck: string;
+    deleteConfirm: string;
+    system: string;
+    backToDecks: string;
+    failedReview: string;
+  };
+
+  // ─── Formulas ───
+  formulas: {
+    title: string;
+    noFormulas: string;
+    bookmarked: string;
+    allFormulas: string;
+    bookmark: string;
+    unbookmark: string;
+  };
+
+  // ─── Strategies ───
+  strategies: {
+    title: string;
+    noStrategies: string;
+    readMore: string;
+    minRead: string;
+    category: string;
+  };
+
+  // ─── Drills ───
+  drills: {
+    title: string;
+    history: string;
+    start: string;
+    personalBests: string;
+    score: string;
+    streak: string;
+    avg: string;
+    drillComplete: string;
+    type: string;
+    accuracyLabel: string;
+    correct: string;
+    bestStreak: string;
+    avgTime: string;
+    totalTime: string;
+    backToMenu: string;
+    tryAgain: string;
+    nextQuestion: string;
+    noDrills: string;
+  };
+
+  // ─── Practice / Test ───
+  practice: {
+    title: string;
+    startPractice: string;
+    questions: string;
+    difficulty: string;
+    hint: string;
+    explanation: string;
+    correct: string;
+    incorrect: string;
+    timeSpent: string;
+    questionOf: string;
+    submitAnswer: string;
+    nextQuestion: string;
+    submitting: string;
+    quit: string;
+    quitConfirmPlan: string;
+    quitConfirmPractice: string;
+    yesQuit: string;
+    continue: string;
+    practice: string;
+    hideHint: string;
+    correctAnswer: string;
+    skill: string;
+    level: string;
+    confidence: string;
+    noQuestions: string;
+    noQuestionsDesc: string;
+    chooseDifferent: string;
+    backToExams: string;
+    solved: string;
+    inTopic: string;
+    mastery: string;
+    easy: string;
+    medium: string;
+    hard: string;
+  };
+
+  // ─── Mock Exam ───
+  mockExam: {
+    title: string;
+    startExam: string;
+    sections: string;
+    timeLimit: string;
+    questionsCount: string;
+    examComplete: string;
+    results: string;
+    sectionName: string;
+    minutes: string;
+  };
+
+  // ─── Progress / Analytics ───
+  progress: {
+    title: string;
+    analytics: string;
+    prediction: string;
+    historyTab: string;
+    whatIf: string;
+    questionsAnswered: string;
+    correctAnswers: string;
+    accuracy: string;
+    dayStreak: string;
+    best: string;
+    skillProfile: string;
+    allSkills: string;
+    noSessions: string;
+    scorePrediction: string;
+    studyTrend: string;
+    skillProgressOverTime: string;
+    accuracyByDifficulty: string;
+    activity: string;
+    skillLevels: string;
+    understanding: string;
+    beginner: string;
+    intermediate: string;
+    advanced: string;
+    less: string;
+    more: string;
+    noSkillData: string;
+    irtExplanation: string;
+    correct: string;
+    incorrect: string;
+    failedToLoad: string;
+    noAnalyticsData: string;
+  };
+
+  // ─── History ───
+  history: {
+    title: string;
+    noSessions: string;
+    sessionDetails: string;
+    noAnswers: string;
+    examMode: string;
+    practiceMode: string;
+    correct: string;
+    yourAnswer: string;
+    correctAnswer: string;
+    failedToLoad: string;
+    previous: string;
+    nextPage: string;
+    page: string;
+  };
+
+  // ─── Prediction ───
+  prediction: {
+    title: string;
+    loading: string;
+    loadError: string;
+    examLoadError: string;
+    tryAgain: string;
+    sectionForecast: string;
+    sectionDetails: string;
+    improvementTips: string;
+    whatIf: string;
+    whatIfDesc: string;
+    topic: string;
+    level: string;
+    calculate: string;
+    forecast: string;
+    forecastHistory: string;
+    toTarget: string;
+    targetReached: string;
+    accuracyLabel: string;
+    currentLevel: string;
+    practice: string;
+    ofMax: string;
+    strong: string;
+    average: string;
+    weak: string;
+    critical: string;
+    predicted: string;
+    toMax: string;
+    upperBound: string;
+    lowerBound: string;
+    target: string;
+  };
+
+  // ─── Limits / Subscription ───
+  limits: {
+    exhausted: string;
+    exhaustedMsg: string;
+    remaining: string;
+    unlockAll: string;
+    exhaustedDesc: string;
+    lowDesc: string;
+    unlockDesc: string;
+    upgradePro: string;
+    comeBackTomorrow: string;
+    upgrade: string;
+    choosePlan: string;
+    choosePlanDesc: string;
+    recommended: string;
+    forever: string;
+    perMonth: string;
+    upgrading: string;
+    errorUpgrade: string;
+    freeQuestions: string;
+    freeLesson: string;
+    freeAnalytics: string;
+    freeWeeklyForecast: string;
+    freeDiagnostic: string;
+    freeBasicPlan: string;
+    proUnlimited: string;
+    proAllLessons: string;
+    proMockExams: string;
+    proFullAnalytics: string;
+    proFullPlan: string;
+    proRealtimePrediction: string;
+    proPriority: string;
+    questionsToday: string;
+    lessonsToday: string;
+    limitReachedTitle: string;
+    limitReachedDesc: string;
+    cannotStartPractice: string;
+  };
+
+  // ─── Study Plan ───
+  studyPlan: {
+    title: string;
+    setGoal: string;
+    targetScore: string;
+    targetDate: string;
+    examSelect: string;
+    dailyTasks: string;
+    completed: string;
+    pending: string;
+    overdue: string;
+    noGoals: string;
+    createGoal: string;
+    loadError: string;
+    createError: string;
+    regenError: string;
+    loading: string;
+    tryAgain: string;
+    regenerate: string;
+    changeGoal: string;
+    setGoalDesc: string;
+    tabToday: string;
+    tabPlan: string;
+    tabStats: string;
+    deleteGoalTitle: string;
+    deleteGoalDesc: string;
+    deleteGoal: string;
+    noTasksToday: string;
+    start: string;
+    more: string;
+    done: string;
+    minLeft: string;
+    tasksDone: string;
+    typeNew: string;
+    typeReview: string;
+    typePractice: string;
+    typeWeakness: string;
+    daysToExam: string;
+    targetScoreLabel: string;
+    recHoursPerDay: string;
+    deadline: string;
+    totalTasks: string;
+    completedTasks: string;
+    progressLabel: string;
+    daysInPlan: string;
+    todayLabel: string;
+    min: string;
+    questions: string;
+    result: string;
+    generalStats: string;
+    activeDays: string;
+    skippedDays: string;
+    questionsAnswered: string;
+    accuracyLabel: string;
+    adherence: string;
+    weeklyProgress: string;
+    planned: string;
+    accuracyTrend: string;
+    accuracyPercent: string;
+    goalFormTitle: string;
+    exam: string;
+    selectExam: string;
+    sections: string;
+    examDate: string;
+    targetScoreValue: string;
+    creating: string;
+    createAndGenerate: string;
+    planAssignment: string;
+    adaptivePractice: string;
+    planAssignmentDesc: string;
+    adaptivePracticeDesc: string;
+    startPractice: string;
+    taskComplete: string;
+    topicMastered: string;
+    practiceComplete: string;
+    taskCompleteDesc: string;
+    topicMasteredDesc: string;
+    practiceCompleteDesc: string;
+    topicMastery: string;
+    sessionAnswered: string;
+    backToPlan: string;
+    analytics: string;
+    continuePractice: string;
+  };
+
+  // ─── Profile ───
+  profilePage: {
+    title: string;
+    personalInfo: string;
+    examPreferences: string;
+    notifications: string;
+    subscription: string;
+    free: string;
+    pro: string;
+    upgradePro: string;
+    changePassword: string;
+    deleteAccount: string;
+    registeredAt: string;
+    validUntil: string;
+    selectAtLeastOne: string;
+  };
+
+  // ─── Admin ───
+  admin: {
+    nav: {
+      dashboard: string;
+      questions: string;
+      content: string;
+      users: string;
+      tutors: string;
+      audit: string;
+      health: string;
+      activity: string;
+      import: string;
+      questionImport: string;
+    };
+    content: {
+      title: string;
+      subtitle: string;
+      lessons: string;
+      flashcards: string;
+      formulas: string;
+      strategies: string;
+      drillsTab: string;
+      addLesson: string;
+      addDeck: string;
+      addFormula: string;
+      addStrategy: string;
+      addDrill: string;
+      editLesson: string;
+      editDeck: string;
+      editFormula: string;
+      editStrategy: string;
+      editDrill: string;
+      topic: string;
+      exam: string;
+      name: string;
+      steps: string;
+      cardsCount: string;
+      sortOrder: string;
+      active: string;
+      questionsCount: string;
+      timeLimit: string;
+      drillType: string;
+      noBinding: string;
+      deleteConfirm: string;
+    };
+    stats: {
+      totalQuestions: string;
+      totalUsers: string;
+      totalTopics: string;
+      withoutQuestions: string;
+    };
+  };
+
+  // ─── Onboarding ───
+  onboarding: {
+    welcome: string;
+    selectExams: string;
+    selectExamsDesc: string;
+    continue: string;
+    skip: string;
+    finish: string;
+    step: string;
+    of: string;
+    welcomeDesc: string;
+    featureAdaptive: string;
+    featurePrediction: string;
+    featurePlan: string;
+    startSetup: string;
+    back: string;
+    examQuestion: string;
+    examDesc: string;
+    targetTitle: string;
+    targetDesc: string;
+    examDate: string;
+    targetScore: string;
+    presetAverage: string;
+    presetGood: string;
+    presetExcellent: string;
+    presetMax: string;
+    sections: string;
+    createPlan: string;
+    readyTitle: string;
+    readyDesc: string;
+    diagnosticTest: string;
+    studyPlan: string;
+    questionsAndLessons: string;
+    goToDashboard: string;
+    featureMockExam: string;
+    whatAwaits: string;
+    examLabel: string;
+    daysUntilExam: string;
+    dateMustBeFuture: string;
+    setting: string;
+    recommendStart: string;
+    rec1: string;
+    rec2: string;
+    rec3: string;
+    skipAndStart: string;
+    selectSections: string;
+  };
+
+  // ─── Landing ───
+  landing: {
+    hero: string;
+    heroDesc: string;
+    getStarted: string;
+    signIn: string;
+    features: string;
+    adaptiveLearning: string;
+    adaptiveLearningDesc: string;
+    examPrep: string;
+    examPrepDesc: string;
+    analytics2: string;
+    analyticsDesc: string;
+    login: string;
+    register: string;
+    heroTitle: string;
+    heroSubtitle: string;
+    startFree: string;
+    learnMore: string;
+    statsQuestions: string;
+    statsExams: string;
+    statsAccuracy: string;
+    statsGrowth: string;
+    featuresTitle: string;
+    featuresDesc: string;
+    featureAdaptiveTitle: string;
+    featureAdaptiveDesc: string;
+    featurePredictionTitle: string;
+    featurePredictionDesc: string;
+    featurePlanTitle: string;
+    featurePlanDesc: string;
+    featureMockTitle: string;
+    featureMockDesc: string;
+    featureDiagnosticTitle: string;
+    featureDiagnosticDesc: string;
+    featureExplanationsTitle: string;
+    featureExplanationsDesc: string;
+    pricingTitle: string;
+    pricingDesc: string;
+    popular: string;
+    forever: string;
+    perMonth: string;
+    freeQuestions: string;
+    freeLesson: string;
+    freeAnalytics: string;
+    freeDiagnostic: string;
+    freeWeeklyForecast: string;
+    freeBasicPlan: string;
+    proUnlimited: string;
+    proAllLessons: string;
+    proMockExams: string;
+    proFullAnalytics: string;
+    proRealtimePrediction: string;
+    proFullPlan: string;
+    proPriority: string;
+    startWithFree: string;
+    startWithPro: string;
+    testimonialsTitle: string;
+    ctaTitle: string;
+    ctaDesc: string;
+    createAccountFree: string;
+    footerDesc: string;
+    platform: string;
+    capabilities: string;
+    faq: string;
+    contacts: string;
+    faqExams: string;
+    faqExamsAnswer: string;
+    faqPrice: string;
+    faqPriceAnswer: string;
+    allRights: string;
+  };
+
+  // ─── Topics / Lessons ───
+  topics: {
+    title: string;
+    noTopics: string;
+    lesson: string;
+    locked: string;
+    completed: string;
+    inProgress: string;
+    prerequisites: string;
+    mastery: string;
+    learning: string;
+    back: string;
+    sections: string;
+    totalTopics: string;
+    mastered: string;
+    needsWork: string;
+    allSections: string;
+    topics: string;
+    topicsMastered: string;
+    questionsInTopic: string;
+    lessonsCount: string;
+    correctAnswers: string;
+    errors: string;
+    lessonLabel: string;
+    practiceLabel: string;
+    nextLesson: string;
+    startPractice: string;
+    other: string;
+    questionOf: string;
+    checking: string;
+    answer: string;
+    nextQ: string;
+    finish: string;
+    backToTopics: string;
+  };
+
+  // ─── Review / Mistakes ───
+  reviewPage: {
+    title: string;
+    noMistakes: string;
+    yourAnswer: string;
+    correctAnswer: string;
+    tryAgain: string;
+    excellent: string;
+    noMistakesDesc: string;
+    startNewTest: string;
+    reviewErrors: string;
+    back: string;
+    questionOf: string;
+    correct: string;
+    incorrect: string;
+    correctAnswerLabel: string;
+    explanation: string;
+    checking: string;
+    answer: string;
+    nextQuestion: string;
+    finish: string;
+  };
+
+  // ─── Tutor ───
+  tutor: {
+    findTutor: string;
+    specialization: string;
+    rating: string;
+    reviews: string;
+    bookLesson: string;
+    perHour: string;
+    experience: string;
+    schedule: string;
+    myStudents: string;
+    mySchedule: string;
+    myReviews: string;
+    editProfile: string;
+    title: string;
+    subtitle: string;
+    partnerSchools: string;
+    searchPlaceholder: string;
+    searchBtn: string;
+    allExams: string;
+    byRating: string;
+    byReviews: string;
+    byStudents: string;
+    priceAsc: string;
+    priceDesc: string;
+    newest: string;
+    onlyAvailable: string;
+    loadingTutors: string;
+    noTutors: string;
+    noTutorsDesc: string;
+    found: string;
+    verified: string;
+    partner: string;
+    available: string;
+    unavailable: string;
+    prev: string;
+    next: string;
+    website: string;
+    perHourShort: string;
+    defaultHeadline: string;
+  };
+}

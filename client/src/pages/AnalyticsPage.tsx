@@ -18,6 +18,7 @@ import {
 } from 'recharts';
 import { analyticsService } from '../services/analyticsService';
 import { AnalyticsSkeleton } from '../components/Skeleton';
+import { useTranslation } from '../i18n';
 import type { Dashboard } from '../types';
 
 const SKILL_COLORS = [
@@ -53,6 +54,7 @@ function AnalyticsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedExam, setSelectedExam] = useState<string>('SAT');
+  const { t } = useTranslation();
 
   useEffect(() => {
     const fetchDashboard = async () => {
@@ -60,7 +62,7 @@ function AnalyticsPage() {
         const data = await analyticsService.getDashboard();
         setDashboard(data);
       } catch (err) {
-        setError('Failed to load analytics');
+        setError(t.progress.failedToLoad);
         console.error(err);
       } finally {
         setIsLoading(false);
@@ -71,7 +73,7 @@ function AnalyticsPage() {
 
   if (isLoading) return <AnalyticsSkeleton />;
   if (error) return <p className="error-message animate-fade-in">{error}</p>;
-  if (!dashboard) return <p className="animate-fade-in">No analytics data available</p>;
+  if (!dashboard) return <p className="animate-fade-in">{t.progress.noAnalyticsData}</p>;
 
   const getSkillLevelColor = (level: number) => {
     if (level >= 70) return 'var(--success-color)';
@@ -147,28 +149,28 @@ function AnalyticsPage() {
   return (
     <div className="animate-fade-in" style={{ maxWidth: '1000px', margin: '0 auto' }}>
       <h1 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '2rem' }}>
-        Your Progress Analytics
+        {t.progress.title}
       </h1>
 
       {/* Stats Overview */}
       <div className="stats-grid">
         <div className="card stat-card animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
           <div className="stat-value">{dashboard.totalQuestionsAnswered}</div>
-          <div className="stat-label">Questions Answered</div>
+          <div className="stat-label">{t.progress.questionsAnswered}</div>
         </div>
         <div className="card stat-card animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
           <div className="stat-value">{dashboard.correctAnswers}</div>
-          <div className="stat-label">Correct Answers</div>
+          <div className="stat-label">{t.progress.correctAnswers}</div>
         </div>
         <div className="card stat-card animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
           <div className="stat-value">{dashboard.overallAccuracy}%</div>
-          <div className="stat-label">Accuracy</div>
+          <div className="stat-label">{t.progress.accuracy}</div>
         </div>
         <div className="card stat-card animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
           <div className="stat-value" style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', justifyContent: 'center' }}>
             {dashboard.currentStreak}
           </div>
-          <div className="stat-label">Day Streak (Best: {dashboard.bestStreak})</div>
+          <div className="stat-label">{t.progress.dayStreak} ({t.progress.best}: {dashboard.bestStreak})</div>
         </div>
       </div>
 
@@ -190,7 +192,7 @@ function AnalyticsPage() {
       {radarData.length > 0 && (
         <div className="card card-static animate-fade-in-up" style={{ marginTop: '2rem', animationDelay: '0.5s' }}>
           <h2 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1rem' }}>
-            Skill Profile
+            {t.progress.skillProfile}
           </h2>
           {radarData.length <= 2 ? (
             <ResponsiveContainer width="100%" height={160}>
@@ -207,7 +209,7 @@ function AnalyticsPage() {
                   itemStyle={{ color: 'var(--text-primary)' }}
                   labelStyle={{ color: 'var(--text-primary)', fontWeight: 600 }}
                 />
-                <Bar dataKey="level" name="Skill Level" fill="#6366f1" radius={[0, 6, 6, 0]} />
+                <Bar dataKey="level" name={t.progress.skillLevels} fill="#6366f1" radius={[0, 6, 6, 0]} />
               </BarChart>
             </ResponsiveContainer>
           ) : (
@@ -225,7 +227,7 @@ function AnalyticsPage() {
                   itemStyle={{ color: 'var(--text-primary)' }}
                   labelStyle={{ color: 'var(--text-primary)', fontWeight: 600 }}
                 />
-                <Radar name="Skill Level" dataKey="level" stroke="#6366f1" fill="#6366f1" fillOpacity={0.3} />
+                <Radar name={t.progress.skillLevels} dataKey="level" stroke="#6366f1" fill="#6366f1" fillOpacity={0.3} />
               </RadarChart>
             </ResponsiveContainer>
           )}
@@ -236,7 +238,7 @@ function AnalyticsPage() {
       {lineChartData.length > 1 && (
         <div className="card card-static animate-fade-in-up" style={{ marginTop: '2rem', animationDelay: '0.6s' }}>
           <h2 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1rem' }}>
-            Skill Progress Over Time
+            {t.progress.skillProgressOverTime}
           </h2>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={lineChartData}>
@@ -273,7 +275,7 @@ function AnalyticsPage() {
       {difficultyData.length > 0 && (
         <div className="card card-static animate-fade-in-up" style={{ marginTop: '2rem', animationDelay: '0.7s' }}>
           <h2 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1rem' }}>
-            Accuracy by Difficulty
+            {t.progress.accuracyByDifficulty}
           </h2>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={difficultyData} barGap={8}>
@@ -290,8 +292,8 @@ function AnalyticsPage() {
                 labelStyle={{ color: 'var(--text-primary)', fontWeight: 600 }}
               />
               <Legend wrapperStyle={{ color: 'var(--text-primary)' }} />
-              <Bar dataKey="correctCount" name="Correct" stackId="a" fill="#10b981" radius={[0, 0, 0, 0]} />
-              <Bar dataKey="incorrectCount" name="Incorrect" stackId="a" fill="#f87171" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="correctCount" name={t.progress.correct} stackId="a" fill="#10b981" radius={[0, 0, 0, 0]} />
+              <Bar dataKey="incorrectCount" name={t.progress.incorrect} stackId="a" fill="#f87171" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
           <div style={{ display: 'flex', gap: '2rem', justifyContent: 'center', marginTop: '0.75rem' }}>
@@ -329,22 +331,22 @@ function AnalyticsPage() {
           ))}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'flex-end', marginTop: '0.5rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-          <span>Less</span>
+          <span>{t.progress.less}</span>
           {heatmapColors.map((c, i) => (
             <div key={i} style={{ width: '12px', height: '12px', borderRadius: '2px', backgroundColor: c }} />
           ))}
-          <span>More</span>
+          <span>{t.progress.more}</span>
         </div>
       </div>
 
       {/* Skill Bars (detailed, with confidence intervals) */}
       <div className="card card-static animate-fade-in-up" style={{ marginTop: '2rem', animationDelay: '0.9s' }}>
         <h2 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1.5rem' }}>
-          Skill Levels
-        </h2>
+            {t.progress.skillLevels}
+          </h2>
         {filteredProfiles.length === 0 ? (
           <p style={{ color: 'var(--text-secondary)' }}>
-            No skill data yet. Start taking tests to see your progress!
+            {t.progress.noSkillData}
           </p>
         ) : (
           <div className="skills-list">
@@ -404,26 +406,24 @@ function AnalyticsPage() {
       {/* Legend */}
       <div className="card" style={{ marginTop: '2rem' }}>
         <h2 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1rem' }}>
-          Understanding Your Skill Levels
+          {t.progress.understanding}
         </h2>
         <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <div style={{ width: '1rem', height: '1rem', borderRadius: '50%', backgroundColor: 'var(--error-color)' }} />
-            <span style={{ fontSize: '0.875rem' }}>0-39: Beginner</span>
+            <span style={{ fontSize: '0.875rem' }}>0-39: {t.progress.beginner}</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <div style={{ width: '1rem', height: '1rem', borderRadius: '50%', backgroundColor: 'var(--warning-color)' }} />
-            <span style={{ fontSize: '0.875rem' }}>40-69: Intermediate</span>
+            <span style={{ fontSize: '0.875rem' }}>40-69: {t.progress.intermediate}</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <div style={{ width: '1rem', height: '1rem', borderRadius: '50%', backgroundColor: 'var(--success-color)' }} />
-            <span style={{ fontSize: '0.875rem' }}>70-100: Advanced</span>
+            <span style={{ fontSize: '0.875rem' }}>70-100: {t.progress.advanced}</span>
           </div>
         </div>
         <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.75rem', lineHeight: '1.4' }}>
-          Skill levels are estimated using Item Response Theory (IRT). The shaded band on skill bars
-          shows the 95% confidence interval — a narrower band means more precise measurement.
-          Questions are selected adaptively to maximize information about your ability.
+          {t.progress.irtExplanation}
         </p>
       </div>
     </div>

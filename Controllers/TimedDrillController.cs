@@ -1,8 +1,10 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using UniStart.Application.DTOs;
 using UniStart.Application.Interfaces;
+using UniStart.Infrastructure.Data;
 using Asp.Versioning;
 
 namespace UniStart.Controllers;
@@ -14,10 +16,38 @@ namespace UniStart.Controllers;
 public class TimedDrillController : ControllerBase
 {
     private readonly ITimedDrillService _drillService;
+    private readonly UniStartDbContext _db;
 
-    public TimedDrillController(ITimedDrillService drillService)
+    public TimedDrillController(ITimedDrillService drillService, UniStartDbContext db)
     {
         _drillService = drillService;
+        _db = db;
+    }
+
+    /// <summary>
+    /// Get active drill templates
+    /// </summary>
+    [HttpGet("templates")]
+    public async Task<IActionResult> GetTemplates()
+    {
+        var templates = await _db.DrillTemplates
+            .Where(t => t.IsActive)
+            .OrderBy(t => t.SortOrder)
+            .AsNoTracking()
+            .Select(t => new
+            {
+                t.Id,
+                t.Title,
+                t.Description,
+                DrillType = t.DrillType.ToString(),
+                t.ExamTypeCode,
+                t.TopicId,
+                t.QuestionCount,
+                t.TimeLimitMinutes,
+                t.SortOrder,
+            })
+            .ToListAsync();
+        return Ok(templates);
     }
 
     /// <summary>

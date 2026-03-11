@@ -3,7 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '../hooks/useAppDispatch';
 import { useAppSelector } from '../hooks/useAppSelector';
 import { setOnboardingComplete } from '../store/slices/authSlice';
+import { setSelectedExams } from '../store/slices/examSlice';
 import { onboardingService } from '../services/onboardingService';
+import { useTranslation } from '../i18n';
+import LanguageSwitcher from '../components/LanguageSwitcher';
 import axios from 'axios';
 import type { ExamTypeInfo } from '../types';
 
@@ -29,21 +32,23 @@ function OnboardingPage() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { user } = useAppSelector((state) => state.auth);
+  const { t } = useTranslation();
 
   // ── Restore wizard state from sessionStorage ──────────
   const saved = sessionStorage.getItem('onboarding');
-  const restored = saved ? JSON.parse(saved) as { step?: Step; exam?: ExamTypeInfo; date?: string; score?: number } : null;
+  const restored = saved ? JSON.parse(saved) as { step?: Step; exam?: ExamTypeInfo; date?: string; score?: number; sections?: string[] } : null;
 
   const [step, _setStep] = useState<Step>(restored?.step ?? 'welcome');
   const [examTypes, setExamTypes] = useState<ExamTypeInfo[]>([]);
   const [selectedExam, _setSelectedExam] = useState<ExamTypeInfo | null>(restored?.exam ?? null);
   const [targetDate, _setTargetDate] = useState(restored?.date ?? '');
   const [targetScore, _setTargetScore] = useState(restored?.score ?? 0);
+  const [selectedSections, _setSelectedSections] = useState<string[]>(restored?.sections ?? []);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Wrapped setters that also persist to sessionStorage
-  const persist = (patch: Partial<{ step: Step; exam: ExamTypeInfo | null; date: string; score: number }>) => {
+  const persist = (patch: Partial<{ step: Step; exam: ExamTypeInfo | null; date: string; score: number; sections: string[] }>) => {
     const prev = JSON.parse(sessionStorage.getItem('onboarding') ?? '{}');
     sessionStorage.setItem('onboarding', JSON.stringify({ ...prev, ...patch }));
   };
@@ -51,6 +56,7 @@ function OnboardingPage() {
   const setSelectedExam = (e: ExamTypeInfo | null) => { _setSelectedExam(e); persist({ exam: e }); };
   const setTargetDate = (d: string) => { _setTargetDate(d); persist({ date: d }); };
   const setTargetScore = (s: number) => { _setTargetScore(s); persist({ score: s }); };
+  const setSelectedSections = (ss: string[]) => { _setSelectedSections(ss); persist({ sections: ss }); };
 
   // Redirect if already onboarded
   useEffect(() => {
@@ -71,12 +77,14 @@ function OnboardingPage() {
       const types = await onboardingService.getExamTypes();
       setExamTypes(types);
     } catch {
-      setError('Не удалось загрузить типы экзаменов');
+      setError(t.common.error);
     }
   };
 
   const handleExamSelect = (exam: ExamTypeInfo) => {
     setSelectedExam(exam);
+    // Auto-select all sections
+    setSelectedSections(exam.sections.map(s => s.name));
     // Set defaults
     const defaultDate = new Date();
     defaultDate.setMonth(defaultDate.getMonth() + 3);
@@ -97,9 +105,10 @@ function OnboardingPage() {
       });
       sessionStorage.removeItem('onboarding');
       dispatch(setOnboardingComplete());
+      dispatch(setSelectedExams([selectedExam.code]));
       setStep('ready');
     } catch (err: unknown) {
-      setError(axios.isAxiosError(err) ? err.response?.data?.error || 'Произошла ошибка' : 'Произошла ошибка');
+      setError(axios.isAxiosError(err) ? err.response?.data?.error || t.common.error : t.common.error);
     } finally {
       setIsLoading(false);
     }
@@ -138,6 +147,11 @@ function OnboardingPage() {
         transition: 'max-width 0.3s ease',
       }}>
 
+        {/* Language switcher */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
+          <LanguageSwitcher />
+        </div>
+
         {/* Progress indicator */}
         {step !== 'ready' && (
           <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', marginBottom: '2rem' }}>
@@ -159,11 +173,10 @@ function OnboardingPage() {
         {step === 'welcome' && (
           <div style={{ textAlign: 'center' }}>
             <h1 style={{ fontSize: '2rem', marginBottom: '0.75rem', color: 'var(--text-primary)' }}>
-              Добро пожаловать, {user?.name}!
+              {t.onboarding.welcome}, {user?.name}!
             </h1>
             <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem', lineHeight: 1.6, marginBottom: '2rem' }}>
-              UniStart — ваш адаптивный помощник для подготовки к экзаменам.
-              Давайте настроим платформу под ваши цели за несколько шагов.
+              {t.onboarding.welcomeDesc}
             </p>
             <div style={{
               background: 'var(--bg-secondary, #f9fafb)',
@@ -172,13 +185,13 @@ function OnboardingPage() {
               marginBottom: '2rem',
               textAlign: 'left',
             }}>
-              <h3 style={{ marginBottom: '1rem', color: 'var(--text-primary)' }}>Что вас ждёт:</h3>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-primary)' }}>{t.onboarding.whatAwaits}</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 {[
-                  { icon: '', text: 'Адаптивные тесты, подстраивающиеся под ваш уровень' },
-                  { icon: '', text: 'Детальная аналитика и прогноз баллов' },
-                  { icon: '', text: 'Персональный план подготовки' },
-                  { icon: '', text: 'Пробные экзамены в реальном формате' },
+                  { icon: '', text: t.onboarding.featureAdaptive },
+                  { icon: '', text: t.onboarding.featurePrediction },
+                  { icon: '', text: t.onboarding.featurePlan },
+                  { icon: '', text: t.onboarding.featureMockExam },
                 ].map((item, i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                     <span style={{ fontSize: '1.3rem' }}>{item.icon}</span>
@@ -197,7 +210,7 @@ function OnboardingPage() {
                 borderRadius: '0.75rem',
               }}
             >
-              Начать настройку →
+              {t.onboarding.startSetup}
             </button>
           </div>
         )}
@@ -217,13 +230,13 @@ function OnboardingPage() {
                 padding: 0,
               }}
             >
-              ← Назад
+              {t.onboarding.back}
             </button>
             <h2 style={{ fontSize: '1.5rem', marginBottom: '0.5rem', textAlign: 'center', color: 'var(--text-primary)' }}>
-              Какой экзамен вы готовите?
+              {t.onboarding.examQuestion}
             </h2>
             <p style={{ color: 'var(--text-secondary)', textAlign: 'center', marginBottom: '2rem' }}>
-              Выберите экзамен, к которому вы хотите подготовиться
+              {t.onboarding.examDesc}
             </p>
 
             {error && (
@@ -343,7 +356,7 @@ function OnboardingPage() {
                 padding: 0,
               }}
             >
-              ← Назад
+              {t.onboarding.back}
             </button>
             <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
               <div style={{
@@ -361,10 +374,10 @@ function OnboardingPage() {
                 {EXAM_ICONS[selectedExam.code]} {selectedExam.code}
               </div>
               <h2 style={{ fontSize: '1.5rem', marginBottom: '0.5rem', color: 'var(--text-primary)' }}>
-                Настройте вашу цель
+                {t.onboarding.targetTitle}
               </h2>
               <p style={{ color: 'var(--text-secondary)' }}>
-                Укажите дату экзамена и желаемый балл
+                {t.onboarding.targetDesc}
               </p>
             </div>
 
@@ -382,6 +395,73 @@ function OnboardingPage() {
             )}
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              {/* Section selection (for exams with multiple sections like CSCA) */}
+              {selectedExam.sections.length > 1 && (
+                <div>
+                  <label style={{
+                    display: 'block',
+                    marginBottom: '0.5rem',
+                    fontWeight: 600,
+                    color: 'var(--text-primary)',
+                    fontSize: '0.95rem',
+                  }}>
+                    {t.onboarding.selectSections}
+                  </label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {selectedExam.sections.map((s) => {
+                      const checked = selectedSections.includes(s.name);
+                      return (
+                        <label
+                          key={s.name}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.75rem',
+                            padding: '0.75rem 1rem',
+                            borderRadius: '0.75rem',
+                            border: checked
+                              ? `2px solid ${EXAM_COLORS[selectedExam.code]}`
+                              : '2px solid var(--border-color, #e5e7eb)',
+                            background: checked
+                              ? `${EXAM_COLORS[selectedExam.code]}08`
+                              : 'transparent',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => {
+                              const next = checked
+                                ? selectedSections.filter(n => n !== s.name)
+                                : [...selectedSections, s.name];
+                              if (next.length === 0) return; // at least one must be selected
+                              setSelectedSections(next);
+                              // Recalculate target score range
+                              const activeSections = selectedExam.sections.filter(sec => next.includes(sec.name));
+                              const newMax = activeSections.reduce((sum, sec) => sum + sec.maxScore, 0);
+                              const newMin = activeSections.reduce((sum, sec) => sum + sec.minScore, 0);
+                              if (targetScore > newMax) setTargetScore(newMax);
+                              if (targetScore < newMin) setTargetScore(Math.round((newMin + newMax) / 2));
+                            }}
+                            style={{ accentColor: EXAM_COLORS[selectedExam.code] }}
+                          />
+                          <div style={{ flex: 1 }}>
+                            <span style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.9rem' }}>
+                              {s.name}
+                            </span>
+                            <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginLeft: '0.5rem' }}>
+                              ({s.minScore}–{s.maxScore})
+                            </span>
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {/* Target Date */}
               <div>
                 <label style={{
@@ -391,7 +471,7 @@ function OnboardingPage() {
                   color: 'var(--text-primary)',
                   fontSize: '0.95rem',
                 }}>
-                  Дата экзамена
+                  {t.onboarding.examDate}
                 </label>
                 <input
                   type="date"
@@ -413,15 +493,22 @@ function OnboardingPage() {
                   <p style={{ margin: '0.5rem 0 0', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
                     {(() => {
                       const days = Math.ceil((new Date(targetDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-                      if (days <= 0) return 'Дата должна быть в будущем';
+                      if (days <= 0) return t.onboarding.dateMustBeFuture;
                       const weeks = Math.floor(days / 7);
-                      return `До экзамена: ${days} дней (${weeks} недель)`;
+                      return `${t.onboarding.daysUntilExam}: ${days} (${weeks})`;
                     })()}
                   </p>
                 )}
               </div>
 
               {/* Target Score */}
+              {(() => {
+                const activeSections = selectedSections.length > 0 && selectedExam.sections.length > 1
+                  ? selectedExam.sections.filter(s => selectedSections.includes(s.name))
+                  : selectedExam.sections;
+                const effectiveMin = activeSections.reduce((sum, s) => sum + s.minScore, 0);
+                const effectiveMax = activeSections.reduce((sum, s) => sum + s.maxScore, 0);
+                return (
               <div>
                 <label style={{
                   display: 'block',
@@ -430,7 +517,7 @@ function OnboardingPage() {
                   color: 'var(--text-primary)',
                   fontSize: '0.95rem',
                 }}>
-                  Целевой балл
+                  {t.onboarding.targetScore}
                 </label>
                 <div style={{
                   display: 'flex',
@@ -439,8 +526,8 @@ function OnboardingPage() {
                 }}>
                   <input
                     type="range"
-                    min={selectedExam.minScore}
-                    max={selectedExam.maxScore}
+                    min={effectiveMin}
+                    max={effectiveMax}
                     step={selectedExam.code === 'SAT' ? 10 : 1}
                     value={targetScore}
                     onChange={(e) => setTargetScore(Number(e.target.value))}
@@ -463,8 +550,8 @@ function OnboardingPage() {
                   fontSize: '0.8rem',
                   color: 'var(--text-secondary)',
                 }}>
-                  <span>{selectedExam.minScore}</span>
-                  <span>{selectedExam.maxScore}</span>
+                  <span>{effectiveMin}</span>
+                  <span>{effectiveMax}</span>
                 </div>
                 <div style={{
                   marginTop: '1rem',
@@ -473,12 +560,12 @@ function OnboardingPage() {
                   flexWrap: 'wrap',
                 }}>
                   {(() => {
-                    const range = selectedExam.maxScore - selectedExam.minScore;
+                    const range = effectiveMax - effectiveMin;
                     const presets = [
-                      { label: 'Средний', value: Math.round(selectedExam.minScore + range * 0.4) },
-                      { label: 'Хороший', value: Math.round(selectedExam.minScore + range * 0.6) },
-                      { label: 'Отличный', value: Math.round(selectedExam.minScore + range * 0.8) },
-                      { label: 'Максимум', value: selectedExam.maxScore },
+                      { label: t.onboarding.presetAverage, value: Math.round(effectiveMin + range * 0.4) },
+                      { label: t.onboarding.presetGood, value: Math.round(effectiveMin + range * 0.6) },
+                      { label: t.onboarding.presetExcellent, value: Math.round(effectiveMin + range * 0.8) },
+                      { label: t.onboarding.presetMax, value: effectiveMax },
                     ];
                     // Round SAT presets to nearest 10
                     if (selectedExam.code === 'SAT') {
@@ -512,6 +599,8 @@ function OnboardingPage() {
                   })()}
                 </div>
               </div>
+                );
+              })()}
 
               {/* Section breakdown */}
               <div style={{
@@ -520,10 +609,12 @@ function OnboardingPage() {
                 padding: '1rem 1.25rem',
               }}>
                 <h4 style={{ margin: '0 0 0.75rem', color: 'var(--text-primary)', fontSize: '0.9rem' }}>
-                  Секции экзамена
+                  {t.onboarding.sections}
                 </h4>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  {selectedExam.sections.map((s) => (
+                  {selectedExam.sections
+                    .filter(s => selectedSections.length === 0 || selectedSections.includes(s.name))
+                    .map((s) => (
                     <div key={s.name} style={{
                       display: 'flex',
                       justifyContent: 'space-between',
@@ -551,7 +642,7 @@ function OnboardingPage() {
                   opacity: isLoading ? 0.7 : 1,
                 }}
               >
-                {isLoading ? 'Настраиваем...' : 'Создать план подготовки →'}
+                {isLoading ? t.onboarding.setting : t.onboarding.createPlan}
               </button>
             </div>
           </div>
@@ -561,11 +652,10 @@ function OnboardingPage() {
         {step === 'ready' && selectedExam && (
           <div style={{ textAlign: 'center' }}>
             <h2 style={{ fontSize: '1.75rem', marginBottom: '0.75rem', color: 'var(--text-primary)' }}>
-              Всё готово!
+              {t.onboarding.readyTitle}
             </h2>
             <p style={{ color: 'var(--text-secondary)', fontSize: '1.05rem', lineHeight: 1.6, marginBottom: '2rem' }}>
-              Ваш персональный план подготовки к {selectedExam.code} создан.
-              Платформа адаптируется под ваш уровень по мере обучения.
+              {t.onboarding.readyDesc}
             </p>
 
             <div style={{
@@ -582,7 +672,7 @@ function OnboardingPage() {
               }}>
                 <div>
                   <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '0.25rem' }}>
-                    Экзамен
+                    {t.onboarding.examLabel}
                   </div>
                   <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '1.1rem' }}>
                     {EXAM_ICONS[selectedExam.code]} {selectedExam.code}
@@ -590,15 +680,17 @@ function OnboardingPage() {
                 </div>
                 <div>
                   <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '0.25rem' }}>
-                    Целевой балл
+                    {t.onboarding.targetScore}
                   </div>
                   <div style={{ fontWeight: 600, color: EXAM_COLORS[selectedExam.code], fontSize: '1.1rem' }}>
-                    {targetScore} / {selectedExam.maxScore}
+                    {targetScore} / {selectedSections.length > 0 && selectedExam.sections.length > 1
+                      ? selectedExam.sections.filter(s => selectedSections.includes(s.name)).reduce((sum, s) => sum + s.maxScore, 0)
+                      : selectedExam.maxScore}
                   </div>
                 </div>
                 <div>
                   <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '0.25rem' }}>
-                    Дата экзамена
+                    {t.onboarding.examDate}
                   </div>
                   <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '1.1rem' }}>
                     {new Date(targetDate).toLocaleDateString('ru-RU', {
@@ -610,7 +702,7 @@ function OnboardingPage() {
                 </div>
                 <div>
                   <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '0.25rem' }}>
-                    Дней до экзамена
+                    {t.onboarding.daysUntilExam}
                   </div>
                   <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '1.1rem' }}>
                     {Math.ceil((new Date(targetDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))}
@@ -627,13 +719,13 @@ function OnboardingPage() {
               textAlign: 'left',
             }}>
               <h4 style={{ margin: '0 0 0.75rem', color: 'var(--text-primary)' }}>
-                Рекомендуем начать с:
+                {t.onboarding.recommendStart}
               </h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 {[
-                  { icon: '1.', text: 'Пройдите диагностический тест, чтобы определить уровень' },
-                  { icon: '2.', text: 'Изучите план подготовки на сегодня' },
-                  { icon: '3.', text: 'Просмотрите свою аналитику после первых тестов' },
+                  { icon: '1.', text: t.onboarding.rec1 },
+                  { icon: '2.', text: t.onboarding.rec2 },
+                  { icon: '3.', text: t.onboarding.rec3 },
                 ].map((item, i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <span>{item.icon}</span>
@@ -654,7 +746,7 @@ function OnboardingPage() {
                 marginBottom: '0.75rem',
               }}
             >
-              Пройти диагностический тест
+              {t.onboarding.diagnosticTest}
             </button>
 
             <button
@@ -670,7 +762,7 @@ function OnboardingPage() {
                 cursor: 'pointer',
               }}
             >
-              Пропустить и начать подготовку →
+              {t.onboarding.skipAndStart}
             </button>
           </div>
         )}

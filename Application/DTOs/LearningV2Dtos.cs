@@ -29,6 +29,7 @@ public record FormulaCardDto(
     int Id,
     int TopicId,
     string TopicName,
+    string? ExamTypeCode,
     string Title,
     string Formula,
     string? Description,

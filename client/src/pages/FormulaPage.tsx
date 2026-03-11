@@ -46,10 +46,17 @@ function FormulaPage() {
     f.formula.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const grouped = filtered.reduce<Record<string, FormulaCard[]>>((acc, f) => {
-    (acc[f.topicName] ??= []).push(f);
+  // Group by exam → topic (two-level hierarchy)
+  const groupedByExam = filtered.reduce<Record<string, Record<string, FormulaCard[]>>>((acc, f) => {
+    const exam = f.examTypeCode || 'Other';
+    const topic = f.topicName;
+    (acc[exam] ??= {})[topic] ??= [];
+    acc[exam][topic].push(f);
     return acc;
   }, {});
+
+  const examKeys = Object.keys(groupedByExam).sort();
+  const hasMultipleExams = examKeys.length > 1;
 
   if (loading) {
     return <div className="loading-container"><div className="loading-spinner" /></div>;
@@ -82,42 +89,51 @@ function FormulaPage() {
           </p>
         </div>
       ) : (
-        Object.entries(grouped).map(([topicName, cards]) => (
-          <div key={topicName} style={{ marginBottom: '1.5rem' }}>
-            <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-secondary)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              {topicName}
-            </h3>
-            <div style={{ display: 'grid', gap: '0.75rem', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}>
-              {cards.map(f => (
-                <div key={f.id} className="card" style={{ padding: '1.25rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <h4 style={{ margin: 0, fontSize: '0.95rem' }}>{f.title}</h4>
-                    <button
-                      className="btn-icon"
-                      onClick={() => handleToggleBookmark(f.id)}
-                      title={f.isBookmarked ? 'Remove bookmark' : 'Add bookmark'}
-                      style={{ opacity: f.isBookmarked ? 1 : 0.5, fontSize: '1.2rem', background: 'none', border: 'none', cursor: 'pointer', color: f.isBookmarked ? 'var(--warning-color)' : 'var(--text-secondary)' }}
-                    >
-                      {f.isBookmarked ? '\u2605' : '\u2606'}
-                    </button>
-                  </div>
-                  <div
-                    style={{
-                      margin: '0.75rem 0', padding: '0.75rem',
-                      background: 'var(--bg-secondary)', borderRadius: '8px',
-                      fontSize: '1.1rem', textAlign: 'center',
-                      overflowX: 'auto'
-                    }}
-                  >
-                    <MathText text={`$${f.formula}$`} />
-                  </div>
-                  {f.description && (
-                    <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)' }}
-                      dangerouslySetInnerHTML={{ __html: renderMarkdown(f.description) }} />
-                  )}
+        examKeys.map(examCode => (
+          <div key={examCode} style={{ marginBottom: hasMultipleExams ? '2rem' : 0 }}>
+            {hasMultipleExams && (
+              <h2 style={{ marginBottom: '1rem', fontSize: '1.1rem', borderBottom: '2px solid var(--primary-color)', paddingBottom: '0.5rem' }}>
+                {examCode}
+              </h2>
+            )}
+            {Object.entries(groupedByExam[examCode]).map(([topicName, cards]) => (
+              <div key={topicName} style={{ marginBottom: '1.5rem' }}>
+                <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-secondary)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  {topicName}
+                </h3>
+                <div style={{ display: 'grid', gap: '0.75rem', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}>
+                  {cards.map(f => (
+                    <div key={f.id} className="card" style={{ padding: '1.25rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <h4 style={{ margin: 0, fontSize: '0.95rem' }}>{f.title}</h4>
+                        <button
+                          className="btn-icon"
+                          onClick={() => handleToggleBookmark(f.id)}
+                          title={f.isBookmarked ? 'Remove bookmark' : 'Add bookmark'}
+                          style={{ opacity: f.isBookmarked ? 1 : 0.5, fontSize: '1.2rem', background: 'none', border: 'none', cursor: 'pointer', color: f.isBookmarked ? 'var(--warning-color)' : 'var(--text-secondary)' }}
+                        >
+                          {f.isBookmarked ? '\u2605' : '\u2606'}
+                        </button>
+                      </div>
+                      <div
+                        style={{
+                          margin: '0.75rem 0', padding: '0.75rem',
+                          background: 'var(--bg-secondary)', borderRadius: '8px',
+                          fontSize: '1.1rem', textAlign: 'center',
+                          overflowX: 'auto'
+                        }}
+                      >
+                        <MathText text={`$${f.formula}$`} />
+                      </div>
+                      {f.description && (
+                        <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)' }}
+                          dangerouslySetInnerHTML={{ __html: renderMarkdown(f.description) }} />
+                      )}
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
         ))
       )}

@@ -5,9 +5,11 @@ import type { RootState } from '../store';
 import type { Question, AnswerResult } from '../types';
 import { testService } from '../services/testService';
 import { QuestionSkeleton } from '../components/Skeleton';
+import { useTranslation } from '../hooks/useTranslation';
 
 export default function ReviewPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { selectedExams } = useSelector((state: RootState) => state.exam);
   
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -81,12 +83,12 @@ export default function ReviewPage() {
     return (
       <div className="card animate-fade-in-scale" style={{ maxWidth: '500px', margin: '2rem auto', textAlign: 'center', padding: '3rem' }}>
         <div style={{ fontSize: '4rem', marginBottom: '1rem' }}></div>
-        <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '1rem', color: 'var(--text-primary)' }}>Отлично!</h2>
+        <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '1rem', color: 'var(--text-primary)' }}>{t.reviewPage.excellent}</h2>
         <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
-          У вас нет ошибок для повторения. Продолжайте практиковаться!
+          {t.reviewPage.noMistakesDesc}
         </p>
         <button onClick={() => navigate('/test')} className="btn btn-primary">
-          Начать новый тест
+          {t.reviewPage.startNewTest}
         </button>
       </div>
     );
@@ -114,10 +116,10 @@ export default function ReviewPage() {
           fontSize: '0.875rem',
           fontWeight: '500'
         }}>
-          Повторение ошибок
+          {t.reviewPage.reviewErrors}
         </span>
         <button onClick={() => navigate('/test')} className="btn btn-outline">
-          ← Назад
+          {t.reviewPage.back}
         </button>
       </div>
 
@@ -142,7 +144,7 @@ export default function ReviewPage() {
       {/* Progress */}
       <div className="card" style={{ padding: '1rem', marginBottom: '1.5rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
-          <span>Вопрос {currentIndex + 1} из {questions.length}</span>
+          <span>{t.reviewPage.questionOf.replace('{n}', String(currentIndex + 1)).replace('{total}', String(questions.length))}</span>
           <span>{currentQuestion.topicName}</span>
         </div>
         <div style={{ width: '100%', backgroundColor: 'var(--border-color)', borderRadius: '9999px', height: '0.5rem' }}>
@@ -166,8 +168,8 @@ export default function ReviewPage() {
             fontWeight: '500',
             ...getDifficultyStyle(currentQuestion.difficulty)
           }}>
-            {currentQuestion.difficulty === 'Easy' ? 'Легкий' :
-             currentQuestion.difficulty === 'Medium' ? 'Средний' : 'Сложный'}
+            {currentQuestion.difficulty === 'Easy' ? t.practice.easy :
+             currentQuestion.difficulty === 'Medium' ? t.practice.medium : t.practice.hard}
           </span>
         </div>
 
@@ -227,13 +229,13 @@ export default function ReviewPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
               <span style={{ fontSize: '1.5rem' }}>{answerResult.isCorrect ? '✓' : '✕'}</span>
               <span style={{ fontWeight: '600', color: answerResult.isCorrect ? 'var(--success-color)' : 'var(--error-color)' }}>
-                {answerResult.isCorrect ? 'Правильно!' : 'Неправильно'}
+                {answerResult.isCorrect ? t.reviewPage.correct : t.reviewPage.incorrect}
               </span>
             </div>
             
             {!answerResult.isCorrect && (
               <p style={{ color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
-                <span style={{ fontWeight: '500' }}>Правильный ответ: </span>
+                <span style={{ fontWeight: '500' }}>{t.reviewPage.correctAnswerLabel} </span>
                 {answerResult.correctOptionText}
               </p>
             )}
@@ -241,7 +243,7 @@ export default function ReviewPage() {
             {answerResult.explanation && (
               <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid var(--border-color)' }}>
                 <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                  <span style={{ fontWeight: '500' }}>Объяснение: </span>
+                  <span style={{ fontWeight: '500' }}>{t.reviewPage.explanation}: </span>
                   {answerResult.explanation}
                 </p>
               </div>
@@ -258,7 +260,7 @@ export default function ReviewPage() {
               className="btn btn-primary"
               style={{ width: '100%' }}
             >
-              {submitting ? 'Проверка...' : 'Ответить'}
+              {submitting ? t.reviewPage.checking : t.reviewPage.answer}
             </button>
           ) : (
             <button
@@ -266,7 +268,7 @@ export default function ReviewPage() {
               className="btn btn-primary"
               style={{ width: '100%' }}
             >
-              {currentIndex < questions.length - 1 ? 'Следующий вопрос' : 'Завершить'}
+              {currentIndex < questions.length - 1 ? t.reviewPage.nextQuestion : t.reviewPage.finish}
             </button>
           )}
         </div>

@@ -2,11 +2,13 @@ import { useState, FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useAppDispatch } from '../hooks/useAppDispatch';
 import { useAppSelector } from '../hooks/useAppSelector';
+import { useTranslation } from '../hooks/useTranslation';
 import { register, clearError } from '../store/slices/authSlice';
 
 function RegisterPage() {
   const dispatch = useAppDispatch();
   const { isLoading, error } = useAppSelector((state) => state.auth);
+  const { t } = useTranslation();
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -41,13 +43,13 @@ function RegisterPage() {
   return (
     <div className="auth-container">
       <div className="auth-card card">
-        <h1 className="auth-title">Create Account</h1>
-        <p className="auth-subtitle">Start your adaptive learning journey today</p>
+        <h1 className="auth-title">{t.auth.registerTitle}</h1>
+        <p className="auth-subtitle">{t.auth.registerSubtitle}</p>
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label htmlFor="name" className="form-label">
-              Full Name
+              {t.auth.firstName}
             </label>
             <input
               type="text"
@@ -65,7 +67,7 @@ function RegisterPage() {
 
           <div className="form-group">
             <label htmlFor="email" className="form-label">
-              Email
+              {t.auth.email}
             </label>
             <input
               type="email"
@@ -83,7 +85,7 @@ function RegisterPage() {
 
           <div className="form-group">
             <label htmlFor="password" className="form-label">
-              Password
+              {t.auth.password}
             </label>
             <input
               type="password"
@@ -101,7 +103,7 @@ function RegisterPage() {
 
           <div className="form-group">
             <label htmlFor="confirmPassword" className="form-label">
-              Confirm Password
+              {t.auth.confirmPassword}
             </label>
             <input
               type="password"
@@ -127,14 +129,14 @@ function RegisterPage() {
             style={{ width: '100%', marginTop: '1rem' }}
             disabled={isLoading}
           >
-            {isLoading ? 'Creating account...' : 'Create Account'}
+            {isLoading ? t.common.loading : t.auth.register}
           </button>
         </form>
 
         <p style={{ textAlign: 'center', marginTop: '1.5rem', color: 'var(--text-secondary)' }}>
-          Already have an account?{' '}
+          {t.auth.hasAccount}{' '}
           <Link to="/login" style={{ color: 'var(--primary-color)' }}>
-            Sign In
+            {t.auth.login}
           </Link>
         </p>
       </div>

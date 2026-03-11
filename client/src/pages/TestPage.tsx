@@ -16,11 +16,13 @@ import { subscriptionService } from '../services/subscriptionService';
 import { studyPlanService } from '../services/studyPlanService';
 import { UpgradeBanner } from '../components/UpgradeBanner';
 import { DailyLimitModal } from '../components/DailyLimitModal';
+import { useTranslation } from '../hooks/useTranslation';
 import type { DailyUsage } from '../types';
 
 function TestPage() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const { selectedExams } = useAppSelector((state) => state.exam);
 
@@ -228,12 +230,12 @@ function TestPage() {
         )}
         <div className="card" style={{ maxWidth: '500px', margin: '0 auto', padding: '2.5rem', textAlign: 'center' }}>
           <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '0.5rem', color: 'var(--text-primary)' }}>
-            {topicId ? 'Задание по плану' : 'Адаптивная практика'}
+            {topicId ? t.studyPlan.planAssignment : t.studyPlan.adaptivePractice}
           </h2>
           <p style={{ color: 'var(--text-secondary)', marginBottom: '0.5rem', lineHeight: '1.5' }}>
             {topicId
-              ? 'Вопросы подобраны по теме из вашего учебного плана. После завершения результат автоматически зачтётся в план.'
-              : 'Вопросы подбираются под ваш уровень с помощью IRT-алгоритма. Объяснения после каждого ответа, подсказки и без ограничения по времени.'
+              ? t.studyPlan.planAssignmentDesc
+              : t.studyPlan.adaptivePracticeDesc
             }
           </p>
           <div style={{
@@ -261,7 +263,7 @@ function TestPage() {
             className="btn btn-primary"
             style={{ padding: '0.75rem 2rem', fontSize: '1rem' }}
           >
-            ▶ Начать практику
+            ▶ {t.studyPlan.startPractice}
           </button>
         </div>
       </div>
@@ -285,23 +287,23 @@ function TestPage() {
           )}
           <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '1rem' }}>
             {planEntryId
-              ? 'Задание выполнено!'
+              ? t.studyPlan.taskComplete
               : isMastered
-                ? 'Тема освоена!'
-                : 'Практика завершена!'}
+                ? t.studyPlan.topicMastered
+                : t.studyPlan.practiceComplete}
           </h2>
           <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
             {planEntryId
-              ? 'Результат автоматически зачтён в ваш учебный план.'
+              ? t.studyPlan.taskCompleteDesc
               : isMastered
-                ? 'Вы правильно ответили на все вопросы темы. Отличная работа!'
-                : 'Вы ответили на все доступные вопросы. Проверьте аналитику, чтобы увидеть прогресс.'
+                ? t.studyPlan.topicMasteredDesc
+                : t.studyPlan.practiceCompleteDesc
             }
           </p>
           {topicMastery > 0 && (
             <div style={{ marginBottom: '1.5rem' }}>
               <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
-                Освоение темы
+                {t.studyPlan.topicMastery}
               </div>
               <div style={{
                 width: '200px', height: '8px', backgroundColor: 'var(--border-color)',
@@ -322,18 +324,18 @@ function TestPage() {
             </div>
           )}
           <p style={{ marginBottom: '2rem', fontSize: '0.95rem', color: 'var(--text-secondary)' }}>
-            Отвечено вопросов за сессию: <strong>{sessionAnswered}</strong>
+            {t.studyPlan.sessionAnswered}: <strong>{sessionAnswered}</strong>
           </p>
           <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
             <button onClick={handleFinishTest} className="btn btn-primary">
-              {planEntryId ? 'Вернуться к плану' : 'Аналитика'}
+              {planEntryId ? t.studyPlan.backToPlan : t.studyPlan.analytics}
             </button>
             {!planEntryId && (
               <button onClick={() => {
                 setMasteryShown(true);
                 dispatch(fetchNextQuestion({ examTypeCodes: selectedExams, topicId }));
               }} className="btn btn-secondary" disabled={isLoading}>
-                Продолжить практику
+                {t.studyPlan.continuePractice}
               </button>
             )}
           </div>
@@ -356,7 +358,7 @@ function TestPage() {
         <div className="card" style={{ textAlign: 'center' }}>
           <p className="error-message">{error}</p>
           <button onClick={() => navigate('/')} className="btn btn-primary" style={{ marginTop: '1rem' }}>
-            Back to Exam Selection
+            {t.practice.backToExams}
           </button>
         </div>
       </div>
@@ -368,13 +370,13 @@ function TestPage() {
       <div className="test-container">
         <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
           <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '1rem' }}>
-            No Questions Available
+            {t.practice.noQuestions}
           </h2>
           <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>
-            There are no more questions available for the selected exams.
+            {t.practice.noQuestionsDesc}
           </p>
           <button onClick={() => navigate('/')} className="btn btn-primary">
-            Choose Different Exams
+            {t.practice.chooseDifferent}
           </button>
         </div>
       </div>
@@ -456,7 +458,7 @@ function TestPage() {
             onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.15)'; }}
             onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.05)'; }}
           >
-            ✕ Выйти
+            ✕ {t.practice.quit}
           </button>
         </div>
 
@@ -471,8 +473,8 @@ function TestPage() {
           }}>
             <p style={{ margin: '0 0 0.75rem', fontSize: '0.9rem', color: 'var(--text-primary)' }}>
               {planEntryId
-                ? `Завершить задание? Ваш прогресс (${questionsAnswered} вопросов) будет зачтён в учебный план.`
-                : `Завершить практику? Ваш прогресс (${questionsAnswered} вопросов) сохранится.`
+                ? t.practice.quitConfirmPlan
+                : t.practice.quitConfirmPractice
               }
             </p>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -489,14 +491,14 @@ function TestPage() {
                   cursor: 'pointer',
                 }}
               >
-                Да, выйти
+                {t.practice.yesQuit}
               </button>
               <button
                 onClick={() => setShowQuitConfirm(false)}
                 className="btn btn-secondary"
                 style={{ padding: '0.375rem 1rem', fontSize: '0.8rem' }}
               >
-                Продолжить
+                {t.practice.continue}
               </button>
             </div>
           </div>
@@ -521,15 +523,15 @@ function TestPage() {
               }}>
                 <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
                   {isRecycling
-                    ? `Solved: ${sessionAnswered} (${totalQuestions} in topic)`
-                    : `Question ${sessionAnswered + 1} of ${totalQuestions}`}
+                    ? `${t.practice.solved}: ${sessionAnswered} (${totalQuestions} ${t.practice.inTopic})`
+                    : `${sessionAnswered + 1} / ${totalQuestions}`}
                 </span>
                 {hasTopic && (
                   <span style={{
                     display: 'flex', alignItems: 'center', gap: '0.375rem',
                     fontSize: '0.8rem', fontWeight: '600', color: masteryColor,
                   }}>
-                    Освоение: {mastery}%
+                    {t.practice.mastery}: {mastery}%
                   </span>
                 )}
                 {!hasTopic && (
@@ -587,7 +589,7 @@ function TestPage() {
                   transition: 'all 0.2s ease'
                 }}
               >
-                {hintLoading ? '...' : showHint ? 'Hide Hint' : 'Hint'}
+                {hintLoading ? '...' : showHint ? t.practice.hideHint : t.practice.hint}
               </button>
             )}
             <span className={`difficulty-badge ${getDifficultyClass(currentQuestion.difficulty)}`}>
@@ -653,7 +655,7 @@ function TestPage() {
                   margin: 0,
                 }}
               >
-                {answerResult.isCorrect ? 'Correct!' : 'Incorrect'}
+                {answerResult.isCorrect ? t.practice.correct : t.practice.incorrect}
               </p>
             </div>
 
@@ -666,7 +668,7 @@ function TestPage() {
                 border: '1px solid rgba(16, 185, 129, 0.3)'
               }}>
                 <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                  Correct answer:
+                  {t.practice.correctAnswer}
                 </p>
                 <p style={{ margin: '0.25rem 0 0 0', fontWeight: '600', color: 'var(--success-color)' }}>
                   {answerResult.correctOptionText}
@@ -684,7 +686,7 @@ function TestPage() {
                 border: '1px solid rgba(99, 102, 241, 0.2)'
               }}>
                 <p style={{ margin: 0, fontSize: '0.75rem', fontWeight: '600', color: 'var(--primary-color)', textTransform: 'uppercase' }}>
-                  Explanation
+                  {t.practice.explanation}
                 </p>
                 <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.9rem', lineHeight: '1.5' }}>
                   {answerResult.explanation}
@@ -703,10 +705,10 @@ function TestPage() {
               flexWrap: 'wrap',
             }}>
               <span>
-                Skill: {answerResult.skillChange > 0 ? '+' : ''}{answerResult.skillChange}
+                {t.practice.skill}: {answerResult.skillChange > 0 ? '+' : ''}{answerResult.skillChange}
               </span>
               <span>•</span>
-              <span>Level: {answerResult.newSkillLevel}</span>
+              <span>{t.practice.level}: {answerResult.newSkillLevel}</span>
               {answerResult.confidenceLow != null && answerResult.confidenceHigh != null && (
                 <>
                   <span>•</span>
@@ -726,11 +728,11 @@ function TestPage() {
               className="btn btn-primary"
               disabled={!selectedAnswer || isLoading}
             >
-              {isLoading ? 'Submitting...' : 'Submit Answer'}
+              {isLoading ? t.practice.submitting : t.practice.submitAnswer}
             </button>
           ) : (
             <button onClick={handleNextQuestion} className="btn btn-primary">
-              Next Question
+              {t.practice.nextQuestion}
             </button>
           )}
         </div>

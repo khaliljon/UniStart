@@ -1,8 +1,14 @@
 import { Outlet, NavLink } from 'react-router-dom';
+import { useState } from 'react';
 import ProfileDropdown from './ProfileDropdown';
 import GuidedTour from './GuidedTour';
+import LanguageSwitcher from './LanguageSwitcher';
+import { useTranslation } from '../hooks/useTranslation';
 
 function Layout() {
+  const { t } = useTranslation();
+  const [menuOpen, setMenuOpen] = useState(false);
+
   return (
     <div className="layout">
       <GuidedTour />
@@ -12,30 +18,43 @@ function Layout() {
             UniStart
           </NavLink>
 
-          <ul className="navbar-nav">
-            <li>
-              <NavLink to="/" end>
-                Главная
-              </NavLink>
-            </li>
-            <li>
-              <NavLink to="/learn">
-                Обучение
-              </NavLink>
-            </li>
-            <li>
-              <NavLink to="/progress">
-                Прогресс
-              </NavLink>
-            </li>
-            <li>
-              <NavLink to="/plan">
-                План
-              </NavLink>
-            </li>
-          </ul>
+          <button
+            className="burger-btn"
+            onClick={() => setMenuOpen(!menuOpen)}
+            aria-label="Toggle menu"
+          >
+            <span className={`burger-icon ${menuOpen ? 'open' : ''}`} />
+          </button>
 
-          <ProfileDropdown />
+          <div className={`navbar-collapse ${menuOpen ? 'show' : ''}`}>
+            <ul className="navbar-nav">
+              <li>
+                <NavLink to="/" end onClick={() => setMenuOpen(false)}>
+                  {t.nav.home}
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/learn" onClick={() => setMenuOpen(false)}>
+                  {t.nav.learn}
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/progress" onClick={() => setMenuOpen(false)}>
+                  {t.nav.progress}
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/plan" onClick={() => setMenuOpen(false)}>
+                  {t.nav.plan}
+                </NavLink>
+              </li>
+            </ul>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <LanguageSwitcher />
+              <ProfileDropdown />
+            </div>
+          </div>
         </div>
       </nav>
 

@@ -1,23 +1,26 @@
+import { useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useTranslation } from '../hooks/useTranslation';
 import AnalyticsPage from './AnalyticsPage';
 import PredictionPage from './PredictionPage';
 import HistoryPage from './HistoryPage';
 
 type ProgressTab = 'overview' | 'prediction' | 'history';
 
-const TABS: { id: ProgressTab; label: string; icon: string }[] = [
-  { id: 'overview', label: 'Обзор', icon: '' },
-  { id: 'prediction', label: 'Прогноз', icon: '' },
-  { id: 'history', label: 'История', icon: '' },
-];
-
 const isValidTab = (v: string | null): v is ProgressTab =>
   v === 'overview' || v === 'prediction' || v === 'history';
 
 function ProgressPage() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const { t } = useTranslation();
   const tabParam = searchParams.get('tab');
   const activeTab: ProgressTab = isValidTab(tabParam) ? tabParam : 'overview';
+
+  const TABS = useMemo(() => [
+    { id: 'overview' as const, label: t.progress.analytics, icon: '' },
+    { id: 'prediction' as const, label: t.progress.prediction, icon: '' },
+    { id: 'history' as const, label: t.progress.historyTab, icon: '' },
+  ], [t]);
 
   const switchTab = (tab: ProgressTab) => {
     setSearchParams(tab === 'overview' ? {} : { tab }, { replace: true });

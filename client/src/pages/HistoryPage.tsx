@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { analyticsService } from '../services/analyticsService';
+import { useTranslation } from '../i18n';
 import type { TestSessionSummary, TestSessionDetail } from '../types';
 
 function HistoryPage() {
@@ -9,6 +10,7 @@ function HistoryPage() {
   const [isDetailLoading, setIsDetailLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
+  const { t } = useTranslation();
 
   useEffect(() => {
     const fetchSessions = async () => {
@@ -17,7 +19,7 @@ function HistoryPage() {
         const data = await analyticsService.getSessions(page, 10);
         setSessions(data);
       } catch (err) {
-        setError('Failed to load test history');
+        setError(t.history.failedToLoad);
         console.error(err);
       } finally {
         setIsLoading(false);
@@ -64,7 +66,7 @@ function HistoryPage() {
   if (isLoading) {
     return (
       <div className="animate-fade-in" style={{ maxWidth: '800px', margin: '0 auto' }}>
-        <h1 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '2rem' }}>Test History</h1>
+        <h1 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '2rem' }}>{t.history.title}</h1>
         {[1, 2, 3].map((i) => (
           <div key={i} className="card skeleton" style={{ height: '80px', marginBottom: '1rem' }} />
         ))}
@@ -76,12 +78,12 @@ function HistoryPage() {
 
   return (
     <div className="animate-fade-in" style={{ maxWidth: '800px', margin: '0 auto' }}>
-      <h1 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '2rem' }}>Test History</h1>
+      <h1 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '2rem' }}>{t.history.title}</h1>
 
       {sessions.length === 0 ? (
         <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
           <p style={{ fontSize: '1.125rem', color: 'var(--text-secondary)' }}>
-            No test sessions yet. Start a test to see your history here!
+            {t.history.noSessions}
           </p>
         </div>
       ) : (
@@ -108,7 +110,7 @@ function HistoryPage() {
                         {session.examTypeName}
                       </div>
                       <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                        {formatDate(session.startedAt)} · {session.mode === 'exam' ? 'Exam' : 'Practice'} mode
+                        {formatDate(session.startedAt)} · {session.mode === 'exam' ? t.history.examMode : t.history.practiceMode} mode
                       </div>
                     </div>
                   </div>
@@ -117,7 +119,7 @@ function HistoryPage() {
                       {session.score !== null ? `${session.score}%` : '—'}
                     </div>
                     <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                      {session.correctCount}/{session.totalQuestions} correct
+                      {session.correctCount}/{session.totalQuestions} {t.history.correct}
                     </div>
                   </div>
                 </div>
@@ -127,10 +129,10 @@ function HistoryPage() {
               {selectedSession?.id === session.id && !isDetailLoading && (
                 <div className="card animate-fade-in" style={{ marginTop: '0.5rem', borderLeft: '3px solid var(--primary-color)' }}>
                   <h3 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '1rem' }}>
-                    Session Details
+                    {t.history.sessionDetails}
                   </h3>
                   {selectedSession.answers.length === 0 ? (
-                    <p style={{ color: 'var(--text-secondary)' }}>No answers recorded for this session.</p>
+                    <p style={{ color: 'var(--text-secondary)' }}>{t.history.noAnswers}</p>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                       {selectedSession.answers.map((answer, i) => (
@@ -156,11 +158,11 @@ function HistoryPage() {
                               </div>
                               <div style={{ fontSize: '0.85rem' }}>
                                 <span style={{ color: answer.isCorrect ? 'var(--success-color)' : 'var(--error-color)' }}>
-                                  Your answer: {answer.selectedOptionText}
+                                {t.history.yourAnswer} {answer.selectedOptionText}
                                 </span>
                                 {!answer.isCorrect && (
                                   <span style={{ color: 'var(--success-color)', marginLeft: '1rem' }}>
-                                    Correct: {answer.correctOptionText}
+                                    {t.history.correctAnswer} {answer.correctOptionText}
                                   </span>
                                 )}
                               </div>
@@ -202,17 +204,17 @@ function HistoryPage() {
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
             >
-              ← Previous
+              {t.history.previous}
             </button>
             <span style={{ display: 'flex', alignItems: 'center', color: 'var(--text-secondary)' }}>
-              Page {page}
+              {t.history.page} {page}
             </span>
             <button
               className="btn btn-secondary"
               onClick={() => setPage((p) => p + 1)}
               disabled={sessions.length < 10}
             >
-              Next →
+              {t.history.nextPage}
             </button>
           </div>
         </div>

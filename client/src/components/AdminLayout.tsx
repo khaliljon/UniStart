@@ -3,14 +3,17 @@ import { useState, useRef, useEffect } from 'react';
 import { useAppDispatch } from '../hooks/useAppDispatch';
 import { useAppSelector } from '../hooks/useAppSelector';
 import { useTheme } from '../hooks/useTheme';
+import { useTranslation } from '../hooks/useTranslation';
 import { logout } from '../store/slices/authSlice';
 import { chatService } from '../services/chatService';
+import LanguageSwitcher from './LanguageSwitcher';
 
 function AdminLayout() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { user } = useAppSelector((state) => state.auth);
   const { theme, toggleTheme } = useTheme();
+  const { t } = useTranslation();
   const [moreOpen, setMoreOpen] = useState(false);
   const moreRef = useRef<HTMLLIElement>(null);
 
@@ -51,27 +54,27 @@ function AdminLayout() {
           <ul className="navbar-nav">
             <li>
               <NavLink to="/" end>
-                Обзор
+                {t.admin.nav.dashboard}
               </NavLink>
             </li>
             <li>
               <NavLink to="/questions">
-                Вопросы
+                {t.admin.nav.questions}
               </NavLink>
             </li>
             <li>
               <NavLink to="/content">
-                Контент
+                {t.admin.nav.content}
               </NavLink>
             </li>
             <li>
               <NavLink to="/users">
-                Пользователи
+                {t.admin.nav.users}
               </NavLink>
             </li>
             <li>
               <NavLink to="/tutors">
-                Тьюторы
+                {t.admin.nav.tutors}
               </NavLink>
             </li>
             <li ref={moreRef} style={{ position: 'relative' }}>
@@ -118,10 +121,11 @@ function AdminLayout() {
           </ul>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <LanguageSwitcher />
             <button
               onClick={toggleTheme}
               className="theme-toggle"
-              title={theme === 'light' ? 'Тёмная тема' : 'Светлая тема'}
+              title={theme === 'light' ? t.nav.darkMode : t.nav.lightMode}
             >
               {theme === 'light' ? '◑' : '○'}
             </button>
@@ -129,7 +133,7 @@ function AdminLayout() {
               {user?.name}
             </span>
             <button onClick={handleLogout} className="btn btn-outline">
-              Выйти
+              {t.nav.logout}
             </button>
           </div>
         </div>

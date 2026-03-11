@@ -1000,6 +1000,7 @@ export interface FormulaCard {
   id: number;
   topicId: number;
   topicName: string;
+  examTypeCode: string | null;
   title: string;
   formula: string;
   description: string | null;

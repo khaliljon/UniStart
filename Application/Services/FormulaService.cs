@@ -23,7 +23,7 @@ public class FormulaService : IFormulaService
 
         var query = _context.FormulaCards
             .Include(f => f.Topic)
-                .ThenInclude(t => t.Section)
+                .ThenInclude(t => t.Section!)
             .AsQueryable();
 
         if (examTypeCodes != null && examTypeCodes.Length > 0)
@@ -36,6 +36,7 @@ public class FormulaService : IFormulaService
                 f.Id,
                 f.TopicId,
                 f.Topic.Name,
+                f.Topic.Section != null ? f.Topic.Section.ExamTypeCode : null,
                 f.Title,
                 f.Formula,
                 f.Description,
@@ -52,11 +53,13 @@ public class FormulaService : IFormulaService
             .Where(b => b.UserId == userId)
             .Include(b => b.FormulaCard)
                 .ThenInclude(f => f.Topic)
+                    .ThenInclude(t => t.Section!)
             .OrderBy(b => b.CreatedAt)
             .Select(b => new FormulaCardDto(
                 b.FormulaCard.Id,
                 b.FormulaCard.TopicId,
                 b.FormulaCard.Topic.Name,
+                b.FormulaCard.Topic.Section != null ? b.FormulaCard.Topic.Section.ExamTypeCode : null,
                 b.FormulaCard.Title,
                 b.FormulaCard.Formula,
                 b.FormulaCard.Description,

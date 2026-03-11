@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '../hooks/useAppDispatch';
 import { useAppSelector } from '../hooks/useAppSelector';
 import { useTheme } from '../hooks/useTheme';
+import { useTranslation } from '../i18n';
 import { logout } from '../store/slices/authSlice';
 import { messageService } from '../services/messageService';
 import { chatService } from '../services/chatService';
@@ -12,6 +13,7 @@ function ProfileDropdown() {
   const navigate = useNavigate();
   const { user } = useAppSelector((state) => state.auth);
   const { theme, toggleTheme } = useTheme();
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const ref = useRef<HTMLDivElement>(null);
@@ -60,7 +62,7 @@ function ProfileDropdown() {
       <button
         onClick={() => setOpen(!open)}
         className="profile-trigger"
-        title="Профиль"
+        title={t.nav.profile}
       >
         <span className="profile-avatar" style={{ position: 'relative' }}>
           {initials}
@@ -103,7 +105,7 @@ function ProfileDropdown() {
           {/* Menu items */}
           <button className="profile-dropdown-item" onClick={() => goTo('/messages')}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
-              Сообщения
+              {t.nav.messages}
               {unreadCount > 0 && (
                 <span style={{
                   background: '#ef4444', color: '#fff', borderRadius: '999px',
@@ -113,25 +115,25 @@ function ProfileDropdown() {
             </span>
           </button>
           <button className="profile-dropdown-item" onClick={() => goTo('/tutors')}>
-            Тьюторы
+            {t.nav.tutors}
           </button>
           <button className="profile-dropdown-item" onClick={() => goTo('/profile')}>
-            Профиль
+            {t.nav.profile}
           </button>
           <button className="profile-dropdown-item" onClick={() => goTo('/profile/notifications')}>
-            Уведомления
+            {t.nav.notifications}
           </button>
 
           <div className="profile-dropdown-divider" />
 
           <button className="profile-dropdown-item" onClick={() => { toggleTheme(); }}>
-            {theme === 'light' ? 'Темная тема' : 'Светлая тема'}
+            {theme === 'light' ? t.nav.darkMode : t.nav.lightMode}
           </button>
 
           <div className="profile-dropdown-divider" />
 
           <button className="profile-dropdown-item profile-dropdown-danger" onClick={handleLogout}>
-            Выйти
+            {t.nav.logout}
           </button>
         </div>
       )}

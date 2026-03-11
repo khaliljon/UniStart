@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAppSelector } from '../hooks/useAppSelector';
 import { useAppDispatch } from '../hooks/useAppDispatch';
+import { useTranslation } from '../hooks/useTranslation';
 import { fetchExams, toggleExamSelection } from '../store/slices/examSlice';
 import { subscriptionService } from '../services/subscriptionService';
 import type { SubscriptionStatus } from '../types';
@@ -9,6 +10,7 @@ function ProfilePage() {
   const { user } = useAppSelector((state) => state.auth);
   const { exams, selectedExams } = useAppSelector((state) => state.exam);
   const dispatch = useAppDispatch();
+  const { t } = useTranslation();
   const [sub, setSub] = useState<SubscriptionStatus | null>(null);
 
   useEffect(() => {
@@ -20,7 +22,7 @@ function ProfilePage() {
 
   return (
     <div className="animate-fade-in" style={{ maxWidth: '640px', margin: '0 auto', padding: '2rem 0' }}>
-      <h1 style={{ marginBottom: '1.5rem' }}>Профиль</h1>
+      <h1 style={{ marginBottom: '1.5rem' }}>{t.profilePage.title}</h1>
 
       {/* ─── User Info Card ─── */}
       <div className="card" style={{ padding: '1.5rem', marginBottom: '1.25rem' }}>
@@ -40,14 +42,14 @@ function ProfilePage() {
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', fontSize: '0.85rem' }}>
-          <InfoRow label="Роль" value={user?.role === 'Student' ? 'Студент' : user?.role === 'Tutor' ? 'Репетитор' : user?.role || '—'} />
-          <InfoRow label="Регистрация" value={user?.createdAt ? new Date(user.createdAt).toLocaleDateString('ru') : '—'} />
+          <InfoRow label={t.profilePage.personalInfo} value={user?.role === 'Student' ? t.nav.home : user?.role === 'Tutor' ? t.tutor.editProfile : user?.role || '—'} />
+          <InfoRow label={t.profilePage.registeredAt} value={user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : '—'} />
         </div>
       </div>
 
       {/* ─── Subscription ─── */}
       <div className="card" style={{ padding: '1.5rem', marginBottom: '1.25rem' }}>
-        <h3 style={{ margin: '0 0 0.75rem', fontSize: '1rem' }}>Подписка</h3>
+        <h3 style={{ margin: '0 0 0.75rem', fontSize: '1rem' }}>{t.profilePage.subscription}</h3>
         <div style={{
           display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem',
         }}>
@@ -56,33 +58,33 @@ function ProfilePage() {
             background: isPro ? 'linear-gradient(135deg, #f59e0b, #ef4444)' : 'var(--bg-secondary)',
             color: isPro ? '#fff' : 'var(--text-secondary)',
           }}>
-            {isPro ? 'PRO' : 'FREE'}
+            {isPro ? t.profilePage.pro : t.profilePage.free}
           </span>
           {isPro && user?.subscriptionExpiresAt && (
             <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-              до {new Date(user.subscriptionExpiresAt).toLocaleDateString('ru')}
+              {t.profilePage.validUntil.replace('{date}', new Date(user.subscriptionExpiresAt).toLocaleDateString())}
             </span>
           )}
         </div>
 
         {sub && (
           <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-            <p style={{ margin: '0.25rem 0' }}>Вопросов сегодня: {sub.dailyUsage.questionsAnswered} / {sub.limits.questionsPerDay === -1 ? '∞' : sub.limits.questionsPerDay}</p>
-            <p style={{ margin: '0.25rem 0' }}>Уроков сегодня: {sub.dailyUsage.lessonsViewed} / {sub.limits.lessonsPerDay === -1 ? '∞' : sub.limits.lessonsPerDay}</p>
+            <p style={{ margin: '0.25rem 0' }}>{t.limits.questionsToday}: {sub.dailyUsage.questionsAnswered} / {sub.limits.questionsPerDay === -1 ? '∞' : sub.limits.questionsPerDay}</p>
+            <p style={{ margin: '0.25rem 0' }}>{t.limits.lessonsToday}: {sub.dailyUsage.lessonsViewed} / {sub.limits.lessonsPerDay === -1 ? '∞' : sub.limits.lessonsPerDay}</p>
           </div>
         )}
 
         {!isPro && (
           <button className="btn btn-primary" style={{ marginTop: '0.75rem', fontSize: '0.85rem' }}
             onClick={() => { /* TODO: upgrade flow */ }}>
-            Перейти на PRO
+            {t.profilePage.upgradePro}
           </button>
         )}
       </div>
 
       {/* ─── Selected Exams ─── */}
       <div className="card" style={{ padding: '1.5rem', marginBottom: '1.25rem' }}>
-        <h3 style={{ margin: '0 0 0.75rem', fontSize: '1rem' }}>Мои экзамены</h3>
+        <h3 style={{ margin: '0 0 0.75rem', fontSize: '1rem' }}>{t.profilePage.examPreferences}</h3>
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
           {exams.map(exam => {
             const isSelected = selectedExams.includes(exam.code);
@@ -105,7 +107,7 @@ function ProfilePage() {
         </div>
         {selectedExams.length === 0 && (
           <p style={{ color: 'var(--warning-color)', fontSize: '0.85rem', marginTop: '0.5rem' }}>
-            Выберите хотя бы один экзамен
+            {t.profilePage.selectAtLeastOne}
           </p>
         )}
       </div>
