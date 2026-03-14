@@ -344,9 +344,11 @@ public class AdminService : IAdminService
     // ═══════════════════════════════════════════════════════
 
     public async Task<PagedResult<AdminUserDto>> GetUsersAsync(string? role = null, string? search = null,
-        int page = 1, int pageSize = 50)
+        int page = 1, int pageSize = 50, bool includeDeleted = false)
     {
-        var query = _db.Users.AsQueryable();
+        var query = includeDeleted
+            ? _db.Users.IgnoreQueryFilters()
+            : _db.Users.AsQueryable();
 
         if (!string.IsNullOrEmpty(role) && Enum.TryParse<UserRole>(role, true, out var r))
             query = query.Where(u => u.Role == r);
@@ -403,6 +405,8 @@ public class AdminService : IAdminService
                 IsBlocked: u.IsBlocked,
                 BlockedAt: u.BlockedAt,
                 BlockReason: u.BlockReason,
+                IsDeleted: u.IsDeleted,
+                DeletedAt: u.DeletedAt,
                 CreatedAt: u.CreatedAt,
                 UpdatedAt: u.UpdatedAt,
                 TotalAnswers: stats?.Total ?? 0,
@@ -420,7 +424,7 @@ public class AdminService : IAdminService
 
     public async Task<AdminUserDto?> GetUserByIdAsync(int id)
     {
-        var user = await _db.Users.FindAsync(id);
+        var user = await _db.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Id == id);
         if (user == null) return null;
 
         var totalAnswers = await _db.UserAnswers.CountAsync(a => a.UserId == id);
@@ -440,6 +444,8 @@ public class AdminService : IAdminService
             IsBlocked: user.IsBlocked,
             BlockedAt: user.BlockedAt,
             BlockReason: user.BlockReason,
+            IsDeleted: user.IsDeleted,
+            DeletedAt: user.DeletedAt,
             CreatedAt: user.CreatedAt,
             UpdatedAt: user.UpdatedAt,
             TotalAnswers: totalAnswers,
@@ -730,5 +736,173 @@ public class AdminService : IAdminService
 
         _logger.LogInformation("Unblocked user {UserId} ({Email})", id, user.Email);
         return await GetUserByIdAsync(id);
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  TRASH / RECYCLE BIN
+    // ═══════════════════════════════════════════════════════
+
+    private const int PurgeRetentionDays = 30;
+
+    public async Task<TrashSummaryDto> GetTrashAsync()
+    {
+        var deletedQuestions = await _db.Questions
+            .IgnoreQueryFilters()
+            .Include(q => q.Topic)
+            .Where(q => q.IsDeleted)
+            .OrderByDescending(q => q.DeletedAt)
+            .ToListAsync();
+
+        var deletedUsers = await _db.Users
+            .IgnoreQueryFilters()
+            .Where(u => u.IsDeleted)
+            .OrderByDescending(u => u.DeletedAt)
+            .ToListAsync();
+
+        var now = DateTime.UtcNow;
+
+        var items = new List<TrashItemDto>();
+
+        foreach (var q in deletedQuestions)
+        {
+            var daysLeft = q.DeletedAt.HasValue
+                ? Math.Max(0, PurgeRetentionDays - (int)(now - q.DeletedAt.Value).TotalDays)
+                : PurgeRetentionDays;
+
+            items.Add(new TrashItemDto(
+                Id: q.Id,
+                EntityType: "Question",
+                DisplayName: q.Text.Length > 80 ? q.Text[..80] + "…" : q.Text,
+                Detail: q.Topic?.Name,
+                DeletedAt: q.DeletedAt,
+                DeletedBy: q.DeletedBy?.ToString(),
+                DaysUntilPurge: daysLeft
+            ));
+        }
+
+        foreach (var u in deletedUsers)
+        {
+            var daysLeft = u.DeletedAt.HasValue
+                ? Math.Max(0, PurgeRetentionDays - (int)(now - u.DeletedAt.Value).TotalDays)
+                : PurgeRetentionDays;
+
+            items.Add(new TrashItemDto(
+                Id: u.Id,
+                EntityType: "User",
+                DisplayName: u.Name,
+                Detail: u.Email,
+                DeletedAt: u.DeletedAt,
+                DeletedBy: u.DeletedBy?.ToString(),
+                DaysUntilPurge: daysLeft
+            ));
+        }
+
+        return new TrashSummaryDto(
+            TotalUsers: deletedUsers.Count,
+            TotalQuestions: deletedQuestions.Count,
+            Items: items
+        );
+    }
+
+    public async Task<bool> HardDeleteQuestionAsync(int id)
+    {
+        var question = await _db.Questions
+            .IgnoreQueryFilters()
+            .Include(q => q.AnswerOptions)
+            .FirstOrDefaultAsync(q => q.Id == id && q.IsDeleted);
+
+        if (question == null) return false;
+
+        // Remove UserAnswers that reference this question's answer options (Restrict FK)
+        var optionIds = question.AnswerOptions.Select(a => a.Id).ToList();
+        if (optionIds.Count > 0)
+        {
+            var userAnswers = await _db.UserAnswers.Where(ua => optionIds.Contains(ua.AnswerOptionId)).ToListAsync();
+            if (userAnswers.Count > 0) _db.UserAnswers.RemoveRange(userAnswers);
+        }
+
+        // Remove MockExamAnswers that reference this question (Restrict FK)
+        var mockAnswers = await _db.MockExamAnswers.Where(ma => ma.QuestionId == id).ToListAsync();
+        if (mockAnswers.Count > 0) _db.MockExamAnswers.RemoveRange(mockAnswers);
+
+        _db.Questions.Remove(question);
+        await _db.SaveChangesAsync();
+
+        _logger.LogInformation("Hard-deleted question {QuestionId}", id);
+        return true;
+    }
+
+    public async Task<bool> HardDeleteUserAsync(int id)
+    {
+        var user = await _db.Users
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(u => u.Id == id && u.IsDeleted);
+
+        if (user == null) return false;
+
+        // Prevent hard-deleting the last admin
+        if (user.Role == UserRole.Admin)
+        {
+            var adminCount = await _db.Users.CountAsync(u => u.Role == UserRole.Admin);
+            if (adminCount <= 1)
+                throw new InvalidOperationException("Cannot delete the last admin user");
+        }
+
+        // Remove records with Restrict FK behavior that would block cascade
+        var messages = await _db.Messages.Where(m => m.SenderId == id).ToListAsync();
+        if (messages.Count > 0) _db.Messages.RemoveRange(messages);
+
+        var conversations = await _db.Conversations.Where(c => c.TutorId == id).ToListAsync();
+        if (conversations.Count > 0) _db.Conversations.RemoveRange(conversations);
+
+        var importJobs = await _db.QuestionImportJobs.Where(j => j.AdminUserId == id).ToListAsync();
+        if (importJobs.Count > 0) _db.QuestionImportJobs.RemoveRange(importJobs);
+
+        _db.Users.Remove(user);
+        await _db.SaveChangesAsync();
+
+        _logger.LogInformation("Hard-deleted user {UserId} ({Email})", id, user.Email);
+        return true;
+    }
+
+    public async Task<int> EmptyTrashAsync()
+    {
+        var deletedQuestions = await _db.Questions
+            .IgnoreQueryFilters()
+            .Include(q => q.AnswerOptions)
+            .Where(q => q.IsDeleted)
+            .ToListAsync();
+
+        var deletedUsers = await _db.Users
+            .IgnoreQueryFilters()
+            .Where(u => u.IsDeleted)
+            .ToListAsync();
+
+        var count = deletedQuestions.Count + deletedUsers.Count;
+
+        if (deletedQuestions.Count > 0)
+            _db.Questions.RemoveRange(deletedQuestions);
+
+        if (deletedUsers.Count > 0)
+        {
+            var userIds = deletedUsers.Select(u => u.Id).ToList();
+
+            var messages = await _db.Messages.Where(m => userIds.Contains(m.SenderId)).ToListAsync();
+            if (messages.Count > 0) _db.Messages.RemoveRange(messages);
+
+            var conversations = await _db.Conversations.Where(c => userIds.Contains(c.TutorId)).ToListAsync();
+            if (conversations.Count > 0) _db.Conversations.RemoveRange(conversations);
+
+            var importJobs = await _db.QuestionImportJobs.Where(j => userIds.Contains(j.AdminUserId)).ToListAsync();
+            if (importJobs.Count > 0) _db.QuestionImportJobs.RemoveRange(importJobs);
+
+            _db.Users.RemoveRange(deletedUsers);
+        }
+
+        if (count > 0)
+            await _db.SaveChangesAsync();
+
+        _logger.LogInformation("Emptied trash: {Count} records permanently removed", count);
+        return count;
     }
 }

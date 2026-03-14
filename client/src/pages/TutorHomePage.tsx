@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { tutorService } from '../services/tutorService';
 import { messageService } from '../services/messageService';
 import type { TutorProfileDetail, PendingRequest } from '../types';
+import { getDateLocale } from '../i18n';
 
 function TutorHomePage() {
   const navigate = useNavigate();
@@ -76,7 +77,7 @@ function TutorHomePage() {
 
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr);
-    return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+    return d.toLocaleDateString(getDateLocale(), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
   };
 
   if (loading) {

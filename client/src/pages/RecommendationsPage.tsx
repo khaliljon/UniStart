@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import recommendationService from '../services/recommendationService';
 import type { DailyBriefing, Milestone, Recommendation, Streak } from '../types';
+import { getDateLocale } from '../i18n';
 
 function RecommendationsPage() {
   const navigate = useNavigate();
@@ -271,7 +272,7 @@ function RecommendationCard({ rec, onAction }: { rec: Recommendation; onAction: 
 }
 
 function MilestoneCard({ milestone }: { milestone: Milestone }) {
-  const dateStr = new Date(milestone.achievedAt).toLocaleDateString('ru-RU', {
+  const dateStr = new Date(milestone.achievedAt).toLocaleDateString(getDateLocale(), {
     day: 'numeric', month: 'short', year: 'numeric',
   });
 

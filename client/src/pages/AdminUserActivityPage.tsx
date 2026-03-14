@@ -1,12 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import adminService from '../services/adminService';
+import { useTranslation } from '../hooks/useTranslation';
+import { getDateLocale } from '../i18n';
 
 type ActivityData = Awaited<ReturnType<typeof adminService.getUserActivity>>;
 
 function formatDate(iso: string | null): string {
   if (!iso) return '—';
-  return new Date(iso).toLocaleString('ru-RU', {
+  return new Date(iso).toLocaleString(getDateLocale(), {
     day: '2-digit', month: '2-digit', year: 'numeric',
     hour: '2-digit', minute: '2-digit'
   });
@@ -18,6 +20,7 @@ const LEVEL_COLORS: Record<string, string> = {
 };
 
 export default function AdminUserActivityPage() {
+  const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const [userId, setUserId] = useState(Number(searchParams.get('id')) || 0);
@@ -35,7 +38,7 @@ export default function AdminUserActivityPage() {
       const result = await adminService.getUserActivity(uid, p);
       setData(result);
     } catch {
-      setError('Пользователь не найден');
+      setError(t.admin.activity.userNotFound);
       setData(null);
     } finally {
       setLoading(false);
@@ -57,7 +60,7 @@ export default function AdminUserActivityPage() {
 
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-      <h2 style={{ marginBottom: 16 }}>Активность пользователя</h2>
+      <h2 style={{ marginBottom: 16 }}>{t.admin.activity.title}</h2>
 
       {/* Search bar */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
@@ -75,16 +78,16 @@ export default function AdminUserActivityPage() {
         <button onClick={handleSearch} style={{
           padding: '8px 20px', borderRadius: 8, border: 'none',
           background: 'var(--accent-color)', color: '#fff', cursor: 'pointer', fontWeight: 600
-        }}>Найти</button>
+        }}>{t.admin.activity.findBtn}</button>
         {data && (
           <button onClick={() => navigate(`/users`)} style={{
             padding: '8px 16px', borderRadius: 8, border: '1px solid var(--border)',
             background: 'var(--bg-secondary)', color: 'var(--text-primary)', cursor: 'pointer'
-          }}>← К списку</button>
+          }}>{t.admin.activity.backToList}</button>
         )}
       </div>
 
-      {loading && <div style={{ textAlign: 'center', padding: 32 }}>Загрузка...</div>}
+      {loading && <div style={{ textAlign: 'center', padding: 32 }}>{t.admin.common.loading}</div>}
       {error && <div style={{ color: '#ef4444', padding: 16 }}>{error}</div>}
 
       {data && !loading && (
@@ -97,21 +100,21 @@ export default function AdminUserActivityPage() {
             <div>
               <div style={{ fontSize: 20, fontWeight: 700 }}>
                 {data.user.name}
-                {data.user.isBlocked && <span style={{ color: '#ef4444', marginLeft: 8 }}>Заблокирован</span>}
+                {data.user.isBlocked && <span style={{ color: '#ef4444', marginLeft: 8 }}>{t.admin.activity.blockedBadge}</span>}
               </div>
               <div style={{ color: 'var(--text-secondary)', marginTop: 4 }}>
                 {data.user.email} · {data.user.role} · {data.user.subscriptionTier}
               </div>
               <div style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 2 }}>
-                Зарегистрирован: {formatDate(data.user.createdAt)}
-                {data.user.blockReason && ` · Причина блокировки: ${data.user.blockReason}`}
+                {t.admin.activity.registeredAt} {formatDate(data.user.createdAt)}
+                {data.user.blockReason && ` · ${t.admin.activity.blockReason} ${data.user.blockReason}`}
               </div>
             </div>
             <div style={{ textAlign: 'right' }}>
               <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--accent-color)' }}>
                 {data.summary.accuracy}%
               </div>
-              <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>точность</div>
+              <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{t.admin.activity.accuracy}</div>
             </div>
           </div>
 
@@ -120,20 +123,20 @@ export default function AdminUserActivityPage() {
             display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
             gap: 12, marginBottom: 24
           }}>
-            <SummaryCard label="Всего ответов" value={data.summary.totalAnswers} />
-            <SummaryCard label="Правильных" value={data.summary.correctAnswers} />
-            <SummaryCard label="Сессий" value={data.summary.totalSessions} />
-            <SummaryCard label="Streak" value={data.summary.currentStreak} suffix=" дн" />
-            <SummaryCard label="Последняя активность" text={formatDate(data.summary.lastActivity)} />
+            <SummaryCard label={t.admin.activity.totalAnswers} value={data.summary.totalAnswers} />
+            <SummaryCard label={t.admin.activity.correctAnswers} value={data.summary.correctAnswers} />
+            <SummaryCard label={t.admin.activity.sessionsCount} value={data.summary.totalSessions} />
+            <SummaryCard label="Streak" value={data.summary.currentStreak} suffix={` ${t.admin.activity.daysShort}`} />
+            <SummaryCard label={t.admin.activity.lastActivity} text={formatDate(data.summary.lastActivity)} />
           </div>
 
           {/* Two-column: Skills + Activity Heatmap */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 24 }}>
             {/* Skills */}
             <div style={{ background: 'var(--bg-secondary)', borderRadius: 12, padding: 20 }}>
-              <h3 style={{ margin: '0 0 12px' }}>Навыки</h3>
+              <h3 style={{ margin: '0 0 12px' }}>{t.admin.activity.skills}</h3>
               {data.skills.length === 0 ? (
-                <div style={{ color: 'var(--text-secondary)' }}>Нет данных</div>
+                <div style={{ color: 'var(--text-secondary)' }}>{t.admin.common.noData}</div>
               ) : data.skills.map(s => (
                 <div key={s.skillName} style={{
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -155,16 +158,16 @@ export default function AdminUserActivityPage() {
 
             {/* Daily Activity Chart (simple bar chart) */}
             <div style={{ background: 'var(--bg-secondary)', borderRadius: 12, padding: 20 }}>
-              <h3 style={{ margin: '0 0 12px' }}>Активность (30 дней)</h3>
+              <h3 style={{ margin: '0 0 12px' }}>{t.admin.activity.activity30days}</h3>
               {data.dailyActivity.length === 0 ? (
-                <div style={{ color: 'var(--text-secondary)' }}>Нет данных</div>
+                <div style={{ color: 'var(--text-secondary)' }}>{t.admin.common.noData}</div>
               ) : (
                 <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 120 }}>
                   {data.dailyActivity.map(d => {
                     const max = Math.max(...data.dailyActivity.map(x => x.count));
                     const h = max > 0 ? (d.count / max) * 100 : 0;
                     return (
-                      <div key={d.date} title={`${new Date(d.date).toLocaleDateString('ru-RU')}: ${d.count}`}
+                      <div key={d.date} title={`${new Date(d.date).toLocaleDateString(getDateLocale())}: ${d.count}`}
                         style={{
                           flex: 1, minWidth: 4, borderRadius: '4px 4px 0 0',
                           height: `${Math.max(h, 4)}%`,
@@ -182,16 +185,16 @@ export default function AdminUserActivityPage() {
           {/* Sessions Table */}
           <div style={{ background: 'var(--bg-secondary)', borderRadius: 12, padding: 20 }}>
             <h3 style={{ margin: '0 0 12px' }}>
-              Сессии ({data.sessions.totalCount})
+              {t.admin.activity.sessions} ({data.sessions.totalCount})
             </h3>
             {data.sessions.items.length === 0 ? (
-              <div style={{ color: 'var(--text-secondary)' }}>Нет сессий</div>
+              <div style={{ color: 'var(--text-secondary)' }}>{t.admin.activity.noSessions}</div>
             ) : (
               <>
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr style={{ borderBottom: '2px solid var(--border)' }}>
-                      {['ID', 'Экзамен', 'Начало', 'Конец', 'Вопросы', 'Правильно', 'Статус'].map(h => (
+                      {['ID', t.admin.activity.examCol, t.admin.activity.startCol, t.admin.activity.endCol, t.admin.activity.questionsCol, t.admin.activity.correctCol, t.admin.activity.statusCol].map(h => (
                         <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontSize: 13, color: 'var(--text-secondary)' }}>{h}</th>
                       ))}
                     </tr>
@@ -218,7 +221,7 @@ export default function AdminUserActivityPage() {
                             color: '#fff',
                             background: s.isCompleted ? '#22c55e' : '#f59e0b'
                           }}>
-                            {s.isCompleted ? 'Завершена' : 'В процессе'}
+                            {s.isCompleted ? t.admin.activity.completed : t.admin.activity.inProgress}
                           </span>
                         </td>
                       </tr>
@@ -250,7 +253,7 @@ export default function AdminUserActivityPage() {
 
       {!data && !loading && !error && (
         <div style={{ textAlign: 'center', padding: 48, color: 'var(--text-secondary)' }}>
-          Введите ID пользователя для просмотра активности
+          {t.admin.activity.enterUserIdPrompt}
         </div>
       )}
     </div>
@@ -264,7 +267,7 @@ function SummaryCard({ label, value, text, suffix }: {
     <div style={{ background: 'var(--bg-secondary)', borderRadius: 10, padding: '14px 18px' }}>
       <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>{label}</div>
       <div style={{ fontWeight: 700, fontSize: 20 }}>
-        {text ?? `${(value ?? 0).toLocaleString('ru-RU')}${suffix || ''}`}
+        {text ?? `${(value ?? 0).toLocaleString(getDateLocale())}${suffix || ''}`}
       </div>
     </div>
   );

@@ -26,6 +26,7 @@ const AdminUserActivityPage = lazy(() => import('./pages/AdminUserActivityPage')
 const AdminTutorsPage = lazy(() => import('./pages/AdminTutorsPage'))
 const AdminQuestionImportPage = lazy(() => import('./pages/AdminQuestionImportPage'))
 const AdminContentPage = lazy(() => import('./pages/AdminContentPage'))
+const AdminTrashPage = lazy(() => import('./pages/AdminTrashPage'))
 const LandingPage = lazy(() => import('./pages/LandingPage'))
 const TutorsPage = lazy(() => import('./pages/TutorsPage'))
 const TutorProfilePage = lazy(() => import('./pages/TutorProfilePage'))
@@ -85,6 +86,7 @@ function AdminRoutes() {
       <Route path="activity" element={<AdminUserActivityPage />} />
       <Route path="import" element={<AdminImportPage />} />
       <Route path="question-import" element={<AdminQuestionImportPage />} />
+      <Route path="trash" element={<AdminTrashPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Route>
   )

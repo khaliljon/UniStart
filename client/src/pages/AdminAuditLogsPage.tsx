@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import adminService from '../services/adminService';
+import { useTranslation } from '../hooks/useTranslation';
+import { getDateLocale } from '../i18n';
 
 interface AuditLog {
   id: number;
@@ -25,6 +27,7 @@ const ACTION_COLORS: Record<string, string> = {
 };
 
 function AdminAuditLogsPage() {
+  const { t } = useTranslation();
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -73,7 +76,7 @@ function AdminAuditLogsPage() {
 
   const formatDate = (iso: string) => {
     const d = new Date(iso);
-    return d.toLocaleDateString('ru-RU', {
+    return d.toLocaleDateString(getDateLocale(), {
       day: '2-digit', month: '2-digit', year: 'numeric',
       hour: '2-digit', minute: '2-digit', second: '2-digit',
     });
@@ -90,19 +93,19 @@ function AdminAuditLogsPage() {
 
   return (
     <div>
-      <h1 style={{ marginBottom: '1.5rem' }}>Журнал аудита</h1>
+      <h1 style={{ marginBottom: '1.5rem' }}>{t.admin.audit.title}</h1>
 
       {/* Filters */}
       <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap', alignItems: 'end' }}>
         <div>
-          <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>Действие</label>
+          <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>{t.admin.audit.actionFilter}</label>
           <select
             value={action}
             onChange={e => { setAction(e.target.value); handleFilterChange(); }}
             className="form-select"
             style={{ minWidth: '140px' }}
           >
-            <option value="">Все</option>
+            <option value="">{t.admin.common.all}</option>
             <option value="Create">Create</option>
             <option value="Update">Update</option>
             <option value="Delete">Delete</option>
@@ -114,14 +117,14 @@ function AdminAuditLogsPage() {
         </div>
 
         <div>
-          <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>Сущность</label>
+          <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>{t.admin.audit.entityFilter}</label>
           <select
             value={entityType}
             onChange={e => { setEntityType(e.target.value); handleFilterChange(); }}
             className="form-select"
             style={{ minWidth: '140px' }}
           >
-            <option value="">Все</option>
+            <option value="">{t.admin.common.all}</option>
             <option value="Question">Question</option>
             <option value="User">User</option>
             <option value="Topic">Topic</option>
@@ -129,7 +132,7 @@ function AdminAuditLogsPage() {
         </div>
 
         <div>
-          <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>С даты</label>
+          <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>{t.admin.audit.fromDate}</label>
           <input
             type="date"
             value={fromDate}
@@ -139,7 +142,7 @@ function AdminAuditLogsPage() {
         </div>
 
         <div>
-          <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>По дату</label>
+          <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>{t.admin.audit.toDate}</label>
           <input
             type="date"
             value={toDate}
@@ -149,7 +152,7 @@ function AdminAuditLogsPage() {
         </div>
 
         <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', alignSelf: 'center' }}>
-          {totalCount} записей
+          {totalCount} {t.admin.audit.recordsCount}
         </div>
       </div>
 
@@ -158,17 +161,17 @@ function AdminAuditLogsPage() {
         <div className="loading-skeleton" style={{ height: '400px', borderRadius: '12px' }} />
       ) : logs.length === 0 ? (
         <div className="card" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
-          Нет записей аудита
+          {t.admin.audit.noRecords}
         </div>
       ) : (
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '2px solid var(--border-color)' }}>
-                <th style={thStyle}>Время</th>
-                <th style={thStyle}>Пользователь</th>
-                <th style={thStyle}>Действие</th>
-                <th style={thStyle}>Сущность</th>
+                <th style={thStyle}>{t.admin.audit.timeCol}</th>
+                <th style={thStyle}>{t.admin.audit.userCol}</th>
+                <th style={thStyle}>{t.admin.audit.actionCol}</th>
+                <th style={thStyle}>{t.admin.audit.entityCol}</th>
                 <th style={thStyle}>ID</th>
                 <th style={thStyle}>IP</th>
                 <th style={thStyle}></th>
@@ -222,13 +225,13 @@ function AdminAuditLogsPage() {
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                           {log.oldValues && (
                             <div>
-                              <div style={{ fontWeight: 600, marginBottom: '0.25rem', color: '#ef4444', fontSize: '0.8rem' }}>До изменения</div>
+                              <div style={{ fontWeight: 600, marginBottom: '0.25rem', color: '#ef4444', fontSize: '0.8rem' }}>{t.admin.audit.before}</div>
                               <pre style={preStyle}>{formatJson(log.oldValues)}</pre>
                             </div>
                           )}
                           {log.newValues && (
                             <div>
-                              <div style={{ fontWeight: 600, marginBottom: '0.25rem', color: '#22c55e', fontSize: '0.8rem' }}>После изменения</div>
+                              <div style={{ fontWeight: 600, marginBottom: '0.25rem', color: '#22c55e', fontSize: '0.8rem' }}>{t.admin.audit.after}</div>
                               <pre style={preStyle}>{formatJson(log.newValues)}</pre>
                             </div>
                           )}

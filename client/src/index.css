@@ -888,7 +888,11 @@ select option,
   align-items: center;
   gap: 1rem;
   flex: 1;
-  justify-content: space-between;
+}
+
+.navbar-collapse .navbar-nav {
+  flex: 1;
+  justify-content: center;
 }
 
 /* Responsive */

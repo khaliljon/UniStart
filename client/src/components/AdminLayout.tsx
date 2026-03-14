@@ -86,7 +86,7 @@ function AdminLayout() {
                   gap: '0.25rem',
                 }}
               >
-                Ещё <span style={{ fontSize: '0.55rem', opacity: 0.6 }}>▼</span>
+                {t.admin.nav.more} <span style={{ fontSize: '0.55rem', opacity: 0.6 }}>▼</span>
               </NavLink>
               {moreOpen && (
                 <div style={{
@@ -96,10 +96,11 @@ function AdminLayout() {
                   zIndex: 100, padding: '0.35rem 0', marginTop: '0.25rem',
                 }}>
                   {[
-                    { label: 'Импорт JSON', path: '/import' },
-                    { label: 'Импорт файлов', path: '/question-import' },
-                    { label: 'Аудит', path: '/audit' },
-                    { label: 'Здоровье', path: '/health' },
+                    { label: t.admin.nav.import, path: '/import' },
+                    { label: t.admin.nav.questionImport, path: '/question-import' },
+                    { label: t.admin.nav.audit, path: '/audit' },
+                    { label: t.admin.nav.health, path: '/health' },
+                    { label: t.admin.nav.trash, path: '/trash' },
                   ].map(item => (
                     <NavLink
                       key={item.path}

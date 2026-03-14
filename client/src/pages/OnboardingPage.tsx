@@ -32,13 +32,15 @@ function OnboardingPage() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { user } = useAppSelector((state) => state.auth);
-  const { t } = useTranslation();
+  const { t, dateLocale } = useTranslation();
 
   // ── Restore wizard state from sessionStorage ──────────
   const saved = sessionStorage.getItem('onboarding');
   const restored = saved ? JSON.parse(saved) as { step?: Step; exam?: ExamTypeInfo; date?: string; score?: number; sections?: string[] } : null;
+  const validSteps: Step[] = ['welcome', 'exam', 'target'];
+  const restoredStep = restored?.step && validSteps.includes(restored.step) ? restored.step : 'welcome';
 
-  const [step, _setStep] = useState<Step>(restored?.step ?? 'welcome');
+  const [step, _setStep] = useState<Step>(restoredStep);
   const [examTypes, setExamTypes] = useState<ExamTypeInfo[]>([]);
   const [selectedExam, _setSelectedExam] = useState<ExamTypeInfo | null>(restored?.exam ?? null);
   const [targetDate, _setTargetDate] = useState(restored?.date ?? '');
@@ -211,6 +213,40 @@ function OnboardingPage() {
               }}
             >
               {t.onboarding.startSetup}
+            </button>
+          </div>
+        )}
+
+        {/* Skip onboarding link — always visible on welcome */}
+        {step === 'welcome' && (
+          <div style={{ textAlign: 'center', marginTop: '1rem' }}>
+            <button
+              onClick={async () => {
+                setIsLoading(true);
+                try {
+                  await onboardingService.complete({ examTypeCode: 'SAT', targetDate: new Date(Date.now() + 90 * 86400000).toISOString().split('T')[0], targetScore: 1200 });
+                  sessionStorage.removeItem('onboarding');
+                  dispatch(setOnboardingComplete());
+                  navigate('/', { replace: true });
+                } catch {
+                  sessionStorage.removeItem('onboarding');
+                  dispatch(setOnboardingComplete());
+                  navigate('/', { replace: true });
+                } finally {
+                  setIsLoading(false);
+                }
+              }}
+              disabled={isLoading}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--text-secondary)',
+                cursor: 'pointer',
+                fontSize: '0.9rem',
+                textDecoration: 'underline',
+              }}
+            >
+              {t.onboarding.skipAndStart}
             </button>
           </div>
         )}
@@ -693,7 +729,7 @@ function OnboardingPage() {
                     {t.onboarding.examDate}
                   </div>
                   <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '1.1rem' }}>
-                    {new Date(targetDate).toLocaleDateString('ru-RU', {
+                    {new Date(targetDate).toLocaleDateString(dateLocale, {
                       day: 'numeric',
                       month: 'long',
                       year: 'numeric',

@@ -575,9 +575,9 @@ function WhatIfSection({
 // ═══════════════════════════════════════════════════════════
 
 function HistoryChart({ history, prediction }: { history: PredictionHistory[]; prediction: ScorePrediction }) {
-  const { t } = useTranslation();
+  const { t, dateLocale } = useTranslation();
   const data = history.map((h) => ({
-    date: new Date(h.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }),
+    date: new Date(h.date).toLocaleDateString(dateLocale, { day: 'numeric', month: 'short' }),
     score: h.predictedScore,
     low: h.confidenceLow,
     high: h.confidenceHigh,

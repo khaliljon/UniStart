@@ -98,6 +98,20 @@ public class FlashcardService : IFlashcardService
                 Repetitions = 0
             };
             _context.UserFlashcardProgress.Add(progress);
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException)
+            {
+                // Race condition: another request already inserted this row.
+                // Detach the failed entity and re-fetch the existing one.
+                _context.Entry(progress).State = EntityState.Detached;
+                progress = await _context.UserFlashcardProgress
+                    .FirstOrDefaultAsync(p => p.UserId == userId && p.FlashcardId == request.FlashcardId);
+                if (progress == null) return; // should not happen
+            }
         }
 
         var quality = Math.Clamp(request.Quality, 0, 5);
@@ -127,7 +141,14 @@ public class FlashcardService : IFlashcardService
         progress.LastReviewedAt = DateTime.UtcNow;
         progress.NextReviewAt = DateTime.UtcNow.AddDays(progress.IntervalDays);
 
-        await _context.SaveChangesAsync();
+        try
+        {
+            await _context.SaveChangesAsync();
+        }
+        catch (DbUpdateException)
+        {
+            // Concurrent update — safe to ignore, the other request's values are equivalent
+        }
     }
 
     public async Task<FlashcardDeckDto> CreateDeckAsync(int userId, CreateDeckRequest request)

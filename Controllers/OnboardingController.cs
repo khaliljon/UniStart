@@ -48,7 +48,9 @@ public class OnboardingController : ControllerBase
     [ProducesResponseType(typeof(IEnumerable<ExamTypeInfoDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetExamTypes()
     {
-        var examTypes = await _onboardingService.GetExamTypesInfoAsync();
+        var lang = Request.Headers["Accept-Language"].FirstOrDefault() ?? "ru";
+        if (lang != "kz" && lang != "en") lang = "ru";
+        var examTypes = await _onboardingService.GetExamTypesInfoAsync(lang);
         return Ok(examTypes);
     }
 

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { tutorService } from '../services/tutorService';
 import type { StudentInfo } from '../types';
+import { getDateLocale } from '../i18n';
 
 function TutorStudentsPage() {
   const navigate = useNavigate();
@@ -25,7 +26,7 @@ function TutorStudentsPage() {
 
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr);
-    return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+    return d.toLocaleDateString(getDateLocale(), { day: 'numeric', month: 'long', year: 'numeric' });
   };
 
   const getInitials = (name: string) =>

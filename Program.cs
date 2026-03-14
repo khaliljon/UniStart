@@ -74,6 +74,7 @@ try
     // ═══════════════════════════════════════════════════════
     //  REPOSITORIES & SERVICES
     // ═══════════════════════════════════════════════════════
+    builder.Services.AddHttpContextAccessor();
     builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
     builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 

@@ -66,6 +66,10 @@ async function refreshToken(): Promise<string | null> {
 
 // Add auth token to requests + proactive refresh if about to expire
 api.interceptors.request.use(async (config) => {
+  // Set Accept-Language from saved locale
+  const locale = localStorage.getItem('unistart_locale') || 'ru';
+  config.headers['Accept-Language'] = locale;
+
   const token = localStorage.getItem('token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;

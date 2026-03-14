@@ -20,12 +20,14 @@ export interface I18nContextValue {
   locale: Locale;
   setLocale: (l: Locale) => void;
   t: Translations;
+  dateLocale: string;
 }
 
 export const I18nContext = createContext<I18nContextValue>({
   locale: 'ru',
   setLocale: () => {},
   t: ru,
+  dateLocale: 'ru-RU',
 });
 
 export function I18nProvider({ children }: { children: ReactNode }) {
@@ -37,7 +39,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo<I18nContextValue>(
-    () => ({ locale, setLocale, t: translations[locale] }),
+    () => ({ locale, setLocale, t: translations[locale], dateLocale: DATE_LOCALES[locale] }),
     [locale, setLocale],
   );
 
@@ -46,4 +48,12 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
 export function useTranslation() {
   return useContext(I18nContext);
+}
+
+export const DATE_LOCALES: Record<Locale, string> = { ru: 'ru-RU', kz: 'kk-KZ', en: 'en-US' };
+
+export function getDateLocale(): string {
+  const stored = localStorage.getItem(STORAGE_KEY) as Locale | null;
+  const locale: Locale = stored === 'ru' || stored === 'kz' || stored === 'en' ? stored : 'ru';
+  return DATE_LOCALES[locale];
 }

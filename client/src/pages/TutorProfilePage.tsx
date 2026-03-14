@@ -4,6 +4,7 @@ import { useAppSelector } from '../hooks/useAppSelector';
 import { tutorService } from '../services/tutorService';
 import { messageService } from '../services/messageService';
 import type { TutorProfileDetail, CreateReviewRequest } from '../types';
+import { getDateLocale } from '../i18n';
 
 function TutorProfilePage() {
   const { userId } = useParams<{ userId: string }>();
@@ -250,7 +251,7 @@ function TutorProfilePage() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.35rem' }}>
                       <span style={{ fontWeight: 600, fontSize: '0.88rem' }}>{review.studentName}</span>
                       <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
-                        {new Date(review.createdAt).toLocaleDateString('ru-RU')}
+                        {new Date(review.createdAt).toLocaleDateString(getDateLocale())}
                       </span>
                     </div>
                     <div style={{ marginBottom: '0.25rem' }}>{renderStars(review.rating)}</div>

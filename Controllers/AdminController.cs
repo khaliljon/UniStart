@@ -134,9 +134,10 @@ public class AdminController : ControllerBase
         [FromQuery] string? role = null,
         [FromQuery] string? search = null,
         [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 50)
+        [FromQuery] int pageSize = 50,
+        [FromQuery] bool includeDeleted = false)
     {
-        var result = await _svc.GetUsersAsync(role, search, page, pageSize);
+        var result = await _svc.GetUsersAsync(role, search, page, pageSize, includeDeleted);
         return Ok(result);
     }
 
@@ -333,6 +334,59 @@ public class AdminController : ControllerBase
         var (adminId, email) = GetCurrentAdmin();
         await _audit.LogAsync(adminId, email, "Restore", "User", id.ToString(), ipAddress: GetClientIp());
         return Ok(new { message = "User restored" });
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  TRASH / RECYCLE BIN
+    // ═══════════════════════════════════════════════════════
+
+    /// <summary>List all soft-deleted items (users + questions)</summary>
+    [HttpGet("trash")]
+    public async Task<IActionResult> GetTrash()
+    {
+        var result = await _svc.GetTrashAsync();
+        return Ok(result);
+    }
+
+    /// <summary>Permanently delete a soft-deleted question</summary>
+    [HttpDelete("trash/questions/{id:int}")]
+    public async Task<IActionResult> HardDeleteQuestion(int id)
+    {
+        var ok = await _svc.HardDeleteQuestionAsync(id);
+        if (!ok) return NotFound(new { error = "Question not found or not in trash" });
+        var (adminId, email) = GetCurrentAdmin();
+        await _audit.LogAsync(adminId, email, "HardDelete", "Question", id.ToString(), ipAddress: GetClientIp());
+        return NoContent();
+    }
+
+    /// <summary>Permanently delete a soft-deleted user</summary>
+    [HttpDelete("trash/users/{id:int}")]
+    public async Task<IActionResult> HardDeleteUser(int id)
+    {
+        try
+        {
+            var ok = await _svc.HardDeleteUserAsync(id);
+            if (!ok) return NotFound(new { error = "User not found or not in trash" });
+            var (adminId, email) = GetCurrentAdmin();
+            await _audit.LogAsync(adminId, email, "HardDelete", "User", id.ToString(), ipAddress: GetClientIp());
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    /// <summary>Permanently delete all items in trash</summary>
+    [HttpDelete("trash")]
+    public async Task<IActionResult> EmptyTrash()
+    {
+        var count = await _svc.EmptyTrashAsync();
+        var (adminId, email) = GetCurrentAdmin();
+        await _audit.LogAsync(adminId, email, "EmptyTrash", "All", null,
+            newValues: new { PurgedCount = count },
+            ipAddress: GetClientIp());
+        return Ok(new { message = $"Trash emptied: {count} records permanently removed", count });
     }
 
     // ═══════════════════════════════════════════════════════

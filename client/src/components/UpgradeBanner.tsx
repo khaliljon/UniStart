@@ -10,9 +10,12 @@ interface UpgradeBannerProps {
 export function UpgradeBanner({ questionsRemaining, questionsLimit }: UpgradeBannerProps) {
   const { t } = useTranslation();
   const [showPricing, setShowPricing] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
 
   const isLow = questionsRemaining !== undefined && questionsRemaining <= 5;
   const isExhausted = questionsRemaining !== undefined && questionsRemaining <= 0;
+
+  if (dismissed) return null;
 
   return (
     <>
@@ -30,9 +33,9 @@ export function UpgradeBanner({ questionsRemaining, questionsLimit }: UpgradeBan
         gap: '1rem',
         marginBottom: '1rem',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: 1 }}>
           <span style={{ fontSize: '1.2rem' }}>
-            {isExhausted ? '✕' : isLow ? '!' : '★'}
+            {isExhausted ? '!' : isLow ? '!' : ''}
           </span>
           <div>
             <div style={{
@@ -75,6 +78,23 @@ export function UpgradeBanner({ questionsRemaining, questionsLimit }: UpgradeBan
           }}
         >
           {isExhausted ? t.limits.upgrade : 'Pro'}
+        </button>
+        <button
+          onClick={() => setDismissed(true)}
+          style={{
+            flexShrink: 0,
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            fontSize: '1.1rem',
+            lineHeight: 1,
+            padding: '0.25rem',
+            color: isExhausted ? '#991b1b' : isLow ? '#92400e' : '#3730a3',
+            opacity: 0.6,
+          }}
+          aria-label="Close"
+        >
+          &times;
         </button>
       </div>
 

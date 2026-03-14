@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { PricingModal } from './PricingModal';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface ProGateProps {
   children: ReactNode;
@@ -11,12 +12,15 @@ interface ProGateProps {
  * Wraps Pro-only content with a blur overlay + CTA if user doesn't have access.
  * Usage: <ProGate hasAccess={user.isPro}><ExpensiveComponent /></ProGate>
  */
-export function ProGate({ children, hasAccess, featureName = 'эту функцию' }: ProGateProps) {
+export function ProGate({ children, hasAccess, featureName }: ProGateProps) {
+  const { t } = useTranslation();
   const [showPricing, setShowPricing] = useState(false);
 
   if (hasAccess) {
     return <>{children}</>;
   }
+
+  const displayFeature = featureName || t.common.loading;
 
   return (
     <>
@@ -50,12 +54,11 @@ export function ProGate({ children, hasAccess, featureName = 'эту функц�
             boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
             maxWidth: '320px',
           }}>
-            <div style={{ fontSize: '2rem', marginBottom: '0.75rem' }}></div>
             <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.1rem', color: 'var(--text-primary)' }}>
-              Pro-функция
+              {t.limits.proFeature}
             </h3>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', lineHeight: 1.5, marginBottom: '1rem' }}>
-              Разблокируйте {featureName} с тарифом Pro для максимальной подготовки к экзамену.
+              {t.limits.proFeatureDesc.replace('{feature}', displayFeature)}
             </p>
             <button
               onClick={() => setShowPricing(true)}
@@ -66,7 +69,7 @@ export function ProGate({ children, hasAccess, featureName = 'эту функц�
                 fontSize: '0.9rem',
               }}
             >
-              Узнать о Pro
+              {t.limits.learnAboutPro}
             </button>
           </div>
         </div>

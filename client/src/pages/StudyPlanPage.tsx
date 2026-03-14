@@ -328,7 +328,7 @@ function StudyPlanPage() {
 // ═══════════════════════════════════════════════════════════
 
 function GoalCard({ goal, onDelete }: { goal: StudyGoal; onDelete: () => void }) {
-  const { t } = useTranslation();
+  const { t, dateLocale } = useTranslation();
   const [showMenu, setShowMenu] = useState(false);
 
   return (
@@ -355,7 +355,7 @@ function GoalCard({ goal, onDelete }: { goal: StudyGoal; onDelete: () => void })
             } />
             <StatBox label={t.studyPlan.targetScoreLabel} value={goal.targetScore} />
             <StatBox label={t.studyPlan.recHoursPerDay} value={goal.recommendedHoursPerDay} />
-            <StatBox label={t.studyPlan.deadline} value={new Date(goal.targetDate).toLocaleDateString('ru-RU')} />
+            <StatBox label={t.studyPlan.deadline} value={new Date(goal.targetDate).toLocaleDateString(dateLocale)} />
           </div>
         </div>
         {/* Three-dot menu instead of dangerous X */}
@@ -512,7 +512,7 @@ function EntryCard({ entry, onStart }: { entry: StudyPlanEntry; onStart: () => v
 // ─── Plan Tab ─────────────────────────────────────────────
 
 function PlanTab({ plan }: { plan: StudyPlan }) {
-  const { t } = useTranslation();
+  const { t, dateLocale } = useTranslation();
   // Group entries by date
   const groupedEntries = new Map<string, StudyPlanEntry[]>();
   for (const entry of plan.entries) {
@@ -561,7 +561,7 @@ function PlanTab({ plan }: { plan: StudyPlan }) {
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                 <div style={{ fontWeight: 600 }}>
-                  {new Date(dateStr).toLocaleDateString('ru-RU', { weekday: 'short', day: 'numeric', month: 'short' })}
+                  {new Date(dateStr).toLocaleDateString(dateLocale, { weekday: 'short', day: 'numeric', month: 'short' })}
                   {isToday && ` (${t.studyPlan.todayLabel})`}
                 </div>
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
@@ -593,9 +593,9 @@ function PlanTab({ plan }: { plan: StudyPlan }) {
 // ─── Stats Tab ────────────────────────────────────────────
 
 function StatsTab({ stats }: { stats: PlanStats }) {
-  const { t } = useTranslation();
+  const { t, dateLocale } = useTranslation();
   const weeklyChartData = stats.weeklySummary.map(w => ({
-    week: new Date(w.weekStart).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }),
+    week: new Date(w.weekStart).toLocaleDateString(dateLocale, { day: 'numeric', month: 'short' }),
     planned: w.plannedEntries,
     completed: w.completedEntries,
     accuracy: w.accuracy,

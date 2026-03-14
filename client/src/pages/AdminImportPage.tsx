@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import adminService from '../services/adminService';
+import { useTranslation } from '../hooks/useTranslation';
 
 function AdminImportPage() {
+  const { t } = useTranslation();
   const [importJson, setImportJson] = useState('');
   const [importResult, setImportResult] = useState<{ imported: number; failed: number; errors: string[] } | null>(null);
   const [importLoading, setImportLoading] = useState(false);
@@ -23,14 +25,14 @@ function AdminImportPage() {
 
   return (
     <div className="animate-fade-in" style={{ padding: '2rem 0' }}>
-      <h1 style={{ marginBottom: '0.5rem' }}>Импорт вопросов</h1>
+      <h1 style={{ marginBottom: '0.5rem' }}>{t.admin.import.title}</h1>
       <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
-        Массовый импорт вопросов из JSON
+        {t.admin.import.subtitle}
       </p>
 
       <div className="card" style={{ padding: '1.5rem' }}>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1rem' }}>
-          Вставьте массив вопросов в формате JSON. Каждый вопрос должен содержать: <code>topicId</code>, <code>text</code>, <code>difficulty</code>, <code>answerOptions[]</code>.
+          {t.admin.import.instructions} <code>topicId</code>, <code>text</code>, <code>difficulty</code>, <code>answerOptions[]</code>.
         </p>
         <textarea
           value={importJson}
@@ -50,7 +52,7 @@ function AdminImportPage() {
           disabled={importLoading || !importJson.trim()}
           onClick={handleImport}
         >
-          {importLoading ? 'Импорт…' : 'Импортировать'}
+          {importLoading ? t.admin.import.importing : t.admin.import.importBtn}
         </button>
 
         {importResult && (
@@ -60,7 +62,7 @@ function AdminImportPage() {
             border: `1px solid ${importResult.failed > 0 ? 'var(--error-color)' : 'var(--success-color)'}`
           }}>
             <div style={{ fontWeight: 600, marginBottom: '0.5rem' }}>
-              Импортировано: {importResult.imported} / {importResult.imported + importResult.failed}
+              {t.admin.import.imported} {importResult.imported} / {importResult.imported + importResult.failed}
             </div>
             {importResult.errors.length > 0 && (
               <div style={{ fontSize: '0.85rem', color: 'var(--error-color)' }}>
@@ -73,17 +75,17 @@ function AdminImportPage() {
 
       {/* Reference */}
       <div className="card" style={{ padding: '1.5rem', marginTop: '1rem' }}>
-        <h3 style={{ marginBottom: '0.75rem' }}>Формат вопроса</h3>
+        <h3 style={{ marginBottom: '0.75rem' }}>{t.admin.import.formatTitle}</h3>
         <pre style={{
           background: 'var(--background-color)', padding: '1rem', borderRadius: '0.5rem',
           fontSize: '0.8rem', overflow: 'auto', color: 'var(--text-primary)'
         }}>
 {`{
-  "topicId": number,       // ID темы (1-16)
-  "text": string,          // Текст вопроса
-  "difficulty": string,    // "Easy" | "Medium" | "Hard"
-  "explanation": string?,  // Объяснение (опционально)
-  "answerOptions": [       // Минимум 2, ровно 1 правильный
+  "topicId": number,       ${t.admin.import.commentTopicId}
+  "text": string,          ${t.admin.import.commentQuestionText}
+  "difficulty": string,    ${t.admin.import.commentDifficulty}
+  "explanation": string?,  ${t.admin.import.commentExplanation}
+  "answerOptions": [       ${t.admin.import.commentOptions}
     { "text": string, "isCorrect": boolean }
   ]
 }`}

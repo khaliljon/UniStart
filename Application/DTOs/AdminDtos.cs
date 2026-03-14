@@ -97,6 +97,8 @@ public record AdminUserDto(
     bool IsBlocked,
     DateTime? BlockedAt,
     string? BlockReason,
+    bool IsDeleted,
+    DateTime? DeletedAt,
     DateTime CreatedAt,
     DateTime? UpdatedAt,
     int TotalAnswers,
@@ -114,6 +116,24 @@ public record AdminUpdateUserDto(
 
 public record BlockUserDto(
     string? Reason
+);
+
+// ─── Trash / Recycle Bin ────────────────────────────
+
+public record TrashItemDto(
+    int Id,
+    string EntityType,     // "User" | "Question"
+    string DisplayName,
+    string? Detail,
+    DateTime? DeletedAt,
+    string? DeletedBy,
+    int DaysUntilPurge
+);
+
+public record TrashSummaryDto(
+    int TotalUsers,
+    int TotalQuestions,
+    List<TrashItemDto> Items
 );
 
 public record AdminUserStatsDto(

@@ -120,7 +120,18 @@ function TestPage() {
     }
   };
 
-  const handleNextQuestion = () => {
+  const handleNextQuestion = async () => {
+    // Check daily limit before fetching next question (prevents 429)
+    if (!isPro) {
+      try {
+        const usage = await subscriptionService.getDailyUsage();
+        setDailyUsage(usage);
+        if (usage.isLimitReached) {
+          setShowLimitModal(true);
+          return;
+        }
+      } catch { /* proceed if check fails */ }
+    }
     setShowFeedback(false);
     setHintText(null);
     setShowHint(false);
@@ -353,13 +364,42 @@ function TestPage() {
   }
 
   if (error) {
+    const is429 = error.includes('429');
     return (
       <div className="test-container">
-        <div className="card" style={{ textAlign: 'center' }}>
-          <p className="error-message">{error}</p>
-          <button onClick={() => navigate('/')} className="btn btn-primary" style={{ marginTop: '1rem' }}>
-            {t.practice.backToExams}
-          </button>
+        {is429 && <DailyLimitModal isOpen={showLimitModal} onClose={() => setShowLimitModal(false)} />}
+        <div className="card" style={{ textAlign: 'center', padding: '2rem' }}>
+          {is429 ? (
+            <>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.75rem', color: 'var(--text-primary)' }}>
+                {t.limits.limitReachedTitle}
+              </h2>
+              <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', lineHeight: 1.5 }}>
+                {t.limits.exhaustedDesc}
+              </p>
+              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                <button
+                  onClick={() => setShowLimitModal(true)}
+                  className="btn btn-primary"
+                >
+                  {t.limits.upgradePro}
+                </button>
+                <button
+                  onClick={() => { dispatch(resetTest()); navigate('/'); }}
+                  className="btn btn-secondary"
+                >
+                  {t.practice.backToExams}
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="error-message">{error}</p>
+              <button onClick={() => { dispatch(resetTest()); navigate('/'); }} className="btn btn-primary" style={{ marginTop: '1rem' }}>
+                {t.practice.backToExams}
+              </button>
+            </>
+          )}
         </div>
       </div>
     );

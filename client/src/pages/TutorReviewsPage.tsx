@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { tutorService } from '../services/tutorService';
 import type { TutorProfileDetail } from '../types';
+import { getDateLocale } from '../i18n';
 
 function TutorReviewsPage() {
   const [profile, setProfile] = useState<TutorProfileDetail | null>(null);
@@ -28,7 +29,7 @@ function TutorReviewsPage() {
 
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr);
-    return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+    return d.toLocaleDateString(getDateLocale(), { day: 'numeric', month: 'long', year: 'numeric' });
   };
 
   const renderStars = (r: number) => (

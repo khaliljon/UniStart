@@ -2,6 +2,8 @@ import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import adminService from '../services/adminService';
 import type { AdminUser, AdminUserStats } from '../types';
+import { useTranslation } from '../hooks/useTranslation';
+import { getDateLocale } from '../i18n';
 
 const ROLE_COLORS: Record<string, string> = {
   Admin: 'var(--error-color)',
@@ -15,6 +17,7 @@ const TIER_COLORS: Record<string, string> = {
 };
 
 function AdminUsersPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [stats, setStats] = useState<AdminUserStats | null>(null);
@@ -32,6 +35,7 @@ function AdminUsersPage() {
   const [filterRole, setFilterRole] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchInput, setSearchInput] = useState('');
+  const [showDeleted, setShowDeleted] = useState(false);
 
   // Edit form state
   const [editMode, setEditMode] = useState(false);
@@ -55,17 +59,18 @@ function AdminUsersPage() {
         filterRole || undefined,
         searchQuery || undefined,
         page,
-        50
+        50,
+        showDeleted
       );
       setUsers(result.items);
       setTotalPages(result.totalPages);
       setTotalCount(result.totalCount);
     } catch {
-      setError('Ошибка загрузки пользователей');
+      setError(t.admin.common.loadError);
     } finally {
       setIsLoading(false);
     }
-  }, [filterRole, searchQuery, page]);
+  }, [filterRole, searchQuery, page, showDeleted]);
 
   const loadStats = async () => {
     try {
@@ -94,14 +99,14 @@ function AdminUsersPage() {
       setTutorLoading(true);
       adminService.getTutors().then(tutors => {
         const map = new Map(tutorCache);
-        for (const t of tutors) {
-          map.set(t.userId, {
-            averageRating: t.averageRating,
-            totalReviews: t.totalReviews,
-            totalStudents: t.totalStudents,
-            isVerified: t.isVerified,
-            specializations: t.specializations,
-            hourlyRate: t.hourlyRate,
+        for (const u of tutors) {
+          map.set(u.userId, {
+            averageRating: u.averageRating,
+            totalReviews: u.totalReviews,
+            totalStudents: u.totalStudents,
+            isVerified: u.isVerified,
+            specializations: u.specializations,
+            hourlyRate: u.hourlyRate,
           });
         }
         setTutorCache(map);
@@ -137,41 +142,41 @@ function AdminUsersPage() {
       });
       setSelected(updated);
       setEditMode(false);
-      setSuccess('Пользователь обновлён');
+      setSuccess(t.admin.users.userUpdated);
       loadUsers();
       loadStats();
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Ошибка обновления';
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || t.admin.users.userUpdateError;
       setError(msg);
     }
   };
 
   const deleteUser = async (id: number) => {
-    if (!confirm('Удалить пользователя и все его данные? Это действие необратимо.')) return;
+    if (!confirm(t.admin.users.userDeleteConfirm)) return;
     try {
       setError(null);
       await adminService.deleteUser(id);
       setSelected(null);
-      setSuccess('Пользователь удалён');
+      setSuccess(t.admin.users.userDeleted);
       loadUsers();
       loadStats();
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Ошибка удаления';
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || t.admin.users.userDeleteError;
       setError(msg);
     }
   };
 
   // Block / Unblock (OP-14)
   const blockUser = async (id: number) => {
-    const reason = prompt('Причина блокировки (необязательно):');
+    const reason = prompt(t.admin.users.blockReasonPrompt);
     try {
       setError(null);
       const updated = await adminService.blockUser(id, reason || undefined);
       setSelected(updated);
-      setSuccess('Пользователь заблокирован');
+      setSuccess(t.admin.users.userBlocked);
       loadUsers();
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Ошибка блокировки';
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || t.admin.users.blockError;
       setError(msg);
     }
   };
@@ -181,30 +186,45 @@ function AdminUsersPage() {
       setError(null);
       const updated = await adminService.unblockUser(id);
       setSelected(updated);
-      setSuccess('Пользователь разблокирован');
+      setSuccess(t.admin.users.userUnblocked);
       loadUsers();
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Ошибка разблокировки';
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || t.admin.users.unblockError;
+      setError(msg);
+    }
+  };
+
+  const restoreUser = async (id: number) => {
+    if (!confirm(t.admin.users.restoreConfirm)) return;
+    try {
+      setError(null);
+      await adminService.restoreUser(id);
+      setSelected(null);
+      setSuccess(t.admin.users.userRestored);
+      loadUsers();
+      loadStats();
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || t.admin.users.restoreError;
       setError(msg);
     }
   };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      <h1>Управление пользователями</h1>
+      <h1>{t.admin.users.title}</h1>
       <button className="btn btn-outline" onClick={() => adminService.exportUsersCsv(filterRole || undefined)} style={{ fontSize: '0.85rem', alignSelf: 'flex-start', marginTop: '-0.5rem' }}>
-        Экспорт CSV
+        {t.admin.users.exportCsv}
       </button>
 
       {/* Stats Cards */}
       {stats && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '1rem' }}>
-          <StatCard label="Всего" value={stats.totalUsers} color="var(--primary-color)" />
-          <StatCard label="Студенты" value={stats.students} color="var(--primary-color)" />
-          <StatCard label="Тьюторы" value={stats.tutors} color="var(--warning-color)" />
-          <StatCard label="Админы" value={stats.admins} color="var(--error-color)" />
+          <StatCard label={t.admin.common.total} value={stats.totalUsers} color="var(--primary-color)" />
+          <StatCard label={t.admin.users.students} value={stats.students} color="var(--primary-color)" />
+          <StatCard label={t.admin.users.tutorsLabel} value={stats.tutors} color="var(--warning-color)" />
+          <StatCard label={t.admin.users.admins} value={stats.admins} color="var(--error-color)" />
           <StatCard label="Pro" value={stats.proUsers} color="#f59e0b" />
-          <StatCard label="Активны (7д)" value={stats.activeLast7Days} color="var(--success-color)" />
+          <StatCard label={t.admin.users.activeDays} value={stats.activeLast7Days} color="var(--success-color)" />
         </div>
       )}
 
@@ -219,7 +239,7 @@ function AdminUsersPage() {
           className="select"
           style={{ padding: '0.5rem', borderRadius: '8px', minWidth: '140px' }}
         >
-          <option value="">Все роли</option>
+          <option value="">{t.admin.users.allRoles}</option>
           <option value="Student">Student</option>
           <option value="Tutor">Tutor</option>
           <option value="Admin">Admin</option>
@@ -230,12 +250,21 @@ function AdminUsersPage() {
             type="text"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            placeholder="Поиск по имени или email..."
+            placeholder={t.admin.users.searchPlaceholder}
             className="form-input"
             style={{ flex: 1 }}
           />
-          <button type="submit" className="btn btn-primary" style={{ padding: '0.5rem 1rem' }}>Поиск</button>
+          <button type="submit" className="btn btn-primary" style={{ padding: '0.5rem 1rem' }}>{t.admin.users.searchBtn}</button>
         </form>
+
+        <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+          <input
+            type="checkbox"
+            checked={showDeleted}
+            onChange={(e) => { setShowDeleted(e.target.checked); setPage(1); }}
+          />
+          {t.admin.users.showDeleted}
+        </label>
       </div>
 
       {/* Main content */}
@@ -243,19 +272,19 @@ function AdminUsersPage() {
         {/* Users list */}
         <div className="card" style={{ padding: '1rem', overflow: 'auto', maxHeight: '70vh' }}>
           {isLoading ? (
-            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>Загрузка...</div>
+            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>{t.admin.common.loading}</div>
           ) : users.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>Пользователи не найдены</div>
+            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>{t.admin.users.notFound}</div>
           ) : (
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
               <thead>
                 <tr style={{ borderBottom: '2px solid var(--border-color)', textAlign: 'left' }}>
                   <th style={{ padding: '0.5rem' }}>ID</th>
-                  <th style={{ padding: '0.5rem' }}>Имя</th>
+                  <th style={{ padding: '0.5rem' }}>{t.admin.users.nameCol}</th>
                   <th style={{ padding: '0.5rem' }}>Email</th>
-                  <th style={{ padding: '0.5rem' }}>Роль</th>
-                  <th style={{ padding: '0.5rem' }}>Тариф</th>
-                  <th style={{ padding: '0.5rem' }}>Ответы</th>
+                  <th style={{ padding: '0.5rem' }}>{t.admin.users.roleCol}</th>
+                  <th style={{ padding: '0.5rem' }}>{t.admin.users.planCol}</th>
+                  <th style={{ padding: '0.5rem' }}>{t.admin.users.answersCol}</th>
                 </tr>
               </thead>
               <tbody>
@@ -275,7 +304,8 @@ function AdminUsersPage() {
                     <td style={{ padding: '0.5rem' }}>{u.id}</td>
                     <td style={{ padding: '0.5rem', fontWeight: 500 }}>
                       {u.name}
-                      {u.isBlocked && <span style={{ color: 'var(--error-color)', fontSize: '0.75rem', marginLeft: '0.35rem' }} title={u.blockReason || 'Заблокирован'}>[Блок]</span>}
+                      {u.isBlocked && <span style={{ color: 'var(--error-color)', fontSize: '0.75rem', marginLeft: '0.35rem' }} title={u.blockReason || t.admin.users.blocked}>[{t.admin.users.blocked}]</span>}
+                      {u.isDeleted && <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginLeft: '0.35rem' }} title={u.deletedAt ? `${t.admin.users.deleted} ${new Date(u.deletedAt).toLocaleDateString(getDateLocale())}` : t.admin.users.deleted}>[{t.admin.users.deleted}]</span>}
                     </td>
                     <td style={{ padding: '0.5rem', color: 'var(--text-secondary)' }}>{u.email}</td>
                     <td style={{ padding: '0.5rem' }}>
@@ -314,7 +344,7 @@ function AdminUsersPage() {
           )}
 
           <div style={{ marginTop: '0.75rem', textAlign: 'right', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
-            Найдено: {totalCount}
+            {t.admin.users.found} {totalCount}
           </div>
           {/* Pagination (OP-13) */}
           {totalPages > 1 && (
@@ -335,7 +365,7 @@ function AdminUsersPage() {
           <div className="card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2 style={{ margin: 0, fontSize: '1.2rem' }}>
-                {editMode ? 'Редактирование' : 'Профиль пользователя'}
+                {editMode ? t.admin.users.editTitle : t.admin.users.profileTitle}
               </h2>
               <button onClick={() => setSelected(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', color: 'var(--text-muted)' }}>✕</button>
             </div>
@@ -344,7 +374,7 @@ function AdminUsersPage() {
               /* Edit form */
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                  Имя
+                  {t.admin.users.nameLabel}
                   <input
                     type="text"
                     value={editData.name}
@@ -354,7 +384,7 @@ function AdminUsersPage() {
                   />
                 </label>
                 <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                  Email
+                  {t.admin.users.emailLabel}
                   <input
                     type="email"
                     value={editData.email}
@@ -364,7 +394,7 @@ function AdminUsersPage() {
                   />
                 </label>
                 <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                  Роль
+                  {t.admin.users.roleLabel}
                   <select
                     value={editData.role}
                     onChange={(e) => setEditData({ ...editData, role: e.target.value })}
@@ -376,7 +406,7 @@ function AdminUsersPage() {
                   </select>
                 </label>
                 <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                  Подписка
+                  {t.admin.users.subscriptionLabel}
                   <select
                     value={editData.subscriptionTier}
                     onChange={(e) => setEditData({ ...editData, subscriptionTier: e.target.value })}
@@ -388,8 +418,8 @@ function AdminUsersPage() {
                 </label>
 
                 <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
-                  <button className="btn btn-primary" onClick={saveUser} style={{ flex: 1 }}>Сохранить</button>
-                  <button className="btn btn-outline" onClick={cancelEdit} style={{ flex: 1 }}>Отмена</button>
+                  <button className="btn btn-primary" onClick={saveUser} style={{ flex: 1 }}>{t.admin.common.save}</button>
+                  <button className="btn btn-outline" onClick={cancelEdit} style={{ flex: 1 }}>{t.admin.common.cancel}</button>
                 </div>
               </div>
             ) : (
@@ -397,39 +427,47 @@ function AdminUsersPage() {
               <>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                   <InfoField label="ID" value={String(selected.id)} />
-                  <InfoField label="Имя" value={selected.name} />
-                  <InfoField label="Email" value={selected.email} />
-                  <InfoField label="Роль" value={selected.role} color={ROLE_COLORS[selected.role]} />
-                  <InfoField label="Подписка" value={selected.subscriptionTier} color={TIER_COLORS[selected.subscriptionTier]} />
-                  <InfoField label="Онбординг" value={selected.hasCompletedOnboarding ? 'Пройден' : 'Не завершён'} />
-                  <InfoField label="Дата регистрации" value={new Date(selected.createdAt).toLocaleDateString('ru-RU')} />
-                  <InfoField label="Обновлён" value={selected.updatedAt ? new Date(selected.updatedAt).toLocaleDateString('ru-RU') : '—'} />
+                  <InfoField label={t.admin.users.nameLabel} value={selected.name} />
+                  <InfoField label={t.admin.users.emailLabel} value={selected.email} />
+                  <InfoField label={t.admin.users.roleLabel} value={selected.role} color={ROLE_COLORS[selected.role]} />
+                  <InfoField label={t.admin.users.subscriptionLabel} value={selected.subscriptionTier} color={TIER_COLORS[selected.subscriptionTier]} />
+                  <InfoField label={t.admin.users.onboarding} value={selected.hasCompletedOnboarding ? t.admin.users.onboardingDone : t.admin.users.onboardingNotDone} />
+                  <InfoField label={t.admin.users.registeredAt} value={new Date(selected.createdAt).toLocaleDateString(getDateLocale())} />
+                  <InfoField label={t.admin.users.updatedAt} value={selected.updatedAt ? new Date(selected.updatedAt).toLocaleDateString(getDateLocale()) : '—'} />
                 </div>
 
                 {/* Block status (OP-14) */}
                 {selected.isBlocked && (
                   <div style={{ padding: '0.75rem', background: 'rgba(239,68,68,0.08)', borderRadius: '8px', border: '1px solid var(--error-color)' }}>
-                    <div style={{ fontWeight: 600, color: 'var(--error-color)', fontSize: '0.9rem' }}>Заблокирован</div>
-                    {selected.blockReason && <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>Причина: {selected.blockReason}</div>}
-                    {selected.blockedAt && <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>С {new Date(selected.blockedAt).toLocaleDateString('ru-RU')}</div>}
+                    <div style={{ fontWeight: 600, color: 'var(--error-color)', fontSize: '0.9rem' }}>{t.admin.users.blockedLabel}</div>
+                    {selected.blockReason && <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>{t.admin.users.blockReason} {selected.blockReason}</div>}
+                    {selected.blockedAt && <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>{t.admin.users.since} {new Date(selected.blockedAt).toLocaleDateString(getDateLocale())}</div>}
+                  </div>
+                )}
+
+                {/* Deleted status */}
+                {selected.isDeleted && (
+                  <div style={{ padding: '0.75rem', background: 'rgba(107,114,128,0.08)', borderRadius: '8px', border: '1px solid var(--text-muted)' }}>
+                    <div style={{ fontWeight: 600, color: 'var(--text-muted)', fontSize: '0.9rem' }}>{t.admin.users.deletedLabel}</div>
+                    {selected.deletedAt && <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>{t.admin.users.since} {new Date(selected.deletedAt).toLocaleDateString(getDateLocale())}</div>}
                   </div>
                 )}
 
                 <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem' }}>
-                  <h3 style={{ fontSize: '1rem', margin: '0 0 0.5rem' }}>Статистика</h3>
+                  <h3 style={{ fontSize: '1rem', margin: '0 0 0.5rem' }}>{t.admin.users.statistics}</h3>
                   {selected.role === 'Tutor' ? (
                     /* Tutor-specific stats */
                     tutorLoading ? (
-                      <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Загрузка...</div>
+                      <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{t.admin.common.loading}</div>
                     ) : (() => {
                       const tutor = tutorCache.get(selected.id);
-                      if (!tutor) return <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Нет профиля тьютора</div>;
+                      if (!tutor) return <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{t.admin.users.noTutorProfile}</div>;
                       return (
                         <>
                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
-                            <StatCard label="Студентов" value={tutor.totalStudents} color="var(--primary-color)" small />
-                            <StatCard label="Отзывов" value={tutor.totalReviews} color="var(--warning-color)" small />
-                            <StatCard label="Рейтинг" value={tutor.averageRating} color="var(--success-color)" small />
+                            <StatCard label={t.admin.users.studentsCount} value={tutor.totalStudents} color="var(--primary-color)" small />
+                            <StatCard label={t.admin.users.reviewsCount} value={tutor.totalReviews} color="var(--warning-color)" small />
+                            <StatCard label={t.admin.users.ratingLabel} value={tutor.averageRating} color="var(--success-color)" small />
                           </div>
                           <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
                             <span style={{
@@ -437,7 +475,7 @@ function AdminUsersPage() {
                               background: tutor.isVerified ? 'var(--success-color)' : 'var(--text-muted)',
                               color: '#fff',
                             }}>
-                              {tutor.isVerified ? 'Верифицирован' : 'Не верифицирован'}
+                              {tutor.isVerified ? t.admin.users.verifiedLabel : t.admin.users.notVerified}
                             </span>
                             {tutor.hourlyRate != null && (
                               <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
@@ -447,7 +485,7 @@ function AdminUsersPage() {
                           </div>
                           {tutor.specializations && (
                             <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                              Специализации: {tutor.specializations}
+                              {t.admin.users.specializations} {tutor.specializations}
                             </div>
                           )}
                         </>
@@ -457,13 +495,13 @@ function AdminUsersPage() {
                     /* Student / Admin stats */
                     <>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
-                        <StatCard label="Ответов" value={selected.totalAnswers} color="var(--primary-color)" small />
-                        <StatCard label="Верных" value={selected.correctAnswers} color="var(--success-color)" small />
-                        <StatCard label="Сессий" value={selected.testSessions} color="var(--info-color, #3b82f6)" small />
+                        <StatCard label={t.admin.users.answersCount} value={selected.totalAnswers} color="var(--primary-color)" small />
+                        <StatCard label={t.admin.users.correctCount} value={selected.correctAnswers} color="var(--success-color)" small />
+                        <StatCard label={t.admin.users.sessionsCount} value={selected.testSessions} color="var(--info-color, #3b82f6)" small />
                       </div>
                       {selected.totalAnswers > 0 && (
                         <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                          Точность: {Math.round((selected.correctAnswers / selected.totalAnswers) * 100)}%
+                          {t.admin.users.accuracyLabel} {Math.round((selected.correctAnswers / selected.totalAnswers) * 100)}%
                         </div>
                       )}
                     </>
@@ -471,13 +509,13 @@ function AdminUsersPage() {
                 </div>
 
                 <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
-                  <button className="btn btn-primary" onClick={startEdit} style={{ flex: 1 }}>Редактировать</button>
+                  <button className="btn btn-primary" onClick={startEdit} style={{ flex: 1 }}>{t.admin.users.editBtn}</button>
                   <button
                     className="btn btn-outline"
                     onClick={() => navigate(`/activity?id=${selected.id}`)}
                     style={{ flex: 1 }}
                   >
-                    Активность
+                    {t.admin.users.activityBtn}
                   </button>
                   {selected.role !== 'Admin' && (
                     selected.isBlocked ? (
@@ -486,7 +524,7 @@ function AdminUsersPage() {
                         onClick={() => unblockUser(selected.id)}
                         style={{ flex: 1, background: 'var(--success-color)', color: '#fff', border: 'none', cursor: 'pointer', borderRadius: '8px', padding: '0.5rem' }}
                       >
-                        Разблокировать
+                        {t.admin.users.unblockBtn}
                       </button>
                     ) : (
                       <button
@@ -494,17 +532,27 @@ function AdminUsersPage() {
                         onClick={() => blockUser(selected.id)}
                         style={{ flex: 1, background: 'var(--warning-color)', color: '#fff', border: 'none', cursor: 'pointer', borderRadius: '8px', padding: '0.5rem' }}
                       >
-                        Заблокировать
+                        {t.admin.users.blockBtn}
                       </button>
                     )
                   )}
-                  <button
-                    className="btn"
-                    onClick={() => deleteUser(selected.id)}
-                    style={{ flex: 1, background: 'var(--error-color)', color: '#fff', border: 'none', cursor: 'pointer', borderRadius: '8px', padding: '0.5rem' }}
-                  >
-                    Удалить
-                  </button>
+                  {selected.isDeleted ? (
+                    <button
+                      className="btn"
+                      onClick={() => restoreUser(selected.id)}
+                      style={{ flex: 1, background: 'var(--success-color)', color: '#fff', border: 'none', cursor: 'pointer', borderRadius: '8px', padding: '0.5rem' }}
+                    >
+                      {t.admin.users.restoreBtn}
+                    </button>
+                  ) : (
+                    <button
+                      className="btn"
+                      onClick={() => deleteUser(selected.id)}
+                      style={{ flex: 1, background: 'var(--error-color)', color: '#fff', border: 'none', cursor: 'pointer', borderRadius: '8px', padding: '0.5rem' }}
+                    >
+                      {t.admin.users.deleteBtn}
+                    </button>
+                  )}
                 </div>
               </>
             )}

@@ -1,5 +1,5 @@
 import api from './api';
-import type { QuestionListItem, QuestionDetail, QuestionStats, BulkImportResult, AdminUser, AdminUserStats, AdminTopicSummary, AdminDashboard, AdminSection, AdminSkill, PagedResult } from '../types';
+import type { QuestionListItem, QuestionDetail, QuestionStats, BulkImportResult, AdminUser, AdminUserStats, AdminTopicSummary, AdminDashboard, AdminSection, AdminSkill, PagedResult, TrashSummary } from '../types';
 
 const adminService = {
   // ─── Questions ───────────────────────────────────────────
@@ -54,12 +54,13 @@ const adminService = {
     api.get<QuestionStats>('/admin/stats').then(r => r.data),
 
   // ─── Users ───────────────────────────────────────────────
-  getUsers: (role?: string, search?: string, page: number = 1, pageSize: number = 50) => {
+  getUsers: (role?: string, search?: string, page: number = 1, pageSize: number = 50, includeDeleted: boolean = false) => {
     const params = new URLSearchParams();
     if (role) params.set('role', role);
     if (search) params.set('search', search);
     params.set('page', String(page));
     params.set('pageSize', String(pageSize));
+    if (includeDeleted) params.set('includeDeleted', 'true');
     const qs = params.toString();
     return api.get<PagedResult<AdminUser>>(`/admin/users${qs ? '?' + qs : ''}`).then(r => r.data);
   },
@@ -340,6 +341,19 @@ const adminService = {
     api.put(`/admin/content/drills/${id}`, data).then(r => r.data),
   deleteDrill: (id: number) =>
     api.delete(`/admin/content/drills/${id}`).then(r => r.data),
+
+  // ─── Trash / Recycle Bin ─────────────────────────────────
+  getTrash: () =>
+    api.get<TrashSummary>('/admin/trash').then(r => r.data),
+
+  hardDeleteQuestion: (id: number) =>
+    api.delete(`/admin/trash/questions/${id}`),
+
+  hardDeleteUser: (id: number) =>
+    api.delete(`/admin/trash/users/${id}`),
+
+  emptyTrash: () =>
+    api.delete<{ message: string; count: number }>('/admin/trash').then(r => r.data),
 };
 
 export default adminService;

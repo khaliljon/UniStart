@@ -11,12 +11,23 @@ public class RecommendationService : IRecommendationService
 {
     private readonly UniStartDbContext _db;
     private readonly ILogger<RecommendationService> _logger;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
-    public RecommendationService(UniStartDbContext db, ILogger<RecommendationService> logger)
+    public RecommendationService(UniStartDbContext db, ILogger<RecommendationService> logger, IHttpContextAccessor httpContextAccessor)
     {
         _db = db;
         _logger = logger;
+        _httpContextAccessor = httpContextAccessor;
     }
+
+    private string GetLang()
+    {
+        var lang = _httpContextAccessor.HttpContext?.Request.Headers["Accept-Language"].FirstOrDefault();
+        return lang switch { "kz" => "kz", "en" => "en", _ => "ru" };
+    }
+
+    private static string L(string lang, string ru, string kz, string en)
+        => lang switch { "kz" => kz, "en" => en, _ => ru };
 
     // ═══════════════════════════════════════════════════════
     //  DAILY BRIEFING
@@ -46,6 +57,7 @@ public class RecommendationService : IRecommendationService
 
     public async Task<AfterSessionDto> GetAfterSessionRecommendationsAsync(int userId, int sessionId)
     {
+        var lang = GetLang();
         var session = await _db.TestSessions
             .Include(s => s.Answers)
                 .ThenInclude(a => a.AnswerOption)
@@ -72,10 +84,13 @@ public class RecommendationService : IRecommendationService
             recs.Add(new RecommendationDto(
                 Type: "after_session",
                 Priority: te.Count >= 3 ? "high" : "medium",
-                Title: $"Повторите {te.Topic.Name}",
-                Description: $"В этой сессии {te.Count} ошибок по теме «{te.Topic.Name}». Рекомендуем дополнительную практику.",
+                Title: L(lang, $"Повторите {te.Topic.Name}", $"{te.Topic.Name} қайталаңыз", $"Review {te.Topic.Name}"),
+                Description: L(lang,
+                    $"В этой сессии {te.Count} ошибок по теме «{te.Topic.Name}». Рекомендуем дополнительную практику.",
+                    $"Бұл сессияда «{te.Topic.Name}» тақырыбында {te.Count} қате. Қосымша жаттығу ұсынамыз.",
+                    $"You made {te.Count} mistakes on \"{te.Topic.Name}\" this session. Extra practice recommended."),
                 Icon: null,
-                ActionLabel: "Практика",
+                ActionLabel: L(lang, "Практика", "Жаттығу", "Practice"),
                 ActionUrl: $"/learn?tab=practice&topicId={te.Topic.Id}",
                 Metadata: new Dictionary<string, object>
                 {
@@ -102,10 +117,13 @@ public class RecommendationService : IRecommendationService
             recs.Add(new RecommendationDto(
                 Type: "after_session",
                 Priority: "low",
-                Title: $"Отлично по {ts.Topic.Name}!",
-                Description: $"Все {ts.Count} ответов правильные. Попробуйте более сложные вопросы!",
+                Title: L(lang, $"Отлично по {ts.Topic.Name}!", $"{ts.Topic.Name} бойынша тамаша!", $"Great job on {ts.Topic.Name}!"),
+                Description: L(lang,
+                    $"Все {ts.Count} ответов правильные. Попробуйте более сложные вопросы!",
+                    $"Барлық {ts.Count} жауап дұрыс. Күрделірек сұрақтарды қолданып көріңіз!",
+                    $"All {ts.Count} answers correct. Try harder questions!"),
                 Icon: null,
-                ActionLabel: "Hard-режим",
+                ActionLabel: L(lang, "Hard-режим", "Hard режим", "Hard mode"),
                 ActionUrl: $"/learn?tab=practice&topicId={ts.Topic.Id}",
                 Metadata: new Dictionary<string, object>
                 {
@@ -124,10 +142,13 @@ public class RecommendationService : IRecommendationService
                 recs.Add(new RecommendationDto(
                     Type: "after_session",
                     Priority: "high",
-                    Title: "Не сдавайтесь!",
-                    Description: $"Точность {accuracy:F0}% — попробуйте вернуться к основам. Начните с Practice-режима.",
+                    Title: L(lang, "Не сдавайтесь!", "Тоқтамаңыз!", "Don't give up!"),
+                    Description: L(lang,
+                        $"Точность {accuracy:F0}% — попробуйте вернуться к основам. Начните с Practice-режима.",
+                        $"Дәлдік {accuracy:F0}% — негіздерге оралып көріңіз. Practice режимінен бастаңыз.",
+                        $"Accuracy {accuracy:F0}% — try going back to basics. Start with Practice mode."),
                     Icon: null,
-                    ActionLabel: "Практика",
+                    ActionLabel: L(lang, "Практика", "Жаттығу", "Practice"),
                     ActionUrl: "/learn",
                     Metadata: null
                 ));
@@ -137,8 +158,11 @@ public class RecommendationService : IRecommendationService
                 recs.Add(new RecommendationDto(
                     Type: "after_session",
                     Priority: "low",
-                    Title: "Отличный результат!",
-                    Description: $"Точность {accuracy:F0}%! Попробуйте Mock Exam для подготовки к реальному экзамену.",
+                    Title: L(lang, "Отличный результат!", "Тамаша нәтиже!", "Great result!"),
+                    Description: L(lang,
+                        $"Точность {accuracy:F0}%! Попробуйте Mock Exam для подготовки к реальному экзамену.",
+                        $"Дәлдік {accuracy:F0}%! Нақты емтиханға дайындалу үшін Mock Exam қолданып көріңіз.",
+                        $"Accuracy {accuracy:F0}%! Try a Mock Exam to prepare for the real test."),
                     Icon: null,
                     ActionLabel: "Mock Exam",
                     ActionUrl: "/learn?tab=mock",
@@ -391,6 +415,7 @@ public class RecommendationService : IRecommendationService
     private async Task<List<RecommendationDto>> GenerateDailyRecommendationsAsync(int userId)
     {
         var recs = new List<RecommendationDto>();
+        var lang = GetLang();
         var today = DateTime.SpecifyKind(DateTime.UtcNow.Date, DateTimeKind.Utc);
 
         // ─── Forgetting Curve: topics needing review ─────
@@ -418,10 +443,13 @@ public class RecommendationService : IRecommendationService
                 recs.Add(new RecommendationDto(
                     Type: "daily",
                     Priority: retention < 0.4 ? "high" : "medium",
-                    Title: $"Повторите {ta.Topic.Name}",
-                    Description: $"Последнее занятие {daysSince:F0} дней назад. Оценка запоминания: {retention * 100:F0}%.",
+                    Title: L(lang, $"Повторите {ta.Topic.Name}", $"{ta.Topic.Name} қайталаңыз", $"Review {ta.Topic.Name}"),
+                    Description: L(lang,
+                        $"Последнее занятие {daysSince:F0} дней назад. Оценка запоминания: {retention * 100:F0}%.",
+                        $"Соңғы сабақ {daysSince:F0} күн бұрын. Есте сақтау бағасы: {retention * 100:F0}%.",
+                        $"Last studied {daysSince:F0} days ago. Retention estimate: {retention * 100:F0}%."),
                     Icon: null,
-                    ActionLabel: "Повторить",
+                    ActionLabel: L(lang, "Повторить", "Қайталау", "Review"),
                     ActionUrl: $"/learn?tab=practice&topicId={ta.Topic.Id}",
                     Metadata: new Dictionary<string, object>
                     {
@@ -484,10 +512,13 @@ public class RecommendationService : IRecommendationService
                 recs.Add(new RecommendationDto(
                     Type: "daily",
                     Priority: "high",
-                    Title: $"Подтяните {wp.Skill.Name}",
-                    Description: $"Уровень {wp.Level}% — рекомендуем практику по «{topic.Name}»",
+                    Title: L(lang, $"Подтяните {wp.Skill.Name}", $"{wp.Skill.Name} жақсартыңыз", $"Improve {wp.Skill.Name}"),
+                    Description: L(lang,
+                        $"Уровень {wp.Level}% — рекомендуем практику по «{topic.Name}»",
+                        $"Деңгей {wp.Level}% — «{topic.Name}» бойынша жаттығу ұсынамыз",
+                        $"Level {wp.Level}% — we recommend practicing \"{topic.Name}\""),
                     Icon: null,
-                    ActionLabel: "Практика",
+                    ActionLabel: L(lang, "Практика", "Жаттығу", "Practice"),
                     ActionUrl: $"/learn?tab=practice&topicId={topic.Id}",
                     Metadata: new Dictionary<string, object>
                     {
@@ -510,8 +541,14 @@ public class RecommendationService : IRecommendationService
                 recs.Add(new RecommendationDto(
                     Type: "mode",
                     Priority: "high",
-                    Title: "Экзамен через " + (int)daysUntilExam + " дней!",
-                    Description: "Попробуйте Mock Exam для тренировки в условиях таймера",
+                    Title: L(lang,
+                        "Экзамен через " + (int)daysUntilExam + " дней!",
+                        "Емтиханға " + (int)daysUntilExam + " күн қалды!",
+                        "Exam in " + (int)daysUntilExam + " days!"),
+                    Description: L(lang,
+                        "Попробуйте Mock Exam для тренировки в условиях таймера",
+                        "Таймер жағдайында жаттығу үшін Mock Exam қолданып көріңіз",
+                        "Try a Mock Exam to practice under timed conditions"),
                     Icon: null,
                     ActionLabel: "Mock Exam",
                     ActionUrl: "/learn?tab=mock",
@@ -534,10 +571,13 @@ public class RecommendationService : IRecommendationService
                     recs.Add(new RecommendationDto(
                         Type: "mode",
                         Priority: "low",
-                        Title: "Попробуйте Mock Exam",
-                        Description: "Вы ещё не пробовали экзаменационный режим. Потренируйтесь с таймером!",
+                        Title: L(lang, "Попробуйте Mock Exam", "Mock Exam қолданып көріңіз", "Try Mock Exam"),
+                        Description: L(lang,
+                            "Вы ещё не пробовали экзаменационный режим. Потренируйтесь с таймером!",
+                            "Сіз әлі емтихан режимін қолданбадыңыз. Таймермен жаттығыңыз!",
+                            "You haven't tried exam mode yet. Practice with a timer!"),
                         Icon: null,
-                        ActionLabel: "Попробовать",
+                        ActionLabel: L(lang, "Попробовать", "Бастау", "Try it"),
                         ActionUrl: "/learn?tab=mock",
                         Metadata: null
                     ));
@@ -552,10 +592,16 @@ public class RecommendationService : IRecommendationService
             recs.Add(new RecommendationDto(
                 Type: "streak",
                 Priority: "medium",
-                Title: $"Серия {streak.CurrentStreak} дней!",
-                Description: "Не прерывайте серию — ответьте хотя бы на 5 вопросов сегодня",
+                Title: L(lang,
+                    $"Серия {streak.CurrentStreak} дней!",
+                    $"{streak.CurrentStreak} күн қатарынан!",
+                    $"{streak.CurrentStreak}-day streak!"),
+                Description: L(lang,
+                    "Не прерывайте серию — ответьте хотя бы на 5 вопросов сегодня",
+                    "Серияны үзбеңіз — бүгін кемінде 5 сұраққа жауап беріңіз",
+                    "Don't break your streak — answer at least 5 questions today"),
                 Icon: null,
-                ActionLabel: "Начать",
+                ActionLabel: L(lang, "Начать", "Бастау", "Start"),
                 ActionUrl: "/learn",
                 Metadata: new Dictionary<string, object>
                 {

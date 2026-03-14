@@ -4,6 +4,7 @@ import { messageService } from '../services/messageService';
 import { chatService } from '../services/chatService';
 import { userService, type PresenceInfo } from '../services/userService';
 import type { Conversation, Message } from '../types';
+import { getDateLocale } from '../i18n';
 
 function MessagesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -308,9 +309,10 @@ function MessagesPage() {
     const d = new Date(dateStr);
     const now = new Date();
     const isToday = d.toDateString() === now.toDateString();
-    if (isToday) return d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-    return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) + ' ' +
-           d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+    const dl = getDateLocale();
+    if (isToday) return d.toLocaleTimeString(dl, { hour: '2-digit', minute: '2-digit' });
+    return d.toLocaleDateString(dl, { day: 'numeric', month: 'short' }) + ' ' +
+           d.toLocaleTimeString(dl, { hour: '2-digit', minute: '2-digit' });
   };
 
   const formatLastSeen = (dateStr: string | null): string => {

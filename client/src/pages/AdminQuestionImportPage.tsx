@@ -1,14 +1,9 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { questionImportService } from '../services/questionImportService';
 import type { QuestionImportJob, ImportedQuestionDraft, UpdateDraftPayload, FileRole, BatchFileEntry } from '../services/questionImportService';
+import { useTranslation } from '../hooks/useTranslation';
 
 const EXAM_TYPES = ['SAT', 'TOEFL', 'NUET', 'IELTS', 'CSCA'];
-
-const ROLE_LABELS: Record<FileRole, string> = {
-  Questions: 'Вопросы',
-  Answers: 'Ответы',
-  Mixed: 'Смешанный',
-};
 
 const STATUS_COLORS: Record<string, string> = {
   Pending: 'var(--warning-color)',
@@ -25,6 +20,9 @@ const DRAFT_STATUS_COLORS: Record<string, string> = {
 };
 
 function AdminQuestionImportPage() {
+  const { t } = useTranslation();
+  const roleLabels: Record<string, string> = { Questions: t.admin.questionImport.roleQuestions, Answers: t.admin.questionImport.roleAnswers, Mixed: t.admin.questionImport.roleMixed };
+
   const [jobs, setJobs] = useState<QuestionImportJob[]>([]);
   const [selectedJob, setSelectedJob] = useState<QuestionImportJob | null>(null);
   const [drafts, setDrafts] = useState<ImportedQuestionDraft[]>([]);
@@ -159,7 +157,7 @@ function AdminQuestionImportPage() {
 
   const handleDeleteJob = async (jobId: number, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm('Удалить этот импорт и все связанные черновики?')) return;
+    if (!confirm(t.admin.questionImport.deleteImportConfirm)) return;
     try {
       await questionImportService.deleteJob(jobId);
       if (selectedJob?.id === jobId) { setSelectedJob(null); setDrafts([]); }
@@ -170,7 +168,7 @@ function AdminQuestionImportPage() {
   };
 
   const handleDeleteAllJobs = async () => {
-    if (!confirm('Удалить ВСЮ историю импортов? Это действие необратимо.')) return;
+    if (!confirm(t.admin.questionImport.clearAllConfirm)) return;
     try {
       await questionImportService.deleteAllJobs();
       setSelectedJob(null);
@@ -218,9 +216,9 @@ function AdminQuestionImportPage() {
 
   return (
     <div className="animate-fade-in" style={{ padding: '2rem 0' }}>
-      <h1 style={{ marginBottom: '0.5rem' }}>Импорт вопросов из файлов</h1>
+      <h1 style={{ marginBottom: '0.5rem' }}>{t.admin.questionImport.title}</h1>
       <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
-        Загрузите файлы — система извлечёт вопросы автоматически. Поддерживается мульти-файл с ответами.
+        {t.admin.questionImport.subtitle}
       </p>
 
       {error && (
@@ -232,7 +230,7 @@ function AdminQuestionImportPage() {
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', flexWrap: 'wrap', marginBottom: '1rem' }}>
           <div>
             <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.25rem' }}>
-              Экзамен
+              {t.admin.questionImport.examLabel}
             </label>
             <select
               value={examTypeCode}
@@ -250,7 +248,7 @@ function AdminQuestionImportPage() {
           </div>
           <div>
             <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.25rem' }}>
-              Режим
+              {t.admin.questionImport.modeLabel}
             </label>
             <div style={{ display: 'flex', gap: '0.25rem' }}>
               <button
@@ -258,14 +256,14 @@ function AdminQuestionImportPage() {
                 style={{ fontSize: '0.8rem', padding: '0.45rem 0.75rem' }}
                 onClick={() => setUploadMode('single')}
               >
-                Один файл
+                {t.admin.questionImport.singleFile}
               </button>
               <button
                 className={`btn ${uploadMode === 'multi' ? 'btn-primary' : 'btn-secondary'}`}
                 style={{ fontSize: '0.8rem', padding: '0.45rem 0.75rem' }}
                 onClick={() => setUploadMode('multi')}
               >
-                Несколько файлов
+                {t.admin.questionImport.multiFile}
               </button>
             </div>
           </div>
@@ -299,15 +297,15 @@ function AdminQuestionImportPage() {
               }}
             />
             {isUploading ? (
-              <p style={{ color: 'var(--primary-color)', fontWeight: 600 }}>Обработка файла...</p>
+              <p style={{ color: 'var(--primary-color)', fontWeight: 600 }}>{t.admin.questionImport.processing}</p>
             ) : (
               <>
                 <p style={{ fontSize: '1.2rem', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>PDF / DOCX / XLSX</p>
                 <p style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-                  Перетащите файл сюда или нажмите для выбора
+                  {t.admin.questionImport.dropzone}
                 </p>
                 <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
-                  Один файл с вопросами (до 50 МБ)
+                  {t.admin.questionImport.dropzoneHint}
                 </p>
               </>
             )}
@@ -344,10 +342,10 @@ function AdminQuestionImportPage() {
               />
               <p style={{ fontSize: '1.2rem', marginBottom: '0.25rem', color: 'var(--text-secondary)' }}>+</p>
               <p style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.9rem' }}>
-                Добавить файлы (вопросы, ответы)
+                {t.admin.questionImport.addFiles}
               </p>
               <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
-                Перетащите или нажмите. Роль файла (вопросы/ответы) можно выбрать ниже.
+                {t.admin.questionImport.addFilesHint}
               </p>
             </div>
 
@@ -380,8 +378,8 @@ function AdminQuestionImportPage() {
                         fontWeight: 600,
                       }}
                     >
-                      {(Object.keys(ROLE_LABELS) as FileRole[]).map(r => (
-                        <option key={r} value={r}>{ROLE_LABELS[r]}</option>
+                      {(Object.keys(roleLabels) as FileRole[]).map(r => (
+                        <option key={r} value={r}>{roleLabels[r]}</option>
                       ))}
                     </select>
                     <button
@@ -390,7 +388,7 @@ function AdminQuestionImportPage() {
                         background: 'transparent', border: 'none', cursor: 'pointer',
                         color: 'var(--error-color)', fontSize: '1.1rem', padding: '0 0.25rem',
                       }}
-                      title="Удалить"
+                      title={t.admin.questionImport.removeFile}
                     >
                       x
                     </button>
@@ -402,7 +400,7 @@ function AdminQuestionImportPage() {
             {/* Instructions textarea */}
             <div style={{ marginBottom: '1rem' }}>
               <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.25rem' }}>
-                Контекст / инструкции для парсера (необязательно)
+                {t.admin.questionImport.contextLabel}
               </label>
               <textarea
                 value={instructions}
@@ -425,7 +423,7 @@ function AdminQuestionImportPage() {
               onClick={handleBatchUpload}
               style={{ width: '100%', padding: '0.7rem', fontSize: '0.95rem' }}
             >
-              {isUploading ? 'Обработка...' : `Загрузить и обработать (${batchFiles.length} файл${batchFiles.length === 1 ? '' : batchFiles.length < 5 ? 'а' : 'ов'})`}
+              {isUploading ? t.admin.questionImport.processBtn : `${t.admin.questionImport.processFiles} (${batchFiles.length})`}
             </button>
           </div>
         )}
@@ -435,7 +433,7 @@ function AdminQuestionImportPage() {
       {jobs.length > 0 && (
         <div className="card" style={{ padding: '1.5rem', marginBottom: '2rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <h2 style={{ fontSize: '1.1rem', fontWeight: 600 }}>История импортов</h2>
+            <h2 style={{ fontSize: '1.1rem', fontWeight: 600 }}>{t.admin.questionImport.historyTitle}</h2>
             <button
               onClick={handleDeleteAllJobs}
               style={{
@@ -444,7 +442,7 @@ function AdminQuestionImportPage() {
                 fontSize: '0.8rem', padding: '0.3rem 0.75rem', cursor: 'pointer',
               }}
             >
-              Очистить всё
+              {t.admin.questionImport.clearAll}
             </button>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
@@ -482,14 +480,14 @@ function AdminQuestionImportPage() {
                     {job.status}
                   </span>
                   <span style={{ color: 'var(--text-secondary)' }}>
-                    {job.totalExtracted} extracted · {job.totalApproved} approved
+                    {job.totalExtracted} {t.admin.questionImport.extracted} · {job.totalApproved} {t.admin.questionImport.approved}
                   </span>
                   <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
                     {new Date(job.createdAt).toLocaleDateString()}
                   </span>
                   <button
                     onClick={(e) => handleDeleteJob(job.id, e)}
-                    title="Удалить"
+                    title={t.admin.questionImport.removeFile}
                     style={{
                       background: 'transparent', border: 'none', cursor: 'pointer',
                       color: 'var(--error-color)', fontSize: '1rem', padding: '0 0.25rem',
@@ -512,7 +510,7 @@ function AdminQuestionImportPage() {
         <div className="card" style={{ padding: '1.5rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
             <h2 style={{ fontSize: '1.1rem', fontWeight: 600 }}>
-              Вопросы из «{selectedJob.fileName}» ({drafts.length})
+              {t.admin.questionImport.questionsFrom} «{selectedJob.fileName}» ({drafts.length})
             </h2>
             <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
               <select
@@ -536,7 +534,7 @@ function AdminQuestionImportPage() {
           </div>
 
           {drafts.length === 0 ? (
-            <p style={{ color: 'var(--text-secondary)' }}>Нет вопросов для отображения</p>
+            <p style={{ color: 'var(--text-secondary)' }}>{t.admin.questionImport.noQuestions}</p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               {drafts.map((draft, idx) => (
@@ -583,7 +581,7 @@ function AdminQuestionImportPage() {
                             fontSize: '0.8rem', fontStyle: 'italic',
                             color: 'var(--warning-color, #f59e0b)', padding: '0.25rem 0',
                           }}>
-                            Нет вариантов ответа — заполните вручную перед одобрением
+                            {t.admin.questionImport.noOptionsHint}
                           </span>
                         )}
                       </div>
@@ -624,14 +622,14 @@ function AdminQuestionImportPage() {
                               style={{ fontSize: '0.75rem', padding: '0.3rem 0.5rem' }}
                               onClick={() => handleSaveEdit(draft.id)}
                             >
-                              Save
+                              {t.admin.questionImport.saveEdit}
                             </button>
                             <button
                               className="btn btn-secondary"
                               style={{ fontSize: '0.75rem', padding: '0.3rem 0.5rem' }}
                               onClick={() => { setEditingDraft(null); setEditForm({}); }}
                             >
-                              Cancel
+                              {t.admin.questionImport.cancelEdit}
                             </button>
                           </>
                         ) : (
@@ -641,14 +639,14 @@ function AdminQuestionImportPage() {
                               style={{ fontSize: '0.75rem', padding: '0.3rem 0.5rem' }}
                               onClick={() => handleApprove(draft.id)}
                             >
-                              Approve
+                              {t.admin.questionImport.approve}
                             </button>
                             <button
                               className="btn btn-secondary"
                               style={{ fontSize: '0.75rem', padding: '0.3rem 0.5rem' }}
                               onClick={() => startEdit(draft)}
                             >
-                              Edit
+                              {t.admin.questionImport.editBtn}
                             </button>
                             <button
                               style={{
@@ -658,7 +656,7 @@ function AdminQuestionImportPage() {
                               }}
                               onClick={() => handleReject(draft.id)}
                             >
-                              Reject
+                              {t.admin.questionImport.reject}
                             </button>
                           </>
                         )}

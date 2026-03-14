@@ -490,6 +490,8 @@ export interface AdminUser {
   isBlocked: boolean;
   blockedAt: string | null;
   blockReason: string | null;
+  isDeleted: boolean;
+  deletedAt: string | null;
   createdAt: string;
   updatedAt: string | null;
   totalAnswers: number;
@@ -530,6 +532,24 @@ export interface AdminDashboard {
   questionStats: QuestionStats;
   userStats: AdminUserStats;
   topics: AdminTopicSummary[];
+}
+
+// ─── Trash / Recycle Bin ────────────────────────────────
+
+export interface TrashItem {
+  id: number;
+  entityType: 'User' | 'Question';
+  displayName: string;
+  detail: string | null;
+  deletedAt: string | null;
+  deletedBy: string | null;
+  daysUntilPurge: number;
+}
+
+export interface TrashSummary {
+  totalUsers: number;
+  totalQuestions: number;
+  items: TrashItem[];
 }
 
 // ─── Stage 9.2: Learning Materials ──────────────────────

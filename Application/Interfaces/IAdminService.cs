@@ -14,7 +14,7 @@ public interface IAdminService
     Task<QuestionStatsDto> GetStatsAsync();
 
     // Users
-    Task<PagedResult<AdminUserDto>> GetUsersAsync(string? role = null, string? search = null, int page = 1, int pageSize = 50);
+    Task<PagedResult<AdminUserDto>> GetUsersAsync(string? role = null, string? search = null, int page = 1, int pageSize = 50, bool includeDeleted = false);
     Task<AdminUserDto?> GetUserByIdAsync(int id);
     Task<AdminUserDto?> UpdateUserAsync(int id, AdminUpdateUserDto dto);
     Task<bool> DeleteUserAsync(int id);
@@ -36,4 +36,10 @@ public interface IAdminService
     // Soft Delete restore (OP-9)
     Task<bool> RestoreQuestionAsync(int id);
     Task<bool> RestoreUserAsync(int id);
+
+    // Trash / Recycle Bin
+    Task<TrashSummaryDto> GetTrashAsync();
+    Task<bool> HardDeleteQuestionAsync(int id);
+    Task<bool> HardDeleteUserAsync(int id);
+    Task<int> EmptyTrashAsync();
 }

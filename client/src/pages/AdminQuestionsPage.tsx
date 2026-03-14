@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import adminService from '../services/adminService';
 import type { QuestionListItem, QuestionDetail, AdminTopicSummary, AdminSection, AdminSkill } from '../types';
+import { useTranslation } from '../hooks/useTranslation';
 
 const EXAM_COLORS: Record<string, string> = {
   SAT: '#4f46e5',
@@ -33,6 +34,7 @@ const emptyForm = {
 };
 
 function AdminQuestionsPage() {
+  const { t } = useTranslation();
   const [questions, setQuestions] = useState<QuestionListItem[]>([]);
   const [topics, setTopics] = useState<AdminTopicSummary[]>([]);
   const [selected, setSelected] = useState<QuestionDetail | null>(null);
@@ -80,7 +82,7 @@ function AdminQuestionsPage() {
       setTotalPages(result.totalPages);
       setTotalCount(result.totalCount);
     } catch {
-      setError('Ошибка загрузки');
+      setError(t.admin.common.loadError);
     } finally {
       setIsLoading(false);
     }
@@ -88,8 +90,8 @@ function AdminQuestionsPage() {
 
   const loadTopics = async () => {
     try {
-      const t = await adminService.getTopics();
-      setTopics(t);
+      const tp = await adminService.getTopics();
+      setTopics(tp);
     } catch { /* ignore */ }
   };
 
@@ -129,17 +131,17 @@ function AdminQuestionsPage() {
   };
 
   const saveTopic = async () => {
-    if (!topicForm.name.trim()) { setError('Введите название темы'); return; }
-    if (!topicForm.sectionId) { setError('Выберите секцию экзамена'); return; }
-    if (!topicForm.skillId) { setError('Выберите навык'); return; }
+    if (!topicForm.name.trim()) { setError(t.admin.questions.enterTopicName); return; }
+    if (!topicForm.sectionId) { setError(t.admin.questions.selectSection); return; }
+    if (!topicForm.skillId) { setError(t.admin.questions.selectSkill); return; }
     try {
       setError(null);
       await adminService.createTopic(topicForm);
       setShowTopicModal(false);
-      setSuccess('Тема создана');
+      setSuccess(t.admin.questions.topicCreated);
       loadTopics();
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Ошибка создания темы';
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || t.admin.questions.topicCreateError;
       setError(msg);
     }
   };
@@ -153,7 +155,7 @@ function AdminQuestionsPage() {
       setModalMode('view');
       setSuccess(null);
     } catch {
-      setError('Ошибка загрузки вопроса');
+      setError(t.admin.questions.questionLoadError);
     }
   };
 
@@ -199,21 +201,21 @@ function AdminQuestionsPage() {
       });
       setSelected(updated);
       setModalMode('view');
-      setSuccess('Вопрос обновлён');
+      setSuccess(t.admin.questions.questionUpdated);
       loadQuestions();
       if (viewMode === 'topics') loadTopicViewQuestions();
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Ошибка сохранения';
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || t.admin.questions.questionSaveError;
       setError(msg);
     }
   };
 
   const saveCreate = async () => {
     const validOptions = form.answerOptions.filter(o => o.text.trim());
-    if (!form.text.trim()) { setError('Введите текст вопроса'); return; }
-    if (validOptions.length < 2) { setError('Минимум 2 варианта ответа'); return; }
-    if (!validOptions.some(o => o.isCorrect)) { setError('Отметьте правильный ответ'); return; }
-    if (!form.topicId) { setError('Выберите тему'); return; }
+    if (!form.text.trim()) { setError(t.admin.questions.enterQuestion); return; }
+    if (validOptions.length < 2) { setError(t.admin.questions.minTwoOptions); return; }
+    if (!validOptions.some(o => o.isCorrect)) { setError(t.admin.questions.markCorrectOption); return; }
+    if (!form.topicId) { setError(t.admin.questions.selectTopic); return; }
 
     try {
       setError(null);
@@ -226,28 +228,28 @@ function AdminQuestionsPage() {
       });
       setSelected(created);
       setModalMode('view');
-      setSuccess('Вопрос создан');
+      setSuccess(t.admin.questions.questionCreated);
       loadQuestions();
       loadTopics();
       if (viewMode === 'topics') loadTopicViewQuestions();
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Ошибка создания';
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || t.admin.questions.questionCreateError;
       setError(msg);
     }
   };
 
   const deleteQuestion = async (id: number) => {
-    if (!confirm('Удалить вопрос? Это действие необратимо.')) return;
+    if (!confirm(t.admin.questions.questionDeleteConfirm)) return;
     try {
       await adminService.deleteQuestion(id);
       setSelected(null);
       setModalMode('view');
-      setSuccess('Вопрос удалён');
+      setSuccess(t.admin.questions.questionDeleted);
       loadQuestions();
       loadTopics();
       if (viewMode === 'topics') loadTopicViewQuestions();
     } catch {
-      setError('Ошибка удаления');
+      setError(t.admin.questions.questionDeleteError);
     }
   };
 
@@ -294,11 +296,11 @@ function AdminQuestionsPage() {
   const groupedByTopic = (() => {
     // Use all topics (including those with 0 questions)
     let filtered = topics;
-    if (topicFilterExam) filtered = filtered.filter(t => t.examTypeCode === topicFilterExam);
-    if (topicFilterSection) filtered = filtered.filter(t => t.sectionName === topicFilterSection);
+    if (topicFilterExam) filtered = filtered.filter(tp => tp.examTypeCode === topicFilterExam);
+    if (topicFilterSection) filtered = filtered.filter(tp => tp.sectionName === topicFilterSection);
     if (topicFilterTopic) {
       const q = topicFilterTopic.toLowerCase();
-      filtered = filtered.filter(t => t.name.toLowerCase().includes(q));
+      filtered = filtered.filter(tp => tp.name.toLowerCase().includes(q));
     }
 
     // Build questions lookup by topic name + exam
@@ -311,9 +313,9 @@ function AdminQuestionsPage() {
 
     // Natural numeric sort: "1.1.1" < "1.1.2" < "2.1.1" < "10.1.1", "P1.1.1" groups after numbers
     return filtered
-      .map(t => ({
-        topic: t,
-        questions: qMap.get(`${t.examTypeCode}|${t.name}`) ?? [],
+      .map(tp => ({
+        topic: tp,
+        questions: qMap.get(`${tp.examTypeCode}|${tp.name}`) ?? [],
       }))
       .sort((a, b) => {
         // Sort by exam first
@@ -336,7 +338,7 @@ function AdminQuestionsPage() {
     return (
       <div className="animate-fade-in" style={{ textAlign: 'center', padding: '4rem 1rem' }}>
         <div className="loading-spinner" />
-        <p style={{ color: 'var(--text-secondary)', marginTop: '1rem' }}>Загрузка…</p>
+        <p style={{ color: 'var(--text-secondary)', marginTop: '1rem' }}>{t.admin.common.loading}</p>
       </div>
     );
   }
@@ -346,17 +348,17 @@ function AdminQuestionsPage() {
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
         <div>
-          <h1 style={{ margin: 0 }}>Управление вопросами</h1>
+          <h1 style={{ margin: 0 }}>{t.admin.questions.title}</h1>
           <p style={{ color: 'var(--text-secondary)', margin: '0.25rem 0 0' }}>
-            {totalCount} вопросов • {topics.length} тем{totalPages > 1 ? ` • стр. ${page}/${totalPages}` : ''}
+            {totalCount} {t.admin.questions.questionsCount} • {topics.length} {t.admin.questions.topicsCount}{totalPages > 1 ? ` • ${t.admin.common.page} ${page}/${totalPages}` : ''}
           </p>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           <button className="btn btn-primary" onClick={() => startCreate()} style={{ fontSize: '0.9rem' }}>
-            Новый вопрос
+            {t.admin.questions.newQuestion}
           </button>
           <button className="btn btn-outline" onClick={openTopicModal} style={{ fontSize: '0.9rem' }}>
-            Новая тема
+            {t.admin.questions.newTopic}
           </button>
           <button className="btn btn-outline" onClick={() => adminService.exportQuestionsCsv(filterExam || undefined, filterDiff || undefined)} style={{ fontSize: '0.9rem' }}>
             CSV
@@ -386,7 +388,7 @@ function AdminQuestionsPage() {
               background: viewMode === 'table' ? 'var(--primary-color)' : 'var(--card-background)',
               color: viewMode === 'table' ? '#fff' : 'var(--text-secondary)',
             }}
-          >Таблица</button>
+          >{t.admin.questions.tableView}</button>
           <button
             onClick={() => setViewMode('topics')}
             style={{
@@ -395,7 +397,7 @@ function AdminQuestionsPage() {
               background: viewMode === 'topics' ? 'var(--primary-color)' : 'var(--card-background)',
               color: viewMode === 'topics' ? '#fff' : 'var(--text-secondary)',
             }}
-          >По темам</button>
+          >{t.admin.questions.topicsView}</button>
         </div>
       </div>
 
@@ -403,7 +405,7 @@ function AdminQuestionsPage() {
       {viewMode === 'table' && (
         <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', flexWrap: 'wrap', alignItems: 'center' }}>
           <select value={filterExam} onChange={e => { setFilterExam(e.target.value); setFilterSection(''); setPage(1); }} style={{ padding: '0.5rem' }}>
-            <option value="">Все экзамены</option>
+            <option value="">{t.admin.common.allExams}</option>
             <option value="SAT">SAT</option>
             <option value="TOEFL">TOEFL</option>
             <option value="NUET">NUET</option>
@@ -411,19 +413,19 @@ function AdminQuestionsPage() {
             <option value="CSCA">CSCA</option>
           </select>
           <select value={filterSection} onChange={e => { setFilterSection(e.target.value); setPage(1); }} style={{ padding: '0.5rem' }}>
-            <option value="">Все секции</option>
+            <option value="">{t.admin.common.allSections}</option>
             {sections
               .filter(s => !filterExam || s.examTypeCode === filterExam)
               .map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
           </select>
           <select value={filterDiff} onChange={e => { setFilterDiff(e.target.value); setPage(1); }} style={{ padding: '0.5rem' }}>
-            <option value="">Все уровни</option>
+            <option value="">{t.admin.common.allLevels}</option>
             <option value="Easy">Easy</option>
             <option value="Medium">Medium</option>
             <option value="Hard">Hard</option>
           </select>
           <input
-            placeholder="Поиск по теме…"
+            placeholder={t.admin.questions.searchTopic}
             value={filterTopic}
             onChange={e => { setFilterTopic(e.target.value); setPage(1); }}
             className="form-input"
@@ -436,7 +438,7 @@ function AdminQuestionsPage() {
       {viewMode === 'topics' && (
         <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', flexWrap: 'wrap', alignItems: 'center' }}>
           <select value={topicFilterExam} onChange={e => { setTopicFilterExam(e.target.value); setTopicFilterSection(''); setTopicPage(1); }} style={{ padding: '0.5rem' }}>
-            <option value="">Все экзамены</option>
+            <option value="">{t.admin.common.allExams}</option>
             <option value="SAT">SAT</option>
             <option value="TOEFL">TOEFL</option>
             <option value="NUET">NUET</option>
@@ -444,13 +446,13 @@ function AdminQuestionsPage() {
             <option value="CSCA">CSCA</option>
           </select>
           <select value={topicFilterSection} onChange={e => { setTopicFilterSection(e.target.value); setTopicPage(1); }} style={{ padding: '0.5rem' }}>
-            <option value="">Все секции</option>
+            <option value="">{t.admin.common.allSections}</option>
             {sections
               .filter(s => !topicFilterExam || s.examTypeCode === topicFilterExam)
               .map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
           </select>
           <input
-            placeholder="Поиск по теме…"
+            placeholder={t.admin.questions.searchTopic}
             value={topicFilterTopic}
             onChange={e => { setTopicFilterTopic(e.target.value); setTopicPage(1); }}
             className="form-input"
@@ -466,11 +468,11 @@ function AdminQuestionsPage() {
             <thead>
               <tr style={{ borderBottom: '2px solid var(--border-color)', textAlign: 'left' }}>
                 <th style={thStyle}>ID</th>
-                <th style={thStyle}>Экзамен</th>
-                <th style={thStyle}>Секция / Тема</th>
-                <th style={thStyle}>Вопрос</th>
-                <th style={thStyle}>Уровень</th>
-                <th style={thStyle}>Ответы</th>
+                <th style={thStyle}>{t.admin.questions.examSection}</th>
+                <th style={thStyle}>{t.admin.questions.topicName}</th>
+                <th style={thStyle}>{t.admin.questions.questionText}</th>
+                <th style={thStyle}>{t.admin.questions.difficulty}</th>
+                <th style={thStyle}>{t.admin.questions.answers}</th>
                 <th style={thStyle}>b</th>
               </tr>
             </thead>
@@ -504,7 +506,7 @@ function AdminQuestionsPage() {
           </table>
           {questions.length === 0 && !isLoading && (
             <div style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--text-secondary)' }}>
-              Нет вопросов по выбранным фильтрам
+              {t.admin.questions.noQuestionsFilter}
             </div>
           )}
           {/* Pagination (OP-13) */}
@@ -528,12 +530,12 @@ function AdminQuestionsPage() {
           {topicViewLoading && (
             <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>
               <div className="loading-spinner" style={{ margin: '0 auto 0.5rem' }} />
-              Загрузка тем…
+              {t.admin.questions.loadingTopics}
             </div>
           )}
           {groupedByTopic.length === 0 && !topicViewLoading && (
             <div style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--text-secondary)' }}>
-              Нет тем по выбранным фильтрам
+              {t.admin.questions.noTopicsFilter}
             </div>
           )}
           {(() => {
@@ -546,27 +548,27 @@ function AdminQuestionsPage() {
               <>
                 {groupedByTopic.length > 0 && (
                   <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-                    Показано {sliced.length} из {groupedByTopic.length} тем (стр. {topicPage}/{topicTotalPages})
+                    {t.admin.questions.showingTopics} {sliced.length} {t.admin.common.of} {groupedByTopic.length} {t.admin.questions.topicsCount} ({t.admin.common.page} {topicPage}/{topicTotalPages})
                   </div>
                 )}
-                {sliced.map(({ topic: t, questions: qs }) => (
-                    <div key={`${t.examTypeCode}-${t.id}`} className="card" style={{ padding: '1rem 1.25rem' }}>
+                {sliced.map(({ topic: tp, questions: qs }) => (
+                    <div key={`${tp.examTypeCode}-${tp.id}`} className="card" style={{ padding: '1rem 1.25rem' }}>
                       {/* Topic header */}
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: qs.length > 0 ? '0.75rem' : 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                          <Badge bg={EXAM_COLORS[t.examTypeCode]}>{t.examTypeCode}</Badge>
-                          <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{t.sectionName} →</span>
-                          <span style={{ fontWeight: 600, fontSize: '1rem' }}>{t.name}</span>
-                          <span style={{ color: t.questionCount > 0 ? 'var(--text-secondary)' : 'var(--error-color)', fontSize: '0.8rem' }}>
-                            ({t.questionCount} {t.questionCount === 0 ? 'нет вопросов' : `вопр.`})
+                          <Badge bg={EXAM_COLORS[tp.examTypeCode]}>{tp.examTypeCode}</Badge>
+                          <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{tp.sectionName} →</span>
+                          <span style={{ fontWeight: 600, fontSize: '1rem' }}>{tp.name}</span>
+                          <span style={{ color: tp.questionCount > 0 ? 'var(--text-secondary)' : 'var(--error-color)', fontSize: '0.8rem' }}>
+                            ({tp.questionCount} {tp.questionCount === 0 ? t.admin.questions.noQuestions : t.admin.questions.questionsShort})
                           </span>
                         </div>
                         <button
                           className="btn btn-outline"
                           style={{ fontSize: '0.8rem', padding: '0.3rem 0.7rem' }}
-                          onClick={() => startCreate(t.id)}
+                          onClick={() => startCreate(tp.id)}
                         >
-                          Добавить
+                          {t.admin.questions.newQuestion}
                         </button>
                       </div>
                       {/* Questions list */}
@@ -590,7 +592,7 @@ function AdminQuestionsPage() {
                             <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.9rem' }}>
                               {q.text}
                             </span>
-                            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{q.answerCount} вар.</span>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{q.answerCount} {t.admin.questions.optionsShort}</span>
                           </div>
                         ))}
                       </div>
@@ -671,7 +673,7 @@ function AdminQuestionsPage() {
                     background: 'rgba(79,70,229,0.06)', border: '1px solid var(--primary-color)',
                     fontSize: '0.9rem', marginBottom: '1rem', lineHeight: 1.5,
                   }}>
-                    <strong>Объяснение:</strong> {selected.explanation}
+                    <strong>{t.admin.questions.explanationLabel}</strong> {selected.explanation}
                   </div>
                 )}
 
@@ -683,11 +685,11 @@ function AdminQuestionsPage() {
 
                 <div style={{ display: 'flex', gap: '0.75rem' }}>
                   <button className="btn btn-primary" style={{ fontSize: '0.85rem' }} onClick={startEdit}>
-                    Редактировать
+                    {t.admin.common.edit}
                   </button>
                   <button className="btn btn-outline" style={{ fontSize: '0.85rem', color: 'var(--error-color)', borderColor: 'var(--error-color)' }}
                     onClick={() => deleteQuestion(selected.id)}>
-                    Удалить
+                    {t.admin.common.delete}
                   </button>
                 </div>
               </>
@@ -698,7 +700,7 @@ function AdminQuestionsPage() {
               <>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
                   <h2 style={{ margin: 0, fontSize: '1.15rem' }}>
-                    {modalMode === 'create' ? 'Новый вопрос' : 'Редактирование'}
+                    {modalMode === 'create' ? t.admin.questions.createQuestion : t.admin.questions.editQuestion}
                   </h2>
                   <button onClick={closeModal} style={closeBtn}>✕</button>
                 </div>
@@ -712,16 +714,16 @@ function AdminQuestionsPage() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                   {/* Topic selector (only for create) */}
                   {modalMode === 'create' && (
-                    <FormField label="Тема">
+                    <FormField label={t.admin.questions.selectTopic}>
                       <select
                         value={form.topicId}
                         onChange={e => setForm({ ...form, topicId: Number(e.target.value) })}
                         style={{ width: '100%' }}
                       >
-                        <option value={0}>Выберите тему...</option>
-                        {topics.map(t => (
-                          <option key={t.id} value={t.id}>
-                            [{t.examTypeCode}] {t.sectionName} → {t.name} ({t.questionCount} вопр.)
+                        <option value={0}>{t.admin.questions.selectTopic}...</option>
+                        {topics.map(tp => (
+                          <option key={tp.id} value={tp.id}>
+                            [{tp.examTypeCode}] {tp.sectionName} → {tp.name} ({tp.questionCount} {t.admin.questions.questionsShort})
                           </option>
                         ))}
                       </select>
@@ -729,19 +731,19 @@ function AdminQuestionsPage() {
                   )}
 
                   {/* Question text */}
-                  <FormField label="Текст вопроса">
+                  <FormField label={t.admin.questions.questionText}>
                     <textarea
                       value={form.text}
                       onChange={e => setForm({ ...form, text: e.target.value })}
                       className="form-input"
                       rows={3}
                       style={{ width: '100%', resize: 'vertical' }}
-                      placeholder="Введите текст вопроса..."
+                      placeholder={t.admin.questions.enterQuestion}
                     />
                   </FormField>
 
                   {/* Difficulty */}
-                  <FormField label="Уровень сложности">
+                  <FormField label={t.admin.questions.difficulty}>
                     <div style={{ display: 'flex', gap: '0.5rem' }}>
                       {['Easy', 'Medium', 'Hard'].map(d => (
                         <button
@@ -761,14 +763,14 @@ function AdminQuestionsPage() {
                   </FormField>
 
                   {/* Answer options */}
-                  <FormField label="Варианты ответа (нажмите ● для выбора правильного)">
+                  <FormField label={`${t.admin.questions.answerOptions} (${t.admin.questions.answerOptionsHint})`}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                       {form.answerOptions.map((opt, i) => (
                         <div key={i} style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
                           <button
                             type="button"
                             onClick={() => updateOption(i, 'isCorrect', true)}
-                            title={opt.isCorrect ? 'Правильный ответ' : 'Отметить как правильный'}
+                            title={opt.isCorrect ? t.admin.questions.correctAnswer : t.admin.questions.markCorrect}
                             style={{
                               width: '28px', height: '28px', borderRadius: '50%', border: '2px solid',
                               borderColor: opt.isCorrect ? 'var(--success-color)' : 'var(--border-color)',
@@ -784,7 +786,7 @@ function AdminQuestionsPage() {
                             className="form-input"
                             value={opt.text}
                             onChange={e => updateOption(i, 'text', e.target.value)}
-                            placeholder={`Вариант ${String.fromCharCode(65 + i)}...`}
+                            placeholder={`${t.admin.questions.optionPlaceholder} ${String.fromCharCode(65 + i)}...`}
                             style={{ flex: 1 }}
                           />
                           {form.answerOptions.length > 2 && (
@@ -795,7 +797,7 @@ function AdminQuestionsPage() {
                                 background: 'none', border: 'none', cursor: 'pointer',
                                 color: 'var(--error-color)', fontSize: '1.1rem', flexShrink: 0,
                               }}
-                              title="Удалить вариант"
+                              title={t.admin.questions.removeOption}
                             >✕</button>
                           )}
                         </div>
@@ -807,31 +809,31 @@ function AdminQuestionsPage() {
                           className="btn btn-outline"
                           style={{ fontSize: '0.8rem', padding: '0.3rem 0.7rem', alignSelf: 'flex-start', marginTop: '0.25rem' }}
                         >
-                          + Вариант
+                          {t.admin.questions.addOption}
                         </button>
                       )}
                     </div>
                   </FormField>
 
                   {/* Explanation */}
-                  <FormField label="Объяснение (необязательно)">
+                  <FormField label={t.admin.questions.explanationOptional}>
                     <textarea
                       value={form.explanation}
                       onChange={e => setForm({ ...form, explanation: e.target.value })}
                       className="form-input"
                       rows={2}
                       style={{ width: '100%', resize: 'vertical' }}
-                      placeholder="Объяснение правильного ответа..."
+                      placeholder={t.admin.questions.explanationPlaceholder}
                     />
                   </FormField>
 
                   {/* Actions */}
                   <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
                     <button className="btn btn-primary" onClick={modalMode === 'create' ? saveCreate : saveEdit} style={{ flex: 1 }}>
-                      {modalMode === 'create' ? 'Создать вопрос' : 'Сохранить'}
+                      {modalMode === 'create' ? t.admin.questions.createQuestion : t.admin.common.save}
                     </button>
                     <button className="btn btn-outline" onClick={modalMode === 'edit' ? () => setModalMode('view') : closeModal} style={{ flex: 1 }}>
-                      Отмена
+                      {t.admin.common.cancel}
                     </button>
                   </div>
                 </div>
@@ -856,7 +858,7 @@ function AdminQuestionsPage() {
             onClick={e => e.stopPropagation()}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-              <h2 style={{ margin: 0, fontSize: '1.15rem' }}>Новая тема</h2>
+              <h2 style={{ margin: 0, fontSize: '1.15rem' }}>{t.admin.questions.newTopic}</h2>
               <button onClick={() => setShowTopicModal(false)} style={closeBtn}>✕</button>
             </div>
 
@@ -867,24 +869,24 @@ function AdminQuestionsPage() {
             )}
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <FormField label="Название темы">
+              <FormField label={t.admin.questions.topicName}>
                 <input
                   className="form-input"
                   value={topicForm.name}
                   onChange={e => setTopicForm({ ...topicForm, name: e.target.value })}
-                  placeholder="Например: Trigonometry"
+                  placeholder={t.admin.questions.enterTopicName}
                   style={{ width: '100%' }}
                   autoFocus
                 />
               </FormField>
 
-              <FormField label="Секция экзамена">
+              <FormField label={t.admin.questions.examSection}>
                 <select
                   value={topicForm.sectionId}
                   onChange={e => setTopicForm({ ...topicForm, sectionId: Number(e.target.value) })}
                   style={{ width: '100%' }}
                 >
-                  <option value={0}>Выберите секцию...</option>
+                  <option value={0}>{t.admin.questions.selectSection}...</option>
                   {sections.map(s => (
                     <option key={s.id} value={s.id}>
                       [{s.examTypeCode}] {s.name}
@@ -893,13 +895,13 @@ function AdminQuestionsPage() {
                 </select>
               </FormField>
 
-              <FormField label="Навык">
+              <FormField label={t.admin.questions.skill}>
                 <select
                   value={topicForm.skillId}
                   onChange={e => setTopicForm({ ...topicForm, skillId: Number(e.target.value) })}
                   style={{ width: '100%' }}
                 >
-                  <option value={0}>Выберите навык...</option>
+                  <option value={0}>{t.admin.questions.selectSkill}...</option>
                   {skills.map(s => (
                     <option key={s.id} value={s.id}>
                       {s.name}
@@ -910,10 +912,10 @@ function AdminQuestionsPage() {
 
               <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
                 <button className="btn btn-primary" onClick={saveTopic} style={{ flex: 1 }}>
-                  Создать тему
+                  {t.admin.questions.createTopic}
                 </button>
                 <button className="btn btn-outline" onClick={() => setShowTopicModal(false)} style={{ flex: 1 }}>
-                  Отмена
+                  {t.admin.common.cancel}
                 </button>
               </div>
             </div>

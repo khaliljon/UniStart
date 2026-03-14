@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import adminService from '../services/adminService';
+import { useTranslation } from '../hooks/useTranslation';
+import { getDateLocale } from '../i18n';
 
 interface TutorItem {
   tutorProfileId: number;
@@ -20,6 +22,7 @@ interface TutorItem {
 }
 
 function AdminTutorsPage() {
+  const { t } = useTranslation();
   const [tutors, setTutors] = useState<TutorItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'verified' | 'unverified' | 'blocked'>('all');
@@ -38,56 +41,56 @@ function AdminTutorsPage() {
 
   useEffect(() => { loadTutors(); }, [loadTutors]);
 
-  const handleVerify = async (t: TutorItem) => {
-    setActionLoading(t.tutorProfileId);
+  const handleVerify = async (tutor: TutorItem) => {
+    setActionLoading(tutor.tutorProfileId);
     try {
-      if (t.isVerified) {
-        await adminService.unverifyTutor(t.tutorProfileId);
-        setTutors(prev => prev.map(x => x.tutorProfileId === t.tutorProfileId ? { ...x, isVerified: false } : x));
+      if (tutor.isVerified) {
+        await adminService.unverifyTutor(tutor.tutorProfileId);
+        setTutors(prev => prev.map(x => x.tutorProfileId === tutor.tutorProfileId ? { ...x, isVerified: false } : x));
       } else {
-        await adminService.verifyTutor(t.tutorProfileId);
-        setTutors(prev => prev.map(x => x.tutorProfileId === t.tutorProfileId ? { ...x, isVerified: true } : x));
+        await adminService.verifyTutor(tutor.tutorProfileId);
+        setTutors(prev => prev.map(x => x.tutorProfileId === tutor.tutorProfileId ? { ...x, isVerified: true } : x));
       }
     } catch {
-      alert('Не удалось изменить статус верификации');
+      alert(t.admin.tutors.verifyError);
     } finally {
       setActionLoading(null);
     }
   };
 
-  const handleBlock = async (t: TutorItem) => {
-    setActionLoading(t.tutorProfileId);
+  const handleBlock = async (tutor: TutorItem) => {
+    setActionLoading(tutor.tutorProfileId);
     try {
-      if (t.isBlocked) {
-        await adminService.unblockUser(t.userId);
-        setTutors(prev => prev.map(x => x.tutorProfileId === t.tutorProfileId ? { ...x, isBlocked: false, blockReason: null } : x));
+      if (tutor.isBlocked) {
+        await adminService.unblockUser(tutor.userId);
+        setTutors(prev => prev.map(x => x.tutorProfileId === tutor.tutorProfileId ? { ...x, isBlocked: false, blockReason: null } : x));
       } else {
-        const reason = prompt('Причина блокировки (необязательно):');
-        await adminService.blockUser(t.userId, reason ?? undefined);
-        setTutors(prev => prev.map(x => x.tutorProfileId === t.tutorProfileId ? { ...x, isBlocked: true, blockReason: reason } : x));
+        const reason = prompt(t.admin.tutors.blockReasonPrompt);
+        await adminService.blockUser(tutor.userId, reason ?? undefined);
+        setTutors(prev => prev.map(x => x.tutorProfileId === tutor.tutorProfileId ? { ...x, isBlocked: true, blockReason: reason } : x));
       }
     } catch {
-      alert('Не удалось изменить статус блокировки');
+      alert(t.admin.tutors.blockError);
     } finally {
       setActionLoading(null);
     }
   };
 
-  const filteredTutors = tutors.filter(t => {
-    if (filter === 'verified') return t.isVerified;
-    if (filter === 'unverified') return !t.isVerified;
-    if (filter === 'blocked') return t.isBlocked;
+  const filteredTutors = tutors.filter(tutor => {
+    if (filter === 'verified') return tutor.isVerified;
+    if (filter === 'unverified') return !tutor.isVerified;
+    if (filter === 'blocked') return tutor.isBlocked;
     return true;
   });
 
-  const formatDate = (d: string) => new Date(d).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' });
+  const formatDate = (d: string) => new Date(d).toLocaleDateString(getDateLocale(), { day: 'numeric', month: 'short', year: 'numeric' });
 
   return (
     <div className="animate-fade-in">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-        <h1 style={{ fontSize: '1.5rem', fontWeight: 700 }}>Управление тьюторами</h1>
+        <h1 style={{ fontSize: '1.5rem', fontWeight: 700 }}>{t.admin.tutors.title}</h1>
         <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-          Всего: {tutors.length} | Верифицированы: {tutors.filter(t => t.isVerified).length}
+          {t.admin.tutors.totalLabel} {tutors.length} | {t.admin.tutors.verifiedLabel} {tutors.filter(tutor => tutor.isVerified).length}
         </span>
       </div>
 
@@ -104,11 +107,11 @@ function AdminTutorsPage() {
               color: filter === f ? '#fff' : undefined,
             }}
           >
-            {f === 'all' ? 'Все' : f === 'verified' ? 'Верифицированы' : f === 'unverified' ? 'Не верифицированы' : 'Заблокированы'}
-            {' '}({tutors.filter(t => {
-              if (f === 'verified') return t.isVerified;
-              if (f === 'unverified') return !t.isVerified;
-              if (f === 'blocked') return t.isBlocked;
+            {f === 'all' ? t.admin.tutors.filterAll : f === 'verified' ? t.admin.tutors.filterVerified : f === 'unverified' ? t.admin.tutors.filterUnverified : t.admin.tutors.filterBlocked}
+            {' '}({tutors.filter(tutor => {
+              if (f === 'verified') return tutor.isVerified;
+              if (f === 'unverified') return !tutor.isVerified;
+              if (f === 'blocked') return tutor.isBlocked;
               return true;
             }).length})
           </button>
@@ -116,23 +119,23 @@ function AdminTutorsPage() {
       </div>
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>Загрузка...</div>
+        <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>{t.admin.common.loading}</div>
       ) : filteredTutors.length === 0 ? (
         <div className="card" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>
-          Нет тьюторов в этой категории
+          {t.admin.tutors.noTutors}
         </div>
       ) : (
         <div style={{ display: 'grid', gap: '0.75rem' }}>
-          {filteredTutors.map(t => (
+          {filteredTutors.map(tutor => (
             <div
-              key={t.tutorProfileId}
+              key={tutor.tutorProfileId}
               className="card"
               style={{
                 padding: '1rem 1.25rem',
                 display: 'flex', alignItems: 'center', gap: '1rem',
-                borderLeft: t.isBlocked
+                borderLeft: tutor.isBlocked
                   ? '4px solid #ef4444'
-                  : t.isVerified
+                  : tutor.isVerified
                     ? '4px solid #22c55e'
                     : '4px solid #f59e0b',
               }}
@@ -140,51 +143,51 @@ function AdminTutorsPage() {
               {/* Avatar */}
               <div style={{
                 width: '48px', height: '48px', borderRadius: '50%', flexShrink: 0,
-                background: t.isBlocked
+                background: tutor.isBlocked
                   ? '#fca5a5'
                   : 'linear-gradient(135deg, var(--primary-color), var(--primary-hover))',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 color: '#fff', fontWeight: 700, fontSize: '1rem',
               }}>
-                {t.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)}
+                {tutor.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)}
               </div>
 
               {/* Info */}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                  <span style={{ fontWeight: 700, fontSize: '1rem' }}>{t.name}</span>
-                  {t.isVerified && (
+                  <span style={{ fontWeight: 700, fontSize: '1rem' }}>{tutor.name}</span>
+                  {tutor.isVerified && (
                     <span style={{
                       background: '#dcfce7', color: '#16a34a', padding: '0.1rem 0.5rem',
                       borderRadius: '999px', fontSize: '0.7rem', fontWeight: 700,
-                    }}>Верифицирован</span>
+                    }}>{t.admin.tutors.verified}</span>
                   )}
-                  {t.isBlocked && (
+                  {tutor.isBlocked && (
                     <span style={{
                       background: '#fef2f2', color: '#dc2626', padding: '0.1rem 0.5rem',
                       borderRadius: '999px', fontSize: '0.7rem', fontWeight: 700,
-                    }}>Заблокирован</span>
+                    }}>{t.admin.tutors.blocked}</span>
                   )}
-                  {!t.isAvailable && (
+                  {!tutor.isAvailable && (
                     <span style={{
                       background: '#fef9c3', color: '#ca8a04', padding: '0.1rem 0.5rem',
                       borderRadius: '999px', fontSize: '0.7rem', fontWeight: 700,
-                    }}>Недоступен</span>
+                    }}>{t.admin.tutors.unavailable}</span>
                   )}
                 </div>
                 <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
-                  {t.email} · {t.headline || 'Без заголовка'}
+                  {tutor.email} · {tutor.headline || t.admin.tutors.noHeadline}
                 </div>
                 <div style={{ display: 'flex', gap: '1rem', marginTop: '0.3rem', fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
-                  <span>★ {t.averageRating.toFixed(1)} ({t.totalReviews})</span>
-                  <span>{t.totalStudents} учеников</span>
-                  {t.hourlyRate && <span>{t.hourlyRate}₸/ч</span>}
-                  <span>{formatDate(t.createdAt)}</span>
-                  {t.specializations && <span>{t.specializations}</span>}
+                  <span>★ {tutor.averageRating.toFixed(1)} ({tutor.totalReviews})</span>
+                  <span>{tutor.totalStudents} {t.admin.tutors.studentsCount}</span>
+                  {tutor.hourlyRate && <span>{tutor.hourlyRate}₸/ч</span>}
+                  <span>{formatDate(tutor.createdAt)}</span>
+                  {tutor.specializations && <span>{tutor.specializations}</span>}
                 </div>
-                {t.isBlocked && t.blockReason && (
+                {tutor.isBlocked && tutor.blockReason && (
                   <div style={{ fontSize: '0.8rem', color: '#dc2626', marginTop: '0.25rem' }}>
-                    Причина: {t.blockReason}
+                    {t.admin.tutors.reason} {tutor.blockReason}
                   </div>
                 )}
               </div>
@@ -192,32 +195,32 @@ function AdminTutorsPage() {
               {/* Actions */}
               <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
                 <button
-                  onClick={() => handleVerify(t)}
-                  disabled={actionLoading === t.tutorProfileId}
+                  onClick={() => handleVerify(tutor)}
+                  disabled={actionLoading === tutor.tutorProfileId}
                   className="btn"
                   style={{
                     padding: '0.4rem 0.75rem', fontSize: '0.82rem',
-                    background: t.isVerified ? '#fef2f2' : '#dcfce7',
-                    color: t.isVerified ? '#dc2626' : '#16a34a',
+                    background: tutor.isVerified ? '#fef2f2' : '#dcfce7',
+                    color: tutor.isVerified ? '#dc2626' : '#16a34a',
                     border: 'none',
                   }}
-                  title={t.isVerified ? 'Снять верификацию' : 'Верифицировать'}
+                  title={tutor.isVerified ? t.admin.tutors.unverify : t.admin.tutors.verify}
                 >
-                  {actionLoading === t.tutorProfileId ? '...' : t.isVerified ? 'Снять ✓' : 'Верифицировать'}
+                  {actionLoading === tutor.tutorProfileId ? '...' : tutor.isVerified ? t.admin.tutors.unverifyShort : t.admin.tutors.verify}
                 </button>
                 <button
-                  onClick={() => handleBlock(t)}
-                  disabled={actionLoading === t.tutorProfileId}
+                  onClick={() => handleBlock(tutor)}
+                  disabled={actionLoading === tutor.tutorProfileId}
                   className="btn"
                   style={{
                     padding: '0.4rem 0.75rem', fontSize: '0.82rem',
-                    background: t.isBlocked ? '#dcfce7' : '#fef2f2',
-                    color: t.isBlocked ? '#16a34a' : '#dc2626',
+                    background: tutor.isBlocked ? '#dcfce7' : '#fef2f2',
+                    color: tutor.isBlocked ? '#16a34a' : '#dc2626',
                     border: 'none',
                   }}
-                  title={t.isBlocked ? 'Разблокировать' : 'Заблокировать'}
+                  title={tutor.isBlocked ? t.admin.tutors.unblock : t.admin.tutors.block}
                 >
-                  {actionLoading === t.tutorProfileId ? '...' : t.isBlocked ? 'Разблокировать' : 'Заблокировать'}
+                  {actionLoading === tutor.tutorProfileId ? '...' : tutor.isBlocked ? t.admin.tutors.unblock : t.admin.tutors.block}
                 </button>
               </div>
             </div>

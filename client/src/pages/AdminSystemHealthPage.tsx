@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import adminService from '../services/adminService';
+import { useTranslation } from '../hooks/useTranslation';
+import { getDateLocale } from '../i18n';
 
 type SystemHealth = Awaited<ReturnType<typeof adminService.getSystemHealth>>;
 
@@ -14,23 +16,24 @@ const STATUS_COLORS: Record<string, string> = {
   Enqueued: '#f59e0b',
 };
 
-function formatUptime(minutes: number): string {
-  if (minutes < 60) return `${Math.round(minutes)} мин`;
-  if (minutes < 1440) return `${Math.floor(minutes / 60)} ч ${Math.round(minutes % 60)} мин`;
+function formatUptime(minutes: number, labels: { min: string; hours: string; days: string }): string {
+  if (minutes < 60) return `${Math.round(minutes)} ${labels.min}`;
+  if (minutes < 1440) return `${Math.floor(minutes / 60)} ${labels.hours} ${Math.round(minutes % 60)} ${labels.min}`;
   const days = Math.floor(minutes / 1440);
   const hours = Math.floor((minutes % 1440) / 60);
-  return `${days} д ${hours} ч`;
+  return `${days} ${labels.days} ${hours} ${labels.hours}`;
 }
 
 function formatDate(iso: string | null): string {
   if (!iso) return '—';
-  return new Date(iso).toLocaleString('ru-RU', {
+  return new Date(iso).toLocaleString(getDateLocale(), {
     day: '2-digit', month: '2-digit', year: 'numeric',
     hour: '2-digit', minute: '2-digit', second: '2-digit'
   });
 }
 
 export default function AdminSystemHealthPage() {
+  const { t } = useTranslation();
   const [data, setData] = useState<SystemHealth | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -42,7 +45,7 @@ export default function AdminSystemHealthPage() {
       const result = await adminService.getSystemHealth();
       setData(result);
     } catch {
-      setError('Не удалось загрузить данные о системе');
+      setError(t.admin.common.loadError);
     } finally {
       setLoading(false);
     }
@@ -72,7 +75,7 @@ export default function AdminSystemHealthPage() {
     setTriggering(null);
   };
 
-  if (loading) return <div style={{ padding: 32, textAlign: 'center' }}>Загрузка...</div>;
+  if (loading) return <div style={{ padding: 32, textAlign: 'center' }}>{t.admin.common.loading}</div>;
   if (error) return <div style={{ padding: 32, color: '#ef4444' }}>{error}</div>;
   if (!data) return null;
 
@@ -81,11 +84,11 @@ export default function AdminSystemHealthPage() {
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <h2 style={{ margin: 0 }}>Здоровье системы</h2>
+        <h2 style={{ margin: 0 }}>{t.admin.health.title}</h2>
         <button onClick={load} style={{
           padding: '8px 16px', borderRadius: 8, border: '1px solid var(--border)',
           background: 'var(--bg-secondary)', cursor: 'pointer', color: 'var(--text-primary)'
-        }}>Обновить</button>
+        }}>{t.admin.health.refreshBtn}</button>
       </div>
 
       {/* Overall Status Banner */}
@@ -97,24 +100,24 @@ export default function AdminSystemHealthPage() {
         <span style={{ fontSize: 28 }}>{data.status === 'Healthy' ? '' : data.status === 'Degraded' ? '' : ''}</span>
         <div>
           <div style={{ fontWeight: 700, fontSize: 18, color: overallColor }}>
-            {data.status === 'Healthy' ? 'Система работает нормально' :
-             data.status === 'Degraded' ? 'Система работает с ограничениями' :
-             'Система недоступна'}
+            {data.status === 'Healthy' ? t.admin.health.statusOk :
+             data.status === 'Degraded' ? t.admin.health.statusDegraded :
+             t.admin.health.statusDown}
           </div>
           <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 2 }}>
-            Обновлено: {formatDate(data.system.serverTime)}
+            {t.admin.health.updatedAt} {formatDate(data.system.serverTime)}
           </div>
         </div>
       </div>
 
       {/* Cards Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 24 }}>
-        <StatCard label="Окружение" value={data.system.environment} icon="" />
-        <StatCard label="Uptime" value={formatUptime(data.system.uptime)} icon="" />
-        <StatCard label="Память" value={`${data.system.memoryMB.toFixed(0)} MB`} icon="" />
+        <StatCard label={t.admin.health.environment} value={data.system.environment} icon="" />
+        <StatCard label={t.admin.health.uptime} value={formatUptime(data.system.uptime, { min: t.admin.health.min, hours: t.admin.health.hours, days: t.admin.health.days })} icon="" />
+        <StatCard label={t.admin.health.memory} value={`${data.system.memoryMB.toFixed(0)} MB`} icon="" />
         <StatCard label=".NET" value={data.system.dotnetVersion} icon="" />
-        <StatCard label="Потоки" value={String(data.system.threadCount)} icon="" />
-        <StatCard label="Машина" value={data.system.machineName} icon="" />
+        <StatCard label={t.admin.health.threads} value={String(data.system.threadCount)} icon="" />
+        <StatCard label={t.admin.health.machine} value={data.system.machineName} icon="" />
       </div>
 
       {/* Two-column layout */}
@@ -123,7 +126,7 @@ export default function AdminSystemHealthPage() {
         <div style={{ background: 'var(--bg-secondary)', borderRadius: 12, padding: 20 }}>
           <h3 style={{ margin: '0 0 16px' }}>Health Checks</h3>
           {data.healthChecks.length === 0 ? (
-            <div style={{ color: 'var(--text-secondary)' }}>Нет проверок</div>
+            <div style={{ color: 'var(--text-secondary)' }}>{t.admin.health.noChecks}</div>
           ) : data.healthChecks.map(hc => (
             <div key={hc.name} style={{
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -146,28 +149,28 @@ export default function AdminSystemHealthPage() {
 
         {/* Database Stats */}
         <div style={{ background: 'var(--bg-secondary)', borderRadius: 12, padding: 20 }}>
-          <h3 style={{ margin: '0 0 16px' }}>База данных</h3>
+          <h3 style={{ margin: '0 0 16px' }}>{t.admin.health.database}</h3>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <DbStat label="Пользователей" value={data.database.totalUsers} />
-            <DbStat label="Вопросов" value={data.database.totalQuestions} />
-            <DbStat label="Ответов" value={data.database.totalAnswers} />
-            <DbStat label="Сессий" value={data.database.totalSessions} />
-            <DbStat label="Активных сегодня" value={data.database.activeUsersToday} highlight />
-            <DbStat label="Ответов сегодня" value={data.database.answersToday} highlight />
+            <DbStat label={t.admin.health.usersCount} value={data.database.totalUsers} />
+            <DbStat label={t.admin.health.questionsCount} value={data.database.totalQuestions} />
+            <DbStat label={t.admin.health.answersCount} value={data.database.totalAnswers} />
+            <DbStat label={t.admin.health.sessionsCount} value={data.database.totalSessions} />
+            <DbStat label={t.admin.health.activeToday} value={data.database.activeUsersToday} highlight />
+            <DbStat label={t.admin.health.answersToday} value={data.database.answersToday} highlight />
           </div>
         </div>
       </div>
 
       {/* Recurring Jobs */}
       <div style={{ background: 'var(--bg-secondary)', borderRadius: 12, padding: 20 }}>
-        <h3 style={{ margin: '0 0 16px' }}>Фоновые задачи (Hangfire)</h3>
+        <h3 style={{ margin: '0 0 16px' }}>{t.admin.health.backgroundJobs}</h3>
         {!data.recurringJobs || data.recurringJobs.length === 0 ? (
-          <div style={{ color: 'var(--text-secondary)' }}>Нет зарегистрированных задач</div>
+          <div style={{ color: 'var(--text-secondary)' }}>{t.admin.health.noJobs}</div>
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '2px solid var(--border)' }}>
-                {['Задача', 'Расписание', 'Последний запуск', 'Следующий запуск', 'Статус', ''].map(h => (
+                {[t.admin.health.taskCol, t.admin.health.scheduleCol, t.admin.health.lastRunCol, t.admin.health.nextRunCol, t.admin.health.statusCol, ''].map(h => (
                   <th key={h} style={{ padding: '8px 12px', textAlign: 'left', fontSize: 13, color: 'var(--text-secondary)' }}>{h}</th>
                 ))}
               </tr>
@@ -197,7 +200,7 @@ export default function AdminSystemHealthPage() {
                         color: 'var(--text-primary)', opacity: triggering === job.id ? 0.5 : 1
                       }}
                     >
-                      {triggering === job.id ? '...' : '▶ Запустить'}
+                      {triggering === job.id ? '...' : `▶ ${t.admin.health.runBtn}`}
                     </button>
                   </td>
                 </tr>
@@ -233,7 +236,7 @@ function DbStat({ label, value, highlight }: { label: string; value: number; hig
     }}>
       <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>{label}</div>
       <div style={{ fontWeight: 700, fontSize: 20, color: highlight ? 'var(--accent-color)' : 'var(--text-primary)' }}>
-        {value.toLocaleString('ru-RU')}
+        {value.toLocaleString(getDateLocale())}
       </div>
     </div>
   );

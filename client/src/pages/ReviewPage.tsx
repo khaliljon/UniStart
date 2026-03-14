@@ -2,15 +2,19 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../store';
-import type { Question, AnswerResult } from '../types';
+import type { Question, AnswerResult, DailyUsage } from '../types';
 import { testService } from '../services/testService';
+import { subscriptionService } from '../services/subscriptionService';
 import { QuestionSkeleton } from '../components/Skeleton';
 import { useTranslation } from '../hooks/useTranslation';
+import { DailyLimitModal } from '../components/DailyLimitModal';
 
 export default function ReviewPage() {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { selectedExams } = useSelector((state: RootState) => state.exam);
+  const { user } = useSelector((state: RootState) => state.auth);
+  const isPro = user?.subscriptionTier === 'Pro';
   
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -18,14 +22,32 @@ export default function ReviewPage() {
   const [answerResult, setAnswerResult] = useState<AnswerResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [, setDailyUsage] = useState<DailyUsage | null>(null);
+  const [limitBlocked, setLimitBlocked] = useState(false);
+  const [showLimitModal, setShowLimitModal] = useState(false);
 
   useEffect(() => {
     if (selectedExams.length === 0) {
       navigate('/');
       return;
     }
-    loadWeakQuestions();
-  }, [selectedExams, navigate]);
+    // Check daily limit for free users before loading review questions
+    if (!isPro) {
+      subscriptionService.getDailyUsage().then(usage => {
+        setDailyUsage(usage);
+        if (usage.isLimitReached) {
+          setLimitBlocked(true);
+          setLoading(false);
+          return;
+        }
+        loadWeakQuestions();
+      }).catch(() => {
+        loadWeakQuestions();
+      });
+    } else {
+      loadWeakQuestions();
+    }
+  }, [selectedExams, navigate, isPro]);
 
   const loadWeakQuestions = async () => {
     try {
@@ -39,9 +61,22 @@ export default function ReviewPage() {
     }
   };
 
+  // Daily limit check on answer submission
   const handleSubmit = async () => {
     if (selectedOption === null) return;
     
+    // Re-check limit before submitting
+    if (!isPro) {
+      try {
+        const usage = await subscriptionService.getDailyUsage();
+        setDailyUsage(usage);
+        if (usage.isLimitReached) {
+          setLimitBlocked(true);
+          return;
+        }
+      } catch { /* proceed */ }
+    }
+
     const currentQuestion = questions[currentIndex];
     setSubmitting(true);
     
@@ -51,7 +86,11 @@ export default function ReviewPage() {
         answerOptionId: selectedOption,
       });
       setAnswerResult(result);
-    } catch (error) {
+    } catch (error: any) {
+      if (error?.response?.status === 429) {
+        setLimitBlocked(true);
+        return;
+      }
       console.error('Failed to submit answer:', error);
     } finally {
       setSubmitting(false);
@@ -75,6 +114,45 @@ export default function ReviewPage() {
           <div className="skeleton" style={{ height: '2rem', width: '200px', marginBottom: '1rem' }} />
         </div>
         <QuestionSkeleton />
+      </div>
+    );
+  }
+
+  // Blocked state when daily limit reached
+  if (limitBlocked) {
+    return (
+      <div className="animate-fade-in" style={{ maxWidth: '500px', margin: '2rem auto' }}>
+        <DailyLimitModal isOpen={showLimitModal} onClose={() => setShowLimitModal(false)} />
+        <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
+          <div style={{
+            width: '64px', height: '64px', borderRadius: '50%',
+            backgroundColor: 'rgba(239, 68, 68, 0.1)', display: 'flex',
+            alignItems: 'center', justifyContent: 'center',
+            margin: '0 auto 1rem', fontSize: '1.5rem', color: 'var(--error-color)',
+          }}>
+            !
+          </div>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.75rem', color: 'var(--text-primary)' }}>
+            {t.limits.reviewBlocked}
+          </h2>
+          <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', lineHeight: 1.5 }}>
+            {t.limits.reviewBlockedDesc}
+          </p>
+          <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <button
+              onClick={() => setShowLimitModal(true)}
+              className="btn btn-primary"
+            >
+              {t.limits.upgradePro}
+            </button>
+            <button
+              onClick={() => navigate('/')}
+              className="btn btn-secondary"
+            >
+              {t.practice.backToExams}
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
