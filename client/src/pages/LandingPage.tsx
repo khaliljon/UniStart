@@ -457,6 +457,8 @@ function LandingPage() {
               <span style={{ cursor: 'pointer' }} onClick={() => navigate('/register')}>{t.landing.register}</span>
               <span style={{ cursor: 'pointer' }} onClick={() => navigate('/login')}>{t.landing.login}</span>
               <span style={{ cursor: 'pointer' }} onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}>{t.landing.capabilities}</span>
+              <span style={{ cursor: 'pointer' }} onClick={() => navigate('/privacy')}>{t.legal.privacyTitle}</span>
+              <span style={{ cursor: 'pointer' }} onClick={() => navigate('/terms')}>{t.legal.termsTitle}</span>
             </div>
           </div>
 
@@ -491,7 +493,9 @@ function LandingPage() {
           textAlign: 'center',
           fontSize: '0.8rem',
         }}>
-          © {new Date().getFullYear()} UniStart. {t.landing.allRights}
+          © {new Date().getFullYear()} UniStart. {t.landing.allRights} |{' '}
+          <span style={{ cursor: 'pointer', color: '#9ca3af' }} onClick={() => navigate('/privacy')}>{t.legal.privacyTitle}</span>{' | '}
+          <span style={{ cursor: 'pointer', color: '#9ca3af' }} onClick={() => navigate('/terms')}>{t.legal.termsTitle}</span>
         </div>
       </footer>
     </div>

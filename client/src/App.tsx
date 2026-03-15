@@ -4,6 +4,7 @@ import { useAppSelector } from './hooks/useAppSelector'
 import Layout from './components/Layout'
 import AdminLayout from './components/AdminLayout'
 import TutorLayout from './components/TutorLayout'
+import CookieBanner from './components/CookieBanner'
 
 // ── Lazy-loaded pages (code splitting) ──────────────────
 const LoginPage = lazy(() => import('./pages/LoginPage'))
@@ -31,6 +32,8 @@ const LandingPage = lazy(() => import('./pages/LandingPage'))
 const TutorsPage = lazy(() => import('./pages/TutorsPage'))
 const TutorProfilePage = lazy(() => import('./pages/TutorProfilePage'))
 const SchoolDetailPage = lazy(() => import('./pages/SchoolDetailPage'))
+const PrivacyPage = lazy(() => import('./pages/PrivacyPage'))
+const TermsPage = lazy(() => import('./pages/TermsPage'))
 const MessagesPage = lazy(() => import('./pages/MessagesPage'))
 const TutorHomePage = lazy(() => import('./pages/TutorHomePage'))
 const TutorStudentsPage = lazy(() => import('./pages/TutorStudentsPage'))
@@ -115,11 +118,14 @@ function App() {
   const needsOnboarding = isAuthenticated && !isAdmin && !isTutor && !user?.hasCompletedOnboarding
 
   return (
+    <>
     <Suspense fallback={<PageLoader />}>
     <Routes>
       <Route path="/landing" element={!isAuthenticated ? <LandingPage /> : <Navigate to="/" replace />} />
       <Route path="/login" element={!isAuthenticated ? <LoginPage /> : <Navigate to={needsOnboarding ? '/onboarding' : '/'} />} />
       <Route path="/register" element={!isAuthenticated ? <RegisterPage /> : <Navigate to={needsOnboarding ? '/onboarding' : '/'} />} />
+      <Route path="/privacy" element={<PrivacyPage />} />
+      <Route path="/terms" element={<TermsPage />} />
       <Route path="/onboarding" element={needsOnboarding ? <OnboardingPage /> : <Navigate to="/" replace />} />
 
       {isAuthenticated ? (
@@ -133,6 +139,8 @@ function App() {
       )}
     </Routes>
     </Suspense>
+    <CookieBanner />
+    </>
   )
 }
 

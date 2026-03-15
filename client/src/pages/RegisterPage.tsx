@@ -14,11 +14,17 @@ function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [validationError, setValidationError] = useState('');
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setValidationError('');
+
+    if (!acceptedTerms) {
+      setValidationError(t.legal.consentRequired);
+      return;
+    }
 
     if (password !== confirmPassword) {
       setValidationError('Passwords do not match');
@@ -117,6 +123,30 @@ function RegisterPage() {
               placeholder="Confirm your password"
               required
             />
+          </div>
+
+          <div style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '0.5rem',
+            marginTop: '0.5rem',
+          }}>
+            <input
+              type="checkbox"
+              id="acceptTerms"
+              checked={acceptedTerms}
+              onChange={(e) => {
+                setAcceptedTerms(e.target.checked);
+                handleInputChange();
+              }}
+              style={{ marginTop: '0.25rem', flexShrink: 0 }}
+            />
+            <label htmlFor="acceptTerms" style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+              {t.legal.consentText}{' '}
+              (<Link to="/terms" style={{ color: 'var(--primary-color)' }} target="_blank">{t.legal.termsTitle}</Link>
+              {', '}
+              <Link to="/privacy" style={{ color: 'var(--primary-color)' }} target="_blank">{t.legal.privacyTitle}</Link>)
+            </label>
           </div>
 
           {(error || validationError) && (

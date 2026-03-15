@@ -24,18 +24,23 @@
 - FIX-38: Профиль — `∞` вместо `2147483647` для Pro пользователей
 - FIX-39: Валидатор подписки — `ProYearly` вместо `ProAnnual` (фикс ошибки при апгрейде)
 - FIX-40: Лендинг — убраны фейковые метрики и отзывы, акцент на CSCA/NUET, партнёр LinHao, годовая подписка
+- FIX-41: Убраны эмодзи с LandingPage + SchoolDetailPage (RULES.md compliance)
+- FIX-42: Unit-тесты — 125 тестов (JwtService 10, Subscription 16, Validators 21, AdaptiveEngine 8 + IrtMath ~70)
+- FIX-43: PHASE 1 Legal — PrivacyPage, TermsPage, CookieBanner, consent checkbox, i18n (ru/en/kz), footer links
 - README обновлён
 
 ---
 
 ## 🚀 ПЛАН ЗАПУСКА — Pre-launch Checklist
 
-### PHASE 1 — Юридическая база (Priority: HIGH)
-- [ ] **Политика конфиденциальности** (`/privacy`) — сбор данных, cookies, хранение, удаление
-- [ ] **Пользовательское соглашение** (`/terms`) — условия использования, оплата, возврат, ответственность
-- [ ] **Согласие при регистрации** — чекбокс «Согласен с условиями и политикой конфиденциальности»
-- [ ] **Cookie banner** — информирование о cookies (GDPR-like для KZ)
-- [ ] Роутинг + страницы PrivacyPage.tsx, TermsPage.tsx
+### PHASE 1 — Юридическая база (Priority: HIGH) ✅
+- [x] **Политика конфиденциальности** (`/privacy`) — сбор данных, cookies, хранение, удаление, права по ЗРК
+- [x] **Пользовательское соглашение** (`/terms`) — условия использования, оплата, возврат, ответственность, ИС
+- [x] **Согласие при регистрации** — чекбокс «Согласен с условиями и политикой конфиденциальности» (блокирует submit)
+- [x] **Cookie banner** — фиксированный баннер с Accept/Decline, localStorage persistence
+- [x] Роутинг + страницы PrivacyPage.tsx, TermsPage.tsx (публичные, доступны без авторизации)
+- [x] i18n — полная локализация (ru/en/kz) всех юридических текстов (~95 ключей)
+- [x] Footer лендинга — ссылки на /privacy и /terms
 
 ### PHASE 2 — Безопасность (Priority: HIGH)
 - [ ] **Secrets audit** — убедиться что appsettings.json содержит ТОЛЬКО placeholder'ы
@@ -48,12 +53,15 @@
 - [ ] **Dependency audit** — `dotnet list package --vulnerable` + `npm audit`
 
 ### PHASE 3 — Тестирование (Priority: HIGH)
-- [ ] **Unit tests — Backend:**
-  - [ ] IRT engine (ThetaEstimation, ItemSelection, ScorePrediction)
-  - [ ] SubscriptionService (tier resolution, daily limits, upgrade)
-  - [ ] AdaptiveEngineService (question selection, theta update)
-  - [ ] AuthService (register, login, JWT generation)
+- [x] **Unit tests — Backend (125 тестов, все проходят):**
+  - [x] IRT engine — IrtMathTests: 3PL вероятность, Fisher information, EAP estimation, theta↔level, difficulty mapping, forgetting curve, item selection (~70 тестов)
+  - [x] JwtService — JwtServiceTests: GenerateToken, ValidateToken roundtrip, invalid/tampered/expired/wrong-key tokens, claims, roles (10 тестов)
+  - [x] SubscriptionService — SubscriptionServiceTests: GetLimits (Free/Trial/Pro/Unknown), GetStatus tier resolution, CanAnswerQuestion, HasAccess, UpgradeAsync (Pro/ProYearly/Unknown), GetDailyUsage (16 тестов)
+  - [x] AdaptiveEngineService — AdaptiveEngineServiceTests: difficulty boundaries, GetNextQuestion, GetUserSkillProfile, ResetProgress, question/answer counts (8 тестов)
+  - [x] Validators — ValidatorTests: RegisterDto, LoginDto, UpdateUserDto, StartTestSessionDto, UpgradeRequestDto, MockExamSubmitAnswerDto, CompleteEntryDto, DiagnosticAnswerDto (21 тест)
+  - [ ] AuthService (register, login, password hashing)
   - [ ] MockExamService (start, answer, complete, scoring)
+  - [ ] ExamService (question retrieval, session management)
 - [ ] **Unit tests — Frontend:**
   - [ ] Redux slices (authSlice, examSlice)
   - [ ] Key components (ProGate, PricingModal, TrialBanner)
