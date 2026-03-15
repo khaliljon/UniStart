@@ -4,6 +4,7 @@ using UniStart.Application.Interfaces;
 using UniStart.Domain.Entities;
 using UniStart.Domain.Interfaces;
 using UniStart.Infrastructure.Data;
+using UniStart.Application.Helpers;
 using BC = BCrypt.Net.BCrypt;
 
 namespace UniStart.Application.Services;
@@ -40,7 +41,7 @@ public class AuthService : IAuthService
                 existingUser.IsDeleted = false;
                 existingUser.DeletedAt = null;
                 existingUser.DeletedBy = null;
-                existingUser.Name = dto.Name;
+                existingUser.Name = InputSanitizer.Sanitize(dto.Name)!;
                 existingUser.PasswordHash = BC.HashPassword(dto.Password);
                 existingUser.HasCompletedOnboarding = false;
                 existingUser.CreatedAt = DateTime.UtcNow;
@@ -67,7 +68,7 @@ public class AuthService : IAuthService
         var user = new User
         {
             Email = dto.Email,
-            Name = dto.Name,
+            Name = InputSanitizer.Sanitize(dto.Name)!,
             PasswordHash = BC.HashPassword(dto.Password),
             Role = UserRole.Student,
             CreatedAt = DateTime.UtcNow
@@ -180,7 +181,7 @@ public class AuthService : IAuthService
         if (user == null) return null;
 
         if (!string.IsNullOrWhiteSpace(dto.Name))
-            user.Name = dto.Name;
+            user.Name = InputSanitizer.Sanitize(dto.Name)!;
         
         if (!string.IsNullOrWhiteSpace(dto.Email))
         {

@@ -193,3 +193,52 @@ mockUpsell: {
 7. [ ] Frontend: `MockResultUpsellModal` — 4-шаговый интерактив
 8. [ ] Frontend: i18n ключи (ru/kz/en)
 9. [ ] Тестирование: регистрация → мок → upsell → повторный вход → gate
+
+---
+
+## Pre-Launch Checklist
+
+### FIX-43 ✅ Фаза 1 — Юридическая база
+- [x] PrivacyPage.tsx — 10 секций, ЗРК «О персональных данных» №94-V
+- [x] TermsPage.tsx — 12 секций (подписки, оплата KZT, возвраты 14 дней, ИС, споры)
+- [x] CookieBanner.tsx — фиксированный баннер, Accept/Decline, localStorage
+- [x] i18n: 95+ ключей legal секции (ru/en/kz)
+- [x] Публичные маршруты /privacy, /terms (без авторизации)
+- [x] Чекбокс согласия на RegisterPage (блокирует отправку)
+- [x] Ссылки в футере LandingPage
+
+### FIX-44 ✅ Фаза 2 — Безопасность
+- [x] Аудит секретов: appsettings.json (плейсхолдеры), Production (env vars), .gitignore ок
+- [x] CSP заголовок: default-src 'self', script/font/style-src, frame-ancestors 'none'
+- [x] HSTS: max-age=31536000; includeSubDomains; preload
+- [x] CORS: ограничены методы (GET/POST/PUT/DELETE/PATCH)
+- [x] Rate limiting: auth 10/мин, api 120/мин, global 200/мин per IP
+- [x] InputSanitizer: HTML-тег стриппинг для user-facing полей
+  - AuthService (Name при регистрации, обновлении)
+  - TutorService (Headline, Bio, Experience)
+  - MessageService (Text, RequestMessage, LastMessagePreview)
+  - AdminService (user Name, topic Name)
+  - НЕ применяется к контенту вопросов (KaTeX/markdown)
+- [x] Аудит зависимостей: dotnet — 0 уязвимостей, npm — 8 dev-only (eslint/vite)
+- [x] HTTPS redirect уже в пайплайне
+- [x] Env vars: UNISTART_JWT_SECRET, UNISTART_DB_CONNECTION
+
+### Фаза 3 — Инфраструктура (TODO)
+- [ ] Docker: Dockerfile + docker-compose.yml (PostgreSQL 17 + .NET 8 + Nginx)
+- [ ] CI/CD: GitHub Actions (build → test → deploy)
+- [ ] Мониторинг: health checks, Serilog Seq/файлы
+- [ ] Бэкапы PostgreSQL (pg_dump cron)
+
+### Фаза 4 — Контент & QA (TODO)
+- [ ] Финальная проверка 182 вопросов CSCA Math
+- [ ] Сидинг вопросов по физике (12 глав)
+- [ ] Тестирование всех user flows (регистрация → экзамен → аналитика → подписка)
+
+### Фаза 5 — Бесплатный мок-экзамен (TODO)
+- [ ] См. FIX-37 выше
+
+### Фаза 6 — Финальная проверка (TODO)
+- [ ] Lighthouse: Performance ≥90, Accessibility ≥90
+- [ ] Cross-browser: Chrome, Firefox, Safari, Edge
+- [ ] Mobile responsive проверка
+- [ ] SEO: meta tags, sitemap.xml, robots.txt

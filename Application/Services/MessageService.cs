@@ -3,6 +3,7 @@ using UniStart.Application.DTOs;
 using UniStart.Application.Interfaces;
 using UniStart.Domain.Entities;
 using UniStart.Infrastructure.Data;
+using UniStart.Application.Helpers;
 
 namespace UniStart.Application.Services;
 
@@ -94,11 +95,13 @@ public class MessageService : IMessageService
         if (conv.Status != ConversationStatus.Active)
             throw new InvalidOperationException("Отправка сообщений возможна только в активных диалогах");
 
+        var sanitized = InputSanitizer.Sanitize(text) ?? text;
+
         var message = new Message
         {
             ConversationId = conversationId,
             SenderId = senderId,
-            Text = text.Length > 4000 ? text[..4000] : text,
+            Text = sanitized.Length > 4000 ? sanitized[..4000] : sanitized,
             SentAt = DateTime.UtcNow,
             Type = MessageType.Text
         };
@@ -106,7 +109,7 @@ public class MessageService : IMessageService
         _db.Messages.Add(message);
 
         // Update conversation metadata
-        conv.LastMessagePreview = text.Length > 100 ? text[..100] : text;
+        conv.LastMessagePreview = sanitized.Length > 100 ? sanitized[..100] : sanitized;
         conv.LastMessageAt = message.SentAt;
 
         // Increment unread for the other party
@@ -152,12 +155,13 @@ public class MessageService : IMessageService
         }
 
         // Create new conversation with Pending status
+        var sanitizedRequest = InputSanitizer.Sanitize(requestMessage);
         var conv = new Conversation
         {
             StudentId = studentId,
             TutorId = tutorId,
             Status = ConversationStatus.Pending,
-            RequestMessage = requestMessage?.Length > 500 ? requestMessage[..500] : requestMessage,
+            RequestMessage = sanitizedRequest?.Length > 500 ? sanitizedRequest[..500] : sanitizedRequest,
             CreatedAt = DateTime.UtcNow
         };
 

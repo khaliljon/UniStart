@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using UniStart.Application.DTOs;
 using UniStart.Application.Interfaces;
 using UniStart.Application.Services;
+using UniStart.Application.Helpers;
 using UniStart.Domain.Entities;
 using UniStart.Infrastructure.Data;
 
@@ -464,7 +465,7 @@ public class AdminService : IAdminService
         if (user == null) return null;
 
         if (!string.IsNullOrWhiteSpace(dto.Name))
-            user.Name = dto.Name;
+            user.Name = InputSanitizer.Sanitize(dto.Name)!;
 
         if (!string.IsNullOrWhiteSpace(dto.Email))
         {
@@ -611,7 +612,7 @@ public class AdminService : IAdminService
 
         var topic = new Topic
         {
-            Name = dto.Name,
+            Name = InputSanitizer.Sanitize(dto.Name)!,
             SectionId = dto.SectionId,
             SkillId = dto.SkillId
         };

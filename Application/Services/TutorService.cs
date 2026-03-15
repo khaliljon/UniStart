@@ -3,6 +3,7 @@ using UniStart.Application.DTOs;
 using UniStart.Application.Interfaces;
 using UniStart.Domain.Entities;
 using UniStart.Infrastructure.Data;
+using UniStart.Application.Helpers;
 
 namespace UniStart.Application.Services;
 
@@ -107,9 +108,9 @@ public class TutorService : ITutorService
             .FirstOrDefaultAsync(x => x.UserId == userId)
             ?? throw new KeyNotFoundException("Tutor profile not found");
 
-        if (dto.Headline != null) tp.Headline = dto.Headline;
-        if (dto.Bio != null) tp.Bio = dto.Bio;
-        if (dto.Experience != null) tp.Experience = dto.Experience;
+        if (dto.Headline != null) tp.Headline = InputSanitizer.Sanitize(dto.Headline)!;
+        if (dto.Bio != null) tp.Bio = InputSanitizer.Sanitize(dto.Bio)!;
+        if (dto.Experience != null) tp.Experience = InputSanitizer.Sanitize(dto.Experience)!;
         if (dto.Specializations != null) tp.Specializations = string.Join(",", dto.Specializations);
         if (dto.HourlyRate.HasValue) tp.HourlyRate = dto.HourlyRate;
         if (dto.IsAvailable.HasValue) tp.IsAvailable = dto.IsAvailable.Value;

@@ -294,7 +294,7 @@ try
         {
             policy.WithOrigins(corsOrigins)
                   .AllowAnyHeader()
-                  .AllowAnyMethod()
+                  .WithMethods("GET", "POST", "PUT", "DELETE", "PATCH")
                   .AllowCredentials();
         });
     });
@@ -433,12 +433,20 @@ try
         context.Response.Headers.Append("X-XSS-Protection", "0");
         context.Response.Headers.Append("Referrer-Policy", "strict-origin-when-cross-origin");
         context.Response.Headers.Append("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+        context.Response.Headers.Append("Content-Security-Policy",
+            "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self' wss: ws:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'");
         await next();
     });
 
     if (!app.Environment.IsDevelopment())
     {
         app.UseHsts();
+        app.Use(async (context, next) =>
+        {
+            context.Response.Headers.Append("Strict-Transport-Security",
+                "max-age=31536000; includeSubDomains; preload");
+            await next();
+        });
     }
 
     // Swagger (dev only)
