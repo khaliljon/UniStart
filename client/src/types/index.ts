@@ -804,6 +804,8 @@ export interface DiagnosticAnswerReview {
 export interface SubscriptionStatus {
   tier: string;
   isPro: boolean;
+  isTrial: boolean;
+  trialDaysRemaining: number;
   expiresAt: string | null;
   dailyUsage: DailyUsage;
   limits: TierLimits;
@@ -817,6 +819,7 @@ export interface DailyUsage {
   lessonsLimit: number;
   lessonsRemaining: number;
   isLimitReached: boolean;
+  serverTimeUtc: string;
 }
 
 export interface TierLimits {

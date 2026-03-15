@@ -161,7 +161,7 @@ export default function SchoolDetailPage() {
             {school.logoUrl ? (
               <img src={school.logoUrl} alt={school.name} style={{ width: '100%', height: '100%', borderRadius: '1rem', objectFit: 'cover' }} />
             ) : (
-              '🏫'
+              ''
             )}
           </div>
           <div>
@@ -206,19 +206,19 @@ export default function SchoolDetailPage() {
           {school.instagramUrl && (
             <a href={school.instagramUrl} target="_blank" rel="noopener noreferrer"
               style={{ color: 'var(--primary-color)', textDecoration: 'none', fontWeight: 500 }}>
-              📷 Instagram
+              Instagram
             </a>
           )}
           {school.telegramUrl && (
             <a href={school.telegramUrl} target="_blank" rel="noopener noreferrer"
               style={{ color: 'var(--primary-color)', textDecoration: 'none', fontWeight: 500 }}>
-              ✈️ Telegram
+              Telegram
             </a>
           )}
           {school.websiteUrl && (
             <a href={school.websiteUrl} target="_blank" rel="noopener noreferrer"
               style={{ color: 'var(--primary-color)', textDecoration: 'none', fontWeight: 500 }}>
-              🌐 Сайт
+              Сайт
             </a>
           )}
         </div>

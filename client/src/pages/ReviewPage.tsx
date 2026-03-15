@@ -33,14 +33,19 @@ export default function ReviewPage() {
     }
     // Check daily limit for free users before loading review questions
     if (!isPro) {
-      subscriptionService.getDailyUsage().then(usage => {
+      Promise.all([
+        subscriptionService.getDailyUsage(),
+        subscriptionService.getStatus(),
+      ]).then(([usage, status]) => {
         setDailyUsage(usage);
         if (usage.isLimitReached) {
           setLimitBlocked(true);
           setLoading(false);
           return;
         }
-        loadWeakQuestions();
+        // Free: 5 review questions, Trial: 15, Pro: unlimited
+        const limit = status.isTrial ? 15 : 5;
+        loadWeakQuestions(limit);
       }).catch(() => {
         loadWeakQuestions();
       });
@@ -49,10 +54,10 @@ export default function ReviewPage() {
     }
   }, [selectedExams, navigate, isPro]);
 
-  const loadWeakQuestions = async () => {
+  const loadWeakQuestions = async (count?: number) => {
     try {
       setLoading(true);
-      const data = await testService.getWeakQuestions(selectedExams);
+      const data = await testService.getWeakQuestions(selectedExams, count);
       setQuestions(data);
     } catch (error) {
       console.error('Failed to load weak questions:', error);

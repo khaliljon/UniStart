@@ -337,6 +337,8 @@ export interface Translations {
     upperBound: string;
     lowerBound: string;
     target: string;
+    allSections: string;
+    selectedSections: string;
   };
 
   // ─── Limits / Subscription ───
@@ -359,18 +361,22 @@ export interface Translations {
     upgrading: string;
     errorUpgrade: string;
     freeQuestions: string;
-    freeLesson: string;
     freeAnalytics: string;
     freeWeeklyForecast: string;
     freeDiagnostic: string;
     freeBasicPlan: string;
+    freeMockExam: string;
     proUnlimited: string;
-    proAllLessons: string;
     proMockExams: string;
     proFullAnalytics: string;
     proFullPlan: string;
     proRealtimePrediction: string;
+    proReviewMistakes: string;
     proPriority: string;
+    perYear: string;
+    yearlyDiscount: string;
+    proMonthlyPrice: string;
+    proYearlyPrice: string;
     questionsToday: string;
     lessonsToday: string;
     limitReachedTitle: string;
@@ -381,6 +387,9 @@ export interface Translations {
     learnAboutPro: string;
     reviewBlocked: string;
     reviewBlockedDesc: string;
+    trialActive: string;
+    trialDaysLeft: string;
+    trialExpired: string;
   };
 
   // ─── Study Plan ───
@@ -777,20 +786,29 @@ export interface Translations {
     forever: string;
     perMonth: string;
     freeQuestions: string;
-    freeLesson: string;
     freeAnalytics: string;
     freeDiagnostic: string;
     freeWeeklyForecast: string;
     freeBasicPlan: string;
+    freeMockExam: string;
     proUnlimited: string;
-    proAllLessons: string;
     proMockExams: string;
     proFullAnalytics: string;
     proRealtimePrediction: string;
     proFullPlan: string;
+    proReviewMistakes: string;
     proPriority: string;
     startWithFree: string;
     startWithPro: string;
+    perYear: string;
+    proMonthlyPrice: string;
+    proYearlyPrice: string;
+    yearlyDiscount: string;
+    partnerTitle: string;
+    partnerDesc: string;
+    partnerLinHaoName: string;
+    partnerLinHaoDesc: string;
+    partnerVisit: string;
     testimonialsTitle: string;
     ctaTitle: string;
     ctaDesc: string;

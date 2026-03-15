@@ -83,3 +83,113 @@
 - [ ] Контент для Chinese Humanitarian (中文人文)
 - [ ] Улучшение взаимодействия Тьютор ↔ Студент
 - [ ] Новые фичи (аналитика, адаптивность)
+
+---
+
+## Sprint 5 — Монетизация & UX
+
+### FIX-29 ✅ Фильтрация секций предикшена
+### FIX-30 ✅ 3-дневный trial период
+### FIX-31 ✅ Аналитика: free/pro split (ProGate)
+### FIX-32 ✅ Работа над ошибками — лимит по тарифу
+### FIX-33 ✅ Предикшен — blur для Free
+### FIX-34 ✅ Профиль: убраны уроки, кнопка апгрейда → PricingModal
+### FIX-35 ✅ PricingModal: цена 10 000 ₸, годовая подписка 99 990 ₸
+### FIX-36 ✅ i18n: обновлены ключи (3 локали) + LandingPage
+
+---
+
+## FIX-37 — Бесплатный пробный мок-экзамен + интерактивный upsell
+
+### Концепция
+После регистрации пользователь получает **1 бесплатный полноценный мок-экзамен** (реальный сценарий: все секции, ограничение по времени, настоящие вопросы). После завершения показывается **интерактивный upsell-модал** с превью Pro-функций.
+
+### Backend
+
+#### 1. User entity — новое поле
+```csharp
+// Domain/Entities/User.cs
+public bool FreeMockUsed { get; set; } = false;
+```
+
+#### 2. EF Migration
+```
+dotnet ef migrations add AddFreeMockUsed
+```
+
+#### 3. SubscriptionService — логика доступа
+В `HasAccessAsync` изменить кейс `mock_exams`:
+```csharp
+"mock_exams" => limits.MockExamsEnabled || !user.FreeMockUsed,
+```
+Результат: Free-пользователь с `FreeMockUsed == false` → доступ разрешён.
+
+#### 4. SubscriptionStatusDto — новое поле
+```csharp
+public record SubscriptionStatusDto(
+    ...
+    bool FreeMockAvailable  // !user.FreeMockUsed && !isPro
+);
+```
+
+#### 5. MockExamController / MockExamService — пометка использования
+При **завершении** мок-экзамена (endpoint `POST /api/mock-exams/attempts/{id}/complete`):
+```csharp
+if (!user.IsPro && !user.FreeMockUsed)
+{
+    user.FreeMockUsed = true;
+    await _unitOfWork.SaveChangesAsync();
+}
+```
+
+### Frontend
+
+#### 6. MockExamPage.tsx — разрешить 1 бесплатный мок
+Заменить `ProGate hasAccess={isPro}` на:
+```tsx
+const canAccessMock = isPro || subscriptionStatus?.freeMockAvailable;
+<ProGate hasAccess={canAccessMock} featureName="Mock Exams">
+```
+
+#### 7. MockResultUpsellModal — интерактивный upsell после бесплатного мока
+Новый компонент `client/src/components/MockResultUpsellModal.tsx`.
+Показывается **только после завершения бесплатного мока** (не для Pro).
+
+**Экраны (шаги):**
+1. **Результаты** — «Твой балл: X/Y. Хочешь узнать, где ты потерял баллы?»
+   - Кнопка: «Показать аналитику» → переход к шагу 2
+2. **Превью аналитики** — Размытый radar-чарт + heatmap с текстом:
+   «С Pro ты увидишь полную аналитику: сильные/слабые стороны, прогресс по темам»
+   - Кнопка: «А что ещё есть?» → шаг 3
+3. **Работа над ошибками** — Превью списка ошибок (1-2 видны, остальные blur):
+   «Разбирай каждую ошибку с объяснением. Доступно в Pro.»
+   - Кнопка: «Хочу попробовать Pro» → шаг 4
+4. **CTA** — PricingModal (месяц/год) со скидкой:
+   «Специальное предложение: первый месяц -50%» (5 000 ₸ вместо 10 000 ₸)
+
+#### 8. i18n ключи
+Добавить в `mockUpsell` секцию (ru/kz/en):
+```
+mockUpsell: {
+  title: 'Мок завершён!',
+  scoreText: 'Твой результат',
+  wantAnalytics: 'Хочешь узнать, где потерял баллы?',
+  showAnalytics: 'Показать аналитику',  
+  analyticsPreview: 'С Pro — полная аналитика',
+  whatElse: 'А что ещё есть?',
+  mistakesPreview: 'Разбирай каждую ошибку',
+  tryPro: 'Хочу попробовать Pro',
+  specialOffer: 'Первый месяц -50%',
+}
+```
+
+### Порядок реализации
+1. [ ] Backend: добавить `FreeMockUsed` в User entity
+2. [ ] Backend: миграция `AddFreeMockUsed`
+3. [ ] Backend: `HasAccessAsync` — разрешить mock_exams при !FreeMockUsed
+4. [ ] Backend: `SubscriptionStatusDto` + `FreeMockAvailable`
+5. [ ] Backend: пометить FreeMockUsed при завершении мока
+6. [ ] Frontend: MockExamPage — `canAccessMock` вместо `isPro`
+7. [ ] Frontend: `MockResultUpsellModal` — 4-шаговый интерактив
+8. [ ] Frontend: i18n ключи (ru/kz/en)
+9. [ ] Тестирование: регистрация → мок → upsell → повторный вход → gate

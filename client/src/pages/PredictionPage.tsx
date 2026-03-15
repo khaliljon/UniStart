@@ -15,7 +15,10 @@ import {
 import { predictionService } from '../services/predictionService';
 import { examService } from '../services/examService';
 import { testService } from '../services/testService';
+import { subscriptionService } from '../services/subscriptionService';
 import { useTranslation } from '../i18n';
+import { useAppSelector } from '../hooks/useAppSelector';
+import { ProGate } from '../components/ProGate';
 import type {
   ScorePrediction,
   SectionPrediction,
@@ -41,8 +44,10 @@ function PredictionPage() {
     weak: { label: t.prediction.weak, ...STRENGTH_COLORS.weak },
     critical: { label: t.prediction.critical, ...STRENGTH_COLORS.critical },
   };
+  const { selectedExams: userExams } = useAppSelector((state) => state.exam);
   const [exams, setExams] = useState<ExamType[]>([]);
   const [selectedExam, setSelectedExam] = useState<string>('');
+  const [selectedSectionIds, setSelectedSectionIds] = useState<number[]>([]);
   const [prediction, setPrediction] = useState<ScorePrediction | null>(null);
   const [history, setHistory] = useState<PredictionHistory[]>([]);
   const [topics, setTopics] = useState<TopicProgress[]>([]);
@@ -54,6 +59,7 @@ function PredictionPage() {
   const [whatIfLevel, setWhatIfLevel] = useState(80);
   const [whatIfResult, setWhatIfResult] = useState<WhatIfResult | null>(null);
   const [whatIfLoading, setWhatIfLoading] = useState(false);
+  const [hasPredictionAccess, setHasPredictionAccess] = useState(true);
 
   // Load exams on mount
   useEffect(() => {
@@ -62,7 +68,8 @@ function PredictionPage() {
         const data = await examService.getExams();
         setExams(data);
         if (data.length > 0) {
-          setSelectedExam(data[0].code);
+          const userMatch = data.find(e => userExams.includes(e.code));
+          setSelectedExam(userMatch ? userMatch.code : data[0].code);
         }
       } catch {
         setError(t.prediction.examLoadError);
@@ -70,6 +77,9 @@ function PredictionPage() {
         setIsLoading(false);
       }
     })();
+    subscriptionService.getStatus().then((s) => {
+      setHasPredictionAccess(s.isPro || s.isTrial || s.limits.realtimePrediction);
+    }).catch(() => {});
   }, []);
 
   // Load prediction when exam changes
@@ -86,6 +96,7 @@ function PredictionPage() {
       setPrediction(pred);
       setHistory(hist);
       setTopics(topicsData);
+      setSelectedSectionIds([]);
       setWhatIfResult(null);
       setWhatIfTopic(topicsData.length > 0 ? topicsData[0].topicId : null);
     } catch (err) {
@@ -166,9 +177,64 @@ function PredictionPage() {
       </div>
 
       {prediction && (
+        <ProGate hasAccess={hasPredictionAccess} featureName={t.prediction.title}>
         <>
+          {/* ─── Section Filter (for multi-section exams) ─── */}
+          {prediction.sections.length > 1 && (
+            <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
+              <button
+                className={selectedSectionIds.length === 0 ? 'btn btn-primary' : 'btn btn-secondary'}
+                style={{ padding: '0.3rem 0.8rem', fontSize: '0.8rem' }}
+                onClick={() => setSelectedSectionIds([])}
+              >
+                {t.prediction.allSections}
+              </button>
+              {prediction.sections.map((s) => (
+                <button
+                  key={s.sectionId}
+                  className={selectedSectionIds.includes(s.sectionId) ? 'btn btn-primary' : 'btn btn-secondary'}
+                  style={{ padding: '0.3rem 0.8rem', fontSize: '0.8rem' }}
+                  onClick={() => setSelectedSectionIds((prev) => {
+                    if (prev.includes(s.sectionId)) {
+                      const next = prev.filter((id) => id !== s.sectionId);
+                      return next;
+                    }
+                    return [...prev, s.sectionId];
+                  })}
+                >
+                  {s.sectionName}
+                </button>
+              ))}
+            </div>
+          )}
+
           {/* ─── Main Score Card ─── */}
-          <ScoreCard prediction={prediction} />
+          {(() => {
+            const filtered = selectedSectionIds.length > 0
+              ? prediction.sections.filter((s) => selectedSectionIds.includes(s.sectionId))
+              : prediction.sections;
+            const totalPredicted = filtered.reduce((sum, s) => sum + s.predictedScore, 0);
+            const totalMin = filtered.reduce((sum, s) => sum + s.minScore, 0);
+            const totalMax = filtered.reduce((sum, s) => sum + s.maxScore, 0);
+            const totalConfLow = filtered.reduce((sum, s) => sum + s.confidenceLow, 0);
+            const totalConfHigh = filtered.reduce((sum, s) => sum + s.confidenceHigh, 0);
+            const scaledTarget = selectedSectionIds.length > 0 && prediction.targetScore != null
+              ? Math.round(prediction.targetScore * (totalMax / prediction.maxPossibleScore))
+              : prediction.targetScore;
+            const gap = scaledTarget != null ? Math.max(0, scaledTarget - totalPredicted) : prediction.gapToTarget;
+            const displayPrediction: ScorePrediction = {
+              ...prediction,
+              predictedScore: totalPredicted,
+              minPossibleScore: totalMin,
+              maxPossibleScore: totalMax,
+              confidenceLow: totalConfLow,
+              confidenceHigh: totalConfHigh,
+              targetScore: scaledTarget ?? null,
+              gapToTarget: gap ?? null,
+              sections: filtered,
+            };
+            return <ScoreCard prediction={displayPrediction} />;
+          })()}
 
           {/* ─── Section Breakdown ─── */}
           <div style={{ marginTop: '1rem' }}>
@@ -198,6 +264,7 @@ function PredictionPage() {
           {/* ─── History Chart ─── */}
           {history.length > 1 && <HistoryChart history={history} prediction={prediction} />}
         </>
+        </ProGate>
       )}
     </div>
   );

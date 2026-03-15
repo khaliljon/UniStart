@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../i18n';
 import LanguageSwitcher from '../components/LanguageSwitcher';
@@ -5,6 +6,7 @@ import LanguageSwitcher from '../components/LanguageSwitcher';
 function LandingPage() {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const [isYearly, setIsYearly] = useState(false);
 
   const FEATURES = [
     { icon: '', title: t.landing.featureAdaptiveTitle, desc: t.landing.featureAdaptiveDesc },
@@ -15,51 +17,23 @@ function LandingPage() {
     { icon: '', title: t.landing.featureExplanationsTitle, desc: t.landing.featureExplanationsDesc },
   ];
 
-  const PLANS = [
-    {
-      name: 'Free',
-      price: '$0',
-      period: t.landing.forever,
-      highlight: false,
-      features: [
-        t.landing.freeQuestions,
-        t.landing.freeLesson,
-        t.landing.freeAnalytics,
-        t.landing.freeDiagnostic,
-        t.landing.freeWeeklyForecast,
-        t.landing.freeBasicPlan,
-      ],
-      cta: t.landing.startWithFree,
-    },
-    {
-      name: 'Pro',
-      price: '$9.99',
-      period: t.landing.perMonth,
-      highlight: true,
-      features: [
-        t.landing.proUnlimited,
-        t.landing.proAllLessons,
-        t.landing.proMockExams,
-        t.landing.proFullAnalytics,
-        t.landing.proRealtimePrediction,
-        t.landing.proFullPlan,
-        t.landing.proPriority,
-      ],
-      cta: t.landing.startWithPro,
-    },
+  const FREE_FEATURES = [
+    t.landing.freeQuestions,
+    t.landing.freeAnalytics,
+    t.landing.freeDiagnostic,
+    t.landing.freeWeeklyForecast,
+    t.landing.freeBasicPlan,
+    t.landing.freeMockExam,
   ];
 
-  const TESTIMONIALS = [
-    { name: 'Айдана К.', exam: 'SAT', score: '1480', text: 'За 2 месяца подготовки на UniStart мой балл вырос с 1200 до 1480. Адаптивные тесты — это совсем другой уровень.' },
-    { name: 'Тимур Б.', exam: 'TOEFL', score: '108', text: 'Удобный план подготовки и прогноз балла мотивировали заниматься каждый день. Получил 108 при цели 100.' },
-    { name: 'Дана М.', exam: 'NUET', score: '156', text: 'UniStart идеально подготовил к NUET. Mock exams были максимально близки к реальному экзамену.' },
-  ];
-
-  const STATS = [
-    { value: '10 000+', label: t.landing.statsQuestions },
-    { value: '3', label: t.landing.statsExams },
-    { value: '95%', label: t.landing.statsAccuracy },
-    { value: '~30%', label: t.landing.statsGrowth },
+  const PRO_FEATURES = [
+    t.landing.proUnlimited,
+    t.landing.proMockExams,
+    t.landing.proFullAnalytics,
+    t.landing.proRealtimePrediction,
+    t.landing.proFullPlan,
+    t.landing.proReviewMistakes,
+    t.landing.proPriority,
   ];
 
   return (
@@ -127,7 +101,7 @@ function LandingPage() {
           fontSize: '0.85rem',
           marginBottom: '1.5rem',
         }}>
-          SAT • TOEFL • NUET
+          SAT • TOEFL • NUET • CSCA • IELTS
         </div>
         <h1 style={{
           fontSize: 'clamp(2rem, 5vw, 3.5rem)',
@@ -186,28 +160,6 @@ function LandingPage() {
         </div>
       </section>
 
-      {/* ═══ Stats ═══ */}
-      <section style={{
-        background: 'var(--bg-secondary)',
-        padding: '3rem 2rem',
-      }}>
-        <div style={{
-          maxWidth: '900px',
-          margin: '0 auto',
-          display: 'grid',
-          gridTemplateColumns: 'repeat(4, 1fr)',
-          gap: '2rem',
-          textAlign: 'center',
-        }}>
-          {STATS.map((s) => (
-            <div key={s.label}>
-              <div style={{ fontSize: '2rem', fontWeight: 800, color: '#6366f1' }}>{s.value}</div>
-              <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>{s.label}</div>
-            </div>
-          ))}
-        </div>
-      </section>
-
       {/* ═══ Features ═══ */}
       <section id="features" style={{
         padding: '5rem 2rem',
@@ -258,125 +210,187 @@ function LandingPage() {
         padding: '5rem 2rem',
         background: 'var(--bg-secondary)',
       }}>
-        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+        <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
             <h2 style={{ fontSize: '2rem', fontWeight: 700, marginBottom: '0.75rem' }}>
               {t.landing.pricingTitle}
             </h2>
             <p style={{ color: 'var(--text-secondary)', fontSize: '1.05rem' }}>
               {t.landing.pricingDesc}
             </p>
+
+            {/* Monthly / Yearly toggle */}
+            <div style={{
+              display: 'flex', justifyContent: 'center', gap: '0.5rem',
+              marginTop: '1.5rem',
+              background: 'var(--card-bg)', borderRadius: '999px', padding: '0.3rem',
+              width: 'fit-content', margin: '1.5rem auto 0',
+              border: '1px solid var(--border-color)',
+            }}>
+              <button
+                onClick={() => setIsYearly(false)}
+                style={{
+                  padding: '0.5rem 1.25rem', borderRadius: '999px', border: 'none',
+                  fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer',
+                  background: !isYearly ? '#6366f1' : 'transparent',
+                  color: !isYearly ? '#fff' : 'var(--text-secondary)',
+                }}
+              >
+                {t.landing.perMonth}
+              </button>
+              <button
+                onClick={() => setIsYearly(true)}
+                style={{
+                  padding: '0.5rem 1.25rem', borderRadius: '999px', border: 'none',
+                  fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer',
+                  background: isYearly ? '#6366f1' : 'transparent',
+                  color: isYearly ? '#fff' : 'var(--text-secondary)',
+                }}
+              >
+                {t.landing.perYear} {!isYearly ? `— ${t.landing.yearlyDiscount}` : ''}
+              </button>
+            </div>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-            {PLANS.map((plan) => (
-              <div key={plan.name} style={{
-                padding: '2rem',
-                borderRadius: '1.25rem',
-                border: plan.highlight ? '2px solid #6366f1' : '1px solid var(--border-color)',
-                background: 'var(--card-bg)',
-                position: 'relative',
-                boxShadow: plan.highlight ? '0 8px 30px rgba(99,102,241,0.15)' : 'none',
-              }}>
-                {plan.highlight && (
-                  <div style={{
-                    position: 'absolute',
-                    top: '-12px',
-                    right: '1.25rem',
-                    background: '#6366f1',
-                    color: '#fff',
-                    padding: '0.2rem 0.8rem',
-                    borderRadius: '1rem',
-                    fontSize: '0.75rem',
-                    fontWeight: 600,
-                  }}>
-                    {t.landing.popular}
-                  </div>
-                )}
-                <div style={{ fontWeight: 700, fontSize: '1.25rem', marginBottom: '0.25rem', color: plan.highlight ? '#6366f1' : 'var(--text-primary)' }}>
-                  {plan.name}
-                </div>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.25rem', marginBottom: '0.25rem' }}>
-                  <span style={{ fontSize: '2.5rem', fontWeight: 800 }}>{plan.price}</span>
-                  <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{plan.period}</span>
-                </div>
-
-                <ul style={{ listStyle: 'none', padding: 0, margin: '1.5rem 0', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-                  {plan.features.map((f) => (
-                    <li key={f} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', color: 'var(--text-primary)' }}>
-                      <span style={{ color: plan.highlight ? '#6366f1' : '#10b981', flexShrink: 0 }}>✓</span>
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-
-                <button
-                  onClick={() => navigate('/register')}
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem',
-                    borderRadius: '0.75rem',
-                    border: plan.highlight ? 'none' : '2px solid var(--border-color)',
-                    background: plan.highlight ? '#6366f1' : 'transparent',
-                    color: plan.highlight ? '#fff' : 'var(--text-primary)',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    fontSize: '1rem',
-                  }}
-                >
-                  {plan.cta}
-                </button>
+            {/* Free */}
+            <div style={{
+              padding: '2rem',
+              borderRadius: '1.25rem',
+              border: '1px solid var(--border-color)',
+              background: 'var(--card-bg)',
+            }}>
+              <div style={{ fontWeight: 700, fontSize: '1.25rem', marginBottom: '0.25rem', color: 'var(--text-primary)' }}>
+                Free
               </div>
-            ))}
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.25rem', marginBottom: '0.25rem' }}>
+                <span style={{ fontSize: '2.5rem', fontWeight: 800 }}>0 ₸</span>
+                <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{t.landing.forever}</span>
+              </div>
+              <ul style={{ listStyle: 'none', padding: 0, margin: '1.5rem 0', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                {FREE_FEATURES.map((f) => (
+                  <li key={f} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', color: 'var(--text-primary)' }}>
+                    <span style={{ color: '#10b981', flexShrink: 0 }}>✓</span>
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <button
+                onClick={() => navigate('/register')}
+                style={{
+                  width: '100%', padding: '0.75rem', borderRadius: '0.75rem',
+                  border: '2px solid var(--border-color)', background: 'transparent',
+                  color: 'var(--text-primary)', fontWeight: 600, cursor: 'pointer', fontSize: '1rem',
+                }}
+              >
+                {t.landing.startWithFree}
+              </button>
+            </div>
+
+            {/* Pro */}
+            <div style={{
+              padding: '2rem',
+              borderRadius: '1.25rem',
+              border: '2px solid #6366f1',
+              background: 'var(--card-bg)',
+              position: 'relative',
+              boxShadow: '0 8px 30px rgba(99,102,241,0.15)',
+            }}>
+              <div style={{
+                position: 'absolute', top: '-12px', right: '1.25rem',
+                background: '#6366f1', color: '#fff',
+                padding: '0.2rem 0.8rem', borderRadius: '1rem', fontSize: '0.75rem', fontWeight: 600,
+              }}>
+                {t.landing.popular}
+              </div>
+              <div style={{ fontWeight: 700, fontSize: '1.25rem', marginBottom: '0.25rem', color: '#6366f1' }}>
+                Pro
+              </div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.25rem', marginBottom: '0.25rem' }}>
+                <span style={{ fontSize: '2.5rem', fontWeight: 800 }}>
+                  {isYearly ? t.landing.proYearlyPrice : t.landing.proMonthlyPrice}
+                </span>
+                <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                  {isYearly ? t.landing.perYear : t.landing.perMonth}
+                </span>
+              </div>
+              {isYearly && (
+                <div style={{ color: '#10b981', fontWeight: 600, fontSize: '0.8rem', marginBottom: '0.5rem' }}>
+                  {t.landing.yearlyDiscount}
+                </div>
+              )}
+              <ul style={{ listStyle: 'none', padding: 0, margin: '1.5rem 0', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                {PRO_FEATURES.map((f) => (
+                  <li key={f} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', color: 'var(--text-primary)' }}>
+                    <span style={{ color: '#6366f1', flexShrink: 0 }}>✓</span>
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <button
+                onClick={() => navigate('/register')}
+                style={{
+                  width: '100%', padding: '0.75rem', borderRadius: '0.75rem',
+                  border: 'none', background: '#6366f1',
+                  color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '1rem',
+                }}
+              >
+                {t.landing.startWithPro}
+              </button>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ═══ Testimonials ═══ */}
+      {/* ═══ Partner ═══ */}
       <section style={{
         padding: '5rem 2rem',
-        maxWidth: '1000px',
+        maxWidth: '800px',
         margin: '0 auto',
       }}>
-        <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+        <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
           <h2 style={{ fontSize: '2rem', fontWeight: 700, marginBottom: '0.75rem' }}>
-            {t.landing.testimonialsTitle}
+            {t.landing.partnerTitle}
           </h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '1.05rem' }}>
+            {t.landing.partnerDesc}
+          </p>
         </div>
 
         <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-          gap: '1.5rem',
+          padding: '2rem',
+          borderRadius: '1.25rem',
+          border: '1px solid var(--border-color)',
+          background: 'var(--card-bg)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '2rem',
+          flexWrap: 'wrap',
         }}>
-          {TESTIMONIALS.map((item) => (
-            <div key={item.name} style={{
-              padding: '1.5rem',
-              borderRadius: '1rem',
-              border: '1px solid var(--border-color)',
-              background: 'var(--card-bg)',
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <div>
-                  <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>{item.name}</div>
-                  <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>{item.exam}</div>
-                </div>
-                <div style={{
-                  background: '#6366f115',
-                  color: '#6366f1',
-                  fontWeight: 700,
-                  padding: '0.25rem 0.75rem',
-                  borderRadius: '0.5rem',
-                  fontSize: '0.9rem',
-                }}>
-                  {item.score}
-                </div>
-              </div>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: 1.6, margin: 0 }}>
-                "{item.text}"
-              </p>
-            </div>
-          ))}
+          <div style={{
+            width: '80px', height: '80px', borderRadius: '1rem',
+            background: 'linear-gradient(135deg, #ef4444, #f97316)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '2rem', fontWeight: 800, color: '#fff', flexShrink: 0,
+          }}>
+            LH
+          </div>
+          <div style={{ flex: 1, minWidth: '200px' }}>
+            <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.2rem', fontWeight: 700 }}>
+              {t.landing.partnerLinHaoName}
+            </h3>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: 1.6, margin: '0 0 0.75rem' }}>
+              {t.landing.partnerLinHaoDesc}
+            </p>
+            <a
+              href="https://linhao.kz"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: '#6366f1', fontWeight: 600, fontSize: '0.9rem', textDecoration: 'none' }}
+            >
+              {t.landing.partnerVisit}
+            </a>
+          </div>
         </div>
       </section>
 

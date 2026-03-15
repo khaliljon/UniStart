@@ -1,43 +1,158 @@
-# UniStart -- Статус проекта и план запуска
+# UniStart — Статус проекта и план запуска
 
-> **Последнее обновление**: 4 марта 2026
+> **Последнее обновление**: 14 марта 2026
 
 ---
 
-## Текущий статус: v2 Learning -- Sprint 3 🔄 в работе
+## Текущий статус: Sprint 5 — Монетизация + Pre-launch
 
-### Сводка состояния на 4 марта 2026
+### Сводка состояния на 14 марта 2026
 
 **Что работает стабильно:**
-- Ядро платформы: IRT 3PL + CAT, адаптивная практика, mock exams (SAT, TOEFL, NUET, IELTS, CSCA)
-- Аналитика, прогноз баллов, study plan, onboarding, монетизация (Free/Pro)
-- Admin-панель, тьюторская система (каталог, профили, чат -- SignalR баги задокументированы)
+- Ядро платформы: IRT 3PL + CAT, адаптивная практика, mock exams (CSCA, NUET, SAT, TOEFL, IELTS)
+- Аналитика, прогноз баллов, study plan, onboarding, монетизация (Free/Trial/Pro)
+- Admin-панель, тьюторская система (каталог, профили, чат — SignalR)
 - Production: rate limiting, security headers, Serilog, health checks, audit log, soft delete, кэш, Hangfire
-- KaTeX рендеринг формул, GuidedTour, IELTS/CSCA сидер, убраны ненужные экзамены
+- KaTeX рендеринг формул, GuidedTour, IELTS/CSCA сидер
+- Монетизация: Free/Trial (3 дня)/Pro, месячная (10 000 ₸) и годовая (99 990 ₸) подписки
+- i18n: русский, казахский, английский
+- Партнёрство: LinHao International School (CSCA)
 
-**Критические проблемы (2 марта, Sprint 2):**
-1. KaTeX иконки / символы в тёмной теме сливаются с фоном (FormulaPage, TimedDrillPage) — нужна контрастная цветовая схема.
-2. Marathon drill — нет таймера обратного отсчёта, только секундомер вверх. Нужен countdown (например 3 мин) + подсчёт вопросов за время.
-3. Мало контента: мало флэшкарточек, стратегий, формул. По IELTS и CSCA контент не загружается (seed есть, но БД не обновлена или фронтенд не фильтрует).
-4. Mock Exams — отображаются только 3 экзамена (SAT, TOEFL, NUET). IELTS и CSCA моки не видны.
-5. Установка цели — максимальный целевой балл (slider max) зафиксирован 100 для всех экзаменов. Должен быть: SAT→1600, TOEFL→120, NUET→200, IELTS→9 (шаг 0.5), CSCA→100.
-6. "Что если" — в dropdown выбора темы все показывают 0%, а в результате расчёта 11% → рассинхрон masteryPercentage vs IRT currentLevel.
-7. История сессий — некоторые сессии показывают 0/0 correct, examTypeName "Gaokao" — незавершённые/пустые сессии не фильтруются.
+**Завершено в Sprint 5 (14 марта):**
+- FIX-29–33: Фильтрация предикшена, trial period, analytics/prediction ProGate, review лимит
+- FIX-34–36: Профиль (убраны уроки, кнопка апгрейда), PricingModal (₸, годовая), i18n
+- FIX-38: Профиль — `∞` вместо `2147483647` для Pro пользователей
+- FIX-39: Валидатор подписки — `ProYearly` вместо `ProAnnual` (фикс ошибки при апгрейде)
+- FIX-40: Лендинг — убраны фейковые метрики и отзывы, акцент на CSCA/NUET, партнёр LinHao, годовая подписка
+- README обновлён
 
 ---
 
-## ПЛАН РАБОТ -- Sprint 2 марта 2026
+## 🚀 ПЛАН ЗАПУСКА — Pre-launch Checklist
 
-### FIX-1. Рендеринг теории и формул (KaTeX + Markdown)
-- [x] Установить `katex` и `@types/katex` npm
-- [x] Создать компонент `MathRenderer` -- парсит `$...$` inline и `$$...$$` block, рендерит через KaTeX
-- [x] Обновить `renderContent()` в TopicsPage для корректного рендеринга `**bold**`, `*italic*`, `$math$`, `$$block$$`
-- [x] Обновить FormulaPage -- формулы отображаются через KaTeX вместо monospace
-- [x] Обновить StrategyPage -- контент через MathRenderer
-- [x] Обновить FlashcardPage -- front/back карточек через MathRenderer
-- [x] Обновить TimedDrillPage -- text вопросов и options через MathRenderer
+### PHASE 1 — Юридическая база (Priority: HIGH)
+- [ ] **Политика конфиденциальности** (`/privacy`) — сбор данных, cookies, хранение, удаление
+- [ ] **Пользовательское соглашение** (`/terms`) — условия использования, оплата, возврат, ответственность
+- [ ] **Согласие при регистрации** — чекбокс «Согласен с условиями и политикой конфиденциальности»
+- [ ] **Cookie banner** — информирование о cookies (GDPR-like для KZ)
+- [ ] Роутинг + страницы PrivacyPage.tsx, TermsPage.tsx
 
-### FIX-2. Убрать видеоссылки
+### PHASE 2 — Безопасность (Priority: HIGH)
+- [ ] **Secrets audit** — убедиться что appsettings.json содержит ТОЛЬКО placeholder'ы
+- [ ] **Environment variables** — перевести production на env vars (CONNECTION_STRING, JWT_SECRET)
+- [ ] **HTTPS** — force redirect HTTP → HTTPS в production
+- [ ] **CORS** — ограничить origins до production домена
+- [ ] **Rate limiting** — проверить лимиты для auth endpoints (login, register)
+- [ ] **Input sanitization** — XSS protection на всех user-input полях
+- [ ] **SQL injection** — ✅ EF Core parameterized queries (уже защищено)
+- [ ] **Dependency audit** — `dotnet list package --vulnerable` + `npm audit`
+
+### PHASE 3 — Тестирование (Priority: HIGH)
+- [ ] **Unit tests — Backend:**
+  - [ ] IRT engine (ThetaEstimation, ItemSelection, ScorePrediction)
+  - [ ] SubscriptionService (tier resolution, daily limits, upgrade)
+  - [ ] AdaptiveEngineService (question selection, theta update)
+  - [ ] AuthService (register, login, JWT generation)
+  - [ ] MockExamService (start, answer, complete, scoring)
+- [ ] **Unit tests — Frontend:**
+  - [ ] Redux slices (authSlice, examSlice)
+  - [ ] Key components (ProGate, PricingModal, TrialBanner)
+- [ ] **Integration tests:**
+  - [ ] Full mock exam flow (register → diagnostic → practice → mock → results)
+  - [ ] Subscription upgrade flow (Free → Pro monthly/yearly)
+  - [ ] Admin question import flow
+
+### PHASE 4 — Инфраструктура (Priority: MEDIUM)
+- [ ] **Docker** — Dockerfile для .NET + Vite build
+- [ ] **CI/CD** — GitHub Actions (build, test, deploy)
+- [ ] **Мониторинг** — Serilog → production sink (Seq / ELK / файл с ротацией)
+- [ ] **Бэкапы** — PostgreSQL pg_dump cron job
+- [ ] **Домен** — unistart.kz, SSL сертификат
+
+### PHASE 5 — Контент (Priority: MEDIUM)
+- [ ] Сидинг вопросов по Физике (12 глав) — CSCA
+- [ ] Сидинг вопросов по Химии — CSCA
+- [ ] Контент для Chinese Technical (中文技术) — CSCA
+- [ ] Контент для Chinese Humanitarian (中文人文) — CSCA
+- [ ] Расширить базу вопросов NUET
+
+### PHASE 6 — Free Mock + Upsell (Priority: LOW)
+- [ ] Backend: `FreeMockUsed` на User entity + миграция
+- [ ] Backend: HasAccessAsync — разрешить mock_exams при !FreeMockUsed
+- [ ] Frontend: MockExamPage — `canAccessMock` вместо `isPro`
+- [ ] Frontend: `MockResultUpsellModal` — интерактивный upsell после бесплатного мока
+- [ ] i18n ключи (ru/kz/en)
+
+---
+
+## 👥 Работа с командой разработчиков
+
+### Что нужно знать новому разработчику
+
+**Setup:**
+1. Клонировать репо, создать `appsettings.Development.local.json` со своими credentials (НЕ коммитить)
+2. PostgreSQL 17 должен быть установлен локально
+3. `dotnet restore` + `dotnet ef database update` + `cd client && npm install`
+4. `dotnet run` (бэкенд :5196) + `npm run dev` (фронтенд :5173)
+
+**Архитектура:**
+- Clean Architecture: Domain → Application → Infrastructure → Controllers
+- Frontend: React 19 + Redux Toolkit + TypeScript strict mode
+- i18n: 3 локали, все ключи типизированы в `types.ts`, обновлять ВСЕ 3 файла одновременно
+- IRT Engine: 3PL модель (a, b, c параметры) — не менять формулы без понимания психометрии
+- Subscriptions: Free/Trial(3 дня)/Pro — логика в `SubscriptionService.cs`
+
+**Правила:**
+- НЕ коммитить секреты (проверить .gitignore перед push)
+- Каждый FIX — отдельный коммит с номером (FIX-XX: описание)
+- i18n — при добавлении ключа обновить types.ts + ru.ts + en.ts + kz.ts
+- FluentValidation — каждый DTO должен иметь валидатор
+- Тесты — покрывать новый код юнит-тестами
+
+**Документация:**
+- [README.md](README.md) — обзор, quick start
+- [API.md](API.md) — все эндпоинты
+- [ARCHITECTURE.md](ARCHITECTURE.md) — архитектура системы
+- [DB_SCHEMA.md](DB_SCHEMA.md) — схема БД
+- [SETUP.md](SETUP.md) — детальная установка
+
+### Кто нужен в команде
+
+| Роль | Приоритет | Задачи |
+|------|-----------|--------|
+| **Backend .NET** | 🔴 Высокий | Unit tests, API hardening, payment интеграция (Kaspi), Docker |
+| **Frontend React** | 🔴 Высокий | UX polish, mobile responsive, A/B тесты, accessibility |
+| **QA / Тестировщик** | 🟡 Средний | E2E тесты, регрессия, тестирование потоков |
+| **DevOps** | 🟡 Средний | CI/CD, Docker, мониторинг, деплой |
+| **Контент-менеджер** | 🟢 Низкий | Загрузка вопросов через admin panel, верификация контента |
+| **Юрист** | 🟢 Низкий | Политика конфиденциальности, пользовательское соглашение |
+
+---
+
+## 🔐 Безопасность секретов
+
+### Текущее состояние
+
+**✅ Защищено:**
+- `appsettings.json` содержит только placeholder'ы (`CHANGE_ME`, пустые строки)
+- `.gitignore` исключает: `appsettings.*.local.json`, `appsettings.Production.json`, `logs/`
+- JWT secret в development — тестовый ключ, не production
+
+**⚠️ На что обратить внимание перед push в GitHub:**
+- Убедиться что `appsettings.Development.json` содержит dev-only значения (localhost, тестовый JWT)
+- НЕ коммитить файлы `*.local.json` — они в .gitignore
+- Production настройки передавать через environment variables:
+  ```
+  ConnectionStrings__DefaultConnection=Host=prod-db;...
+  JwtSettings__SecretKey=<random-64-char-key>
+  LlmExtraction__ApiKey=<api-key>
+  EmailSettings__Password=<smtp-password>
+  ```
+- Запустить `git log --all --diff-filter=A -- '*appsettings*' '*secret*' '*.env'` для проверки истории
+
+**При деплое:**
+- Использовать Azure Key Vault / AWS Secrets Manager или environment variables
+- Никогда не хранить production пароли в репозитории
 - [x] TopicsPage: убрать блок "Видео-урок" из lesson view
 - [x] Сидер: убрать videoUrl из SeedTopicLessonsAsync (не удалять поле, просто null)
 
@@ -2477,3 +2592,72 @@ UserMistakeNote
 - [x] Таблицы в админке: горизонтальный скролл
 - [x] Формы (auth): адаптивная ширина на мобильных
 - [x] Кнопки и текст: адаптивные размеры на 480px
+
+---
+
+## ПЛАН РАБОТ -- Sprint 5 (Монетизация + UX) 14 марта 2026
+
+### Путь пользователя (User Journey)
+
+```
+Регистрация → Онбординг → Диагностика (FREE)
+       ↓
+  3-дневный пробный период (расширенный Free)
+       ↓
+  Бесплатный пользователь (ограниченный)
+       ↓
+  Триггерные точки конверсии → Pro
+```
+
+### Матрица доступа Free vs Pro
+
+| Функция | Free | Trial (3 дня) | Pro |
+|---------|------|---------------|-----|
+| Адаптивная практика | 15 вопросов/день | 30 вопросов/день | Безлимит |
+| Работа над ошибками (Review) | 5 вопросов/день | 15 вопросов/день | Безлимит |
+| Уроки | 1 урок/день | 3 урока/день | Безлимит |
+| Формулы | Все | Все | Все |
+| Стратегии | Все | Все | Все |
+| Флешкарты | Просмотр | Просмотр + SR | Полный доступ |
+| Дриллы | 1 в день | 3 в день | Безлимит |
+| Аналитика | Базовая (% за неделю) | Полная | Полная |
+| Прогноз балла | Размытый (blur + CTA) | Полный | Полный |
+| Mock-экзамены | Заблокировано | 1 попытка | Безлимит |
+| Учебный план | Только текущая неделя | Полный | Полный |
+| Тьюторы | Просмотр каталога | Просмотр | Запись + чат |
+| Сообщения | Заблокировано | Заблокировано | Полный доступ |
+
+### FIX-29. Прогноз — фильтр по секциям (предметам) ✅
+
+**Проблема:** Экзамены с множеством секций (CSCA: Math, Physics, Chemistry и др.) показывают суммарный прогноз (315/800). Если пользователь поставил цель 200 за 2 предмета, система показывает "Цель достигнута" потому что 315 > 200, хотя те конкретные 2 предмета провалены.
+
+**Решение:**
+- [x] Frontend: добавить табы/фильтр секций в ScoreCard — "Все секции" | отдельные секции
+- [x] При выборе конкретных секций: показывать сумму только выбранных, пересчитывать прогресс-бар и gap
+- [x] Пропорциональный расчёт target для выбранных секций
+- [x] gapToTarget проверяется корректно для фильтрованных секций
+
+### FIX-30. Пробный период (3 дня после регистрации) ✅
+
+- [x] Backend: `ResolveTier()` — если `user.CreatedAt > UtcNow - 3 days` и не Pro → Trial (30 вопросов, 3 урока, fullAnalytics, realtimePrediction)
+- [x] DTO: `IsTrial` + `TrialDaysRemaining` в `SubscriptionStatusDto`
+- [x] `HasAccessAsync` учитывает Trial-лимиты через `TierConfigs`
+- [x] Frontend: `TrialBanner` компонент, i18n (3 локали), интеграция в TestPage
+
+### FIX-31. Разделение аналитики Free/Pro ✅
+
+- [x] Базовая аналитика (Free): статистика, skill bars, легенда — всегда видны
+- [x] Полная аналитика (Pro/Trial): radar chart, тренды, difficulty breakdown, heatmap — в ProGate
+- [x] `subscriptionService.getStatus()` для проверки `fullAnalytics`
+
+### FIX-32. Лимит работы над ошибками (Review) ✅
+
+- [x] Backend: `GetWeakQuestions` принимает `count` параметр для ограничения количества
+- [x] Frontend: ReviewPage запрашивает лимит через `getStatus()` (Free: 5, Trial: 15, Pro: unlimited)
+- [x] `testService.getWeakQuestions()` передаёт `count` в API
+
+### FIX-33. Прогноз — blur для бесплатных пользователей ✅
+
+- [x] PredictionPage: `ProGate` оборачивает весь контент прогноза для Free-пользователей
+- [x] Доступ через `realtimePrediction` из `limits` (Pro + Trial — открыто, Free — blur)
+- [x] Заголовок + селектор экзамена видны всем, контент за гейтом

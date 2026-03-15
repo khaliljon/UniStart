@@ -16,11 +16,13 @@ namespace UniStart.Controllers;
 public class TimedDrillController : ControllerBase
 {
     private readonly ITimedDrillService _drillService;
+    private readonly ISubscriptionService _subscriptionService;
     private readonly UniStartDbContext _db;
 
-    public TimedDrillController(ITimedDrillService drillService, UniStartDbContext db)
+    public TimedDrillController(ITimedDrillService drillService, ISubscriptionService subscriptionService, UniStartDbContext db)
     {
         _drillService = drillService;
+        _subscriptionService = subscriptionService;
         _db = db;
     }
 
@@ -80,9 +82,13 @@ public class TimedDrillController : ControllerBase
     /// </summary>
     [HttpPost("answer")]
     [ProducesResponseType(typeof(DrillAnswerResultDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task<IActionResult> SubmitAnswer([FromBody] SubmitDrillAnswerRequest request)
     {
         var userId = GetCurrentUserId();
+        if (!await _subscriptionService.CanAnswerQuestionAsync(userId))
+            return StatusCode(429, new { error = "Daily question limit reached. Upgrade to Pro for unlimited access." });
+
         var result = await _drillService.SubmitDrillAnswerAsync(userId, request);
         return Ok(result);
     }

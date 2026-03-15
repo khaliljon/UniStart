@@ -29,8 +29,10 @@ export const testService = {
     await api.post('/test/reset');
   },
 
-  async getWeakQuestions(examTypeCodes?: string[]): Promise<Question[]> {
-    const params = examTypeCodes?.length ? { examTypeCodes } : {};
+  async getWeakQuestions(examTypeCodes?: string[], count?: number): Promise<Question[]> {
+    const params: Record<string, unknown> = {};
+    if (examTypeCodes?.length) params.examTypeCodes = examTypeCodes;
+    if (count && count > 0) params.count = count;
     const response = await api.get<Question[]>('/test/weak-questions', { params });
     return response.data;
   },

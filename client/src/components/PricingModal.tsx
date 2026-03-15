@@ -14,24 +14,25 @@ export function PricingModal({ isOpen, onClose }: PricingModalProps) {
   const dispatch = useAppDispatch();
   const [isUpgrading, setIsUpgrading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
+  const [isYearly, setIsYearly] = useState(false);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const FREE_FEATURES = [
     t.limits.freeQuestions,
-    t.limits.freeLesson,
     t.limits.freeAnalytics,
     t.limits.freeWeeklyForecast,
     t.limits.freeDiagnostic,
     t.limits.freeBasicPlan,
+    t.limits.freeMockExam,
   ];
 
   const PRO_FEATURES = [
     t.limits.proUnlimited,
-    t.limits.proAllLessons,
     t.limits.proMockExams,
     t.limits.proFullAnalytics,
     t.limits.proFullPlan,
     t.limits.proRealtimePrediction,
+    t.limits.proReviewMistakes,
     t.limits.proPriority,
   ];
 
@@ -44,7 +45,8 @@ export function PricingModal({ isOpen, onClose }: PricingModalProps) {
   const handleUpgrade = async () => {
     setIsUpgrading(true);
     try {
-      const res = await subscriptionService.upgrade('Pro');
+      const plan = isYearly ? 'ProYearly' : 'Pro';
+      const res = await subscriptionService.upgrade(plan);
       if (res.success) {
         dispatch(setSubscription({ tier: res.tier, expiresAt: res.expiresAt }));
         setResult(res.message);
@@ -92,6 +94,37 @@ export function PricingModal({ isOpen, onClose }: PricingModalProps) {
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
             {t.limits.choosePlanDesc}
           </p>
+
+          {/* Monthly / Yearly toggle */}
+          <div style={{
+            display: 'flex', justifyContent: 'center', gap: '0.5rem',
+            marginTop: '1rem',
+            background: 'var(--bg-secondary)', borderRadius: '999px', padding: '0.25rem',
+            width: 'fit-content', margin: '1rem auto 0',
+          }}>
+            <button
+              onClick={() => setIsYearly(false)}
+              style={{
+                padding: '0.4rem 1rem', borderRadius: '999px', border: 'none',
+                fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer',
+                background: !isYearly ? 'var(--primary-color)' : 'transparent',
+                color: !isYearly ? '#fff' : 'var(--text-secondary)',
+              }}
+            >
+              {t.limits.perMonth}
+            </button>
+            <button
+              onClick={() => setIsYearly(true)}
+              style={{
+                padding: '0.4rem 1rem', borderRadius: '999px', border: 'none',
+                fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer',
+                background: isYearly ? 'var(--primary-color)' : 'transparent',
+                color: isYearly ? '#fff' : 'var(--text-secondary)',
+              }}
+            >
+              {t.limits.perYear} {isYearly ? '' : `— ${t.limits.yearlyDiscount}`}
+            </button>
+          </div>
         </div>
 
         {result && (
@@ -119,7 +152,7 @@ export function PricingModal({ isOpen, onClose }: PricingModalProps) {
               Free
             </div>
             <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.25rem' }}>
-              $0
+              0 ₸
             </div>
             <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1.25rem' }}>
               {t.limits.forever}
@@ -158,10 +191,15 @@ export function PricingModal({ isOpen, onClose }: PricingModalProps) {
               Pro
             </div>
             <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.25rem' }}>
-              $9.99
+              {isYearly ? t.limits.proYearlyPrice : t.limits.proMonthlyPrice}
             </div>
             <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1.25rem' }}>
-              {t.limits.perMonth}
+              {isYearly ? t.limits.perYear : t.limits.perMonth}
+              {isYearly && (
+                <span style={{ marginLeft: '0.5rem', color: 'var(--success-color)', fontWeight: 600, fontSize: '0.75rem' }}>
+                  {t.limits.yearlyDiscount}
+                </span>
+              )}
             </div>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               {PRO_FEATURES.map((f) => (

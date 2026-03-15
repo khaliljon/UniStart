@@ -14,11 +14,13 @@ namespace UniStart.Controllers;
 public class DiagnosticController : ControllerBase
 {
     private readonly IDiagnosticService _diagnosticService;
+    private readonly ISubscriptionService _subscriptionService;
     private readonly ILogger<DiagnosticController> _logger;
 
-    public DiagnosticController(IDiagnosticService diagnosticService, ILogger<DiagnosticController> logger)
+    public DiagnosticController(IDiagnosticService diagnosticService, ISubscriptionService subscriptionService, ILogger<DiagnosticController> logger)
     {
         _diagnosticService = diagnosticService;
+        _subscriptionService = subscriptionService;
         _logger = logger;
     }
 
@@ -76,11 +78,16 @@ public class DiagnosticController : ControllerBase
     [HttpPost("answer")]
     [ProducesResponseType(typeof(DiagnosticAnswerResultDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task<IActionResult> SubmitAnswer([FromBody] DiagnosticAnswerDto dto)
     {
+        var userId = GetUserId();
+        if (!await _subscriptionService.CanAnswerQuestionAsync(userId))
+            return StatusCode(429, new { error = "Daily question limit reached. Upgrade to Pro for unlimited access." });
+
         try
         {
-            var result = await _diagnosticService.SubmitAnswerAsync(GetUserId(), dto);
+            var result = await _diagnosticService.SubmitAnswerAsync(userId, dto);
             return Ok(result);
         }
         catch (InvalidOperationException ex)

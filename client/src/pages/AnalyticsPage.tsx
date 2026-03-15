@@ -17,8 +17,11 @@ import {
   Bar,
 } from 'recharts';
 import { analyticsService } from '../services/analyticsService';
+import { subscriptionService } from '../services/subscriptionService';
 import { AnalyticsSkeleton } from '../components/Skeleton';
+import { ProGate } from '../components/ProGate';
 import { useTranslation } from '../i18n';
+import { useAppSelector } from '../hooks/useAppSelector';
 import type { Dashboard } from '../types';
 
 const SKILL_COLORS = [
@@ -53,7 +56,10 @@ function AnalyticsPage() {
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedExam, setSelectedExam] = useState<string>('SAT');
+  const [hasFullAnalytics, setHasFullAnalytics] = useState(true);
+  const { selectedExams } = useAppSelector((state) => state.exam);
+  const defaultExam = selectedExams.length > 0 && EXAM_LABELS[selectedExams[0]] ? selectedExams[0] : 'SAT';
+  const [selectedExam, setSelectedExam] = useState<string>(defaultExam);
   const { t } = useTranslation();
 
   useEffect(() => {
@@ -69,6 +75,9 @@ function AnalyticsPage() {
       }
     };
     fetchDashboard();
+    subscriptionService.getStatus().then((s) => {
+      setHasFullAnalytics(s.isPro || s.isTrial || s.limits.fullAnalytics);
+    }).catch(() => {});
   }, []);
 
   if (isLoading) return <AnalyticsSkeleton />;
@@ -189,6 +198,7 @@ function AnalyticsPage() {
       </div>
 
       {/* Skill Levels — Radar Chart (or Bar Chart for ≤2 skills) */}
+      <ProGate hasAccess={hasFullAnalytics} featureName={t.progress.skillProfile}>
       {radarData.length > 0 && (
         <div className="card card-static animate-fade-in-up" style={{ marginTop: '2rem', animationDelay: '0.5s' }}>
           <h2 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1rem' }}>
@@ -233,8 +243,10 @@ function AnalyticsPage() {
           )}
         </div>
       )}
+      </ProGate>
 
       {/* Skill Progress Over Time — Line Chart */}
+      <ProGate hasAccess={hasFullAnalytics} featureName={t.progress.skillProgressOverTime}>
       {lineChartData.length > 1 && (
         <div className="card card-static animate-fade-in-up" style={{ marginTop: '2rem', animationDelay: '0.6s' }}>
           <h2 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1rem' }}>
@@ -270,8 +282,10 @@ function AnalyticsPage() {
           </ResponsiveContainer>
         </div>
       )}
+      </ProGate>
 
       {/* Difficulty Breakdown — Bar Chart */}
+      <ProGate hasAccess={hasFullAnalytics} featureName={t.progress.accuracyByDifficulty}>
       {difficultyData.length > 0 && (
         <div className="card card-static animate-fade-in-up" style={{ marginTop: '2rem', animationDelay: '0.7s' }}>
           <h2 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1rem' }}>
@@ -305,8 +319,10 @@ function AnalyticsPage() {
           </div>
         </div>
       )}
+      </ProGate>
 
       {/* Activity Heatmap */}
+      <ProGate hasAccess={hasFullAnalytics} featureName="Activity Heatmap">
       <div className="card card-static animate-fade-in-up" style={{ marginTop: '2rem', animationDelay: '0.8s' }}>
         <h2 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1rem' }}>
           Activity (Last 12 Weeks)
@@ -338,6 +354,7 @@ function AnalyticsPage() {
           <span>{t.progress.more}</span>
         </div>
       </div>
+      </ProGate>
 
       {/* Skill Bars (detailed, with confidence intervals) */}
       <div className="card card-static animate-fade-in-up" style={{ marginTop: '2rem', animationDelay: '0.9s' }}>

@@ -102,10 +102,12 @@ public class TestController : ControllerBase
     /// </summary>
     [HttpGet("weak-questions")]
     [ProducesResponseType(typeof(IEnumerable<QuestionDto>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetWeakQuestions([FromQuery] string[]? examTypeCodes = null)
+    public async Task<IActionResult> GetWeakQuestions([FromQuery] string[]? examTypeCodes = null, [FromQuery] int? count = null)
     {
         var userId = GetCurrentUserId();
         var questions = await _adaptiveEngine.GetIncorrectlyAnsweredQuestionsAsync(userId, examTypeCodes);
+        if (count.HasValue && count.Value > 0)
+            questions = questions.Take(count.Value).ToList();
         return Ok(questions);
     }
 

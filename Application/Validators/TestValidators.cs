@@ -177,7 +177,7 @@ public class StartDiagnosticDtoValidator : AbstractValidator<StartDiagnosticDto>
 
 public class UpgradeRequestDtoValidator : AbstractValidator<UpgradeRequestDto>
 {
-    private static readonly string[] ValidPlans = { "Pro", "ProAnnual" };
+    private static readonly string[] ValidPlans = { "Pro", "ProYearly" };
 
     public UpgradeRequestDtoValidator()
     {

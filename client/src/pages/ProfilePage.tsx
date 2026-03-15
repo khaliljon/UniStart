@@ -4,6 +4,7 @@ import { useAppDispatch } from '../hooks/useAppDispatch';
 import { useTranslation } from '../hooks/useTranslation';
 import { fetchExams, toggleExamSelection } from '../store/slices/examSlice';
 import { subscriptionService } from '../services/subscriptionService';
+import { PricingModal } from '../components/PricingModal';
 import type { SubscriptionStatus } from '../types';
 
 function ProfilePage() {
@@ -12,6 +13,7 @@ function ProfilePage() {
   const dispatch = useAppDispatch();
   const { t } = useTranslation();
   const [sub, setSub] = useState<SubscriptionStatus | null>(null);
+  const [showPricing, setShowPricing] = useState(false);
 
   useEffect(() => {
     dispatch(fetchExams());
@@ -69,17 +71,17 @@ function ProfilePage() {
 
         {sub && (
           <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-            <p style={{ margin: '0.25rem 0' }}>{t.limits.questionsToday}: {sub.dailyUsage.questionsAnswered} / {sub.limits.questionsPerDay === -1 ? '∞' : sub.limits.questionsPerDay}</p>
-            <p style={{ margin: '0.25rem 0' }}>{t.limits.lessonsToday}: {sub.dailyUsage.lessonsViewed} / {sub.limits.lessonsPerDay === -1 ? '∞' : sub.limits.lessonsPerDay}</p>
+            <p style={{ margin: '0.25rem 0' }}>{t.limits.questionsToday}: {sub.dailyUsage.questionsAnswered} / {sub.dailyUsage.questionsLimit === -1 ? '∞' : sub.dailyUsage.questionsLimit}</p>
           </div>
         )}
 
         {!isPro && (
           <button className="btn btn-primary" style={{ marginTop: '0.75rem', fontSize: '0.85rem' }}
-            onClick={() => { /* TODO: upgrade flow */ }}>
+            onClick={() => setShowPricing(true)}>
             {t.profilePage.upgradePro}
           </button>
         )}
+        <PricingModal isOpen={showPricing} onClose={() => setShowPricing(false)} />
       </div>
 
       {/* ─── Selected Exams ─── */}

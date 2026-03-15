@@ -15,6 +15,7 @@ import { lessonService } from '../services/lessonService';
 import { subscriptionService } from '../services/subscriptionService';
 import { studyPlanService } from '../services/studyPlanService';
 import { UpgradeBanner } from '../components/UpgradeBanner';
+import { TrialBanner } from '../components/TrialBanner';
 import { DailyLimitModal } from '../components/DailyLimitModal';
 import { useTranslation } from '../hooks/useTranslation';
 import type { DailyUsage } from '../types';
@@ -58,6 +59,8 @@ function TestPage() {
   // Daily limit state
   const [dailyUsage, setDailyUsage] = useState<DailyUsage | null>(null);
   const [showLimitModal, setShowLimitModal] = useState(false);
+  const [trialDaysRemaining, setTrialDaysRemaining] = useState(0);
+  const [isTrial, setIsTrial] = useState(false);
   const { user } = useAppSelector((state) => state.auth);
   const isPro = user?.subscriptionTier === 'Pro';
 
@@ -65,6 +68,10 @@ function TestPage() {
   useEffect(() => {
     if (!isPro) {
       subscriptionService.getDailyUsage().then(setDailyUsage).catch(() => {});
+      subscriptionService.getStatus().then((s) => {
+        setIsTrial(s.isTrial);
+        setTrialDaysRemaining(s.trialDaysRemaining);
+      }).catch(() => {});
     }
   }, [isPro, questionsAnswered]);
 
@@ -233,6 +240,7 @@ function TestPage() {
         <DailyLimitModal isOpen={showLimitModal} onClose={() => setShowLimitModal(false)} />
         {!isPro && dailyUsage && (
           <div style={{ maxWidth: '600px', margin: '0 auto 0' }}>
+            {isTrial && <TrialBanner daysRemaining={trialDaysRemaining} />}
             <UpgradeBanner
               questionsRemaining={dailyUsage.questionsRemaining}
               questionsLimit={dailyUsage.questionsLimit}
@@ -458,6 +466,9 @@ function TestPage() {
           questionsLimit={dailyUsage.questionsLimit}
         />
       )}
+      {!isPro && isTrial && dailyUsage && dailyUsage.questionsRemaining > 5 && (
+        <TrialBanner daysRemaining={trialDaysRemaining} />
+      )}
 
       <DailyLimitModal isOpen={showLimitModal} onClose={() => setShowLimitModal(false)} />
 
@@ -564,7 +575,9 @@ function TestPage() {
                 <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
                   {isRecycling
                     ? `${t.practice.solved}: ${sessionAnswered} (${totalQuestions} ${t.practice.inTopic})`
-                    : `${sessionAnswered + 1} / ${totalQuestions}`}
+                    : !isPro && dailyUsage
+                      ? `${dailyUsage.questionsAnswered} / ${dailyUsage.questionsLimit}`
+                      : `${sessionAnswered + 1} / ${totalQuestions}`}
                 </span>
                 {hasTopic && (
                   <span style={{
@@ -576,7 +589,9 @@ function TestPage() {
                 )}
                 {!hasTopic && (
                   <span style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--primary-color)' }}>
-                    {totalQuestions > 0 ? Math.min(Math.round((sessionAnswered / total) * 100), 100) : 0}%
+                    {!isPro && dailyUsage
+                      ? `${Math.min(Math.round((dailyUsage.questionsAnswered / dailyUsage.questionsLimit) * 100), 100)}%`
+                      : `${totalQuestions > 0 ? Math.min(Math.round((sessionAnswered / total) * 100), 100) : 0}%`}
                   </span>
                 )}
               </div>
@@ -598,7 +613,9 @@ function TestPage() {
                   borderRadius: '4px', overflow: 'hidden'
                 }}>
                   <div style={{
-                    width: `${totalQuestions > 0 ? Math.min((sessionAnswered / total) * 100, 100) : 0}%`,
+                    width: `${!isPro && dailyUsage
+                      ? Math.min((dailyUsage.questionsAnswered / dailyUsage.questionsLimit) * 100, 100)
+                      : totalQuestions > 0 ? Math.min((sessionAnswered / total) * 100, 100) : 0}%`,
                     height: '100%', backgroundColor: 'var(--primary-color)',
                     borderRadius: '4px', transition: 'width 0.3s ease'
                   }} />
