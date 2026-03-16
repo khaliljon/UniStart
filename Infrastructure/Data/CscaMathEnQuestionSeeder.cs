@@ -4,14 +4,14 @@ using UniStart.Domain.Entities;
 namespace UniStart.Infrastructure.Data;
 
 /// <summary>
-/// Seeds ~250 multiple-choice questions for CSCA Mathematics (20 chapters).
+/// Seeds ~250 multiple-choice questions for CSCA Mathematics EN (20 chapters).
 /// Each question has exactly 4 answer options, difficulty level, explanation, and IRT parameters.
 /// </summary>
-public class CscaMathQuestionSeeder
+public class CscaMathEnQuestionSeeder
 {
     private readonly UniStartDbContext _context;
 
-    public CscaMathQuestionSeeder(UniStartDbContext context)
+    public CscaMathEnQuestionSeeder(UniStartDbContext context)
     {
         _context = context;
     }

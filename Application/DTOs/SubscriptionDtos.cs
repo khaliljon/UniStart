@@ -7,7 +7,8 @@ public record SubscriptionStatusDto(
     int TrialDaysRemaining,
     DateTime? ExpiresAt,
     DailyUsageDto DailyUsage,
-    TierLimitsDto Limits
+    TierLimitsDto Limits,
+    bool FreeMockAvailable
 );
 
 public record DailyUsageDto(

@@ -10,6 +10,7 @@ public class User : ISoftDeletable, IAuditable
     public bool HasCompletedOnboarding { get; set; } = false;
     public SubscriptionTier SubscriptionTier { get; set; } = SubscriptionTier.Free;
     public DateTime? SubscriptionExpiresAt { get; set; }
+    public bool FreeMockUsed { get; set; } = false;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
 

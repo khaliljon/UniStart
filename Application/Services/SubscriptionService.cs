@@ -65,7 +65,8 @@ public class SubscriptionService : ISubscriptionService
             TrialDaysRemaining: trialDaysRemaining,
             ExpiresAt: user.SubscriptionExpiresAt,
             DailyUsage: usage,
-            Limits: limits
+            Limits: limits,
+            FreeMockAvailable: !user.IsPro && !user.FreeMockUsed
         );
     }
 
@@ -118,7 +119,7 @@ public class SubscriptionService : ISubscriptionService
             "basic_analytics" => true,
             "weekly_prediction" => true,
             "study_plan_basic" => true,
-            "mock_exams" => limits.MockExamsEnabled,
+            "mock_exams" => limits.MockExamsEnabled || !user.FreeMockUsed,
             "full_analytics" => limits.FullAnalytics,
             "full_study_plan" => limits.FullStudyPlan,
             "realtime_prediction" => limits.RealtimePrediction,

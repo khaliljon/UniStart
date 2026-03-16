@@ -127,9 +127,9 @@ public class DatabaseSeeder
             await SeedIeltsCscaTopicsAsync();
         }
 
-        // Restructure CSCA: replace old 2-section structure with 3-subject hierarchy
-        if (!await _context.ExamSections.AnyAsync(s => s.ExamTypeCode == "CSCA" && s.Name == "Mathematics")
-            && !await _context.ExamSections.AnyAsync(s => s.ExamTypeCode == "CSCA" && s.Name.Contains("Mathematics")))
+        // Restructure CSCA: create detailed topic hierarchy for Math/Physics/Chemistry
+        var cscaChemSec = await _context.ExamSections.FirstOrDefaultAsync(s => s.ExamTypeCode == "CSCA" && s.Name.Contains("Chemistry") && !s.Name.Contains("(CN)"));
+        if (cscaChemSec == null || !await _context.Topics.AnyAsync(t => t.SectionId == cscaChemSec.Id))
         {
             await SeedCscaRestructureAsync();
         }
@@ -140,11 +140,29 @@ public class DatabaseSeeder
             await SeedQuestionsAsync();
         }
 
-        // Seed CSCA Mathematics questions (20 chapters, ~250 questions)
-        await new CscaMathQuestionSeeder(_context).SeedAsync();
+        // Seed CSCA Mathematics EN questions (20 chapters, ~250 questions)
+        await new CscaMathEnQuestionSeeder(_context).SeedAsync();
 
-        // Seed CSCA Physics questions (12 chapters, ~200 questions)
-        await new CscaPhysicsQuestionSeeder(_context).SeedAsync();
+        // Seed CSCA Physics EN questions (12 chapters, ~200 questions)
+        await new CscaPhysicsEnQuestionSeeder(_context).SeedAsync();
+
+        // Seed CSCA Chemistry EN questions (14 chapters, ~140 questions)
+        await new CscaChemistryEnQuestionSeeder(_context).SeedAsync();
+
+        // Seed CSCA Mathematics CN questions (10 topics, ~78 questions, Chinese)
+        await new CscaMathChQuestionSeeder(_context).SeedAsync();
+
+        // Seed CSCA Physics CN questions (10 topics, ~70 questions, Chinese)
+        await new CscaPhysicsChQuestionSeeder(_context).SeedAsync();
+
+        // Seed CSCA Chemistry CN questions (10 topics, ~72 questions, Chinese)
+        await new CscaChemistryChQuestionSeeder(_context).SeedAsync();
+
+        // Seed CSCA Chinese Humanitarian questions (8 chapters, ~75 questions, Chinese)
+        await new CscaChineseHumQuestionSeeder(_context).SeedAsync();
+
+        // Seed CSCA Chinese Technical questions (8 chapters, ~80 questions, Chinese)
+        await new CscaChineseTechQuestionSeeder(_context).SeedAsync();
 
         // Update IRT parameters on existing questions that still have defaults
         await UpdateIrtParametersAsync();
@@ -4073,9 +4091,29 @@ General Tips:
         var skillCnHum = await _context.Skills.FirstAsync(s => s.Code == "SK_CN_HUM");
         var skillCrit = await _context.Skills.FirstAsync(s => s.Code == "SK_CRIT");
 
-        // 4. Skip if topics already seeded
-        if (await _context.Topics.AnyAsync(t => t.SectionId == mathSection.Id && t.Name.StartsWith("1.1.1")))
+        // 4. Add topics per subject only if they don't already have the detailed set
+        var hasMathDetailed = await _context.Topics.AnyAsync(t => t.SectionId == mathSection.Id && t.Name.StartsWith("1.1.1"));
+        var hasPhysDetailed = await _context.Topics.AnyAsync(t => t.SectionId == physSection.Id && t.Name.StartsWith("P1.1.1"));
+        var hasChemDetailed = await _context.Topics.AnyAsync(t => t.SectionId == chemSection.Id && t.Name.StartsWith("C1.1.1"));
+        var hasCnTechDetailed = await _context.Topics.AnyAsync(t => t.SectionId == cnTechSection.Id && t.Name.StartsWith("CT1.1.1"));
+        var hasCnHumDetailed = await _context.Topics.AnyAsync(t => t.SectionId == cnHumSection.Id && t.Name.StartsWith("CH1.1.1"));
+
+        // If all subjects already have detailed topics, nothing to do
+        if (hasMathDetailed && hasPhysDetailed && hasChemDetailed && hasCnTechDetailed && hasCnHumDetailed)
             return;
+
+        // Remove old placeholder topics if they exist (they'll be replaced by detailed ones)
+        if (!hasMathDetailed)
+        {
+            var oldMathTopics = await _context.Topics.Where(t => t.SectionId == mathSection.Id).ToListAsync();
+            if (oldMathTopics.Any()) _context.Topics.RemoveRange(oldMathTopics);
+        }
+        if (!hasPhysDetailed)
+        {
+            var oldPhysTopics = await _context.Topics.Where(t => t.SectionId == physSection.Id).ToListAsync();
+            if (oldPhysTopics.Any()) _context.Topics.RemoveRange(oldPhysTopics);
+        }
+        await _context.SaveChangesAsync();
 
         // ── MATHEMATICS — 20 Chapters ──
         var mathTopics = new List<Topic>
@@ -4511,11 +4549,11 @@ General Tips:
             T("CH8.1.2 Elimination and Guessing Techniques", skillCnHum.Id, cnHumSection.Id),
         };
 
-        await _context.Topics.AddRangeAsync(mathTopics);
-        await _context.Topics.AddRangeAsync(physTopics);
-        await _context.Topics.AddRangeAsync(chemTopics);
-        await _context.Topics.AddRangeAsync(cnTechTopics);
-        await _context.Topics.AddRangeAsync(cnHumTopics);
+        if (!hasMathDetailed) await _context.Topics.AddRangeAsync(mathTopics);
+        if (!hasPhysDetailed) await _context.Topics.AddRangeAsync(physTopics);
+        if (!hasChemDetailed) await _context.Topics.AddRangeAsync(chemTopics);
+        if (!hasCnTechDetailed) await _context.Topics.AddRangeAsync(cnTechTopics);
+        if (!hasCnHumDetailed) await _context.Topics.AddRangeAsync(cnHumTopics);
         await _context.SaveChangesAsync();
     }
 

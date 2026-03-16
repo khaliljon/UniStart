@@ -4,14 +4,14 @@ using UniStart.Domain.Entities;
 namespace UniStart.Infrastructure.Data;
 
 /// <summary>
-/// Seeds ~200 multiple-choice questions for CSCA Physics (12 chapters).
+/// Seeds ~200 multiple-choice questions for CSCA Physics EN (12 chapters).
 /// Each question has exactly 4 answer options, difficulty level, explanation, and IRT parameters.
 /// </summary>
-public class CscaPhysicsQuestionSeeder
+public class CscaPhysicsEnQuestionSeeder
 {
     private readonly UniStartDbContext _context;
 
-    public CscaPhysicsQuestionSeeder(UniStartDbContext context)
+    public CscaPhysicsEnQuestionSeeder(UniStartDbContext context)
     {
         _context = context;
     }

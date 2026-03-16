@@ -77,6 +77,8 @@ public class UniStartDbContext : DbContext
             // Block / Suspend (OP-14)
             entity.Property(e => e.IsBlocked).HasDefaultValue(false);
             entity.Property(e => e.BlockReason).HasMaxLength(500);
+            // Free mock exam tracking (FIX-37)
+            entity.Property(e => e.FreeMockUsed).HasDefaultValue(false);
         });
 
         // ExamType configuration

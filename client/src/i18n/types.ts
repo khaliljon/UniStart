@@ -253,6 +253,21 @@ export interface Translations {
     minutes: string;
   };
 
+  // ─── Mock Upsell ───
+  mockUpsell: {
+    title: string;
+    scoreText: string;
+    wantAnalytics: string;
+    showAnalytics: string;
+    analyticsPreview: string;
+    whatElse: string;
+    mistakesPreview: string;
+    tryPro: string;
+    specialOffer: string;
+    step: string;
+    close: string;
+  };
+
   // ─── Progress / Analytics ───
   progress: {
     title: string;

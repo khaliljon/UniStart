@@ -1,0 +1,35 @@
+# ═══════════════════════════════════════════════════════
+#  UniStart CD — Deploy to Production
+# ═══════════════════════════════════════════════════════
+#  Trigger: manual (workflow_dispatch) or after CI passes on main
+#  Strategy: SSH into VPS, pull latest, docker compose up
+# ═══════════════════════════════════════════════════════
+
+name: Deploy
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            cd /opt/unistart
+            git pull origin main
+            docker compose down
+            docker compose up -d --build
+            docker compose exec -T api dotnet ef database update --no-build || true
+            echo "Deploy completed at $(date)"

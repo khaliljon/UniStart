@@ -27,6 +27,9 @@
 - FIX-41: Убраны эмодзи с LandingPage + SchoolDetailPage (RULES.md compliance)
 - FIX-42: Unit-тесты — 125 тестов (JwtService 10, Subscription 16, Validators 21, AdaptiveEngine 8 + IrtMath ~70)
 - FIX-43: PHASE 1 Legal — PrivacyPage, TermsPage, CookieBanner, consent checkbox, i18n (ru/en/kz), footer links
+- FIX-44: PHASE 2 Security — CSP, HSTS hardening, CORS restriction, InputSanitizer (AuthService, TutorService, MessageService, AdminService), dependency audit
+- FIX-45: PHASE 3 Tests — AuthService (21), MockExamService (22), ExamService (9) = 52 новых тестов (177 всего)
+- FIX-46: PHASE 4 Infra — GitHub Actions CI/CD (ci.yml + deploy.yml), .dockerignore fix, backup script
 - README обновлён
 
 ---
@@ -42,24 +45,28 @@
 - [x] i18n — полная локализация (ru/en/kz) всех юридических текстов (~95 ключей)
 - [x] Footer лендинга — ссылки на /privacy и /terms
 
-### PHASE 2 — Безопасность (Priority: HIGH)
-- [ ] **Secrets audit** — убедиться что appsettings.json содержит ТОЛЬКО placeholder'ы
-- [ ] **Environment variables** — перевести production на env vars (CONNECTION_STRING, JWT_SECRET)
-- [ ] **HTTPS** — force redirect HTTP → HTTPS в production
-- [ ] **CORS** — ограничить origins до production домена
-- [ ] **Rate limiting** — проверить лимиты для auth endpoints (login, register)
-- [ ] **Input sanitization** — XSS protection на всех user-input полях
-- [ ] **SQL injection** — ✅ EF Core parameterized queries (уже защищено)
-- [ ] **Dependency audit** — `dotnet list package --vulnerable` + `npm audit`
+### PHASE 2 — Безопасность (Priority: HIGH) ✅
+- [x] **Secrets audit** — appsettings.json placeholder'ы, Production env vars, .gitignore ок
+- [x] **Environment variables** — UNISTART_JWT_SECRET, UNISTART_DB_CONNECTION в production
+- [x] **HTTPS** — UseHttpsRedirection в pipeline
+- [x] **CORS** — origins из config, методы ограничены (GET/POST/PUT/DELETE/PATCH)
+- [x] **Rate limiting** — auth 10/мин, api 120/мин, global 200/мин per IP
+- [x] **CSP header** — default-src 'self', frame-ancestors 'none', form-action 'self'
+- [x] **HSTS** — max-age=31536000; includeSubDomains; preload
+- [x] **Input sanitization** — InputSanitizer (HTML tag stripping) на user-facing полях (Auth, Tutor, Message, Admin)
+- [x] **SQL injection** — ✅ EF Core parameterized queries (уже защищено)
+- [x] **Dependency audit** — dotnet 0 vulns, npm 8 dev-only (eslint/vite, не production)
 
 ### PHASE 3 — Тестирование (Priority: HIGH)
-- [x] **Unit tests — Backend (125 тестов, все проходят):**
+- [x] **Unit tests — Backend (177 тестов, все проходят):**
   - [x] IRT engine — IrtMathTests: 3PL вероятность, Fisher information, EAP estimation, theta↔level, difficulty mapping, forgetting curve, item selection (~70 тестов)
   - [x] JwtService — JwtServiceTests: GenerateToken, ValidateToken roundtrip, invalid/tampered/expired/wrong-key tokens, claims, roles (10 тестов)
   - [x] SubscriptionService — SubscriptionServiceTests: GetLimits (Free/Trial/Pro/Unknown), GetStatus tier resolution, CanAnswerQuestion, HasAccess, UpgradeAsync (Pro/ProYearly/Unknown), GetDailyUsage (16 тестов)
   - [x] AdaptiveEngineService — AdaptiveEngineServiceTests: difficulty boundaries, GetNextQuestion, GetUserSkillProfile, ResetProgress, question/answer counts (8 тестов)
   - [x] Validators — ValidatorTests: RegisterDto, LoginDto, UpdateUserDto, StartTestSessionDto, UpgradeRequestDto, MockExamSubmitAnswerDto, CompleteEntryDto, DiagnosticAnswerDto (21 тест)
-  - [ ] AuthService (register, login, password hashing)
+  - [x] AuthService — AuthServiceTests: Register (новый/дубль/soft-delete/sanitize/skills), Login (успех/ошибка/JWT), RefreshToken, GetUser, Update (name/email/дубль/sanitize) (21 тест)
+  - [x] MockExamService — MockExamServiceTests: листинг, детали, старт (популяция/abandon), SubmitAnswer (правильный/неправильный), Complete (статус/скор), Abandon, Results, History, ActiveAttempt (22 теста)
+  - [x] ExamService — ExamServiceTests: GetAllExams (список/пустой/кэш), GetExamWithSections (найден/не найден/скоры), GetExamSections (фильтр/пустой/NUET) (9 тестов)
   - [ ] MockExamService (start, answer, complete, scoring)
   - [ ] ExamService (question retrieval, session management)
 - [ ] **Unit tests — Frontend:**
@@ -70,12 +77,14 @@
   - [ ] Subscription upgrade flow (Free → Pro monthly/yearly)
   - [ ] Admin question import flow
 
-### PHASE 4 — Инфраструктура (Priority: MEDIUM)
-- [ ] **Docker** — Dockerfile для .NET + Vite build
-- [ ] **CI/CD** — GitHub Actions (build, test, deploy)
-- [ ] **Мониторинг** — Serilog → production sink (Seq / ELK / файл с ротацией)
-- [ ] **Бэкапы** — PostgreSQL pg_dump cron job
-- [ ] **Домен** — unistart.kz, SSL сертификат
+### PHASE 4 — Инфраструктура (Priority: MEDIUM) ✅
+- [x] **Docker** — Dockerfile (API multi-stage) + client/Dockerfile (Vite+nginx) + docker-compose.yml (3 сервиса)
+- [x] **CI/CD** — GitHub Actions: ci.yml (build+test+TypeScript+Docker), deploy.yml (SSH деплой)
+- [x] **Мониторинг** — Serilog Console+File (rolling daily, 14 дней), request logging с UserId
+- [x] **Health checks** — /health/live, /health/ready (PostgreSQL), /health (JSON)
+- [x] **Бэкапы** — scripts/backup-db.sh (pg_dump, gzip, 7-day retention, cron-ready)
+- [x] **.dockerignore** — исправлен (убрано исключение Migrations)
+- [ ] **Домен** — unistart.kz, SSL сертификат (вне кода, operational)
 
 ### PHASE 5 — Контент (Priority: MEDIUM)
 - [ ] Сидинг вопросов по Физике (12 глав) — CSCA

@@ -1,8 +1,11 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { mockExamService } from '../services/mockExamService';
+import { subscriptionService } from '../services/subscriptionService';
 import { useAppSelector } from '../hooks/useAppSelector';
 import { ProGate } from '../components/ProGate';
+import { MockResultUpsellModal } from '../components/MockResultUpsellModal';
 import type {
+  SubscriptionStatus,
   MockExamListItem,
   MockExamDetail,
   MockExamAttempt,
@@ -25,6 +28,9 @@ function MockExamPage() {
   const [phase, setPhase] = useState<Phase>('list');
   const { user } = useAppSelector((state) => state.auth);
   const isPro = user?.subscriptionTier === 'Pro' || user?.role === 'Admin';
+  const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus | null>(null);
+  const [showUpsell, setShowUpsell] = useState(false);
+  const canAccessMock = isPro || subscriptionStatus?.freeMockAvailable;
 
   // List phase
   const [mockExams, setMockExams] = useState<MockExamListItem[]>([]);
@@ -69,6 +75,10 @@ function MockExamPage() {
   }, []);
 
   useEffect(() => { loadExams(); }, [loadExams]);
+
+  useEffect(() => {
+    subscriptionService.getStatus().then(setSubscriptionStatus).catch(() => {});
+  }, []);
 
   // ── Timer logic ───────────────────────────────────────
   useEffect(() => {
@@ -204,6 +214,7 @@ function MockExamPage() {
       const res = await mockExamService.getResults(updated.attemptId);
       setResults(res);
       setPhase('results');
+      if (!isPro) setShowUpsell(true);
     } catch (e) { console.error(e); }
     setLoading(false);
   };
@@ -246,7 +257,7 @@ function MockExamPage() {
     if (loading) return <div className="loading"><div className="spinner" /></div>;
 
     return (
-      <ProGate hasAccess={isPro} featureName="Mock Exams">
+      <ProGate hasAccess={canAccessMock ?? false} featureName="Mock Exams">
       <div style={{ maxWidth: 900, margin: '0 auto' }}>
         <h1 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.5rem' }}>
           Mock Exams
@@ -835,6 +846,14 @@ function MockExamPage() {
             Back to Mock Exams
           </button>
         </div>
+
+        <MockResultUpsellModal
+          isOpen={showUpsell}
+          onClose={() => setShowUpsell(false)}
+          score={results.totalScore}
+          totalCorrect={results.totalCorrect}
+          totalQuestions={results.totalQuestions}
+        />
       </div>
     );
   }

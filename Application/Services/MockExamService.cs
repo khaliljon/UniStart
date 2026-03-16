@@ -369,6 +369,14 @@ public class MockExamService : IMockExamService
 
         var sections = GetEffectiveSections(attempt);
         await CompleteExamInternalAsync(attempt);
+
+        // Mark free mock as used for non-Pro users (FIX-37)
+        var user = await _context.Users.FindAsync(userId);
+        if (user != null && !user.IsPro && !user.FreeMockUsed)
+        {
+            user.FreeMockUsed = true;
+        }
+
         await _context.SaveChangesAsync();
 
         return new MockExamAttemptDto(

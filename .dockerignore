@@ -7,7 +7,6 @@ client/dist/
 *.suo
 .vs/
 .vscode/
-*.md
 docs/
-Migrations/
-**/*.Designer.cs
+.github/
+UniStart.Tests/

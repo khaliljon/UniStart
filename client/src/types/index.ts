@@ -809,6 +809,7 @@ export interface SubscriptionStatus {
   expiresAt: string | null;
   dailyUsage: DailyUsage;
   limits: TierLimits;
+  freeMockAvailable: boolean;
 }
 
 export interface DailyUsage {
