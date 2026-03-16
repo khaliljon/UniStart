@@ -15,11 +15,13 @@ namespace UniStart.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
+    private readonly IConfiguration _config;
     private readonly ILogger<AuthController> _logger;
 
-    public AuthController(IAuthService authService, ILogger<AuthController> logger)
+    public AuthController(IAuthService authService, IConfiguration config, ILogger<AuthController> logger)
     {
         _authService = authService;
+        _config = config;
         _logger = logger;
     }
 
@@ -97,5 +99,83 @@ public class AuthController : ControllerBase
         {
             return Unauthorized();
         }
+    }
+
+    /// <summary>
+    /// Verify email with 6-digit code
+    /// </summary>
+    [HttpPost("verify-email")]
+    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailDto dto)
+    {
+        try
+        {
+            var result = await _authService.VerifyEmailAsync(dto);
+            return Ok(result);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { error = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Resend verification code to email
+    /// </summary>
+    [HttpPost("resend-code")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ResendCode([FromBody] ResendCodeDto dto)
+    {
+        try
+        {
+            await _authService.ResendVerificationCodeAsync(dto);
+            return Ok(new { message = "Verification code sent" });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { error = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Login or register via Google OAuth
+    /// </summary>
+    [HttpPost("google")]
+    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginDto dto)
+    {
+        try
+        {
+            var result = await _authService.GoogleLoginAsync(dto);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning("Google login failed: {Message}", ex.Message);
+            return BadRequest(new { error = "Google authentication failed" });
+        }
+    }
+
+    /// <summary>
+    /// Get Google OAuth Client ID for frontend initialization
+    /// </summary>
+    [HttpGet("google-client-id")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    public IActionResult GetGoogleClientId()
+    {
+        var clientId = _config["GoogleAuth:ClientId"] ?? "";
+        return Ok(new { clientId });
     }
 }

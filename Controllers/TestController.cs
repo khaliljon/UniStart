@@ -33,9 +33,9 @@ public class TestController : ControllerBase
     {
         var userId = GetCurrentUserId();
         
-        var question = await _adaptiveEngine.GetNextQuestionAsync(userId, dto.ExamTypeCodes, dto.SectionId, dto.TopicId);
-        var totalQuestions = await _adaptiveEngine.GetTotalQuestionsCountAsync(dto.ExamTypeCodes, dto.SectionId, dto.TopicId);
-        var answeredQuestions = await _adaptiveEngine.GetAnsweredQuestionsCountAsync(userId, dto.ExamTypeCodes, dto.SectionId, dto.TopicId);
+        var question = await _adaptiveEngine.GetNextQuestionAsync(userId, dto.ExamTypeCodes, dto.SectionId, dto.SectionIds, dto.TopicId);
+        var totalQuestions = await _adaptiveEngine.GetTotalQuestionsCountAsync(dto.ExamTypeCodes, dto.SectionId, dto.SectionIds, dto.TopicId);
+        var answeredQuestions = await _adaptiveEngine.GetAnsweredQuestionsCountAsync(userId, dto.ExamTypeCodes, dto.SectionId, dto.SectionIds, dto.TopicId);
         var topicMastery = await _adaptiveEngine.GetTopicMasteryAsync(userId, dto.ExamTypeCodes, dto.TopicId);
         
         if (question == null)

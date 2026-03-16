@@ -99,7 +99,7 @@ public class OnboardingService : IOnboardingService
                 minTotal,
                 maxTotal,
                 desc,
-                sections.Select(s => new ExamSectionInfoDto(s.Name, s.MinScore, s.MaxScore))
+                sections.Select(s => new ExamSectionInfoDto(s.Id, s.Name, s.MinScore, s.MaxScore))
             );
         });
     }

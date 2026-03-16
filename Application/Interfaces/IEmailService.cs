@@ -4,6 +4,7 @@ namespace UniStart.Application.Interfaces;
 
 public interface IEmailService
 {
+    Task SendVerificationCodeAsync(string toEmail, string userName, string code);
     Task SendWelcomeEmailAsync(string toEmail, string userName);
     Task SendStreakReminderAsync(string toEmail, string userName, int lastStreak, int inactiveDays);
     Task SendWeeklyDigestAsync(string toEmail, WeeklyDigestDataDto data);

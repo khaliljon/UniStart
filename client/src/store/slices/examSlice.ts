@@ -6,6 +6,7 @@ interface ExamState {
   exams: ExamType[];
   sections: ExamSection[];
   selectedExams: string[];
+  selectedSectionIds: number[];
   selectedSection: number | null;
   isLoading: boolean;
   error: string | null;
@@ -19,10 +20,18 @@ const savedExams = (() => {
   } catch { return []; }
 })();
 
+const savedSectionIds = (() => {
+  try {
+    const stored = localStorage.getItem('selectedSectionIds');
+    return stored ? JSON.parse(stored) as number[] : [];
+  } catch { return []; }
+})();
+
 const initialState: ExamState = {
   exams: [],
   sections: [],
   selectedExams: savedExams,
+  selectedSectionIds: savedSectionIds,
   selectedSection: null,
   isLoading: false,
   error: null,
@@ -59,13 +68,19 @@ const examSlice = createSlice({
       state.selectedExams = action.payload;
       localStorage.setItem('selectedExams', JSON.stringify(action.payload));
     },
+    setSelectedSectionIds: (state, action: PayloadAction<number[]>) => {
+      state.selectedSectionIds = action.payload;
+      localStorage.setItem('selectedSectionIds', JSON.stringify(action.payload));
+    },
     setSelectedSection: (state, action: PayloadAction<number | null>) => {
       state.selectedSection = action.payload;
     },
     clearSelection: (state) => {
       state.selectedExams = [];
+      state.selectedSectionIds = [];
       state.selectedSection = null;
       localStorage.removeItem('selectedExams');
+      localStorage.removeItem('selectedSectionIds');
     },
   },
   extraReducers: (builder) => {
@@ -88,5 +103,5 @@ const examSlice = createSlice({
   },
 });
 
-export const { toggleExamSelection, setSelectedExams, setSelectedSection, clearSelection } = examSlice.actions;
+export const { toggleExamSelection, setSelectedExams, setSelectedSectionIds, setSelectedSection, clearSelection } = examSlice.actions;
 export default examSlice.reducer;

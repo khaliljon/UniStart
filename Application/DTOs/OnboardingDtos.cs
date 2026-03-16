@@ -30,6 +30,7 @@ public record ExamTypeInfoDto(
 );
 
 public record ExamSectionInfoDto(
+    int Id,
     string Name,
     int MinScore,
     int MaxScore

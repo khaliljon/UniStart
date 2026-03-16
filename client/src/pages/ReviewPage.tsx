@@ -33,18 +33,15 @@ export default function ReviewPage() {
     }
     // Check daily limit for free users before loading review questions
     if (!isPro) {
-      Promise.all([
-        subscriptionService.getDailyUsage(),
-        subscriptionService.getStatus(),
-      ]).then(([usage, status]) => {
+      subscriptionService.getDailyUsage().then((usage) => {
         setDailyUsage(usage);
         if (usage.isLimitReached) {
           setLimitBlocked(true);
           setLoading(false);
           return;
         }
-        // Free: 5 review questions, Trial: 15, Pro: unlimited
-        const limit = status.isTrial ? 15 : 5;
+        // Free: 5 review questions, Pro: unlimited
+        const limit = 5;
         loadWeakQuestions(limit);
       }).catch(() => {
         loadWeakQuestions();

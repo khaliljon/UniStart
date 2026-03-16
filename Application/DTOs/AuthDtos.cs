@@ -22,8 +22,22 @@ public record AuthResponseDto(
     bool HasCompletedOnboarding,
     string SubscriptionTier,
     DateTime? SubscriptionExpiresAt,
+    bool EmailVerified,
     string Token,
     DateTime ExpiresAt
+);
+
+public record VerifyEmailDto(
+    [Required][EmailAddress] string Email,
+    [Required][StringLength(6, MinimumLength = 6)] string Code
+);
+
+public record ResendCodeDto(
+    [Required][EmailAddress] string Email
+);
+
+public record GoogleLoginDto(
+    [Required] string IdToken
 );
 
 // User DTOs

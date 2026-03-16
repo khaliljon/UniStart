@@ -56,6 +56,15 @@ export const kz: Translations = {
     registerTitle: 'Аккаунт құру',
     loginSubtitle: 'Емтиханға дайындықты жалғастырыңыз',
     registerSubtitle: 'Емтиханға тегін дайындалыңыз',
+    verifyTitle: 'Email-ды растаңыз',
+    verifySubtitle: 'Біз 6 сандық код жібердік',
+    verificationCode: 'Растау коды',
+    verify: 'Растау',
+    noCodeReceived: 'Код алмадыңыз ба?',
+    resendCode: 'Қайта жіберу',
+    codeSent: 'Код қайта жіберілді',
+    codeResendError: 'Код жіберу мүмкін болмады',
+    orContinueWith: 'немесе жалғастыру',
   },
   dashboard: {
     welcome: 'Қош келдіңіз',
@@ -371,9 +380,6 @@ export const kz: Translations = {
     learnAboutPro: 'Pro туралы білу',
     reviewBlocked: 'Қателермен жұмыс қол жетімді емес',
     reviewBlockedDesc: 'Күнделікті сұрақ лимиті бітті. Жалғастыру үшін Pro жазылымын рәсімдеңіз немесе ертең қайтыңыз.',
-    trialActive: 'Сынақ кезеңі — {n} күн қалды',
-    trialDaysLeft: '{n} күн қалды',
-    trialExpired: 'Сынақ кезеңі аяқталды',
   },
   studyPlan: {
     title: 'Оқу жоспары',
@@ -472,6 +478,7 @@ export const kz: Translations = {
     registeredAt: 'Тіркелген',
     validUntil: '{date} дейін',
     selectAtLeastOne: 'Кемінде бір емтихан таңдаңыз',
+    sectionPreferences: 'Дайындық бөлімдері',
   },
   admin: {
     nav: {

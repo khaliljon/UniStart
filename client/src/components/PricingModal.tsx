@@ -12,16 +12,14 @@ interface PricingModalProps {
 export function PricingModal({ isOpen, onClose }: PricingModalProps) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
-  const [isUpgrading, setIsUpgrading] = useState(false);
+  const [isUpgrading, setIsUpgrading] = useState<string | null>(null);
   const [result, setResult] = useState<string | null>(null);
-  const [isYearly, setIsYearly] = useState(false);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const FREE_FEATURES = [
-    t.limits.freeQuestions,
+    `${t.limits.freeDiagnostic} / ${t.limits.freeQuestions}`,
     t.limits.freeAnalytics,
     t.limits.freeWeeklyForecast,
-    t.limits.freeDiagnostic,
     t.limits.freeBasicPlan,
     t.limits.freeMockExam,
   ];
@@ -42,10 +40,9 @@ export function PricingModal({ isOpen, onClose }: PricingModalProps) {
 
   if (!isOpen) return null;
 
-  const handleUpgrade = async () => {
-    setIsUpgrading(true);
+  const handleUpgrade = async (plan: string) => {
+    setIsUpgrading(plan);
     try {
-      const plan = isYearly ? 'ProYearly' : 'Pro';
       const res = await subscriptionService.upgrade(plan);
       if (res.success) {
         dispatch(setSubscription({ tier: res.tier, expiresAt: res.expiresAt }));
@@ -59,7 +56,7 @@ export function PricingModal({ isOpen, onClose }: PricingModalProps) {
     } catch {
       setResult(t.limits.errorUpgrade);
     } finally {
-      setIsUpgrading(false);
+      setIsUpgrading(null);
     }
   };
 
@@ -81,8 +78,8 @@ export function PricingModal({ isOpen, onClose }: PricingModalProps) {
         background: 'var(--card-bg, #fff)',
         borderRadius: '1.5rem',
         padding: '2rem',
-        maxWidth: '720px',
-        width: '90%',
+        maxWidth: '960px',
+        width: '95%',
         maxHeight: '90vh',
         overflow: 'auto',
         boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
@@ -94,37 +91,6 @@ export function PricingModal({ isOpen, onClose }: PricingModalProps) {
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
             {t.limits.choosePlanDesc}
           </p>
-
-          {/* Monthly / Yearly toggle */}
-          <div style={{
-            display: 'flex', justifyContent: 'center', gap: '0.5rem',
-            marginTop: '1rem',
-            background: 'var(--bg-secondary)', borderRadius: '999px', padding: '0.25rem',
-            width: 'fit-content', margin: '1rem auto 0',
-          }}>
-            <button
-              onClick={() => setIsYearly(false)}
-              style={{
-                padding: '0.4rem 1rem', borderRadius: '999px', border: 'none',
-                fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer',
-                background: !isYearly ? 'var(--primary-color)' : 'transparent',
-                color: !isYearly ? '#fff' : 'var(--text-secondary)',
-              }}
-            >
-              {t.limits.perMonth}
-            </button>
-            <button
-              onClick={() => setIsYearly(true)}
-              style={{
-                padding: '0.4rem 1rem', borderRadius: '999px', border: 'none',
-                fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer',
-                background: isYearly ? 'var(--primary-color)' : 'transparent',
-                color: isYearly ? '#fff' : 'var(--text-secondary)',
-              }}
-            >
-              {t.limits.perYear} {isYearly ? '' : `— ${t.limits.yearlyDiscount}`}
-            </button>
-          </div>
         </div>
 
         {result && (
@@ -141,17 +107,17 @@ export function PricingModal({ isOpen, onClose }: PricingModalProps) {
           </div>
         )}
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
           {/* Free */}
           <div style={{
             border: '2px solid var(--border-color, #e5e7eb)',
             borderRadius: '1rem',
             padding: '1.5rem',
           }}>
-            <div style={{ fontWeight: 700, fontSize: '1.2rem', marginBottom: '0.25rem', color: 'var(--text-primary)' }}>
+            <div style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: '0.25rem', color: 'var(--text-primary)' }}>
               Free
             </div>
-            <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.25rem' }}>
+            <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.25rem' }}>
               0 ₸
             </div>
             <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1.25rem' }}>
@@ -159,14 +125,48 @@ export function PricingModal({ isOpen, onClose }: PricingModalProps) {
             </div>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               {FREE_FEATURES.map((f) => (
-                <li key={f} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                  <span style={{ color: 'var(--success-color)' }}>✓</span> {f}
+                <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                  <span style={{ color: 'var(--success-color)', flexShrink: 0 }}>✓</span> {f}
                 </li>
               ))}
             </ul>
           </div>
 
-          {/* Pro */}
+          {/* Pro Monthly */}
+          <div style={{
+            border: '2px solid var(--primary-color)',
+            borderRadius: '1rem',
+            padding: '1.5rem',
+            background: 'rgba(99, 102, 241, 0.03)',
+            position: 'relative',
+          }}>
+            <div style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: '0.25rem', color: 'var(--primary-color)' }}>
+              Pro
+            </div>
+            <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.25rem' }}>
+              {t.limits.proMonthlyPrice}
+            </div>
+            <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1.25rem' }}>
+              {t.limits.perMonth}
+            </div>
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {PRO_FEATURES.map((f) => (
+                <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', fontSize: '0.8rem', color: 'var(--text-primary)' }}>
+                  <span style={{ color: 'var(--primary-color)', flexShrink: 0 }}>✓</span> {f}
+                </li>
+              ))}
+            </ul>
+            <button
+              onClick={() => handleUpgrade('Pro')}
+              disabled={!!isUpgrading}
+              className="btn btn-primary"
+              style={{ width: '100%', marginTop: '1.25rem', padding: '0.65rem', borderRadius: '0.75rem' }}
+            >
+              {isUpgrading === 'Pro' ? t.limits.upgrading : t.limits.upgradePro}
+            </button>
+          </div>
+
+          {/* Pro Yearly */}
           <div style={{
             border: '2px solid var(--primary-color)',
             borderRadius: '1rem',
@@ -185,41 +185,31 @@ export function PricingModal({ isOpen, onClose }: PricingModalProps) {
               fontSize: '0.7rem',
               fontWeight: 600,
             }}>
-              {t.limits.recommended}
+              {t.limits.yearlyDiscount}
             </div>
-            <div style={{ fontWeight: 700, fontSize: '1.2rem', marginBottom: '0.25rem', color: 'var(--primary-color)' }}>
+            <div style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: '0.25rem', color: 'var(--primary-color)' }}>
               Pro
             </div>
-            <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.25rem' }}>
-              {isYearly ? t.limits.proYearlyPrice : t.limits.proMonthlyPrice}
+            <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.25rem' }}>
+              {t.limits.proYearlyPrice}
             </div>
             <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1.25rem' }}>
-              {isYearly ? t.limits.perYear : t.limits.perMonth}
-              {isYearly && (
-                <span style={{ marginLeft: '0.5rem', color: 'var(--success-color)', fontWeight: 600, fontSize: '0.75rem' }}>
-                  {t.limits.yearlyDiscount}
-                </span>
-              )}
+              {t.limits.perYear}
             </div>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               {PRO_FEATURES.map((f) => (
-                <li key={f} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-primary)' }}>
-                  <span style={{ color: 'var(--primary-color)' }}>✓</span> {f}
+                <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', fontSize: '0.8rem', color: 'var(--text-primary)' }}>
+                  <span style={{ color: 'var(--primary-color)', flexShrink: 0 }}>✓</span> {f}
                 </li>
               ))}
             </ul>
             <button
-              onClick={handleUpgrade}
-              disabled={isUpgrading}
+              onClick={() => handleUpgrade('ProYearly')}
+              disabled={!!isUpgrading}
               className="btn btn-primary"
-              style={{
-                width: '100%',
-                marginTop: '1.25rem',
-                padding: '0.75rem',
-                borderRadius: '0.75rem',
-              }}
+              style={{ width: '100%', marginTop: '1.25rem', padding: '0.65rem', borderRadius: '0.75rem' }}
             >
-              {isUpgrading ? t.limits.upgrading : t.limits.upgradePro}
+              {isUpgrading === 'ProYearly' ? t.limits.upgrading : t.limits.upgradePro}
             </button>
           </div>
         </div>

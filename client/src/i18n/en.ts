@@ -56,6 +56,15 @@ export const en: Translations = {
     registerTitle: 'Create an account',
     loginSubtitle: 'Continue your exam preparation',
     registerSubtitle: 'Start your exam prep for free',
+    verifyTitle: 'Verify your email',
+    verifySubtitle: 'We sent a 6-digit code to',
+    verificationCode: 'Verification code',
+    verify: 'Verify',
+    noCodeReceived: "Didn't receive a code?",
+    resendCode: 'Resend',
+    codeSent: 'Code resent',
+    codeResendError: 'Failed to resend code',
+    orContinueWith: 'or continue with',
   },
   dashboard: {
     welcome: 'Welcome',
@@ -371,9 +380,6 @@ export const en: Translations = {
     learnAboutPro: 'Learn about Pro',
     reviewBlocked: 'Review not available',
     reviewBlockedDesc: 'Daily question limit reached. Subscribe to Pro or come back tomorrow.',
-    trialActive: 'Trial period — {n} days left',
-    trialDaysLeft: '{n} days left',
-    trialExpired: 'Trial expired',
   },
   studyPlan: {
     title: 'Study Plan',
@@ -472,6 +478,7 @@ export const en: Translations = {
     registeredAt: 'Registered',
     validUntil: 'until {date}',
     selectAtLeastOne: 'Select at least one exam',
+    sectionPreferences: 'Sections to prepare for',
   },
   admin: {
     nav: {

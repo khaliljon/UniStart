@@ -6,6 +6,7 @@ using UniStart.Domain.Interfaces;
 using UniStart.Infrastructure.Data;
 using UniStart.Application.Helpers;
 using BC = BCrypt.Net.BCrypt;
+using System.Security.Cryptography;
 
 namespace UniStart.Application.Services;
 
@@ -57,6 +58,7 @@ public class AuthService : IAuthService
                     existingUser.HasCompletedOnboarding,
                     existingUser.SubscriptionTier.ToString(),
                     existingUser.SubscriptionExpiresAt,
+                    existingUser.EmailVerified,
                     restoredToken,
                     restoredExpiresAt
                 );
@@ -64,14 +66,18 @@ public class AuthService : IAuthService
             throw new InvalidOperationException("User with this email already exists");
         }
 
-        // Create new user
+        // Create new user with verification code
+        var code = GenerateVerificationCode();
         var user = new User
         {
             Email = dto.Email,
             Name = InputSanitizer.Sanitize(dto.Name)!,
             PasswordHash = BC.HashPassword(dto.Password),
             Role = UserRole.Student,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            EmailVerified = false,
+            EmailVerificationCode = code,
+            EmailVerificationCodeExpiresAt = DateTime.UtcNow.AddMinutes(10)
         };
 
         _context.Users.Add(user);
@@ -90,11 +96,11 @@ public class AuthService : IAuthService
         }
         await _unitOfWork.SaveChangesAsync();
 
-        // Create default notification preferences and send welcome email
+        // Create default notification preferences and send verification code
         await _notificationService.EnsurePreferencesExistAsync(user.Id);
         _ = Task.Run(async () =>
         {
-            try { await _emailService.SendWelcomeEmailAsync(user.Email, user.Name); }
+            try { await _emailService.SendVerificationCodeAsync(user.Email, user.Name, code); }
             catch { /* logged inside EmailService */ }
         });
 
@@ -110,6 +116,7 @@ public class AuthService : IAuthService
             user.HasCompletedOnboarding,
             user.SubscriptionTier.ToString(),
             user.SubscriptionExpiresAt,
+            user.EmailVerified,
             token,
             expiresAt
         );
@@ -134,6 +141,7 @@ public class AuthService : IAuthService
             user.HasCompletedOnboarding,
             user.SubscriptionTier.ToString(),
             user.SubscriptionExpiresAt,
+            user.EmailVerified,
             token,
             expiresAt
         );
@@ -155,9 +163,132 @@ public class AuthService : IAuthService
             user.HasCompletedOnboarding,
             user.SubscriptionTier.ToString(),
             user.SubscriptionExpiresAt,
+            user.EmailVerified,
             token,
             expiresAt
         );
+    }
+
+    public async Task<AuthResponseDto> VerifyEmailAsync(VerifyEmailDto dto)
+    {
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email)
+            ?? throw new KeyNotFoundException("User not found");
+
+        if (user.EmailVerified)
+            throw new InvalidOperationException("Email already verified");
+
+        if (user.EmailVerificationCode != dto.Code
+            || user.EmailVerificationCodeExpiresAt == null
+            || user.EmailVerificationCodeExpiresAt < DateTime.UtcNow)
+            throw new InvalidOperationException("Invalid or expired verification code");
+
+        user.EmailVerified = true;
+        user.EmailVerificationCode = null;
+        user.EmailVerificationCodeExpiresAt = null;
+        await _unitOfWork.SaveChangesAsync();
+
+        // Send welcome email after verification
+        _ = Task.Run(async () =>
+        {
+            try { await _emailService.SendWelcomeEmailAsync(user.Email, user.Name); }
+            catch { /* logged inside EmailService */ }
+        });
+
+        var token = _jwtService.GenerateToken(user);
+        var expiresAt = DateTime.UtcNow.AddHours(24);
+        return new AuthResponseDto(
+            user.Id, user.Email, user.Name, user.Role.ToString(),
+            user.HasCompletedOnboarding, user.SubscriptionTier.ToString(),
+            user.SubscriptionExpiresAt, user.EmailVerified, token, expiresAt
+        );
+    }
+
+    public async Task ResendVerificationCodeAsync(ResendCodeDto dto)
+    {
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email)
+            ?? throw new KeyNotFoundException("User not found");
+
+        if (user.EmailVerified)
+            throw new InvalidOperationException("Email already verified");
+
+        var code = GenerateVerificationCode();
+        user.EmailVerificationCode = code;
+        user.EmailVerificationCodeExpiresAt = DateTime.UtcNow.AddMinutes(10);
+        await _unitOfWork.SaveChangesAsync();
+
+        await _emailService.SendVerificationCodeAsync(user.Email, user.Name, code);
+    }
+
+    public async Task<AuthResponseDto> GoogleLoginAsync(GoogleLoginDto dto)
+    {
+        var payload = await Google.Apis.Auth.GoogleJsonWebSignature.ValidateAsync(dto.IdToken);
+        var email = payload.Email;
+        var name = payload.Name ?? email.Split('@')[0];
+        var googleId = payload.Subject;
+
+        var user = await _context.Users
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(u => u.Email == email);
+
+        if (user == null)
+        {
+            user = new User
+            {
+                Email = email,
+                Name = InputSanitizer.Sanitize(name)!,
+                PasswordHash = BC.HashPassword(Guid.NewGuid().ToString()),
+                Role = UserRole.Student,
+                CreatedAt = DateTime.UtcNow,
+                EmailVerified = true,
+                GoogleId = googleId
+            };
+            _context.Users.Add(user);
+            await _unitOfWork.SaveChangesAsync();
+
+            var skills = await _context.Skills.ToListAsync();
+            foreach (var skill in skills)
+            {
+                _context.UserSkillProfiles.Add(new UserSkillProfile
+                {
+                    UserId = user.Id, SkillId = skill.Id, Level = 50
+                });
+            }
+            await _unitOfWork.SaveChangesAsync();
+            await _notificationService.EnsurePreferencesExistAsync(user.Id);
+
+            _ = Task.Run(async () =>
+            {
+                try { await _emailService.SendWelcomeEmailAsync(user.Email, user.Name); }
+                catch { /* logged inside EmailService */ }
+            });
+        }
+        else
+        {
+            if (user.IsDeleted)
+            {
+                user.IsDeleted = false;
+                user.DeletedAt = null;
+                user.DeletedBy = null;
+            }
+            if (string.IsNullOrEmpty(user.GoogleId))
+                user.GoogleId = googleId;
+            if (!user.EmailVerified)
+                user.EmailVerified = true;
+            await _unitOfWork.SaveChangesAsync();
+        }
+
+        var token = _jwtService.GenerateToken(user);
+        var expiresAt = DateTime.UtcNow.AddHours(24);
+        return new AuthResponseDto(
+            user.Id, user.Email, user.Name, user.Role.ToString(),
+            user.HasCompletedOnboarding, user.SubscriptionTier.ToString(),
+            user.SubscriptionExpiresAt, user.EmailVerified, token, expiresAt
+        );
+    }
+
+    private static string GenerateVerificationCode()
+    {
+        return RandomNumberGenerator.GetInt32(100000, 999999).ToString();
     }
 
     public async Task<UserDto?> GetUserByIdAsync(int userId)

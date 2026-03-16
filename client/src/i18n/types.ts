@@ -61,6 +61,15 @@ export interface Translations {
     registerTitle: string;
     loginSubtitle: string;
     registerSubtitle: string;
+    verifyTitle: string;
+    verifySubtitle: string;
+    verificationCode: string;
+    verify: string;
+    noCodeReceived: string;
+    resendCode: string;
+    codeSent: string;
+    codeResendError: string;
+    orContinueWith: string;
   };
 
   // ─── Dashboard ───
@@ -402,9 +411,6 @@ export interface Translations {
     learnAboutPro: string;
     reviewBlocked: string;
     reviewBlockedDesc: string;
-    trialActive: string;
-    trialDaysLeft: string;
-    trialExpired: string;
   };
 
   // ─── Study Plan ───
@@ -507,6 +513,7 @@ export interface Translations {
     registeredAt: string;
     validUntil: string;
     selectAtLeastOne: string;
+    sectionPreferences: string;
   };
 
   // ─── Admin ───

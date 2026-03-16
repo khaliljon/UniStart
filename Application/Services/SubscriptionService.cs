@@ -13,7 +13,6 @@ public class SubscriptionService : ISubscriptionService
     private readonly IUnitOfWork _unitOfWork;
 
     // ── Tier configuration ──
-    private const int TrialDurationDays = 3;
 
     private static readonly Dictionary<string, TierLimitsDto> TierConfigs = new()
     {
@@ -24,14 +23,6 @@ public class SubscriptionService : ISubscriptionService
             FullAnalytics: false,
             FullStudyPlan: false,
             RealtimePrediction: false
-        ),
-        ["Trial"] = new TierLimitsDto(
-            QuestionsPerDay: 30,
-            LessonsPerDay: 3,
-            MockExamsEnabled: false,
-            FullAnalytics: true,
-            FullStudyPlan: false,
-            RealtimePrediction: true
         ),
         ["Pro"] = new TierLimitsDto(
             QuestionsPerDay: int.MaxValue,
@@ -54,15 +45,13 @@ public class SubscriptionService : ISubscriptionService
         var user = await _context.Users.FindAsync(userId)
             ?? throw new KeyNotFoundException("User not found");
 
-        var (tier, isTrial, trialDaysRemaining) = ResolveTier(user);
+        var tier = ResolveTier(user);
         var limits = GetLimits(tier);
         var usage = await GetDailyUsageAsync(userId);
 
         return new SubscriptionStatusDto(
             Tier: tier,
             IsPro: user.IsPro,
-            IsTrial: isTrial,
-            TrialDaysRemaining: trialDaysRemaining,
             ExpiresAt: user.SubscriptionExpiresAt,
             DailyUsage: usage,
             Limits: limits,
@@ -75,7 +64,7 @@ public class SubscriptionService : ISubscriptionService
         var user = await _context.Users.FindAsync(userId)
             ?? throw new KeyNotFoundException("User not found");
 
-        var (tier, _, _) = ResolveTier(user);
+        var tier = ResolveTier(user);
         var limits = GetLimits(tier);
 
         var todayUtc = DateTime.UtcNow.Date;
@@ -110,7 +99,7 @@ public class SubscriptionService : ISubscriptionService
         if (user == null) return false;
         if (user.IsPro || user.Role == UserRole.Admin) return true;
 
-        var (tier, _, _) = ResolveTier(user);
+        var tier = ResolveTier(user);
         var limits = GetLimits(tier);
 
         return feature.ToLower() switch
@@ -133,7 +122,7 @@ public class SubscriptionService : ISubscriptionService
         if (user == null) return false;
         if (user.IsPro || user.Role == UserRole.Admin) return true;
 
-        var (tier, _, _) = ResolveTier(user);
+        var tier = ResolveTier(user);
         var limits = GetLimits(tier);
         var todayUtc = DateTime.UtcNow.Date;
 
@@ -202,17 +191,8 @@ public class SubscriptionService : ISubscriptionService
             : TierConfigs["Free"];
     }
 
-    private static (string Tier, bool IsTrial, int TrialDaysRemaining) ResolveTier(User user)
+    private static string ResolveTier(User user)
     {
-        if (user.IsPro) return ("Pro", false, 0);
-
-        var daysSinceRegistration = (DateTime.UtcNow - user.CreatedAt).TotalDays;
-        if (daysSinceRegistration < TrialDurationDays)
-        {
-            var remaining = (int)Math.Ceiling(TrialDurationDays - daysSinceRegistration);
-            return ("Trial", true, remaining);
-        }
-
-        return ("Free", false, 0);
+        return user.IsPro ? "Pro" : "Free";
     }
 }

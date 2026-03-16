@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { authService } from '../../services/authService';
-import type { User, LoginRequest, RegisterRequest, AuthResponse } from '../../types';
+import type { User, LoginRequest, RegisterRequest, AuthResponse, VerifyEmailRequest, GoogleLoginRequest } from '../../types';
 
 interface AuthState {
   user: User | null;
@@ -8,6 +8,7 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
+  pendingVerificationEmail: string | null;
 }
 
 const storedUser = localStorage.getItem('user');
@@ -38,6 +39,7 @@ const initialState: AuthState = {
   isAuthenticated: isTokenValid,
   isLoading: false,
   error: null,
+  pendingVerificationEmail: null,
 };
 
 export const login = createAsyncThunk(
@@ -66,6 +68,32 @@ export const register = createAsyncThunk(
   }
 );
 
+export const verifyEmail = createAsyncThunk(
+  'auth/verifyEmail',
+  async (data: VerifyEmailRequest, { rejectWithValue }) => {
+    try {
+      const response = await authService.verifyEmail(data);
+      return response;
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { error?: string } } };
+      return rejectWithValue(err.response?.data?.error || 'Verification failed');
+    }
+  }
+);
+
+export const googleLogin = createAsyncThunk(
+  'auth/googleLogin',
+  async (data: GoogleLoginRequest, { rejectWithValue }) => {
+    try {
+      const response = await authService.googleLogin(data);
+      return response;
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { error?: string } } };
+      return rejectWithValue(err.response?.data?.error || 'Google login failed');
+    }
+  }
+);
+
 const authSlice = createSlice({
   name: 'auth',
   initialState,
@@ -74,11 +102,15 @@ const authSlice = createSlice({
       state.user = null;
       state.token = null;
       state.isAuthenticated = false;
+      state.pendingVerificationEmail = null;
       authService.removeToken();
       localStorage.removeItem('tokenExpiresAt');
     },
     clearError: (state) => {
       state.error = null;
+    },
+    clearPendingVerification: (state) => {
+      state.pendingVerificationEmail = null;
     },
     setOnboardingComplete: (state) => {
       if (state.user) {
@@ -95,63 +127,80 @@ const authSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
+    const handleAuthFulfilled = (state: AuthState, action: PayloadAction<AuthResponse>) => {
+      state.isLoading = false;
+      state.user = {
+        id: action.payload.userId,
+        email: action.payload.email,
+        name: action.payload.name,
+        role: action.payload.role,
+        hasCompletedOnboarding: action.payload.hasCompletedOnboarding,
+        subscriptionTier: action.payload.subscriptionTier || 'Free',
+        subscriptionExpiresAt: action.payload.subscriptionExpiresAt || null,
+        emailVerified: action.payload.emailVerified,
+        createdAt: new Date().toISOString(),
+      };
+      state.token = action.payload.token;
+      state.isAuthenticated = true;
+      state.pendingVerificationEmail = null;
+      authService.saveToken(action.payload.token);
+      localStorage.setItem('user', JSON.stringify(state.user));
+      localStorage.setItem('tokenExpiresAt', action.payload.expiresAt);
+    };
+
     builder
       // Login
       .addCase(login.pending, (state) => {
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(login.fulfilled, (state, action: PayloadAction<AuthResponse>) => {
-        state.isLoading = false;
-        state.user = {
-          id: action.payload.userId,
-          email: action.payload.email,
-          name: action.payload.name,
-          role: action.payload.role,
-          hasCompletedOnboarding: action.payload.hasCompletedOnboarding,
-          subscriptionTier: action.payload.subscriptionTier || 'Free',
-          subscriptionExpiresAt: action.payload.subscriptionExpiresAt || null,
-          createdAt: new Date().toISOString(),
-        };
-        state.token = action.payload.token;
-        state.isAuthenticated = true;
-        authService.saveToken(action.payload.token);
-        localStorage.setItem('user', JSON.stringify(state.user));
-        localStorage.setItem('tokenExpiresAt', action.payload.expiresAt);
+      .addCase(login.fulfilled, (state, action) => {
+        handleAuthFulfilled(state, action);
       })
       .addCase(login.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
       })
-      // Register
+      // Register — sets pending verification instead of full login
       .addCase(register.pending, (state) => {
         state.isLoading = true;
         state.error = null;
       })
       .addCase(register.fulfilled, (state, action: PayloadAction<AuthResponse>) => {
         state.isLoading = false;
-        state.user = {
-          id: action.payload.userId,
-          email: action.payload.email,
-          name: action.payload.name,
-          role: action.payload.role,
-          hasCompletedOnboarding: action.payload.hasCompletedOnboarding,
-          subscriptionTier: action.payload.subscriptionTier || 'Free',
-          subscriptionExpiresAt: action.payload.subscriptionExpiresAt || null,
-          createdAt: new Date().toISOString(),
-        };
-        state.token = action.payload.token;
-        state.isAuthenticated = true;
-        authService.saveToken(action.payload.token);
-        localStorage.setItem('user', JSON.stringify(state.user));
-        localStorage.setItem('tokenExpiresAt', action.payload.expiresAt);
+        state.pendingVerificationEmail = action.payload.email;
+        // Do NOT save token yet — only after email verification
       })
       .addCase(register.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      })
+      // Verify Email
+      .addCase(verifyEmail.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(verifyEmail.fulfilled, (state, action) => {
+        handleAuthFulfilled(state, action);
+      })
+      .addCase(verifyEmail.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      })
+      // Google Login
+      .addCase(googleLogin.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(googleLogin.fulfilled, (state, action) => {
+        handleAuthFulfilled(state, action);
+      })
+      .addCase(googleLogin.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
       });
   },
 });
 
-export const { logout, clearError, setOnboardingComplete, setSubscription } = authSlice.actions;
+export const { logout, clearError, clearPendingVerification, setOnboardingComplete, setSubscription } = authSlice.actions;
 export default authSlice.reducer;

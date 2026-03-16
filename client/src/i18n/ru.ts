@@ -56,6 +56,15 @@ export const ru: Translations = {
     registerTitle: 'Создайте аккаунт',
     loginSubtitle: 'Продолжите подготовку к экзаменам',
     registerSubtitle: 'Начните подготовку к экзаменам бесплатно',
+    verifyTitle: 'Подтвердите email',
+    verifySubtitle: 'Мы отправили 6-значный код на',
+    verificationCode: 'Код подтверждения',
+    verify: 'Подтвердить',
+    noCodeReceived: 'Не получили код?',
+    resendCode: 'Отправить повторно',
+    codeSent: 'Код отправлен повторно',
+    codeResendError: 'Не удалось отправить код',
+    orContinueWith: 'или продолжить с',
   },
   dashboard: {
     welcome: 'Добро пожаловать',
@@ -371,9 +380,6 @@ export const ru: Translations = {
     learnAboutPro: 'Узнать о Pro',
     reviewBlocked: 'Работа над ошибками недоступна',
     reviewBlockedDesc: 'Дневной лимит вопросов исчерпан. Для продолжения оформите Pro-подписку или вернитесь завтра.',
-    trialActive: 'Пробный период — осталось {n} дн.',
-    trialDaysLeft: 'Осталось {n} дн.',
-    trialExpired: 'Пробный период завершён',
   },
   studyPlan: {
     title: 'План обучения',
@@ -472,6 +478,7 @@ export const ru: Translations = {
     registeredAt: 'Регистрация',
     validUntil: 'до',
     selectAtLeastOne: 'Выберите хотя бы один экзамен',
+    sectionPreferences: 'Секции для подготовки',
   },
   admin: {
     nav: {

@@ -78,7 +78,7 @@ function PredictionPage() {
       }
     })();
     subscriptionService.getStatus().then((s) => {
-      setHasPredictionAccess(s.isPro || s.isTrial || s.limits.realtimePrediction);
+      setHasPredictionAccess(s.isPro || s.limits.realtimePrediction);
     }).catch(() => {});
   }, []);
 

@@ -76,7 +76,7 @@ function AnalyticsPage() {
     };
     fetchDashboard();
     subscriptionService.getStatus().then((s) => {
-      setHasFullAnalytics(s.isPro || s.isTrial || s.limits.fullAnalytics);
+      setHasFullAnalytics(s.isPro || s.limits.fullAnalytics);
     }).catch(() => {});
   }, []);
 
@@ -197,8 +197,10 @@ function AnalyticsPage() {
         ))}
       </div>
 
-      {/* Skill Levels — Radar Chart (or Bar Chart for ≤2 skills) */}
+      {/* Pro-gated analytics charts */}
       <ProGate hasAccess={hasFullAnalytics} featureName={t.progress.skillProfile}>
+      <>
+      {/* Skill Levels — Radar Chart (or Bar Chart for ≤2 skills) */}
       {radarData.length > 0 && (
         <div className="card card-static animate-fade-in-up" style={{ marginTop: '2rem', animationDelay: '0.5s' }}>
           <h2 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1rem' }}>
@@ -243,10 +245,8 @@ function AnalyticsPage() {
           )}
         </div>
       )}
-      </ProGate>
 
       {/* Skill Progress Over Time — Line Chart */}
-      <ProGate hasAccess={hasFullAnalytics} featureName={t.progress.skillProgressOverTime}>
       {lineChartData.length > 1 && (
         <div className="card card-static animate-fade-in-up" style={{ marginTop: '2rem', animationDelay: '0.6s' }}>
           <h2 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1rem' }}>
@@ -282,10 +282,8 @@ function AnalyticsPage() {
           </ResponsiveContainer>
         </div>
       )}
-      </ProGate>
 
       {/* Difficulty Breakdown — Bar Chart */}
-      <ProGate hasAccess={hasFullAnalytics} featureName={t.progress.accuracyByDifficulty}>
       {difficultyData.length > 0 && (
         <div className="card card-static animate-fade-in-up" style={{ marginTop: '2rem', animationDelay: '0.7s' }}>
           <h2 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1rem' }}>
@@ -319,10 +317,8 @@ function AnalyticsPage() {
           </div>
         </div>
       )}
-      </ProGate>
 
       {/* Activity Heatmap */}
-      <ProGate hasAccess={hasFullAnalytics} featureName="Activity Heatmap">
       <div className="card card-static animate-fade-in-up" style={{ marginTop: '2rem', animationDelay: '0.8s' }}>
         <h2 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1rem' }}>
           Activity (Last 12 Weeks)
@@ -354,6 +350,7 @@ function AnalyticsPage() {
           <span>{t.progress.more}</span>
         </div>
       </div>
+      </>
       </ProGate>
 
       {/* Skill Bars (detailed, with confidence intervals) */}

@@ -45,7 +45,7 @@ public class AdaptiveEngineService : IAdaptiveEngineService
     /// Selects next question using Computerized Adaptive Testing (CAT).
     /// Uses maximum Fisher information criterion with randomized top-fraction selection.
     /// </summary>
-    public async Task<QuestionDto?> GetNextQuestionAsync(int userId, string[] examTypeCodes, int? sectionId = null, int? topicId = null)
+    public async Task<QuestionDto?> GetNextQuestionAsync(int userId, string[] examTypeCodes, int? sectionId = null, int[]? sectionIds = null, int? topicId = null)
     {
         // Get user's answered question IDs to avoid repetition
         var answeredQuestionIds = await _context.UserAnswers
@@ -68,7 +68,12 @@ public class AdaptiveEngineService : IAdaptiveEngineService
                 examTypeCodes.Contains(q.Topic.Section.ExamTypeCode));
         }
 
-        if (sectionId.HasValue)
+        // Filter by multiple section IDs (preferred) or single sectionId (backward compat)
+        if (sectionIds is { Length: > 0 })
+        {
+            questionsQuery = questionsQuery.Where(q => q.Topic.SectionId != null && sectionIds.Contains(q.Topic.SectionId.Value));
+        }
+        else if (sectionId.HasValue)
         {
             questionsQuery = questionsQuery.Where(q => q.Topic.SectionId == sectionId.Value);
         }
@@ -92,7 +97,9 @@ public class AdaptiveEngineService : IAdaptiveEngineService
 
             if (examTypeCodes.Length > 0)
                 recycleQuery = recycleQuery.Where(q => q.Topic.Section != null && examTypeCodes.Contains(q.Topic.Section.ExamTypeCode));
-            if (sectionId.HasValue)
+            if (sectionIds is { Length: > 0 })
+                recycleQuery = recycleQuery.Where(q => q.Topic.SectionId != null && sectionIds.Contains(q.Topic.SectionId.Value));
+            else if (sectionId.HasValue)
                 recycleQuery = recycleQuery.Where(q => q.Topic.SectionId == sectionId.Value);
             if (topicId.HasValue)
                 recycleQuery = recycleQuery.Where(q => q.TopicId == topicId.Value);
@@ -390,13 +397,15 @@ public class AdaptiveEngineService : IAdaptiveEngineService
     /// <summary>
     /// Gets total question count for selected exams, optionally filtered by section/topic
     /// </summary>
-    public async Task<int> GetTotalQuestionsCountAsync(string[] examTypeCodes, int? sectionId = null, int? topicId = null)
+    public async Task<int> GetTotalQuestionsCountAsync(string[] examTypeCodes, int? sectionId = null, int[]? sectionIds = null, int? topicId = null)
     {
         var query = _context.Questions
             .Where(q => q.Topic.Section != null && examTypeCodes.Contains(q.Topic.Section.ExamTypeCode));
 
         if (topicId.HasValue)
             query = query.Where(q => q.TopicId == topicId.Value);
+        else if (sectionIds is { Length: > 0 })
+            query = query.Where(q => q.Topic.SectionId != null && sectionIds.Contains(q.Topic.SectionId.Value));
         else if (sectionId.HasValue)
             query = query.Where(q => q.Topic.SectionId == sectionId.Value);
 
@@ -406,13 +415,15 @@ public class AdaptiveEngineService : IAdaptiveEngineService
     /// <summary>
     /// Gets count of answered questions for user in selected exams, optionally filtered by section/topic
     /// </summary>
-    public async Task<int> GetAnsweredQuestionsCountAsync(int userId, string[] examTypeCodes, int? sectionId = null, int? topicId = null)
+    public async Task<int> GetAnsweredQuestionsCountAsync(int userId, string[] examTypeCodes, int? sectionId = null, int[]? sectionIds = null, int? topicId = null)
     {
         var query = _context.UserAnswers
             .Where(ua => ua.UserId == userId && ua.Question.Topic.Section != null && examTypeCodes.Contains(ua.Question.Topic.Section.ExamTypeCode));
 
         if (topicId.HasValue)
             query = query.Where(ua => ua.Question.TopicId == topicId.Value);
+        else if (sectionIds is { Length: > 0 })
+            query = query.Where(ua => ua.Question.Topic.SectionId != null && sectionIds.Contains(ua.Question.Topic.SectionId.Value));
         else if (sectionId.HasValue)
             query = query.Where(ua => ua.Question.Topic.SectionId == sectionId.Value);
 

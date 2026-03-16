@@ -15,7 +15,6 @@ import { lessonService } from '../services/lessonService';
 import { subscriptionService } from '../services/subscriptionService';
 import { studyPlanService } from '../services/studyPlanService';
 import { UpgradeBanner } from '../components/UpgradeBanner';
-import { TrialBanner } from '../components/TrialBanner';
 import { DailyLimitModal } from '../components/DailyLimitModal';
 import { useTranslation } from '../hooks/useTranslation';
 import type { DailyUsage } from '../types';
@@ -25,7 +24,7 @@ function TestPage() {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { selectedExams } = useAppSelector((state) => state.exam);
+  const { selectedExams, selectedSectionIds } = useAppSelector((state) => state.exam);
 
   // Read plan-related params from URL
   const topicIdParam = searchParams.get('topicId');
@@ -59,8 +58,6 @@ function TestPage() {
   // Daily limit state
   const [dailyUsage, setDailyUsage] = useState<DailyUsage | null>(null);
   const [showLimitModal, setShowLimitModal] = useState(false);
-  const [trialDaysRemaining, setTrialDaysRemaining] = useState(0);
-  const [isTrial, setIsTrial] = useState(false);
   const { user } = useAppSelector((state) => state.auth);
   const isPro = user?.subscriptionTier === 'Pro';
 
@@ -68,10 +65,6 @@ function TestPage() {
   useEffect(() => {
     if (!isPro) {
       subscriptionService.getDailyUsage().then(setDailyUsage).catch(() => {});
-      subscriptionService.getStatus().then((s) => {
-        setIsTrial(s.isTrial);
-        setTrialDaysRemaining(s.trialDaysRemaining);
-      }).catch(() => {});
     }
   }, [isPro, questionsAnswered]);
 
@@ -101,7 +94,7 @@ function TestPage() {
     } catch (err) {
       console.error('Failed to start session:', err);
     }
-    dispatch(fetchNextQuestion({ examTypeCodes: selectedExams, topicId }));
+    dispatch(fetchNextQuestion({ examTypeCodes: selectedExams, sectionIds: topicId ? undefined : selectedSectionIds.length > 0 ? selectedSectionIds : undefined, topicId }));
   };
 
   const handleOptionClick = (optionId: number) => {
@@ -144,7 +137,7 @@ function TestPage() {
     setShowHint(false);
     setSessionAnswered(prev => prev + 1);
     dispatch(clearAnswerResult());
-    dispatch(fetchNextQuestion({ examTypeCodes: selectedExams, topicId }));
+    dispatch(fetchNextQuestion({ examTypeCodes: selectedExams, sectionIds: topicId ? undefined : selectedSectionIds.length > 0 ? selectedSectionIds : undefined, topicId }));
   };
 
   const handleFinishTest = async () => {
@@ -240,7 +233,7 @@ function TestPage() {
         <DailyLimitModal isOpen={showLimitModal} onClose={() => setShowLimitModal(false)} />
         {!isPro && dailyUsage && (
           <div style={{ maxWidth: '600px', margin: '0 auto 0' }}>
-            {isTrial && <TrialBanner daysRemaining={trialDaysRemaining} />}
+
             <UpgradeBanner
               questionsRemaining={dailyUsage.questionsRemaining}
               questionsLimit={dailyUsage.questionsLimit}
@@ -352,7 +345,7 @@ function TestPage() {
             {!planEntryId && (
               <button onClick={() => {
                 setMasteryShown(true);
-                dispatch(fetchNextQuestion({ examTypeCodes: selectedExams, topicId }));
+                dispatch(fetchNextQuestion({ examTypeCodes: selectedExams, sectionIds: topicId ? undefined : selectedSectionIds.length > 0 ? selectedSectionIds : undefined, topicId }));
               }} className="btn btn-secondary" disabled={isLoading}>
                 {t.studyPlan.continuePractice}
               </button>
@@ -465,9 +458,6 @@ function TestPage() {
           questionsRemaining={dailyUsage.questionsRemaining}
           questionsLimit={dailyUsage.questionsLimit}
         />
-      )}
-      {!isPro && isTrial && dailyUsage && dailyUsage.questionsRemaining > 5 && (
-        <TrialBanner daysRemaining={trialDaysRemaining} />
       )}
 
       <DailyLimitModal isOpen={showLimitModal} onClose={() => setShowLimitModal(false)} />

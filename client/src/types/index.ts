@@ -7,6 +7,7 @@ export interface User {
   hasCompletedOnboarding: boolean;
   subscriptionTier: string;
   subscriptionExpiresAt: string | null;
+  emailVerified: boolean;
   createdAt: string;
 }
 
@@ -18,6 +19,7 @@ export interface AuthResponse {
   hasCompletedOnboarding: boolean;
   subscriptionTier: string;
   subscriptionExpiresAt: string | null;
+  emailVerified: boolean;
   token: string;
   expiresAt: string;
 }
@@ -31,6 +33,19 @@ export interface RegisterRequest {
   email: string;
   name: string;
   password: string;
+}
+
+export interface VerifyEmailRequest {
+  email: string;
+  code: string;
+}
+
+export interface ResendCodeRequest {
+  email: string;
+}
+
+export interface GoogleLoginRequest {
+  idToken: string;
 }
 
 // Exam types
@@ -119,6 +134,7 @@ export interface SkillProgress {
 export interface StartTestRequest {
   examTypeCodes: string[];
   sectionId?: number;
+  sectionIds?: number[];
   topicId?: number;
 }
 
@@ -722,6 +738,7 @@ export interface ExamTypeInfo {
 }
 
 export interface ExamSectionInfo {
+  id: number;
   name: string;
   minScore: number;
   maxScore: number;
@@ -804,8 +821,6 @@ export interface DiagnosticAnswerReview {
 export interface SubscriptionStatus {
   tier: string;
   isPro: boolean;
-  isTrial: boolean;
-  trialDaysRemaining: number;
   expiresAt: string | null;
   dailyUsage: DailyUsage;
   limits: TierLimits;

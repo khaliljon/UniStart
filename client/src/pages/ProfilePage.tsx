@@ -2,23 +2,58 @@ import { useEffect, useState } from 'react';
 import { useAppSelector } from '../hooks/useAppSelector';
 import { useAppDispatch } from '../hooks/useAppDispatch';
 import { useTranslation } from '../hooks/useTranslation';
-import { fetchExams, toggleExamSelection } from '../store/slices/examSlice';
+import { fetchExams, fetchExamSections, toggleExamSelection, setSelectedSectionIds } from '../store/slices/examSlice';
 import { subscriptionService } from '../services/subscriptionService';
 import { PricingModal } from '../components/PricingModal';
-import type { SubscriptionStatus } from '../types';
+import type { SubscriptionStatus, ExamSection } from '../types';
 
 function ProfilePage() {
   const { user } = useAppSelector((state) => state.auth);
-  const { exams, selectedExams } = useAppSelector((state) => state.exam);
+  const { exams, selectedExams, selectedSectionIds } = useAppSelector((state) => state.exam);
   const dispatch = useAppDispatch();
   const { t } = useTranslation();
   const [sub, setSub] = useState<SubscriptionStatus | null>(null);
   const [showPricing, setShowPricing] = useState(false);
+  const [allSections, setAllSections] = useState<ExamSection[]>([]);
 
   useEffect(() => {
     dispatch(fetchExams());
     subscriptionService.getStatus().then(setSub).catch(() => {});
   }, [dispatch]);
+
+  // Load sections for all selected exams
+  useEffect(() => {
+    if (selectedExams.length === 0) {
+      setAllSections([]);
+      return;
+    }
+    Promise.all(
+      selectedExams.map(code =>
+        dispatch(fetchExamSections(code)).unwrap().catch(() => [] as ExamSection[])
+      )
+    ).then(results => {
+      const flat = results.flat();
+      setAllSections(flat);
+      // Auto-cleanup: keep only IDs that belong to current exams
+      const validIds = new Set(flat.map(s => s.id));
+      const cleaned = selectedSectionIds.filter(id => validIds.has(id));
+      // If user had no valid selections, auto-select all
+      if (cleaned.length === 0 && flat.length > 0) {
+        dispatch(setSelectedSectionIds(flat.map(s => s.id)));
+      } else if (cleaned.length !== selectedSectionIds.length) {
+        dispatch(setSelectedSectionIds(cleaned));
+      }
+    });
+  }, [selectedExams, dispatch]);
+
+  const handleToggleSection = (sectionId: number) => {
+    const next = selectedSectionIds.includes(sectionId)
+      ? selectedSectionIds.filter(id => id !== sectionId)
+      : [...selectedSectionIds, sectionId];
+    // Don't allow deselecting all sections for an exam
+    if (next.length === 0) return;
+    dispatch(setSelectedSectionIds(next));
+  };
 
   const isPro = user?.subscriptionTier === 'Pro';
 
@@ -113,6 +148,49 @@ function ProfilePage() {
           </p>
         )}
       </div>
+
+      {/* ─── Section Preferences ─── */}
+      {allSections.length > 0 && (
+        <div className="card" style={{ padding: '1.5rem', marginBottom: '1.25rem' }}>
+          <h3 style={{ margin: '0 0 0.75rem', fontSize: '1rem' }}>{t.profilePage.sectionPreferences}</h3>
+          {selectedExams.map(examCode => {
+            const examSections = allSections.filter(s => s.examTypeCode === examCode);
+            if (examSections.length === 0) return null;
+            return (
+              <div key={examCode} style={{ marginBottom: '0.75rem' }}>
+                <p style={{ margin: '0 0 0.5rem', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)' }}>{examCode}</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                  {examSections.map(section => {
+                    const checked = selectedSectionIds.includes(section.id);
+                    return (
+                      <label
+                        key={section.id}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.5rem 0.75rem',
+                          borderRadius: '8px', border: '2px solid',
+                          borderColor: checked ? 'var(--primary-color)' : 'var(--border-color)',
+                          background: checked ? 'rgba(79,70,229,0.08)' : 'transparent',
+                          cursor: 'pointer', transition: 'all 0.2s', fontSize: '0.9rem',
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => handleToggleSection(section.id)}
+                          style={{ accentColor: 'var(--primary-color)', width: '16px', height: '16px' }}
+                        />
+                        <span style={{ color: checked ? 'var(--text-primary)' : 'var(--text-secondary)', fontWeight: checked ? 600 : 400 }}>
+                          {section.name}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

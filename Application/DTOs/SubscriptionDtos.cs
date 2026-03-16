@@ -3,8 +3,6 @@ namespace UniStart.Application.DTOs;
 public record SubscriptionStatusDto(
     string Tier,
     bool IsPro,
-    bool IsTrial,
-    int TrialDaysRemaining,
     DateTime? ExpiresAt,
     DailyUsageDto DailyUsage,
     TierLimitsDto Limits,

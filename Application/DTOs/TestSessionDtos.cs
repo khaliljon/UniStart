@@ -4,6 +4,7 @@ namespace UniStart.Application.DTOs;
 public record StartTestSessionDto(
     string[] ExamTypeCodes,
     int? SectionId = null,
+    int[]? SectionIds = null,
     int? TopicId = null
 );
 

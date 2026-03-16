@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '../hooks/useAppDispatch';
 import { useAppSelector } from '../hooks/useAppSelector';
 import { setOnboardingComplete } from '../store/slices/authSlice';
-import { setSelectedExams } from '../store/slices/examSlice';
+import { setSelectedExams, setSelectedSectionIds } from '../store/slices/examSlice';
 import { onboardingService } from '../services/onboardingService';
 import { useTranslation } from '../i18n';
 import LanguageSwitcher from '../components/LanguageSwitcher';
@@ -108,16 +108,17 @@ function OnboardingPage() {
       sessionStorage.removeItem('onboarding');
       dispatch(setOnboardingComplete());
       dispatch(setSelectedExams([selectedExam.code]));
+      // Save selected section IDs so practice filters by chosen sections
+      const sectionIds = selectedExam.sections
+        .filter(s => selectedSections.includes(s.name))
+        .map(s => s.id);
+      dispatch(setSelectedSectionIds(sectionIds));
       setStep('ready');
     } catch (err: unknown) {
       setError(axios.isAxiosError(err) ? err.response?.data?.error || t.common.error : t.common.error);
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleStart = () => {
-    navigate('/', { replace: true });
   };
 
   // Helper: min date = tomorrow
@@ -213,40 +214,6 @@ function OnboardingPage() {
               }}
             >
               {t.onboarding.startSetup}
-            </button>
-          </div>
-        )}
-
-        {/* Skip onboarding link — always visible on welcome */}
-        {step === 'welcome' && (
-          <div style={{ textAlign: 'center', marginTop: '1rem' }}>
-            <button
-              onClick={async () => {
-                setIsLoading(true);
-                try {
-                  await onboardingService.complete({ examTypeCode: 'SAT', targetDate: new Date(Date.now() + 90 * 86400000).toISOString().split('T')[0], targetScore: 1200 });
-                  sessionStorage.removeItem('onboarding');
-                  dispatch(setOnboardingComplete());
-                  navigate('/', { replace: true });
-                } catch {
-                  sessionStorage.removeItem('onboarding');
-                  dispatch(setOnboardingComplete());
-                  navigate('/', { replace: true });
-                } finally {
-                  setIsLoading(false);
-                }
-              }}
-              disabled={isLoading}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: 'var(--text-secondary)',
-                cursor: 'pointer',
-                fontSize: '0.9rem',
-                textDecoration: 'underline',
-              }}
-            >
-              {t.onboarding.skipAndStart}
             </button>
           </div>
         )}
@@ -783,22 +750,6 @@ function OnboardingPage() {
               }}
             >
               {t.onboarding.diagnosticTest}
-            </button>
-
-            <button
-              onClick={handleStart}
-              style={{
-                width: '100%',
-                padding: '0.85rem',
-                fontSize: '1rem',
-                borderRadius: '0.75rem',
-                background: 'none',
-                border: '1px solid var(--border-color, #e5e7eb)',
-                color: 'var(--text-secondary)',
-                cursor: 'pointer',
-              }}
-            >
-              {t.onboarding.skipAndStart}
             </button>
           </div>
         )}

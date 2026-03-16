@@ -11,6 +11,15 @@ public class User : ISoftDeletable, IAuditable
     public SubscriptionTier SubscriptionTier { get; set; } = SubscriptionTier.Free;
     public DateTime? SubscriptionExpiresAt { get; set; }
     public bool FreeMockUsed { get; set; } = false;
+
+    // Email verification
+    public bool EmailVerified { get; set; } = false;
+    public string? EmailVerificationCode { get; set; }
+    public DateTime? EmailVerificationCodeExpiresAt { get; set; }
+
+    // External login (Google OAuth)
+    public string? GoogleId { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
 

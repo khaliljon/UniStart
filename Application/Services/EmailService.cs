@@ -17,6 +17,13 @@ public class EmailService : IEmailService
         _logger = logger;
     }
 
+    public async Task SendVerificationCodeAsync(string toEmail, string userName, string code)
+    {
+        var subject = "Код подтверждения — UniStart";
+        var body = GetVerificationCodeTemplate(userName, code);
+        await SendEmailAsync(toEmail, subject, body);
+    }
+
     public async Task SendWelcomeEmailAsync(string toEmail, string userName)
     {
         var subject = "Добро пожаловать в UniStart!";
@@ -120,7 +127,7 @@ public class EmailService : IEmailService
     <!-- Header -->
     <div style=""background:linear-gradient(135deg,#6c5ce7,#a855f7);padding:32px 24px;text-align:center;"">
       <h1 style=""margin:0;color:#fff;font-size:28px;font-weight:700;"">UniStart</h1>
-      <p style=""margin:8px 0 0;color:rgba(255,255,255,0.85);font-size:14px;"">Adaptive SAT / TOEFL / NUET Preparation</p>
+      <p style=""margin:8px 0 0;color:rgba(255,255,255,0.85);font-size:14px;"">Adaptive CSCA / NUET Preparation</p>
     </div>
     <!-- Content -->
     <div style=""padding:32px 24px;"">
@@ -130,12 +137,29 @@ public class EmailService : IEmailService
     <div style=""background:#f8f9fa;padding:20px 24px;text-align:center;border-top:1px solid #eee;"">
       <p style=""margin:0;font-size:12px;color:#999;"">
         © {DateTime.UtcNow.Year} UniStart. Все права защищены.<br>
-        <a href=""http://localhost:5173/settings"" style=""color:#6c5ce7;text-decoration:none;"">Настройки уведомлений</a>
+        <a href=""http://localhost:5173/profile/notifications"" style=""color:#6c5ce7;text-decoration:none;"">Настройки уведомлений</a>
       </p>
     </div>
   </div>
 </body>
 </html>";
+    }
+
+    private static string GetVerificationCodeTemplate(string userName, string code)
+    {
+        var content = $@"
+      <h2 style=""color:#1a1a2e;margin:0 0 16px;"">Привет, {userName}!</h2>
+      <p style=""font-size:16px;line-height:1.6;color:#555;"">
+        Ваш код подтверждения для входа в UniStart:
+      </p>
+      <div style=""background:#f0f4ff;border-radius:12px;padding:24px;margin:24px 0;text-align:center;"">
+        <div style=""font-size:36px;font-weight:800;letter-spacing:8px;color:#6c5ce7;font-family:monospace;"">{code}</div>
+      </div>
+      <p style=""font-size:14px;line-height:1.6;color:#999;"">
+        Код действителен 10 минут. Если вы не запрашивали этот код, проигнорируйте это письмо.
+      </p>";
+
+        return WrapInLayout("Код подтверждения — UniStart", content);
     }
 
     private static string GetWelcomeTemplate(string userName)
@@ -173,17 +197,17 @@ public class EmailService : IEmailService
       <p style=""font-size:16px;line-height:1.6;color:#555;"">
         Вы не занимались уже {inactiveDays} {GetDaysWord(inactiveDays)}. {streakText}
       </p>
-      <div style=""background:#fff3e0;border-radius:8px;padding:20px;margin:24px 0;text-align:center;"">
-        <div style=""font-size:24px;font-weight:700;color:#e65100;"">Серия</div>
-        <p style=""font-size:18px;font-weight:600;color:#e65100;margin:8px 0 0;"">
-          {(lastStreak > 0 ? $"Серия: {lastStreak} дн." : "Начните серию сегодня!")}
-        </p>
+      <div style=""background:#f0f4ff;border-radius:8px;padding:20px;margin:24px 0;text-align:center;"">
+        <div style=""font-size:14px;color:#666;margin-bottom:4px;"">Ваша серия</div>
+        <div style=""font-size:28px;font-weight:700;color:#6c5ce7;"">
+          {(lastStreak > 0 ? $"{lastStreak} {GetDaysWord(lastStreak)}" : "0 дней")}
+        </div>
       </div>
       <p style=""font-size:15px;line-height:1.6;color:#555;"">
         Даже 10 минут практики в день помогают удержать знания и повысить результат.
       </p>
       <div style=""text-align:center;margin:32px 0;"">
-        <a href=""http://localhost:5173/test"" style=""display:inline-block;background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:16px;"">
+        <a href=""http://localhost:5173/test"" style=""display:inline-block;background:linear-gradient(135deg,#6c5ce7,#a855f7);color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:16px;"">
           Продолжить обучение →
         </a>
       </div>";
@@ -293,9 +317,14 @@ public class EmailService : IEmailService
 
     private static string GetAchievementTemplate(string userName, string title, string icon)
     {
+        var iconHtml = !string.IsNullOrEmpty(icon)
+            ? $@"<div style=""font-size:48px;margin-bottom:12px;"">{icon}</div>"
+            : "";
+
         var content = $@"
       <h2 style=""color:#1a1a2e;margin:0 0 16px;"">Поздравляем, {userName}!</h2>
       <div style=""text-align:center;margin:32px 0;"">
+        {iconHtml}
         <div style=""font-size:36px;font-weight:700;color:#6c5ce7;"">{title}</div>
         <p style=""font-size:16px;color:#555;margin-top:12px;"">Вы открыли новое достижение!</p>
       </div>
