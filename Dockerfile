@@ -7,10 +7,10 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
 COPY UniStart.csproj ./
-RUN dotnet restore
+RUN dotnet restore UniStart.csproj
 
 COPY . .
-RUN dotnet publish -c Release -o /app/publish --no-restore
+RUN dotnet publish UniStart.csproj -c Release -o /app/publish --no-restore
 
 # ── Stage 2: runtime ────────────────────────────────────
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime

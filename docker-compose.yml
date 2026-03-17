@@ -63,6 +63,8 @@ services:
       LlmExtraction__Model: ${LLM_MODEL:-deepseek-chat}
       LlmExtraction__BaseUrl: ${LLM_BASE_URL:-https://api.deepseek.com}
       CorsOrigins__0: ${CORS_ORIGIN:-http://localhost}
+      GoogleAuth__ClientId: ${GOOGLE_CLIENT_ID:-}
+      GoogleAuth__ClientSecret: ${GOOGLE_CLIENT_SECRET:-}
     ports:
       - "${API_PORT:-5009}:5009"
 
@@ -77,7 +79,12 @@ services:
     depends_on:
       - api
     ports:
-      - "${CLIENT_PORT:-80}:80"
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - certbot-webroot:/var/www/certbot:ro
 
 volumes:
   pgdata:
+  certbot-webroot:

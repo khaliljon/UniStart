@@ -1,12 +1,12 @@
 # UniStart — Статус проекта и план запуска
 
-> **Последнее обновление**: 14 марта 2026
+> **Последнее обновление**: 17 марта 2026
 
 ---
 
-## Текущий статус: Sprint 5 — Монетизация + Pre-launch
+## Текущий статус: Sprint 6 — Деплой + Post-launch
 
-### Сводка состояния на 14 марта 2026
+### Сводка состояния на 17 марта 2026
 
 **Что работает стабильно:**
 - Ядро платформы: IRT 3PL + CAT, адаптивная практика, mock exams (CSCA, NUET, SAT, TOEFL, IELTS)
@@ -31,6 +31,323 @@
 - FIX-45: PHASE 3 Tests — AuthService (21), MockExamService (22), ExamService (9) = 52 новых тестов (177 всего)
 - FIX-46: PHASE 4 Infra — GitHub Actions CI/CD (ci.yml + deploy.yml), .dockerignore fix, backup script
 - README обновлён
+
+**Завершено в Sprint 6 (17 марта):**
+- FIX-47: LandingPage — 3-колоночная сетка тарифов (Free / Pro Monthly / Pro Yearly), убран toggle
+- FIX-48: LinHao — реальные ссылки Instagram (@linhao.chinese) + Telegram (t.me/linhao_chinese), SVG-логотип
+- FIX-49: StudyPlan — фильтрация по секциям профиля (SectionId в DTO + фронтенд-фильтр по Redux selectedSectionIds)
+- FIX-50: HistoryPage — ProGate для free-пользователей (isPro || fullAnalytics)
+- FIX-51: TopicsPage — секции видны всем, темы внутри секций заблюрены для free (ProGate)
+- FIX-52: Рекомендации — фильтрация по sectionIds + скрытие mock если уже пройден
+- FIX-53: DashboardPage — перезагрузка рекомендаций при смене языка (locale dependency)
+- FIX-54: ProfilePage — PricingModal вынесен за пределы узкого контейнера
+
+---
+
+## ХОСТИНГ И ДЕПЛОЙ — Полный гайд
+
+### Почему виртуальный хостинг Hoster.kz НЕ подходит
+
+Скриншоты тарифов "Турбо" и "Эконом" на Hoster.kz — это **shared (виртуальный) хостинг**.
+Он предназначен для PHP-сайтов (WordPress, Joomla, Drupal).
+
+**Наш стек НЕ совместим с shared хостингом:**
+
+| Требование UniStart | Shared хостинг | VPS/VDS |
+|---------------------|----------------|---------|
+| .NET 8 Runtime | Нет (только PHP) | Да (свой рантайм) |
+| Docker | Нет | Да |
+| PostgreSQL 17 | Нет (MySQL/MariaDB) | Да |
+| SignalR (WebSocket) | Нет | Да |
+| Hangfire (фоновые задачи) | Нет | Да |
+| Tesseract OCR | Нет | Да |
+| Кастомный nginx конфиг | Нет | Да |
+| SSH / root доступ | Нет | Да |
+| Произвольные порты | Нет | Да |
+
+**Вывод: нам нужен VPS/VDS** (виртуальный выделенный сервер), а не shared хостинг.
+
+### Рекомендуемый VPS — Минимальные требования
+
+| Компонент | Потребление RAM | Примечание |
+|-----------|-----------------|------------|
+| PostgreSQL 17 | ~300-500 МБ | С кэшированием запросов |
+| .NET 8 API (Kestrel) | ~200-400 МБ | IRT engine + Hangfire |
+| nginx (React SPA) | ~20-50 МБ | Статика, reverse proxy |
+| Tesseract OCR | ~200 МБ (пиковое) | Только при импорте вопросов |
+| ОС (Ubuntu 22.04) | ~200 МБ | Базовые демоны |
+| **Итого** | **~1-1.5 ГБ** | Для старта |
+
+**Рекомендуемый тариф VPS для старта (до ~500 пользователей):**
+
+| Параметр | Минимум | Рекомендуется |
+|----------|---------|---------------|
+| CPU | 2 vCPU | 2 vCPU |
+| RAM | 2 ГБ | 4 ГБ |
+| SSD/NVMe | 20 ГБ | 40 ГБ |
+| ОС | Ubuntu 22.04 LTS | Ubuntu 22.04 LTS |
+| Трафик | Безлимитный | Безлимитный |
+
+### Где заказать VPS в Казахстане
+
+| Тариф Hoster.kz | vCPU | RAM | NVMe | Цена | Вердикт |
+|-----------------|------|-----|------|------|---------|
+| Cloud 1-1-25 | 1 | 1 ГБ | 25 ГБ | 3 100 ₸/мес | ❌ Мало RAM — PostgreSQL+.NET упрутся в потолок |
+| **Cloud 1-2-50** | **1** | **2 ГБ** | **50 ГБ** | **4 800 ₸/мес** | **✅ РЕКОМЕНДУЕМ — оптимум для 100-150 юзеров** |
+| Cloud 2-2-50 | 2 | 2 ГБ | 50 ГБ | 6 200 ₸/мес | Тот же RAM, лишний vCPU не нужен при малой нагрузке |
+| Cloud 2-2-100 | 2 | 2 ГБ | 100 ГБ | 8 200 ₸/мес | Переплата за лишний диск |
+| Cloud 2-4-100 | 2 | 4 ГБ | 100 ГБ | 9 600 ₸/мес | Апгрейд при >500 MAU |
+| Cloud 4-4-100 | 4 | 4 ГБ | 100 ГБ | 12 400 ₸/мес | Overkill, для >1000 MAU |
+
+**Выбор: Hoster.kz Cloud 1-2-50 (4 800 ₸/мес)** — 7 дней бесплатный тест.
+При росте до 500+ юзеров — апгрейд на Cloud 2-4-100 (9 600 ₸/мес) без переустановки.
+Домен unistart.kz уже куплен (10 000 ₸/год) — DNS настроить на IP VPS.
+
+### Что уже готово к деплою
+
+- [x] Домен unistart.kz (10 000 ₸/год)
+- [x] Docker: `Dockerfile` (API multi-stage) + `client/Dockerfile` (React + nginx)
+- [x] `docker-compose.yml` — 3 сервиса: postgres, api, client
+- [x] nginx.conf — reverse proxy (API, WebSocket/SignalR, Hangfire, SPA fallback)
+- [x] CI/CD: GitHub Actions (`ci.yml` + `deploy.yml` через SSH)
+- [x] Health checks: `/health/live`, `/health/ready`
+- [x] Backup script: `scripts/backup-db.sh` (pg_dump + gzip + 7-day retention)
+- [x] Security: CSP, HSTS, CORS, rate limiting, input sanitization
+- [x] Legal: Privacy Policy, Terms of Service, Cookie Banner
+
+### Чего НЕ хватает для деплоя
+
+- [ ] **VPS сервер** — заказать Hoster.kz Cloud 1-2-50 (1 vCPU, 2 ГБ RAM, 50 ГБ NVMe, 4 800 ₸/мес)
+- [ ] **SSL сертификат** — Let's Encrypt (бесплатный), настроить certbot
+- [ ] **DNS** — A-запись: `unistart.kz` → IP VPS, `www.unistart.kz` → CNAME → unistart.kz
+- [ ] **`.env` файл** на сервере — production секреты (JWT, DB пароль, SMTP, LLM ключ)
+- [ ] **SMTP для email** — Gmail App Password или Mailgun/SendGrid для верификации email
+- [ ] **Google OAuth credentials** — production Client ID (redirect_uri: `https://unistart.kz/api/auth/google/callback`)
+- [ ] **Платёжная интеграция** — Kaspi Pay / Halyk epay для реальных подписок (сейчас только mock upgrade)
+- [ ] **nginx SSL конфиг** — обновить `nginx.conf` для HTTPS (443) + HTTP→HTTPS redirect
+
+---
+
+## DEPLOYMENT CHECKLIST — Пошаговый деплой на VPS
+
+### Шаг 1. Заказать VPS и настроить доступ
+```
+1. Заказать Hoster.kz Cloud 1-2-50 (4 800 ₸/мес, 7 дней бесплатный тест)
+   - ОС: Ubuntu 22.04 LTS
+   - 1 vCPU, 2 ГБ RAM, 50 ГБ NVMe
+2. Получить IP-адрес сервера
+3. Подключиться по SSH: ssh root@<IP>
+4. Создать пользователя: adduser unistart && usermod -aG sudo unistart
+5. Настроить SSH-ключ (отключить пароль-аутентификацию)
+6. Обновить систему: apt update && apt upgrade -y
+```
+
+### Шаг 2. Установить Docker
+```bash
+# Установка Docker Engine
+curl -fsSL https://get.docker.com | sh
+sudo usermod -aG docker unistart
+
+# Установка Docker Compose (уже в составе Docker Engine 24+)
+docker compose version
+```
+
+### Шаг 3. Настроить DNS (на Hoster.kz или где куплен домен)
+```
+A-запись:     unistart.kz    →  <IP-VPS>
+A-запись:     www.unistart.kz →  <IP-VPS>
+```
+
+### Шаг 4. Клонировать репозиторий и настроить секреты
+```bash
+sudo mkdir -p /opt/unistart && cd /opt/unistart
+git clone <repo-url> .
+
+# Создать .env файл с production секретами
+cat > .env << 'EOF'
+POSTGRES_DB=UniStart
+POSTGRES_USER=unistart_prod
+POSTGRES_PASSWORD=<сгенерировать-64-символа>
+
+JWT_SECRET_KEY=<сгенерировать-64-символа>
+JWT_ISSUER=UniStart
+JWT_AUDIENCE=UniStartUsers
+
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USE_SSL=true
+SMTP_SENDER_EMAIL=noreply@unistart.kz
+SMTP_SENDER_NAME=UniStart
+SMTP_USERNAME=<gmail>
+SMTP_PASSWORD=<app-password>
+SMTP_ENABLED=true
+
+LLM_PROVIDER=deepseek
+LLM_API_KEY=<deepseek-key>
+LLM_MODEL=deepseek-chat
+LLM_BASE_URL=https://api.deepseek.com
+
+CORS_ORIGIN=https://unistart.kz
+
+ASPNETCORE_ENVIRONMENT=Production
+EOF
+
+chmod 600 .env
+```
+
+### Шаг 5. SSL сертификат (Let's Encrypt)
+```bash
+# Установить certbot
+sudo apt install -y certbot
+
+# Получить сертификат (перед этим порт 80 должен быть свободен)
+sudo certbot certonly --standalone -d unistart.kz -d www.unistart.kz
+
+# Сертификаты будут в:
+# /etc/letsencrypt/live/unistart.kz/fullchain.pem
+# /etc/letsencrypt/live/unistart.kz/privkey.pem
+
+# Автопродление (cron):
+echo "0 3 * * * certbot renew --quiet --post-hook 'docker compose -f /opt/unistart/docker-compose.yml restart client'" | sudo crontab -
+```
+
+### Шаг 6. Обновить nginx.conf для HTTPS
+```nginx
+# В client/nginx.conf — добавить SSL
+server {
+    listen 80;
+    server_name unistart.kz www.unistart.kz;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name unistart.kz www.unistart.kz;
+
+    ssl_certificate     /etc/letsencrypt/live/unistart.kz/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/unistart.kz/privkey.pem;
+
+    # ... остальной конфиг (root, proxy_pass и т.д.)
+}
+```
+
+Примонтировать сертификаты в docker-compose.yml:
+```yaml
+client:
+  volumes:
+    - /etc/letsencrypt:/etc/letsencrypt:ro
+  ports:
+    - "80:80"
+    - "443:443"
+```
+
+### Шаг 7. Запустить
+```bash
+cd /opt/unistart
+docker compose up -d --build
+
+# Проверить:
+docker compose ps          # все 3 сервиса running
+docker compose logs api    # .NET логи
+curl https://unistart.kz/health/ready   # должен вернуть Healthy
+```
+
+### Шаг 8. Настроить GitHub Actions Secrets
+```
+В GitHub → Settings → Secrets → Actions:
+  DEPLOY_HOST     = <IP-VPS>
+  DEPLOY_USER     = unistart
+  DEPLOY_SSH_KEY  = <приватный SSH-ключ>
+```
+
+### Шаг 9. Настроить бэкапы
+```bash
+# Скопировать скрипт
+cp scripts/backup-db.sh /opt/unistart/
+chmod +x /opt/unistart/backup-db.sh
+
+# Cron: ежедневный бэкап в 2:00 ночи
+echo "0 2 * * * /opt/unistart/backup-db.sh" | crontab -
+
+# Опционально: копирование бэкапов на S3/Yandex Cloud Storage
+```
+
+---
+
+## БЮДЖЕТ ЗАПУСКА
+
+| Статья | Стоимость | Период | Статус |
+|--------|-----------|--------|--------|
+| Домен unistart.kz | 10 000 ₸ | /год | Куплен |
+| VPS Hoster.kz Cloud 1-2-50 | 4 800 ₸ | /мес | Нужно купить (7 дней тест) |
+| SSL (Let's Encrypt) | 0 ₸ | бесплатно | Настроить |
+| SMTP (Gmail App Password) | 0 ₸ | бесплатно | Настроить |
+| DeepSeek API (LLM) | ~1 000-3 000 ₸ | /мес | Опционально |
+| **Итого (минимум)** | **~4 800 ₸/мес** + 10 000 ₸/год | | |
+
+При росте до 500+ юзеров — апгрейд на Cloud 2-4-100 (9 600 ₸/мес).
+
+---
+
+## POST-LAUNCH ROADMAP — Что делать после деплоя
+
+### PHASE A — Сразу после запуска (Неделя 1-2)
+
+- [ ] **Мониторинг**: проверять `docker compose logs` ежедневно первые 2 недели
+- [ ] **Serilog**: настроить алерты на ошибки (email или Telegram бот при 5xx)
+- [ ] **Performance**: проверить время отклика API (<200ms для основных эндпоинтов)
+- [ ] **Tестирование боевое**: пройти полный flow на production (регистрация → практика → mock → analytics)
+- [ ] **Google OAuth**: обновить redirect URI на `https://unistart.kz/...` в Google Console
+- [ ] **Email**: проверить доставку email верификации (не в спам)
+- [ ] **Mobile**: проверить responsive на реальных устройствах (iPhone, Android)
+
+### PHASE B — Монетизация (Неделя 2-4)
+
+- [ ] **Kaspi Pay интеграция**: реальные платежи за Pro Monthly / Pro Yearly
+  - Kaspi QR API или Kaspi Payment Gateway
+  - Webhook для подтверждения оплаты
+  - Автоматическая активация подписки
+  - Страница успешной оплаты
+- [ ] **Альтернатива Kaspi**: Halyk epay, PayBox.kz, или Stripe (для международных карт)
+- [ ] **Чеки/инвойсы**: генерация PDF-чека после оплаты (требование НК РК)
+- [ ] **Возвраты**: механизм возврата средств (7 дней по ЗРК о защите прав потребителей)
+
+### PHASE C — Контент (Недели 2-8)
+
+- [ ] Сидинг вопросов по Физике CSCA (12 глав, ~200 вопросов)
+- [ ] Сидинг вопросов по Химии CSCA (~150 вопросов)
+- [ ] Контент для Chinese Technical (中文技术) — CSCA
+- [ ] Контент для Chinese Humanitarian (中文人文) — CSCA
+- [ ] Расширить базу NUET (доп. вопросы по матграмотности и чтению)
+- [ ] Расширить SAT (больше вопросов для адаптивного движка)
+- [ ] **Цель: 500+ вопросов** к концу месяца (сейчас ~320)
+
+### PHASE D — Масштабирование (Месяц 2-3)
+
+- [ ] **Redis**: добавить для кэширования сессий и rate limiting (сейчас in-memory)
+- [ ] **CDN**: Cloudflare (бесплатный план) — кэширование статики, DDoS protection, SSL
+- [ ] **Upgrade VPS**: при >500 MAU перейти на 4 ГБ RAM
+- [ ] **Horizontal scaling**: при >2000 MAU — отдельный сервер для PostgreSQL
+- [ ] **Мониторинг продвинутый**: Grafana + Prometheus или Sentry для error tracking
+- [ ] **CI/CD zero-downtime**: blue-green deploy или rolling update
+
+### PHASE E — Маркетинг и рост (Параллельно)
+
+- [ ] **SEO**: мета-теги, sitemap.xml, robots.txt, Open Graph теги
+- [ ] **Аналитика**: Google Analytics 4 или Yandex Metrica
+- [ ] **Социальные сети**: Instagram, Telegram канал (@unistart_kz)
+- [ ] **Партнёрства**: расширить сотрудничество с LinHao, привлечь другие школы
+- [ ] **Контент-маркетинг**: блог с tips для CSCA/NUET подготовки
+- [ ] **Реферальная программа**: "пригласи друга — получи неделю Pro"
+
+### PHASE F — Функции второй очереди
+
+- [ ] **Free Mock + Upsell**: один бесплатный mock exam, затем ProGate
+- [ ] **Push-уведомления**: streak reminders, study plan напоминания
+- [ ] **Мобильное приложение**: React Native или PWA
+- [ ] **A/B тестирование**: варианты лендинга, цен, onboarding flow
+- [ ] **Tьюторский маркетплейс**: оплата за занятия с тьюторами через платформу
+- [ ] **Gamification**: badges, leaderboard, streak achievements
 
 ---
 
@@ -84,7 +401,7 @@
 - [x] **Health checks** — /health/live, /health/ready (PostgreSQL), /health (JSON)
 - [x] **Бэкапы** — scripts/backup-db.sh (pg_dump, gzip, 7-day retention, cron-ready)
 - [x] **.dockerignore** — исправлен (убрано исключение Migrations)
-- [ ] **Домен** — unistart.kz, SSL сертификат (вне кода, operational)
+- [ ] **Домен** — unistart.kz куплен (10 000 ₸/год), SSL + DNS настроить при деплое
 
 ### PHASE 5 — Контент (Priority: MEDIUM)
 - [ ] Сидинг вопросов по Физике (12 глав) — CSCA
