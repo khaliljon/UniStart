@@ -596,22 +596,14 @@ try
         "0 2 * * *"); // daily at 02:00 UTC
 
     // ═══════════════════════════════════════════════════════
-    //  AUTO-MIGRATE (all environments)
+    //  AUTO-MIGRATE & SEED (all environments)
     // ═══════════════════════════════════════════════════════
     using (var scope = app.Services.CreateScope())
     {
         var dbContext = scope.ServiceProvider.GetRequiredService<UniStartDbContext>();
         await dbContext.Database.MigrateAsync();
-    }
 
-    // ═══════════════════════════════════════════════════════
-    //  SEED (dev only)
-    // ═══════════════════════════════════════════════════════
-    if (app.Environment.IsDevelopment())
-    {
-        using var scope = app.Services.CreateScope();
-        var dbContext = scope.ServiceProvider.GetRequiredService<UniStartDbContext>();
-
+        // Seeder is idempotent — safe to run on every start
         var seeder = new DatabaseSeeder(dbContext);
         await seeder.SeedAsync();
 
