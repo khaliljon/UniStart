@@ -33,10 +33,10 @@ public class RecommendationService : IRecommendationService
     //  DAILY BRIEFING
     // ═══════════════════════════════════════════════════════
 
-    public async Task<DailyBriefingDto> GetDailyBriefingAsync(int userId)
+    public async Task<DailyBriefingDto> GetDailyBriefingAsync(int userId, List<int>? sectionIds = null)
     {
         var streak = await GetStreakAsync(userId);
-        var recommendations = await GenerateDailyRecommendationsAsync(userId);
+        var recommendations = await GenerateDailyRecommendationsAsync(userId, sectionIds);
         var newMilestones = await CheckAndAwardMilestonesAsync(userId);
         var recentMilestones = await GetRecentMilestonesAsync(userId, 7);
         var yesterday = await GetDaySummaryAsync(userId, DateTime.UtcNow.Date.AddDays(-1));
@@ -412,15 +412,21 @@ public class RecommendationService : IRecommendationService
     //  DAILY RECOMMENDATIONS (PRIVATE)
     // ═══════════════════════════════════════════════════════
 
-    private async Task<List<RecommendationDto>> GenerateDailyRecommendationsAsync(int userId)
+    private async Task<List<RecommendationDto>> GenerateDailyRecommendationsAsync(int userId, List<int>? sectionIds = null)
     {
         var recs = new List<RecommendationDto>();
         var lang = GetLang();
         var today = DateTime.SpecifyKind(DateTime.UtcNow.Date, DateTimeKind.Utc);
+        var filterBySections = sectionIds is { Count: > 0 };
+        var sectionIdSet = filterBySections ? new HashSet<int>(sectionIds!) : null;
 
         // ─── Forgetting Curve: topics needing review ─────
-        var topicLastAnswer = await _db.UserAnswers
-            .Where(a => a.UserId == userId)
+        var topicQuery = _db.UserAnswers
+            .Where(a => a.UserId == userId);
+        if (filterBySections)
+            topicQuery = topicQuery.Where(a => a.Question!.Topic!.SectionId != null && sectionIdSet!.Contains(a.Question!.Topic!.SectionId!.Value));
+
+        var topicLastAnswer = await topicQuery
             .GroupBy(a => a.Question!.Topic)
             .Select(g => new
             {
@@ -499,9 +505,11 @@ public class RecommendationService : IRecommendationService
 
         foreach (var wp in weakProfiles)
         {
-            // Find a topic for this skill
-            var topic = await _db.Topics
-                .FirstOrDefaultAsync(t => t.SkillId == wp.SkillId);
+            // Find a topic for this skill (filtered by selected sections if provided)
+            var weakTopicQuery = _db.Topics.Where(t => t.SkillId == wp.SkillId);
+            if (filterBySections)
+                weakTopicQuery = weakTopicQuery.Where(t => t.SectionId != null && sectionIdSet!.Contains(t.SectionId!.Value));
+            var topic = await weakTopicQuery.FirstOrDefaultAsync();
 
             // Skip if topic is fully mastered (all questions answered correctly)
             if (topic != null && masteredTopicIds.Contains(topic.Id))
@@ -533,7 +541,14 @@ public class RecommendationService : IRecommendationService
         var goal = await _db.StudyGoals
             .FirstOrDefaultAsync(g => g.UserId == userId && g.IsActive);
 
-        if (goal != null)
+        // Check if user has completed any mock exam (attempts or exam-mode sessions)
+        var hasCompletedMock = await _db.MockExamAttempts
+            .AnyAsync(a => a.UserId == userId && a.Status == "Completed");
+        if (!hasCompletedMock)
+            hasCompletedMock = await _db.TestSessions
+                .AnyAsync(s => s.UserId == userId && s.Mode == "exam" && s.CompletedAt != null);
+
+        if (goal != null && !hasCompletedMock)
         {
             var daysUntilExam = (goal.TargetDate - today).TotalDays;
             if (daysUntilExam <= 14 && daysUntilExam > 0)
@@ -561,27 +576,19 @@ public class RecommendationService : IRecommendationService
             }
             else if (daysUntilExam > 14)
             {
-                // Balanced recommendation
-                var recentExamSessions = await _db.TestSessions
-                    .Where(s => s.UserId == userId && s.Mode == "exam")
-                    .CountAsync();
-
-                if (recentExamSessions == 0)
-                {
-                    recs.Add(new RecommendationDto(
-                        Type: "mode",
-                        Priority: "low",
-                        Title: L(lang, "Попробуйте Mock Exam", "Mock Exam қолданып көріңіз", "Try Mock Exam"),
-                        Description: L(lang,
-                            "Вы ещё не пробовали экзаменационный режим. Потренируйтесь с таймером!",
-                            "Сіз әлі емтихан режимін қолданбадыңыз. Таймермен жаттығыңыз!",
-                            "You haven't tried exam mode yet. Practice with a timer!"),
-                        Icon: null,
-                        ActionLabel: L(lang, "Попробовать", "Бастау", "Try it"),
-                        ActionUrl: "/learn?tab=mock",
-                        Metadata: null
-                    ));
-                }
+                recs.Add(new RecommendationDto(
+                    Type: "mode",
+                    Priority: "low",
+                    Title: L(lang, "Попробуйте Mock Exam", "Mock Exam қолданып көріңіз", "Try Mock Exam"),
+                    Description: L(lang,
+                        "Вы ещё не пробовали экзаменационный режим. Потренируйтесь с таймером!",
+                        "Сіз әлі емтихан режимін қолданбадыңыз. Таймермен жаттығыңыз!",
+                        "You haven't tried exam mode yet. Practice with a timer!"),
+                    Icon: null,
+                    ActionLabel: L(lang, "Попробовать", "Бастау", "Try it"),
+                    ActionUrl: "/learn?tab=mock",
+                    Metadata: null
+                ));
             }
         }
 

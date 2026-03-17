@@ -7,7 +7,7 @@ public interface IRecommendationService
     /// <summary>
     /// Ежедневный брифинг: стрик, рекомендации, последние достижения
     /// </summary>
-    Task<DailyBriefingDto> GetDailyBriefingAsync(int userId);
+    Task<DailyBriefingDto> GetDailyBriefingAsync(int userId, List<int>? sectionIds = null);
 
     /// <summary>
     /// Рекомендации после завершения тестовой сессии

@@ -17,7 +17,13 @@ export function ProGate({ children, hasAccess, featureName }: ProGateProps) {
   const [showPricing, setShowPricing] = useState(false);
 
   if (hasAccess) {
-    return <>{children}</>;
+    return (
+      <>
+        {children}
+        {/* Keep modal mounted during upgrade success animation */}
+        <PricingModal isOpen={showPricing} onClose={() => setShowPricing(false)} />
+      </>
+    );
   }
 
   const displayFeature = featureName || t.common.loading;

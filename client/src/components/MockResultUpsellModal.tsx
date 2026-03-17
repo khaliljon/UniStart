@@ -18,12 +18,13 @@ export function MockResultUpsellModal({ isOpen, onClose, score, totalCorrect, to
   if (!isOpen) return null;
 
   const overlay: React.CSSProperties = {
-    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex',
+    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex',
     alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem',
   };
   const modal: React.CSSProperties = {
-    background: 'var(--bg-primary)', borderRadius: 16, maxWidth: 480, width: '100%',
+    background: 'var(--card-bg)', borderRadius: 16, maxWidth: 480, width: '100%',
     padding: '2rem', position: 'relative', maxHeight: '90vh', overflowY: 'auto',
+    boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
   };
   const stepIndicator: React.CSSProperties = {
     display: 'flex', justifyContent: 'center', gap: '0.5rem', marginBottom: '1.5rem',
@@ -53,7 +54,6 @@ export function MockResultUpsellModal({ isOpen, onClose, score, totalCorrect, to
           {/* Step 1: Score + CTA analytics */}
           {step === 1 && (
             <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '2.5rem', marginBottom: '0.25rem' }}>🎯</div>
               <h2 style={{ margin: '0 0 0.5rem', fontSize: '1.3rem' }}>{t.mockUpsell.title}</h2>
               <div style={{
                 fontSize: '2.5rem', fontWeight: 800, margin: '0.5rem 0',
@@ -77,7 +77,6 @@ export function MockResultUpsellModal({ isOpen, onClose, score, totalCorrect, to
           {/* Step 2: Analytics preview (blurred) */}
           {step === 2 && (
             <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '2.5rem', marginBottom: '0.25rem' }}>📊</div>
               <h2 style={{ margin: '0 0 1rem', fontSize: '1.2rem' }}>{t.mockUpsell.analyticsPreview}</h2>
 
               {/* Faux blurred radar chart */}
@@ -109,7 +108,6 @@ export function MockResultUpsellModal({ isOpen, onClose, score, totalCorrect, to
           {/* Step 3: Mistakes preview (blurred partial list) */}
           {step === 3 && (
             <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '2.5rem', marginBottom: '0.25rem' }}>🔍</div>
               <h2 style={{ margin: '0 0 1rem', fontSize: '1.2rem' }}>{t.mockUpsell.mistakesPreview}</h2>
 
               {/* Faux mistake items — first visible, rest blurred */}
@@ -142,7 +140,6 @@ export function MockResultUpsellModal({ isOpen, onClose, score, totalCorrect, to
           {/* Step 4: CTA with pricing */}
           {step === 4 && (
             <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '2.5rem', marginBottom: '0.25rem' }}>🚀</div>
               <h2 style={{ margin: '0 0 0.75rem', fontSize: '1.3rem' }}>{t.mockUpsell.tryPro}</h2>
 
               <div style={{

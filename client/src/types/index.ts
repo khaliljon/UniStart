@@ -269,6 +269,7 @@ export interface StudyPlanEntry {
   id: number;
   topicId: number;
   topicName: string;
+  sectionId: number | null;
   date: string;
   recommendedMinutes: number;
   type: 'New' | 'Review' | 'Practice' | 'Weakness';

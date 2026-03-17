@@ -78,8 +78,8 @@ export function PricingModal({ isOpen, onClose }: PricingModalProps) {
         background: 'var(--card-bg, #fff)',
         borderRadius: '1.5rem',
         padding: '2rem',
-        maxWidth: '960px',
-        width: '95%',
+        maxWidth: '1080px',
+        width: '95vw',
         maxHeight: '90vh',
         overflow: 'auto',
         boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
@@ -107,7 +107,7 @@ export function PricingModal({ isOpen, onClose }: PricingModalProps) {
           </div>
         )}
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+        <div className="pricing-grid">
           {/* Free */}
           <div style={{
             border: '2px solid var(--border-color, #e5e7eb)',

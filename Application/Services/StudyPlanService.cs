@@ -986,6 +986,7 @@ public class StudyPlanService : IStudyPlanService
         Id: e.Id,
         TopicId: e.TopicId,
         TopicName: e.Topic?.Name ?? "Unknown",
+        SectionId: e.Topic?.SectionId,
         Date: e.Date,
         RecommendedMinutes: e.RecommendedMinutes,
         Type: e.Type.ToString(),

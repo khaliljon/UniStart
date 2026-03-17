@@ -28,6 +28,7 @@
 }
 
 [data-theme="dark"] {
+  color-scheme: dark;
   --primary-color: #6366f1;
   --primary-hover: #818cf8;
   --secondary-color: #9ca3af;
@@ -171,6 +172,11 @@ select option,
 [data-theme="dark"] .form-select option {
   background-color: #1e293b;
   color: #f1f5f9;
+}
+
+/* Dark date picker calendar */
+[data-theme="dark"] input[type="date"] {
+  color-scheme: dark;
 }
 
 /* KaTeX dark mode — ensure math symbols are visible */
@@ -895,8 +901,19 @@ select option,
   justify-content: center;
 }
 
+/* Pricing grid */
+.pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
+  .pricing-grid {
+    grid-template-columns: 1fr !important;
+  }
+
   .burger-btn {
     display: block;
   }

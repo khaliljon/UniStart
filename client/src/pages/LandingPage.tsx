@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../i18n';
 import LanguageSwitcher from '../components/LanguageSwitcher';
@@ -6,8 +5,6 @@ import LanguageSwitcher from '../components/LanguageSwitcher';
 function LandingPage() {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const [isYearly, setIsYearly] = useState(false);
-
   const FEATURES = [
     { icon: '', title: t.landing.featureAdaptiveTitle, desc: t.landing.featureAdaptiveDesc },
     { icon: '', title: t.landing.featurePredictionTitle, desc: t.landing.featurePredictionDesc },
@@ -210,7 +207,7 @@ function LandingPage() {
         padding: '5rem 2rem',
         background: 'var(--bg-secondary)',
       }}>
-        <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
             <h2 style={{ fontSize: '2rem', fontWeight: 700, marginBottom: '0.75rem' }}>
               {t.landing.pricingTitle}
@@ -218,41 +215,9 @@ function LandingPage() {
             <p style={{ color: 'var(--text-secondary)', fontSize: '1.05rem' }}>
               {t.landing.pricingDesc}
             </p>
-
-            {/* Monthly / Yearly toggle */}
-            <div style={{
-              display: 'flex', justifyContent: 'center', gap: '0.5rem',
-              marginTop: '1.5rem',
-              background: 'var(--card-bg)', borderRadius: '999px', padding: '0.3rem',
-              width: 'fit-content', margin: '1.5rem auto 0',
-              border: '1px solid var(--border-color)',
-            }}>
-              <button
-                onClick={() => setIsYearly(false)}
-                style={{
-                  padding: '0.5rem 1.25rem', borderRadius: '999px', border: 'none',
-                  fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer',
-                  background: !isYearly ? '#6366f1' : 'transparent',
-                  color: !isYearly ? '#fff' : 'var(--text-secondary)',
-                }}
-              >
-                {t.landing.perMonth}
-              </button>
-              <button
-                onClick={() => setIsYearly(true)}
-                style={{
-                  padding: '0.5rem 1.25rem', borderRadius: '999px', border: 'none',
-                  fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer',
-                  background: isYearly ? '#6366f1' : 'transparent',
-                  color: isYearly ? '#fff' : 'var(--text-secondary)',
-                }}
-              >
-                {t.landing.perYear} {!isYearly ? `— ${t.landing.yearlyDiscount}` : ''}
-              </button>
-            </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+          <div className="pricing-grid">
             {/* Free */}
             <div style={{
               padding: '2rem',
@@ -287,7 +252,7 @@ function LandingPage() {
               </button>
             </div>
 
-            {/* Pro */}
+            {/* Pro Monthly */}
             <div style={{
               padding: '2rem',
               borderRadius: '1.25rem',
@@ -308,17 +273,12 @@ function LandingPage() {
               </div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.25rem', marginBottom: '0.25rem' }}>
                 <span style={{ fontSize: '2.5rem', fontWeight: 800 }}>
-                  {isYearly ? t.landing.proYearlyPrice : t.landing.proMonthlyPrice}
+                  {t.landing.proMonthlyPrice}
                 </span>
                 <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-                  {isYearly ? t.landing.perYear : t.landing.perMonth}
+                  {t.landing.perMonth}
                 </span>
               </div>
-              {isYearly && (
-                <div style={{ color: '#10b981', fontWeight: 600, fontSize: '0.8rem', marginBottom: '0.5rem' }}>
-                  {t.landing.yearlyDiscount}
-                </div>
-              )}
               <ul style={{ listStyle: 'none', padding: 0, margin: '1.5rem 0', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
                 {PRO_FEATURES.map((f) => (
                   <li key={f} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', color: 'var(--text-primary)' }}>
@@ -332,6 +292,52 @@ function LandingPage() {
                 style={{
                   width: '100%', padding: '0.75rem', borderRadius: '0.75rem',
                   border: 'none', background: '#6366f1',
+                  color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '1rem',
+                }}
+              >
+                {t.landing.startWithPro}
+              </button>
+            </div>
+
+            {/* Pro Yearly */}
+            <div style={{
+              padding: '2rem',
+              borderRadius: '1.25rem',
+              border: '2px solid #8b5cf6',
+              background: 'var(--card-bg)',
+              position: 'relative',
+            }}>
+              <div style={{
+                position: 'absolute', top: '-12px', right: '1.25rem',
+                background: 'linear-gradient(135deg, #10b981, #059669)', color: '#fff',
+                padding: '0.2rem 0.8rem', borderRadius: '1rem', fontSize: '0.75rem', fontWeight: 600,
+              }}>
+                {t.landing.yearlyDiscount}
+              </div>
+              <div style={{ fontWeight: 700, fontSize: '1.25rem', marginBottom: '0.25rem', color: '#8b5cf6' }}>
+                Pro
+              </div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.25rem', marginBottom: '0.25rem' }}>
+                <span style={{ fontSize: '2.5rem', fontWeight: 800 }}>
+                  {t.landing.proYearlyPrice}
+                </span>
+                <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                  {t.landing.perYear}
+                </span>
+              </div>
+              <ul style={{ listStyle: 'none', padding: 0, margin: '1.5rem 0', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                {PRO_FEATURES.map((f) => (
+                  <li key={f} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', color: 'var(--text-primary)' }}>
+                    <span style={{ color: '#8b5cf6', flexShrink: 0 }}>✓</span>
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <button
+                onClick={() => navigate('/register')}
+                style={{
+                  width: '100%', padding: '0.75rem', borderRadius: '0.75rem',
+                  border: 'none', background: 'linear-gradient(135deg, #8b5cf6, #6366f1)',
                   color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '1rem',
                 }}
               >
@@ -369,11 +375,9 @@ function LandingPage() {
         }}>
           <div style={{
             width: '80px', height: '80px', borderRadius: '1rem',
-            background: 'linear-gradient(135deg, #ef4444, #f97316)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '2rem', fontWeight: 800, color: '#fff', flexShrink: 0,
+            overflow: 'hidden', flexShrink: 0,
           }}>
-            LH
+            <img src="/linhao-logo.svg" alt="LinHao" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           </div>
           <div style={{ flex: 1, minWidth: '200px' }}>
             <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.2rem', fontWeight: 700 }}>
@@ -382,14 +386,24 @@ function LandingPage() {
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: 1.6, margin: '0 0 0.75rem' }}>
               {t.landing.partnerLinHaoDesc}
             </p>
-            <a
-              href="https://linhao.kz"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ color: '#6366f1', fontWeight: 600, fontSize: '0.9rem', textDecoration: 'none' }}
-            >
-              {t.landing.partnerVisit}
-            </a>
+            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+              <a
+                href="https://instagram.com/linhao.chinese"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: '#6366f1', fontWeight: 600, fontSize: '0.9rem', textDecoration: 'none' }}
+              >
+                Instagram
+              </a>
+              <a
+                href="https://t.me/linhao_chinese"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: '#6366f1', fontWeight: 600, fontSize: '0.9rem', textDecoration: 'none' }}
+              >
+                Telegram
+              </a>
+            </div>
           </div>
         </div>
       </section>

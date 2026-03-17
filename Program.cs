@@ -438,8 +438,9 @@ try
         context.Response.Headers.Append("X-XSS-Protection", "0");
         context.Response.Headers.Append("Referrer-Policy", "strict-origin-when-cross-origin");
         context.Response.Headers.Append("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+        context.Response.Headers.Append("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
         context.Response.Headers.Append("Content-Security-Policy",
-            "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self' wss: ws:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'");
+            "default-src 'self'; script-src 'self' 'unsafe-inline' https://accounts.google.com; style-src 'self' 'unsafe-inline' https://accounts.google.com; img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' wss: ws: https://accounts.google.com; frame-src https://accounts.google.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'");
         await next();
     });
 

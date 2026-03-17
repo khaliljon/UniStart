@@ -12,8 +12,11 @@ import {
   Line,
 } from 'recharts';
 import { useTranslation } from '../hooks/useTranslation';
+import { useAppSelector } from '../hooks/useAppSelector';
 import { studyPlanService } from '../services/studyPlanService';
 import { examService } from '../services/examService';
+import { subscriptionService } from '../services/subscriptionService';
+import { ProGate } from '../components/ProGate';
 import type {
   StudyGoal,
   StudyPlan,
@@ -36,6 +39,7 @@ const TYPE_COLORS: Record<string, string> = {
 function StudyPlanPage() {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { selectedSectionIds: profileSectionIds } = useAppSelector((state) => state.exam);
   const [tab, setTab] = useState<Tab>('today');
   const [goal, setGoal] = useState<StudyGoal | null>(null);
   const [todayPlan, setTodayPlan] = useState<TodayPlan | null>(null);
@@ -56,6 +60,7 @@ function StudyPlanPage() {
 
   // Delete confirmation
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [hasFullStudyPlan, setHasFullStudyPlan] = useState(true);
 
   const loadData = useCallback(async () => {
     try {
@@ -92,6 +97,9 @@ function StudyPlanPage() {
 
   useEffect(() => {
     loadData();
+    subscriptionService.getStatus().then((s) => {
+      setHasFullStudyPlan(s.isPro || s.limits.fullStudyPlan);
+    }).catch(() => {});
   }, [loadData]);
 
   // Load sections when exam changes in goal form
@@ -279,15 +287,31 @@ function StudyPlanPage() {
           </div>
 
           {tab === 'today' && todayPlan && (
-            <TodayTab todayPlan={todayPlan} onStart={handleStartEntry} />
+            <TodayTab
+              todayPlan={profileSectionIds.length > 0 ? {
+                ...todayPlan,
+                entries: todayPlan.entries.filter(e => e.sectionId == null || profileSectionIds.includes(e.sectionId)),
+                totalMinutesToday: todayPlan.entries
+                  .filter(e => !e.isCompleted && (e.sectionId == null || profileSectionIds.includes(e.sectionId)))
+                  .reduce((s, e) => s + e.recommendedMinutes, 0),
+              } : todayPlan}
+              onStart={handleStartEntry}
+            />
           )}
 
           {tab === 'plan' && plan && (
-            <PlanTab plan={plan} />
+            <ProGate hasAccess={hasFullStudyPlan} featureName={t.studyPlan.tabPlan}>
+              <PlanTab plan={profileSectionIds.length > 0 ? {
+                ...plan,
+                entries: plan.entries.filter(e => e.sectionId == null || profileSectionIds.includes(e.sectionId)),
+              } : plan} />
+            </ProGate>
           )}
 
           {tab === 'stats' && stats && (
-            <StatsTab stats={stats} />
+            <ProGate hasAccess={hasFullStudyPlan} featureName={t.studyPlan.tabStats}>
+              <StatsTab stats={stats} />
+            </ProGate>
           )}
         </>
       )}

@@ -2,8 +2,11 @@ import api from './api';
 import { DailyBriefing, AfterSession, Streak, Milestone } from '../types';
 
 const recommendationService = {
-  getDailyBriefing: () =>
-    api.get<DailyBriefing>('/recommendations/daily').then(r => r.data),
+  getDailyBriefing: (sectionIds?: number[]) => {
+    const params: Record<string, string> = {};
+    if (sectionIds && sectionIds.length > 0) params.sectionIds = sectionIds.join(',');
+    return api.get<DailyBriefing>('/recommendations/daily', { params }).then(r => r.data);
+  },
 
   getAfterSession: (sessionId: number) =>
     api.get<AfterSession>(`/recommendations/after-session/${sessionId}`).then(r => r.data),

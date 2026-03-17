@@ -12,8 +12,8 @@ function DashboardPage() {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { user } = useAppSelector((state) => state.auth);
-  const { selectedExams } = useAppSelector((state) => state.exam);
-  const { t } = useTranslation();
+  const { selectedExams, selectedSectionIds } = useAppSelector((state) => state.exam);
+  const { t, locale } = useTranslation();
 
   const [streak, setStreak] = useState<Streak | null>(null);
   const [recs, setRecs] = useState<Recommendation[]>([]);
@@ -27,7 +27,7 @@ function DashboardPage() {
       setIsLoading(true);
       setError(null);
       const [briefing, dailyUsage] = await Promise.all([
-        recommendationService.getDailyBriefing(),
+        recommendationService.getDailyBriefing(selectedSectionIds.length > 0 ? selectedSectionIds : undefined),
         subscriptionService.getDailyUsage().catch(() => null),
       ]);
       setStreak(briefing.streak);
@@ -39,7 +39,7 @@ function DashboardPage() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [locale, selectedSectionIds]);
 
   useEffect(() => { dispatch(fetchExams()); load(); }, [dispatch, load]);
 

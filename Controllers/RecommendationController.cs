@@ -31,9 +31,18 @@ public class RecommendationController : ControllerBase
 
     /// <summary>Daily briefing: streak, recommendations, milestones, yesterday summary</summary>
     [HttpGet("daily")]
-    public async Task<IActionResult> GetDailyBriefing()
+    public async Task<IActionResult> GetDailyBriefing([FromQuery] string? sectionIds)
     {
-        var result = await _svc.GetDailyBriefingAsync(GetCurrentUserId());
+        List<int>? parsedIds = null;
+        if (!string.IsNullOrWhiteSpace(sectionIds))
+        {
+            parsedIds = sectionIds.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                .Select(s => int.TryParse(s.Trim(), out var id) ? id : -1)
+                .Where(id => id > 0)
+                .ToList();
+            if (parsedIds.Count == 0) parsedIds = null;
+        }
+        var result = await _svc.GetDailyBriefingAsync(GetCurrentUserId(), parsedIds);
         return Ok(result);
     }
 

@@ -52,6 +52,7 @@ public record StudyPlanEntryDto(
     int Id,
     int TopicId,
     string TopicName,
+    int? SectionId,
     DateTime Date,
     int RecommendedMinutes,
     string Type,

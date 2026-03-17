@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { analyticsService } from '../services/analyticsService';
+import { subscriptionService } from '../services/subscriptionService';
+import { ProGate } from '../components/ProGate';
 import { useTranslation } from '../i18n';
 import type { TestSessionSummary, TestSessionDetail } from '../types';
 
@@ -10,7 +12,14 @@ function HistoryPage() {
   const [isDetailLoading, setIsDetailLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
+  const [hasAccess, setHasAccess] = useState(true);
   const { t } = useTranslation();
+
+  useEffect(() => {
+    subscriptionService.getStatus().then((s) => {
+      setHasAccess(s.isPro || s.limits.fullAnalytics);
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     const fetchSessions = async () => {
@@ -80,6 +89,7 @@ function HistoryPage() {
     <div className="animate-fade-in" style={{ maxWidth: '800px', margin: '0 auto' }}>
       <h1 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '2rem' }}>{t.history.title}</h1>
 
+      <ProGate hasAccess={hasAccess} featureName={t.history.title}>
       {sessions.length === 0 ? (
         <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
           <p style={{ fontSize: '1.125rem', color: 'var(--text-secondary)' }}>
@@ -219,6 +229,7 @@ function HistoryPage() {
           </div>
         </div>
       )}
+      </ProGate>
     </div>
   );
 }

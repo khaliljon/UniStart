@@ -5,6 +5,8 @@ import type { RootState } from '../store';
 import type { TopicProgress, Question, AnswerResult, TopicLesson } from '../types';
 import { testService } from '../services/testService';
 import { lessonService } from '../services/lessonService';
+import { subscriptionService } from '../services/subscriptionService';
+import { ProGate } from '../components/ProGate';
 import { TopicsSkeleton, QuestionSkeleton } from '../components/Skeleton';
 import { ContentRenderer } from '../components/MathRenderer';
 import { useTranslation } from '../hooks/useTranslation';
@@ -35,6 +37,13 @@ export default function TopicsPage() {
   // Lesson mode state
   const [lessons, setLessons] = useState<TopicLesson[]>([]);
   const [currentLessonIndex, setCurrentLessonIndex] = useState(0);
+  const [hasAccess, setHasAccess] = useState(true);
+
+  useEffect(() => {
+    subscriptionService.getStatus().then((s) => {
+      setHasAccess(s.isPro);
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (selectedExams.length === 0) {
@@ -460,6 +469,7 @@ export default function TopicsPage() {
             })()}
 
             {/* Topic cards */}
+            <ProGate hasAccess={hasAccess} featureName={t.topics.learning}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               {(activeSection ? activeSection.topics : sectionGroups.flatMap(s => s.topics)).map((topic, index) => (
                 <div
@@ -528,6 +538,7 @@ export default function TopicsPage() {
                 </div>
               ))}
             </div>
+            </ProGate>
           </div>
         ) : null}
 

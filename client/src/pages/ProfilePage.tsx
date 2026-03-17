@@ -58,6 +58,7 @@ function ProfilePage() {
   const isPro = user?.subscriptionTier === 'Pro';
 
   return (
+    <>
     <div className="animate-fade-in" style={{ maxWidth: '640px', margin: '0 auto', padding: '2rem 0' }}>
       <h1 style={{ marginBottom: '1.5rem' }}>{t.profilePage.title}</h1>
 
@@ -116,7 +117,6 @@ function ProfilePage() {
             {t.profilePage.upgradePro}
           </button>
         )}
-        <PricingModal isOpen={showPricing} onClose={() => setShowPricing(false)} />
       </div>
 
       {/* ─── Selected Exams ─── */}
@@ -192,6 +192,8 @@ function ProfilePage() {
         </div>
       )}
     </div>
+    <PricingModal isOpen={showPricing} onClose={() => setShowPricing(false)} />
+    </>
   );
 }
 

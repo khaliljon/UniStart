@@ -1,24 +1,11 @@
-import { useState, FormEvent, useEffect } from 'react';
+import { useState, FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useAppDispatch } from '../hooks/useAppDispatch';
 import { useAppSelector } from '../hooks/useAppSelector';
 import { useTranslation } from '../hooks/useTranslation';
-import { register, verifyEmail, googleLogin, clearError } from '../store/slices/authSlice';
+import { useGoogleSignIn } from '../hooks/useGoogleSignIn';
+import { register, verifyEmail, clearError } from '../store/slices/authSlice';
 import { authService } from '../services/authService';
-import api from '../services/api';
-
-declare global {
-  interface Window {
-    google?: {
-      accounts: {
-        id: {
-          initialize: (config: { client_id: string; callback: (response: { credential: string }) => void }) => void;
-          renderButton: (element: HTMLElement, config: { theme: string; size: string; width: number; text: string }) => void;
-        };
-      };
-    };
-  }
-}
 
 function RegisterPage() {
   const dispatch = useAppDispatch();
@@ -37,42 +24,7 @@ function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  useEffect(() => {
-    let script: HTMLScriptElement | null = null;
-    (async () => {
-      try {
-        const res = await api.get<{ clientId: string }>('/auth/google-client-id');
-        const clientId = res.data.clientId;
-        if (!clientId) return;
-
-        script = document.createElement('script');
-        script.src = 'https://accounts.google.com/gsi/client';
-        script.async = true;
-        script.defer = true;
-        script.onload = () => {
-          if (window.google) {
-            window.google.accounts.id.initialize({
-              client_id: clientId,
-              callback: (response) => {
-                dispatch(googleLogin({ idToken: response.credential }));
-              },
-            });
-            const btnEl = document.getElementById('google-register-btn');
-            if (btnEl) {
-              window.google.accounts.id.renderButton(btnEl, {
-                theme: 'outline',
-                size: 'large',
-                width: 360,
-                text: 'signup_with',
-              });
-            }
-          }
-        };
-        document.head.appendChild(script);
-      } catch { /* Google sign-in not configured */ }
-    })();
-    return () => { if (script) document.head.removeChild(script); };
-  }, [dispatch]);
+  useGoogleSignIn('google-register-btn', 'signup_with');
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();

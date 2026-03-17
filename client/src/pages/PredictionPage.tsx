@@ -177,7 +177,6 @@ function PredictionPage() {
       </div>
 
       {prediction && (
-        <ProGate hasAccess={hasPredictionAccess} featureName={t.prediction.title}>
         <>
           {/* ─── Section Filter (for multi-section exams) ─── */}
           {prediction.sections.length > 1 && (
@@ -236,6 +235,9 @@ function PredictionPage() {
             return <ScoreCard prediction={displayPrediction} />;
           })()}
 
+          {/* ─── Pro-only: detailed breakdown ─── */}
+          <ProGate hasAccess={hasPredictionAccess} featureName={t.prediction.title}>
+          <>
           {/* ─── Section Breakdown ─── */}
           <div style={{ marginTop: '1rem' }}>
             <SectionsBarChart sections={prediction.sections} />
@@ -263,8 +265,9 @@ function PredictionPage() {
 
           {/* ─── History Chart ─── */}
           {history.length > 1 && <HistoryChart history={history} prediction={prediction} />}
+          </>
+          </ProGate>
         </>
-        </ProGate>
       )}
     </div>
   );
