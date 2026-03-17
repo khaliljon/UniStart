@@ -479,7 +479,15 @@ public class DatabaseSeeder
 
             // CSCA Topics — Physics placeholder
             new Topic { Name = "P1.1 Types of Forces", SkillId = skillPhys.Id, SectionId = cscaPhys.Id },
-            new Topic { Name = "P1.2 Force Analysis", SkillId = skillPhys.Id, SectionId = cscaPhys.Id }
+            new Topic { Name = "P1.2 Force Analysis", SkillId = skillPhys.Id, SectionId = cscaPhys.Id },
+
+            // NUET / CSCA advanced math & critical thinking topics
+            new Topic { Name = "Calculus & Analysis", SkillId = skillMath.Id, SectionId = cscaMath.Id },
+            new Topic { Name = "Probability & Statistics", SkillId = skillMath.Id, SectionId = cscaMath.Id },
+            new Topic { Name = "Discrete Mathematics", SkillId = skillMath.Id, SectionId = cscaMath.Id },
+            new Topic { Name = "Formal Logic", SkillId = skillCrit.Id, SectionId = nuetCritical.Id },
+            new Topic { Name = "Algorithmic Thinking", SkillId = skillCrit.Id, SectionId = nuetCritical.Id },
+            new Topic { Name = "Data Interpretation", SkillId = skillCrit.Id, SectionId = nuetCritical.Id }
         };
 
         await _context.Topics.AddRangeAsync(topics);
