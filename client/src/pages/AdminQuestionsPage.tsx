@@ -17,7 +17,7 @@ const DIFF_COLORS: Record<string, string> = {
   Hard: 'var(--error-color)',
 };
 
-type ViewMode = 'table' | 'topics';
+type ViewMode = 'table' | 'topics' | 'sections';
 type ModalMode = 'view' | 'edit' | 'create';
 
 const emptyForm = {
@@ -80,6 +80,18 @@ function AdminQuestionsPage() {
   const [showMathKeyboard, setShowMathKeyboard] = useState(false);
   const [mathTarget, setMathTarget] = useState<'text' | 'explanation' | number | null>(null);
 
+  // Inline topic rename
+  const [editingTopicId, setEditingTopicId] = useState<number | null>(null);
+  const [editingTopicName, setEditingTopicName] = useState('');
+
+  // Section view
+  const [sectionPage, setSectionPage] = useState(1);
+  const SECTIONS_PER_PAGE = 10;
+  const [sectionFilterExam, setSectionFilterExam] = useState('');
+
+  // Section selector in question edit/create
+  const [formSectionId, setFormSectionId] = useState<number>(0);
+
   // ─── Load ────────────────────
 
   const loadQuestions = useCallback(async () => {
@@ -129,6 +141,25 @@ function AdminQuestionsPage() {
   useEffect(() => {
     if (viewMode === 'topics') loadTopicViewQuestions();
   }, [viewMode, loadTopicViewQuestions]);
+
+  // ─── Inline Topic Rename ─────
+
+  const startTopicRename = (topicId: number, currentName: string) => {
+    setEditingTopicId(topicId);
+    setEditingTopicName(currentName);
+  };
+
+  const saveTopicRename = async () => {
+    if (!editingTopicId || !editingTopicName.trim()) return;
+    try {
+      await adminService.updateTopic(editingTopicId, { name: editingTopicName.trim() });
+      setEditingTopicId(null);
+      setSuccess(t.admin.questions.topicNameUpdated);
+      loadTopics();
+    } catch {
+      setError(t.admin.questions.topicNameUpdateError);
+    }
+  };
 
   // ─── Topic Actions ───────────
 
@@ -193,14 +224,18 @@ function AdminQuestionsPage() {
 
   // ─── Math keyboard ──────────
 
-  const MATH_SYMBOLS = [
-    ['±', '√', '∛', '∞', 'π', 'θ', 'α', 'β', 'γ', 'δ', 'λ', 'μ', 'σ', 'Σ', 'Δ', 'Ω'],
-    ['≤', '≥', '≠', '≈', '∈', '∉', '⊆', '⊇', '∪', '∩', '∅', '∀', '∃', '⇒', '⇔', '¬'],
-    ['×', '÷', '·', '°', '′', '″', '‰', '∂', '∫', '∮', '∑', '∏', '⌊', '⌋', '⌈', '⌉'],
-    ['¹', '²', '³', '⁴', '⁵', '⁻', '⁺', '⁰', '₀', '₁', '₂', '₃', '₄', 'ⁿ', 'ₙ', 'ₓ'],
-    ['½', '⅓', '¼', '⅕', '⅙', '⅛', '⅔', '¾', '⅖', '⅗', '⅘', '⅜', '⅝', '⅞', 'ℝ', 'ℤ'],
-    ['→', '←', '↑', '↓', '⃗', '∠', '⊥', '∥', '△', '□', '∘', '•', '…', 'ₘ', 'log', 'ln'],
-  ];
+  const MATH_SYMBOLS: Record<string, string[]> = {
+    '123': ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.', ',', '%', '='],
+    '+-×÷': ['+', '−', '×', '÷', '±', '·', '/', '^', '(', ')', '[', ']', '{', '}'],
+    'αβγ': ['α', 'β', 'γ', 'δ', 'θ', 'λ', 'μ', 'σ', 'π', 'ε', 'φ', 'ω', 'Σ', 'Δ', 'Ω', 'Φ'],
+    '∈∪⊆': ['∈', '∉', '⊆', '⊇', '⊂', '⊃', '∪', '∩', '∅', '∀', '∃', '∄', 'ℝ', 'ℤ', 'ℕ', 'ℚ'],
+    '∫∂√': ['∫', '∮', '∂', '∑', '∏', '√', '∛', '∞', 'lim', 'log', 'ln', '∇', '°', '′', '″', '‰'],
+    '≤≥≠': ['<', '>', '≤', '≥', '≠', '≈', '≡', '≪', '≫', '⇒', '⇔', '¬', '∧', '∨', '→', '←'],
+    'x²ₙ': ['¹', '²', '³', '⁴', '⁵', '⁻', '⁺', 'ⁿ', '⁰', '₀', '₁', '₂', '₃', '₄', 'ₙ', 'ₓ'],
+    '½¾': ['½', '⅓', '¼', '⅕', '⅙', '⅛', '⅔', '¾', '⅖', '⅗', '⅘', '⅜', '⅝', '⅞'],
+    '△∠⊥': ['∠', '⊥', '∥', '△', '□', '○', '⃗', '→', '↑', '↓', '↔', '⌊', '⌋', '⌈', '⌉', '∘'],
+  };
+  const [mathTab, setMathTab] = useState<string>('αβγ');
 
   const insertMathSymbol = (symbol: string) => {
     if (mathTarget === 'text') {
@@ -234,6 +269,10 @@ function AdminQuestionsPage() {
       explanation: selected.explanation || '',
       answerOptions: selected.answerOptions.map(o => ({ text: o.text, isCorrect: o.isCorrect })),
     });
+    // Find section for the selected topic
+    const tp = topics.find(t => t.id === selected.topicId);
+    const sec = tp ? sections.find(s => s.name === tp.sectionName && s.examTypeCode === tp.examTypeCode) : null;
+    setFormSectionId(sec?.id || 0);
     setModalMode('edit');
     setSuccess(null);
   };
@@ -250,6 +289,7 @@ function AdminQuestionsPage() {
         { text: '', isCorrect: false },
       ],
     });
+    setFormSectionId(0);
     setModalMode('create');
     setSuccess(null);
     setError(null);
@@ -417,7 +457,13 @@ function AdminQuestionsPage() {
         <div>
           <h1 style={{ margin: 0 }}>{t.admin.questions.title}</h1>
           <p style={{ color: 'var(--text-secondary)', margin: '0.25rem 0 0' }}>
-            {totalCount} {t.admin.questions.questionsCount} • {topics.length} {t.admin.questions.topicsCount}{totalPages > 1 ? ` • ${t.admin.common.page} ${page}/${totalPages}` : ''}
+            {totalCount} {t.admin.questions.questionsCount} • {(() => {
+              const activeSec = filterSection || topicFilterSection;
+              const filteredTopicCount = activeSec
+                ? topics.filter(tp => tp.sectionName === activeSec).length
+                : topics.length;
+              return `${filteredTopicCount} ${t.admin.questions.topicsCount}`;
+            })()}{totalPages > 1 ? ` • ${t.admin.common.page} ${page}/${totalPages}` : ''}
           </p>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -468,6 +514,15 @@ function AdminQuestionsPage() {
               color: viewMode === 'topics' ? '#fff' : 'var(--text-secondary)',
             }}
           >{t.admin.questions.topicsView}</button>
+          <button
+            onClick={() => setViewMode('sections')}
+            style={{
+              padding: '0.4rem 0.75rem', border: 'none', cursor: 'pointer', fontSize: '0.85rem',
+              borderLeft: '1px solid var(--border-color)',
+              background: viewMode === 'sections' ? 'var(--primary-color)' : 'var(--card-background)',
+              color: viewMode === 'sections' ? '#fff' : 'var(--text-secondary)',
+            }}
+          >{t.admin.questions.sectionsView}</button>
         </div>
       </div>
 
@@ -486,7 +541,7 @@ function AdminQuestionsPage() {
             <option value="">{t.admin.common.allSections}</option>
             {sections
               .filter(s => !filterExam || s.examTypeCode === filterExam)
-              .map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
+              .map(s => <option key={s.id} value={s.name}>{s.name} [{s.examTypeCode}]</option>)}
           </select>
           <select value={filterDiff} onChange={e => { setFilterDiff(e.target.value); setPage(1); }} style={{ padding: '0.5rem' }}>
             <option value="">{t.admin.common.allLevels}</option>
@@ -519,7 +574,7 @@ function AdminQuestionsPage() {
             <option value="">{t.admin.common.allSections}</option>
             {sections
               .filter(s => !topicFilterExam || s.examTypeCode === topicFilterExam)
-              .map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
+              .map(s => <option key={s.id} value={s.name}>{s.name} [{s.examTypeCode}]</option>)}
           </select>
           <input
             placeholder={t.admin.questions.searchTopic}
@@ -628,7 +683,26 @@ function AdminQuestionsPage() {
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                           <Badge bg={EXAM_COLORS[tp.examTypeCode]}>{tp.examTypeCode}</Badge>
                           <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{tp.sectionName} →</span>
-                          <span style={{ fontWeight: 600, fontSize: '1rem' }}>{tp.name}</span>
+                          {editingTopicId === tp.id ? (
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                              <input
+                                className="form-input"
+                                value={editingTopicName}
+                                onChange={e => setEditingTopicName(e.target.value)}
+                                onKeyDown={e => { if (e.key === 'Enter') saveTopicRename(); if (e.key === 'Escape') setEditingTopicId(null); }}
+                                autoFocus
+                                style={{ padding: '0.2rem 0.4rem', fontSize: '0.95rem', fontWeight: 600, width: '200px' }}
+                              />
+                              <button className="btn btn-primary" onClick={saveTopicRename} style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem' }}>✓</button>
+                              <button className="btn btn-outline" onClick={() => setEditingTopicId(null)} style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem' }}>✕</button>
+                            </span>
+                          ) : (
+                            <span
+                              style={{ fontWeight: 600, fontSize: '1rem', cursor: 'pointer', borderBottom: '1px dashed var(--text-secondary)' }}
+                              onClick={() => startTopicRename(tp.id, tp.name)}
+                              title={t.admin.questions.clickToEditTopic}
+                            >{tp.name}</span>
+                          )}
                           <span style={{ color: tp.questionCount > 0 ? 'var(--text-secondary)' : 'var(--error-color)', fontSize: '0.8rem' }}>
                             ({tp.questionCount} {tp.questionCount === 0 ? t.admin.questions.noQuestions : t.admin.questions.questionsShort})
                           </span>
@@ -685,6 +759,128 @@ function AdminQuestionsPage() {
             );
           })()}
         </div>
+      )}
+
+      {/* ─── SECTIONS VIEW ─── */}
+      {viewMode === 'sections' && (
+        <>
+          <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', flexWrap: 'wrap', alignItems: 'center' }}>
+            <select value={sectionFilterExam} onChange={e => { setSectionFilterExam(e.target.value); setSectionPage(1); }} style={{ padding: '0.5rem' }}>
+              <option value="">{t.admin.common.allExams}</option>
+              <option value="SAT">SAT</option>
+              <option value="TOEFL">TOEFL</option>
+              <option value="NUET">NUET</option>
+              <option value="IELTS">IELTS</option>
+              <option value="CSCA">CSCA</option>
+            </select>
+          </div>
+          {(() => {
+            const filteredSections = sectionFilterExam
+              ? sections.filter(s => s.examTypeCode === sectionFilterExam)
+              : sections;
+            const sectionTotalPages = Math.ceil(filteredSections.length / SECTIONS_PER_PAGE);
+            const slicedSections = filteredSections.slice(
+              (sectionPage - 1) * SECTIONS_PER_PAGE,
+              sectionPage * SECTIONS_PER_PAGE
+            );
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {filteredSections.length > 0 && (
+                  <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                    {t.admin.questions.showingSections} {slicedSections.length} {t.admin.common.of} {filteredSections.length} {t.admin.questions.sectionsCount}
+                  </div>
+                )}
+                {slicedSections.length === 0 && (
+                  <div style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--text-secondary)' }}>
+                    {t.admin.questions.noSectionsFilter}
+                  </div>
+                )}
+                {slicedSections.map(s => {
+                  const sectionTopics = topics.filter(tp => tp.sectionName === s.name && tp.examTypeCode === s.examTypeCode);
+                  const totalQ = sectionTopics.reduce((sum, tp) => sum + tp.questionCount, 0);
+                  return (
+                    <div key={s.id} className="card" style={{ padding: '1rem 1.25rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: sectionTopics.length > 0 ? '0.75rem' : 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                          <Badge bg={EXAM_COLORS[s.examTypeCode]}>{s.examTypeCode}</Badge>
+                          {editingSectionId === s.id && showSectionModal ? (
+                            <span style={{ fontWeight: 600, fontSize: '1.05rem' }}>{s.name}</span>
+                          ) : (
+                            <span
+                              style={{ fontWeight: 600, fontSize: '1.05rem', cursor: 'pointer', borderBottom: '1px dashed var(--text-secondary)' }}
+                              onClick={() => openSectionModal(s)}
+                              title={t.admin.questions.editSection}
+                            >{s.name}</span>
+                          )}
+                          <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
+                            ({sectionTopics.length} {t.admin.questions.topicsCount} • {totalQ} {t.admin.questions.questionsShort})
+                          </span>
+                        </div>
+                        <button
+                          className="btn btn-outline"
+                          style={{ fontSize: '0.8rem', padding: '0.3rem 0.7rem' }}
+                          onClick={() => openSectionModal(s)}
+                        >
+                          {t.admin.common.edit}
+                        </button>
+                      </div>
+                      {sectionTopics.length > 0 && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                          {sectionTopics.map(tp => (
+                            <div key={tp.id} style={{
+                              display: 'flex', alignItems: 'center', gap: '0.6rem',
+                              padding: '0.4rem 0.6rem', borderRadius: '6px',
+                              border: '1px solid var(--border-color)', fontSize: '0.85rem',
+                            }}>
+                              {editingTopicId === tp.id ? (
+                                <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', flex: 1 }}>
+                                  <input
+                                    className="form-input"
+                                    value={editingTopicName}
+                                    onChange={e => setEditingTopicName(e.target.value)}
+                                    onKeyDown={e => { if (e.key === 'Enter') saveTopicRename(); if (e.key === 'Escape') setEditingTopicId(null); }}
+                                    autoFocus
+                                    style={{ padding: '0.15rem 0.4rem', fontSize: '0.85rem', flex: 1 }}
+                                  />
+                                  <button className="btn btn-primary" onClick={saveTopicRename} style={{ padding: '0.15rem 0.4rem', fontSize: '0.7rem' }}>✓</button>
+                                  <button className="btn btn-outline" onClick={() => setEditingTopicId(null)} style={{ padding: '0.15rem 0.4rem', fontSize: '0.7rem' }}>✕</button>
+                                </span>
+                              ) : (
+                                <span
+                                  style={{ flex: 1, cursor: 'pointer', borderBottom: '1px dashed transparent' }}
+                                  onClick={() => startTopicRename(tp.id, tp.name)}
+                                  onMouseEnter={e => (e.currentTarget.style.borderBottomColor = 'var(--text-secondary)')}
+                                  onMouseLeave={e => (e.currentTarget.style.borderBottomColor = 'transparent')}
+                                  title={t.admin.questions.clickToEditTopic}
+                                >
+                                  {tp.name}
+                                </span>
+                              )}
+                              <span style={{ color: tp.questionCount > 0 ? 'var(--text-secondary)' : 'var(--error-color)', fontSize: '0.8rem', flexShrink: 0 }}>
+                                {tp.questionCount} {t.admin.questions.questionsShort}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+                {sectionTotalPages > 1 && (
+                  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', padding: '1rem 0' }}>
+                    <button className="btn btn-outline" disabled={sectionPage <= 1} onClick={() => setSectionPage(1)} style={{ fontSize: '0.85rem' }}>«</button>
+                    <button className="btn btn-outline" disabled={sectionPage <= 1} onClick={() => setSectionPage(p => p - 1)} style={{ fontSize: '0.85rem' }}>‹</button>
+                    <span style={{ padding: '0 0.75rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                      {sectionPage} / {sectionTotalPages}
+                    </span>
+                    <button className="btn btn-outline" disabled={sectionPage >= sectionTotalPages} onClick={() => setSectionPage(p => p + 1)} style={{ fontSize: '0.85rem' }}>›</button>
+                    <button className="btn btn-outline" disabled={sectionPage >= sectionTotalPages} onClick={() => setSectionPage(sectionTotalPages)} style={{ fontSize: '0.85rem' }}>»</button>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+        </>
       )}
 
       {/* ═══ MODAL: View / Edit / Create ═══ */}
@@ -782,8 +978,26 @@ function AdminQuestionsPage() {
                 )}
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  {/* Section selector (for create AND edit) */}
+                  {(modalMode === 'create' || modalMode === 'edit') && (
+                    <FormField label={t.admin.questions.selectSectionForQuestion}>
+                      <select
+                        value={formSectionId}
+                        onChange={e => { setFormSectionId(Number(e.target.value)); setForm({ ...form, topicId: 0 }); }}
+                        style={{ width: '100%' }}
+                      >
+                        <option value={0}>{t.admin.questions.selectSectionForQuestion}...</option>
+                        {sections.map(s => (
+                          <option key={s.id} value={s.id}>
+                            {s.name} [{s.examTypeCode}]
+                          </option>
+                        ))}
+                      </select>
+                    </FormField>
+                  )}
+
                   {/* Topic selector (for create AND edit) */}
-                {(modalMode === 'create' || modalMode === 'edit') && (
+                  {(modalMode === 'create' || modalMode === 'edit') && (
                     <FormField label={t.admin.questions.selectTopic}>
                       <select
                         value={form.topicId}
@@ -791,7 +1005,10 @@ function AdminQuestionsPage() {
                         style={{ width: '100%' }}
                       >
                         <option value={0}>{t.admin.questions.selectTopic}...</option>
-                        {topics.map(tp => (
+                        {(formSectionId
+                          ? topics.filter(tp => { const sec = sections.find(s => s.id === formSectionId); return sec && tp.sectionName === sec.name && tp.examTypeCode === sec.examTypeCode; })
+                          : topics
+                        ).map(tp => (
                           <option key={tp.id} value={tp.id}>
                             [{tp.examTypeCode}] {tp.sectionName} → {tp.name} ({tp.questionCount} {t.admin.questions.questionsShort})
                           </option>
@@ -825,14 +1042,17 @@ function AdminQuestionsPage() {
                     </button>
                   </div>
 
-                  {/* Math keyboard panel */}
+                  {/* Math keyboard panel — Photomath style */}
                   {showMathKeyboard && (
                     <div style={{
-                      padding: '0.75rem', borderRadius: '8px',
+                      borderRadius: '12px',
                       border: '1px solid var(--border-color)',
                       background: 'var(--bg-secondary)',
+                      overflow: 'hidden',
+                      boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
                     }}>
-                      <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
+                      {/* Target selector — pill buttons */}
+                      <div style={{ display: 'flex', gap: '0.35rem', padding: '0.6rem 0.75rem', flexWrap: 'wrap', borderBottom: '1px solid var(--border-color)' }}>
                         {[
                           { key: 'text', label: t.admin.questions.questionText },
                           { key: 'explanation', label: t.admin.questions.explanation },
@@ -843,37 +1063,69 @@ function AdminQuestionsPage() {
                             type="button"
                             onClick={() => setMathTarget(target.key === 'text' ? 'text' : target.key === 'explanation' ? 'explanation' : Number(target.key))}
                             style={{
-                              padding: '0.2rem 0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)',
+                              padding: '0.25rem 0.65rem', borderRadius: '999px', border: 'none',
                               background: (mathTarget === target.key || mathTarget === Number(target.key)) ? 'var(--primary-color)' : 'var(--card-background)',
                               color: (mathTarget === target.key || mathTarget === Number(target.key)) ? '#fff' : 'var(--text-secondary)',
                               cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600,
+                              boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
                             }}
                           >
                             {target.label}
                           </button>
                         ))}
                       </div>
-                      {MATH_SYMBOLS.map((row, ri) => (
-                        <div key={ri} style={{ display: 'flex', gap: '2px', marginBottom: '2px', flexWrap: 'wrap' }}>
-                          {row.map(sym => (
-                            <button
-                              key={sym}
-                              type="button"
-                              onClick={() => insertMathSymbol(sym)}
-                              style={{
-                                width: '32px', height: '32px', border: '1px solid var(--border-color)',
-                                borderRadius: '4px', background: 'var(--card-background)',
-                                color: 'var(--text-primary)', cursor: 'pointer',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                fontSize: sym.length > 2 ? '0.65rem' : '0.9rem', fontWeight: 500,
-                              }}
-                              title={sym}
-                            >
-                              {sym}
-                            </button>
-                          ))}
-                        </div>
-                      ))}
+                      {/* Category tabs */}
+                      <div style={{
+                        display: 'flex', gap: 0, overflowX: 'auto',
+                        borderBottom: '1px solid var(--border-color)', background: 'var(--card-background)',
+                      }}>
+                        {Object.keys(MATH_SYMBOLS).map(tab => (
+                          <button
+                            key={tab}
+                            type="button"
+                            onClick={() => setMathTab(tab)}
+                            style={{
+                              flex: '1 0 auto', padding: '0.45rem 0.7rem', border: 'none',
+                              borderBottom: mathTab === tab ? '2px solid var(--primary-color)' : '2px solid transparent',
+                              background: 'transparent',
+                              color: mathTab === tab ? 'var(--primary-color)' : 'var(--text-secondary)',
+                              cursor: 'pointer', fontSize: '0.85rem', fontWeight: mathTab === tab ? 700 : 500,
+                              whiteSpace: 'nowrap', transition: 'all 0.15s',
+                            }}
+                          >
+                            {tab}
+                          </button>
+                        ))}
+                      </div>
+                      {/* Symbol grid */}
+                      <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fill, minmax(38px, 1fr))',
+                        gap: '4px', padding: '0.6rem',
+                      }}>
+                        {MATH_SYMBOLS[mathTab]?.map(sym => (
+                          <button
+                            key={sym}
+                            type="button"
+                            onClick={() => insertMathSymbol(sym)}
+                            style={{
+                              height: '38px', border: 'none',
+                              borderRadius: '8px', background: 'var(--card-background)',
+                              color: 'var(--text-primary)', cursor: 'pointer',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              fontSize: sym.length > 2 ? '0.65rem' : '1rem', fontWeight: 500,
+                              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+                              transition: 'transform 0.1s, box-shadow 0.1s',
+                            }}
+                            onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.92)'; }}
+                            onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)'; }}
+                            onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
+                            title={sym}
+                          >
+                            {sym}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   )}
 

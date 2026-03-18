@@ -577,6 +577,8 @@ export interface Translations {
       selectExamType: string; sectionCreated: string; sectionCreateError: string;
       editSection: string; sectionUpdated: string; sectionUpdateError: string;
       mathKeyboard: string;
+      sectionsView: string; sectionsCount: string; noSectionsFilter: string;
+      showingSections: string; clickToEditTopic: string; selectSectionForQuestion: string;
     };
     content: {
       title: string; subtitle: string;
