@@ -130,9 +130,9 @@ function AdminLayout() {
             >
               {theme === 'light' ? '◑' : '○'}
             </button>
-            <span style={{ color: 'var(--text-secondary)' }}>
+            <NavLink to="/profile" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>
               {user?.name}
-            </span>
+            </NavLink>
             <button onClick={handleLogout} className="btn btn-outline">
               {t.nav.logout}
             </button>

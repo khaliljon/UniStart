@@ -30,8 +30,13 @@ public interface IAdminService
 
     // Topics
     Task<AdminTopicSummaryDto> CreateTopicAsync(CreateTopicDto dto);
+    Task<AdminTopicSummaryDto?> UpdateTopicAsync(int id, UpdateTopicDto dto);
     Task<List<AdminSectionDto>> GetSectionsAsync();
     Task<List<AdminSkillDto>> GetSkillsAsync();
+
+    // Sections
+    Task<AdminSectionDto> CreateSectionAsync(CreateSectionDto dto);
+    Task<AdminSectionDto?> UpdateSectionAsync(int id, UpdateSectionDto dto);
 
     // Soft Delete restore (OP-9)
     Task<bool> RestoreQuestionAsync(int id);

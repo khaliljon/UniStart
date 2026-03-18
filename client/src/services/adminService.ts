@@ -30,6 +30,7 @@ const adminService = {
   }) => api.post<QuestionDetail>('/admin/questions', data).then(r => r.data),
 
   updateQuestion: (id: number, data: {
+    topicId?: number;
     text?: string;
     difficulty?: string;
     explanation?: string;
@@ -92,8 +93,17 @@ const adminService = {
   createTopic: (data: { name: string; sectionId: number; skillId: number }) =>
     api.post<AdminTopicSummary>('/admin/topics', data).then(r => r.data),
 
+  updateTopic: (id: number, data: { name?: string }) =>
+    api.put<AdminTopicSummary>(`/admin/topics/${id}`, data).then(r => r.data),
+
   getSections: () =>
     api.get<AdminSection[]>('/admin/sections').then(r => r.data),
+
+  createSection: (data: { name: string; examTypeCode: string }) =>
+    api.post<AdminSection>('/admin/sections', data).then(r => r.data),
+
+  updateSection: (id: number, data: { name?: string }) =>
+    api.put<AdminSection>(`/admin/sections/${id}`, data).then(r => r.data),
 
   getSkills: () =>
     api.get<AdminSkill[]>('/admin/skills').then(r => r.data),

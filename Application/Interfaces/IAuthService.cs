@@ -12,4 +12,6 @@ public interface IAuthService
     Task<AuthResponseDto> GoogleLoginAsync(GoogleLoginDto dto);
     Task<UserDto?> GetUserByIdAsync(int userId);
     Task<UserDto?> UpdateUserAsync(int userId, UpdateUserDto dto);
+    Task ChangePasswordAsync(int userId, ChangePasswordDto dto);
+    Task ChangeEmailAsync(int userId, ChangeEmailDto dto);
 }

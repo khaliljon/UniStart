@@ -514,6 +514,17 @@ export interface Translations {
     validUntil: string;
     selectAtLeastOne: string;
     sectionPreferences: string;
+    currentPassword: string;
+    newPassword: string;
+    confirmNewPassword: string;
+    passwordChanged: string;
+    passwordChangeError: string;
+    passwordsDoNotMatch: string;
+    newEmail: string;
+    emailChanged: string;
+    emailChangeError: string;
+    enterPassword: string;
+    security: string;
   };
 
   // ─── Admin ───
@@ -561,6 +572,11 @@ export interface Translations {
       questionDeleteError: string;
       minTwoOptions: string; markCorrectOption: string;
       loadingTopics: string; answers: string;
+      editTopicName: string; topicNameUpdated: string; topicNameUpdateError: string;
+      newSection: string; sectionName: string; enterSectionName: string;
+      selectExamType: string; sectionCreated: string; sectionCreateError: string;
+      editSection: string; sectionUpdated: string; sectionUpdateError: string;
+      mathKeyboard: string;
     };
     content: {
       title: string; subtitle: string;

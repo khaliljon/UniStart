@@ -71,6 +71,15 @@ function AdminQuestionsPage() {
   const [skills, setSkills] = useState<AdminSkill[]>([]);
   const [topicForm, setTopicForm] = useState({ name: '', sectionId: 0, skillId: 0 });
 
+  // Section management
+  const [showSectionModal, setShowSectionModal] = useState(false);
+  const [sectionForm, setSectionForm] = useState({ name: '', examTypeCode: '' });
+  const [editingSectionId, setEditingSectionId] = useState<number | null>(null);
+
+  // Math keyboard
+  const [showMathKeyboard, setShowMathKeyboard] = useState(false);
+  const [mathTarget, setMathTarget] = useState<'text' | 'explanation' | number | null>(null);
+
   // ─── Load ────────────────────
 
   const loadQuestions = useCallback(async () => {
@@ -146,6 +155,63 @@ function AdminQuestionsPage() {
     }
   };
 
+  // ─── Section Actions ─────────
+
+  const openSectionModal = (section?: AdminSection) => {
+    if (section) {
+      setEditingSectionId(section.id);
+      setSectionForm({ name: section.name, examTypeCode: section.examTypeCode });
+    } else {
+      setEditingSectionId(null);
+      setSectionForm({ name: '', examTypeCode: '' });
+    }
+    setError(null);
+    setShowSectionModal(true);
+  };
+
+  const saveSection = async () => {
+    if (!sectionForm.name.trim()) { setError(t.admin.questions.enterSectionName); return; }
+    try {
+      setError(null);
+      if (editingSectionId) {
+        await adminService.updateSection(editingSectionId, { name: sectionForm.name });
+        setSuccess(t.admin.questions.sectionUpdated);
+      } else {
+        if (!sectionForm.examTypeCode) { setError(t.admin.questions.selectExamType); return; }
+        await adminService.createSection(sectionForm);
+        setSuccess(t.admin.questions.sectionCreated);
+      }
+      setShowSectionModal(false);
+      loadSectionsAndSkills();
+      loadTopics();
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
+        || (editingSectionId ? t.admin.questions.sectionUpdateError : t.admin.questions.sectionCreateError);
+      setError(msg);
+    }
+  };
+
+  // ─── Math keyboard ──────────
+
+  const MATH_SYMBOLS = [
+    ['±', '√', '∛', '∞', 'π', 'θ', 'α', 'β', 'γ', 'δ', 'λ', 'μ', 'σ', 'Σ', 'Δ', 'Ω'],
+    ['≤', '≥', '≠', '≈', '∈', '∉', '⊆', '⊇', '∪', '∩', '∅', '∀', '∃', '⇒', '⇔', '¬'],
+    ['×', '÷', '·', '°', '′', '″', '‰', '∂', '∫', '∮', '∑', '∏', '⌊', '⌋', '⌈', '⌉'],
+    ['¹', '²', '³', '⁴', '⁵', '⁻', '⁺', '⁰', '₀', '₁', '₂', '₃', '₄', 'ⁿ', 'ₙ', 'ₓ'],
+    ['½', '⅓', '¼', '⅕', '⅙', '⅛', '⅔', '¾', '⅖', '⅗', '⅘', '⅜', '⅝', '⅞', 'ℝ', 'ℤ'],
+    ['→', '←', '↑', '↓', '⃗', '∠', '⊥', '∥', '△', '□', '∘', '•', '…', 'ₘ', 'log', 'ln'],
+  ];
+
+  const insertMathSymbol = (symbol: string) => {
+    if (mathTarget === 'text') {
+      setForm(prev => ({ ...prev, text: prev.text + symbol }));
+    } else if (mathTarget === 'explanation') {
+      setForm(prev => ({ ...prev, explanation: prev.explanation + symbol }));
+    } else if (typeof mathTarget === 'number') {
+      updateOption(mathTarget, 'text', form.answerOptions[mathTarget].text + symbol);
+    }
+  };
+
   // ─── Actions ─────────────────
 
   const openDetail = async (id: number) => {
@@ -194,6 +260,7 @@ function AdminQuestionsPage() {
     try {
       setError(null);
       const updated = await adminService.updateQuestion(selected.id, {
+        topicId: form.topicId !== selected.topicId ? form.topicId : undefined,
         text: form.text,
         difficulty: form.difficulty,
         explanation: form.explanation || undefined,
@@ -359,6 +426,9 @@ function AdminQuestionsPage() {
           </button>
           <button className="btn btn-outline" onClick={openTopicModal} style={{ fontSize: '0.9rem' }}>
             {t.admin.questions.newTopic}
+          </button>
+          <button className="btn btn-outline" onClick={() => openSectionModal()} style={{ fontSize: '0.9rem' }}>
+            {t.admin.questions.newSection}
           </button>
           <button className="btn btn-outline" onClick={() => adminService.exportQuestionsCsv(filterExam || undefined, filterDiff || undefined)} style={{ fontSize: '0.9rem' }}>
             CSV
@@ -712,8 +782,8 @@ function AdminQuestionsPage() {
                 )}
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  {/* Topic selector (only for create) */}
-                  {modalMode === 'create' && (
+                  {/* Topic selector (for create AND edit) */}
+                {(modalMode === 'create' || modalMode === 'edit') && (
                     <FormField label={t.admin.questions.selectTopic}>
                       <select
                         value={form.topicId}
@@ -735,12 +805,77 @@ function AdminQuestionsPage() {
                     <textarea
                       value={form.text}
                       onChange={e => setForm({ ...form, text: e.target.value })}
+                      onFocus={() => setMathTarget('text')}
                       className="form-input"
                       rows={3}
                       style={{ width: '100%', resize: 'vertical' }}
                       placeholder={t.admin.questions.enterQuestion}
                     />
                   </FormField>
+
+                  {/* Math keyboard toggle */}
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    <button
+                      type="button"
+                      className="btn btn-outline"
+                      onClick={() => setShowMathKeyboard(!showMathKeyboard)}
+                      style={{ fontSize: '0.8rem', padding: '0.3rem 0.7rem' }}
+                    >
+                      {showMathKeyboard ? '✕' : '∑'} {t.admin.questions.mathKeyboard}
+                    </button>
+                  </div>
+
+                  {/* Math keyboard panel */}
+                  {showMathKeyboard && (
+                    <div style={{
+                      padding: '0.75rem', borderRadius: '8px',
+                      border: '1px solid var(--border-color)',
+                      background: 'var(--bg-secondary)',
+                    }}>
+                      <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
+                        {[
+                          { key: 'text', label: t.admin.questions.questionText },
+                          { key: 'explanation', label: t.admin.questions.explanation },
+                          ...form.answerOptions.map((_, i) => ({ key: String(i), label: String.fromCharCode(65 + i) })),
+                        ].map(target => (
+                          <button
+                            key={target.key}
+                            type="button"
+                            onClick={() => setMathTarget(target.key === 'text' ? 'text' : target.key === 'explanation' ? 'explanation' : Number(target.key))}
+                            style={{
+                              padding: '0.2rem 0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)',
+                              background: (mathTarget === target.key || mathTarget === Number(target.key)) ? 'var(--primary-color)' : 'var(--card-background)',
+                              color: (mathTarget === target.key || mathTarget === Number(target.key)) ? '#fff' : 'var(--text-secondary)',
+                              cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600,
+                            }}
+                          >
+                            {target.label}
+                          </button>
+                        ))}
+                      </div>
+                      {MATH_SYMBOLS.map((row, ri) => (
+                        <div key={ri} style={{ display: 'flex', gap: '2px', marginBottom: '2px', flexWrap: 'wrap' }}>
+                          {row.map(sym => (
+                            <button
+                              key={sym}
+                              type="button"
+                              onClick={() => insertMathSymbol(sym)}
+                              style={{
+                                width: '32px', height: '32px', border: '1px solid var(--border-color)',
+                                borderRadius: '4px', background: 'var(--card-background)',
+                                color: 'var(--text-primary)', cursor: 'pointer',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                fontSize: sym.length > 2 ? '0.65rem' : '0.9rem', fontWeight: 500,
+                              }}
+                              title={sym}
+                            >
+                              {sym}
+                            </button>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                  )}
 
                   {/* Difficulty */}
                   <FormField label={t.admin.questions.difficulty}>
@@ -915,6 +1050,106 @@ function AdminQuestionsPage() {
                   {t.admin.questions.createTopic}
                 </button>
                 <button className="btn btn-outline" onClick={() => setShowTopicModal(false)} style={{ flex: 1 }}>
+                  {t.admin.common.cancel}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ═══ SECTION CREATION/EDIT MODAL ═══ */}
+      {showSectionModal && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 1001, padding: '1rem',
+          }}
+          onClick={() => setShowSectionModal(false)}
+        >
+          <div
+            className="card"
+            style={{ maxWidth: '500px', width: '100%', padding: '2rem' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+              <h2 style={{ margin: 0, fontSize: '1.15rem' }}>
+                {editingSectionId ? t.admin.questions.editSection : t.admin.questions.newSection}
+              </h2>
+              <button onClick={() => setShowSectionModal(false)} style={closeBtn}>✕</button>
+            </div>
+
+            {error && (
+              <div style={{ color: 'var(--error-color)', marginBottom: '1rem', padding: '0.5rem 0.75rem', background: 'var(--error-bg)', borderRadius: '6px', fontSize: '0.85rem' }}>
+                {error}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <FormField label={t.admin.questions.sectionName}>
+                <input
+                  className="form-input"
+                  value={sectionForm.name}
+                  onChange={e => setSectionForm({ ...sectionForm, name: e.target.value })}
+                  placeholder={t.admin.questions.enterSectionName}
+                  style={{ width: '100%' }}
+                  autoFocus
+                />
+              </FormField>
+
+              {!editingSectionId && (
+                <FormField label={t.admin.questions.selectExamType}>
+                  <select
+                    value={sectionForm.examTypeCode}
+                    onChange={e => setSectionForm({ ...sectionForm, examTypeCode: e.target.value })}
+                    style={{ width: '100%' }}
+                  >
+                    <option value="">{t.admin.questions.selectExamType}...</option>
+                    <option value="SAT">SAT</option>
+                    <option value="TOEFL">TOEFL</option>
+                    <option value="NUET">NUET</option>
+                    <option value="IELTS">IELTS</option>
+                    <option value="CSCA">CSCA</option>
+                  </select>
+                </FormField>
+              )}
+
+              {/* Existing sections list for editing */}
+              {!editingSectionId && sections.length > 0 && (
+                <div style={{ marginTop: '0.5rem' }}>
+                  <label style={{ display: 'block', marginBottom: '0.35rem', fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                    {t.admin.questions.editSection}
+                  </label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', maxHeight: '200px', overflow: 'auto' }}>
+                    {sections.map(s => (
+                      <div key={s.id} style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        padding: '0.4rem 0.6rem', borderRadius: '6px',
+                        border: '1px solid var(--border-color)', fontSize: '0.85rem',
+                      }}>
+                        <span><Badge bg={EXAM_COLORS[s.examTypeCode]}>{s.examTypeCode}</Badge> {s.name}</span>
+                        <button
+                          type="button"
+                          className="btn btn-outline"
+                          style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem' }}
+                          onClick={() => {
+                            setShowSectionModal(false);
+                            setTimeout(() => openSectionModal(s), 100);
+                          }}
+                        >
+                          {t.admin.common.edit}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
+                <button className="btn btn-primary" onClick={saveSection} style={{ flex: 1 }}>
+                  {editingSectionId ? t.admin.common.save : t.admin.common.create}
+                </button>
+                <button className="btn btn-outline" onClick={() => setShowSectionModal(false)} style={{ flex: 1 }}>
                   {t.admin.common.cancel}
                 </button>
               </div>

@@ -335,4 +335,34 @@ public class AuthService : IAuthService
             user.LastSeenAt
         );
     }
+
+    public async Task ChangePasswordAsync(int userId, ChangePasswordDto dto)
+    {
+        var user = await _context.Users.FindAsync(userId)
+            ?? throw new KeyNotFoundException("User not found");
+
+        if (!BC.Verify(dto.CurrentPassword, user.PasswordHash))
+            throw new UnauthorizedAccessException("Current password is incorrect");
+
+        user.PasswordHash = BC.HashPassword(dto.NewPassword);
+        user.UpdatedAt = DateTime.UtcNow;
+        await _unitOfWork.SaveChangesAsync();
+    }
+
+    public async Task ChangeEmailAsync(int userId, ChangeEmailDto dto)
+    {
+        var user = await _context.Users.FindAsync(userId)
+            ?? throw new KeyNotFoundException("User not found");
+
+        if (!BC.Verify(dto.Password, user.PasswordHash))
+            throw new UnauthorizedAccessException("Password is incorrect");
+
+        var emailExists = await _context.Users.AnyAsync(u => u.Email == dto.NewEmail && u.Id != userId);
+        if (emailExists)
+            throw new InvalidOperationException("Email is already taken");
+
+        user.Email = dto.NewEmail;
+        user.UpdatedAt = DateTime.UtcNow;
+        await _unitOfWork.SaveChangesAsync();
+    }
 }

@@ -42,4 +42,12 @@ export const authService = {
   isAuthenticated(): boolean {
     return !!this.getToken();
   },
+
+  async changePassword(data: { currentPassword: string; newPassword: string }): Promise<void> {
+    await api.post('/auth/change-password', data);
+  },
+
+  async changeEmail(data: { newEmail: string; password: string }): Promise<void> {
+    await api.post('/auth/change-email', data);
+  },
 };

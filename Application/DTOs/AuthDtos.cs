@@ -40,6 +40,16 @@ public record GoogleLoginDto(
     [Required] string IdToken
 );
 
+public record ChangePasswordDto(
+    [Required] string CurrentPassword,
+    [Required][MinLength(6)] string NewPassword
+);
+
+public record ChangeEmailDto(
+    [Required][EmailAddress] string NewEmail,
+    [Required] string Password
+);
+
 // User DTOs
 public record UserDto(
     int Id,

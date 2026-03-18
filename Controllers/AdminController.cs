@@ -240,12 +240,71 @@ public class AdminController : ControllerBase
         }
     }
 
+    /// <summary>Update an existing topic name</summary>
+    [HttpPut("topics/{id:int}")]
+    public async Task<IActionResult> UpdateTopic(int id, [FromBody] UpdateTopicDto dto)
+    {
+        try
+        {
+            var result = await _svc.UpdateTopicAsync(id, dto);
+            if (result == null) return NotFound();
+            var (adminId, email) = GetCurrentAdmin();
+            await _audit.LogAsync(adminId, email, "Update", "Topic", id.ToString(),
+                newValues: new { result.Name },
+                ipAddress: GetClientIp());
+            return Ok(result);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
     /// <summary>List all exam sections (for dropdowns)</summary>
     [HttpGet("sections")]
     public async Task<IActionResult> GetSections()
     {
         var result = await _svc.GetSectionsAsync();
         return Ok(result);
+    }
+
+    /// <summary>Create a new exam section</summary>
+    [HttpPost("sections")]
+    public async Task<IActionResult> CreateSection([FromBody] CreateSectionDto dto)
+    {
+        try
+        {
+            var result = await _svc.CreateSectionAsync(dto);
+            var (adminId, email) = GetCurrentAdmin();
+            await _audit.LogAsync(adminId, email, "Create", "Section", result.Id.ToString(),
+                newValues: new { result.Name, result.ExamTypeCode },
+                ipAddress: GetClientIp());
+            return Created($"/api/admin/sections", result);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    /// <summary>Update an existing section name</summary>
+    [HttpPut("sections/{id:int}")]
+    public async Task<IActionResult> UpdateSection(int id, [FromBody] UpdateSectionDto dto)
+    {
+        try
+        {
+            var result = await _svc.UpdateSectionAsync(id, dto);
+            if (result == null) return NotFound();
+            var (adminId, email) = GetCurrentAdmin();
+            await _audit.LogAsync(adminId, email, "Update", "Section", id.ToString(),
+                newValues: new { result.Name },
+                ipAddress: GetClientIp());
+            return Ok(result);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     /// <summary>List all skills (for dropdowns)</summary>

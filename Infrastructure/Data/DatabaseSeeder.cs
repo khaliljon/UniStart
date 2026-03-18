@@ -143,6 +143,9 @@ public class DatabaseSeeder
         // Seed CSCA Mathematics EN questions (20 chapters, ~250 questions)
         await new CscaMathEnQuestionSeeder(_context).SeedAsync();
 
+        // Seed CSCA Mathematics EN expansion batch 2 (+200 questions)
+        await new CscaMathEnExpansion2Seeder(_context).SeedAsync();
+
         // Seed CSCA Physics EN questions (12 chapters, ~200 questions)
         await new CscaPhysicsEnQuestionSeeder(_context).SeedAsync();
 

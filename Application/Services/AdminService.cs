@@ -162,6 +162,13 @@ public class AdminService : IAdminService
 
         if (question == null) return null;
 
+        if (dto.TopicId.HasValue)
+        {
+            var topicExists = await _db.Topics.AnyAsync(t => t.Id == dto.TopicId.Value);
+            if (!topicExists) throw new ArgumentException($"Topic with ID {dto.TopicId.Value} not found");
+            question.TopicId = dto.TopicId.Value;
+        }
+
         if (dto.Text != null) question.Text = dto.Text;
         if (dto.Explanation != null) question.Explanation = dto.Explanation;
         if (dto.DifficultyParam.HasValue) question.DifficultyParam = dto.DifficultyParam.Value;
@@ -633,6 +640,35 @@ public class AdminService : IAdminService
         );
     }
 
+    public async Task<AdminTopicSummaryDto?> UpdateTopicAsync(int id, UpdateTopicDto dto)
+    {
+        var topic = await _db.Topics
+            .Include(t => t.Section!)
+            .Include(t => t.Questions)
+            .FirstOrDefaultAsync(t => t.Id == id);
+
+        if (topic == null) return null;
+
+        if (!string.IsNullOrWhiteSpace(dto.Name))
+        {
+            var exists = await _db.Topics.AnyAsync(t => t.Name == dto.Name && t.SectionId == topic.SectionId && t.Id != id);
+            if (exists)
+                throw new ArgumentException($"Topic '{dto.Name}' already exists in this section");
+            topic.Name = InputSanitizer.Sanitize(dto.Name)!;
+        }
+
+        topic.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+
+        return new AdminTopicSummaryDto(
+            Id: topic.Id,
+            Name: topic.Name,
+            SectionName: topic.Section?.Name ?? "",
+            ExamTypeCode: topic.Section?.ExamTypeCode ?? "",
+            QuestionCount: topic.Questions.Count
+        );
+    }
+
     // ═══════════════════════════════════════════════════════
     //  SECTIONS & SKILLS (for dropdowns)
     // ═══════════════════════════════════════════════════════
@@ -660,6 +696,50 @@ public class AdminService : IAdminService
                 .Select(s => new AdminSkillDto(s.Id, s.Code, s.Name))
                 .ToListAsync();
         }) ?? [];
+    }
+
+    public async Task<AdminSectionDto> CreateSectionAsync(CreateSectionDto dto)
+    {
+        if (string.IsNullOrWhiteSpace(dto.Name))
+            throw new ArgumentException("Section name cannot be empty");
+
+        var examType = await _db.ExamTypes.FindAsync(dto.ExamTypeCode)
+            ?? throw new ArgumentException($"Exam type '{dto.ExamTypeCode}' not found");
+
+        var exists = await _db.ExamSections.AnyAsync(s => s.Name == dto.Name && s.ExamTypeCode == dto.ExamTypeCode);
+        if (exists)
+            throw new ArgumentException($"Section '{dto.Name}' already exists for {dto.ExamTypeCode}");
+
+        var section = new ExamSection
+        {
+            Name = InputSanitizer.Sanitize(dto.Name)!,
+            ExamTypeCode = dto.ExamTypeCode
+        };
+
+        _db.ExamSections.Add(section);
+        await _db.SaveChangesAsync();
+        _cache.Remove("admin:sections");
+
+        return new AdminSectionDto(section.Id, section.Name, section.ExamTypeCode);
+    }
+
+    public async Task<AdminSectionDto?> UpdateSectionAsync(int id, UpdateSectionDto dto)
+    {
+        var section = await _db.ExamSections.FindAsync(id);
+        if (section == null) return null;
+
+        if (!string.IsNullOrWhiteSpace(dto.Name))
+        {
+            var exists = await _db.ExamSections.AnyAsync(s => s.Name == dto.Name && s.ExamTypeCode == section.ExamTypeCode && s.Id != id);
+            if (exists)
+                throw new ArgumentException($"Section '{dto.Name}' already exists for {section.ExamTypeCode}");
+            section.Name = InputSanitizer.Sanitize(dto.Name)!;
+        }
+
+        await _db.SaveChangesAsync();
+        _cache.Remove("admin:sections");
+
+        return new AdminSectionDto(section.Id, section.Name, section.ExamTypeCode);
     }
 
     // ═══════════════════════════════════════════════════════

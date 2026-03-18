@@ -54,6 +54,7 @@ public record CreateAnswerOptionDto(
 );
 
 public record UpdateQuestionDto(
+    int? TopicId,
     string? Text,
     string? Difficulty,
     string? Explanation,
@@ -171,6 +172,19 @@ public record AdminSectionDto(
     int Id,
     string Name,
     string ExamTypeCode
+);
+
+public record UpdateTopicDto(
+    string? Name
+);
+
+public record CreateSectionDto(
+    string Name,
+    string ExamTypeCode
+);
+
+public record UpdateSectionDto(
+    string? Name
 );
 
 public record AdminSkillDto(
