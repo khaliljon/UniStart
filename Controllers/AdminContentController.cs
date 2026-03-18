@@ -19,9 +19,9 @@ public class AdminContentController : ControllerBase
         _db = db;
     }
 
-    // ═══════════════════════════════════════════════
+    // ══════════════════════════════════════════════
     //  LESSONS
-    // ═══════════════════════════════════════════════
+    // ══════════════════════════════════════════════
 
     [HttpGet("lessons")]
     public async Task<IActionResult> GetLessons([FromQuery] int? topicId)
