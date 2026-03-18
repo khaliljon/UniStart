@@ -169,6 +169,76 @@ public class TutorController : ControllerBase
         return Ok(school);
     }
 
+    // ═══ Tutor-Student Binding ═══════════════════════════════
+
+    /// <summary>Генерация инвайт-кода (тьютор)</summary>
+    [HttpPost("invite-code")]
+    [Authorize(Roles = "Tutor,Admin")]
+    public async Task<IActionResult> GenerateInviteCode()
+    {
+        var userId = GetUserId();
+        var result = await _tutorService.GenerateInviteCodeAsync(userId);
+        return Ok(result);
+    }
+
+    /// <summary>Получить текущий инвайт-код (тьютор)</summary>
+    [HttpGet("invite-code")]
+    [Authorize(Roles = "Tutor,Admin")]
+    public async Task<IActionResult> GetInviteCode()
+    {
+        var userId = GetUserId();
+        var result = await _tutorService.GetInviteCodeAsync(userId);
+        if (result == null) return Ok(new { inviteCode = (string?)null });
+        return Ok(result);
+    }
+
+    /// <summary>Привязаться к тьютору по инвайт-коду (ученик)</summary>
+    [HttpPost("link")]
+    public async Task<IActionResult> LinkByInviteCode([FromBody] LinkByInviteDto dto)
+    {
+        var userId = GetUserId();
+        var result = await _tutorService.LinkStudentByCodeAsync(userId, dto.InviteCode);
+        return result.Success ? Ok(result) : BadRequest(result);
+    }
+
+    /// <summary>Отвязать ученика (тьютор)</summary>
+    [HttpDelete("students/{studentUserId}/unlink")]
+    [Authorize(Roles = "Tutor,Admin")]
+    public async Task<IActionResult> UnlinkStudent(int studentUserId)
+    {
+        var userId = GetUserId();
+        var result = await _tutorService.UnlinkStudentAsync(userId, studentUserId);
+        return result.Success ? Ok(result) : BadRequest(result);
+    }
+
+    /// <summary>Отвязаться от тьютора (ученик)</summary>
+    [HttpDelete("unlink")]
+    public async Task<IActionResult> UnlinkFromTutor()
+    {
+        var userId = GetUserId();
+        var result = await _tutorService.UnlinkFromTutorAsync(userId);
+        return result.Success ? Ok(result) : BadRequest(result);
+    }
+
+    /// <summary>Привязанные ученики (тьютор)</summary>
+    [HttpGet("linked-students")]
+    [Authorize(Roles = "Tutor,Admin")]
+    public async Task<IActionResult> GetLinkedStudents()
+    {
+        var userId = GetUserId();
+        var students = await _tutorService.GetLinkedStudentsAsync(userId);
+        return Ok(students);
+    }
+
+    /// <summary>Мой привязанный тьютор (ученик)</summary>
+    [HttpGet("my-tutor")]
+    public async Task<IActionResult> GetMyLinkedTutor()
+    {
+        var userId = GetUserId();
+        var tutor = await _tutorService.GetLinkedTutorAsync(userId);
+        return Ok(new { tutor });
+    }
+
     private int GetUserId()
     {
         var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value

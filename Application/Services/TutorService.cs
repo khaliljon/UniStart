@@ -412,4 +412,140 @@ public class TutorService : ITutorService
             school.IsPartner, tutorCards
         );
     }
+
+    // ═══ Tutor-Student Binding ══════════════════════════════
+
+    public async Task<InviteCodeDto> GenerateInviteCodeAsync(int tutorUserId)
+    {
+        var profile = await _db.TutorProfiles.FirstOrDefaultAsync(p => p.UserId == tutorUserId)
+            ?? throw new KeyNotFoundException("Tutor profile not found");
+
+        profile.InviteCode = GenerateCode();
+        profile.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+
+        return new InviteCodeDto(profile.InviteCode);
+    }
+
+    public async Task<InviteCodeDto?> GetInviteCodeAsync(int tutorUserId)
+    {
+        var profile = await _db.TutorProfiles.FirstOrDefaultAsync(p => p.UserId == tutorUserId);
+        if (profile?.InviteCode == null) return null;
+        return new InviteCodeDto(profile.InviteCode);
+    }
+
+    public async Task<LinkResultDto> LinkStudentByCodeAsync(int studentUserId, string inviteCode)
+    {
+        var student = await _db.Users.FindAsync(studentUserId);
+        if (student == null) return new LinkResultDto(false, "User not found");
+        if (student.Role != UserRole.Student) return new LinkResultDto(false, "Only students can link to a tutor");
+
+        // Check if already linked
+        var existing = await _db.TutorStudents
+            .FirstOrDefaultAsync(ts => ts.StudentUserId == studentUserId && ts.Status == TutorStudentStatus.Active);
+        if (existing != null)
+            return new LinkResultDto(false, "You are already linked to a tutor. Unlink first.");
+
+        // Find tutor by code
+        var profile = await _db.TutorProfiles
+            .Include(p => p.User)
+            .FirstOrDefaultAsync(p => p.InviteCode == inviteCode && p.User.Role == UserRole.Tutor && !p.User.IsDeleted);
+        if (profile == null) return new LinkResultDto(false, "Invalid invite code");
+
+        // Create binding
+        _db.TutorStudents.Add(new TutorStudent
+        {
+            TutorUserId = profile.UserId,
+            StudentUserId = studentUserId,
+            InviteCode = inviteCode,
+            Status = TutorStudentStatus.Active,
+            LinkedAt = DateTime.UtcNow,
+        });
+
+        // Denormalize on User for fast lookup
+        student.LinkedTutorId = profile.UserId;
+        student.UpdatedAt = DateTime.UtcNow;
+
+        // Update tutor's student count
+        profile.TotalStudents = await _db.TutorStudents.CountAsync(ts => ts.TutorUserId == profile.UserId && ts.Status == TutorStudentStatus.Active) + 1;
+        profile.UpdatedAt = DateTime.UtcNow;
+
+        await _db.SaveChangesAsync();
+        return new LinkResultDto(true, $"Successfully linked to tutor {profile.User.Name}");
+    }
+
+    public async Task<LinkResultDto> UnlinkStudentAsync(int tutorUserId, int studentUserId)
+    {
+        var binding = await _db.TutorStudents
+            .FirstOrDefaultAsync(ts => ts.TutorUserId == tutorUserId && ts.StudentUserId == studentUserId && ts.Status == TutorStudentStatus.Active);
+        if (binding == null) return new LinkResultDto(false, "Binding not found");
+
+        binding.Status = TutorStudentStatus.Revoked;
+        binding.RevokedAt = DateTime.UtcNow;
+
+        var student = await _db.Users.FindAsync(studentUserId);
+        if (student != null) { student.LinkedTutorId = null; student.UpdatedAt = DateTime.UtcNow; }
+
+        var profile = await _db.TutorProfiles.FirstOrDefaultAsync(p => p.UserId == tutorUserId);
+        if (profile != null)
+        {
+            profile.TotalStudents = await _db.TutorStudents.CountAsync(ts => ts.TutorUserId == tutorUserId && ts.Status == TutorStudentStatus.Active) - 1;
+            profile.UpdatedAt = DateTime.UtcNow;
+        }
+
+        await _db.SaveChangesAsync();
+        return new LinkResultDto(true, "Student unlinked");
+    }
+
+    public async Task<LinkResultDto> UnlinkFromTutorAsync(int studentUserId)
+    {
+        var binding = await _db.TutorStudents
+            .FirstOrDefaultAsync(ts => ts.StudentUserId == studentUserId && ts.Status == TutorStudentStatus.Active);
+        if (binding == null) return new LinkResultDto(false, "No active tutor binding");
+
+        return await UnlinkStudentAsync(binding.TutorUserId, studentUserId);
+    }
+
+    public async Task<List<TutorStudentDto>> GetLinkedStudentsAsync(int tutorUserId)
+    {
+        return await _db.TutorStudents
+            .Include(ts => ts.StudentUser)
+            .Where(ts => ts.TutorUserId == tutorUserId && ts.Status == TutorStudentStatus.Active)
+            .OrderByDescending(ts => ts.LinkedAt)
+            .Select(ts => new TutorStudentDto(
+                ts.Id, ts.StudentUserId, ts.StudentUser.Name, ts.StudentUser.Email,
+                ts.Status.ToString(), ts.LinkedAt, ts.RevokedAt
+            ))
+            .ToListAsync();
+    }
+
+    public async Task<LinkedTutorDto?> GetLinkedTutorAsync(int studentUserId)
+    {
+        var binding = await _db.TutorStudents
+            .Include(ts => ts.TutorUser).ThenInclude(u => u.TutorProfile)
+            .FirstOrDefaultAsync(ts => ts.StudentUserId == studentUserId && ts.Status == TutorStudentStatus.Active);
+
+        if (binding?.TutorUser.TutorProfile == null) return null;
+
+        var p = binding.TutorUser.TutorProfile;
+        return new LinkedTutorDto(
+            binding.TutorUserId, binding.TutorUser.Name, p.Headline,
+            p.Specializations.Length > 0
+                ? p.Specializations.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                : Array.Empty<string>(),
+            p.AverageRating, p.AvatarUrl, binding.LinkedAt
+        );
+    }
+
+    private static string GenerateCode()
+    {
+        const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+        var random = System.Security.Cryptography.RandomNumberGenerator.Create();
+        var bytes = new byte[8];
+        random.GetBytes(bytes);
+        var code = new char[8];
+        for (int i = 0; i < 8; i++)
+            code[i] = chars[bytes[i] % chars.Length];
+        return new string(code);
+    }
 }

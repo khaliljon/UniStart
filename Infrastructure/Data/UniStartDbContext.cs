@@ -38,6 +38,7 @@ public class UniStartDbContext : DbContext
     public DbSet<TutorReview> TutorReviews => Set<TutorReview>();
     public DbSet<Conversation> Conversations => Set<Conversation>();
     public DbSet<Message> Messages => Set<Message>();
+    public DbSet<TutorStudent> TutorStudents => Set<TutorStudent>();
 
     // Learning v2 entities
     public DbSet<LessonStep> LessonSteps => Set<LessonStep>();
@@ -465,6 +466,7 @@ public class UniStartDbContext : DbContext
             entity.Property(e => e.AverageRating).HasPrecision(3, 2);
             entity.Property(e => e.IsAvailable).HasDefaultValue(true);
             entity.Property(e => e.IsVerified).HasDefaultValue(false);
+            entity.Property(e => e.InviteCode).HasMaxLength(20);
             entity.Property(e => e.ContactPreference)
                   .HasConversion<string>()
                   .HasMaxLength(10);
@@ -573,6 +575,32 @@ public class UniStartDbContext : DbContext
                   .OnDelete(DeleteBehavior.Restrict);
             entity.HasIndex(e => new { e.ConversationId, e.SentAt })
                   .HasDatabaseName("IX_Messages_Conversation_SentAt");
+        });
+
+        // ─── Tutor-Student Binding ─────────────────────────
+        modelBuilder.Entity<TutorStudent>(entity =>
+        {
+            entity.ToTable("TutorStudents");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.InviteCode).IsRequired().HasMaxLength(20);
+            entity.Property(e => e.Status)
+                  .HasConversion<string>()
+                  .HasMaxLength(20);
+            entity.HasOne(e => e.TutorUser)
+                  .WithMany()
+                  .HasForeignKey(e => e.TutorUserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.StudentUser)
+                  .WithMany()
+                  .HasForeignKey(e => e.StudentUserId)
+                  .OnDelete(DeleteBehavior.Restrict);
+            // One active binding per student
+            entity.HasIndex(e => e.StudentUserId)
+                  .HasFilter("\"Status\" = 'Active'")
+                  .IsUnique()
+                  .HasDatabaseName("IX_TutorStudents_Student_Active");
+            entity.HasIndex(e => e.TutorUserId)
+                  .HasDatabaseName("IX_TutorStudents_TutorUserId");
         });
 
         // ─── Lesson Step (TH-1) ────────────────────────────

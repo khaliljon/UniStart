@@ -525,6 +525,18 @@ export interface Translations {
     emailChangeError: string;
     enterPassword: string;
     security: string;
+    myTutor: string;
+    enterInviteCode: string;
+    inviteCodePlaceholder: string;
+    linkToTutor: string;
+    unlinkFromTutor: string;
+    noTutorLinked: string;
+    noTutorLinkedDesc: string;
+    linkedTo: string;
+    tutorDiscount: string;
+    linking: string;
+    unlinking: string;
+    confirmUnlink: string;
   };
 
   // ─── Admin ───
@@ -964,6 +976,18 @@ export interface Translations {
     website: string;
     perHourShort: string;
     defaultHeadline: string;
+    inviteCode: string;
+    generateCode: string;
+    regenerateCode: string;
+    copyCode: string;
+    codeCopied: string;
+    noCodeYet: string;
+    linkedStudents: string;
+    noLinkedStudents: string;
+    noLinkedStudentsDesc: string;
+    unlinkStudent: string;
+    confirmUnlinkStudent: string;
+    linkedSince: string;
   };
 
   // ─── Legal ───

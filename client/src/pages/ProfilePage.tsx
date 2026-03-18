@@ -4,8 +4,9 @@ import { useAppDispatch } from '../hooks/useAppDispatch';
 import { useTranslation } from '../hooks/useTranslation';
 import { fetchExams, fetchExamSections, toggleExamSelection, setSelectedSectionIds } from '../store/slices/examSlice';
 import { subscriptionService } from '../services/subscriptionService';
+import { tutorService } from '../services/tutorService';
 import { PricingModal } from '../components/PricingModal';
-import type { SubscriptionStatus, ExamSection } from '../types';
+import type { SubscriptionStatus, ExamSection, LinkedTutorInfo } from '../types';
 
 function ProfilePage() {
   const { user } = useAppSelector((state) => state.auth);
@@ -15,10 +16,19 @@ function ProfilePage() {
   const [sub, setSub] = useState<SubscriptionStatus | null>(null);
   const [showPricing, setShowPricing] = useState(false);
   const [allSections, setAllSections] = useState<ExamSection[]>([]);
+  const [linkedTutor, setLinkedTutor] = useState<LinkedTutorInfo | null>(null);
+  const [inviteCode, setInviteCode] = useState('');
+  const [linkLoading, setLinkLoading] = useState(false);
+  const [linkError, setLinkError] = useState<string | null>(null);
+  const [unlinkLoading, setUnlinkLoading] = useState(false);
+  const isStudent = user?.role === 'Student';
 
   useEffect(() => {
     dispatch(fetchExams());
     subscriptionService.getStatus().then(setSub).catch(() => {});
+    if (user?.role === 'Student') {
+      tutorService.getMyTutor().then(setLinkedTutor).catch(() => {});
+    }
   }, [dispatch]);
 
   // Load sections for all selected exams
@@ -56,6 +66,41 @@ function ProfilePage() {
   };
 
   const isPro = user?.subscriptionTier === 'Pro';
+
+  const handleLinkTutor = async () => {
+    if (!inviteCode.trim()) return;
+    setLinkLoading(true);
+    setLinkError(null);
+    try {
+      const result = await tutorService.linkByInviteCode(inviteCode.trim());
+      if (result.success) {
+        const tutor = await tutorService.getMyTutor();
+        setLinkedTutor(tutor);
+        setInviteCode('');
+        subscriptionService.getStatus().then(setSub).catch(() => {});
+      } else {
+        setLinkError(result.message);
+      }
+    } catch {
+      setLinkError('Ошибка привязки');
+    } finally {
+      setLinkLoading(false);
+    }
+  };
+
+  const handleUnlinkTutor = async () => {
+    if (!confirm(t.profilePage.confirmUnlink)) return;
+    setUnlinkLoading(true);
+    try {
+      await tutorService.unlinkFromTutor();
+      setLinkedTutor(null);
+      subscriptionService.getStatus().then(setSub).catch(() => {});
+    } catch {
+      alert('Ошибка отвязки');
+    } finally {
+      setUnlinkLoading(false);
+    }
+  };
 
   return (
     <>
@@ -118,6 +163,94 @@ function ProfilePage() {
           </button>
         )}
       </div>
+
+      {/* ─── My Tutor (student only) ─── */}
+      {isStudent && (
+        <div className="card" style={{ padding: '1.5rem', marginBottom: '1.25rem' }}>
+          <h3 style={{ margin: '0 0 0.75rem', fontSize: '1rem' }}>{t.profilePage.myTutor}</h3>
+
+          {linkedTutor ? (
+            <div>
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem',
+                padding: '0.75rem', borderRadius: '10px', background: 'var(--bg-secondary)',
+              }}>
+                <div style={{
+                  width: '48px', height: '48px', borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #10b981, #059669)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: '#fff', fontWeight: 700, fontSize: '1rem', flexShrink: 0,
+                }}>
+                  {linkedTutor.tutorName.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 600 }}>{linkedTutor.tutorName}</div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                    {linkedTutor.headline}
+                    {linkedTutor.averageRating > 0 && ` · ★ ${linkedTutor.averageRating.toFixed(1)}`}
+                  </div>
+                  {linkedTutor.specializations.length > 0 && (
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
+                      {linkedTutor.specializations.join(', ')}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {sub?.hasTutorDiscount && (
+                <div style={{
+                  padding: '0.5rem 0.75rem', borderRadius: '8px', marginBottom: '0.75rem',
+                  background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)',
+                  fontSize: '0.85rem', color: '#10b981', fontWeight: 600,
+                }}>
+                  ✓ {t.profilePage.tutorDiscount}
+                </div>
+              )}
+
+              <button
+                className="btn btn-outline"
+                onClick={handleUnlinkTutor}
+                disabled={unlinkLoading}
+                style={{ fontSize: '0.85rem', color: '#ef4444', borderColor: '#ef4444' }}
+              >
+                {unlinkLoading ? t.profilePage.unlinking : t.profilePage.unlinkFromTutor}
+              </button>
+            </div>
+          ) : (
+            <div>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: '0 0 0.75rem' }}>
+                {t.profilePage.noTutorLinkedDesc}
+              </p>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                <input
+                  type="text"
+                  value={inviteCode}
+                  onChange={e => { setInviteCode(e.target.value.toUpperCase()); setLinkError(null); }}
+                  placeholder={t.profilePage.inviteCodePlaceholder}
+                  maxLength={10}
+                  style={{
+                    padding: '0.5rem 0.75rem', borderRadius: '8px',
+                    border: '2px solid var(--border-color)', background: 'var(--bg-secondary)',
+                    color: 'var(--text-primary)', fontSize: '1rem', fontFamily: 'monospace',
+                    letterSpacing: '0.1em', width: '160px', textTransform: 'uppercase',
+                  }}
+                />
+                <button
+                  className="btn btn-primary"
+                  onClick={handleLinkTutor}
+                  disabled={linkLoading || !inviteCode.trim()}
+                  style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}
+                >
+                  {linkLoading ? t.profilePage.linking : t.profilePage.linkToTutor}
+                </button>
+              </div>
+              {linkError && (
+                <p style={{ color: '#ef4444', fontSize: '0.82rem', marginTop: '0.5rem' }}>{linkError}</p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ─── Selected Exams ─── */}
       <div className="card" style={{ padding: '1.5rem', marginBottom: '1.25rem' }}>

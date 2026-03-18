@@ -1,18 +1,31 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { tutorService } from '../services/tutorService';
-import type { StudentInfo } from '../types';
+import { useTranslation } from '../hooks/useTranslation';
+import type { StudentInfo, TutorStudentInfo } from '../types';
 import { getDateLocale } from '../i18n';
 
 function TutorStudentsPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [students, setStudents] = useState<StudentInfo[]>([]);
+  const [linkedStudents, setLinkedStudents] = useState<TutorStudentInfo[]>([]);
+  const [inviteCode, setInviteCode] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [codeLoading, setCodeLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [unlinkingId, setUnlinkingId] = useState<number | null>(null);
 
-  const loadStudents = useCallback(async () => {
+  const loadData = useCallback(async () => {
     try {
-      const data = await tutorService.getMyStudents();
-      setStudents(data);
+      const [studentsData, linked, code] = await Promise.all([
+        tutorService.getMyStudents(),
+        tutorService.getLinkedStudents().catch(() => []),
+        tutorService.getInviteCode().catch(() => null),
+      ]);
+      setStudents(studentsData);
+      setLinkedStudents(linked);
+      if (code) setInviteCode(code.inviteCode);
     } catch (err) {
       console.error('Failed to load students:', err);
     } finally {
@@ -21,8 +34,40 @@ function TutorStudentsPage() {
   }, []);
 
   useEffect(() => {
-    loadStudents();
-  }, [loadStudents]);
+    loadData();
+  }, [loadData]);
+
+  const handleGenerateCode = async () => {
+    setCodeLoading(true);
+    try {
+      const result = await tutorService.generateInviteCode();
+      setInviteCode(result.inviteCode);
+    } catch {
+      alert('Ошибка генерации кода');
+    } finally {
+      setCodeLoading(false);
+    }
+  };
+
+  const handleCopyCode = async () => {
+    if (!inviteCode) return;
+    await navigator.clipboard.writeText(inviteCode);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleUnlinkStudent = async (studentUserId: number) => {
+    if (!confirm(t.tutor.confirmUnlinkStudent)) return;
+    setUnlinkingId(studentUserId);
+    try {
+      await tutorService.unlinkStudent(studentUserId);
+      setLinkedStudents(prev => prev.filter(s => s.studentUserId !== studentUserId));
+    } catch {
+      alert('Ошибка отвязки');
+    } finally {
+      setUnlinkingId(null);
+    }
+  };
 
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr);
@@ -50,17 +95,112 @@ function TutorStudentsPage() {
 
   return (
     <div className="animate-fade-in">
-      <h1 style={{ marginBottom: '1.5rem' }}>Мои ученики</h1>
+      <h1 style={{ marginBottom: '1.5rem' }}>{t.tutor.myStudents}</h1>
 
-      {students.length === 0 ? (
+      {/* ─── Invite Code Card ─── */}
+      <div className="card" style={{ padding: '1.5rem', marginBottom: '1.25rem' }}>
+        <h2 style={{ margin: '0 0 0.75rem', fontSize: '1.15rem' }}>{t.tutor.inviteCode}</h2>
+        {inviteCode ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+            <div style={{
+              padding: '0.6rem 1.2rem', borderRadius: '10px',
+              background: 'var(--bg-secondary)', border: '2px dashed var(--primary-color)',
+              fontFamily: 'monospace', fontSize: '1.4rem', fontWeight: 700,
+              letterSpacing: '0.15em', color: 'var(--primary-color)',
+            }}>
+              {inviteCode}
+            </div>
+            <button
+              className="btn btn-outline"
+              onClick={handleCopyCode}
+              style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}
+            >
+              {copied ? t.tutor.codeCopied : t.tutor.copyCode}
+            </button>
+            <button
+              className="btn btn-outline"
+              onClick={handleGenerateCode}
+              disabled={codeLoading}
+              style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}
+            >
+              {t.tutor.regenerateCode}
+            </button>
+          </div>
+        ) : (
+          <div>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', margin: '0 0 0.75rem' }}>
+              {t.tutor.noCodeYet}
+            </p>
+            <button
+              className="btn btn-primary"
+              onClick={handleGenerateCode}
+              disabled={codeLoading}
+              style={{ fontSize: '0.85rem' }}
+            >
+              {t.tutor.generateCode}
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* ─── Linked Students (via invite code) ─── */}
+      {linkedStudents.length > 0 && (
+        <div className="card" style={{ padding: '1.5rem', marginBottom: '1.25rem' }}>
+          <h2 style={{ margin: '0 0 1rem', fontSize: '1.15rem' }}>
+            {t.tutor.linkedStudents}
+            <span style={{
+              background: 'var(--primary-color)', color: '#fff', borderRadius: '999px',
+              padding: '0.15rem 0.5rem', fontSize: '0.75rem', fontWeight: 700, marginLeft: '0.5rem',
+            }}>{linkedStudents.length}</span>
+          </h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            {linkedStudents.map(s => (
+              <div
+                key={s.id}
+                style={{
+                  padding: '1rem', borderRadius: '10px',
+                  background: 'var(--bg-secondary)', border: '1px solid var(--border-color)',
+                  display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap',
+                }}
+              >
+                <div style={{
+                  width: '42px', height: '42px', borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #10b981, #059669)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: '#fff', fontWeight: 700, fontSize: '0.85rem', flexShrink: 0,
+                }}>
+                  {getInitials(s.studentName)}
+                </div>
+                <div style={{ flex: 1, minWidth: '150px' }}>
+                  <div style={{ fontWeight: 600 }}>{s.studentName}</div>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                    {s.studentEmail} · {t.tutor.linkedSince} {formatDate(s.linkedAt)}
+                  </div>
+                </div>
+                <button
+                  className="btn btn-outline"
+                  onClick={() => handleUnlinkStudent(s.studentUserId)}
+                  disabled={unlinkingId === s.studentUserId}
+                  style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem', color: '#ef4444', borderColor: '#ef4444' }}
+                >
+                  {t.tutor.unlinkStudent}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ─── Conversation-based Students ─── */}
+      {students.length === 0 && linkedStudents.length === 0 ? (
         <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
           <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}></div>
-          <h3 style={{ color: 'var(--text-secondary)' }}>Пока нет учеников</h3>
+          <h3 style={{ color: 'var(--text-secondary)' }}>{t.tutor.noLinkedStudents}</h3>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-            Когда студент отправит вам заявку и вы её примете, он появится здесь.
+            {t.tutor.noLinkedStudentsDesc}
           </p>
         </div>
-      ) : (
+      ) : students.length > 0 && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1rem' }}>
           {students.map(s => (
             <div

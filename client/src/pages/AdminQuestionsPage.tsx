@@ -83,6 +83,7 @@ function AdminQuestionsPage() {
   // Inline topic rename
   const [editingTopicId, setEditingTopicId] = useState<number | null>(null);
   const [editingTopicName, setEditingTopicName] = useState('');
+  const [showTopicRenameModal, setShowTopicRenameModal] = useState(false);
 
   // Section view
   const [sectionPage, setSectionPage] = useState(1);
@@ -683,26 +684,11 @@ function AdminQuestionsPage() {
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                           <Badge bg={EXAM_COLORS[tp.examTypeCode]}>{tp.examTypeCode}</Badge>
                           <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{tp.sectionName} →</span>
-                          {editingTopicId === tp.id ? (
-                            <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                              <input
-                                className="form-input"
-                                value={editingTopicName}
-                                onChange={e => setEditingTopicName(e.target.value)}
-                                onKeyDown={e => { if (e.key === 'Enter') saveTopicRename(); if (e.key === 'Escape') setEditingTopicId(null); }}
-                                autoFocus
-                                style={{ padding: '0.2rem 0.4rem', fontSize: '0.95rem', fontWeight: 600, width: '200px' }}
-                              />
-                              <button className="btn btn-primary" onClick={saveTopicRename} style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem' }}>✓</button>
-                              <button className="btn btn-outline" onClick={() => setEditingTopicId(null)} style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem' }}>✕</button>
-                            </span>
-                          ) : (
-                            <span
-                              style={{ fontWeight: 600, fontSize: '1rem', cursor: 'pointer', borderBottom: '1px dashed var(--text-secondary)' }}
-                              onClick={() => startTopicRename(tp.id, tp.name)}
-                              title={t.admin.questions.clickToEditTopic}
-                            >{tp.name}</span>
-                          )}
+                          <span
+                            style={{ fontWeight: 600, fontSize: '1rem', cursor: 'pointer', borderBottom: '1px dashed var(--text-secondary)' }}
+                            onClick={() => { startTopicRename(tp.id, tp.name); setShowTopicRenameModal(true); }}
+                            title={t.admin.questions.clickToEditTopic}
+                          >{tp.name}</span>
                           <span style={{ color: tp.questionCount > 0 ? 'var(--text-secondary)' : 'var(--error-color)', fontSize: '0.8rem' }}>
                             ({tp.questionCount} {tp.questionCount === 0 ? t.admin.questions.noQuestions : t.admin.questions.questionsShort})
                           </span>
@@ -816,13 +802,6 @@ function AdminQuestionsPage() {
                             ({sectionTopics.length} {t.admin.questions.topicsCount} • {totalQ} {t.admin.questions.questionsShort})
                           </span>
                         </div>
-                        <button
-                          className="btn btn-outline"
-                          style={{ fontSize: '0.8rem', padding: '0.3rem 0.7rem' }}
-                          onClick={() => openSectionModal(s)}
-                        >
-                          {t.admin.common.edit}
-                        </button>
                       </div>
                       {sectionTopics.length > 0 && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
@@ -1402,6 +1381,48 @@ function AdminQuestionsPage() {
                   {editingSectionId ? t.admin.common.save : t.admin.common.create}
                 </button>
                 <button className="btn btn-outline" onClick={() => setShowSectionModal(false)} style={{ flex: 1 }}>
+                  {t.admin.common.cancel}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ═══ TOPIC RENAME MODAL ═══ */}
+      {showTopicRenameModal && editingTopicId && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 1001, padding: '1rem',
+          }}
+          onClick={() => { setShowTopicRenameModal(false); setEditingTopicId(null); }}
+        >
+          <div
+            className="card"
+            style={{ maxWidth: '500px', width: '100%', padding: '2rem' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+              <h2 style={{ margin: 0, fontSize: '1.15rem' }}>{t.admin.questions.editTopicName}</h2>
+              <button onClick={() => { setShowTopicRenameModal(false); setEditingTopicId(null); }} style={closeBtn}>✕</button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <FormField label={t.admin.questions.topicName}>
+                <input
+                  className="form-input"
+                  value={editingTopicName}
+                  onChange={e => setEditingTopicName(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') { saveTopicRename(); setShowTopicRenameModal(false); } }}
+                  autoFocus
+                  style={{ width: '100%' }}
+                />
+              </FormField>
+              <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
+                <button className="btn btn-primary" onClick={() => { saveTopicRename(); setShowTopicRenameModal(false); }} style={{ flex: 1 }}>
+                  {t.admin.common.save}
+                </button>
+                <button className="btn btn-outline" onClick={() => { setShowTopicRenameModal(false); setEditingTopicId(null); }} style={{ flex: 1 }}>
                   {t.admin.common.cancel}
                 </button>
               </div>

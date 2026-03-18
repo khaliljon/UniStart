@@ -6,7 +6,9 @@ public record SubscriptionStatusDto(
     DateTime? ExpiresAt,
     DailyUsageDto DailyUsage,
     TierLimitsDto Limits,
-    bool FreeMockAvailable
+    bool FreeMockAvailable,
+    bool HasTutorDiscount,
+    string? LinkedTutorName
 );
 
 public record DailyUsageDto(

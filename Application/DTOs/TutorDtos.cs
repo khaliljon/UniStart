@@ -190,3 +190,40 @@ public record TutorSchoolDetailDto(
     bool IsPartner,
     List<TutorCardDto> Tutors
 );
+
+// ═══════════════════════════════════════════════════════
+//  TUTOR-STUDENT BINDING DTOs
+// ═══════════════════════════════════════════════════════
+
+public record InviteCodeDto(
+    string InviteCode
+);
+
+public record LinkByInviteDto(
+    string InviteCode
+);
+
+public record TutorStudentDto(
+    int Id,
+    int StudentUserId,
+    string StudentName,
+    string StudentEmail,
+    string Status,
+    DateTime LinkedAt,
+    DateTime? RevokedAt
+);
+
+public record LinkedTutorDto(
+    int TutorUserId,
+    string TutorName,
+    string Headline,
+    string[] Specializations,
+    decimal AverageRating,
+    string? AvatarUrl,
+    DateTime LinkedAt
+);
+
+public record LinkResultDto(
+    bool Success,
+    string Message
+);

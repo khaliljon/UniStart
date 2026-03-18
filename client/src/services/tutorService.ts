@@ -10,6 +10,10 @@ import type {
   AcceptDeclineResult,
   TutorSchoolCard,
   TutorSchoolDetail,
+  InviteCodeInfo,
+  LinkResult,
+  TutorStudentInfo,
+  LinkedTutorInfo,
 } from '../types';
 
 export interface TutorListParams {
@@ -71,6 +75,41 @@ export const tutorService = {
 
   async getSchool(slug: string): Promise<TutorSchoolDetail> {
     const response = await api.get<TutorSchoolDetail>(`/tutors/schools/${encodeURIComponent(slug)}`);
+    return response.data;
+  },
+
+  // ── Invite code & binding ──
+
+  async generateInviteCode(): Promise<InviteCodeInfo> {
+    const response = await api.post<InviteCodeInfo>('/tutors/invite-code');
+    return response.data;
+  },
+
+  async getInviteCode(): Promise<InviteCodeInfo> {
+    const response = await api.get<InviteCodeInfo>('/tutors/invite-code');
+    return response.data;
+  },
+
+  async linkByInviteCode(inviteCode: string): Promise<LinkResult> {
+    const response = await api.post<LinkResult>('/tutors/link', { inviteCode });
+    return response.data;
+  },
+
+  async getLinkedStudents(): Promise<TutorStudentInfo[]> {
+    const response = await api.get<TutorStudentInfo[]>('/tutors/linked-students');
+    return response.data;
+  },
+
+  async unlinkStudent(studentUserId: number): Promise<void> {
+    await api.delete(`/tutors/students/${studentUserId}/unlink`);
+  },
+
+  async unlinkFromTutor(): Promise<void> {
+    await api.delete('/tutors/unlink');
+  },
+
+  async getMyTutor(): Promise<LinkedTutorInfo> {
+    const response = await api.get<LinkedTutorInfo>('/tutors/my-tutor');
     return response.data;
   },
 };

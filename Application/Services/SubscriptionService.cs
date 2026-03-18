@@ -49,13 +49,23 @@ public class SubscriptionService : ISubscriptionService
         var limits = GetLimits(tier);
         var usage = await GetDailyUsageAsync(userId);
 
+        var hasTutorDiscount = user.LinkedTutorId.HasValue;
+        string? linkedTutorName = null;
+        if (hasTutorDiscount)
+        {
+            var tutor = await _context.Users.FindAsync(user.LinkedTutorId.Value);
+            linkedTutorName = tutor?.Name;
+        }
+
         return new SubscriptionStatusDto(
             Tier: tier,
             IsPro: user.IsPro,
             ExpiresAt: user.SubscriptionExpiresAt,
             DailyUsage: usage,
             Limits: limits,
-            FreeMockAvailable: !user.IsPro && !user.FreeMockUsed
+            FreeMockAvailable: !user.IsPro && !user.FreeMockUsed,
+            HasTutorDiscount: hasTutorDiscount,
+            LinkedTutorName: linkedTutorName
         );
     }
 
@@ -139,6 +149,8 @@ public class SubscriptionService : ISubscriptionService
         var user = await _context.Users.FindAsync(userId)
             ?? throw new KeyNotFoundException("User not found");
 
+        var hasTutorDiscount = user.LinkedTutorId.HasValue;
+
         // Stub: in production this would integrate with a payment provider (Kaspi, etc.)
         if (dto.Plan.Equals("Pro", StringComparison.OrdinalIgnoreCase))
         {
@@ -147,11 +159,14 @@ public class SubscriptionService : ISubscriptionService
             user.UpdatedAt = DateTime.UtcNow;
             await _unitOfWork.SaveChangesAsync();
 
+            var price = hasTutorDiscount ? "7 000 ₸" : "10 000 ₸";
             return new UpgradeResponseDto(
                 Success: true,
                 Tier: "Pro",
                 ExpiresAt: user.SubscriptionExpiresAt,
-                Message: "Вы успешно перешли на тариф Pro (1 месяц)! Все функции разблокированы."
+                Message: hasTutorDiscount
+                    ? $"Вы перешли на тариф Pro (1 месяц) со скидкой тьютора — {price}!"
+                    : $"Вы успешно перешли на тариф Pro (1 месяц)! Все функции разблокированы."
             );
         }
 

@@ -826,6 +826,8 @@ export interface SubscriptionStatus {
   dailyUsage: DailyUsage;
   limits: TierLimits;
   freeMockAvailable: boolean;
+  hasTutorDiscount: boolean;
+  linkedTutorName: string | null;
 }
 
 export interface DailyUsage {
@@ -1205,6 +1207,36 @@ export interface MistakeAnalysis {
   totalMistakes: number;
   errorPatterns: ErrorPattern[];
   topicBreakdown: TopicMistake[];
+}
+
+// ─── Tutor-Student Binding ───────────────────────────────
+export interface TutorStudentInfo {
+  id: number;
+  studentUserId: number;
+  studentName: string;
+  studentEmail: string;
+  status: string;
+  linkedAt: string;
+  revokedAt: string | null;
+}
+
+export interface LinkedTutorInfo {
+  tutorUserId: number;
+  tutorName: string;
+  headline: string;
+  specializations: string[];
+  averageRating: number;
+  avatarUrl: string | null;
+  linkedAt: string;
+}
+
+export interface LinkResult {
+  success: boolean;
+  message: string;
+}
+
+export interface InviteCodeInfo {
+  inviteCode: string;
 }
 
 // ─── Tutor Schools ──────────────────────────────────────

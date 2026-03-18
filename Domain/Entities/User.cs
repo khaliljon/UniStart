@@ -12,6 +12,9 @@ public class User : ISoftDeletable, IAuditable
     public DateTime? SubscriptionExpiresAt { get; set; }
     public bool FreeMockUsed { get; set; } = false;
 
+    // Tutor binding (student's linked tutor)
+    public int? LinkedTutorId { get; set; }
+
     // Email verification
     public bool EmailVerified { get; set; } = false;
     public string? EmailVerificationCode { get; set; }

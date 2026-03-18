@@ -25,6 +25,9 @@ public class TutorProfile : IAuditable
     public int TotalReviews { get; set; } = 0;
     public int TotalStudents { get; set; } = 0;
 
+    // Invite code for student binding
+    public string? InviteCode { get; set; }
+
     // IAuditable
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }

@@ -91,8 +91,8 @@ function AdminLayout() {
               {moreOpen && (
                 <div style={{
                   position: 'absolute', top: '100%', right: 0, minWidth: '170px',
-                  background: 'var(--bg-primary)', border: '1px solid var(--border-color)',
-                  borderRadius: '8px', boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
+                  background: 'var(--card-background)', border: '1px solid var(--border-color)',
+                  borderRadius: '8px', boxShadow: '0 4px 16px rgba(0,0,0,0.18)',
                   zIndex: 100, padding: '0.35rem 0', marginTop: '0.25rem',
                 }}>
                   {[

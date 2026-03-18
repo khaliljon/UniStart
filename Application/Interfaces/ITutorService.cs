@@ -17,4 +17,13 @@ public interface ITutorService
     Task EnsureTutorProfileAsync(int userId);
     Task<List<TutorSchoolCardDto>> GetSchoolsAsync();
     Task<TutorSchoolDetailDto?> GetSchoolAsync(string slug);
+
+    // Tutor-Student binding
+    Task<InviteCodeDto> GenerateInviteCodeAsync(int tutorUserId);
+    Task<InviteCodeDto?> GetInviteCodeAsync(int tutorUserId);
+    Task<LinkResultDto> LinkStudentByCodeAsync(int studentUserId, string inviteCode);
+    Task<LinkResultDto> UnlinkStudentAsync(int tutorUserId, int studentUserId);
+    Task<LinkResultDto> UnlinkFromTutorAsync(int studentUserId);
+    Task<List<TutorStudentDto>> GetLinkedStudentsAsync(int tutorUserId);
+    Task<LinkedTutorDto?> GetLinkedTutorAsync(int studentUserId);
 }
