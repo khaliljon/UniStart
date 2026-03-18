@@ -26,9 +26,14 @@ public class Question : ISoftDeletable, IAuditable
     public DateTime? DeletedAt { get; set; }
     public int? DeletedBy { get; set; }
 
+    // Tutor content (Sprint 7 Этап 2)
+    public int? CreatedByTutorId { get; set; }
+    public bool IsPrivate { get; set; }
+
     // Navigation properties
     public virtual Topic Topic { get; set; } = null!;
     public virtual ReadingPassage? ReadingPassage { get; set; }
+    public virtual User? CreatedByTutor { get; set; }
     public virtual ICollection<AnswerOption> AnswerOptions { get; set; } = new List<AnswerOption>();
     public virtual ICollection<UserAnswer> UserAnswers { get; set; } = new List<UserAnswer>();
 }

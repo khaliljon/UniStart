@@ -114,6 +114,16 @@ function TutorLayout() {
               </NavLink>
             </li>
             <li>
+              <NavLink to="/questions">
+                Вопросы
+              </NavLink>
+            </li>
+            <li>
+              <NavLink to="/assignments">
+                Задания
+              </NavLink>
+            </li>
+            <li>
               <NavLink to="/messages">
                 Сообщения
                 <Badge count={unreadCount} />

@@ -239,6 +239,162 @@ public class TutorController : ControllerBase
         return Ok(new { tutor });
     }
 
+    // ═══════════════════════════════════════════════════════
+    //  TUTOR QUESTION MANAGEMENT (Этап 2)
+    // ═══════════════════════════════════════════════════════
+
+    /// <summary>Создать вопрос (тьютор)</summary>
+    [HttpPost("questions")]
+    [Authorize(Roles = "Tutor,Admin")]
+    public async Task<IActionResult> CreateQuestion([FromBody] CreateQuestionDto dto)
+    {
+        var userId = GetUserId();
+        var result = await _tutorService.CreateQuestionAsync(userId, dto);
+        return Ok(result);
+    }
+
+    /// <summary>Обновить вопрос (тьютор)</summary>
+    [HttpPut("questions/{questionId}")]
+    [Authorize(Roles = "Tutor,Admin")]
+    public async Task<IActionResult> UpdateQuestion(int questionId, [FromBody] UpdateQuestionDto dto)
+    {
+        var userId = GetUserId();
+        var result = await _tutorService.UpdateQuestionAsync(userId, questionId, dto);
+        return result != null ? Ok(result) : NotFound();
+    }
+
+    /// <summary>Удалить вопрос (тьютор)</summary>
+    [HttpDelete("questions/{questionId}")]
+    [Authorize(Roles = "Tutor,Admin")]
+    public async Task<IActionResult> DeleteQuestion(int questionId)
+    {
+        var userId = GetUserId();
+        var deleted = await _tutorService.DeleteQuestionAsync(userId, questionId);
+        return deleted ? Ok() : NotFound();
+    }
+
+    /// <summary>Мои вопросы (тьютор)</summary>
+    [HttpGet("questions")]
+    [Authorize(Roles = "Tutor,Admin")]
+    public async Task<IActionResult> GetMyQuestions(
+        [FromQuery] string? search, [FromQuery] string? examType,
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+    {
+        var userId = GetUserId();
+        var result = await _tutorService.GetMyQuestionsAsync(userId, search, examType, page, pageSize);
+        return Ok(result);
+    }
+
+    /// <summary>Деталь вопроса (тьютор)</summary>
+    [HttpGet("questions/{questionId}")]
+    [Authorize(Roles = "Tutor,Admin")]
+    public async Task<IActionResult> GetQuestion(int questionId)
+    {
+        var userId = GetUserId();
+        var result = await _tutorService.GetQuestionByIdAsync(userId, questionId);
+        return result != null ? Ok(result) : NotFound();
+    }
+
+    /// <summary>Список тем для тьютора</summary>
+    [HttpGet("topics")]
+    [Authorize(Roles = "Tutor,Admin")]
+    public async Task<IActionResult> GetTopics()
+    {
+        var result = await _tutorService.GetTopicsAsync();
+        return Ok(result);
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  ASSIGNMENTS (Sprint 7 Этап 3)
+    // ═══════════════════════════════════════════════════════
+
+    /// <summary>Создать задание</summary>
+    [HttpPost("assignments")]
+    [Authorize(Roles = "Tutor,Admin")]
+    public async Task<IActionResult> CreateAssignment([FromBody] CreateAssignmentDto dto)
+    {
+        var userId = GetUserId();
+        try
+        {
+            var result = await _tutorService.CreateAssignmentAsync(userId, dto);
+            return Created($"/api/tutors/assignments/{result.Id}", result);
+        }
+        catch (ArgumentException ex) { return BadRequest(new { error = ex.Message }); }
+    }
+
+    /// <summary>Обновить задание</summary>
+    [HttpPut("assignments/{assignmentId}")]
+    [Authorize(Roles = "Tutor,Admin")]
+    public async Task<IActionResult> UpdateAssignment(int assignmentId, [FromBody] UpdateAssignmentDto dto)
+    {
+        var userId = GetUserId();
+        var result = await _tutorService.UpdateAssignmentAsync(userId, assignmentId, dto);
+        return result != null ? Ok(result) : NotFound();
+    }
+
+    /// <summary>Удалить задание</summary>
+    [HttpDelete("assignments/{assignmentId}")]
+    [Authorize(Roles = "Tutor,Admin")]
+    public async Task<IActionResult> DeleteAssignment(int assignmentId)
+    {
+        var userId = GetUserId();
+        var ok = await _tutorService.DeleteAssignmentAsync(userId, assignmentId);
+        return ok ? NoContent() : NotFound();
+    }
+
+    /// <summary>Список заданий тьютора</summary>
+    [HttpGet("assignments")]
+    [Authorize(Roles = "Tutor,Admin")]
+    public async Task<IActionResult> GetAssignments()
+    {
+        var userId = GetUserId();
+        var result = await _tutorService.GetAssignmentsAsync(userId);
+        return Ok(result);
+    }
+
+    /// <summary>Деталь задания (тьютор)</summary>
+    [HttpGet("assignments/{assignmentId}")]
+    [Authorize(Roles = "Tutor,Admin")]
+    public async Task<IActionResult> GetAssignment(int assignmentId)
+    {
+        var userId = GetUserId();
+        var result = await _tutorService.GetAssignmentAsync(userId, assignmentId);
+        return result != null ? Ok(result) : NotFound();
+    }
+
+    // ── Student-facing assignment endpoints ──
+
+    /// <summary>Мои задания (ученик)</summary>
+    [HttpGet("my-assignments")]
+    public async Task<IActionResult> GetMyAssignments()
+    {
+        var userId = GetUserId();
+        var result = await _tutorService.GetStudentAssignmentsAsync(userId);
+        return Ok(result);
+    }
+
+    /// <summary>Деталь задания (ученик)</summary>
+    [HttpGet("my-assignments/{assignmentId}")]
+    public async Task<IActionResult> GetMyAssignment(int assignmentId)
+    {
+        var userId = GetUserId();
+        var result = await _tutorService.GetStudentAssignmentAsync(userId, assignmentId);
+        return result != null ? Ok(result) : NotFound();
+    }
+
+    /// <summary>Ответить на вопрос задания (ученик)</summary>
+    [HttpPost("my-assignments/{assignmentId}/answer")]
+    public async Task<IActionResult> SubmitAssignmentAnswer(int assignmentId, [FromBody] SubmitAssignmentAnswerDto dto)
+    {
+        var userId = GetUserId();
+        try
+        {
+            var result = await _tutorService.SubmitAssignmentAnswerAsync(userId, assignmentId, dto);
+            return Ok(result);
+        }
+        catch (ArgumentException ex) { return BadRequest(new { error = ex.Message }); }
+    }
+
     private int GetUserId()
     {
         var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value

@@ -48,6 +48,11 @@ function Layout() {
                   {t.nav.plan}
                 </NavLink>
               </li>
+              <li>
+                <NavLink to="/assignments" onClick={() => setMenuOpen(false)}>
+                  {t.nav.assignments}
+                </NavLink>
+              </li>
             </ul>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>

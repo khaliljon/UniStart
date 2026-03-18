@@ -41,6 +41,9 @@ const TutorStudentsPage = lazy(() => import('./pages/TutorStudentsPage'))
 const TutorSchedulePage = lazy(() => import('./pages/TutorSchedulePage'))
 const TutorProfileEditPage = lazy(() => import('./pages/TutorProfileEditPage'))
 const TutorReviewsPage = lazy(() => import('./pages/TutorReviewsPage'))
+const TutorQuestionsPage = lazy(() => import('./pages/TutorQuestionsPage'))
+const TutorAssignmentsPage = lazy(() => import('./pages/TutorAssignmentsPage'))
+const StudentAssignmentsPage = lazy(() => import('./pages/StudentAssignmentsPage'))
 
 // ── Suspense fallback ───────────────────────────────────
 const PageLoader = () => (
@@ -60,6 +63,7 @@ function StudentRoutes() {
       <Route path="tutors" element={<TutorsPage />} />
       <Route path="tutors/schools/:slug" element={<SchoolDetailPage />} />
       <Route path="tutors/:userId" element={<TutorProfilePage />} />
+      <Route path="assignments" element={<StudentAssignmentsPage />} />
       <Route path="messages" element={<MessagesPage />} />
       {/* Legacy redirects */}
       <Route path="test" element={<Navigate to="/learn" replace />} />
@@ -102,6 +106,8 @@ function TutorRoutes() {
     <Route path="/" element={<TutorLayout />}>
       <Route index element={<TutorHomePage />} />
       <Route path="students" element={<TutorStudentsPage />} />
+      <Route path="questions" element={<TutorQuestionsPage />} />
+      <Route path="assignments" element={<TutorAssignmentsPage />} />
       <Route path="messages" element={<MessagesPage />} />
       <Route path="schedule" element={<TutorSchedulePage />} />
       <Route path="reviews" element={<TutorReviewsPage />} />

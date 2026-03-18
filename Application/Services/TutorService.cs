@@ -537,6 +537,440 @@ public class TutorService : ITutorService
         );
     }
 
+    // ═══════════════════════════════════════════════════════
+    //  TUTOR QUESTION MANAGEMENT (Этап 2)
+    // ═══════════════════════════════════════════════════════
+
+    public async Task<TutorQuestionDetailDto> CreateQuestionAsync(int tutorUserId, CreateQuestionDto dto)
+    {
+        var topic = await _db.Topics
+            .Include(t => t.Section!).ThenInclude(s => s.ExamType)
+            .FirstOrDefaultAsync(t => t.Id == dto.TopicId)
+            ?? throw new ArgumentException($"Topic with Id {dto.TopicId} not found");
+
+        if (!Enum.TryParse<QuestionDifficulty>(dto.Difficulty, true, out var difficulty))
+            throw new ArgumentException($"Invalid difficulty: {dto.Difficulty}");
+
+        if (dto.AnswerOptions == null || dto.AnswerOptions.Count < 2)
+            throw new ArgumentException("At least 2 answer options required");
+
+        if (!dto.AnswerOptions.Any(o => o.IsCorrect))
+            throw new ArgumentException("At least one answer must be marked correct");
+
+        var question = new Question
+        {
+            TopicId = dto.TopicId,
+            Text = InputSanitizer.Sanitize(dto.Text)!,
+            Difficulty = difficulty,
+            Explanation = dto.Explanation,
+            DifficultyParam = dto.DifficultyParam ?? IrtMath.DifficultyToParam(difficulty),
+            DiscriminationParam = dto.DiscriminationParam ?? IrtMath.DifficultyToDiscrimination(difficulty),
+            GuessParam = dto.GuessParam ?? (1.0 / dto.AnswerOptions.Count),
+            CreatedByTutorId = tutorUserId,
+            IsPrivate = true,
+            CreatedAt = DateTime.UtcNow,
+            AnswerOptions = dto.AnswerOptions.Select(o => new AnswerOption
+            {
+                Text = InputSanitizer.Sanitize(o.Text)!,
+                IsCorrect = o.IsCorrect
+            }).ToList()
+        };
+
+        _db.Questions.Add(question);
+        await _db.SaveChangesAsync();
+
+        return MapTutorQuestion(question, topic);
+    }
+
+    public async Task<TutorQuestionDetailDto?> UpdateQuestionAsync(int tutorUserId, int questionId, UpdateQuestionDto dto)
+    {
+        var question = await _db.Questions
+            .Include(q => q.AnswerOptions)
+            .Include(q => q.Topic).ThenInclude(t => t.Section!).ThenInclude(s => s.ExamType)
+            .FirstOrDefaultAsync(q => q.Id == questionId && q.CreatedByTutorId == tutorUserId);
+
+        if (question == null) return null;
+
+        if (dto.TopicId.HasValue)
+        {
+            var topicExists = await _db.Topics.AnyAsync(t => t.Id == dto.TopicId.Value);
+            if (!topicExists) throw new ArgumentException($"Topic {dto.TopicId.Value} not found");
+            question.TopicId = dto.TopicId.Value;
+        }
+
+        if (dto.Text != null) question.Text = InputSanitizer.Sanitize(dto.Text)!;
+        if (dto.Explanation != null) question.Explanation = dto.Explanation;
+        if (dto.Difficulty != null && Enum.TryParse<QuestionDifficulty>(dto.Difficulty, true, out var diff))
+            question.Difficulty = diff;
+        if (dto.DifficultyParam.HasValue) question.DifficultyParam = dto.DifficultyParam.Value;
+        if (dto.DiscriminationParam.HasValue) question.DiscriminationParam = dto.DiscriminationParam.Value;
+        if (dto.GuessParam.HasValue) question.GuessParam = dto.GuessParam.Value;
+
+        if (dto.AnswerOptions != null && dto.AnswerOptions.Count >= 2)
+        {
+            _db.AnswerOptions.RemoveRange(question.AnswerOptions);
+            question.AnswerOptions = dto.AnswerOptions.Select(o => new AnswerOption
+            {
+                Text = InputSanitizer.Sanitize(o.Text)!,
+                IsCorrect = o.IsCorrect
+            }).ToList();
+        }
+
+        question.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+
+        // Reload topic nav
+        await _db.Entry(question).Reference(q => q.Topic).LoadAsync();
+        await _db.Entry(question.Topic).Reference(t => t.Section!).LoadAsync();
+        await _db.Entry(question.Topic.Section!).Reference(s => s.ExamType).LoadAsync();
+
+        return MapTutorQuestion(question, question.Topic);
+    }
+
+    public async Task<bool> DeleteQuestionAsync(int tutorUserId, int questionId)
+    {
+        var question = await _db.Questions
+            .FirstOrDefaultAsync(q => q.Id == questionId && q.CreatedByTutorId == tutorUserId);
+
+        if (question == null) return false;
+
+        question.IsDeleted = true;
+        question.DeletedAt = DateTime.UtcNow;
+        question.DeletedBy = tutorUserId;
+        await _db.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<TutorQuestionsPageDto> GetMyQuestionsAsync(int tutorUserId, string? search, string? examType, int page, int pageSize)
+    {
+        var query = _db.Questions
+            .Include(q => q.Topic).ThenInclude(t => t.Section!).ThenInclude(s => s.ExamType)
+            .Include(q => q.AnswerOptions)
+            .Where(q => q.CreatedByTutorId == tutorUserId);
+
+        if (!string.IsNullOrWhiteSpace(search))
+            query = query.Where(q => q.Text.Contains(search));
+
+        if (!string.IsNullOrWhiteSpace(examType))
+            query = query.Where(q => q.Topic.Section!.ExamTypeCode == examType);
+
+        var totalCount = await query.CountAsync();
+        var items = await query
+            .OrderByDescending(q => q.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(q => new TutorQuestionListItemDto(
+                q.Id, q.Text, q.Difficulty.ToString(),
+                q.Topic.Name, q.Topic.Section!.Name, q.Topic.Section.ExamTypeCode,
+                q.AnswerOptions.Count, q.CreatedAt
+            ))
+            .ToListAsync();
+
+        return new TutorQuestionsPageDto(items, totalCount, page, pageSize, (int)Math.Ceiling(totalCount / (double)pageSize));
+    }
+
+    public async Task<TutorQuestionDetailDto?> GetQuestionByIdAsync(int tutorUserId, int questionId)
+    {
+        var question = await _db.Questions
+            .Include(q => q.AnswerOptions)
+            .Include(q => q.Topic).ThenInclude(t => t.Section!).ThenInclude(s => s.ExamType)
+            .FirstOrDefaultAsync(q => q.Id == questionId && q.CreatedByTutorId == tutorUserId);
+
+        if (question == null) return null;
+        return MapTutorQuestion(question, question.Topic);
+    }
+
+    public async Task<List<AdminTopicSummaryDto>> GetTopicsAsync()
+    {
+        var topics = await _db.Topics
+            .Include(t => t.Section!)
+            .Include(t => t.Questions)
+            .OrderBy(t => t.Section!.ExamTypeCode)
+            .ThenBy(t => t.SectionId)
+            .ThenBy(t => t.Id)
+            .ToListAsync();
+
+        return topics.Select(t => new AdminTopicSummaryDto(
+            Id: t.Id,
+            Name: t.Name,
+            SectionName: t.Section?.Name ?? "",
+            ExamTypeCode: t.Section?.ExamTypeCode ?? "",
+            QuestionCount: t.Questions.Count
+        )).ToList();
+    }
+
+    private static TutorQuestionDetailDto MapTutorQuestion(Question q, Topic topic)
+    {
+        return new TutorQuestionDetailDto(
+            q.Id, q.TopicId, topic.Name,
+            topic.Section?.Name ?? "", topic.Section?.ExamTypeCode ?? "",
+            q.Text, q.Difficulty.ToString(), q.Explanation, q.CreatedAt,
+            q.AnswerOptions.Select(a => new AdminAnswerOptionDto(a.Id, a.Text, a.IsCorrect)).ToList()
+        );
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  ASSIGNMENTS (Sprint 7 Этап 3)
+    // ═══════════════════════════════════════════════════════
+
+    public async Task<AssignmentDetailDto> CreateAssignmentAsync(int tutorUserId, CreateAssignmentDto dto)
+    {
+        if (string.IsNullOrWhiteSpace(dto.Title))
+            throw new ArgumentException("Title is required");
+        if (dto.QuestionIds == null || dto.QuestionIds.Count == 0)
+            throw new ArgumentException("At least one question is required");
+        if (dto.StudentUserIds == null || dto.StudentUserIds.Count == 0)
+            throw new ArgumentException("At least one student is required");
+
+        // Verify all questions exist (tutor's own + platform)
+        var questionIds = dto.QuestionIds.Distinct().ToList();
+        var questions = await _db.Questions
+            .Where(q => questionIds.Contains(q.Id) && (q.CreatedByTutorId == null || q.CreatedByTutorId == tutorUserId))
+            .ToListAsync();
+        if (questions.Count != questionIds.Count)
+            throw new ArgumentException("Some questions not found or not accessible");
+
+        // Verify students are linked to this tutor
+        var linkedStudentIds = await _db.TutorStudents
+            .Where(ts => ts.TutorUserId == tutorUserId && ts.Status == TutorStudentStatus.Active)
+            .Select(ts => ts.StudentUserId)
+            .ToListAsync();
+        var studentIds = dto.StudentUserIds.Distinct().ToList();
+        if (studentIds.Any(sid => !linkedStudentIds.Contains(sid)))
+            throw new ArgumentException("Some students are not linked to you");
+
+        var assignment = new Assignment
+        {
+            TutorUserId = tutorUserId,
+            Title = InputSanitizer.Sanitize(dto.Title)!,
+            Description = dto.Description != null ? InputSanitizer.Sanitize(dto.Description) : null,
+            Deadline = dto.Deadline,
+            CreatedAt = DateTime.UtcNow,
+            Questions = questionIds.Select((qid, idx) => new AssignmentQuestion
+            {
+                QuestionId = qid,
+                OrderIndex = idx
+            }).ToList(),
+            Students = studentIds.Select(sid => new AssignmentStudent
+            {
+                StudentUserId = sid,
+                Status = AssignmentStudentStatus.Assigned
+            }).ToList()
+        };
+
+        _db.Assignments.Add(assignment);
+        await _db.SaveChangesAsync();
+
+        return await GetAssignmentAsync(tutorUserId, assignment.Id)
+            ?? throw new InvalidOperationException("Failed to load created assignment");
+    }
+
+    public async Task<AssignmentDetailDto?> UpdateAssignmentAsync(int tutorUserId, int assignmentId, UpdateAssignmentDto dto)
+    {
+        var assignment = await _db.Assignments
+            .FirstOrDefaultAsync(a => a.Id == assignmentId && a.TutorUserId == tutorUserId);
+        if (assignment == null) return null;
+
+        if (dto.Title != null) assignment.Title = InputSanitizer.Sanitize(dto.Title)!;
+        if (dto.Description != null) assignment.Description = InputSanitizer.Sanitize(dto.Description);
+        if (dto.Deadline.HasValue) assignment.Deadline = dto.Deadline.Value;
+        if (dto.IsActive.HasValue) assignment.IsActive = dto.IsActive.Value;
+
+        await _db.SaveChangesAsync();
+        return await GetAssignmentAsync(tutorUserId, assignmentId);
+    }
+
+    public async Task<bool> DeleteAssignmentAsync(int tutorUserId, int assignmentId)
+    {
+        var assignment = await _db.Assignments
+            .FirstOrDefaultAsync(a => a.Id == assignmentId && a.TutorUserId == tutorUserId);
+        if (assignment == null) return false;
+
+        _db.Assignments.Remove(assignment);
+        await _db.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<List<AssignmentListItemDto>> GetAssignmentsAsync(int tutorUserId)
+    {
+        return await _db.Assignments
+            .Where(a => a.TutorUserId == tutorUserId)
+            .OrderByDescending(a => a.CreatedAt)
+            .Select(a => new AssignmentListItemDto(
+                a.Id, a.Title, a.Description, a.Deadline, a.IsActive,
+                a.Questions.Count,
+                a.Students.Count,
+                a.Students.Count(s => s.Status == AssignmentStudentStatus.Completed),
+                a.CreatedAt
+            ))
+            .ToListAsync();
+    }
+
+    public async Task<AssignmentDetailDto?> GetAssignmentAsync(int tutorUserId, int assignmentId)
+    {
+        var assignment = await _db.Assignments
+            .Include(a => a.Questions).ThenInclude(aq => aq.Question).ThenInclude(q => q.Topic)
+            .Include(a => a.Students).ThenInclude(s => s.StudentUser)
+            .Include(a => a.Students).ThenInclude(s => s.Answers)
+            .FirstOrDefaultAsync(a => a.Id == assignmentId && a.TutorUserId == tutorUserId);
+        if (assignment == null) return null;
+
+        return new AssignmentDetailDto(
+            assignment.Id, assignment.Title, assignment.Description,
+            assignment.Deadline, assignment.IsActive, assignment.CreatedAt,
+            assignment.Questions.OrderBy(q => q.OrderIndex).Select(aq => new AssignmentQuestionDto(
+                aq.QuestionId, aq.Question.Text, aq.Question.Difficulty.ToString(),
+                aq.Question.Topic?.Name ?? "", aq.OrderIndex
+            )).ToList(),
+            assignment.Students.Select(s => new AssignmentStudentProgressDto(
+                s.StudentUserId, s.StudentUser?.Name ?? "",
+                s.Status.ToString(),
+                s.Answers.Count,
+                s.Answers.Count(a => a.IsCorrect),
+                assignment.Questions.Count,
+                s.StartedAt, s.CompletedAt, s.Score
+            )).ToList()
+        );
+    }
+
+    // ── Student-facing ──
+
+    public async Task<List<StudentAssignmentListItemDto>> GetStudentAssignmentsAsync(int studentUserId)
+    {
+        return await _db.AssignmentStudents
+            .Where(s => s.StudentUserId == studentUserId)
+            .Include(s => s.Assignment).ThenInclude(a => a.TutorUser)
+            .Include(s => s.Assignment).ThenInclude(a => a.Questions)
+            .Include(s => s.Answers)
+            .OrderByDescending(s => s.Assignment.CreatedAt)
+            .Select(s => new StudentAssignmentListItemDto(
+                s.AssignmentId, s.Assignment.Title, s.Assignment.Description,
+                s.Assignment.Deadline, s.Assignment.TutorUser.Name,
+                s.Status.ToString(),
+                s.Assignment.Questions.Count,
+                s.Answers.Count,
+                s.Answers.Count(a => a.IsCorrect),
+                s.Score, s.Assignment.CreatedAt
+            ))
+            .ToListAsync();
+    }
+
+    public async Task<StudentAssignmentDetailDto?> GetStudentAssignmentAsync(int studentUserId, int assignmentId)
+    {
+        var aStudent = await _db.AssignmentStudents
+            .Include(s => s.Assignment).ThenInclude(a => a.TutorUser)
+            .Include(s => s.Assignment).ThenInclude(a => a.Questions).ThenInclude(aq => aq.Question).ThenInclude(q => q.AnswerOptions)
+            .Include(s => s.Assignment).ThenInclude(a => a.Questions).ThenInclude(aq => aq.Question).ThenInclude(q => q.Topic)
+            .Include(s => s.Answers)
+            .FirstOrDefaultAsync(s => s.StudentUserId == studentUserId && s.AssignmentId == assignmentId);
+        if (aStudent == null) return null;
+
+        var assignment = aStudent.Assignment;
+        var answersMap = aStudent.Answers.ToDictionary(a => a.QuestionId);
+        var isCompleted = aStudent.Status == AssignmentStudentStatus.Completed;
+
+        return new StudentAssignmentDetailDto(
+            assignment.Id, assignment.Title, assignment.Description,
+            assignment.Deadline, assignment.TutorUser.Name,
+            aStudent.Status.ToString(),
+            assignment.Questions.Count,
+            aStudent.Answers.Count,
+            assignment.Questions.OrderBy(aq => aq.OrderIndex).Select(aq =>
+            {
+                var q = aq.Question;
+                var ans = answersMap.GetValueOrDefault(q.Id);
+                return new StudentAssignmentQuestionDto(
+                    q.Id, q.Text, q.Difficulty.ToString(),
+                    q.AnswerOptions.Select(o => new AdminAnswerOptionDto(o.Id, o.Text, isCompleted && o.IsCorrect)).ToList(),
+                    ans?.SelectedOptionId,
+                    ans?.IsCorrect,
+                    isCompleted ? q.Explanation : null
+                );
+            }).ToList()
+        );
+    }
+
+    public async Task<SubmitAssignmentAnswerResultDto> SubmitAssignmentAnswerAsync(int studentUserId, int assignmentId, SubmitAssignmentAnswerDto dto)
+    {
+        var aStudent = await _db.AssignmentStudents
+            .Include(s => s.Assignment).ThenInclude(a => a.Questions)
+            .Include(s => s.Answers)
+            .FirstOrDefaultAsync(s => s.StudentUserId == studentUserId && s.AssignmentId == assignmentId)
+            ?? throw new ArgumentException("Assignment not found");
+
+        if (aStudent.Status == AssignmentStudentStatus.Completed)
+            throw new ArgumentException("Assignment already completed");
+
+        // Check deadline
+        if (aStudent.Assignment.Deadline.HasValue && DateTime.UtcNow > aStudent.Assignment.Deadline.Value)
+        {
+            aStudent.Status = AssignmentStudentStatus.Overdue;
+            await _db.SaveChangesAsync();
+            throw new ArgumentException("Assignment deadline has passed");
+        }
+
+        // Check question belongs to assignment
+        var aq = aStudent.Assignment.Questions.FirstOrDefault(q => q.QuestionId == dto.QuestionId)
+            ?? throw new ArgumentException("Question not in this assignment");
+
+        // Check not already answered
+        if (aStudent.Answers.Any(a => a.QuestionId == dto.QuestionId))
+            throw new ArgumentException("Question already answered");
+
+        // Validate option
+        var option = await _db.AnswerOptions
+            .FirstOrDefaultAsync(o => o.Id == dto.SelectedOptionId && o.QuestionId == dto.QuestionId)
+            ?? throw new ArgumentException("Invalid option");
+
+        // Start progress if first answer
+        if (aStudent.Status == AssignmentStudentStatus.Assigned)
+        {
+            aStudent.Status = AssignmentStudentStatus.InProgress;
+            aStudent.StartedAt = DateTime.UtcNow;
+        }
+
+        var answer = new AssignmentAnswer
+        {
+            AssignmentStudentId = aStudent.Id,
+            QuestionId = dto.QuestionId,
+            SelectedOptionId = dto.SelectedOptionId,
+            IsCorrect = option.IsCorrect,
+            AnsweredAt = DateTime.UtcNow
+        };
+        _db.AssignmentAnswers.Add(answer);
+
+        var totalQuestions = aStudent.Assignment.Questions.Count;
+        var answeredCount = aStudent.Answers.Count + 1;
+        var correctCount = aStudent.Answers.Count(a => a.IsCorrect) + (option.IsCorrect ? 1 : 0);
+        var isCompleted = answeredCount >= totalQuestions;
+        int? score = null;
+
+        if (isCompleted)
+        {
+            aStudent.Status = AssignmentStudentStatus.Completed;
+            aStudent.CompletedAt = DateTime.UtcNow;
+            score = totalQuestions > 0 ? (int)Math.Round(100.0 * correctCount / totalQuestions) : 0;
+            aStudent.Score = score;
+        }
+
+        await _db.SaveChangesAsync();
+
+        // Get explanation for the question
+        var question = await _db.Questions.FindAsync(dto.QuestionId);
+        var correctOpt = await _db.AnswerOptions
+            .FirstOrDefaultAsync(o => o.QuestionId == dto.QuestionId && o.IsCorrect);
+
+        return new SubmitAssignmentAnswerResultDto(
+            option.IsCorrect,
+            correctOpt?.Id ?? 0,
+            question?.Explanation,
+            answeredCount,
+            totalQuestions,
+            isCompleted,
+            score
+        );
+    }
+
     private static string GenerateCode()
     {
         const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";

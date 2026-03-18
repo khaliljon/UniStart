@@ -227,3 +227,151 @@ public record LinkResultDto(
     bool Success,
     string Message
 );
+
+// ─── Tutor Question Management (Этап 2) ─────────────
+
+public record TutorQuestionListItemDto(
+    int Id,
+    string Text,
+    string Difficulty,
+    string TopicName,
+    string SectionName,
+    string ExamTypeCode,
+    int AnswerCount,
+    DateTime CreatedAt
+);
+
+public record TutorQuestionDetailDto(
+    int Id,
+    int TopicId,
+    string TopicName,
+    string SectionName,
+    string ExamTypeCode,
+    string Text,
+    string Difficulty,
+    string? Explanation,
+    DateTime CreatedAt,
+    List<AdminAnswerOptionDto> AnswerOptions
+);
+
+public record TutorQuestionsPageDto(
+    List<TutorQuestionListItemDto> Items,
+    int TotalCount,
+    int Page,
+    int PageSize,
+    int TotalPages
+);
+
+// ═══════════════════════════════════════════════════════
+//  ASSIGNMENT DTOs (Sprint 7 Этап 3)
+// ═══════════════════════════════════════════════════════
+
+public record CreateAssignmentDto(
+    string Title,
+    string? Description,
+    DateTime? Deadline,
+    List<int> QuestionIds,
+    List<int> StudentUserIds
+);
+
+public record UpdateAssignmentDto(
+    string? Title,
+    string? Description,
+    DateTime? Deadline,
+    bool? IsActive
+);
+
+public record AssignmentListItemDto(
+    int Id,
+    string Title,
+    string? Description,
+    DateTime? Deadline,
+    bool IsActive,
+    int QuestionCount,
+    int StudentCount,
+    int CompletedCount,
+    DateTime CreatedAt
+);
+
+public record AssignmentDetailDto(
+    int Id,
+    string Title,
+    string? Description,
+    DateTime? Deadline,
+    bool IsActive,
+    DateTime CreatedAt,
+    List<AssignmentQuestionDto> Questions,
+    List<AssignmentStudentProgressDto> Students
+);
+
+public record AssignmentQuestionDto(
+    int QuestionId,
+    string Text,
+    string Difficulty,
+    string TopicName,
+    int OrderIndex
+);
+
+public record AssignmentStudentProgressDto(
+    int StudentUserId,
+    string StudentName,
+    string Status,
+    int AnsweredCount,
+    int CorrectCount,
+    int TotalQuestions,
+    DateTime? StartedAt,
+    DateTime? CompletedAt,
+    int? Score
+);
+
+// Student-facing DTOs
+public record StudentAssignmentListItemDto(
+    int Id,
+    string Title,
+    string? Description,
+    DateTime? Deadline,
+    string TutorName,
+    string Status,
+    int TotalQuestions,
+    int AnsweredCount,
+    int CorrectCount,
+    int? Score,
+    DateTime CreatedAt
+);
+
+public record StudentAssignmentDetailDto(
+    int Id,
+    string Title,
+    string? Description,
+    DateTime? Deadline,
+    string TutorName,
+    string Status,
+    int TotalQuestions,
+    int AnsweredCount,
+    List<StudentAssignmentQuestionDto> Questions
+);
+
+public record StudentAssignmentQuestionDto(
+    int QuestionId,
+    string Text,
+    string Difficulty,
+    List<AdminAnswerOptionDto> Options,
+    int? SelectedOptionId,
+    bool? IsCorrect,
+    string? Explanation
+);
+
+public record SubmitAssignmentAnswerDto(
+    int QuestionId,
+    int SelectedOptionId
+);
+
+public record SubmitAssignmentAnswerResultDto(
+    bool IsCorrect,
+    int CorrectOptionId,
+    string? Explanation,
+    int AnsweredCount,
+    int TotalQuestions,
+    bool IsCompleted,
+    int? Score
+);

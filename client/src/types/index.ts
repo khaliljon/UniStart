@@ -1239,6 +1239,39 @@ export interface InviteCodeInfo {
   inviteCode: string;
 }
 
+// ─── Tutor Questions (Этап 2) ───────────────────────────
+export interface TutorQuestionListItem {
+  id: number;
+  text: string;
+  difficulty: string;
+  topicName: string;
+  sectionName: string;
+  examTypeCode: string;
+  answerCount: number;
+  createdAt: string;
+}
+
+export interface TutorQuestionDetail {
+  id: number;
+  topicId: number;
+  topicName: string;
+  sectionName: string;
+  examTypeCode: string;
+  text: string;
+  difficulty: string;
+  explanation: string | null;
+  createdAt: string;
+  answerOptions: AdminAnswerOption[];
+}
+
+export interface TutorQuestionsPage {
+  items: TutorQuestionListItem[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
 // ─── Tutor Schools ──────────────────────────────────────
 export interface TutorSchoolCard {
   id: number;
@@ -1266,4 +1299,95 @@ export interface TutorSchoolDetail {
   specializations: string[];
   isPartner: boolean;
   tutors: TutorCard[];
+}
+
+// ─── Assignments (Этап 3) ──────────────────────────────
+
+export interface AssignmentListItem {
+  id: number;
+  title: string;
+  description: string | null;
+  deadline: string | null;
+  isActive: boolean;
+  questionCount: number;
+  studentCount: number;
+  completedCount: number;
+  createdAt: string;
+}
+
+export interface AssignmentDetail {
+  id: number;
+  title: string;
+  description: string | null;
+  deadline: string | null;
+  isActive: boolean;
+  createdAt: string;
+  questions: AssignmentQuestionInfo[];
+  students: AssignmentStudentProgress[];
+}
+
+export interface AssignmentQuestionInfo {
+  questionId: number;
+  text: string;
+  difficulty: string;
+  topicName: string;
+  orderIndex: number;
+}
+
+export interface AssignmentStudentProgress {
+  studentUserId: number;
+  studentName: string;
+  status: string;
+  answeredCount: number;
+  correctCount: number;
+  totalQuestions: number;
+  startedAt: string | null;
+  completedAt: string | null;
+  score: number | null;
+}
+
+export interface StudentAssignmentListItem {
+  id: number;
+  title: string;
+  description: string | null;
+  deadline: string | null;
+  tutorName: string;
+  status: string;
+  totalQuestions: number;
+  answeredCount: number;
+  correctCount: number;
+  score: number | null;
+  createdAt: string;
+}
+
+export interface StudentAssignmentDetail {
+  id: number;
+  title: string;
+  description: string | null;
+  deadline: string | null;
+  tutorName: string;
+  status: string;
+  totalQuestions: number;
+  answeredCount: number;
+  questions: StudentAssignmentQuestion[];
+}
+
+export interface StudentAssignmentQuestion {
+  questionId: number;
+  text: string;
+  difficulty: string;
+  options: AdminAnswerOption[];
+  selectedOptionId: number | null;
+  isCorrect: boolean | null;
+  explanation: string | null;
+}
+
+export interface SubmitAssignmentAnswerResult {
+  isCorrect: boolean;
+  correctOptionId: number;
+  explanation: string | null;
+  answeredCount: number;
+  totalQuestions: number;
+  isCompleted: boolean;
+  score: number | null;
 }

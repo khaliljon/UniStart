@@ -26,4 +26,24 @@ public interface ITutorService
     Task<LinkResultDto> UnlinkFromTutorAsync(int studentUserId);
     Task<List<TutorStudentDto>> GetLinkedStudentsAsync(int tutorUserId);
     Task<LinkedTutorDto?> GetLinkedTutorAsync(int studentUserId);
+
+    // Tutor question management (Этап 2)
+    Task<TutorQuestionDetailDto> CreateQuestionAsync(int tutorUserId, CreateQuestionDto dto);
+    Task<TutorQuestionDetailDto?> UpdateQuestionAsync(int tutorUserId, int questionId, UpdateQuestionDto dto);
+    Task<bool> DeleteQuestionAsync(int tutorUserId, int questionId);
+    Task<TutorQuestionsPageDto> GetMyQuestionsAsync(int tutorUserId, string? search, string? examType, int page, int pageSize);
+    Task<TutorQuestionDetailDto?> GetQuestionByIdAsync(int tutorUserId, int questionId);
+    Task<List<AdminTopicSummaryDto>> GetTopicsAsync();
+
+    // Assignments (Этап 3)
+    Task<AssignmentDetailDto> CreateAssignmentAsync(int tutorUserId, CreateAssignmentDto dto);
+    Task<AssignmentDetailDto?> UpdateAssignmentAsync(int tutorUserId, int assignmentId, UpdateAssignmentDto dto);
+    Task<bool> DeleteAssignmentAsync(int tutorUserId, int assignmentId);
+    Task<List<AssignmentListItemDto>> GetAssignmentsAsync(int tutorUserId);
+    Task<AssignmentDetailDto?> GetAssignmentAsync(int tutorUserId, int assignmentId);
+
+    // Student-facing assignments
+    Task<List<StudentAssignmentListItemDto>> GetStudentAssignmentsAsync(int studentUserId);
+    Task<StudentAssignmentDetailDto?> GetStudentAssignmentAsync(int studentUserId, int assignmentId);
+    Task<SubmitAssignmentAnswerResultDto> SubmitAssignmentAnswerAsync(int studentUserId, int assignmentId, SubmitAssignmentAnswerDto dto);
 }

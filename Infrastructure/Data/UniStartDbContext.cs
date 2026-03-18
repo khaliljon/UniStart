@@ -59,6 +59,12 @@ public class UniStartDbContext : DbContext
     public DbSet<ImportedQuestionDraft> ImportedQuestionDrafts => Set<ImportedQuestionDraft>();
     public DbSet<ImportJobFile> ImportJobFiles => Set<ImportJobFile>();
 
+    // Assignment entities (Sprint 7 Этап 3)
+    public DbSet<Assignment> Assignments => Set<Assignment>();
+    public DbSet<AssignmentQuestion> AssignmentQuestions => Set<AssignmentQuestion>();
+    public DbSet<AssignmentStudent> AssignmentStudents => Set<AssignmentStudent>();
+    public DbSet<AssignmentAnswer> AssignmentAnswers => Set<AssignmentAnswer>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -146,6 +152,14 @@ public class UniStartDbContext : DbContext
             // Soft delete (OP-9)
             entity.HasQueryFilter(e => !e.IsDeleted);
             entity.Property(e => e.IsDeleted).HasDefaultValue(false);
+
+            // Tutor content (Sprint 7 Этап 2)
+            entity.Property(e => e.IsPrivate).HasDefaultValue(false);
+            entity.HasOne(e => e.CreatedByTutor)
+                  .WithMany()
+                  .HasForeignKey(e => e.CreatedByTutorId)
+                  .OnDelete(DeleteBehavior.SetNull);
+            entity.HasIndex(e => e.CreatedByTutorId).HasDatabaseName("IX_Questions_CreatedByTutorId");
 
             // Performance index (OP-8)
             entity.HasIndex(e => e.TopicId).HasDatabaseName("IX_Questions_TopicId");
@@ -871,6 +885,80 @@ public class UniStartDbContext : DbContext
                   .OnDelete(DeleteBehavior.SetNull);
             entity.HasIndex(e => new { e.ImportJobId, e.Status })
                   .HasDatabaseName("IX_ImportedQuestionDrafts_Job_Status");
+        });
+
+        // ═══════════════════════════════════════════════════════
+        //  ASSIGNMENT (Sprint 7 Этап 3)
+        // ═══════════════════════════════════════════════════════
+
+        modelBuilder.Entity<Assignment>(entity =>
+        {
+            entity.ToTable("Assignments");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Description).HasMaxLength(2000);
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.HasOne(e => e.TutorUser)
+                  .WithMany()
+                  .HasForeignKey(e => e.TutorUserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(e => e.TutorUserId).HasDatabaseName("IX_Assignments_TutorUserId");
+        });
+
+        modelBuilder.Entity<AssignmentQuestion>(entity =>
+        {
+            entity.ToTable("AssignmentQuestions");
+            entity.HasKey(e => e.Id);
+            entity.HasOne(e => e.Assignment)
+                  .WithMany(a => a.Questions)
+                  .HasForeignKey(e => e.AssignmentId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Question)
+                  .WithMany()
+                  .HasForeignKey(e => e.QuestionId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(e => new { e.AssignmentId, e.QuestionId })
+                  .IsUnique()
+                  .HasDatabaseName("IX_AssignmentQuestions_Assignment_Question");
+        });
+
+        modelBuilder.Entity<AssignmentStudent>(entity =>
+        {
+            entity.ToTable("AssignmentStudents");
+            entity.HasKey(e => e.Id);
+            entity.HasOne(e => e.Assignment)
+                  .WithMany(a => a.Students)
+                  .HasForeignKey(e => e.AssignmentId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.StudentUser)
+                  .WithMany()
+                  .HasForeignKey(e => e.StudentUserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(e => new { e.AssignmentId, e.StudentUserId })
+                  .IsUnique()
+                  .HasDatabaseName("IX_AssignmentStudents_Assignment_Student");
+            entity.HasIndex(e => e.StudentUserId).HasDatabaseName("IX_AssignmentStudents_StudentUserId");
+        });
+
+        modelBuilder.Entity<AssignmentAnswer>(entity =>
+        {
+            entity.ToTable("AssignmentAnswers");
+            entity.HasKey(e => e.Id);
+            entity.HasOne(e => e.AssignmentStudent)
+                  .WithMany(s => s.Answers)
+                  .HasForeignKey(e => e.AssignmentStudentId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Question)
+                  .WithMany()
+                  .HasForeignKey(e => e.QuestionId)
+                  .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.SelectedOption)
+                  .WithMany()
+                  .HasForeignKey(e => e.SelectedOptionId)
+                  .OnDelete(DeleteBehavior.Restrict);
+            entity.HasIndex(e => new { e.AssignmentStudentId, e.QuestionId })
+                  .IsUnique()
+                  .HasDatabaseName("IX_AssignmentAnswers_Student_Question");
         });
 
         // Seed exam types

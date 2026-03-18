@@ -43,6 +43,7 @@ export interface Translations {
     lightMode: string;
     language: string;
     notifications: string;
+    assignments: string;
   };
 
   // ─── Auth ───
@@ -988,6 +989,43 @@ export interface Translations {
     unlinkStudent: string;
     confirmUnlinkStudent: string;
     linkedSince: string;
+    // Tutor Questions (Этап 2)
+    myQuestions: string;
+    totalQuestions: string;
+    createQuestion: string;
+    editQuestion: string;
+    searchQuestions: string;
+    noQuestions: string;
+    noQuestionsDesc: string;
+    questionText: string;
+    topic: string;
+    exam: string;
+    difficulty: string;
+    options: string;
+    section: string;
+    allSections: string;
+    selectTopic: string;
+    enterQuestionText: string;
+    minTwoOptions: string;
+    markCorrectOption: string;
+    questionCreated: string;
+    questionSaveError: string;
+    questionDeleted: string;
+    questionDeleteError: string;
+    confirmDeleteQuestion: string;
+    questionsLoadError: string;
+    explanation: string;
+    explanationPlaceholder: string;
+    edit: string;
+    delete: string;
+    cancel: string;
+    create: string;
+    save: string;
+    answerOptions: string;
+    option: string;
+    addOption: string;
+    markCorrect: string;
+    mathTarget: string;
   };
 
   // ─── Legal ───

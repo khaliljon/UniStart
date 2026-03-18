@@ -14,6 +14,14 @@ import type {
   LinkResult,
   TutorStudentInfo,
   LinkedTutorInfo,
+  TutorQuestionsPage,
+  TutorQuestionDetail,
+  AdminTopicSummary,
+  AssignmentListItem,
+  AssignmentDetail,
+  StudentAssignmentListItem,
+  StudentAssignmentDetail,
+  SubmitAssignmentAnswerResult,
 } from '../types';
 
 export interface TutorListParams {
@@ -110,6 +118,106 @@ export const tutorService = {
 
   async getMyTutor(): Promise<LinkedTutorInfo> {
     const response = await api.get<LinkedTutorInfo>('/tutors/my-tutor');
+    return response.data;
+  },
+
+  // ── Tutor question management (Этап 2) ──
+
+  async getMyQuestions(params: { search?: string; examType?: string; page?: number; pageSize?: number } = {}): Promise<TutorQuestionsPage> {
+    const response = await api.get<TutorQuestionsPage>('/tutors/questions', { params });
+    return response.data;
+  },
+
+  async getQuestion(questionId: number): Promise<TutorQuestionDetail> {
+    const response = await api.get<TutorQuestionDetail>(`/tutors/questions/${questionId}`);
+    return response.data;
+  },
+
+  async createQuestion(data: {
+    topicId: number;
+    text: string;
+    difficulty: string;
+    explanation?: string;
+    answerOptions: { text: string; isCorrect: boolean }[];
+  }): Promise<TutorQuestionDetail> {
+    const response = await api.post<TutorQuestionDetail>('/tutors/questions', data);
+    return response.data;
+  },
+
+  async updateQuestion(questionId: number, data: {
+    topicId?: number;
+    text?: string;
+    difficulty?: string;
+    explanation?: string;
+    answerOptions?: { text: string; isCorrect: boolean }[];
+  }): Promise<TutorQuestionDetail> {
+    const response = await api.put<TutorQuestionDetail>(`/tutors/questions/${questionId}`, data);
+    return response.data;
+  },
+
+  async deleteQuestion(questionId: number): Promise<void> {
+    await api.delete(`/tutors/questions/${questionId}`);
+  },
+
+  async getTopics(): Promise<AdminTopicSummary[]> {
+    const response = await api.get<AdminTopicSummary[]>('/tutors/topics');
+    return response.data;
+  },
+
+  // ─── Assignments (Этап 3) ──────────────────────────────
+
+  async getAssignments(): Promise<AssignmentListItem[]> {
+    const response = await api.get<AssignmentListItem[]>('/tutors/assignments');
+    return response.data;
+  },
+
+  async getAssignment(id: number): Promise<AssignmentDetail> {
+    const response = await api.get<AssignmentDetail>(`/tutors/assignments/${id}`);
+    return response.data;
+  },
+
+  async createAssignment(data: {
+    title: string;
+    description?: string;
+    deadline?: string;
+    questionIds: number[];
+    studentUserIds: number[];
+  }): Promise<AssignmentDetail> {
+    const response = await api.post<AssignmentDetail>('/tutors/assignments', data);
+    return response.data;
+  },
+
+  async updateAssignment(id: number, data: {
+    title?: string;
+    description?: string | null;
+    deadline?: string | null;
+    isActive?: boolean;
+  }): Promise<AssignmentDetail> {
+    const response = await api.put<AssignmentDetail>(`/tutors/assignments/${id}`, data);
+    return response.data;
+  },
+
+  async deleteAssignment(id: number): Promise<void> {
+    await api.delete(`/tutors/assignments/${id}`);
+  },
+
+  // Student-facing assignment methods
+
+  async getMyAssignments(): Promise<StudentAssignmentListItem[]> {
+    const response = await api.get<StudentAssignmentListItem[]>('/tutors/my-assignments');
+    return response.data;
+  },
+
+  async getMyAssignment(id: number): Promise<StudentAssignmentDetail> {
+    const response = await api.get<StudentAssignmentDetail>(`/tutors/my-assignments/${id}`);
+    return response.data;
+  },
+
+  async submitAssignmentAnswer(assignmentId: number, data: {
+    questionId: number;
+    selectedOptionId: number;
+  }): Promise<SubmitAssignmentAnswerResult> {
+    const response = await api.post<SubmitAssignmentAnswerResult>(`/tutors/my-assignments/${assignmentId}/answer`, data);
     return response.data;
   },
 };

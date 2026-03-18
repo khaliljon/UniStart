@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using UniStart.Infrastructure.Data;
@@ -11,9 +12,11 @@ using UniStart.Infrastructure.Data;
 namespace UniStart.Migrations
 {
     [DbContext(typeof(UniStartDbContext))]
-    partial class UniStartDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260318203330_AddTutorQuestionContent")]
+    partial class AddTutorQuestionContent
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -45,147 +48,6 @@ namespace UniStart.Migrations
                     b.HasIndex("QuestionId");
 
                     b.ToTable("AnswerOptions", (string)null);
-                });
-
-            modelBuilder.Entity("UniStart.Domain.Entities.Assignment", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime?>("Deadline")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)");
-
-                    b.Property<bool>("IsActive")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(true);
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<int>("TutorUserId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TutorUserId")
-                        .HasDatabaseName("IX_Assignments_TutorUserId");
-
-                    b.ToTable("Assignments", (string)null);
-                });
-
-            modelBuilder.Entity("UniStart.Domain.Entities.AssignmentAnswer", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("AnsweredAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("AssignmentStudentId")
-                        .HasColumnType("integer");
-
-                    b.Property<bool>("IsCorrect")
-                        .HasColumnType("boolean");
-
-                    b.Property<int>("QuestionId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("SelectedOptionId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("QuestionId");
-
-                    b.HasIndex("SelectedOptionId");
-
-                    b.HasIndex("AssignmentStudentId", "QuestionId")
-                        .IsUnique()
-                        .HasDatabaseName("IX_AssignmentAnswers_Student_Question");
-
-                    b.ToTable("AssignmentAnswers", (string)null);
-                });
-
-            modelBuilder.Entity("UniStart.Domain.Entities.AssignmentQuestion", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("AssignmentId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("OrderIndex")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("QuestionId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("QuestionId");
-
-                    b.HasIndex("AssignmentId", "QuestionId")
-                        .IsUnique()
-                        .HasDatabaseName("IX_AssignmentQuestions_Assignment_Question");
-
-                    b.ToTable("AssignmentQuestions", (string)null);
-                });
-
-            modelBuilder.Entity("UniStart.Domain.Entities.AssignmentStudent", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("AssignmentId")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("CompletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int?>("Score")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("StartedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("StudentUserId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("StudentUserId")
-                        .HasDatabaseName("IX_AssignmentStudents_StudentUserId");
-
-                    b.HasIndex("AssignmentId", "StudentUserId")
-                        .IsUnique()
-                        .HasDatabaseName("IX_AssignmentStudents_Assignment_Student");
-
-                    b.ToTable("AssignmentStudents", (string)null);
                 });
 
             modelBuilder.Entity("UniStart.Domain.Entities.AuditLog", b =>
@@ -2214,82 +2076,6 @@ namespace UniStart.Migrations
                     b.Navigation("Question");
                 });
 
-            modelBuilder.Entity("UniStart.Domain.Entities.Assignment", b =>
-                {
-                    b.HasOne("UniStart.Domain.Entities.User", "TutorUser")
-                        .WithMany()
-                        .HasForeignKey("TutorUserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("TutorUser");
-                });
-
-            modelBuilder.Entity("UniStart.Domain.Entities.AssignmentAnswer", b =>
-                {
-                    b.HasOne("UniStart.Domain.Entities.AssignmentStudent", "AssignmentStudent")
-                        .WithMany("Answers")
-                        .HasForeignKey("AssignmentStudentId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("UniStart.Domain.Entities.Question", "Question")
-                        .WithMany()
-                        .HasForeignKey("QuestionId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("UniStart.Domain.Entities.AnswerOption", "SelectedOption")
-                        .WithMany()
-                        .HasForeignKey("SelectedOptionId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("AssignmentStudent");
-
-                    b.Navigation("Question");
-
-                    b.Navigation("SelectedOption");
-                });
-
-            modelBuilder.Entity("UniStart.Domain.Entities.AssignmentQuestion", b =>
-                {
-                    b.HasOne("UniStart.Domain.Entities.Assignment", "Assignment")
-                        .WithMany("Questions")
-                        .HasForeignKey("AssignmentId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("UniStart.Domain.Entities.Question", "Question")
-                        .WithMany()
-                        .HasForeignKey("QuestionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Assignment");
-
-                    b.Navigation("Question");
-                });
-
-            modelBuilder.Entity("UniStart.Domain.Entities.AssignmentStudent", b =>
-                {
-                    b.HasOne("UniStart.Domain.Entities.Assignment", "Assignment")
-                        .WithMany("Students")
-                        .HasForeignKey("AssignmentId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("UniStart.Domain.Entities.User", "StudentUser")
-                        .WithMany()
-                        .HasForeignKey("StudentUserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Assignment");
-
-                    b.Navigation("StudentUser");
-                });
-
             modelBuilder.Entity("UniStart.Domain.Entities.AuditLog", b =>
                 {
                     b.HasOne("UniStart.Domain.Entities.User", "User")
@@ -2981,18 +2767,6 @@ namespace UniStart.Migrations
             modelBuilder.Entity("UniStart.Domain.Entities.AnswerOption", b =>
                 {
                     b.Navigation("UserAnswers");
-                });
-
-            modelBuilder.Entity("UniStart.Domain.Entities.Assignment", b =>
-                {
-                    b.Navigation("Questions");
-
-                    b.Navigation("Students");
-                });
-
-            modelBuilder.Entity("UniStart.Domain.Entities.AssignmentStudent", b =>
-                {
-                    b.Navigation("Answers");
                 });
 
             modelBuilder.Entity("UniStart.Domain.Entities.Conversation", b =>
