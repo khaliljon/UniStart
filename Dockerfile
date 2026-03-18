@@ -9,6 +9,10 @@ WORKDIR /src
 COPY UniStart.csproj ./
 RUN dotnet restore UniStart.csproj
 
+# EF Core tools for migrations
+RUN dotnet tool install --global dotnet-ef
+ENV PATH="$PATH:/root/.dotnet/tools"
+
 COPY . .
 RUN dotnet publish UniStart.csproj -c Release -o /app/publish --no-restore
 
