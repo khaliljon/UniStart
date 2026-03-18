@@ -1,54 +1,27 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from '../hooks/useTranslation';
+import type { Translations } from '../i18n/types';
 
 interface TourStep {
-  target: string;        // CSS selector for the element to highlight
-  title: string;
-  description: string;
+  target: string;
+  titleKey: keyof Translations['tour'];
+  descKey: keyof Translations['tour'];
   placement: 'top' | 'bottom' | 'left' | 'right';
 }
 
 const TOUR_STEPS: TourStep[] = [
-  {
-    target: '.navbar-brand',
-    title: 'Welcome to UniStart!',
-    description: 'This is your exam preparation platform. Let us give you a quick tour of the key features.',
-    placement: 'bottom',
-  },
-  {
-    target: '.navbar-nav li:nth-child(1) a',
-    title: 'Dashboard',
-    description: 'Your home page shows daily recommendations, streak progress, and quick access to practice sessions.',
-    placement: 'bottom',
-  },
-  {
-    target: '.navbar-nav li:nth-child(2) a',
-    title: 'Learning Hub',
-    description: 'Access topics, flashcards, formulas, strategy guides, timed drills, and mock exams — all in one place.',
-    placement: 'bottom',
-  },
-  {
-    target: '.navbar-nav li:nth-child(3) a',
-    title: 'Progress Tracking',
-    description: 'View your analytics, score predictions, test history, and see how you compare with other students.',
-    placement: 'bottom',
-  },
-  {
-    target: '.navbar-nav li:nth-child(4) a',
-    title: 'Study Plan',
-    description: 'Your personalised AI-powered study plan adapts to your strengths and weaknesses automatically.',
-    placement: 'bottom',
-  },
-  {
-    target: '.profile-dropdown',
-    title: 'Your Profile',
-    description: 'Access settings, notification preferences, and manage your account from here. You are all set -- let us start learning!',
-    placement: 'bottom',
-  },
+  { target: '.navbar-brand', titleKey: 'welcomeTitle', descKey: 'welcomeDesc', placement: 'bottom' },
+  { target: '.navbar-nav li:nth-child(1) a', titleKey: 'dashboardTitle', descKey: 'dashboardDesc', placement: 'bottom' },
+  { target: '.navbar-nav li:nth-child(2) a', titleKey: 'learnTitle', descKey: 'learnDesc', placement: 'bottom' },
+  { target: '.navbar-nav li:nth-child(3) a', titleKey: 'progressTitle', descKey: 'progressDesc', placement: 'bottom' },
+  { target: '.navbar-nav li:nth-child(4) a', titleKey: 'studyPlanTitle', descKey: 'studyPlanDesc', placement: 'bottom' },
+  { target: '.profile-dropdown', titleKey: 'profileTitle', descKey: 'profileDesc', placement: 'bottom' },
 ];
 
 const STORAGE_KEY = 'unistart_tour_completed';
 
 export default function GuidedTour() {
+  const { t } = useTranslation();
   const [currentStep, setCurrentStep] = useState(0);
   const [visible, setVisible] = useState(false);
   const [tooltipPos, setTooltipPos] = useState({ top: 0, left: 0 });
@@ -211,7 +184,7 @@ export default function GuidedTour() {
         }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-          <h4 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#1e293b' }}>{step.title}</h4>
+          <h4 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#1e293b' }}>{t.tour[step.titleKey]}</h4>
           <button
             onClick={handleClose}
             style={{
@@ -228,7 +201,7 @@ export default function GuidedTour() {
             ×
           </button>
         </div>
-        <p style={{ margin: '0 0 16px', fontSize: 14, lineHeight: 1.6, color: '#475569' }}>{step.description}</p>
+        <p style={{ margin: '0 0 16px', fontSize: 14, lineHeight: 1.6, color: '#475569' }}>{t.tour[step.descKey]}</p>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontSize: 12, color: '#94a3b8' }}>
@@ -249,7 +222,7 @@ export default function GuidedTour() {
                   fontWeight: 500,
                 }}
               >
-                Back
+                {t.tour.back}
               </button>
             )}
             <button
@@ -265,7 +238,7 @@ export default function GuidedTour() {
                 fontWeight: 600,
               }}
             >
-              {isLast ? 'Get Started' : 'Next'}
+              {isLast ? t.tour.getStarted : t.tour.next}
             </button>
           </div>
         </div>

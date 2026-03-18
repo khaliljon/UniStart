@@ -1045,4 +1045,21 @@ export interface Translations {
     consentText: string;
     consentRequired: string;
   };
+  tour: {
+    welcomeTitle: string;
+    welcomeDesc: string;
+    dashboardTitle: string;
+    dashboardDesc: string;
+    learnTitle: string;
+    learnDesc: string;
+    progressTitle: string;
+    progressDesc: string;
+    studyPlanTitle: string;
+    studyPlanDesc: string;
+    profileTitle: string;
+    profileDesc: string;
+    next: string;
+    back: string;
+    getStarted: string;
+  };
 }
