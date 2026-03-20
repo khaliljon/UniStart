@@ -43,6 +43,7 @@ const TutorProfileEditPage = lazy(() => import('./pages/TutorProfileEditPage'))
 const TutorReviewsPage = lazy(() => import('./pages/TutorReviewsPage'))
 const TutorQuestionsPage = lazy(() => import('./pages/TutorQuestionsPage'))
 const TutorAssignmentsPage = lazy(() => import('./pages/TutorAssignmentsPage'))
+const TutorSchoolManagePage = lazy(() => import('./pages/TutorSchoolManagePage'))
 const StudentAssignmentsPage = lazy(() => import('./pages/StudentAssignmentsPage'))
 
 // ── Suspense fallback ───────────────────────────────────
@@ -110,6 +111,7 @@ function TutorRoutes() {
       <Route path="assignments" element={<TutorAssignmentsPage />} />
       <Route path="messages" element={<MessagesPage />} />
       <Route path="schedule" element={<TutorSchedulePage />} />
+      <Route path="school" element={<TutorSchoolManagePage />} />
       <Route path="reviews" element={<TutorReviewsPage />} />
       <Route path="my-profile" element={<TutorProfileEditPage />} />
       <Route path="profile" element={<ProfilePage />} />

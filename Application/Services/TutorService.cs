@@ -93,13 +93,34 @@ public class TutorService : ITutorService
                 .ThenInclude(r => r.Student)
             .FirstOrDefaultAsync(x => x.UserId == userId);
 
-        if (tp == null) return null;
+        // Auto-create TutorProfile if user has Tutor role but no profile yet
+        if (tp == null)
+        {
+            var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId && u.Role == UserRole.Tutor && !u.IsDeleted);
+            if (user == null) return null;
+
+            tp = new TutorProfile
+            {
+                UserId = userId,
+                User = user,
+                Headline = $"Тьютор {user.Name}",
+                Bio = "",
+                Experience = "",
+                Specializations = "",
+                IsAvailable = true
+            };
+            _db.TutorProfiles.Add(tp);
+            await _db.SaveChangesAsync();
+        }
 
         return MapToDetail(tp);
     }
 
     public async Task<TutorProfileDetailDto> UpdateMyProfileAsync(int userId, UpdateTutorProfileDto dto)
     {
+        // Auto-create if missing
+        await EnsureTutorProfileAsync(userId);
+
         var tp = await _db.TutorProfiles
             .Include(x => x.User)
             .Include(x => x.Schedule)
@@ -409,8 +430,160 @@ public class TutorService : ITutorService
             school.Specializations.Length > 0
                 ? school.Specializations.Split(',', StringSplitOptions.RemoveEmptyEntries)
                 : Array.Empty<string>(),
-            school.IsPartner, tutorCards
+            school.IsPartner, school.OwnerUserId, tutorCards
         );
+    }
+
+    // ═══ School Management (Этап 4) ═════════════════════════
+
+    public async Task<SchoolAdminDto> CreateSchoolAsync(int ownerUserId, CreateSchoolDto dto)
+    {
+        var slug = GenerateSlug(dto.Name);
+
+        // Ensure slug is unique
+        var slugExists = await _db.TutorSchools.AnyAsync(s => s.Slug == slug);
+        if (slugExists)
+            slug = $"{slug}-{DateTime.UtcNow.Ticks % 10000}";
+
+        var school = new TutorSchool
+        {
+            Name = InputSanitizer.Sanitize(dto.Name)!,
+            Slug = slug,
+            Description = InputSanitizer.Sanitize(dto.Description) ?? string.Empty,
+            LogoUrl = dto.LogoUrl,
+            WebsiteUrl = dto.WebsiteUrl,
+            InstagramUrl = dto.InstagramUrl,
+            TelegramUrl = dto.TelegramUrl,
+            Specializations = dto.Specializations?.Trim() ?? string.Empty,
+            OwnerUserId = ownerUserId,
+            IsPartner = false,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow,
+        };
+        _db.TutorSchools.Add(school);
+
+        // Also link the owner's tutor profile to this school
+        var profile = await _db.TutorProfiles.FirstOrDefaultAsync(p => p.UserId == ownerUserId);
+        if (profile != null)
+        {
+            profile.SchoolId = school.Id;
+            profile.UpdatedAt = DateTime.UtcNow;
+        }
+
+        await _db.SaveChangesAsync();
+        return MapToSchoolAdminDto(school, profile != null ? 1 : 0);
+    }
+
+    public async Task<SchoolAdminDto?> GetMySchoolAsync(int ownerUserId)
+    {
+        var school = await _db.TutorSchools
+            .Include(s => s.Tutors)
+            .FirstOrDefaultAsync(s => s.OwnerUserId == ownerUserId && s.IsActive);
+        if (school == null) return null;
+
+        var tutorCount = school.Tutors.Count(t => t.User == null || (!t.User.IsDeleted));
+        return MapToSchoolAdminDto(school, tutorCount);
+    }
+
+    public async Task<SchoolAdminDto?> UpdateSchoolAsync(int ownerUserId, UpdateSchoolDto dto)
+    {
+        var school = await _db.TutorSchools
+            .Include(s => s.Tutors)
+            .FirstOrDefaultAsync(s => s.OwnerUserId == ownerUserId && s.IsActive);
+        if (school == null) return null;
+
+        if (dto.Name != null) school.Name = InputSanitizer.Sanitize(dto.Name)!;
+        if (dto.Description != null) school.Description = InputSanitizer.Sanitize(dto.Description) ?? string.Empty;
+        if (dto.LogoUrl != null) school.LogoUrl = dto.LogoUrl;
+        if (dto.WebsiteUrl != null) school.WebsiteUrl = dto.WebsiteUrl;
+        if (dto.InstagramUrl != null) school.InstagramUrl = dto.InstagramUrl;
+        if (dto.TelegramUrl != null) school.TelegramUrl = dto.TelegramUrl;
+        if (dto.Specializations != null) school.Specializations = dto.Specializations.Trim();
+        school.UpdatedAt = DateTime.UtcNow;
+
+        await _db.SaveChangesAsync();
+        return MapToSchoolAdminDto(school, school.Tutors.Count);
+    }
+
+    public async Task<LinkResultDto> AddTutorToSchoolAsync(int ownerUserId, int tutorUserId)
+    {
+        var school = await _db.TutorSchools
+            .FirstOrDefaultAsync(s => s.OwnerUserId == ownerUserId && s.IsActive);
+        if (school == null) return new LinkResultDto(false, "School not found");
+
+        var tutorProfile = await _db.TutorProfiles
+            .Include(p => p.User)
+            .FirstOrDefaultAsync(p => p.UserId == tutorUserId && p.User.Role == UserRole.Tutor && !p.User.IsDeleted);
+        if (tutorProfile == null) return new LinkResultDto(false, "Tutor not found");
+
+        if (tutorProfile.SchoolId == school.Id)
+            return new LinkResultDto(false, "Tutor is already in this school");
+
+        tutorProfile.SchoolId = school.Id;
+        tutorProfile.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+
+        return new LinkResultDto(true, $"Tutor {tutorProfile.User.Name} added to school");
+    }
+
+    public async Task<LinkResultDto> RemoveTutorFromSchoolAsync(int ownerUserId, int tutorUserId)
+    {
+        var school = await _db.TutorSchools
+            .FirstOrDefaultAsync(s => s.OwnerUserId == ownerUserId && s.IsActive);
+        if (school == null) return new LinkResultDto(false, "School not found");
+
+        if (tutorUserId == ownerUserId)
+            return new LinkResultDto(false, "Cannot remove yourself from your own school");
+
+        var tutorProfile = await _db.TutorProfiles
+            .Include(p => p.User)
+            .FirstOrDefaultAsync(p => p.UserId == tutorUserId && p.SchoolId == school.Id);
+        if (tutorProfile == null) return new LinkResultDto(false, "Tutor is not in this school");
+
+        tutorProfile.SchoolId = null;
+        tutorProfile.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+
+        return new LinkResultDto(true, $"Tutor {tutorProfile.User.Name} removed from school");
+    }
+
+    private static SchoolAdminDto MapToSchoolAdminDto(TutorSchool school, int tutorCount)
+    {
+        return new SchoolAdminDto(
+            school.Id, school.Name, school.Slug, school.Description, school.LogoUrl,
+            school.InstagramUrl, school.TelegramUrl, school.WebsiteUrl,
+            school.Specializations.Length > 0
+                ? school.Specializations.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                : Array.Empty<string>(),
+            school.IsPartner, school.IsActive, school.OwnerUserId,
+            tutorCount, school.CreatedAt
+        );
+    }
+
+    private static string GenerateSlug(string name)
+    {
+        var slug = name.ToLowerInvariant().Trim();
+        // Replace Cyrillic basic transliteration
+        var map = new Dictionary<char, string>
+        {
+            ['а']="a",['б']="b",['в']="v",['г']="g",['д']="d",['е']="e",['ё']="yo",
+            ['ж']="zh",['з']="z",['и']="i",['й']="y",['к']="k",['л']="l",['м']="m",
+            ['н']="n",['о']="o",['п']="p",['р']="r",['с']="s",['т']="t",['у']="u",
+            ['ф']="f",['х']="kh",['ц']="ts",['ч']="ch",['ш']="sh",['щ']="shch",
+            ['ъ']="",['ы']="y",['ь']="",['э']="e",['ю']="yu",['я']="ya",
+        };
+        var sb = new System.Text.StringBuilder();
+        foreach (var c in slug)
+        {
+            if (map.TryGetValue(c, out var replacement))
+                sb.Append(replacement);
+            else if (char.IsLetterOrDigit(c))
+                sb.Append(c);
+            else if (c is ' ' or '-' or '_')
+                sb.Append('-');
+        }
+        // Remove consecutive dashes
+        return System.Text.RegularExpressions.Regex.Replace(sb.ToString(), "-{2,}", "-").Trim('-');
     }
 
     // ═══ Tutor-Student Binding ══════════════════════════════
@@ -420,11 +593,24 @@ public class TutorService : ITutorService
         var profile = await _db.TutorProfiles.FirstOrDefaultAsync(p => p.UserId == tutorUserId)
             ?? throw new KeyNotFoundException("Tutor profile not found");
 
-        profile.InviteCode = GenerateCode();
+        var code = GenerateCode();
+
+        // Keep backward compat: set code on profile
+        profile.InviteCode = code;
         profile.UpdatedAt = DateTime.UtcNow;
+
+        // Create tracked invite code entity (S-6)
+        _db.TutorInviteCodes.Add(new TutorInviteCode
+        {
+            TutorUserId = tutorUserId,
+            Code = code,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow,
+        });
+
         await _db.SaveChangesAsync();
 
-        return new InviteCodeDto(profile.InviteCode);
+        return new InviteCodeDto(code);
     }
 
     public async Task<InviteCodeDto?> GetInviteCodeAsync(int tutorUserId)
@@ -432,6 +618,59 @@ public class TutorService : ITutorService
         var profile = await _db.TutorProfiles.FirstOrDefaultAsync(p => p.UserId == tutorUserId);
         if (profile?.InviteCode == null) return null;
         return new InviteCodeDto(profile.InviteCode);
+    }
+
+    public async Task<List<InviteCodeDetailDto>> GetInviteCodesAsync(int tutorUserId)
+    {
+        return await _db.TutorInviteCodes
+            .Where(c => c.TutorUserId == tutorUserId)
+            .OrderByDescending(c => c.CreatedAt)
+            .Select(c => new InviteCodeDetailDto(
+                c.Id, c.Code, c.MaxUses, c.UsedCount,
+                c.ExpiresAt, c.IsActive, c.Note, c.CreatedAt))
+            .ToListAsync();
+    }
+
+    public async Task<InviteCodeDetailDto> CreateInviteCodeAsync(int tutorUserId, CreateInviteCodeDto dto)
+    {
+        var code = GenerateCode();
+
+        var entity = new TutorInviteCode
+        {
+            TutorUserId = tutorUserId,
+            Code = code,
+            MaxUses = dto.MaxUses,
+            ExpiresAt = dto.ExpiresAt,
+            Note = dto.Note?.Trim(),
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow,
+        };
+        _db.TutorInviteCodes.Add(entity);
+
+        // Also update profile's main code for backward compat
+        var profile = await _db.TutorProfiles.FirstOrDefaultAsync(p => p.UserId == tutorUserId);
+        if (profile != null)
+        {
+            profile.InviteCode = code;
+            profile.UpdatedAt = DateTime.UtcNow;
+        }
+
+        await _db.SaveChangesAsync();
+
+        return new InviteCodeDetailDto(
+            entity.Id, entity.Code, entity.MaxUses, entity.UsedCount,
+            entity.ExpiresAt, entity.IsActive, entity.Note, entity.CreatedAt);
+    }
+
+    public async Task<bool> DeactivateInviteCodeAsync(int tutorUserId, int codeId)
+    {
+        var entity = await _db.TutorInviteCodes
+            .FirstOrDefaultAsync(c => c.Id == codeId && c.TutorUserId == tutorUserId);
+        if (entity == null) return false;
+
+        entity.IsActive = false;
+        await _db.SaveChangesAsync();
+        return true;
     }
 
     public async Task<LinkResultDto> LinkStudentByCodeAsync(int studentUserId, string inviteCode)
@@ -446,11 +685,47 @@ public class TutorService : ITutorService
         if (existing != null)
             return new LinkResultDto(false, "You are already linked to a tutor. Unlink first.");
 
-        // Find tutor by code
-        var profile = await _db.TutorProfiles
-            .Include(p => p.User)
-            .FirstOrDefaultAsync(p => p.InviteCode == inviteCode && p.User.Role == UserRole.Tutor && !p.User.IsDeleted);
-        if (profile == null) return new LinkResultDto(false, "Invalid invite code");
+        // Try to find via new TutorInviteCode table first (S-6)
+        var inviteEntity = await _db.TutorInviteCodes
+            .Include(c => c.TutorUser)
+            .FirstOrDefaultAsync(c => c.Code == inviteCode && c.IsActive && c.TutorUser.Role == UserRole.Tutor && !c.TutorUser.IsDeleted);
+
+        TutorProfile? profile;
+        if (inviteEntity != null)
+        {
+            // Validate MaxUses
+            if (inviteEntity.MaxUses.HasValue && inviteEntity.UsedCount >= inviteEntity.MaxUses.Value)
+                return new LinkResultDto(false, "This invite code has reached its usage limit");
+            // Validate ExpiresAt
+            if (inviteEntity.ExpiresAt.HasValue && inviteEntity.ExpiresAt.Value < DateTime.UtcNow)
+                return new LinkResultDto(false, "This invite code has expired");
+            // Check if student already used this code
+            var alreadyUsed = await _db.TutorInviteCodeUsages
+                .AnyAsync(u => u.InviteCodeId == inviteEntity.Id && u.StudentUserId == studentUserId);
+            if (alreadyUsed)
+                return new LinkResultDto(false, "You have already used this invite code");
+
+            profile = await _db.TutorProfiles.Include(p => p.User)
+                .FirstOrDefaultAsync(p => p.UserId == inviteEntity.TutorUserId);
+            if (profile == null) return new LinkResultDto(false, "Tutor profile not found");
+
+            // Track usage
+            inviteEntity.UsedCount++;
+            _db.TutorInviteCodeUsages.Add(new TutorInviteCodeUsage
+            {
+                InviteCodeId = inviteEntity.Id,
+                StudentUserId = studentUserId,
+                UsedAt = DateTime.UtcNow,
+            });
+        }
+        else
+        {
+            // Fallback: legacy TutorProfile.InviteCode lookup
+            profile = await _db.TutorProfiles
+                .Include(p => p.User)
+                .FirstOrDefaultAsync(p => p.InviteCode == inviteCode && p.User.Role == UserRole.Tutor && !p.User.IsDeleted);
+            if (profile == null) return new LinkResultDto(false, "Invalid invite code");
+        }
 
         // Create binding
         _db.TutorStudents.Add(new TutorStudent

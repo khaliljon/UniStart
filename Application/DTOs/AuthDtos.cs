@@ -6,7 +6,7 @@ namespace UniStart.Application.DTOs;
 public record RegisterDto(
     [Required][EmailAddress] string Email,
     [Required][MinLength(2)] string Name,
-    [Required][MinLength(6)] string Password
+    [Required][MinLength(8)] string Password
 );
 
 public record LoginDto(
@@ -42,7 +42,7 @@ public record GoogleLoginDto(
 
 public record ChangePasswordDto(
     [Required] string CurrentPassword,
-    [Required][MinLength(6)] string NewPassword
+    [Required][MinLength(8)] string NewPassword
 );
 
 public record ChangeEmailDto(

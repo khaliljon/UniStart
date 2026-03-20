@@ -1298,7 +1298,46 @@ export interface TutorSchoolDetail {
   websiteUrl: string | null;
   specializations: string[];
   isPartner: boolean;
+  ownerUserId: number | null;
   tutors: TutorCard[];
+}
+
+// ─── School Admin (Этап 4) ─────────────────────────────
+export interface SchoolAdmin {
+  id: number;
+  name: string;
+  slug: string;
+  description: string;
+  logoUrl: string | null;
+  instagramUrl: string | null;
+  telegramUrl: string | null;
+  websiteUrl: string | null;
+  specializations: string[];
+  isPartner: boolean;
+  isActive: boolean;
+  ownerUserId: number | null;
+  tutorCount: number;
+  createdAt: string;
+}
+
+export interface CreateSchoolRequest {
+  name: string;
+  description?: string;
+  logoUrl?: string;
+  websiteUrl?: string;
+  instagramUrl?: string;
+  telegramUrl?: string;
+  specializations?: string;
+}
+
+export interface UpdateSchoolRequest {
+  name?: string;
+  description?: string;
+  logoUrl?: string;
+  websiteUrl?: string;
+  instagramUrl?: string;
+  telegramUrl?: string;
+  specializations?: string;
 }
 
 // ─── Assignments (Этап 3) ──────────────────────────────

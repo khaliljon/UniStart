@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using UniStart.Infrastructure.Data;
@@ -11,9 +12,11 @@ using UniStart.Infrastructure.Data;
 namespace UniStart.Migrations
 {
     [DbContext(typeof(UniStartDbContext))]
-    partial class UniStartDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260319185036_AddSecurityAndInviteCodes")]
+    partial class AddSecurityAndInviteCodes
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1828,9 +1831,6 @@ namespace UniStart.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
-                    b.Property<int?>("OwnerUserId")
-                        .HasColumnType("integer");
-
                     b.Property<string>("Slug")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -1845,16 +1845,11 @@ namespace UniStart.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<string>("WebsiteUrl")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("OwnerUserId");
 
                     b.HasIndex("Slug")
                         .IsUnique();
@@ -2921,16 +2916,6 @@ namespace UniStart.Migrations
                         .IsRequired();
 
                     b.Navigation("TutorProfile");
-                });
-
-            modelBuilder.Entity("UniStart.Domain.Entities.TutorSchool", b =>
-                {
-                    b.HasOne("UniStart.Domain.Entities.User", "Owner")
-                        .WithMany()
-                        .HasForeignKey("OwnerUserId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("Owner");
                 });
 
             modelBuilder.Entity("UniStart.Domain.Entities.TutorStudent", b =>

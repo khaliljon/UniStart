@@ -22,6 +22,9 @@ import type {
   StudentAssignmentListItem,
   StudentAssignmentDetail,
   SubmitAssignmentAnswerResult,
+  SchoolAdmin,
+  CreateSchoolRequest,
+  UpdateSchoolRequest,
 } from '../types';
 
 export interface TutorListParams {
@@ -83,6 +86,34 @@ export const tutorService = {
 
   async getSchool(slug: string): Promise<TutorSchoolDetail> {
     const response = await api.get<TutorSchoolDetail>(`/tutors/schools/${encodeURIComponent(slug)}`);
+    return response.data;
+  },
+
+  // ── School Management (Этап 4) ──
+
+  async createSchool(data: CreateSchoolRequest): Promise<SchoolAdmin> {
+    const response = await api.post<SchoolAdmin>('/tutors/schools', data);
+    return response.data;
+  },
+
+  async getMySchool(): Promise<SchoolAdmin | null> {
+    const response = await api.get<SchoolAdmin | { school: null }>('/tutors/my-school');
+    if ('school' in response.data && response.data.school === null) return null;
+    return response.data as SchoolAdmin;
+  },
+
+  async updateMySchool(data: UpdateSchoolRequest): Promise<SchoolAdmin> {
+    const response = await api.put<SchoolAdmin>('/tutors/my-school', data);
+    return response.data;
+  },
+
+  async addTutorToSchool(tutorUserId: number): Promise<LinkResult> {
+    const response = await api.post<LinkResult>(`/tutors/my-school/tutors/${tutorUserId}`);
+    return response.data;
+  },
+
+  async removeTutorFromSchool(tutorUserId: number): Promise<LinkResult> {
+    const response = await api.delete<LinkResult>(`/tutors/my-school/tutors/${tutorUserId}`);
     return response.data;
   },
 

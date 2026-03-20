@@ -39,6 +39,8 @@ public class UniStartDbContext : DbContext
     public DbSet<Conversation> Conversations => Set<Conversation>();
     public DbSet<Message> Messages => Set<Message>();
     public DbSet<TutorStudent> TutorStudents => Set<TutorStudent>();
+    public DbSet<TutorInviteCode> TutorInviteCodes => Set<TutorInviteCode>();
+    public DbSet<TutorInviteCodeUsage> TutorInviteCodeUsages => Set<TutorInviteCodeUsage>();
 
     // Learning v2 entities
     public DbSet<LessonStep> LessonSteps => Set<LessonStep>();
@@ -512,6 +514,10 @@ public class UniStartDbContext : DbContext
             entity.Property(e => e.IsActive).HasDefaultValue(true);
             entity.Property(e => e.IsPartner).HasDefaultValue(true);
             entity.HasIndex(e => e.Slug).IsUnique();
+            entity.HasOne(e => e.Owner)
+                  .WithMany()
+                  .HasForeignKey(e => e.OwnerUserId)
+                  .OnDelete(DeleteBehavior.SetNull);
         });
 
         // ─── Tutor Schedule Slot ────────────────────────────
@@ -959,6 +965,46 @@ public class UniStartDbContext : DbContext
             entity.HasIndex(e => new { e.AssignmentStudentId, e.QuestionId })
                   .IsUnique()
                   .HasDatabaseName("IX_AssignmentAnswers_Student_Question");
+        });
+
+        // ═══════════════════════════════════════════════════════
+        //  TUTOR INVITE CODES (S-6)
+        // ═══════════════════════════════════════════════════════
+
+        modelBuilder.Entity<TutorInviteCode>(entity =>
+        {
+            entity.ToTable("TutorInviteCodes");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Code).IsRequired().HasMaxLength(8);
+            entity.Property(e => e.Note).HasMaxLength(200);
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.UsedCount).HasDefaultValue(0);
+            entity.HasOne(e => e.TutorUser)
+                  .WithMany()
+                  .HasForeignKey(e => e.TutorUserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(e => e.Code)
+                  .IsUnique()
+                  .HasDatabaseName("IX_TutorInviteCodes_Code");
+            entity.HasIndex(e => e.TutorUserId)
+                  .HasDatabaseName("IX_TutorInviteCodes_TutorUserId");
+        });
+
+        modelBuilder.Entity<TutorInviteCodeUsage>(entity =>
+        {
+            entity.ToTable("TutorInviteCodeUsages");
+            entity.HasKey(e => e.Id);
+            entity.HasOne(e => e.InviteCode)
+                  .WithMany(c => c.Usages)
+                  .HasForeignKey(e => e.InviteCodeId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.StudentUser)
+                  .WithMany()
+                  .HasForeignKey(e => e.StudentUserId)
+                  .OnDelete(DeleteBehavior.Restrict);
+            entity.HasIndex(e => new { e.InviteCodeId, e.StudentUserId })
+                  .IsUnique()
+                  .HasDatabaseName("IX_TutorInviteCodeUsages_Code_Student");
         });
 
         // Seed exam types

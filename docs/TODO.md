@@ -429,11 +429,17 @@ AssignmentAnswer {
 - [x] i18n: навигационный ключ `assignments` (ru/en/kz)
 - [x] Навигация: роуты `/assignments` для тьютора и ученика + ссылки в Layout
 
-#### Этап 4 — Школьный профиль
-- [ ] Модели `School`, `SchoolTutor` + миграция
-- [ ] API: CRUD школы, управление тьюторами, подписка
-- [ ] Frontend: публичная страница школы `/schools/:slug`
-- [ ] Frontend: панель администратора школы
+#### Этап 4 — Школьный профиль ✅
+- [x] `TutorSchool` — добавлены `OwnerUserId`, `UpdatedAt`, FK → Users
+- [x] Миграция `AddSchoolOwnerAndUpdatedAt`
+- [x] DTOs: `CreateSchoolDto`, `UpdateSchoolDto`, `SchoolAdminDto`
+- [x] API: CRUD школы + управление тьюторами (5 эндпоинтов в TutorController)
+- [x] `TutorService`: `CreateSchool`, `GetMySchool`, `UpdateSchool`, `AddTutor`, `RemoveTutor` + slug-генерация (кириллица→латиница)
+- [x] Frontend: типы `SchoolAdmin`, `CreateSchoolRequest`, `UpdateSchoolRequest`
+- [x] Frontend: `tutorService` — 5 методов API (create, getMySchool, update, addTutor, removeTutor)
+- [x] Frontend: `TutorSchoolManagePage` — создание школы / редактирование / управление преподавателями
+- [x] Навигация: «Школа» в `TutorLayout`, роут `/school` в `App.tsx`
+- [ ] Frontend: публичная страница школы `/schools/:slug` (уже существует базовая)
 - [ ] Интеграция LinHao International School как первый пилот
 
 #### Этап 5 — Платёжная интеграция
@@ -441,3 +447,174 @@ AssignmentAnswer {
 - [ ] Автоматическое продление подписки
 - [ ] Скидка при привязке к тьютору (автоматический расчёт)
 - [ ] Чеки и история платежей
+
+---
+
+### Sprint 7 — Баг-фиксы (19 марта 2026)
+
+#### FIX-55: TutorProfile не создавался при смене роли → 404 на `/api/tutors/{id}`
+**Проблема**: Администратор менял роль пользователю на Tutor через `AdminService.UpdateUserAsync`, но `TutorProfile` запись НЕ создавалась. Из-за этого:
+- `GET /api/tutors/{id}` → 404 (профиль не найден)
+- `PUT /api/tutors/profile` → 500 (KeyNotFoundException)
+- Тьютор не отображался в каталоге для студентов
+- `TutorProfileEditPage` и `TutorReviewsPage` не могли загрузить данные
+
+**Исправление**:
+- [x] `AdminService.UpdateUserAsync` — при смене роли на Tutor автоматически создаёт `TutorProfile`
+- [x] `TutorService.GetTutorProfileAsync` — авто-создание профиля если User.Role == Tutor, но TutorProfile отсутствует
+- [x] `TutorService.UpdateMyProfileAsync` — вызывает `EnsureTutorProfileAsync` перед обновлением
+
+---
+
+## 🔒 АУДИТ БЕЗОПАСНОСТИ — 19 марта 2026
+
+### Текущее состояние защиты платформы
+
+#### ✅ Что УЖЕ реализовано (OWASP Top 10 покрытие)
+
+| # | OWASP Категория | Статус | Реализация |
+|---|-----------------|--------|------------|
+| A01 | Broken Access Control | ✅ | JWT + `[Authorize(Roles = "...")]` на каждом эндпоинте, проверка `userId` из токена |
+| A02 | Cryptographic Failures | ✅ | BCrypt хэширование паролей, JWT с HMAC-SHA256, HTTPS redirect |
+| A03 | Injection | ✅ | EF Core параметризованные запросы (SQL injection), `InputSanitizer` (XSS), HTML tag stripping |
+| A04 | Insecure Design | ✅ | Clean Architecture, валидация на уровне DTO, бизнес-логика в сервисах |
+| A05 | Security Misconfiguration | ✅ | CSP, HSTS (preload), CORS ограничены, X-Content-Type-Options: nosniff |
+| A06 | Vulnerable Components | ✅ | `dotnet list package --vulnerable` = 0, npm audit = 8 dev-only (eslint/vite) |
+| A07 | Auth Failures | ✅ | Rate limiting (auth: 10/мин), email verification, JWT expiry, refresh tokens |
+| A08 | Data Integrity | ⚠️ | Docker images without pinned digests, нет SBOM |
+| A09 | Logging & Monitoring | ✅ | Serilog (file + console), audit log, request logging с UserId |
+| A10 | SSRF | ✅ | Нет user-controlled URL fetching, DeepSeek API через фиксированный BaseURL |
+
+#### ✅ Дополнительные меры безопасности
+
+- **Rate Limiting**: auth 10/мин, api 120/мин, global 200/мин per IP
+- **Input Sanitization**: `InputSanitizer.Sanitize()` на всех user-facing полях (Auth, Tutor, Message, Admin, Assignments)
+- **Soft Delete**: данные не удаляются физически (аудит, восстановление)
+- **Audit Log**: действия админов логируются (кто, когда, что)
+- **Health Checks**: `/health/live`, `/health/ready` (PostgreSQL)
+- **Security Headers**: CSP, HSTS, X-Content-Type-Options, X-Frame-Options, Referrer-Policy
+- **CORS**: ограничены origins (только `https://unistart.kz` в production)
+
+### 🔐 Разграничение доступа: Админ ↔ Тьютор ↔ Студент
+
+#### Текущая модель (19 марта 2026)
+
+```
+Admin (полный доступ)
+  ├── Управление пользователями (CRUD, смена ролей, блокировка)
+  ├── Управление контентом (вопросы, экзамены, темы)
+  ├── Статистика платформы и аудит
+  ├── Импорт вопросов (PDF/DOCX/XLSX)
+  └── Доступ к тьюторским эндпоинтам [Roles = "Tutor,Admin"]
+
+Tutor (свой контент + привязанные ученики)
+  ├── Свой профиль (редактирование, расписание, отзывы)
+  ├── Привязка учеников (инвайт-код)
+  ├── CRUD своих приватных вопросов (IsPrivate = true)
+  ├── Создание заданий для привязанных учеников
+  └── НЕТ доступа к admin-панели
+
+Student (только своё)
+  ├── Практика, моки, аналитика (ограничено подпиской)
+  ├── Привязка к тьютору (ввод инвайт-кода)
+  ├── Прохождение заданий от тьютора
+  ├── Чат с тьютором (SignalR)
+  └── НЕТ доступа к тьюторским и admin-эндпоинтам
+```
+
+#### Рекомендации для enterprise-grade безопасности
+
+**Приоритет 1 — Критичные (до деплоя):**
+
+| # | Мера | Статус | Описание |
+|---|------|--------|----------|
+| S-1 | Контент-изоляция тьютора | ⬜ | Админ видит все вопросы для модерации, но НЕ может редактировать приватные вопросы тьютора без его согласия. Логировать доступ |
+| S-2 | Ownership checks на вcех endpoint'ах | ✅ | Тьютор может управлять только СВОИМИ вопросами/заданиями (проверка `CreatedByTutorId == userId`) |
+| S-3 | Student scoping | ✅ | Студент видит только СВОИ задания (проверка `AssignmentStudent.StudentUserId == userId`) |
+| S-4 | Password policy | ✅ | 8+ символов, uppercase, lowercase, digit, special char — backend `ValidatePasswordComplexity` + frontend regex |
+| S-5 | Account lockout | ✅ | 5 неудачных попыток → 15 мин блокировки. `User.FailedLoginAttempts` + `LockoutEnd`. Сброс при успешном входе |
+
+**Приоритет 2 — Важные (первый месяц после запуска):**
+
+| # | Мера | Статус | Описание |
+|---|------|--------|----------|
+| S-6 | Промокоды тьюторов | ✅ | `TutorInviteCode` + `TutorInviteCodeUsage` entities. MaxUses, ExpiresAt, IsActive, Note. CRUD endpoints `invite-codes`. Миграция `AddSecurityAndInviteCodes` |
+| S-7 | Session management | ⚠️ | JWT без server-side revocation — добавить blacklist при logout / смене пароля |
+| S-8 | Data encryption at rest | ⬜ | PostgreSQL: включить TDE или pgcrypto для PII (email, имя) |
+| S-9 | 2FA | ⬜ | TOTP (Google Authenticator) для тьюторов и админов |
+| S-10 | API versioning header | ✅ | `x-api-version` header support |
+
+**Приоритет 3 — Продвинутые (масштабирование):**
+
+| # | Мера | Статус | Описание |
+|---|------|--------|----------|
+| S-11 | WAF | ⬜ | Cloudflare WAF или ModSecurity перед nginx |
+| S-12 | DDoS protection | ⬜ | Cloudflare (бесплатный план) |
+| S-13 | Penetration testing | ⬜ | Заказать у независимой компании перед публичным запуском |
+| S-14 | GDPR/ЗРК compliance audit | ⬜ | Формальный аудит соответствия Закону РК о персональных данных |
+| S-15 | Backup encryption | ⬜ | Шифрование pg_dump бэкапов (GPG) перед хранением |
+
+### 🎟️ Промокоды тьюторов — Детальный план
+
+**Текущий механизм**: Тьютор генерирует `InviteCode` (6 символов, многоразовый, бессрочный). Любой студент может ввести код и привязаться.
+
+**Проблемы**:
+- Код можно передать неограниченному числу студентов
+- Нет срока действия
+- Нет истории кто использовал код
+
+**Рекомендуемая эволюция (Этап 6 Sprint 8)**:
+
+```
+TutorInviteCode {
+  Id, TutorUserId,
+  Code (string, unique, 8 chars),
+  MaxUses (int?, null = unlimited),
+  UsedCount (int, default 0),
+  ExpiresAt (DateTime?),
+  IsActive (bool, default true),
+  Note (string?, "Для группы 11А"),
+  CreatedAt
+}
+
+TutorInviteCodeUsage {
+  Id, InviteCodeId, StudentUserId, UsedAt
+}
+```
+
+**Функционал**:
+- Тьютор создаёт коды с лимитом (например, "5 студентов") и сроком ("до 1 апреля")
+- История использования: кто и когда ввёл код
+- Деактивация кода (IsActive = false)
+- Несколько активных кодов одновременно (для разных групп)
+- Автоматическая деактивация по истечении срока
+
+### 📊 Защита данных пользователей
+
+**Какие PII (Personally Identifiable Information) хранятся:**
+
+| Данные | Где хранится | Защита |
+|--------|-------------|--------|
+| Email | Users.Email | BCrypt hash нет (plain), но HTTPS + DB access control |
+| Имя | Users.Name | Plain text, sanitized |
+| Пароль | Users.PasswordHash | BCrypt (cost factor 12) ✅ |
+| IP-адрес | Serilog logs | 14-day retention, файл на сервере |
+| Ответы на тесты | UserAnswers | Привязаны к UserId, no external sharing |
+| Чат-сообщения | Messages | Sanitized, только участники видят |
+
+**Рекомендации по защите PII:**
+1. Email — не показывать полный email другим пользователям (маскировать: `k***@gmail.com`)
+2. Логи — исключить PII из логов (не логировать email в request body)
+3. Экспорт данных — реализовать "Download my data" (GDPR Article 20 / ЗРК)
+4. Удаление аккаунта — реализовать полное удаление (сейчас только soft delete)
+5. Cookie consent — ✅ уже реализован (CookieBanner)
+
+### 🚨 Известные ограничения (принятые риски)
+
+| Риск | Уровень | Mitigation |
+|------|---------|------------|
+| JWT без server-side revocation | Средний | Короткий TTL (60 мин), refresh token rotation при реализации |
+| In-memory rate limiting | Низкий | Достаточно для одного сервера. Redis при масштабировании |
+| Нет 2FA | Средний | Планируется S-9. Снижен rate limiting на auth |
+| Email в plain text в БД | Низкий | DB access control + SSL connection. pgcrypto при необходимости |
+| Single server | Средний | Бэкапы ежедневно. Мониторинг uptime |

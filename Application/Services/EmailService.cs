@@ -113,8 +113,16 @@ public class EmailService : IEmailService
 
     // ─── HTML Templates ───────────────────────────────────
 
-    private static string WrapInLayout(string title, string content)
+    private string GetBaseUrl() =>
+        _config["EmailSettings:ClientBaseUrl"]?.TrimEnd('/') ?? "https://unistart.kz";
+
+    private string WrapInLayout(string title, string content, bool showNotificationSettings = true)
     {
+        var baseUrl = GetBaseUrl();
+        var notifLink = showNotificationSettings
+            ? $@"<br><a href=""{baseUrl}/profile/notifications"" style=""color:#6c5ce7;text-decoration:none;"">Настройки уведомлений</a>"
+            : "";
+
         return $@"<!DOCTYPE html>
 <html lang=""ru"">
 <head>
@@ -136,8 +144,7 @@ public class EmailService : IEmailService
     <!-- Footer -->
     <div style=""background:#f8f9fa;padding:20px 24px;text-align:center;border-top:1px solid #eee;"">
       <p style=""margin:0;font-size:12px;color:#999;"">
-        © {DateTime.UtcNow.Year} UniStart. Все права защищены.<br>
-        <a href=""http://localhost:5173/profile/notifications"" style=""color:#6c5ce7;text-decoration:none;"">Настройки уведомлений</a>
+        © {DateTime.UtcNow.Year} UniStart. Все права защищены.{notifLink}
       </p>
     </div>
   </div>
@@ -145,7 +152,7 @@ public class EmailService : IEmailService
 </html>";
     }
 
-    private static string GetVerificationCodeTemplate(string userName, string code)
+    private string GetVerificationCodeTemplate(string userName, string code)
     {
         var content = $@"
       <h2 style=""color:#1a1a2e;margin:0 0 16px;"">Привет, {userName}!</h2>
@@ -159,11 +166,12 @@ public class EmailService : IEmailService
         Код действителен 10 минут. Если вы не запрашивали этот код, проигнорируйте это письмо.
       </p>";
 
-        return WrapInLayout("Код подтверждения — UniStart", content);
+        return WrapInLayout("Код подтверждения — UniStart", content, showNotificationSettings: false);
     }
 
-    private static string GetWelcomeTemplate(string userName)
+    private string GetWelcomeTemplate(string userName)
     {
+        var baseUrl = GetBaseUrl();
         var content = $@"
       <h2 style=""color:#1a1a2e;margin:0 0 16px;"">Привет, {userName}!</h2>
       <p style=""font-size:16px;line-height:1.6;color:#555;"">
@@ -177,17 +185,18 @@ public class EmailService : IEmailService
         <li><strong>Прогноз оценки</strong> — знайте свой предполагаемый результат</li>
       </ul>
       <div style=""text-align:center;margin:32px 0;"">
-        <a href=""http://localhost:5173/"" style=""display:inline-block;background:linear-gradient(135deg,#6c5ce7,#a855f7);color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:16px;"">
+        <a href=""{baseUrl}/"" style=""display:inline-block;background:linear-gradient(135deg,#6c5ce7,#a855f7);color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:16px;"">
           Начать подготовку →
         </a>
       </div>
       <p style=""font-size:14px;color:#999;text-align:center;"">Удачи в подготовке!</p>";
 
-        return WrapInLayout("Добро пожаловать в UniStart!", content);
+        return WrapInLayout("Добро пожаловать в UniStart!", content, showNotificationSettings: false);
     }
 
-    private static string GetStreakReminderTemplate(string userName, int lastStreak, int inactiveDays)
+    private string GetStreakReminderTemplate(string userName, int lastStreak, int inactiveDays)
     {
+        var baseUrl = GetBaseUrl();
         var streakText = lastStreak > 0
             ? $"У вас была серия <strong>{lastStreak} {GetDaysWord(lastStreak)}</strong> подряд — не потеряйте её!"
             : "Пора вернуться к учёбе!";
@@ -207,7 +216,7 @@ public class EmailService : IEmailService
         Даже 10 минут практики в день помогают удержать знания и повысить результат.
       </p>
       <div style=""text-align:center;margin:32px 0;"">
-        <a href=""http://localhost:5173/test"" style=""display:inline-block;background:linear-gradient(135deg,#6c5ce7,#a855f7);color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:16px;"">
+        <a href=""{baseUrl}/test"" style=""display:inline-block;background:linear-gradient(135deg,#6c5ce7,#a855f7);color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:16px;"">
           Продолжить обучение →
         </a>
       </div>";
@@ -215,8 +224,9 @@ public class EmailService : IEmailService
         return WrapInLayout("Не потеряйте серию!", content);
     }
 
-    private static string GetWeeklyDigestTemplate(WeeklyDigestDataDto data)
+    private string GetWeeklyDigestTemplate(WeeklyDigestDataDto data)
     {
+        var baseUrl = GetBaseUrl();
         var topProgressHtml = string.Join("", data.TopProgress.Select(tp =>
         {
             var trendIcon = tp.Trend switch
@@ -286,7 +296,7 @@ public class EmailService : IEmailService
       </ul>" : "")}
 
       <div style=""text-align:center;margin:32px 0;"">
-        <a href=""http://localhost:5173/analytics"" style=""display:inline-block;background:linear-gradient(135deg,#6c5ce7,#a855f7);color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:16px;"">
+        <a href=""{baseUrl}/analytics"" style=""display:inline-block;background:linear-gradient(135deg,#6c5ce7,#a855f7);color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:16px;"">
           Подробная аналитика →
         </a>
       </div>";
@@ -294,8 +304,9 @@ public class EmailService : IEmailService
         return WrapInLayout("Еженедельный отчёт UniStart", content);
     }
 
-    private static string GetStudyPlanReminderTemplate(string userName, string todayPlanSummary)
+    private string GetStudyPlanReminderTemplate(string userName, string todayPlanSummary)
     {
+        var baseUrl = GetBaseUrl();
         var content = $@"
       <h2 style=""color:#1a1a2e;margin:0 0 16px;"">Доброе утро, {userName}!</h2>
       <p style=""font-size:16px;line-height:1.6;color:#555;"">
@@ -307,7 +318,7 @@ public class EmailService : IEmailService
         </p>
       </div>
       <div style=""text-align:center;margin:32px 0;"">
-        <a href=""http://localhost:5173/study-plan"" style=""display:inline-block;background:linear-gradient(135deg,#6c5ce7,#a855f7);color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:16px;"">
+        <a href=""{baseUrl}/study-plan"" style=""display:inline-block;background:linear-gradient(135deg,#6c5ce7,#a855f7);color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:16px;"">
           Открыть план →
         </a>
       </div>";
@@ -315,8 +326,9 @@ public class EmailService : IEmailService
         return WrapInLayout("Ваш план на сегодня", content);
     }
 
-    private static string GetAchievementTemplate(string userName, string title, string icon)
+    private string GetAchievementTemplate(string userName, string title, string icon)
     {
+        var baseUrl = GetBaseUrl();
         var iconHtml = !string.IsNullOrEmpty(icon)
             ? $@"<div style=""font-size:48px;margin-bottom:12px;"">{icon}</div>"
             : "";
@@ -329,7 +341,7 @@ public class EmailService : IEmailService
         <p style=""font-size:16px;color:#555;margin-top:12px;"">Вы открыли новое достижение!</p>
       </div>
       <div style=""text-align:center;margin:32px 0;"">
-        <a href=""http://localhost:5173/recommendations"" style=""display:inline-block;background:linear-gradient(135deg,#6c5ce7,#a855f7);color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:16px;"">
+        <a href=""{baseUrl}/recommendations"" style=""display:inline-block;background:linear-gradient(135deg,#6c5ce7,#a855f7);color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:16px;"">
           Все достижения →
         </a>
       </div>";

@@ -13,8 +13,11 @@ public class TutorSchool
     public string Specializations { get; set; } = string.Empty; // comma-separated exam codes
     public bool IsPartner { get; set; } = true;
     public bool IsActive { get; set; } = true;
+    public int? OwnerUserId { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? UpdatedAt { get; set; }
 
     // Navigation
+    public virtual User? Owner { get; set; }
     public ICollection<TutorProfile> Tutors { get; set; } = new List<TutorProfile>();
 }

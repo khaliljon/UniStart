@@ -30,6 +30,9 @@ public class AuthService : IAuthService
 
     public async Task<AuthResponseDto> RegisterAsync(RegisterDto dto)
     {
+        // S-4: Password complexity check
+        ValidatePasswordComplexity(dto.Password);
+
         // Check if user already exists (including soft-deleted)
         var existingUser = await _context.Users
             .IgnoreQueryFilters()
@@ -125,9 +128,37 @@ public class AuthService : IAuthService
     public async Task<AuthResponseDto> LoginAsync(LoginDto dto)
     {
         var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
+
+        // S-5: Account lockout check
+        if (user != null && user.LockoutEnd.HasValue && user.LockoutEnd > DateTime.UtcNow)
+        {
+            var minutesLeft = (int)Math.Ceiling((user.LockoutEnd.Value - DateTime.UtcNow).TotalMinutes);
+            throw new UnauthorizedAccessException($"Account is locked. Try again in {minutesLeft} minute(s)");
+        }
+
         if (user == null || !BC.Verify(dto.Password, user.PasswordHash))
         {
+            // S-5: Track failed attempts
+            if (user != null)
+            {
+                user.FailedLoginAttempts++;
+                if (user.FailedLoginAttempts >= 5)
+                {
+                    user.LockoutEnd = DateTime.UtcNow.AddMinutes(15);
+                    await _context.SaveChangesAsync();
+                    throw new UnauthorizedAccessException("Too many failed attempts. Account locked for 15 minutes");
+                }
+                await _context.SaveChangesAsync();
+            }
             throw new UnauthorizedAccessException("Invalid email or password");
+        }
+
+        // Reset lockout on successful login
+        if (user.FailedLoginAttempts > 0)
+        {
+            user.FailedLoginAttempts = 0;
+            user.LockoutEnd = null;
+            await _context.SaveChangesAsync();
         }
 
         var token = _jwtService.GenerateToken(user);
@@ -291,6 +322,21 @@ public class AuthService : IAuthService
         return RandomNumberGenerator.GetInt32(100000, 999999).ToString();
     }
 
+    /// <summary>S-4: Password must be 8+ chars with uppercase, lowercase, digit, and special character</summary>
+    private static void ValidatePasswordComplexity(string password)
+    {
+        if (string.IsNullOrEmpty(password) || password.Length < 8)
+            throw new InvalidOperationException("Password must be at least 8 characters long");
+        if (!password.Any(char.IsUpper))
+            throw new InvalidOperationException("Password must contain at least one uppercase letter");
+        if (!password.Any(char.IsLower))
+            throw new InvalidOperationException("Password must contain at least one lowercase letter");
+        if (!password.Any(char.IsDigit))
+            throw new InvalidOperationException("Password must contain at least one digit");
+        if (!password.Any(c => !char.IsLetterOrDigit(c)))
+            throw new InvalidOperationException("Password must contain at least one special character");
+    }
+
     public async Task<UserDto?> GetUserByIdAsync(int userId)
     {
         var user = await _context.Users.FindAsync(userId);
@@ -338,6 +384,8 @@ public class AuthService : IAuthService
 
     public async Task ChangePasswordAsync(int userId, ChangePasswordDto dto)
     {
+        ValidatePasswordComplexity(dto.NewPassword);
+
         var user = await _context.Users.FindAsync(userId)
             ?? throw new KeyNotFoundException("User not found");
 

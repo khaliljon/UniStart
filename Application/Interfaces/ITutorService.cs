@@ -18,9 +18,19 @@ public interface ITutorService
     Task<List<TutorSchoolCardDto>> GetSchoolsAsync();
     Task<TutorSchoolDetailDto?> GetSchoolAsync(string slug);
 
+    // School management (Этап 4)
+    Task<SchoolAdminDto> CreateSchoolAsync(int ownerUserId, CreateSchoolDto dto);
+    Task<SchoolAdminDto?> GetMySchoolAsync(int ownerUserId);
+    Task<SchoolAdminDto?> UpdateSchoolAsync(int ownerUserId, UpdateSchoolDto dto);
+    Task<LinkResultDto> AddTutorToSchoolAsync(int ownerUserId, int tutorUserId);
+    Task<LinkResultDto> RemoveTutorFromSchoolAsync(int ownerUserId, int tutorUserId);
+
     // Tutor-Student binding
     Task<InviteCodeDto> GenerateInviteCodeAsync(int tutorUserId);
     Task<InviteCodeDto?> GetInviteCodeAsync(int tutorUserId);
+    Task<List<InviteCodeDetailDto>> GetInviteCodesAsync(int tutorUserId);
+    Task<InviteCodeDetailDto> CreateInviteCodeAsync(int tutorUserId, CreateInviteCodeDto dto);
+    Task<bool> DeactivateInviteCodeAsync(int tutorUserId, int codeId);
     Task<LinkResultDto> LinkStudentByCodeAsync(int studentUserId, string inviteCode);
     Task<LinkResultDto> UnlinkStudentAsync(int tutorUserId, int studentUserId);
     Task<LinkResultDto> UnlinkFromTutorAsync(int studentUserId);

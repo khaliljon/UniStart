@@ -134,6 +134,11 @@ function TutorLayout() {
                 Расписание
               </NavLink>
             </li>
+            <li>
+              <NavLink to="/school">
+                Школа
+              </NavLink>
+            </li>
           </ul>
 
           <div ref={menuRef} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>

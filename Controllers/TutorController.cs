@@ -169,6 +169,60 @@ public class TutorController : ControllerBase
         return Ok(school);
     }
 
+    // ═══ School Management (Этап 4) ═════════════════════════
+
+    /// <summary>Создать школу (тьютор)</summary>
+    [HttpPost("schools")]
+    [Authorize(Roles = "Tutor,Admin")]
+    public async Task<IActionResult> CreateSchool([FromBody] CreateSchoolDto dto)
+    {
+        var userId = GetUserId();
+        var result = await _tutorService.CreateSchoolAsync(userId, dto);
+        return Ok(result);
+    }
+
+    /// <summary>Получить свою школу (владелец)</summary>
+    [HttpGet("my-school")]
+    [Authorize(Roles = "Tutor,Admin")]
+    public async Task<IActionResult> GetMySchool()
+    {
+        var userId = GetUserId();
+        var result = await _tutorService.GetMySchoolAsync(userId);
+        if (result == null) return Ok(new { school = (object?)null });
+        return Ok(result);
+    }
+
+    /// <summary>Обновить свою школу (владелец)</summary>
+    [HttpPut("my-school")]
+    [Authorize(Roles = "Tutor,Admin")]
+    public async Task<IActionResult> UpdateMySchool([FromBody] UpdateSchoolDto dto)
+    {
+        var userId = GetUserId();
+        var result = await _tutorService.UpdateSchoolAsync(userId, dto);
+        if (result == null) return NotFound(new { error = "School not found or not owner" });
+        return Ok(result);
+    }
+
+    /// <summary>Добавить тьютора в школу (владелец)</summary>
+    [HttpPost("my-school/tutors/{tutorUserId}")]
+    [Authorize(Roles = "Tutor,Admin")]
+    public async Task<IActionResult> AddTutorToSchool(int tutorUserId)
+    {
+        var userId = GetUserId();
+        var result = await _tutorService.AddTutorToSchoolAsync(userId, tutorUserId);
+        return result.Success ? Ok(result) : BadRequest(result);
+    }
+
+    /// <summary>Удалить тьютора из школы (владелец)</summary>
+    [HttpDelete("my-school/tutors/{tutorUserId}")]
+    [Authorize(Roles = "Tutor,Admin")]
+    public async Task<IActionResult> RemoveTutorFromSchool(int tutorUserId)
+    {
+        var userId = GetUserId();
+        var result = await _tutorService.RemoveTutorFromSchoolAsync(userId, tutorUserId);
+        return result.Success ? Ok(result) : BadRequest(result);
+    }
+
     // ═══ Tutor-Student Binding ═══════════════════════════════
 
     /// <summary>Генерация инвайт-кода (тьютор)</summary>
@@ -190,6 +244,34 @@ public class TutorController : ControllerBase
         var result = await _tutorService.GetInviteCodeAsync(userId);
         if (result == null) return Ok(new { inviteCode = (string?)null });
         return Ok(result);
+    }
+
+    /// <summary>Список всех инвайт-кодов тьютора (S-6)</summary>
+    [HttpGet("invite-codes")]
+    [Authorize(Roles = "Tutor,Admin")]
+    public async Task<IActionResult> GetInviteCodes()
+    {
+        var userId = GetUserId();
+        return Ok(await _tutorService.GetInviteCodesAsync(userId));
+    }
+
+    /// <summary>Создать инвайт-код с параметрами (S-6)</summary>
+    [HttpPost("invite-codes")]
+    [Authorize(Roles = "Tutor,Admin")]
+    public async Task<IActionResult> CreateInviteCode([FromBody] CreateInviteCodeDto dto)
+    {
+        var userId = GetUserId();
+        return Ok(await _tutorService.CreateInviteCodeAsync(userId, dto));
+    }
+
+    /// <summary>Деактивировать инвайт-код (S-6)</summary>
+    [HttpDelete("invite-codes/{codeId}")]
+    [Authorize(Roles = "Tutor,Admin")]
+    public async Task<IActionResult> DeactivateInviteCode(int codeId)
+    {
+        var userId = GetUserId();
+        var ok = await _tutorService.DeactivateInviteCodeAsync(userId, codeId);
+        return ok ? Ok() : NotFound();
     }
 
     /// <summary>Привязаться к тьютору по инвайт-коду (ученик)</summary>

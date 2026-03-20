@@ -39,6 +39,10 @@ public class User : ISoftDeletable, IAuditable
     public DateTime? BlockedAt { get; set; }
     public string? BlockReason { get; set; }
 
+    // Account lockout (S-5)
+    public int FailedLoginAttempts { get; set; }
+    public DateTime? LockoutEnd { get; set; }
+
     // Navigation properties
     public virtual ICollection<UserAnswer> UserAnswers { get; set; } = new List<UserAnswer>();
     public virtual ICollection<UserSkillProfile> SkillProfiles { get; set; } = new List<UserSkillProfile>();

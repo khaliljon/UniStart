@@ -61,14 +61,26 @@ public class BackgroundJobsService : IBackgroundJobsService
             var streak = 0;
             if (lastAnswerDate != default)
             {
+                // Fetch all distinct study dates in one query to avoid N+1 and .Date comparison issues
+                var studyDates = await _context.UserAnswers
+                    .Where(a => a.UserId == user.Id)
+                    .Select(a => a.AnsweredAt.Date)
+                    .Distinct()
+                    .OrderByDescending(d => d)
+                    .ToListAsync();
+
                 var checkDate = lastAnswerDate.Date;
-                while (true)
+                foreach (var day in studyDates)
                 {
-                    var hasActivity = await _context.UserAnswers
-                        .AnyAsync(a => a.UserId == user.Id && a.AnsweredAt.Date == checkDate);
-                    if (!hasActivity) break;
-                    streak++;
-                    checkDate = checkDate.AddDays(-1);
+                    if (day == checkDate)
+                    {
+                        streak++;
+                        checkDate = checkDate.AddDays(-1);
+                    }
+                    else if (day < checkDate)
+                    {
+                        break;
+                    }
                 }
             }
 

@@ -483,7 +483,27 @@ public class AdminService : IAdminService
         }
 
         if (!string.IsNullOrWhiteSpace(dto.Role) && Enum.TryParse<UserRole>(dto.Role, true, out var role))
+        {
             user.Role = role;
+
+            // Auto-create TutorProfile when role changed to Tutor
+            if (role == UserRole.Tutor)
+            {
+                var hasProfile = await _db.TutorProfiles.AnyAsync(tp => tp.UserId == id);
+                if (!hasProfile)
+                {
+                    _db.TutorProfiles.Add(new TutorProfile
+                    {
+                        UserId = id,
+                        Headline = $"Тьютор {user.Name}",
+                        Bio = "",
+                        Experience = "",
+                        Specializations = "",
+                        IsAvailable = true
+                    });
+                }
+            }
+        }
 
         if (!string.IsNullOrWhiteSpace(dto.SubscriptionTier) && Enum.TryParse<SubscriptionTier>(dto.SubscriptionTier, true, out var tier))
             user.SubscriptionTier = tier;

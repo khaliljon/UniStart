@@ -188,7 +188,47 @@ public record TutorSchoolDetailDto(
     string? WebsiteUrl,
     string[] Specializations,
     bool IsPartner,
+    int? OwnerUserId,
     List<TutorCardDto> Tutors
+);
+
+// ─── School Management DTOs (Этап 4) ─────────────────────
+
+public record CreateSchoolDto(
+    string Name,
+    string? Description,
+    string? LogoUrl,
+    string? WebsiteUrl,
+    string? InstagramUrl,
+    string? TelegramUrl,
+    string? Specializations
+);
+
+public record UpdateSchoolDto(
+    string? Name,
+    string? Description,
+    string? LogoUrl,
+    string? WebsiteUrl,
+    string? InstagramUrl,
+    string? TelegramUrl,
+    string? Specializations
+);
+
+public record SchoolAdminDto(
+    int Id,
+    string Name,
+    string Slug,
+    string Description,
+    string? LogoUrl,
+    string? InstagramUrl,
+    string? TelegramUrl,
+    string? WebsiteUrl,
+    string[] Specializations,
+    bool IsPartner,
+    bool IsActive,
+    int? OwnerUserId,
+    int TutorCount,
+    DateTime CreatedAt
 );
 
 // ═══════════════════════════════════════════════════════
@@ -197,6 +237,23 @@ public record TutorSchoolDetailDto(
 
 public record InviteCodeDto(
     string InviteCode
+);
+
+public record InviteCodeDetailDto(
+    int Id,
+    string Code,
+    int? MaxUses,
+    int UsedCount,
+    DateTime? ExpiresAt,
+    bool IsActive,
+    string? Note,
+    DateTime CreatedAt
+);
+
+public record CreateInviteCodeDto(
+    int? MaxUses,
+    DateTime? ExpiresAt,
+    string? Note
 );
 
 public record LinkByInviteDto(
