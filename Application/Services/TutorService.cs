@@ -466,7 +466,7 @@ public class TutorService : ITutorService
         var profile = await _db.TutorProfiles.FirstOrDefaultAsync(p => p.UserId == ownerUserId);
         if (profile != null)
         {
-            profile.SchoolId = school.Id;
+            profile.School = school; // use navigation property so EF resolves the FK after insert
             profile.UpdatedAt = DateTime.UtcNow;
         }
 

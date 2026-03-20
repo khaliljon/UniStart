@@ -101,30 +101,35 @@ function TutorStudentsPage() {
       <div className="card" style={{ padding: '1.5rem', marginBottom: '1.25rem' }}>
         <h2 style={{ margin: '0 0 0.75rem', fontSize: '1.15rem' }}>{t.tutor.inviteCode}</h2>
         {inviteCode ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-            <div style={{
-              padding: '0.6rem 1.2rem', borderRadius: '10px',
-              background: 'var(--bg-secondary)', border: '2px dashed var(--primary-color)',
-              fontFamily: 'monospace', fontSize: '1.4rem', fontWeight: 700,
-              letterSpacing: '0.15em', color: 'var(--primary-color)',
-            }}>
-              {inviteCode}
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+              <div style={{
+                padding: '0.6rem 1.2rem', borderRadius: '10px',
+                background: 'var(--bg-secondary)', border: '2px dashed var(--primary-color)',
+                fontFamily: 'monospace', fontSize: '1.4rem', fontWeight: 700,
+                letterSpacing: '0.15em', color: 'var(--primary-color)',
+              }}>
+                {inviteCode}
+              </div>
+              <button
+                className="btn btn-outline"
+                onClick={handleCopyCode}
+                style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}
+              >
+                {copied ? t.tutor.codeCopied : t.tutor.copyCode}
+              </button>
+              <button
+                className="btn btn-outline"
+                onClick={handleGenerateCode}
+                disabled={codeLoading}
+                style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}
+              >
+                {t.tutor.regenerateCode}
+              </button>
             </div>
-            <button
-              className="btn btn-outline"
-              onClick={handleCopyCode}
-              style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}
-            >
-              {copied ? t.tutor.codeCopied : t.tutor.copyCode}
-            </button>
-            <button
-              className="btn btn-outline"
-              onClick={handleGenerateCode}
-              disabled={codeLoading}
-              style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}
-            >
-              {t.tutor.regenerateCode}
-            </button>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.82rem', margin: '0.75rem 0 0', lineHeight: 1.5 }}>
+              Отправьте этот код ученику. Ученик вводит его в разделе <strong>Профиль → Мой тьютор</strong>, чтобы привязаться к вам и получить скидку на подписку.
+            </p>
           </div>
         ) : (
           <div>

@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAppSelector } from '../hooks/useAppSelector';
 import { tutorService } from '../services/tutorService';
 import { messageService } from '../services/messageService';
-import type { TutorProfileDetail, CreateReviewRequest } from '../types';
+import type { TutorProfileDetail, CreateReviewRequest, Conversation } from '../types';
 import { getDateLocale } from '../i18n';
 
 function TutorProfilePage() {
@@ -25,7 +25,7 @@ function TutorProfilePage() {
   const [startingChat, setStartingChat] = useState(false);
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [requestMessage, setRequestMessage] = useState('');
-  const [requestSent, setRequestSent] = useState(false);
+  const [existingConversation, setExistingConversation] = useState<Conversation | null>(null);
 
   const fetchProfile = useCallback(async () => {
     if (!userId) return;
@@ -33,12 +33,21 @@ function TutorProfilePage() {
     try {
       const data = await tutorService.getTutorProfile(Number(userId));
       setProfile(data);
+
+      // Check if there's already a conversation with this tutor
+      if (currentUser && currentUser.id !== Number(userId)) {
+        try {
+          const convs = await messageService.getConversations();
+          const existing = convs.find(c => c.otherUserId === Number(userId));
+          if (existing) setExistingConversation(existing);
+        } catch { /* ignore — user might not be logged in */ }
+      }
     } catch {
       setError('Не удалось загрузить профиль тьютора');
     } finally {
       setLoading(false);
     }
-  }, [userId]);
+  }, [userId, currentUser]);
 
   useEffect(() => {
     fetchProfile();
@@ -50,7 +59,7 @@ function TutorProfilePage() {
     try {
       const conversation = await messageService.startConversation(profile.userId, requestMessage || undefined);
       if (conversation.status === 'Pending') {
-        setRequestSent(true);
+        setExistingConversation(conversation);
         setShowRequestModal(false);
       } else {
         navigate(`/messages?c=${conversation.id}`);
@@ -171,13 +180,29 @@ function TutorProfilePage() {
         {/* Action buttons */}
         {!isOwnProfile && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignSelf: 'flex-start' }}>
-            {requestSent ? (
+            {existingConversation?.status === 'Pending' ? (
               <div style={{
                 padding: '0.65rem 1.5rem', fontSize: '0.9rem', borderRadius: '8px',
                 background: 'var(--bg-secondary)', color: 'var(--text-secondary)',
                 textAlign: 'center', fontWeight: 500,
               }}>
-                Заявка отправлена
+                Заявка на рассмотрении
+              </div>
+            ) : existingConversation?.status === 'Active' ? (
+              <button
+                className="btn btn-primary"
+                onClick={() => navigate(`/messages?c=${existingConversation.id}`)}
+                style={{ padding: '0.65rem 1.5rem', fontSize: '0.95rem' }}
+              >
+                Открыть чат
+              </button>
+            ) : existingConversation?.status === 'Declined' ? (
+              <div style={{
+                padding: '0.65rem 1.5rem', fontSize: '0.9rem', borderRadius: '8px',
+                background: 'var(--bg-secondary)', color: '#ef4444',
+                textAlign: 'center', fontWeight: 500,
+              }}>
+                Заявка отклонена
               </div>
             ) : (
               <button
