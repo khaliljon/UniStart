@@ -139,6 +139,11 @@ function TutorLayout() {
                 Школа
               </NavLink>
             </li>
+            <li>
+              <NavLink to="/content">
+                Контент
+              </NavLink>
+            </li>
           </ul>
 
           <div ref={menuRef} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>

@@ -215,6 +215,7 @@ public class AdminController : ControllerBase
 
     /// <summary>List all topics with question counts</summary>
     [HttpGet("topics")]
+    [Authorize(Roles = "Admin,Tutor")]
     public async Task<IActionResult> GetTopics()
     {
         var result = await _svc.GetTopicsAsync();

@@ -9,7 +9,7 @@ namespace UniStart.Controllers;
 
 [ApiController]
 [Route("api/admin/content")]
-[Authorize(Roles = "Admin")]
+[Authorize(Roles = "Admin,Tutor")]
 public class AdminContentController : ControllerBase
 {
     private readonly UniStartDbContext _db;
