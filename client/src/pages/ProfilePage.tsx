@@ -181,7 +181,7 @@ function ProfilePage() {
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   color: '#fff', fontWeight: 700, fontSize: '1rem', flexShrink: 0,
                 }}>
-                  {linkedTutor.tutorName.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)}
+                  {(linkedTutor.tutorName || '').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)}
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: 600 }}>{linkedTutor.tutorName}</div>

@@ -147,9 +147,9 @@ export const tutorService = {
     await api.delete('/tutors/unlink');
   },
 
-  async getMyTutor(): Promise<LinkedTutorInfo> {
-    const response = await api.get<LinkedTutorInfo>('/tutors/my-tutor');
-    return response.data;
+  async getMyTutor(): Promise<LinkedTutorInfo | null> {
+    const response = await api.get<{ tutor: LinkedTutorInfo | null }>('/tutors/my-tutor');
+    return response.data.tutor;
   },
 
   // ── Tutor question management (Этап 2) ──
