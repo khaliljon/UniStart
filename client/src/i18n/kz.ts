@@ -66,6 +66,9 @@ export const kz: Translations = {
     codeSent: 'Код қайта жіберілді',
     codeResendError: 'Код жіберу мүмкін болмады',
     orContinueWith: 'немесе жалғастыру',
+    iAmStudent: 'Мен оқушымын',
+    iAmTutor: 'Мен тьютормын',
+    tutorRegNote: 'Тіркелгеннен кейін профильді толтырыңыз және администратор верификациясын күтіңіз',
   },
   dashboard: {
     welcome: 'Қош келдіңіз',

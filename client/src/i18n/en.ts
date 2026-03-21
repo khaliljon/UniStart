@@ -66,6 +66,9 @@ export const en: Translations = {
     codeSent: 'Code resent',
     codeResendError: 'Failed to resend code',
     orContinueWith: 'or continue with',
+    iAmStudent: "I'm a student",
+    iAmTutor: "I'm a tutor",
+    tutorRegNote: 'After registration, fill out your profile and wait for admin verification',
   },
   dashboard: {
     welcome: 'Welcome',

@@ -71,6 +71,9 @@ export interface Translations {
     codeSent: string;
     codeResendError: string;
     orContinueWith: string;
+    iAmStudent: string;
+    iAmTutor: string;
+    tutorRegNote: string;
   };
 
   // ─── Dashboard ───

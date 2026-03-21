@@ -6,7 +6,8 @@ namespace UniStart.Application.DTOs;
 public record RegisterDto(
     [Required][EmailAddress] string Email,
     [Required][MinLength(2)] string Name,
-    [Required][MinLength(8)] string Password
+    [Required][MinLength(8)] string Password,
+    string? Role = null
 );
 
 public record LoginDto(

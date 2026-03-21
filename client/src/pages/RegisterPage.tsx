@@ -16,6 +16,7 @@ function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [role, setRole] = useState<'Student' | 'Tutor'>('Student');
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [validationError, setValidationError] = useState('');
   const [code, setCode] = useState('');
@@ -61,7 +62,7 @@ function RegisterPage() {
       return;
     }
 
-    dispatch(register({ name, email, password }));
+    dispatch(register({ name, email, password, role }));
   };
 
   const handleVerify = async (e: FormEvent) => {
@@ -166,6 +167,37 @@ function RegisterPage() {
         <p className="auth-subtitle">{t.auth.registerSubtitle}</p>
 
         <form onSubmit={handleSubmit}>
+          {/* Role selector */}
+          <div style={{
+            display: 'flex', gap: '0.5rem', marginBottom: '1.25rem',
+            background: 'var(--bg-secondary)', borderRadius: '10px', padding: '4px',
+          }}>
+            {(['Student', 'Tutor'] as const).map((r) => (
+              <button
+                key={r}
+                type="button"
+                onClick={() => setRole(r)}
+                style={{
+                  flex: 1, padding: '0.55rem', borderRadius: '8px', border: 'none',
+                  cursor: 'pointer', fontWeight: 600, fontSize: '0.9rem', transition: 'all 0.2s',
+                  background: role === r ? 'var(--primary-color)' : 'transparent',
+                  color: role === r ? '#fff' : 'var(--text-secondary)',
+                }}
+              >
+                {r === 'Student' ? t.auth.iAmStudent : t.auth.iAmTutor}
+              </button>
+            ))}
+          </div>
+          {role === 'Tutor' && (
+            <p style={{
+              fontSize: '0.8rem', color: 'var(--text-secondary)', margin: '-0.5rem 0 1rem',
+              padding: '0.5rem 0.75rem', borderRadius: '8px',
+              background: 'var(--bg-secondary)', lineHeight: 1.4,
+            }}>
+              {t.auth.tutorRegNote}
+            </p>
+          )}
+
           <div className="form-group">
             <label htmlFor="name" className="form-label">
               {t.auth.firstName}

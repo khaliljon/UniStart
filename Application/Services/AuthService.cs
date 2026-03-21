@@ -69,6 +69,14 @@ public class AuthService : IAuthService
             throw new InvalidOperationException("User with this email already exists");
         }
 
+        // Determine role (only Student or Tutor allowed from registration)
+        var role = UserRole.Student;
+        if (!string.IsNullOrWhiteSpace(dto.Role) &&
+            string.Equals(dto.Role, "Tutor", StringComparison.OrdinalIgnoreCase))
+        {
+            role = UserRole.Tutor;
+        }
+
         // Create new user with verification code
         var code = GenerateVerificationCode();
         var user = new User
@@ -76,7 +84,7 @@ public class AuthService : IAuthService
             Email = dto.Email,
             Name = InputSanitizer.Sanitize(dto.Name)!,
             PasswordHash = BC.HashPassword(dto.Password),
-            Role = UserRole.Student,
+            Role = role,
             CreatedAt = DateTime.UtcNow,
             EmailVerified = false,
             EmailVerificationCode = code,
@@ -85,6 +93,22 @@ public class AuthService : IAuthService
 
         _context.Users.Add(user);
         await _unitOfWork.SaveChangesAsync();
+
+        // Auto-create TutorProfile for tutor registrations
+        if (role == UserRole.Tutor)
+        {
+            _context.TutorProfiles.Add(new TutorProfile
+            {
+                UserId = user.Id,
+                Headline = $"Tutor {user.Name}",
+                Bio = "",
+                Experience = "",
+                Specializations = "",
+                IsAvailable = true,
+                IsVerified = false
+            });
+            await _unitOfWork.SaveChangesAsync();
+        }
 
         // Initialize default skill profiles for the user
         var skills = await _context.Skills.ToListAsync();

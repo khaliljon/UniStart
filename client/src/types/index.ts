@@ -33,6 +33,7 @@ export interface RegisterRequest {
   email: string;
   name: string;
   password: string;
+  role?: 'Student' | 'Tutor';
 }
 
 export interface VerifyEmailRequest {

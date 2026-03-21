@@ -66,6 +66,9 @@ export const ru: Translations = {
     codeSent: 'Код отправлен повторно',
     codeResendError: 'Не удалось отправить код',
     orContinueWith: 'или продолжить с',
+    iAmStudent: 'Я ученик',
+    iAmTutor: 'Я тьютор',
+    tutorRegNote: 'После регистрации заполните профиль и ожидайте верификацию администратором',
   },
   dashboard: {
     welcome: 'Добро пожаловать',
