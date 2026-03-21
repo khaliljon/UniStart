@@ -29,6 +29,7 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
+            chown -R root:root /opt/unistart/.git
             cd /opt/unistart
             git config --global --add safe.directory /opt/unistart
             git pull origin master
