@@ -24,8 +24,7 @@ public class TutorService : ITutorService
 
         var query = _db.TutorProfiles
             .Include(tp => tp.User)
-            .Where(tp => tp.User.Role == UserRole.Tutor && !tp.User.IsDeleted && !tp.User.IsBlocked)
-            .AsQueryable();
+            .Where(tp => tp.User.Role == UserRole.Tutor && !tp.User.IsDeleted && !tp.User.IsBlocked && tp.IsVerified);
 
         if (available == true)
             query = query.Where(tp => tp.IsAvailable);
@@ -172,6 +171,9 @@ public class TutorService : ITutorService
 
     public async Task<ReviewDto> LeaveReviewAsync(int studentId, int tutorUserId, CreateReviewDto dto)
     {
+        if (string.IsNullOrWhiteSpace(dto.Comment))
+            throw new InvalidOperationException("Напишите текст отзыва");
+
         var tp = await _db.TutorProfiles.FirstOrDefaultAsync(x => x.UserId == tutorUserId)
             ?? throw new KeyNotFoundException("Tutor not found");
 

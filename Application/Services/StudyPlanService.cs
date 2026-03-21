@@ -51,6 +51,9 @@ public class StudyPlanService : IStudyPlanService
             SelectedSectionIds = dto.SectionIds != null && dto.SectionIds.Count > 0
                 ? string.Join(",", dto.SectionIds)
                 : null,
+            HoursPerDay = dto.HoursPerDay.HasValue
+                ? Math.Round(Math.Clamp(dto.HoursPerDay.Value, 0.5, 6.0), 1)
+                : null,
             IsActive = true,
             CreatedAt = DateTime.UtcNow
         };
@@ -926,9 +929,10 @@ public class StudyPlanService : IStudyPlanService
 
         // More gap = more hours needed; distribute over remaining days
         var totalHoursNeeded = gap * 15; // rough: ~15 hours per θ unit gap
-        var hoursPerDay = daysUntilExam > 0
-            ? Math.Round(Math.Clamp(totalHoursNeeded / daysUntilExam, 0.5, 4.0), 1)
-            : 2.0;
+        var hoursPerDay = goal.HoursPerDay
+            ?? (daysUntilExam > 0
+                ? Math.Round(Math.Clamp(totalHoursNeeded / daysUntilExam, 0.5, 4.0), 1)
+                : 2.0);
 
         return new StudyGoalDto(
             Id: goal.Id,

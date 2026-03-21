@@ -29,9 +29,9 @@ import type {
 
 export interface TutorListParams {
   search?: string;
-  examType?: string;
-  sortBy?: string;
-  onlyAvailable?: boolean;
+  exam?: string;
+  sort?: string;
+  available?: boolean;
   page?: number;
   pageSize?: number;
 }

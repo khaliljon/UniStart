@@ -354,6 +354,7 @@ function AnalyticsPage() {
       </ProGate>
 
       {/* Skill Bars (detailed, with confidence intervals) */}
+      <ProGate hasAccess={hasFullAnalytics} featureName={t.progress.skillLevels}>
       <div className="card card-static animate-fade-in-up" style={{ marginTop: '2rem', animationDelay: '0.9s' }}>
         <h2 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1.5rem' }}>
             {t.progress.skillLevels}
@@ -416,6 +417,7 @@ function AnalyticsPage() {
           </div>
         )}
       </div>
+      </ProGate>
 
       {/* Legend */}
       <div className="card" style={{ marginTop: '2rem' }}>

@@ -8,6 +8,7 @@ public class StudyGoal : IAuditable
     public DateTime TargetDate { get; set; }
     public int TargetScore { get; set; }
     public string? SelectedSectionIds { get; set; } // Comma-separated section IDs; null = all sections
+    public double? HoursPerDay { get; set; } // User-specified hours/day; null = auto-calculated
     public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }

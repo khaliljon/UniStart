@@ -475,7 +475,7 @@ function MockExamPage() {
         <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
           <button
             className="btn btn-primary"
-            style={{ padding: '0.75rem 3rem', fontSize: '1rem' }}
+            style={{ padding: '0.75rem 2rem', fontSize: '1rem', width: '100%', maxWidth: '320px' }}
             onClick={handleStartExam}
             disabled={loading || !canStart}
           >
@@ -525,7 +525,7 @@ function MockExamPage() {
             <button className="btn btn-outline" onClick={handleAbandon}>
               Abandon Exam
             </button>
-            <button className="btn btn-primary" style={{ padding: '0.75rem 2.5rem' }} onClick={handleBeginSection}>
+            <button className="btn btn-primary" style={{ padding: '0.75rem 2rem' }} onClick={handleBeginSection}>
               ▶ Begin Exam
             </button>
           </div>
@@ -621,10 +621,10 @@ function MockExamPage() {
         </div>
 
         {/* Main content area: passage (left) + question (right) */}
-        <div style={{ display: 'flex', gap: '1rem', alignItems: hasPassage ? 'stretch' : 'flex-start' }}>
+        <div style={{ display: 'flex', gap: '1rem', alignItems: hasPassage ? 'stretch' : 'flex-start', flexWrap: 'wrap' }}>
           {/* Reading passage panel */}
           {hasPassage && (
-            <div className="card" style={{ flex: 1, maxHeight: 600, overflowY: 'auto', fontSize: '0.88rem', lineHeight: 1.7 }}>
+            <div className="card" style={{ flex: '1 1 300px', maxHeight: 600, overflowY: 'auto', fontSize: '0.88rem', lineHeight: 1.7 }}>
               <h3 style={{ margin: '0 0 0.75rem', fontSize: '1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
                 {currentQuestion.passageTitle}
               </h3>
@@ -635,7 +635,7 @@ function MockExamPage() {
           )}
 
           {/* Question panel */}
-          <div className="card" style={{ flex: 1, minWidth: hasPassage ? 350 : 'auto' }}>
+          <div className="card" style={{ flex: '1 1 300px', minWidth: 0 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
               <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
                 Question {currentQIndex + 1} of {questions.length}

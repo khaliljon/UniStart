@@ -244,6 +244,7 @@ export interface CreateStudyGoalRequest {
   targetDate: string;
   targetScore: number;
   sectionIds?: number[];
+  hoursPerDay?: number;
 }
 
 export interface UpdateStudyGoalRequest {

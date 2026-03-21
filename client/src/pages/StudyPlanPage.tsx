@@ -54,6 +54,7 @@ function StudyPlanPage() {
   const [formExam, setFormExam] = useState('');
   const [formDate, setFormDate] = useState('');
   const [formScore, setFormScore] = useState(80);
+  const [formHoursPerDay, setFormHoursPerDay] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formSections, setFormSections] = useState<ExamSection[]>([]);
   const [selectedSectionIds, setSelectedSectionIds] = useState<number[]>([]);
@@ -130,6 +131,7 @@ function StudyPlanPage() {
         sectionIds: selectedSectionIds.length > 0 && selectedSectionIds.length < formSections.length
           ? selectedSectionIds
           : undefined,
+        hoursPerDay: formHoursPerDay ?? undefined,
       });
       setGoal(newGoal);
       setShowGoalForm(false);
@@ -146,23 +148,6 @@ function StudyPlanPage() {
       setStats(statsData);
     } catch (err) {
       setError(t.studyPlan.createError);
-      console.error(err);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleRegenerate = async () => {
-    try {
-      setIsSubmitting(true);
-      const newPlan = await studyPlanService.regeneratePlan();
-      setPlan(newPlan);
-      const todayData = await studyPlanService.getTodayPlan();
-      setTodayPlan(todayData);
-      const statsData = await studyPlanService.getPlanStats();
-      setStats(statsData);
-    } catch (err) {
-      setError(t.studyPlan.regenError);
       console.error(err);
     } finally {
       setIsSubmitting(false);
@@ -221,9 +206,6 @@ function StudyPlanPage() {
         <h1 style={{ margin: 0 }}>{t.studyPlan.title}</h1>
         {goal && (
           <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <button className="btn btn-outline" onClick={handleRegenerate} disabled={isSubmitting}>
-              {t.studyPlan.regenerate}
-            </button>
             <button className="btn btn-outline" onClick={() => setShowGoalForm(true)}>
               {t.studyPlan.changeGoal}
             </button>
@@ -253,12 +235,14 @@ function StudyPlanPage() {
           formExam={formExam}
           formDate={formDate}
           formScore={formScore}
+          formHoursPerDay={formHoursPerDay}
           isSubmitting={isSubmitting}
           sections={formSections}
           selectedSectionIds={selectedSectionIds}
           onChangeExam={setFormExam}
           onChangeDate={setFormDate}
           onChangeScore={setFormScore}
+          onChangeHoursPerDay={setFormHoursPerDay}
           onChangeSections={setSelectedSectionIds}
           onSubmit={handleCreateGoal}
           onClose={() => setShowGoalForm(false)}
@@ -357,10 +341,10 @@ function GoalCard({ goal, onDelete }: { goal: StudyGoal; onDelete: () => void })
 
   return (
     <div className="card card-static animate-fade-in-up" style={{ padding: '1.25rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div style={{ flex: 1 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
-            <h2 style={{ margin: 0 }}>{goal.examTypeName}</h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem' }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
+            <h2 style={{ margin: 0, wordBreak: 'break-word' }}>{goal.examTypeName}</h2>
             <span style={{
               background: 'var(--primary-color)', color: '#fff',
               padding: '0.2rem 0.6rem', borderRadius: '12px', fontSize: '0.8rem'
@@ -705,15 +689,16 @@ const EXAM_SCORE_CONFIG: Record<string, { min: number; max: number; step: number
 const DEFAULT_SCORE_CONFIG = { min: 0, max: 100, step: 1, default: 70 };
 
 function GoalFormModal({
-  exams, formExam, formDate, formScore, isSubmitting,
+  exams, formExam, formDate, formScore, formHoursPerDay, isSubmitting,
   sections, selectedSectionIds,
-  onChangeExam, onChangeDate, onChangeScore, onChangeSections, onSubmit, onClose,
+  onChangeExam, onChangeDate, onChangeScore, onChangeHoursPerDay, onChangeSections, onSubmit, onClose,
 }: {
   exams: ExamType[];
-  formExam: string; formDate: string; formScore: number; isSubmitting: boolean;
+  formExam: string; formDate: string; formScore: number; formHoursPerDay: number | null; isSubmitting: boolean;
   sections: ExamSection[]; selectedSectionIds: number[];
   onChangeExam: (v: string) => void; onChangeDate: (v: string) => void;
-  onChangeScore: (v: number) => void; onChangeSections: (ids: number[]) => void;
+  onChangeScore: (v: number) => void; onChangeHoursPerDay: (v: number | null) => void;
+  onChangeSections: (ids: number[]) => void;
   onSubmit: (e: React.FormEvent) => void; onClose: () => void;
 }) {
   const minDate = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
@@ -845,6 +830,34 @@ function GoalFormModal({
               <span>{effectiveMin}</span>
               <span>{effectiveMax}</span>
             </div>
+          </div>
+
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem', fontWeight: 600, fontSize: '0.9rem' }}>
+              <input
+                type="checkbox"
+                checked={formHoursPerDay !== null}
+                onChange={(e) => onChangeHoursPerDay(e.target.checked ? 2 : null)}
+              />
+              {t.studyPlan.hoursPerDayLabel}: {formHoursPerDay !== null ? formHoursPerDay : t.studyPlan.hoursPerDayAuto}
+            </label>
+            {formHoursPerDay !== null && (
+              <>
+                <input
+                  type="range"
+                  min={0.5}
+                  max={6}
+                  step={0.5}
+                  value={formHoursPerDay}
+                  onChange={(e) => onChangeHoursPerDay(Number(e.target.value))}
+                  style={{ width: '100%' }}
+                />
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                  <span>0.5</span>
+                  <span>6</span>
+                </div>
+              </>
+            )}
           </div>
 
           <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>

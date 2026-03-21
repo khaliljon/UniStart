@@ -5,6 +5,7 @@ import Layout from './components/Layout'
 import AdminLayout from './components/AdminLayout'
 import TutorLayout from './components/TutorLayout'
 import CookieBanner from './components/CookieBanner'
+import { ToastProvider } from './components/Toast'
 
 // ── Lazy-loaded pages (code splitting) ──────────────────
 const LoginPage = lazy(() => import('./pages/LoginPage'))
@@ -130,7 +131,7 @@ function App() {
   const needsOnboarding = isAuthenticated && !isAdmin && !isTutor && !user?.hasCompletedOnboarding
 
   return (
-    <>
+    <ToastProvider>
     <Suspense fallback={<PageLoader />}>
     <Routes>
       <Route path="/landing" element={!isAuthenticated ? <LandingPage /> : <Navigate to="/" replace />} />
@@ -152,7 +153,7 @@ function App() {
     </Routes>
     </Suspense>
     <CookieBanner />
-    </>
+    </ToastProvider>
   )
 }
 

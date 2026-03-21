@@ -29,10 +29,10 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
-            chown -R root:root /opt/unistart/.git
             cd /opt/unistart
             git config --global --add safe.directory /opt/unistart
-            git pull origin master
+            git fetch origin master
+            git reset --hard origin/master
             docker compose down
             docker compose up -d --build
             docker compose exec -T api dotnet ef database update --no-build || true

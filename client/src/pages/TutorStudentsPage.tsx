@@ -2,12 +2,14 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { tutorService } from '../services/tutorService';
 import { useTranslation } from '../hooks/useTranslation';
+import { useToast } from '../components/Toast';
 import type { StudentInfo, TutorStudentInfo } from '../types';
 import { getDateLocale } from '../i18n';
 
 function TutorStudentsPage() {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { showToast } = useToast();
   const [students, setStudents] = useState<StudentInfo[]>([]);
   const [linkedStudents, setLinkedStudents] = useState<TutorStudentInfo[]>([]);
   const [inviteCode, setInviteCode] = useState<string | null>(null);
@@ -42,8 +44,9 @@ function TutorStudentsPage() {
     try {
       const result = await tutorService.generateInviteCode();
       setInviteCode(result.inviteCode);
+      showToast(t.tutor.codeGenerated);
     } catch {
-      alert('Ошибка генерации кода');
+      showToast(t.tutor.codeGenerateError, 'error');
     } finally {
       setCodeLoading(false);
     }
@@ -52,6 +55,7 @@ function TutorStudentsPage() {
   const handleCopyCode = async () => {
     if (!inviteCode) return;
     await navigator.clipboard.writeText(inviteCode);
+    showToast(t.tutor.codeCopied);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

@@ -24,9 +24,9 @@ function TutorsPage() {
       const [data, schoolsData] = await Promise.all([
         tutorService.getTutors({
           search: search || undefined,
-          examType: examFilter || undefined,
-          sortBy,
-          onlyAvailable: onlyAvailable || undefined,
+          exam: examFilter || undefined,
+          sort: sortBy,
+          available: onlyAvailable || undefined,
           page,
           pageSize: 12,
         }),
@@ -304,16 +304,16 @@ function TutorsPage() {
 
       {/* Filters bar */}
       <div className="card" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center', marginBottom: '1.5rem' }}>
-        <form onSubmit={handleSearch} style={{ flex: '1 1 200px', display: 'flex', gap: '0.5rem' }}>
+        <form onSubmit={handleSearch} style={{ flex: '1 1 100%', display: 'flex', gap: '0.5rem' }}>
           <input
             type="text"
             placeholder={t.tutor.searchPlaceholder}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="form-input"
-            style={{ flex: 1, padding: '0.5rem 0.75rem', fontSize: '0.9rem' }}
+            style={{ flex: 1, padding: '0.5rem 0.75rem', fontSize: '0.9rem', minWidth: 0 }}
           />
-          <button type="submit" className="btn btn-primary" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
+          <button type="submit" className="btn btn-primary" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem', flexShrink: 0 }}>
             {t.tutor.searchBtn}
           </button>
         </form>

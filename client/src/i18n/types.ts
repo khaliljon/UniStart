@@ -479,6 +479,8 @@ export interface Translations {
     sections: string;
     examDate: string;
     targetScoreValue: string;
+    hoursPerDayLabel: string;
+    hoursPerDayAuto: string;
     creating: string;
     createAndGenerate: string;
     planAssignment: string;
@@ -533,6 +535,7 @@ export interface Translations {
     unlinkFromTutor: string;
     noTutorLinked: string;
     noTutorLinkedDesc: string;
+    tutorLinked: string;
     linkedTo: string;
     tutorDiscount: string;
     linking: string;
@@ -982,6 +985,8 @@ export interface Translations {
     regenerateCode: string;
     copyCode: string;
     codeCopied: string;
+    codeGenerated: string;
+    codeGenerateError: string;
     noCodeYet: string;
     linkedStudents: string;
     noLinkedStudents: string;

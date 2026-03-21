@@ -6,7 +6,8 @@ public record CreateStudyGoalDto(
     string ExamTypeCode,
     DateTime TargetDate,
     int TargetScore,
-    List<int>? SectionIds = null
+    List<int>? SectionIds = null,
+    double? HoursPerDay = null
 );
 
 public record UpdateStudyGoalDto(

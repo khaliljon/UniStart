@@ -5,6 +5,7 @@ import { useTranslation } from '../hooks/useTranslation';
 import { fetchExams, fetchExamSections, toggleExamSelection, setSelectedSectionIds } from '../store/slices/examSlice';
 import { subscriptionService } from '../services/subscriptionService';
 import { tutorService } from '../services/tutorService';
+import { useToast } from '../components/Toast';
 import { PricingModal } from '../components/PricingModal';
 import type { SubscriptionStatus, ExamSection, LinkedTutorInfo } from '../types';
 
@@ -13,6 +14,7 @@ function ProfilePage() {
   const { exams, selectedExams, selectedSectionIds } = useAppSelector((state) => state.exam);
   const dispatch = useAppDispatch();
   const { t } = useTranslation();
+  const { showToast } = useToast();
   const [sub, setSub] = useState<SubscriptionStatus | null>(null);
   const [showPricing, setShowPricing] = useState(false);
   const [allSections, setAllSections] = useState<ExamSection[]>([]);
@@ -77,12 +79,15 @@ function ProfilePage() {
         const tutor = await tutorService.getMyTutor();
         setLinkedTutor(tutor);
         setInviteCode('');
+        showToast(t.profilePage.tutorLinked);
         subscriptionService.getStatus().then(setSub).catch(() => {});
       } else {
         setLinkError(result.message);
+        showToast(result.message, 'error');
       }
     } catch {
       setLinkError('Ошибка привязки');
+      showToast('Ошибка привязки', 'error');
     } finally {
       setLinkLoading(false);
     }
