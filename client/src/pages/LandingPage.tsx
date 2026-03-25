@@ -381,7 +381,7 @@ function LandingPage() {
             width: '80px', height: '80px', borderRadius: '1rem',
             overflow: 'hidden', flexShrink: 0,
           }}>
-            <img src="/linhao-logo.svg" alt="LinHao" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            <img src="/linhao-logo.svg" alt="LINHAO.CHINESE" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           </div>
           <div style={{ flex: 1, minWidth: '200px' }}>
             <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.2rem', fontWeight: 700 }}>

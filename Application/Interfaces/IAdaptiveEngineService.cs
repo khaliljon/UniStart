@@ -63,7 +63,7 @@ public interface IAdaptiveEngineService
     /// <summary>
     /// Gets all topics with progress for user
     /// </summary>
-    Task<IEnumerable<TopicProgressDto>> GetTopicsWithProgressAsync(int userId, string[]? examTypeCodes = null);
+    Task<IEnumerable<TopicProgressDto>> GetTopicsWithProgressAsync(int userId, string[]? examTypeCodes = null, int[]? sectionIds = null);
 
     /// <summary>
     /// Gets questions by topic

@@ -116,10 +116,10 @@ public class TestController : ControllerBase
     /// </summary>
     [HttpGet("topics")]
     [ProducesResponseType(typeof(IEnumerable<TopicProgressDto>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetTopicsWithProgress([FromQuery] string[]? examTypeCodes = null)
+    public async Task<IActionResult> GetTopicsWithProgress([FromQuery] string[]? examTypeCodes = null, [FromQuery] int[]? sectionIds = null)
     {
         var userId = GetCurrentUserId();
-        var topics = await _adaptiveEngine.GetTopicsWithProgressAsync(userId, examTypeCodes);
+        var topics = await _adaptiveEngine.GetTopicsWithProgressAsync(userId, examTypeCodes, sectionIds);
         return Ok(topics);
     }
 

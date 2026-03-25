@@ -16,7 +16,7 @@ type ViewMode = 'topics' | 'practice' | 'lesson';
 export default function TopicsPage() {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { selectedExams } = useSelector((state: RootState) => state.exam);
+  const { selectedExams, selectedSectionIds } = useSelector((state: RootState) => state.exam);
   
   const [topics, setTopics] = useState<TopicProgress[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,12 +51,12 @@ export default function TopicsPage() {
       return;
     }
     loadTopics();
-  }, [selectedExams, navigate]);
+  }, [selectedExams, selectedSectionIds, navigate]);
 
   const loadTopics = async () => {
     try {
       setLoading(true);
-      const data = await testService.getTopicsWithProgress(selectedExams);
+      const data = await testService.getTopicsWithProgress(selectedExams, selectedSectionIds);
       setTopics(data);
     } catch (error) {
       console.error('Failed to load topics:', error);

@@ -4578,7 +4578,7 @@ General Tips:
 
         var linhao = new TutorSchool
         {
-            Name = "Linhao Chinese",
+            Name = "Школа LINHAO.CHINESE",
             Slug = "linhao-chinese",
             Description = "Первая онлайн-школа в СНГ по подготовке студентов в Китай к экзамену CSCA. Авторский курс «Мандарин» с 0 до 1 HSK за 8 уроков.",
             LogoUrl = null,

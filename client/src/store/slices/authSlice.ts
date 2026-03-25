@@ -105,6 +105,11 @@ const authSlice = createSlice({
       state.pendingVerificationEmail = null;
       authService.removeToken();
       localStorage.removeItem('tokenExpiresAt');
+      localStorage.removeItem('user');
+      // Tell Google Identity Services to forget the session
+      try {
+        window.google?.accounts.id.disableAutoSelect();
+      } catch { /* GSI not loaded — safe to ignore */ }
     },
     clearError: (state) => {
       state.error = null;

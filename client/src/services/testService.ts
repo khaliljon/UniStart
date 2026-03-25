@@ -37,8 +37,10 @@ export const testService = {
     return response.data;
   },
 
-  async getTopicsWithProgress(examTypeCodes?: string[]): Promise<TopicProgress[]> {
-    const params = examTypeCodes?.length ? { examTypeCodes } : {};
+  async getTopicsWithProgress(examTypeCodes?: string[], sectionIds?: number[]): Promise<TopicProgress[]> {
+    const params: Record<string, unknown> = {};
+    if (examTypeCodes?.length) params.examTypeCodes = examTypeCodes;
+    if (sectionIds?.length) params.sectionIds = sectionIds;
     const response = await api.get<TopicProgress[]>('/test/topics', { params });
     return response.data;
   },

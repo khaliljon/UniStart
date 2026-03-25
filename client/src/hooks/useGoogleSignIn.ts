@@ -16,6 +16,7 @@ declare global {
           renderButton: (element: HTMLElement, config: {
             theme: string; size: string; width: number; text: string;
           }) => void;
+          disableAutoSelect: () => void;
           cancel: () => void;
         };
       };

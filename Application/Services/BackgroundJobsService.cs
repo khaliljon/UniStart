@@ -58,6 +58,9 @@ public class BackgroundJobsService : IBackgroundJobsService
                 .Select(a => a.AnsweredAt)
                 .FirstOrDefaultAsync();
 
+            // Skip users who have never studied — no point sending "0 days" reminders
+            if (lastAnswerDate == default) continue;
+
             var streak = 0;
             if (lastAnswerDate != default)
             {
@@ -85,9 +88,7 @@ public class BackgroundJobsService : IBackgroundJobsService
             }
 
             // Calculate actual days of inactivity
-            var inactiveDays = lastAnswerDate != default
-                ? (int)(DateTime.UtcNow.Date - lastAnswerDate.Date).TotalDays
-                : 2; // default if no activity ever
+            var inactiveDays = (int)(DateTime.UtcNow.Date - lastAnswerDate.Date).TotalDays;
 
             try
             {

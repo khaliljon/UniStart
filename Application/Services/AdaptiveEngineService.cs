@@ -511,7 +511,7 @@ public class AdaptiveEngineService : IAdaptiveEngineService
     /// <summary>
     /// Gets topics with user progress statistics
     /// </summary>
-    public async Task<IEnumerable<TopicProgressDto>> GetTopicsWithProgressAsync(int userId, string[]? examTypeCodes = null)
+    public async Task<IEnumerable<TopicProgressDto>> GetTopicsWithProgressAsync(int userId, string[]? examTypeCodes = null, int[]? sectionIds = null)
     {
         var topicsQuery = _context.Topics
             .Include(t => t.Section)
@@ -519,7 +519,11 @@ public class AdaptiveEngineService : IAdaptiveEngineService
             .Include(t => t.Lessons)
             .AsQueryable();
 
-        if (examTypeCodes != null && examTypeCodes.Length > 0)
+        if (sectionIds != null && sectionIds.Length > 0)
+        {
+            topicsQuery = topicsQuery.Where(t => t.SectionId != null && sectionIds.Contains(t.SectionId.Value));
+        }
+        else if (examTypeCodes != null && examTypeCodes.Length > 0)
         {
             topicsQuery = topicsQuery.Where(t => t.Section != null && examTypeCodes.Contains(t.Section.ExamTypeCode));
         }
