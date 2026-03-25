@@ -4,18 +4,25 @@ import ProfileDropdown from './ProfileDropdown';
 import GuidedTour from './GuidedTour';
 import LanguageSwitcher from './LanguageSwitcher';
 import { useTranslation } from '../hooks/useTranslation';
+import { useBranding } from '../contexts/BrandingContext';
 
 function Layout() {
   const { t } = useTranslation();
+  const { branding, isWhiteLabel } = useBranding();
   const [menuOpen, setMenuOpen] = useState(false);
+
+  const brandName = branding?.navbarTitle || 'UniStart';
 
   return (
     <div className="layout">
       <GuidedTour />
       <nav className="navbar">
         <div className="container navbar-content">
-          <NavLink to="/" className="navbar-brand">
-            UniStart
+          <NavLink to="/" className="navbar-brand" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            {isWhiteLabel && branding?.logoUrl && (
+              <img src={branding.logoUrl} alt={brandName} style={{ height: 28, borderRadius: '50%' }} />
+            )}
+            {brandName}
           </NavLink>
 
           <button

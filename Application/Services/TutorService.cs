@@ -390,6 +390,18 @@ public class TutorService : ITutorService
     }
 
     // ─── Schools ────────────────────────────────────────
+    public async Task<SchoolBrandingDto?> GetSchoolBrandingAsync(string slug)
+    {
+        return await _db.TutorSchools
+            .Where(s => s.IsActive && (s.Subdomain == slug || s.Slug == slug))
+            .Select(s => new SchoolBrandingDto(
+                s.Id, s.Name, s.Slug, s.LogoUrl,
+                s.PrimaryColor, s.PrimaryHoverColor, s.AccentColor,
+                s.NavbarTitle ?? s.Name
+            ))
+            .FirstOrDefaultAsync();
+    }
+
     public async Task<List<TutorSchoolCardDto>> GetSchoolsAsync()
     {
         return await _db.TutorSchools

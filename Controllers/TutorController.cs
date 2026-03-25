@@ -159,6 +159,17 @@ public class TutorController : ControllerBase
         return Ok(schools);
     }
 
+    /// <summary>Брендинг школы по слагу (для White Label субдоменов)</summary>
+    [HttpGet("schools/branding")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetSchoolBranding([FromQuery] string slug)
+    {
+        if (string.IsNullOrWhiteSpace(slug)) return BadRequest(new { error = "slug required" });
+        var branding = await _tutorService.GetSchoolBrandingAsync(slug);
+        if (branding == null) return NotFound();
+        return Ok(branding);
+    }
+
     /// <summary>Школа с тьюторами</summary>
     [HttpGet("schools/{slug}")]
     [AllowAnonymous]

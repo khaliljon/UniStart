@@ -17,6 +17,14 @@ public class TutorSchool
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
 
+    // ── White Label Branding ──────────────────────────────
+    public string? Subdomain { get; set; }          // e.g. "linhao" → linhao.unistart.kz
+    public string? CustomDomain { get; set; }       // e.g. "prep.linhao.cn"
+    public string? PrimaryColor { get; set; }       // e.g. "#c0392b"
+    public string? PrimaryHoverColor { get; set; }  // e.g. "#e74c3c"
+    public string? AccentColor { get; set; }        // e.g. "#d4a437"
+    public string? NavbarTitle { get; set; }        // custom navbar text, defaults to Name
+
     // Navigation
     public virtual User? Owner { get; set; }
     public ICollection<TutorProfile> Tutors { get; set; } = new List<TutorProfile>();

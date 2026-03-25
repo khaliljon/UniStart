@@ -5,3 +5,17 @@ Sitemap: https://unistart.kz/sitemap.xml
 # Disallow admin/API/internal routes
 Disallow: /api/
 Disallow: /hangfire
+Disallow: /login
+Disallow: /register
+Disallow: /verify-email
+Disallow: /onboarding
+Disallow: /test
+Disallow: /learn
+Disallow: /analytics
+Disallow: /study-plan
+Disallow: /mock-exam
+Disallow: /prediction
+Disallow: /profile
+Disallow: /admin
+Disallow: /tutor
+Disallow: /messages

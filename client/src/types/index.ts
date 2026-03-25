@@ -1342,6 +1342,18 @@ export interface UpdateSchoolRequest {
   specializations?: string;
 }
 
+// ─── School Branding (White Label) ─────────────────────
+export interface SchoolBranding {
+  id: number;
+  name: string;
+  slug: string;
+  logoUrl: string | null;
+  primaryColor: string | null;
+  primaryHoverColor: string | null;
+  accentColor: string | null;
+  navbarTitle: string | null;
+}
+
 // ─── Assignments (Этап 3) ──────────────────────────────
 
 export interface AssignmentListItem {

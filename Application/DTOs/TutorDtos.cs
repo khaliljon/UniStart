@@ -163,6 +163,18 @@ public record MessagesPageDto(
 );
 
 // ─── Tutor School DTOs ───────────────────────────────────
+
+public record SchoolBrandingDto(
+    int Id,
+    string Name,
+    string Slug,
+    string? LogoUrl,
+    string? PrimaryColor,
+    string? PrimaryHoverColor,
+    string? AccentColor,
+    string? NavbarTitle
+);
+
 public record TutorSchoolCardDto(
     int Id,
     string Name,

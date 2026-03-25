@@ -1,10 +1,29 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
   <defs>
     <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#ef4444"/>
-      <stop offset="100%" style="stop-color:#f97316"/>
+      <stop offset="0%" style="stop-color:#c0392b"/>
+      <stop offset="100%" style="stop-color:#e74c3c"/>
     </linearGradient>
   </defs>
-  <rect width="200" height="200" rx="32" fill="url(#bg)"/>
-  <text x="100" y="120" text-anchor="middle" fill="white" font-size="80" font-weight="800" font-family="system-ui, sans-serif">LH</text>
+  <!-- Circular red background -->
+  <circle cx="100" cy="100" r="100" fill="url(#bg)"/>
+  <!-- Gold decorative ring -->
+  <circle cx="100" cy="100" r="92" fill="none" stroke="#d4a437" stroke-width="3"/>
+  <circle cx="100" cy="100" r="88" fill="none" stroke="#d4a437" stroke-width="1" stroke-dasharray="4 3"/>
+  <!-- Warrior silhouette (simplified) -->
+  <g fill="#1a0a00" opacity="0.85">
+    <!-- Head -->
+    <circle cx="100" cy="52" r="14"/>
+    <!-- Helmet crest -->
+    <path d="M88 42 Q100 20 112 42" fill="#d4a437"/>
+    <!-- Body/Robe -->
+    <path d="M78 65 L68 140 L100 135 L132 140 L122 65 Q100 58 78 65Z"/>
+    <!-- Arms -->
+    <path d="M78 75 L55 110 L65 112 L82 85Z"/>
+    <path d="M122 75 L145 110 L135 112 L118 85Z"/>
+  </g>
+  <!-- Brand name -->
+  <text x="100" y="165" text-anchor="middle" fill="#d4a437" font-size="16" font-weight="700" font-family="system-ui, sans-serif" letter-spacing="1">linhao.chinese</text>
+  <!-- Chinese text -->
+  <text x="100" y="185" text-anchor="middle" fill="#d4a437" font-size="14" font-family="system-ui, sans-serif">张丽娜学校</text>
 </svg>

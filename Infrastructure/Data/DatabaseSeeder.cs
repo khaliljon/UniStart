@@ -4581,13 +4581,18 @@ General Tips:
             Name = "Школа LINHAO.CHINESE",
             Slug = "linhao-chinese",
             Description = "Первая онлайн-школа в СНГ по подготовке студентов в Китай к экзамену CSCA. Авторский курс «Мандарин» с 0 до 1 HSK за 8 уроков.",
-            LogoUrl = null,
+            LogoUrl = "/linhao-logo.png",
             WebsiteUrl = null,
             InstagramUrl = "https://www.instagram.com/linhao.chinese/",
             TelegramUrl = "https://t.me/linhao_chinese",
             Specializations = "CSCA",
             IsPartner = true,
             IsActive = true,
+            Subdomain = "linhao",
+            PrimaryColor = "#c0392b",
+            PrimaryHoverColor = "#a93226",
+            AccentColor = "#f1c40f",
+            NavbarTitle = "LINHAO.CHINESE",
         };
         _context.TutorSchools.Add(linhao);
         await _context.SaveChangesAsync();

@@ -25,6 +25,7 @@ import type {
   SchoolAdmin,
   CreateSchoolRequest,
   UpdateSchoolRequest,
+  SchoolBranding,
 } from '../types';
 
 export interface TutorListParams {
@@ -250,5 +251,16 @@ export const tutorService = {
   }): Promise<SubmitAssignmentAnswerResult> {
     const response = await api.post<SubmitAssignmentAnswerResult>(`/tutors/my-assignments/${assignmentId}/answer`, data);
     return response.data;
+  },
+
+  // ── School Branding (White Label) ──
+
+  async getSchoolBranding(slug: string): Promise<SchoolBranding | null> {
+    try {
+      const response = await api.get<SchoolBranding>('/tutors/schools/branding', { params: { slug } });
+      return response.data;
+    } catch {
+      return null;
+    }
   },
 };

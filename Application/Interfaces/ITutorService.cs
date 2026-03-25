@@ -16,6 +16,7 @@ public interface ITutorService
     Task<int> GetStudentIdByConversationAsync(int conversationId);
     Task EnsureTutorProfileAsync(int userId);
     Task<List<TutorSchoolCardDto>> GetSchoolsAsync();
+    Task<SchoolBrandingDto?> GetSchoolBrandingAsync(string slug);
     Task<TutorSchoolDetailDto?> GetSchoolAsync(string slug);
 
     // School management (Этап 4)
