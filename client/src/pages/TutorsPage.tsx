@@ -2,12 +2,14 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { tutorService } from '../services/tutorService';
 import { useTranslation } from '../i18n';
+import { useBranding } from '../contexts/BrandingContext';
 import type { TutorCard, TutorListResult, TutorSchoolCard } from '../types';
 
 function TutorsPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { t } = useTranslation();
+  const { branding } = useBranding();
 
   const [result, setResult] = useState<TutorListResult | null>(null);
   const [schools, setSchools] = useState<TutorSchoolCard[]>([]);
@@ -29,6 +31,7 @@ function TutorsPage() {
           available: onlyAvailable || undefined,
           page,
           pageSize: 12,
+          schoolId: branding?.id,
         }),
         schools.length === 0 ? tutorService.getSchools() : Promise.resolve(schools),
       ]);

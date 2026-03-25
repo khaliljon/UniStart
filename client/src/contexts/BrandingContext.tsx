@@ -24,6 +24,17 @@ function getSubdomain(): string | null {
   return null;
 }
 
+function setMeta(name: string, content: string, isProperty = false) {
+  const attr = isProperty ? 'property' : 'name';
+  let el = document.querySelector<HTMLMetaElement>(`meta[${attr}="${name}"]`);
+  if (!el) {
+    el = document.createElement('meta');
+    el.setAttribute(attr, name);
+    document.head.appendChild(el);
+  }
+  el.content = content;
+}
+
 export function BrandingProvider({ children }: { children: ReactNode }) {
   const [branding, setBranding] = useState<SchoolBranding | null>(null);
   const subdomain = getSubdomain();
@@ -39,6 +50,43 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
       if (data.primaryColor) root.style.setProperty('--primary-color', data.primaryColor);
       if (data.primaryHoverColor) root.style.setProperty('--primary-hover', data.primaryHoverColor);
       if (data.accentColor) root.style.setProperty('--success-color', data.accentColor);
+
+      // SEO: dynamic title, meta, OG tags
+      const title = `${data.navbarTitle || data.name} — Подготовка к экзаменам на UniStart`;
+      const description = data.description || `${data.navbarTitle || data.name} — подготовка к экзаменам с адаптивными тестами на платформе UniStart.`;
+      const origin = window.location.origin;
+
+      document.title = title;
+      setMeta('description', description);
+      setMeta('og:title', title, true);
+      setMeta('og:description', description, true);
+      setMeta('og:url', origin, true);
+      setMeta('og:site_name', data.navbarTitle || data.name, true);
+      setMeta('twitter:title', title, true);
+      setMeta('twitter:description', description, true);
+
+      if (data.logoUrl) {
+        const logoAbsolute = data.logoUrl.startsWith('http') ? data.logoUrl : `${origin}${data.logoUrl}`;
+        setMeta('og:image', logoAbsolute, true);
+        setMeta('twitter:image', logoAbsolute, true);
+        // Dynamic favicon
+        let link = document.querySelector<HTMLLinkElement>('link[rel="icon"][data-brand]');
+        if (!link) {
+          link = document.createElement('link');
+          link.rel = 'icon';
+          link.setAttribute('data-brand', 'true');
+          document.head.appendChild(link);
+        }
+        link.href = data.logoUrl;
+      }
+
+      if (data.primaryColor) {
+        setMeta('theme-color', data.primaryColor);
+      }
+
+      // Canonical
+      let canonical = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+      if (canonical) canonical.href = origin;
     });
   }, [subdomain]);
 

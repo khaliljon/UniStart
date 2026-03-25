@@ -16,6 +16,7 @@ function TutorLayout() {
 
   const [pendingCount, setPendingCount] = useState(0);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [hasSchool, setHasSchool] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -34,6 +35,9 @@ function TutorLayout() {
     };
     loadCounts();
     const interval = setInterval(loadCounts, 30000);
+
+    // Check school ownership
+    tutorService.getMySchool().then(s => setHasSchool(s !== null)).catch(() => {});
 
     // Live unread via SignalR
     chatService.start();
@@ -139,6 +143,13 @@ function TutorLayout() {
                 Школа
               </NavLink>
             </li>
+            {hasSchool && (
+              <li>
+                <NavLink to="/school-admin">
+                  Панель школы
+                </NavLink>
+              </li>
+            )}
             <li>
               <NavLink to="/content">
                 Контент

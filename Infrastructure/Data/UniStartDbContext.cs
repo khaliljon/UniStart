@@ -521,6 +521,13 @@ public class UniStartDbContext : DbContext
                   .OnDelete(DeleteBehavior.SetNull);
         });
 
+        // ─── User → School (White Label) ─────────────────────
+        modelBuilder.Entity<User>()
+            .HasOne(u => u.School)
+            .WithMany()
+            .HasForeignKey(u => u.SchoolId)
+            .OnDelete(DeleteBehavior.SetNull);
+
         // ─── Tutor Schedule Slot ────────────────────────────
         modelBuilder.Entity<TutorScheduleSlot>(entity =>
         {

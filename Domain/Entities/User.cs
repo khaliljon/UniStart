@@ -15,6 +15,9 @@ public class User : ISoftDeletable, IAuditable
     // Tutor binding (student's linked tutor)
     public int? LinkedTutorId { get; set; }
 
+    // School binding (White Label — auto-set on subdomain registration)
+    public int? SchoolId { get; set; }
+
     // Email verification
     public bool EmailVerified { get; set; } = false;
     public string? EmailVerificationCode { get; set; }
@@ -53,6 +56,7 @@ public class User : ISoftDeletable, IAuditable
     public virtual ICollection<TestSession> TestSessions { get; set; } = new List<TestSession>();
     public virtual NotificationPreferences? NotificationPreferences { get; set; }
     public virtual TutorProfile? TutorProfile { get; set; }
+    public virtual TutorSchool? School { get; set; }
 
     public bool IsPro => SubscriptionTier == SubscriptionTier.Pro
                          && (SubscriptionExpiresAt == null || SubscriptionExpiresAt > DateTime.UtcNow);
@@ -62,7 +66,8 @@ public enum UserRole
 {
     Student,
     Tutor,
-    Admin
+    Admin,
+    SchoolAdmin
 }
 
 public enum SubscriptionTier

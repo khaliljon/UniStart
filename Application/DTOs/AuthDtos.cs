@@ -7,7 +7,8 @@ public record RegisterDto(
     [Required][EmailAddress] string Email,
     [Required][MinLength(2)] string Name,
     [Required][MinLength(8)] string Password,
-    string? Role = null
+    string? Role = null,
+    string? SchoolSlug = null
 );
 
 public record LoginDto(

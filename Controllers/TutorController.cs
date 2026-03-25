@@ -31,10 +31,11 @@ public class TutorController : ControllerBase
         [FromQuery] string? exam,
         [FromQuery] string? sort,
         [FromQuery] bool? available,
+        [FromQuery] int? schoolId,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 12)
     {
-        var result = await _tutorService.GetTutorsAsync(search, exam, sort, available, page, pageSize);
+        var result = await _tutorService.GetTutorsAsync(search, exam, sort, available, page, pageSize, schoolId);
         return Ok(result);
     }
 

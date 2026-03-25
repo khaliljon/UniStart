@@ -168,11 +168,13 @@ public record SchoolBrandingDto(
     int Id,
     string Name,
     string Slug,
+    string? Description,
     string? LogoUrl,
     string? PrimaryColor,
     string? PrimaryHoverColor,
     string? AccentColor,
-    string? NavbarTitle
+    string? NavbarTitle,
+    string[] Specializations
 );
 
 public record TutorSchoolCardDto(

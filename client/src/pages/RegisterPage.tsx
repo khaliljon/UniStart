@@ -4,12 +4,14 @@ import { useAppDispatch } from '../hooks/useAppDispatch';
 import { useAppSelector } from '../hooks/useAppSelector';
 import { useTranslation } from '../hooks/useTranslation';
 import { useGoogleSignIn } from '../hooks/useGoogleSignIn';
+import { useBranding } from '../contexts/BrandingContext';
 import { register, verifyEmail, clearError } from '../store/slices/authSlice';
 import { authService } from '../services/authService';
 
 function RegisterPage() {
   const dispatch = useAppDispatch();
   const { isLoading, error, pendingVerificationEmail } = useAppSelector((state) => state.auth);
+  const { branding } = useBranding();
   const { t } = useTranslation();
 
   const [name, setName] = useState('');
@@ -62,7 +64,7 @@ function RegisterPage() {
       return;
     }
 
-    dispatch(register({ name, email, password, role }));
+    dispatch(register({ name, email, password, role, schoolSlug: branding?.slug }));
   };
 
   const handleVerify = async (e: FormEvent) => {

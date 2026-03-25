@@ -1,10 +1,17 @@
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../i18n';
 import LanguageSwitcher from '../components/LanguageSwitcher';
+import { useBranding } from '../contexts/BrandingContext';
+import WhiteLabelLanding from './WhiteLabelLanding';
 
 function LandingPage() {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { branding, isWhiteLabel } = useBranding();
+
+  if (isWhiteLabel && branding) {
+    return <WhiteLabelLanding branding={branding} />;
+  }
   const FEATURES = [
     { icon: '', title: t.landing.featureAdaptiveTitle, desc: t.landing.featureAdaptiveDesc },
     { icon: '', title: t.landing.featurePredictionTitle, desc: t.landing.featurePredictionDesc },

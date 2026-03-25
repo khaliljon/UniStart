@@ -46,6 +46,7 @@ const TutorReviewsPage = lazy(() => import('./pages/TutorReviewsPage'))
 const TutorQuestionsPage = lazy(() => import('./pages/TutorQuestionsPage'))
 const TutorAssignmentsPage = lazy(() => import('./pages/TutorAssignmentsPage'))
 const TutorSchoolManagePage = lazy(() => import('./pages/TutorSchoolManagePage'))
+const SchoolAdminDashboardPage = lazy(() => import('./pages/SchoolAdminDashboardPage'))
 const TutorContentPage = lazy(() => import('./pages/TutorContentPage'))
 const StudentAssignmentsPage = lazy(() => import('./pages/StudentAssignmentsPage'))
 const ForSchoolsPage = lazy(() => import('./pages/ForSchoolsPage'))
@@ -118,6 +119,7 @@ function TutorRoutes() {
       <Route path="messages" element={<MessagesPage />} />
       <Route path="schedule" element={<TutorSchedulePage />} />
       <Route path="school" element={<TutorSchoolManagePage />} />
+      <Route path="school-admin" element={<SchoolAdminDashboardPage />} />
       <Route path="content" element={<TutorContentPage />} />
       <Route path="reviews" element={<TutorReviewsPage />} />
       <Route path="my-profile" element={<TutorProfileEditPage />} />

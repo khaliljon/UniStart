@@ -35,6 +35,7 @@ export interface TutorListParams {
   available?: boolean;
   page?: number;
   pageSize?: number;
+  schoolId?: number;
 }
 
 export const tutorService = {

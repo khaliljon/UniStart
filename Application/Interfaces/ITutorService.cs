@@ -4,7 +4,7 @@ namespace UniStart.Application.Interfaces;
 
 public interface ITutorService
 {
-    Task<TutorListResultDto> GetTutorsAsync(string? search, string? exam, string? sort, bool? available, int page, int pageSize);
+    Task<TutorListResultDto> GetTutorsAsync(string? search, string? exam, string? sort, bool? available, int page, int pageSize, int? schoolId = null);
     Task<TutorProfileDetailDto?> GetTutorProfileAsync(int userId);
     Task<TutorProfileDetailDto> UpdateMyProfileAsync(int userId, UpdateTutorProfileDto dto);
     Task<TutorProfileDetailDto> SetScheduleAsync(int userId, SetScheduleDto dto);

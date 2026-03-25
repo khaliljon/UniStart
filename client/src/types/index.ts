@@ -34,6 +34,7 @@ export interface RegisterRequest {
   name: string;
   password: string;
   role?: 'Student' | 'Tutor';
+  schoolSlug?: string;
 }
 
 export interface VerifyEmailRequest {
@@ -1347,11 +1348,13 @@ export interface SchoolBranding {
   id: number;
   name: string;
   slug: string;
+  description: string | null;
   logoUrl: string | null;
   primaryColor: string | null;
   primaryHoverColor: string | null;
   accentColor: string | null;
   navbarTitle: string | null;
+  specializations: string[];
 }
 
 // ─── Assignments (Этап 3) ──────────────────────────────

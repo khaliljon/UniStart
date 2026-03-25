@@ -17,7 +17,7 @@ public class TutorService : ITutorService
     }
 
     public async Task<TutorListResultDto> GetTutorsAsync(
-        string? search, string? exam, string? sort, bool? available, int page, int pageSize)
+        string? search, string? exam, string? sort, bool? available, int page, int pageSize, int? schoolId = null)
     {
         pageSize = Math.Clamp(pageSize, 1, 50);
         page = Math.Max(1, page);
@@ -25,6 +25,9 @@ public class TutorService : ITutorService
         var query = _db.TutorProfiles
             .Include(tp => tp.User)
             .Where(tp => tp.User.Role == UserRole.Tutor && !tp.User.IsDeleted && !tp.User.IsBlocked && tp.IsVerified);
+
+        if (schoolId.HasValue)
+            query = query.Where(tp => tp.SchoolId == schoolId.Value);
 
         if (available == true)
             query = query.Where(tp => tp.IsAvailable);
@@ -395,9 +398,10 @@ public class TutorService : ITutorService
         return await _db.TutorSchools
             .Where(s => s.IsActive && (s.Subdomain == slug || s.Slug == slug))
             .Select(s => new SchoolBrandingDto(
-                s.Id, s.Name, s.Slug, s.LogoUrl,
+                s.Id, s.Name, s.Slug, s.Description, s.LogoUrl,
                 s.PrimaryColor, s.PrimaryHoverColor, s.AccentColor,
-                s.NavbarTitle ?? s.Name
+                s.NavbarTitle ?? s.Name,
+                s.Specializations.Split(',', System.StringSplitOptions.RemoveEmptyEntries)
             ))
             .FirstOrDefaultAsync();
     }

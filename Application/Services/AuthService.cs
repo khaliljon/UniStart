@@ -79,12 +79,23 @@ public class AuthService : IAuthService
 
         // Create new user with verification code
         var code = GenerateVerificationCode();
+
+        // Auto-bind to school if registering from White Label subdomain
+        int? schoolId = null;
+        if (!string.IsNullOrWhiteSpace(dto.SchoolSlug))
+        {
+            var school = await _context.TutorSchools
+                .FirstOrDefaultAsync(s => s.IsActive && (s.Subdomain == dto.SchoolSlug || s.Slug == dto.SchoolSlug));
+            if (school != null) schoolId = school.Id;
+        }
+
         var user = new User
         {
             Email = dto.Email,
             Name = InputSanitizer.Sanitize(dto.Name)!,
             PasswordHash = BC.HashPassword(dto.Password),
             Role = role,
+            SchoolId = schoolId,
             CreatedAt = DateTime.UtcNow,
             EmailVerified = false,
             EmailVerificationCode = code,
@@ -105,7 +116,8 @@ public class AuthService : IAuthService
                 Experience = "",
                 Specializations = "",
                 IsAvailable = true,
-                IsVerified = false
+                IsVerified = false,
+                SchoolId = schoolId
             });
             await _unitOfWork.SaveChangesAsync();
         }
