@@ -414,7 +414,7 @@ function LandingPage() {
         {/* Partner CTA */}
         <div style={{ textAlign: 'center', marginTop: '2rem' }}>
           <a
-            href="mailto:unistart.kz@gmail.com?subject=Партнёрство%20—%20размещение%20школы%20на%20UniStart"
+            href="/for-schools"
             style={{
               display: 'inline-block',
               padding: '0.85rem 2rem',

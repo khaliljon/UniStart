@@ -50,4 +50,12 @@ export const authService = {
   async changeEmail(data: { newEmail: string; password: string }): Promise<void> {
     await api.post('/auth/change-email', data);
   },
+
+  async forgotPassword(email: string): Promise<void> {
+    await api.post('/auth/forgot-password', { email });
+  },
+
+  async resetPassword(data: { email: string; code: string; newPassword: string }): Promise<void> {
+    await api.post('/auth/reset-password', data);
+  },
 };

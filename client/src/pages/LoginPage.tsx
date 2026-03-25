@@ -86,6 +86,12 @@ function LoginPage() {
             </div>
           </div>
 
+          <div style={{ textAlign: 'right', marginTop: '0.25rem' }}>
+            <Link to="/forgot-password" style={{ fontSize: '0.85rem', color: 'var(--primary-color)' }}>
+              {t.auth.forgotPassword}
+            </Link>
+          </div>
+
           {error && <p className="error-message">{error}</p>}
 
           <button

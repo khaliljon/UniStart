@@ -74,6 +74,23 @@ export interface Translations {
     iAmStudent: string;
     iAmTutor: string;
     tutorRegNote: string;
+    fp: {
+      title: string;
+      enterEmail: string;
+      enterCode: string;
+      enterNewPassword: string;
+      sendCode: string;
+      codeSent: string;
+      sendError: string;
+      invalidCode: string;
+      verifyCode: string;
+      newPassword: string;
+      passwordTooShort: string;
+      passwordMismatch: string;
+      resetButton: string;
+      resetSuccess: string;
+      resetError: string;
+    };
   };
 
   // ─── Dashboard ───
@@ -883,6 +900,41 @@ export interface Translations {
     faqPrice: string;
     faqPriceAnswer: string;
     allRights: string;
+  };
+
+  // ─── For Schools ───
+  forSchools: {
+    heroTitle: string;
+    heroDesc: string;
+    contactUs: string;
+    learnMore: string;
+    getStarted: string;
+    benefitsTitle: string;
+    benefitsDesc: string;
+    benefitBrandTitle: string;
+    benefitBrandDesc: string;
+    benefitAnalyticsTitle: string;
+    benefitAnalyticsDesc: string;
+    benefitContentTitle: string;
+    benefitContentDesc: string;
+    benefitSubdomainTitle: string;
+    benefitSubdomainDesc: string;
+    benefitTutorsTitle: string;
+    benefitTutorsDesc: string;
+    benefitMobileTitle: string;
+    benefitMobileDesc: string;
+    howItWorksTitle: string;
+    step1: string;
+    step2: string;
+    step3: string;
+    step4: string;
+    includedTitle: string;
+    includedWhiteLabel: string;
+    includedAnalytics: string;
+    includedContent: string;
+    includedTutorPanel: string;
+    includedStudents: string;
+    includedSupport: string;
   };
 
   // ─── Topics / Lessons ───

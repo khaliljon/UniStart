@@ -51,6 +51,16 @@ public record ChangeEmailDto(
     [Required] string Password
 );
 
+public record ForgotPasswordDto(
+    [Required][EmailAddress] string Email
+);
+
+public record ResetPasswordDto(
+    [Required][EmailAddress] string Email,
+    [Required][StringLength(6, MinimumLength = 6)] string Code,
+    [Required][MinLength(8)] string NewPassword
+);
+
 // User DTOs
 public record UserDto(
     int Id,

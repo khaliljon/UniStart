@@ -20,6 +20,10 @@ public class User : ISoftDeletable, IAuditable
     public string? EmailVerificationCode { get; set; }
     public DateTime? EmailVerificationCodeExpiresAt { get; set; }
 
+    // Password reset
+    public string? PasswordResetCode { get; set; }
+    public DateTime? PasswordResetCodeExpiresAt { get; set; }
+
     // External login (Google OAuth)
     public string? GoogleId { get; set; }
 

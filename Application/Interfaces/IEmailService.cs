@@ -6,6 +6,7 @@ public interface IEmailService
 {
     Task SendVerificationCodeAsync(string toEmail, string userName, string code);
     Task SendWelcomeEmailAsync(string toEmail, string userName);
+    Task SendPasswordResetCodeAsync(string toEmail, string userName, string code);
     Task SendStreakReminderAsync(string toEmail, string userName, int lastStreak, int inactiveDays);
     Task SendWeeklyDigestAsync(string toEmail, WeeklyDigestDataDto data);
     Task SendStudyPlanReminderAsync(string toEmail, string userName, string todayPlanSummary);

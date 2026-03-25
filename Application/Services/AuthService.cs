@@ -437,4 +437,40 @@ public class AuthService : IAuthService
         user.UpdatedAt = DateTime.UtcNow;
         await _unitOfWork.SaveChangesAsync();
     }
+
+    public async Task ForgotPasswordAsync(ForgotPasswordDto dto)
+    {
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
+        // Always return success to avoid email enumeration
+        if (user == null) return;
+
+        var code = RandomNumberGenerator.GetInt32(100000, 999999).ToString();
+        user.PasswordResetCode = code;
+        user.PasswordResetCodeExpiresAt = DateTime.UtcNow.AddMinutes(10);
+        await _unitOfWork.SaveChangesAsync();
+
+        await _emailService.SendPasswordResetCodeAsync(user.Email, user.Name, code);
+    }
+
+    public async Task ResetPasswordAsync(ResetPasswordDto dto)
+    {
+        ValidatePasswordComplexity(dto.NewPassword);
+
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email)
+            ?? throw new KeyNotFoundException("User not found");
+
+        if (user.PasswordResetCode != dto.Code)
+            throw new InvalidOperationException("Invalid reset code");
+
+        if (user.PasswordResetCodeExpiresAt < DateTime.UtcNow)
+            throw new InvalidOperationException("Reset code has expired");
+
+        user.PasswordHash = BC.HashPassword(dto.NewPassword);
+        user.PasswordResetCode = null;
+        user.PasswordResetCodeExpiresAt = null;
+        user.FailedLoginAttempts = 0;
+        user.LockoutEnd = null;
+        user.UpdatedAt = DateTime.UtcNow;
+        await _unitOfWork.SaveChangesAsync();
+    }
 }

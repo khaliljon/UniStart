@@ -180,6 +180,48 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
+    /// Request password reset code
+    /// </summary>
+    [HttpPost("forgot-password")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto dto)
+    {
+        try
+        {
+            await _authService.ForgotPasswordAsync(dto);
+            return Ok(new { message = "If the email exists, a reset code has been sent" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during forgot password for {Email}", dto.Email);
+            return Ok(new { message = "If the email exists, a reset code has been sent" });
+        }
+    }
+
+    /// <summary>
+    /// Reset password with code
+    /// </summary>
+    [HttpPost("reset-password")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto dto)
+    {
+        try
+        {
+            await _authService.ResetPasswordAsync(dto);
+            return Ok(new { message = "Password has been reset successfully" });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { error = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    /// <summary>
     /// Change password for authenticated user
     /// </summary>
     [HttpPost("change-password")]

@@ -31,6 +31,13 @@ public class EmailService : IEmailService
         await SendEmailAsync(toEmail, subject, body);
     }
 
+    public async Task SendPasswordResetCodeAsync(string toEmail, string userName, string code)
+    {
+        var subject = "Восстановление пароля — UniStart";
+        var body = GetPasswordResetTemplate(userName, code);
+        await SendEmailAsync(toEmail, subject, body);
+    }
+
     public async Task SendStreakReminderAsync(string toEmail, string userName, int lastStreak, int inactiveDays)
     {
         var subject = "Не потеряйте серию! — UniStart";
@@ -192,6 +199,23 @@ public class EmailService : IEmailService
       <p style=""font-size:14px;color:#999;text-align:center;"">Удачи в подготовке!</p>";
 
         return WrapInLayout("Добро пожаловать в UniStart!", content, showNotificationSettings: false);
+    }
+
+    private string GetPasswordResetTemplate(string userName, string code)
+    {
+        var content = $@"
+      <h2 style=""color:#1a1a2e;margin:0 0 16px;"">Привет, {userName}!</h2>
+      <p style=""font-size:16px;line-height:1.6;color:#555;"">
+        Вы запросили восстановление пароля в UniStart. Используйте код ниже:
+      </p>
+      <div style=""background:#f0f4ff;border-radius:12px;padding:24px;margin:24px 0;text-align:center;"">
+        <div style=""font-size:36px;font-weight:800;letter-spacing:8px;color:#6c5ce7;font-family:monospace;"">{code}</div>
+      </div>
+      <p style=""font-size:14px;line-height:1.6;color:#999;"">
+        Код действителен 10 минут. Если вы не запрашивали сброс пароля, проигнорируйте это письмо.
+      </p>";
+
+        return WrapInLayout("Восстановление пароля — UniStart", content, showNotificationSettings: false);
     }
 
     private string GetStreakReminderTemplate(string userName, int lastStreak, int inactiveDays)

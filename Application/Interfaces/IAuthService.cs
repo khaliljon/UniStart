@@ -14,4 +14,6 @@ public interface IAuthService
     Task<UserDto?> UpdateUserAsync(int userId, UpdateUserDto dto);
     Task ChangePasswordAsync(int userId, ChangePasswordDto dto);
     Task ChangeEmailAsync(int userId, ChangeEmailDto dto);
+    Task ForgotPasswordAsync(ForgotPasswordDto dto);
+    Task ResetPasswordAsync(ResetPasswordDto dto);
 }
