@@ -10,6 +10,7 @@ public class UniStartDbContext : DbContext
     }
 
     public DbSet<User> Users => Set<User>();
+    public DbSet<SchoolApplication> SchoolApplications => Set<SchoolApplication>();
     public DbSet<ExamType> ExamTypes => Set<ExamType>();
     public DbSet<ExamSection> ExamSections => Set<ExamSection>();
     public DbSet<Skill> Skills => Set<Skill>();

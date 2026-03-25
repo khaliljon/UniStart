@@ -159,14 +159,14 @@ public class SubscriptionService : ISubscriptionService
             user.UpdatedAt = DateTime.UtcNow;
             await _unitOfWork.SaveChangesAsync();
 
-            var price = hasTutorDiscount ? "7 000 ₸" : "10 000 ₸";
+            var price = hasTutorDiscount ? "6 990 ₸" : "9 990 ₸";
             return new UpgradeResponseDto(
                 Success: true,
                 Tier: "Pro",
                 ExpiresAt: user.SubscriptionExpiresAt,
                 Message: hasTutorDiscount
-                    ? $"Вы перешли на тариф Pro (1 месяц) со скидкой тьютора — {price}!"
-                    : $"Вы успешно перешли на тариф Pro (1 месяц)! Все функции разблокированы."
+                    ? $"Вы перешли на тариф Pro (1 месяц) со скидкой — {price}!"
+                    : $"Вы успешно перешли на тариф Pro (1 месяц) — {price}. Все функции разблокированы."
             );
         }
 

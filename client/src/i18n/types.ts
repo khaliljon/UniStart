@@ -422,6 +422,7 @@ export interface Translations {
     yearlyDiscount: string;
     proMonthlyPrice: string;
     proYearlyPrice: string;
+    withTutorPrice: string;
     questionsToday: string;
     lessonsToday: string;
     limitReachedTitle: string;
@@ -909,6 +910,7 @@ export interface Translations {
     contactUs: string;
     learnMore: string;
     getStarted: string;
+    applyNow: string;
     benefitsTitle: string;
     benefitsDesc: string;
     benefitBrandTitle: string;
@@ -935,6 +937,24 @@ export interface Translations {
     includedTutorPanel: string;
     includedStudents: string;
     includedSupport: string;
+    pricingSchoolLabel: string;
+    pricingSchool: string;
+    pricingTutorLabel: string;
+    pricingTutor: string;
+    pricingStudentLabel: string;
+    pricingStudent: string;
+    pricingPerYear: string;
+    pricingPerMonth: string;
+    formTitle: string;
+    formDesc: string;
+    formSuccess: string;
+    formSuccessDesc: string;
+    formSubmit: string;
+    formError: string;
+    fieldName: string;
+    fieldSchool: string;
+    fieldPhone: string;
+    fieldMessage: string;
   };
 
   // ─── Topics / Lessons ───
