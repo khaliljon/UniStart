@@ -96,6 +96,7 @@ function AdminLayout() {
                   zIndex: 100, padding: '0.35rem 0', marginTop: '0.25rem',
                 }}>
                   {[
+                    { label: t.admin.nav.applications, path: '/applications' },
                     { label: t.admin.nav.import, path: '/import' },
                     { label: t.admin.nav.questionImport, path: '/question-import' },
                     { label: t.admin.nav.audit, path: '/audit' },

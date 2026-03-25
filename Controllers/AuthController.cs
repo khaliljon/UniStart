@@ -244,6 +244,10 @@ public class AuthController : ControllerBase
         {
             return BadRequest(new { error = ex.Message });
         }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
         catch (KeyNotFoundException)
         {
             return NotFound(new { error = "User not found" });

@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, FormEvent } from 'react';
 import { useAppSelector } from '../hooks/useAppSelector';
 import { useAppDispatch } from '../hooks/useAppDispatch';
 import { useTranslation } from '../hooks/useTranslation';
 import { fetchExams, fetchExamSections, toggleExamSelection, setSelectedSectionIds } from '../store/slices/examSlice';
 import { subscriptionService } from '../services/subscriptionService';
 import { tutorService } from '../services/tutorService';
+import { authService } from '../services/authService';
 import { useToast } from '../components/Toast';
 import { PricingModal } from '../components/PricingModal';
 import type { SubscriptionStatus, ExamSection, LinkedTutorInfo } from '../types';
@@ -24,6 +25,21 @@ function ProfilePage() {
   const [linkError, setLinkError] = useState<string | null>(null);
   const [unlinkLoading, setUnlinkLoading] = useState(false);
   const isStudent = user?.role === 'Student';
+
+  // Password change
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [pwdError, setPwdError] = useState<string | null>(null);
+  const [pwdSuccess, setPwdSuccess] = useState<string | null>(null);
+  const [pwdLoading, setPwdLoading] = useState(false);
+
+  // Email change
+  const [newEmail, setNewEmail] = useState('');
+  const [emailPassword, setEmailPassword] = useState('');
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [emailSuccess, setEmailSuccess] = useState<string | null>(null);
+  const [emailLoading, setEmailLoading] = useState(false);
 
   useEffect(() => {
     dispatch(fetchExams());
@@ -105,6 +121,36 @@ function ProfilePage() {
     } finally {
       setUnlinkLoading(false);
     }
+  };
+
+  const handleChangePassword = async (e: FormEvent) => {
+    e.preventDefault();
+    setPwdError(null);
+    setPwdSuccess(null);
+    if (newPassword !== confirmPassword) { setPwdError(t.profilePage.passwordsDoNotMatch); return; }
+    try {
+      setPwdLoading(true);
+      await authService.changePassword({ currentPassword, newPassword });
+      setPwdSuccess(t.profilePage.passwordChanged);
+      setCurrentPassword(''); setNewPassword(''); setConfirmPassword('');
+    } catch (err: unknown) {
+      setPwdError((err as { response?: { data?: { error?: string } } })?.response?.data?.error || t.profilePage.passwordChangeError);
+    } finally { setPwdLoading(false); }
+  };
+
+  const handleChangeEmail = async (e: FormEvent) => {
+    e.preventDefault();
+    setEmailError(null);
+    setEmailSuccess(null);
+    if (!newEmail.includes('@')) { setEmailError('Invalid email'); return; }
+    try {
+      setEmailLoading(true);
+      await authService.changeEmail({ newEmail, password: emailPassword });
+      setEmailSuccess(t.profilePage.emailChanged);
+      setNewEmail(''); setEmailPassword('');
+    } catch (err: unknown) {
+      setEmailError((err as { response?: { data?: { error?: string } } })?.response?.data?.error || t.profilePage.emailChangeError);
+    } finally { setEmailLoading(false); }
   };
 
   return (
@@ -329,6 +375,51 @@ function ProfilePage() {
           })}
         </div>
       )}
+
+      {/* ─── Change Password ─── */}
+      <div className="card" style={{ padding: '1.5rem', marginBottom: '1.25rem' }}>
+        <h3 style={{ margin: '0 0 1rem', fontSize: '1rem' }}>{t.profilePage.changePassword}</h3>
+        {pwdError && <div style={{ color: 'var(--error-color)', marginBottom: '0.75rem', padding: '0.5rem 0.75rem', background: 'var(--error-bg)', borderRadius: '6px', fontSize: '0.85rem' }}>{pwdError}</div>}
+        {pwdSuccess && <div style={{ color: 'var(--success-color)', marginBottom: '0.75rem', padding: '0.5rem 0.75rem', background: 'rgba(16,185,129,0.08)', borderRadius: '6px', fontSize: '0.85rem' }}>✓ {pwdSuccess}</div>}
+        <form onSubmit={handleChangePassword} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          <div>
+            <label className="form-label">{t.profilePage.currentPassword}</label>
+            <input type="password" className="form-input" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} style={{ width: '100%' }} />
+          </div>
+          <div>
+            <label className="form-label">{t.profilePage.newPassword}</label>
+            <input type="password" className="form-input" value={newPassword} onChange={e => setNewPassword(e.target.value)} style={{ width: '100%' }} />
+          </div>
+          <div>
+            <label className="form-label">{t.profilePage.confirmNewPassword}</label>
+            <input type="password" className="form-input" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} style={{ width: '100%' }} />
+          </div>
+          <button type="submit" className="btn btn-primary" disabled={pwdLoading || !currentPassword || !newPassword || !confirmPassword} style={{ alignSelf: 'flex-start', fontSize: '0.9rem' }}>
+            {pwdLoading ? '...' : t.profilePage.changePassword}
+          </button>
+        </form>
+      </div>
+
+      {/* ─── Change Email ─── */}
+      <div className="card" style={{ padding: '1.5rem', marginBottom: '1.25rem' }}>
+        <h3 style={{ margin: '0 0 1rem', fontSize: '1rem' }}>{t.profilePage.newEmail}</h3>
+        {emailError && <div style={{ color: 'var(--error-color)', marginBottom: '0.75rem', padding: '0.5rem 0.75rem', background: 'var(--error-bg)', borderRadius: '6px', fontSize: '0.85rem' }}>{emailError}</div>}
+        {emailSuccess && <div style={{ color: 'var(--success-color)', marginBottom: '0.75rem', padding: '0.5rem 0.75rem', background: 'rgba(16,185,129,0.08)', borderRadius: '6px', fontSize: '0.85rem' }}>✓ {emailSuccess}</div>}
+        <form onSubmit={handleChangeEmail} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          <div>
+            <label className="form-label">{t.profilePage.newEmail}</label>
+            <input type="email" className="form-input" value={newEmail} onChange={e => setNewEmail(e.target.value)} placeholder="new@email.com" style={{ width: '100%' }} />
+          </div>
+          <div>
+            <label className="form-label">{t.profilePage.enterPassword}</label>
+            <input type="password" className="form-input" value={emailPassword} onChange={e => setEmailPassword(e.target.value)} style={{ width: '100%' }} />
+          </div>
+          <button type="submit" className="btn btn-primary" disabled={emailLoading || !newEmail || !emailPassword} style={{ alignSelf: 'flex-start', fontSize: '0.9rem' }}>
+            {emailLoading ? '...' : t.common.save}
+          </button>
+        </form>
+      </div>
+
     </div>
     <PricingModal isOpen={showPricing} onClose={() => setShowPricing(false)} />
     </>

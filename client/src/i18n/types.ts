@@ -569,7 +569,7 @@ export interface Translations {
     nav: {
       dashboard: string; questions: string; content: string; users: string;
       tutors: string; audit: string; health: string; activity: string;
-      import: string; questionImport: string; trash: string; more: string;
+      import: string; questionImport: string; trash: string; more: string; applications: string;
     };
     common: {
       loading: string; noData: string; error: string; save: string; cancel: string;
