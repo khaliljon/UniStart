@@ -868,6 +868,7 @@ export interface Translations {
     partnerLinHaoName: string;
     partnerLinHaoDesc: string;
     partnerVisit: string;
+    partnerCta: string;
     testimonialsTitle: string;
     ctaTitle: string;
     ctaDesc: string;

@@ -410,6 +410,28 @@ function LandingPage() {
             </div>
           </div>
         </div>
+
+        {/* Partner CTA */}
+        <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+          <a
+            href="mailto:unistart.kz@gmail.com?subject=Партнёрство%20—%20размещение%20школы%20на%20UniStart"
+            style={{
+              display: 'inline-block',
+              padding: '0.85rem 2rem',
+              borderRadius: '0.75rem',
+              border: '2px solid var(--primary-color)',
+              color: 'var(--primary-color)',
+              fontWeight: 600,
+              fontSize: '0.95rem',
+              textDecoration: 'none',
+              transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--primary-color)'; e.currentTarget.style.color = '#fff'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--primary-color)'; }}
+          >
+            {t.landing.partnerCta}
+          </a>
+        </div>
       </section>
 
       {/* ═══ CTA ═══ */}
@@ -497,8 +519,8 @@ function LandingPage() {
               {t.landing.contacts}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.85rem' }}>
-              <span>support@unistart.kz</span>
-              <span>Алматы, Казахстан</span>
+              <span>unistart.kz@gmail.com</span>
+              <span>Астана, Казахстан</span>
             </div>
           </div>
         </div>

@@ -880,6 +880,7 @@ export const kz: Translations = {
     partnerLinHaoName: 'LINHAO.CHINESE мектебі',
     partnerLinHaoDesc: 'CSCA дайындығы бойынша ресми серіктес. LINHAO.CHINESE мұғалімдерінің бірлескен контенті, тексерілген сұрақтары мен дайындық әдістемесі.',
     partnerVisit: 'Сайтқа өту →',
+    partnerCta: 'Мектебіңізді орналастырыңыз →',
     testimonialsTitle: 'Студент пікірлері',
     ctaTitle: 'Дайындықты қазір бастаңыз',
     ctaDesc: 'Тегін тіркелу, 5 минуттық диагностикалық тест және жеке дайындық жоспары.',

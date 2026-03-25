@@ -882,6 +882,7 @@ export const ru: Translations = {
     partnerLinHaoName: 'Школа LINHAO.CHINESE',
     partnerLinHaoDesc: 'Официальный партнёр по подготовке к CSCA. Совместный контент, верифицированные вопросы и методология подготовки от преподавателей LINHAO.CHINESE.',
     partnerVisit: 'Перейти на сайт →',
+    partnerCta: 'Разместить свою школу →',
     testimonialsTitle: 'Отзывы студентов',
     ctaTitle: 'Начните подготовку прямо сейчас',
     ctaDesc: 'Бесплатная регистрация, диагностический тест за 5 минут и персональный план подготовки.',
