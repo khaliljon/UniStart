@@ -24,13 +24,15 @@ public class AdminController : ControllerBase
     private readonly IAuditService _audit;
     private readonly UniStartDbContext _db;
     private readonly HealthCheckService _healthCheck;
+    private readonly IEmailService _email;
 
-    public AdminController(IAdminService svc, IAuditService audit, UniStartDbContext db, HealthCheckService healthCheck)
+    public AdminController(IAdminService svc, IAuditService audit, UniStartDbContext db, HealthCheckService healthCheck, IEmailService email)
     {
         _svc = svc;
         _audit = audit;
         _db = db;
         _healthCheck = healthCheck;
+        _email = email;
     }
 
     /// <summary>List questions with optional filters</summary>
@@ -894,6 +896,11 @@ public class AdminController : ControllerBase
         await _audit.LogAsync(adminId, adminEmail, "UpdateSchoolApplication", "SchoolApplication", id.ToString(),
             newValues: new { app.SchoolName, Status = newStatus.ToString() },
             ipAddress: GetClientIp());
+
+        // Notify applicant
+        _ = _email.SendSchoolApplicationStatusAsync(
+            app.Email, app.ContactName, app.SchoolName,
+            newStatus == Domain.Entities.SchoolApplicationStatus.Approved);
 
         return Ok(new { id = app.Id, status = newStatus.ToString() });
     }

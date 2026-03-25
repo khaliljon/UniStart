@@ -66,6 +66,21 @@ public class EmailService : IEmailService
         await SendEmailAsync(toEmail, subject, body);
     }
 
+    public async Task SendNewSchoolApplicationNotificationAsync(string adminEmail, string schoolName, string contactName, string contactEmail)
+    {
+        var subject = $"Новая заявка от школы: {schoolName} — UniStart";
+        var body = GetNewSchoolApplicationTemplate(schoolName, contactName, contactEmail);
+        await SendEmailAsync(adminEmail, subject, body);
+    }
+
+    public async Task SendSchoolApplicationStatusAsync(string toEmail, string contactName, string schoolName, bool approved)
+    {
+        var status = approved ? "одобрена" : "отклонена";
+        var subject = $"Ваша заявка {status} — UniStart";
+        var body = GetSchoolApplicationStatusTemplate(contactName, schoolName, approved);
+        await SendEmailAsync(toEmail, subject, body);
+    }
+
     // ─── Core Send Method ─────────────────────────────────
 
     private async Task SendEmailAsync(string toEmail, string subject, string htmlBody)
@@ -371,6 +386,64 @@ public class EmailService : IEmailService
       </div>";
 
         return WrapInLayout("Новое достижение!", content);
+    }
+
+    private string GetNewSchoolApplicationTemplate(string schoolName, string contactName, string contactEmail)
+    {
+        var baseUrl = GetBaseUrl();
+        var content = $@"
+      <h2 style=""color:#1a1a2e;margin:0 0 16px;"">Новая заявка от школы</h2>
+      <p style=""font-size:16px;line-height:1.6;color:#555;"">
+        Поступила новая заявка на подключение школы к платформе UniStart.
+      </p>
+      <div style=""background:#f0f4ff;border-radius:8px;padding:20px;margin:24px 0;border-left:4px solid #6c5ce7;"">
+        <p style=""margin:0 0 8px;font-size:15px;color:#333;""><strong>Школа:</strong> {schoolName}</p>
+        <p style=""margin:0 0 8px;font-size:15px;color:#333;""><strong>Контакт:</strong> {contactName}</p>
+        <p style=""margin:0;font-size:15px;color:#333;""><strong>Email:</strong> {contactEmail}</p>
+      </div>
+      <div style=""text-align:center;margin:32px 0;"">
+        <a href=""{baseUrl}/applications"" style=""display:inline-block;background:linear-gradient(135deg,#6c5ce7,#a855f7);color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:16px;"">
+          Открыть заявки →
+        </a>
+      </div>";
+
+        return WrapInLayout("Новая заявка от школы", content, showNotificationSettings: false);
+    }
+
+    private string GetSchoolApplicationStatusTemplate(string contactName, string schoolName, bool approved)
+    {
+        var baseUrl = GetBaseUrl();
+        if (approved)
+        {
+            var content = $@"
+      <h2 style=""color:#1a1a2e;margin:0 0 16px;"">Здравствуйте, {contactName}!</h2>
+      <p style=""font-size:16px;line-height:1.6;color:#555;"">
+        Ваша заявка на подключение школы <strong>{schoolName}</strong> к платформе UniStart <strong style=""color:#10b981;"">одобрена</strong>.
+      </p>
+      <p style=""font-size:16px;line-height:1.6;color:#555;"">
+        Наш менеджер свяжется с вами в ближайшее время для обсуждения деталей подключения.
+      </p>
+      <div style=""text-align:center;margin:32px 0;"">
+        <a href=""{baseUrl}"" style=""display:inline-block;background:linear-gradient(135deg,#6c5ce7,#a855f7);color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:16px;"">
+          Перейти на UniStart →
+        </a>
+      </div>";
+
+            return WrapInLayout("Заявка одобрена — UniStart", content, showNotificationSettings: false);
+        }
+        else
+        {
+            var content = $@"
+      <h2 style=""color:#1a1a2e;margin:0 0 16px;"">Здравствуйте, {contactName}!</h2>
+      <p style=""font-size:16px;line-height:1.6;color:#555;"">
+        К сожалению, ваша заявка на подключение школы <strong>{schoolName}</strong> к платформе UniStart была <strong style=""color:#ef4444;"">отклонена</strong>.
+      </p>
+      <p style=""font-size:16px;line-height:1.6;color:#555;"">
+        Если у вас есть вопросы, свяжитесь с нами по адресу <a href=""mailto:support@unistart.kz"" style=""color:#6c5ce7;"">support@unistart.kz</a>.
+      </p>";
+
+            return WrapInLayout("Заявка отклонена — UniStart", content, showNotificationSettings: false);
+        }
     }
 
     // ─── Helpers ──────────────────────────────────────────

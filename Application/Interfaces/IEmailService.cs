@@ -11,4 +11,6 @@ public interface IEmailService
     Task SendWeeklyDigestAsync(string toEmail, WeeklyDigestDataDto data);
     Task SendStudyPlanReminderAsync(string toEmail, string userName, string todayPlanSummary);
     Task SendAchievementEmailAsync(string toEmail, string userName, string achievementTitle, string achievementIcon);
+    Task SendNewSchoolApplicationNotificationAsync(string adminEmail, string schoolName, string contactName, string contactEmail);
+    Task SendSchoolApplicationStatusAsync(string toEmail, string contactName, string schoolName, bool approved);
 }
