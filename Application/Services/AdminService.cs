@@ -397,10 +397,19 @@ public class AdminService : IAdminService
             .Select(g => new { UserId = g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.UserId, x => x.Count);
 
+        // Resolve school names for users bound to a school
+        var schoolIds = users.Where(u => u.SchoolId.HasValue).Select(u => u.SchoolId!.Value).Distinct().ToList();
+        var schoolNames = schoolIds.Count > 0
+            ? await _db.TutorSchools
+                .Where(s => schoolIds.Contains(s.Id))
+                .ToDictionaryAsync(s => s.Id, s => s.Name)
+            : new Dictionary<int, string>();
+
         var items = users.Select(u =>
         {
             answerStats.TryGetValue(u.Id, out var stats);
             sessionCounts.TryGetValue(u.Id, out var sessions);
+            schoolNames.TryGetValue(u.SchoolId ?? 0, out var sName);
 
             return new AdminUserDto(
                 Id: u.Id,
@@ -419,7 +428,9 @@ public class AdminService : IAdminService
                 UpdatedAt: u.UpdatedAt,
                 TotalAnswers: stats?.Total ?? 0,
                 CorrectAnswers: stats?.Correct ?? 0,
-                TestSessions: sessions
+                TestSessions: sessions,
+                SchoolId: u.SchoolId,
+                SchoolName: sName
             );
         }).ToList();
 

@@ -1,5 +1,5 @@
 import { useState, useEffect, FormEvent } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useAppDispatch } from '../hooks/useAppDispatch';
 import { useAppSelector } from '../hooks/useAppSelector';
 import { useTranslation } from '../hooks/useTranslation';
@@ -15,12 +15,15 @@ function RegisterPage() {
   const { isLoading, error, pendingVerificationEmail } = useAppSelector((state) => state.auth);
   const { branding } = useBranding();
   const { t } = useTranslation();
+  const [searchParams] = useSearchParams();
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [role, setRole] = useState<'Student' | 'Tutor'>('Student');
+  const [role, setRole] = useState<'Student' | 'Tutor'>(() =>
+    searchParams.get('role') === 'Tutor' ? 'Tutor' : 'Student'
+  );
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [validationError, setValidationError] = useState('');
   const [code, setCode] = useState('');

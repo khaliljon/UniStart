@@ -181,7 +181,8 @@ function ProfilePage() {
         </div>
       </div>
 
-      {/* ─── Subscription ─── */}
+      {/* ─── Subscription (student only) ─── */}
+      {isStudent && (
       <div className="card" style={{ padding: '1.5rem', marginBottom: '1.25rem' }}>
         <h3 style={{ margin: '0 0 0.75rem', fontSize: '1rem' }}>{t.profilePage.subscription}</h3>
         <div style={{
@@ -214,6 +215,7 @@ function ProfilePage() {
           </button>
         )}
       </div>
+      )}
 
       {/* ─── My Tutor (student only) ─── */}
       {isStudent && (
@@ -303,7 +305,8 @@ function ProfilePage() {
         </div>
       )}
 
-      {/* ─── Selected Exams ─── */}
+      {/* ─── Selected Exams (student only) ─── */}
+      {isStudent && (<>
       <div className="card" style={{ padding: '1.5rem', marginBottom: '1.25rem' }}>
         <h3 style={{ margin: '0 0 0.75rem', fontSize: '1rem' }}>{t.profilePage.examPreferences}</h3>
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
@@ -375,6 +378,7 @@ function ProfilePage() {
           })}
         </div>
       )}
+      </>)}
 
       {/* ─── Change Password ─── */}
       <div className="card" style={{ padding: '1.5rem', marginBottom: '1.25rem' }}>

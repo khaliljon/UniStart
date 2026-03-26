@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { tutorService } from '../services/tutorService';
-import type { SchoolAdmin, UpdateSchoolRequest } from '../types';
+import { useTranslation } from '../i18n';
+import api from '../services/api';
+import type { SchoolAdmin, UpdateSchoolRequest, TutorSchoolCard } from '../types';
 
 const EXAM_OPTIONS = ['SAT', 'TOEFL', 'IELTS', 'NUET', 'CSCA'];
 
 function TutorSchoolManagePage() {
-  const navigate = useNavigate();
   const [school, setSchool] = useState<SchoolAdmin | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -153,19 +153,7 @@ function TutorSchoolManagePage() {
 
   // ─── No school yet — browse schools ───
   if (!school) {
-    return (
-      <div className="animate-fade-in" style={{ textAlign: 'center', padding: '3rem' }}>
-        <div className="card" style={{ maxWidth: '500px', margin: '0 auto', padding: '2.5rem' }}>
-          <h2 style={{ marginBottom: '0.75rem' }}>Школа</h2>
-          <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', lineHeight: 1.5 }}>
-            У вас пока нет школы. Вы можете найти школу и подать заявку на вступление.
-          </p>
-          <button className="btn btn-primary" onClick={() => navigate('/tutors')}>
-            Найти школу
-          </button>
-        </div>
-      </div>
-    );
+    return <SchoolBrowser />;
   }
 
   // ─── School exists — edit + manage ───
@@ -365,6 +353,122 @@ function SchoolForm({ name, setName, description, setDescription, descriptionEn,
         </div>
       </div>
     </>
+  );
+}
+
+// ─── School Browser for independent tutors ───
+function SchoolBrowser() {
+  const { t } = useTranslation();
+  const [schools, setSchools] = useState<TutorSchoolCard[]>([]);
+  const [apps, setApps] = useState<{ id: number; schoolId: number; schoolName: string; status: string }[]>([]);
+  const [applyingTo, setApplyingTo] = useState<number | null>(null);
+  const [applyMsg, setApplyMsg] = useState('');
+  const [applyError, setApplyError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([
+      tutorService.getSchools(),
+      api.get('/tutor-school-applications/my').then(r => r.data),
+    ]).then(([s, a]) => {
+      setSchools(s);
+      setApps(a);
+    }).catch(() => {}).finally(() => setLoading(false));
+  }, []);
+
+  const handleApply = async (schoolId: number) => {
+    setApplyError(null);
+    try {
+      await api.post('/tutor-school-applications', { schoolId, message: applyMsg || undefined });
+      setApplyingTo(null);
+      setApplyMsg('');
+      const r = await api.get('/tutor-school-applications/my');
+      setApps(r.data);
+    } catch (e: any) {
+      setApplyError(e.response?.data?.error || 'Error');
+    }
+  };
+
+  const appliedSchoolIds = new Set(apps.map(a => a.schoolId));
+  const availableSchools = schools.filter(s => !appliedSchoolIds.has(s.id));
+
+  if (loading) {
+    return <div className="animate-fade-in" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>...</div>;
+  }
+
+  return (
+    <div className="animate-fade-in" style={{ maxWidth: '700px', margin: '0 auto' }}>
+      <h1 style={{ marginBottom: '0.5rem' }}>{t.tutorGate.availableSchools}</h1>
+      <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
+        {t.tutorGate.description}
+      </p>
+
+      {/* My applications */}
+      {apps.length > 0 && (
+        <div className="card" style={{ padding: '1.5rem', marginBottom: '1.25rem' }}>
+          <h3 style={{ margin: '0 0 0.75rem', fontSize: '1rem' }}>{t.tutorGate.myApps}</h3>
+          {apps.map(a => (
+            <div key={a.id} style={{
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              padding: '0.6rem 0.75rem', borderRadius: '8px', background: 'var(--bg-secondary)', marginBottom: '0.4rem',
+            }}>
+              <span style={{ fontWeight: 500 }}>{a.schoolName}</span>
+              <span style={{
+                fontSize: '0.75rem', fontWeight: 600, padding: '0.15rem 0.5rem', borderRadius: '999px',
+                background: a.status === 'Pending' ? '#f59e0b22' : a.status === 'Approved' ? '#10b98122' : '#ef444422',
+                color: a.status === 'Pending' ? '#f59e0b' : a.status === 'Approved' ? '#10b981' : '#ef4444',
+              }}>
+                {a.status === 'Pending' ? t.tutorGate.statusPending : a.status === 'Approved' ? t.tutorGate.statusApproved : t.tutorGate.statusRejected}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Available schools */}
+      {availableSchools.length > 0 && (
+        <div className="card" style={{ padding: '1.5rem' }}>
+          {availableSchools.map(s => (
+            <div key={s.id} style={{
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              padding: '0.6rem 0.75rem', borderRadius: '8px', background: 'var(--bg-secondary)', marginBottom: '0.4rem',
+            }}>
+              <div style={{ flex: 1 }}>
+                <span style={{ fontWeight: 500 }}>{s.name}</span>
+                {s.description && <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>{s.description.slice(0, 100)}{s.description.length > 100 ? '...' : ''}</div>}
+              </div>
+              {applyingTo === s.id ? (
+                <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center', flexShrink: 0 }}>
+                  <input
+                    value={applyMsg}
+                    onChange={e => setApplyMsg(e.target.value)}
+                    placeholder={t.tutorGate.messagePlaceholder}
+                    style={{ fontSize: '0.8rem', padding: '0.3rem 0.5rem', borderRadius: '6px', border: '1px solid var(--border)', width: '140px' }}
+                  />
+                  <button className="btn btn-primary" style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem' }} onClick={() => handleApply(s.id)}>
+                    {t.tutorGate.send}
+                  </button>
+                  <button className="btn" style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem' }} onClick={() => { setApplyingTo(null); setApplyMsg(''); }}>
+                    &times;
+                  </button>
+                </div>
+              ) : (
+                <button className="btn btn-primary" style={{ fontSize: '0.75rem', padding: '0.3rem 0.8rem', flexShrink: 0 }} onClick={() => setApplyingTo(s.id)}>
+                  {t.tutorGate.applyBtn}
+                </button>
+              )}
+            </div>
+          ))}
+          {applyError && <p style={{ color: '#ef4444', fontSize: '0.8rem', marginTop: '0.5rem' }}>{applyError}</p>}
+        </div>
+      )}
+
+      {availableSchools.length === 0 && apps.length === 0 && (
+        <div className="card" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
+          Нет доступных школ
+        </div>
+      )}
+    </div>
   );
 }
 
