@@ -37,7 +37,10 @@ public record TutorProfileDetailDto(
     string ContactPreference,
     DateTime CreatedAt,
     List<ScheduleSlotDto> Schedule,
-    List<ReviewDto> RecentReviews
+    List<ReviewDto> RecentReviews,
+    DateTime? VerificationRequestedAt = null,
+    bool HasPaidSubscription = false,
+    int? SchoolId = null
 );
 
 public record ScheduleSlotDto(

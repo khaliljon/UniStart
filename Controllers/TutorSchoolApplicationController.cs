@@ -150,7 +150,7 @@ public class TutorSchoolApplicationController : ControllerBase
         app.ReviewedAt = DateTime.UtcNow;
         app.ReviewedByUserId = GetUserId();
 
-        // On approval: bind tutor to school + verify
+        // On approval: bind tutor to school (verification done separately by school admin)
         if (newStatus == TutorSchoolApplicationStatus.Approved)
         {
             var user = app.User;
@@ -160,7 +160,6 @@ public class TutorSchoolApplicationController : ControllerBase
             if (profile != null)
             {
                 profile.SchoolId = school.Id;
-                profile.IsVerified = true;
             }
         }
 

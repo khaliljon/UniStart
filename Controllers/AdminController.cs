@@ -807,7 +807,10 @@ public class AdminController : ControllerBase
                 totalReviews = tp.TotalReviews,
                 totalStudents = tp.TotalStudents,
                 hourlyRate = tp.HourlyRate,
-                createdAt = tp.CreatedAt
+                createdAt = tp.CreatedAt,
+                verificationRequestedAt = tp.VerificationRequestedAt,
+                hasPaidSubscription = tp.HasPaidSubscription,
+                schoolId = tp.SchoolId
             })
             .ToListAsync();
 
@@ -848,6 +851,24 @@ public class AdminController : ControllerBase
             ipAddress: GetClientIp());
 
         return Ok(new { verified = false, tutorProfileId = id });
+    }
+
+    /// <summary>Toggle tutor paid subscription</summary>
+    [HttpPost("tutors/{id:int}/toggle-subscription")]
+    public async Task<IActionResult> ToggleTutorSubscription(int id)
+    {
+        var profile = await _db.TutorProfiles.Include(tp => tp.User).FirstOrDefaultAsync(tp => tp.Id == id);
+        if (profile == null) return NotFound(new { error = "Tutor profile not found" });
+
+        profile.HasPaidSubscription = !profile.HasPaidSubscription;
+        await _db.SaveChangesAsync();
+
+        var (adminId, adminEmail) = GetCurrentAdmin();
+        await _audit.LogAsync(adminId, adminEmail, "ToggleTutorSubscription", "TutorProfile", id.ToString(),
+            newValues: new { profile.UserId, profile.User.Name, profile.HasPaidSubscription },
+            ipAddress: GetClientIp());
+
+        return Ok(new { hasPaidSubscription = profile.HasPaidSubscription, tutorProfileId = id });
     }
 
     // ───────────────────────────────────────────────────────

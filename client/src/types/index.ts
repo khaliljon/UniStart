@@ -923,6 +923,9 @@ export interface TutorProfileDetail {
   createdAt: string;
   schedule: ScheduleSlot[];
   recentReviews: TutorReview[];
+  verificationRequestedAt: string | null;
+  hasPaidSubscription: boolean;
+  schoolId: number | null;
 }
 
 export interface ScheduleSlot {

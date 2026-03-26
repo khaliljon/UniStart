@@ -51,8 +51,8 @@ function TutorLayout() {
     // Check school ownership
     tutorService.getMySchool().then(s => setHasSchool(s !== null)).catch(() => {});
 
-    // Tutor verification gate: block unverified tutors everywhere
-    if (user && user.role === 'Tutor') {
+    // Tutor verification gate: only block WL-bound unverified tutors
+    if (user && user.role === 'Tutor' && isWhiteLabel) {
       tutorService.getTutorProfile(user.id).then(profile => {
         if (!profile.isVerified) {
           setTutorBlocked(true);

@@ -1290,4 +1290,19 @@ export interface Translations {
     statusRejected: string;
     logoutBtn: string;
   };
+  tutorVerification: {
+    notVerifiedTitle: string;
+    notVerifiedDesc: string;
+    requestBtn: string;
+    pendingTitle: string;
+    pendingDesc: string;
+  };
+  tutorSubscription: {
+    title: string;
+    description: string;
+    howTo: string;
+    step1: string;
+    step2: string;
+    step3: string;
+  };
 }

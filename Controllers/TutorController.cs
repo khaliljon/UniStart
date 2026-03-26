@@ -2,8 +2,10 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 using UniStart.Application.DTOs;
 using UniStart.Application.Interfaces;
+using UniStart.Infrastructure.Data;
 using UniStart.Hubs;
 using Asp.Versioning;
 
@@ -17,11 +19,13 @@ public class TutorController : ControllerBase
 {
     private readonly ITutorService _tutorService;
     private readonly IHubContext<ChatHub> _hubContext;
+    private readonly UniStartDbContext _db;
 
-    public TutorController(ITutorService tutorService, IHubContext<ChatHub> hubContext)
+    public TutorController(ITutorService tutorService, IHubContext<ChatHub> hubContext, UniStartDbContext db)
     {
         _tutorService = tutorService;
         _hubContext = hubContext;
+        _db = db;
     }
 
     /// <summary>Каталог тьюторов с фильтрами и пагинацией</summary>
@@ -56,6 +60,24 @@ public class TutorController : ControllerBase
         var userId = GetUserId();
         var profile = await _tutorService.UpdateMyProfileAsync(userId, dto);
         return Ok(profile);
+    }
+
+    /// <summary>Request verification from platform admin (for free tutors)</summary>
+    [HttpPost("request-verification")]
+    [Authorize(Roles = "Tutor")]
+    public async Task<IActionResult> RequestVerification()
+    {
+        var userId = GetUserId();
+        var profile = await _db.TutorProfiles.FirstOrDefaultAsync(p => p.UserId == userId);
+        if (profile == null) return NotFound(new { error = "Profile not found" });
+        if (profile.IsVerified) return Ok(new { alreadyVerified = true });
+        if (profile.VerificationRequestedAt != null)
+            return Ok(new { alreadyRequested = true, requestedAt = profile.VerificationRequestedAt });
+
+        profile.VerificationRequestedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+
+        return Ok(new { requested = true, requestedAt = profile.VerificationRequestedAt });
     }
 
     /// <summary>Установить расписание</summary>

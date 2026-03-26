@@ -20,6 +20,12 @@ public class TutorProfile : IAuditable
     public bool IsVerified { get; set; } = false;
     public ContactPreference ContactPreference { get; set; } = ContactPreference.Chat;
 
+    // Verification request (for free tutors requesting admin review)
+    public DateTime? VerificationRequestedAt { get; set; }
+
+    // Paid subscription (gates content publishing for free tutors)
+    public bool HasPaidSubscription { get; set; } = false;
+
     // Cached aggregates (updated on review CRUD)
     public decimal AverageRating { get; set; } = 0;
     public int TotalReviews { get; set; } = 0;

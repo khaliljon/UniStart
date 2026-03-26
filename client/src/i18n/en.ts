@@ -1289,4 +1289,19 @@ export const en: Translations = {
     statusRejected: 'Rejected',
     logoutBtn: 'Log out',
   },
+  tutorVerification: {
+    notVerifiedTitle: 'Profile not verified',
+    notVerifiedDesc: 'Request verification to appear in the tutor catalog for students.',
+    requestBtn: 'Request verification',
+    pendingTitle: 'Verification request sent',
+    pendingDesc: 'The administrator will review your request shortly.',
+  },
+  tutorSubscription: {
+    title: 'Subscription required',
+    description: 'An active subscription is required to publish educational materials. The subscription allows you to publish courses, assignments, and other content.',
+    howTo: 'How to subscribe:',
+    step1: 'Complete your profile and get verified',
+    step2: 'Contact the administration to set up a subscription',
+    step3: 'After activation, content access will be enabled automatically',
+  },
 };

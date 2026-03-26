@@ -388,7 +388,10 @@ public class TutorService : ITutorService
             )).ToList(),
             tp.Reviews.Select(r => new ReviewDto(
                 r.Id, r.StudentId, r.Student?.Name ?? "—", r.Rating, r.Comment, r.CreatedAt
-            )).ToList()
+            )).ToList(),
+            tp.VerificationRequestedAt,
+            tp.HasPaidSubscription,
+            tp.SchoolId
         );
     }
 

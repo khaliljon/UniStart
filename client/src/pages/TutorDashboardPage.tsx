@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAppSelector } from '../hooks/useAppSelector';
 import { tutorService } from '../services/tutorService';
+import { useTranslation } from '../i18n';
+import api from '../services/api';
 import type { TutorProfileDetail, UpdateTutorProfile, ScheduleSlotInput } from '../types';
 
 const DAY_NAMES = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
@@ -28,6 +30,8 @@ function TutorDashboardPage() {
 
   // Students
   const [students, setStudents] = useState<{ userId: number; name: string }[]>([]);
+  const [requestingVerification, setRequestingVerification] = useState(false);
+  const { t } = useTranslation();
 
   const loadProfile = useCallback(async () => {
     if (!currentUser?.id) return;
@@ -131,6 +135,18 @@ function TutorDashboardPage() {
     if (tab === 'students') loadStudents();
   }, [tab, loadStudents]);
 
+  const handleRequestVerification = async () => {
+    setRequestingVerification(true);
+    try {
+      await api.post('/tutors/request-verification');
+      loadProfile();
+    } catch {
+      // ignore
+    } finally {
+      setRequestingVerification(false);
+    }
+  };
+
   if (loading) {
     return <div className="animate-fade-in" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>Загрузка...</div>;
   }
@@ -176,6 +192,45 @@ function TutorDashboardPage() {
               <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>{stat.label}</div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Verification banner for free tutors */}
+      {profile && !profile.isVerified && !profile.schoolId && (
+        <div className="card" style={{
+          padding: '1rem 1.25rem', marginBottom: '1rem',
+          border: '1px solid',
+          borderColor: profile.verificationRequestedAt ? '#f59e0b44' : '#3b82f644',
+          background: profile.verificationRequestedAt ? '#f59e0b11' : '#3b82f611',
+        }}>
+          {profile.verificationRequestedAt ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span style={{ fontSize: '1.1rem' }}>&#9203;</span>
+              <div>
+                <div style={{ fontWeight: 600 }}>{t.tutorVerification.pendingTitle}</div>
+                <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
+                  {t.tutorVerification.pendingDesc}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
+              <div>
+                <div style={{ fontWeight: 600 }}>{t.tutorVerification.notVerifiedTitle}</div>
+                <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
+                  {t.tutorVerification.notVerifiedDesc}
+                </div>
+              </div>
+              <button
+                className="btn btn-primary"
+                style={{ whiteSpace: 'nowrap', fontSize: '0.85rem' }}
+                onClick={handleRequestVerification}
+                disabled={requestingVerification}
+              >
+                {t.tutorVerification.requestBtn}
+              </button>
+            </div>
+          )}
         </div>
       )}
 
