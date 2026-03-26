@@ -254,6 +254,13 @@ export const tutorService = {
     return response.data;
   },
 
+  // ── School Specs (specializations & sections) ──
+
+  async getMySchoolSpecs(): Promise<{ allowedExams: string[]; sections: { id: number; examTypeCode: string; name: string }[] }> {
+    const response = await api.get<{ allowedExams: string[]; sections: { id: number; examTypeCode: string; name: string }[] }>('/tutors/my-school-specs');
+    return response.data;
+  },
+
   // ── School Branding (White Label) ──
 
   async getSchoolBranding(slug: string): Promise<SchoolBranding | null> {

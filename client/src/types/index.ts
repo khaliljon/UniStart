@@ -927,6 +927,7 @@ export interface TutorProfileDetail {
   verificationRequestedAt: string | null;
   hasPaidSubscription: boolean;
   schoolId: number | null;
+  teachingSections: string[] | null;
 }
 
 export interface ScheduleSlot {
@@ -951,6 +952,7 @@ export interface UpdateTutorProfile {
   bio?: string;
   experience?: string;
   specializations?: string[];
+  teachingSections?: string[];
   hourlyRate?: number;
   isAvailable?: boolean;
   contactPreference?: string;

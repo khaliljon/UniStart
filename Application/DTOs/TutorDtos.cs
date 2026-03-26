@@ -40,7 +40,8 @@ public record TutorProfileDetailDto(
     List<ReviewDto> RecentReviews,
     DateTime? VerificationRequestedAt = null,
     bool HasPaidSubscription = false,
-    int? SchoolId = null
+    int? SchoolId = null,
+    string[]? TeachingSections = null
 );
 
 public record ScheduleSlotDto(
@@ -65,6 +66,7 @@ public record UpdateTutorProfileDto(
     string? Bio,
     string? Experience,
     string[]? Specializations,
+    string[]? TeachingSections,
     decimal? HourlyRate,
     bool? IsAvailable,
     string? ContactPreference

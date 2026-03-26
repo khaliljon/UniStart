@@ -21,12 +21,30 @@ interface TutorItem {
   createdAt: string;
 }
 
+interface ContentAssignment {
+  id: number; title: string; description: string | null; deadline: string | null;
+  isActive: boolean; createdAt: string; tutorName: string; tutorUserId: number;
+  questionCount: number; studentCount: number; completedCount: number;
+}
+
+interface ContentQuestion {
+  id: number; text: string; difficulty: string; isPrivate: boolean; createdAt: string;
+  tutorName: string; tutorUserId: number; topicName: string; examTypeCode: string;
+}
+
 function AdminTutorsPage() {
   const { t } = useTranslation();
+  const [tab, setTab] = useState<'tutors' | 'content'>('tutors');
   const [tutors, setTutors] = useState<TutorItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'verified' | 'unverified' | 'blocked'>('all');
   const [actionLoading, setActionLoading] = useState<number | null>(null);
+
+  // Content state
+  const [contentAssignments, setContentAssignments] = useState<ContentAssignment[]>([]);
+  const [contentQuestions, setContentQuestions] = useState<ContentQuestion[]>([]);
+  const [contentLoading, setContentLoading] = useState(false);
+  const [contentFilter, setContentFilter] = useState<number | undefined>();
 
   const loadTutors = useCallback(async () => {
     try {
@@ -40,6 +58,17 @@ function AdminTutorsPage() {
   }, []);
 
   useEffect(() => { loadTutors(); }, [loadTutors]);
+
+  const loadContent = useCallback(async () => {
+    setContentLoading(true);
+    try {
+      const data = await adminService.getTutorContent({ tutorId: contentFilter, pageSize: 50 });
+      setContentAssignments(data.assignments.items);
+      setContentQuestions(data.questions.items);
+    } catch { /* */ } finally { setContentLoading(false); }
+  }, [contentFilter]);
+
+  useEffect(() => { if (tab === 'content') loadContent(); }, [tab, loadContent]);
 
   const handleVerify = async (tutor: TutorItem) => {
     setActionLoading(tutor.tutorProfileId);
@@ -85,15 +114,32 @@ function AdminTutorsPage() {
 
   const formatDate = (d: string) => new Date(d).toLocaleDateString(getDateLocale(), { day: 'numeric', month: 'short', year: 'numeric' });
 
+  const tabStyle = (active: boolean): React.CSSProperties => ({
+    padding: '0.5rem 1.25rem', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600,
+    borderBottom: active ? '2px solid var(--primary-color)' : '2px solid transparent',
+    color: active ? 'var(--primary-color)' : 'var(--text-secondary)',
+    background: 'none', border: 'none', borderBottomWidth: '2px', borderBottomStyle: 'solid',
+  });
+
   return (
     <div className="animate-fade-in">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
         <h1 style={{ fontSize: '1.5rem', fontWeight: 700 }}>{t.admin.tutors.title}</h1>
         <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
           {t.admin.tutors.totalLabel} {tutors.length} | {t.admin.tutors.verifiedLabel} {tutors.filter(tutor => tutor.isVerified).length}
         </span>
       </div>
 
+      <div style={{ display: 'flex', gap: '0.25rem', borderBottom: '1px solid var(--border-color)', marginBottom: '1rem' }}>
+        <button style={tabStyle(tab === 'tutors')} onClick={() => setTab('tutors')}>
+          {t.admin.tutors.title}
+        </button>
+        <button style={tabStyle(tab === 'content')} onClick={() => setTab('content')}>
+          Контент тьюторов
+        </button>
+      </div>
+
+      {tab === 'tutors' && (<>
       {/* Filters */}
       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
         {(['all', 'verified', 'unverified', 'blocked'] as const).map(f => (
@@ -225,6 +271,83 @@ function AdminTutorsPage() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+      </>)}
+
+      {tab === 'content' && (
+        <div>
+          {tutors.length > 0 && (
+            <div style={{ marginBottom: '1rem' }}>
+              <select className="form-input" style={{ maxWidth: '300px' }} value={contentFilter ?? ''} onChange={e => setContentFilter(e.target.value ? Number(e.target.value) : undefined)}>
+                <option value="">Все тьюторы</option>
+                {tutors.map(tr => <option key={tr.userId} value={tr.userId}>{tr.name}</option>)}
+              </select>
+            </div>
+          )}
+
+          {contentLoading ? (
+            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>Загрузка...</div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              <div>
+                <h3 style={{ margin: '0 0 0.75rem', fontSize: '1rem' }}>Задания ({contentAssignments.length})</h3>
+                {contentAssignments.length === 0 ? (
+                  <div className="card" style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--text-secondary)' }}>Заданий пока нет</div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {contentAssignments.map(a => (
+                      <div key={a.id} className="card" style={{ padding: '1rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
+                          <div>
+                            <strong>{a.title}</strong>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginLeft: '0.5rem' }}>{a.tutorName}</span>
+                          </div>
+                          <span style={{ fontSize: '0.72rem', color: a.isActive ? 'var(--success-color)' : 'var(--text-secondary)' }}>
+                            {a.isActive ? 'Активно' : 'Неактивно'}
+                          </span>
+                        </div>
+                        {a.description && <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.35rem' }}>{a.description}</div>}
+                        <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                          <span>Вопросов: {a.questionCount}</span>
+                          <span>Учеников: {a.studentCount}</span>
+                          <span>Выполнили: {a.completedCount}</span>
+                          {a.deadline && <span>Дедлайн: {new Date(a.deadline).toLocaleDateString()}</span>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <h3 style={{ margin: '0 0 0.75rem', fontSize: '1rem' }}>Вопросы ({contentQuestions.length})</h3>
+                {contentQuestions.length === 0 ? (
+                  <div className="card" style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--text-secondary)' }}>Вопросов пока нет</div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {contentQuestions.map(q => (
+                      <div key={q.id} className="card" style={{ padding: '1rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{q.text.slice(0, 120)}{q.text.length > 120 ? '...' : ''}</div>
+                            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
+                              {q.tutorName} · {q.topicName} · {q.examTypeCode} · {q.difficulty}
+                            </div>
+                          </div>
+                          {q.isPrivate && (
+                            <span style={{ fontSize: '0.7rem', padding: '0.15rem 0.4rem', borderRadius: '4px', background: 'var(--bg-secondary)', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+                              Приватный
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

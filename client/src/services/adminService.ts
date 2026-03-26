@@ -369,6 +369,9 @@ const adminService = {
 
   emptyTrash: () =>
     api.delete<{ message: string; count: number }>('/admin/trash').then(r => r.data),
+
+  getTutorContent: (params: { tutorId?: number; page?: number; pageSize?: number } = {}) =>
+    api.get('/admin/content/tutor-content', { params }).then(r => r.data),
 };
 
 export default adminService;

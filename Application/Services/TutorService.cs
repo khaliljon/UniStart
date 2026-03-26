@@ -135,6 +135,7 @@ public class TutorService : ITutorService
         if (dto.Bio != null) tp.Bio = InputSanitizer.Sanitize(dto.Bio)!;
         if (dto.Experience != null) tp.Experience = InputSanitizer.Sanitize(dto.Experience)!;
         if (dto.Specializations != null) tp.Specializations = string.Join(",", dto.Specializations);
+        if (dto.TeachingSections != null) tp.TeachingSections = string.Join(",", dto.TeachingSections);
         if (dto.HourlyRate.HasValue) tp.HourlyRate = dto.HourlyRate;
         if (dto.IsAvailable.HasValue) tp.IsAvailable = dto.IsAvailable.Value;
         if (dto.ContactPreference != null && Enum.TryParse<ContactPreference>(dto.ContactPreference, true, out var cp))
@@ -391,7 +392,10 @@ public class TutorService : ITutorService
             )).ToList(),
             tp.VerificationRequestedAt,
             tp.HasPaidSubscription,
-            tp.SchoolId
+            tp.SchoolId,
+            tp.TeachingSections.Length > 0
+                ? tp.TeachingSections.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                : Array.Empty<string>()
         );
     }
 

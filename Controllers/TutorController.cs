@@ -511,6 +511,34 @@ public class TutorController : ControllerBase
         catch (ArgumentException ex) { return BadRequest(new { error = ex.Message }); }
     }
 
+    /// <summary>Get allowed specializations and sections for the current tutor</summary>
+    [HttpGet("my-school-specs")]
+    [Authorize(Roles = "Tutor")]
+    public async Task<IActionResult> GetMySchoolSpecs()
+    {
+        var userId = GetUserId();
+        var profile = await _db.TutorProfiles.FirstOrDefaultAsync(p => p.UserId == userId);
+        string[] allowedExams;
+
+        if (profile?.SchoolId != null)
+        {
+            var school = await _db.TutorSchools.FindAsync(profile.SchoolId);
+            allowedExams = school?.Specializations?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                ?? Array.Empty<string>();
+        }
+        else
+        {
+            allowedExams = new[] { "SAT", "TOEFL", "IELTS", "NUET", "CSCA" };
+        }
+
+        var sections = await _db.ExamSections
+            .Where(s => allowedExams.Contains(s.ExamTypeCode))
+            .Select(s => new { s.Id, s.ExamTypeCode, s.Name })
+            .ToListAsync();
+
+        return Ok(new { allowedExams, sections });
+    }
+
     private int GetUserId()
     {
         var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value

@@ -43,6 +43,39 @@ export interface StudentAnalytics {
   skills: Array<{ name: string; proficiencyLevel: number; questionsAnswered: number }>;
 }
 
+export interface TutorContentAssignment {
+  id: number;
+  title: string;
+  description: string | null;
+  deadline: string | null;
+  isActive: boolean;
+  createdAt: string;
+  tutorName: string;
+  tutorUserId: number;
+  questionCount: number;
+  studentCount: number;
+  completedCount: number;
+}
+
+export interface TutorContentQuestion {
+  id: number;
+  text: string;
+  difficulty: string;
+  isPrivate: boolean;
+  createdAt: string;
+  tutorName: string;
+  tutorUserId: number;
+  topicName: string;
+  examTypeCode: string;
+}
+
+export interface TutorContentResult {
+  assignments: { items: TutorContentAssignment[]; total: number };
+  questions: { items: TutorContentQuestion[]; total: number };
+  page: number;
+  pageSize: number;
+}
+
 export const schoolAdminService = {
   async getDashboard(): Promise<SchoolDashboard> {
     const { data } = await api.get<SchoolDashboard>('/school-admin/dashboard');
@@ -61,6 +94,11 @@ export const schoolAdminService = {
 
   async getStudentAnalytics(userId: number): Promise<StudentAnalytics> {
     const { data } = await api.get<StudentAnalytics>(`/school-admin/students/${userId}/analytics`);
+    return data;
+  },
+
+  async getTutorContent(params: { tutorId?: number; page?: number; pageSize?: number } = {}): Promise<TutorContentResult> {
+    const { data } = await api.get<TutorContentResult>('/school-admin/tutor-content', { params });
     return data;
   },
 };

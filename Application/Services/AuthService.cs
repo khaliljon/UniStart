@@ -131,12 +131,6 @@ public class AuthService : IAuthService
                     .AnyAsync(s => s.Id == targetSchoolId && s.IsActive);
                 if (targetSchoolExists)
                 {
-                    // Set the tutor's school binding immediately
-                    user.SchoolId = targetSchoolId;
-                    var tutorProfile = await _context.TutorProfiles.FirstOrDefaultAsync(tp => tp.UserId == user.Id);
-                    if (tutorProfile != null)
-                        tutorProfile.SchoolId = targetSchoolId;
-
                     _context.TutorSchoolApplications.Add(new TutorSchoolApplication
                     {
                         UserId = user.Id,
@@ -145,6 +139,17 @@ public class AuthService : IAuthService
                     });
                     await _unitOfWork.SaveChangesAsync();
                 }
+            }
+            // Auto-create application for WL subdomain registration
+            else if (schoolId != null)
+            {
+                _context.TutorSchoolApplications.Add(new TutorSchoolApplication
+                {
+                    UserId = user.Id,
+                    SchoolId = schoolId.Value,
+                    Message = "Registered from school subdomain",
+                });
+                await _unitOfWork.SaveChangesAsync();
             }
         }
 

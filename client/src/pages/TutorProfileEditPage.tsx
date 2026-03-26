@@ -2,6 +2,12 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { tutorService } from '../services/tutorService';
 import type { TutorProfileDetail, UpdateTutorProfile } from '../types';
 
+interface ExamSection {
+  id: number;
+  examTypeCode: string;
+  name: string;
+}
+
 function TutorProfileEditPage() {
   const [profile, setProfile] = useState<TutorProfileDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -13,26 +19,35 @@ function TutorProfileEditPage() {
   const [bio, setBio] = useState('');
   const [experience, setExperience] = useState('');
   const [specializations, setSpecializations] = useState<string[]>([]);
+  const [teachingSections, setTeachingSections] = useState<string[]>([]);
   const [hourlyRate, setHourlyRate] = useState<string>('');
   const [isAvailable, setIsAvailable] = useState(true);
   const [contactPreference, setContactPreference] = useState('Chat');
 
-  const EXAM_OPTIONS = ['SAT', 'TOEFL', 'IELTS', 'NUET', 'CSCA'];
+  // School specs
+  const [allowedExams, setAllowedExams] = useState<string[]>([]);
+  const [examSections, setExamSections] = useState<ExamSection[]>([]);
 
   const loadProfile = useCallback(async () => {
     try {
       const userStr = localStorage.getItem('user');
       if (userStr) {
         const user = JSON.parse(userStr);
-        const data = await tutorService.getTutorProfile(user.id);
+        const [data, specs] = await Promise.all([
+          tutorService.getTutorProfile(user.id),
+          tutorService.getMySchoolSpecs(),
+        ]);
         setProfile(data);
         setHeadline(data.headline);
         setBio(data.bio);
         setExperience(data.experience);
         setSpecializations(data.specializations);
+        setTeachingSections(data.teachingSections || []);
         setHourlyRate(data.hourlyRate?.toString() || '');
         setIsAvailable(data.isAvailable);
         setContactPreference(data.contactPreference);
+        setAllowedExams(specs.allowedExams);
+        setExamSections(specs.sections);
       }
     } catch {
       console.error('Failed to load profile');
@@ -59,6 +74,7 @@ function TutorProfileEditPage() {
         bio,
         experience,
         specializations,
+        teachingSections,
         hourlyRate: hourlyRate ? Number(hourlyRate) : undefined,
         isAvailable,
         contactPreference,
@@ -75,8 +91,21 @@ function TutorProfileEditPage() {
   };
 
   const toggleSpec = (spec: string) => {
-    setSpecializations(prev =>
-      prev.includes(spec) ? prev.filter(s => s !== spec) : [...prev, spec]
+    setSpecializations(prev => {
+      const next = prev.includes(spec) ? prev.filter(s => s !== spec) : [...prev, spec];
+      // Remove sections of deselected exam
+      if (!next.includes(spec)) {
+        const removedSections = examSections.filter(s => s.examTypeCode === spec).map(s => s.name);
+        setTeachingSections(ts => ts.filter(t => !removedSections.includes(t)));
+      }
+      return next;
+    });
+    setSaved(false);
+  };
+
+  const toggleSection = (sectionName: string) => {
+    setTeachingSections(prev =>
+      prev.includes(sectionName) ? prev.filter(s => s !== sectionName) : [...prev, sectionName]
     );
     setSaved(false);
   };
@@ -157,7 +186,7 @@ function TutorProfileEditPage() {
           <div className="card">
             <h3 style={{ margin: '0 0 0.75rem', fontSize: '1rem' }}>Специализации</h3>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
-              {EXAM_OPTIONS.map(spec => (
+              {allowedExams.map(spec => (
                 <button
                   key={spec}
                   className={`btn ${specializations.includes(spec) ? 'btn-primary' : 'btn-outline'}`}
@@ -168,6 +197,40 @@ function TutorProfileEditPage() {
                 </button>
               ))}
             </div>
+            {specializations.length > 0 && examSections.length > 0 && (
+              <div style={{ marginTop: '0.75rem' }}>
+                <h4 style={{ margin: '0 0 0.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Секции</h4>
+                {specializations.map(spec => {
+                  const secs = examSections.filter(s => s.examTypeCode === spec);
+                  if (secs.length === 0) return null;
+                  return (
+                    <div key={spec} style={{ marginBottom: '0.5rem' }}>
+                      <div style={{ fontSize: '0.82rem', fontWeight: 600, marginBottom: '0.25rem' }}>{spec}</div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
+                        {secs.map(sec => (
+                          <label key={sec.id} style={{
+                            display: 'flex', alignItems: 'center', gap: '0.3rem',
+                            fontSize: '0.8rem', cursor: 'pointer',
+                            padding: '0.2rem 0.5rem', borderRadius: '6px',
+                            background: teachingSections.includes(sec.name) ? 'var(--primary-color)' : 'var(--bg-secondary)',
+                            color: teachingSections.includes(sec.name) ? '#fff' : 'var(--text-primary)',
+                            border: '1px solid var(--border-color)',
+                          }}>
+                            <input
+                              type="checkbox"
+                              checked={teachingSections.includes(sec.name)}
+                              onChange={() => toggleSection(sec.name)}
+                              style={{ display: 'none' }}
+                            />
+                            {sec.name}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           <div className="card">

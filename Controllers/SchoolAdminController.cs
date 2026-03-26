@@ -156,4 +156,74 @@ public class SchoolAdminController : ControllerBase
             skills
         });
     }
+
+    /// <summary>Assignments created by school tutors</summary>
+    [HttpGet("tutor-content")]
+    public async Task<IActionResult> GetTutorContent(
+        [FromQuery] int? tutorId,
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+    {
+        var school = await GetOwnedSchool();
+        if (school == null) return NotFound(new { error = "You don't own a school" });
+
+        var tutorIds = await _db.TutorProfiles
+            .Where(t => t.SchoolId == school.Id && t.User.Role == UserRole.Tutor)
+            .Select(t => t.UserId)
+            .ToListAsync();
+
+        if (tutorId.HasValue && !tutorIds.Contains(tutorId.Value))
+            return BadRequest(new { error = "Tutor not in your school" });
+
+        var filterIds = tutorId.HasValue ? new List<int> { tutorId.Value } : tutorIds;
+
+        // Assignments
+        var assignmentsQuery = _db.Set<Assignment>()
+            .Include(a => a.TutorUser)
+            .Include(a => a.Questions)
+            .Include(a => a.Students)
+            .Where(a => filterIds.Contains(a.TutorUserId));
+
+        var totalAssignments = await assignmentsQuery.CountAsync();
+        var assignments = await assignmentsQuery
+            .OrderByDescending(a => a.CreatedAt)
+            .Skip((page - 1) * pageSize).Take(pageSize)
+            .Select(a => new
+            {
+                a.Id, a.Title, a.Description, a.Deadline, a.IsActive, a.CreatedAt,
+                tutorName = a.TutorUser.Name,
+                tutorUserId = a.TutorUserId,
+                questionCount = a.Questions.Count,
+                studentCount = a.Students.Count,
+                completedCount = a.Students.Count(s => s.Status == AssignmentStudentStatus.Completed),
+            })
+            .ToListAsync();
+
+        // Questions created by tutors
+        var totalQuestions = await _db.Questions
+            .Where(q => q.CreatedByTutorId != null && filterIds.Contains(q.CreatedByTutorId.Value) && !q.IsDeleted)
+            .CountAsync();
+
+        var questions = await _db.Questions
+            .Include(q => q.CreatedByTutor)
+            .Include(q => q.Topic)
+            .Where(q => q.CreatedByTutorId != null && filterIds.Contains(q.CreatedByTutorId.Value) && !q.IsDeleted)
+            .OrderByDescending(q => q.CreatedAt)
+            .Skip((page - 1) * pageSize).Take(pageSize)
+            .Select(q => new
+            {
+                q.Id, q.Text, difficulty = q.Difficulty.ToString(), q.IsPrivate, q.CreatedAt,
+                tutorName = q.CreatedByTutor!.Name,
+                tutorUserId = q.CreatedByTutorId,
+                topicName = q.Topic.Name,
+                examTypeCode = q.Topic.Section != null ? q.Topic.Section.ExamTypeCode : "",
+            })
+            .ToListAsync();
+
+        return Ok(new
+        {
+            assignments = new { items = assignments, total = totalAssignments },
+            questions = new { items = questions, total = totalQuestions },
+            page, pageSize
+        });
+    }
 }
