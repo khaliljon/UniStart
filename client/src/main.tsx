@@ -9,6 +9,20 @@ import App from './App'
 import ErrorBoundary from './components/ErrorBoundary'
 import './index.css'
 
+// Handle auth transfer from main domain to school subdomain
+const _atParam = new URLSearchParams(window.location.search).get('authTransfer');
+if (_atParam) {
+  try {
+    const data = JSON.parse(_atParam);
+    if (data.token && data.expiresAt && data.user) {
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('tokenExpiresAt', data.expiresAt);
+      localStorage.setItem('user', JSON.stringify(data.user));
+    }
+  } catch { /* ignore malformed */ }
+  window.history.replaceState({}, '', window.location.pathname);
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary>

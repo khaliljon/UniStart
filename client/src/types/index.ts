@@ -22,6 +22,7 @@ export interface AuthResponse {
   emailVerified: boolean;
   token: string;
   expiresAt: string;
+  schoolSubdomain: string | null;
 }
 
 export interface LoginRequest {

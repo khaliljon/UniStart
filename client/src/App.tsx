@@ -49,6 +49,9 @@ const TutorQuestionsPage = lazy(() => import('./pages/TutorQuestionsPage'))
 const TutorAssignmentsPage = lazy(() => import('./pages/TutorAssignmentsPage'))
 const TutorSchoolManagePage = lazy(() => import('./pages/TutorSchoolManagePage'))
 const SchoolAdminDashboardPage = lazy(() => import('./pages/SchoolAdminDashboardPage'))
+const SchoolAdminStudentsPage = lazy(() => import('./pages/SchoolAdminStudentsPage'))
+const SchoolAdminTutorsPage = lazy(() => import('./pages/SchoolAdminTutorsPage'))
+const SchoolAdminApplicationsPage = lazy(() => import('./pages/SchoolAdminApplicationsPage'))
 const TutorContentPage = lazy(() => import('./pages/TutorContentPage'))
 const StudentAssignmentsPage = lazy(() => import('./pages/StudentAssignmentsPage'))
 const ForSchoolsPage = lazy(() => import('./pages/ForSchoolsPage'))
@@ -136,7 +139,9 @@ function SchoolAdminRoutes() {
   return (
     <Route path="/" element={<SchoolAdminLayout />}>
       <Route index element={<SchoolAdminDashboardPage />} />
-      <Route path="applications" element={<SchoolAdminDashboardPage />} />
+      <Route path="students" element={<SchoolAdminStudentsPage />} />
+      <Route path="tutors" element={<SchoolAdminTutorsPage />} />
+      <Route path="applications" element={<SchoolAdminApplicationsPage />} />
       <Route path="school" element={<TutorSchoolManagePage />} />
       <Route path="messages" element={<MessagesPage />} />
       <Route path="profile" element={<ProfilePage />} />

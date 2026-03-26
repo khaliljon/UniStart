@@ -27,7 +27,8 @@ public record AuthResponseDto(
     DateTime? SubscriptionExpiresAt,
     bool EmailVerified,
     string Token,
-    DateTime ExpiresAt
+    DateTime ExpiresAt,
+    string? SchoolSubdomain = null
 );
 
 public record VerifyEmailDto(

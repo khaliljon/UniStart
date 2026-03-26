@@ -93,20 +93,19 @@ function SchoolAdminLayout() {
               </NavLink>
             </li>
             <li>
+              <NavLink to="/students">
+                {t.schoolAdmin.students}
+              </NavLink>
+            </li>
+            <li>
+              <NavLink to="/tutors">
+                {t.schoolAdmin.tutors}
+              </NavLink>
+            </li>
+            <li>
               <NavLink to="/applications">
                 {t.schoolAdmin.applications}
                 <Badge count={pendingApps} />
-              </NavLink>
-            </li>
-            <li>
-              <NavLink to="/messages">
-                {t.schoolAdmin.messages}
-                <Badge count={unreadCount} />
-              </NavLink>
-            </li>
-            <li>
-              <NavLink to="/school">
-                {t.schoolAdmin.school}
               </NavLink>
             </li>
           </ul>
@@ -125,6 +124,11 @@ function SchoolAdminLayout() {
                   {user?.name}
                 </div>
                 <div className="profile-dropdown-divider" />
+                <button className="profile-dropdown-item" onClick={() => goTo('/messages')}>
+                  {t.schoolAdmin.messages}
+                  {unreadCount > 0 && <span style={{ background: '#ef4444', color: '#fff', borderRadius: '999px', padding: '0.1rem 0.4rem', fontSize: '0.6rem', fontWeight: 700, marginLeft: '0.4rem' }}>{unreadCount}</span>}
+                </button>
+                <button className="profile-dropdown-item" onClick={() => goTo('/school')}>{t.schoolAdmin.school}</button>
                 <button className="profile-dropdown-item" onClick={() => goTo('/profile')}>{t.schoolAdmin.settings}</button>
                 <div className="profile-dropdown-divider" />
                 <button className="profile-dropdown-item profile-dropdown-danger" onClick={handleLogout}>{t.schoolAdmin.logout}</button>

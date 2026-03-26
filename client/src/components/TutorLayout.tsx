@@ -47,10 +47,10 @@ function TutorLayout() {
     loadCounts();
     const interval = setInterval(loadCounts, 30000);
 
-    // Tutor verification gate: only block WL-bound unverified tutors
+    // Tutor verification gate: only block WL-bound tutors who haven't been approved yet
     if (user && user.role === 'Tutor' && isWhiteLabel) {
       tutorService.getTutorProfile(user.id).then(profile => {
-        if (!profile.isVerified) {
+        if (!profile.isVerified && !profile.schoolId) {
           setTutorBlocked(true);
           // Load schools list and my applications for the gate UI
           tutorService.getSchools().then(s => setGateSchools(s)).catch(() => {});

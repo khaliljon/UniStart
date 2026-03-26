@@ -53,6 +53,7 @@ public class AuthService : IAuthService
 
                 var restoredToken = _jwtService.GenerateToken(existingUser);
                 var restoredExpiresAt = DateTime.UtcNow.AddHours(24);
+                var restoredSub = await GetSchoolSubdomainAsync(existingUser);
                 return new AuthResponseDto(
                     existingUser.Id,
                     existingUser.Email,
@@ -63,7 +64,8 @@ public class AuthService : IAuthService
                     existingUser.SubscriptionExpiresAt,
                     existingUser.EmailVerified,
                     restoredToken,
-                    restoredExpiresAt
+                    restoredExpiresAt,
+                    restoredSub
                 );
             }
             throw new InvalidOperationException("User with this email already exists");
@@ -163,6 +165,7 @@ public class AuthService : IAuthService
         // Generate token
         var token = _jwtService.GenerateToken(user);
         var expiresAt = DateTime.UtcNow.AddHours(24);
+        var subdomain = await GetSchoolSubdomainAsync(user);
 
         return new AuthResponseDto(
             user.Id,
@@ -174,7 +177,8 @@ public class AuthService : IAuthService
             user.SubscriptionExpiresAt,
             user.EmailVerified,
             token,
-            expiresAt
+            expiresAt,
+            subdomain
         );
     }
 
@@ -216,6 +220,7 @@ public class AuthService : IAuthService
 
         var token = _jwtService.GenerateToken(user);
         var expiresAt = DateTime.UtcNow.AddHours(24);
+        var loginSub = await GetSchoolSubdomainAsync(user);
 
         return new AuthResponseDto(
             user.Id,
@@ -227,7 +232,8 @@ public class AuthService : IAuthService
             user.SubscriptionExpiresAt,
             user.EmailVerified,
             token,
-            expiresAt
+            expiresAt,
+            loginSub
         );
     }
 
@@ -238,6 +244,7 @@ public class AuthService : IAuthService
 
         var token = _jwtService.GenerateToken(user);
         var expiresAt = DateTime.UtcNow.AddHours(24);
+        var refreshSub = await GetSchoolSubdomainAsync(user);
 
         return new AuthResponseDto(
             user.Id,
@@ -249,7 +256,8 @@ public class AuthService : IAuthService
             user.SubscriptionExpiresAt,
             user.EmailVerified,
             token,
-            expiresAt
+            expiresAt,
+            refreshSub
         );
     }
 
@@ -280,10 +288,12 @@ public class AuthService : IAuthService
 
         var token = _jwtService.GenerateToken(user);
         var expiresAt = DateTime.UtcNow.AddHours(24);
+        var verifySub = await GetSchoolSubdomainAsync(user);
         return new AuthResponseDto(
             user.Id, user.Email, user.Name, user.Role.ToString(),
             user.HasCompletedOnboarding, user.SubscriptionTier.ToString(),
-            user.SubscriptionExpiresAt, user.EmailVerified, token, expiresAt
+            user.SubscriptionExpiresAt, user.EmailVerified, token, expiresAt,
+            verifySub
         );
     }
 
@@ -363,16 +373,27 @@ public class AuthService : IAuthService
 
         var token = _jwtService.GenerateToken(user);
         var expiresAt = DateTime.UtcNow.AddHours(24);
+        var googleSub = await GetSchoolSubdomainAsync(user);
         return new AuthResponseDto(
             user.Id, user.Email, user.Name, user.Role.ToString(),
             user.HasCompletedOnboarding, user.SubscriptionTier.ToString(),
-            user.SubscriptionExpiresAt, user.EmailVerified, token, expiresAt
+            user.SubscriptionExpiresAt, user.EmailVerified, token, expiresAt,
+            googleSub
         );
     }
 
     private static string GenerateVerificationCode()
     {
         return RandomNumberGenerator.GetInt32(100000, 999999).ToString();
+    }
+
+    private async Task<string?> GetSchoolSubdomainAsync(User user)
+    {
+        if (user.SchoolId == null) return null;
+        return await _context.TutorSchools
+            .Where(s => s.Id == user.SchoolId && s.IsActive && s.Subdomain != null)
+            .Select(s => s.Subdomain)
+            .FirstOrDefaultAsync();
     }
 
     /// <summary>S-4: Password must be 8+ chars with uppercase, lowercase, digit, and special character</summary>
