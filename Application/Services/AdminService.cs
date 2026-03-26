@@ -525,6 +525,15 @@ public class AdminService : IAdminService
                     });
                 }
             }
+
+            // Auto-clear school binding when demoting to Student
+            if (role == UserRole.Student)
+            {
+                user.SchoolId = null;
+                var profile = await _db.TutorProfiles.FirstOrDefaultAsync(tp => tp.UserId == id);
+                if (profile != null)
+                    profile.SchoolId = null;
+            }
         }
 
         // Update SchoolId binding (for SchoolAdmin / Tutor → school assignment)

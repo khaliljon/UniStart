@@ -124,16 +124,23 @@ public class AuthService : IAuthService
             await _unitOfWork.SaveChangesAsync();
 
             // Auto-create school application if tutor selected a school during registration
-            if (dto.ApplyToSchoolId.HasValue && schoolId == null)
+            if (dto.ApplyToSchoolId.HasValue)
             {
-                var targetSchool = await _context.TutorSchools
-                    .AnyAsync(s => s.Id == dto.ApplyToSchoolId.Value && s.IsActive);
-                if (targetSchool)
+                var targetSchoolId = dto.ApplyToSchoolId.Value;
+                var targetSchoolExists = await _context.TutorSchools
+                    .AnyAsync(s => s.Id == targetSchoolId && s.IsActive);
+                if (targetSchoolExists)
                 {
-                    _context.Set<TutorSchoolApplication>().Add(new TutorSchoolApplication
+                    // Set the tutor's school binding immediately
+                    user.SchoolId = targetSchoolId;
+                    var tutorProfile = await _context.TutorProfiles.FirstOrDefaultAsync(tp => tp.UserId == user.Id);
+                    if (tutorProfile != null)
+                        tutorProfile.SchoolId = targetSchoolId;
+
+                    _context.TutorSchoolApplications.Add(new TutorSchoolApplication
                     {
                         UserId = user.Id,
-                        SchoolId = dto.ApplyToSchoolId.Value,
+                        SchoolId = targetSchoolId,
                         Message = "Application submitted during registration",
                     });
                     await _unitOfWork.SaveChangesAsync();

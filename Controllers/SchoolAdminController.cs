@@ -54,7 +54,7 @@ public class SchoolAdminController : ControllerBase
             .Where(u => u.SchoolId == school.Id && !u.IsDeleted && u.Role == UserRole.Student)
             .ToListAsync();
 
-        var tutorCount = await _db.TutorProfiles.CountAsync(t => t.SchoolId == school.Id);
+        var tutorCount = await _db.TutorProfiles.CountAsync(t => t.SchoolId == school.Id && t.User.Role == UserRole.Tutor);
 
         var activeStudents = students.Count(s => s.LastSeenAt > sevenDaysAgo);
 
@@ -111,7 +111,7 @@ public class SchoolAdminController : ControllerBase
 
         var tutors = await _db.TutorProfiles
             .Include(t => t.User)
-            .Where(t => t.SchoolId == school.Id)
+            .Where(t => t.SchoolId == school.Id && t.User.Role == UserRole.Tutor)
             .Select(t => new SchoolTutorDto(
                 t.UserId, t.User.Name, t.User.Email, t.Headline,
                 t.Specializations.Split(',', System.StringSplitOptions.RemoveEmptyEntries),

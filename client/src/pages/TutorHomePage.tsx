@@ -2,16 +2,24 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { tutorService } from '../services/tutorService';
 import { messageService } from '../services/messageService';
-import type { TutorProfileDetail, PendingRequest } from '../types';
+import { useBranding } from '../contexts/BrandingContext';
+import api from '../services/api';
+import type { TutorProfileDetail, PendingRequest, TutorSchoolCard } from '../types';
 import { getDateLocale } from '../i18n';
 
 function TutorHomePage() {
   const navigate = useNavigate();
+  const { isWhiteLabel } = useBranding();
   const [profile, setProfile] = useState<TutorProfileDetail | null>(null);
   const [pending, setPending] = useState<PendingRequest[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<number | null>(null);
+  const [schools, setSchools] = useState<TutorSchoolCard[]>([]);
+  const [myApps, setMyApps] = useState<{ id: number; schoolId: number; schoolName: string; status: string }[]>([]);
+  const [applyingTo, setApplyingTo] = useState<number | null>(null);
+  const [applyMsg, setApplyMsg] = useState('');
+  const [applyError, setApplyError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     try {
@@ -43,12 +51,35 @@ function TutorHomePage() {
           const user = JSON.parse(userStr);
           const data = await tutorService.getTutorProfile(user.id);
           setProfile(data);
+
+          // Load partner schools for free tutors (no school, not on WL)
+          if (!data.schoolId && !isWhiteLabel) {
+            const [schoolsList, appsResp] = await Promise.all([
+              tutorService.getSchools(),
+              api.get<{ id: number; schoolId: number; schoolName: string; status: string }[]>('/tutor-school-applications/my').catch(() => ({ data: [] })),
+            ]);
+            setSchools(schoolsList);
+            setMyApps(appsResp.data);
+          }
         }
       } catch { /* ignore — profile might not exist yet */ }
     };
     loadProfile();
     loadData();
-  }, [loadData]);
+  }, [loadData, isWhiteLabel]);
+
+  const handleApplyToSchool = async (schoolId: number) => {
+    setApplyError(null);
+    try {
+      await api.post('/tutor-school-applications', { schoolId, message: applyMsg || undefined });
+      setApplyingTo(null);
+      setApplyMsg('');
+      const r = await api.get('/tutor-school-applications/my');
+      setMyApps(r.data);
+    } catch (e: any) {
+      setApplyError(e.response?.data?.error || 'Error');
+    }
+  };
 
   const handleAccept = async (conversationId: number) => {
     setActionLoading(conversationId);
@@ -197,6 +228,79 @@ function TutorHomePage() {
           >
             Редактировать профиль
           </button>
+        </div>
+      )}
+
+      {/* Partner Schools — for free tutors not bound to any school */}
+      {!isWhiteLabel && profile && !profile.schoolId && schools.length > 0 && (
+        <div className="card" style={{ marginTop: '1rem' }}>
+          <h2 style={{ margin: '0 0 0.5rem', fontSize: '1.15rem' }}>Школы-партнеры</h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: '0 0 1rem' }}>
+            Присоединяйтесь к школе, чтобы получать учеников и работать в команде
+          </p>
+
+          {/* My applications */}
+          {myApps.length > 0 && (
+            <div style={{ marginBottom: '1rem' }}>
+              <h4 style={{ margin: '0 0 0.5rem', fontSize: '0.95rem' }}>Мои заявки</h4>
+              {myApps.map(a => (
+                <div key={a.id} style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  padding: '0.5rem 0.75rem', borderRadius: '8px', background: 'var(--bg-secondary)', marginBottom: '0.4rem',
+                }}>
+                  <span style={{ fontWeight: 500 }}>{a.schoolName}</span>
+                  <span style={{
+                    fontSize: '0.75rem', fontWeight: 600, padding: '0.15rem 0.5rem', borderRadius: '999px',
+                    background: a.status === 'Pending' ? '#f59e0b22' : a.status === 'Approved' ? '#10b98122' : '#ef444422',
+                    color: a.status === 'Pending' ? '#f59e0b' : a.status === 'Approved' ? '#10b981' : '#ef4444',
+                  }}>
+                    {a.status === 'Pending' ? 'На рассмотрении' : a.status === 'Approved' ? 'Одобрена' : 'Отклонена'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Available schools to apply to */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '0.75rem' }}>
+            {schools.filter(s => !myApps.some(a => a.schoolId === s.id)).map(s => (
+              <div key={s.id} style={{
+                padding: '1rem', borderRadius: '10px', background: 'var(--bg-secondary)',
+                border: '1px solid var(--border-color)',
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '0.5rem' }}>
+                  <strong>{s.name}</strong>
+                  {s.isPartner && <span style={{ fontSize: '0.7rem', background: 'var(--primary-color)', color: '#fff', padding: '0.1rem 0.4rem', borderRadius: '999px' }}>Партнер</span>}
+                </div>
+                {s.description && <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>{s.description.slice(0, 100)}{s.description.length > 100 ? '...' : ''}</div>}
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>
+                  {s.tutorCount} тьюторов
+                  {s.specializations && s.specializations.length > 0 && ` · ${s.specializations.join(', ')}`}
+                </div>
+                {applyingTo === s.id ? (
+                  <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <input
+                      value={applyMsg}
+                      onChange={e => setApplyMsg(e.target.value)}
+                      placeholder="Сообщение (необязательно)"
+                      style={{ flex: 1, minWidth: '120px', fontSize: '0.82rem', padding: '0.35rem 0.5rem', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+                    />
+                    <button className="btn btn-primary" style={{ fontSize: '0.78rem', padding: '0.35rem 0.7rem' }} onClick={() => handleApplyToSchool(s.id)}>
+                      Отправить
+                    </button>
+                    <button className="btn btn-outline" style={{ fontSize: '0.78rem', padding: '0.35rem 0.5rem' }} onClick={() => { setApplyingTo(null); setApplyMsg(''); setApplyError(null); }}>
+                      Отмена
+                    </button>
+                  </div>
+                ) : (
+                  <button className="btn btn-primary" style={{ fontSize: '0.82rem', padding: '0.35rem 0.9rem' }} onClick={() => setApplyingTo(s.id)}>
+                    Подать заявку
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+          {applyError && <p style={{ color: '#ef4444', fontSize: '0.8rem', marginTop: '0.5rem' }}>{applyError}</p>}
         </div>
       )}
     </div>
