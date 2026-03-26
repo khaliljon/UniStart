@@ -1223,4 +1223,29 @@ export interface Translations {
     back: string;
     getStarted: string;
   };
+
+  // ─── White Label Landing ───
+  wl: {
+    heroTitle: string;
+    heroWith: string;
+    getStarted: string;
+    login: string;
+    register: string;
+    whyTitle: string;
+    featureAdaptive: string;
+    featureAdaptiveDesc: string;
+    featurePrediction: string;
+    featurePredictionDesc: string;
+    featurePlan: string;
+    featurePlanDesc: string;
+    featureMock: string;
+    featureMockDesc: string;
+    featureAnalytics: string;
+    featureAnalyticsDesc: string;
+    featureTutors: string;
+    featureTutorsDesc: string;
+    ctaTitle: string;
+    ctaButton: string;
+    poweredBy: string;
+  };
 }

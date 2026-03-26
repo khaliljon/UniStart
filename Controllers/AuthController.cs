@@ -172,6 +172,7 @@ public class AuthController : ControllerBase
     /// </summary>
     [HttpGet("google-client-id")]
     [AllowAnonymous]
+    [DisableRateLimiting]
     [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
     public IActionResult GetGoogleClientId()
     {

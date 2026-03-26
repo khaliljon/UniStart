@@ -29,11 +29,12 @@ declare global {
  * Load the Google Sign-In SDK once and render a button into the given element.
  * Avoids duplicate script tags and duplicate initialize() calls.
  */
-export function useGoogleSignIn(buttonId: string, text: 'continue_with' | 'signup_with') {
+export function useGoogleSignIn(buttonId: string, text: 'continue_with' | 'signup_with', enabled = true) {
   const dispatch = useAppDispatch();
   const clientIdRef = useRef<string | null>(null);
 
   useEffect(() => {
+    if (!enabled) return;
     let cancelled = false;
 
     const initGsi = () => {
@@ -97,5 +98,5 @@ export function useGoogleSignIn(buttonId: string, text: 'continue_with' | 'signu
     return () => {
       cancelled = true;
     };
-  }, [buttonId, text, dispatch]);
+  }, [buttonId, text, dispatch, enabled]);
 }

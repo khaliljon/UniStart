@@ -221,7 +221,7 @@ try
         // Strict limit for auth endpoints (brute-force protection)
         options.AddFixedWindowLimiter("auth", opt =>
         {
-            opt.PermitLimit = 10;
+            opt.PermitLimit = 20;
             opt.Window = TimeSpan.FromMinutes(1);
             opt.QueueLimit = 0;
         });

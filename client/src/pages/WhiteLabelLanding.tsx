@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from '../i18n';
 import type { SchoolBranding } from '../types';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 
@@ -8,8 +9,18 @@ interface Props {
 
 function WhiteLabelLanding({ branding }: Props) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const brandName = branding.navbarTitle || branding.name;
   const primary = branding.primaryColor || '#6366f1';
+
+  const features = [
+    { title: t.wl.featureAdaptive, desc: t.wl.featureAdaptiveDesc },
+    { title: t.wl.featurePrediction, desc: t.wl.featurePredictionDesc },
+    { title: t.wl.featurePlan, desc: t.wl.featurePlanDesc },
+    { title: t.wl.featureMock, desc: t.wl.featureMockDesc },
+    { title: t.wl.featureAnalytics, desc: t.wl.featureAnalyticsDesc },
+    { title: t.wl.featureTutors, desc: t.wl.featureTutorsDesc },
+  ];
 
   return (
     <div style={{ background: 'var(--background-color)', color: 'var(--text-primary)', minHeight: '100vh' }}>
@@ -34,7 +45,7 @@ function WhiteLabelLanding({ branding }: Props) {
               borderRadius: '0.5rem', background: 'transparent', color: 'var(--text-primary)',
               cursor: 'pointer', fontSize: '0.9rem',
             }}>
-            Login
+            {t.wl.login}
           </button>
           <button onClick={() => navigate('/register')}
             style={{
@@ -42,7 +53,7 @@ function WhiteLabelLanding({ branding }: Props) {
               background: primary, color: '#fff', cursor: 'pointer',
               fontSize: '0.9rem', fontWeight: 600,
             }}>
-            Register
+            {t.wl.register}
           </button>
         </div>
       </nav>
@@ -55,16 +66,16 @@ function WhiteLabelLanding({ branding }: Props) {
             background: `${primary}22`, color: primary, fontSize: '0.85rem', fontWeight: 600,
             marginBottom: '1.5rem',
           }}>
-            {branding.specializations.join(' · ')}
+            {branding.specializations.join(' \u00b7 ')}
           </div>
         )}
         <h1 style={{
           fontSize: 'clamp(2rem, 5vw, 3.5rem)', fontWeight: 800,
           lineHeight: 1.15, color: primary, margin: '0 0 1.5rem',
         }}>
-          Adaptive Test Preparation
+          {t.wl.heroTitle}
           <br />
-          <span style={{ color: 'var(--text-primary)' }}>with {brandName}</span>
+          <span style={{ color: 'var(--text-primary)' }}>{t.wl.heroWith} {brandName}</span>
         </h1>
         {branding.description && (
           <p style={{ fontSize: '1.1rem', lineHeight: 1.7, color: 'var(--text-secondary)', maxWidth: '600px', margin: '0 auto 2rem' }}>
@@ -78,7 +89,7 @@ function WhiteLabelLanding({ branding }: Props) {
               border: 'none', borderRadius: '0.75rem', fontSize: '1rem',
               fontWeight: 600, cursor: 'pointer',
             }}>
-            Get Started →
+            {t.wl.getStarted}
           </button>
           <button onClick={() => navigate('/login')}
             style={{
@@ -86,7 +97,7 @@ function WhiteLabelLanding({ branding }: Props) {
               color: 'var(--text-primary)', border: '1px solid var(--border-color)',
               borderRadius: '0.75rem', fontSize: '1rem', cursor: 'pointer',
             }}>
-            Login
+            {t.wl.login}
           </button>
         </div>
       </section>
@@ -94,17 +105,10 @@ function WhiteLabelLanding({ branding }: Props) {
       {/* Features */}
       <section style={{ padding: '3rem 2rem', maxWidth: '1000px', margin: '0 auto' }}>
         <h2 style={{ textAlign: 'center', fontWeight: 700, fontSize: '1.75rem', marginBottom: '2rem' }}>
-          Why {brandName}?
+          {t.wl.whyTitle} {brandName}?
         </h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
-          {[
-            { title: 'Adaptive Tests', desc: 'Questions adapt to your level using IRT algorithms' },
-            { title: 'Score Prediction', desc: 'Real-time exam score prediction based on your progress' },
-            { title: 'Personal Study Plan', desc: 'AI-generated study plan tailored to your weaknesses' },
-            { title: 'Mock Exams', desc: 'Full-length practice exams simulating real test conditions' },
-            { title: 'Detailed Analytics', desc: 'Track progress by skill, topic, and difficulty level' },
-            { title: 'Expert Tutors', desc: 'Connect with verified tutors for personalized guidance' },
-          ].map((f, i) => (
+          {features.map((f, i) => (
             <div key={i} className="card" style={{ padding: '1.5rem', borderLeft: `3px solid ${primary}` }}>
               <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.05rem' }}>{f.title}</h3>
               <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>{f.desc}</p>
@@ -116,7 +120,7 @@ function WhiteLabelLanding({ branding }: Props) {
       {/* CTA */}
       <section style={{ textAlign: 'center', padding: '3rem 2rem 5rem' }}>
         <h2 style={{ fontWeight: 700, fontSize: '1.5rem', marginBottom: '1rem' }}>
-          Ready to start preparing?
+          {t.wl.ctaTitle}
         </h2>
         <button onClick={() => navigate('/register')}
           style={{
@@ -124,7 +128,7 @@ function WhiteLabelLanding({ branding }: Props) {
             border: 'none', borderRadius: '0.75rem', fontSize: '1rem',
             fontWeight: 600, cursor: 'pointer',
           }}>
-          Register Now →
+          {t.wl.ctaButton}
         </button>
       </section>
 
@@ -133,7 +137,7 @@ function WhiteLabelLanding({ branding }: Props) {
         textAlign: 'center', padding: '1.5rem 2rem', borderTop: '1px solid var(--border-color)',
         fontSize: '0.8rem', color: 'var(--text-secondary)',
       }}>
-        Powered by <span style={{ color: '#6366f1', fontWeight: 600 }}>UniStart</span> · {new Date().getFullYear()}
+        {t.wl.poweredBy} <span style={{ color: '#6366f1', fontWeight: 600 }}>UniStart</span> \u00b7 {new Date().getFullYear()}
       </footer>
     </div>
   );
