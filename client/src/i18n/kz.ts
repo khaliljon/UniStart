@@ -69,6 +69,8 @@ export const kz: Translations = {
     iAmStudent: 'Мен оқушымын',
     iAmTutor: 'Мен тьютормын',
     tutorRegNote: 'Тіркелгеннен кейін профильді толтырыңыз және администратор верификациясын күтіңіз',
+    tutorSchoolSelect: 'Мектепке тіркелу',
+    tutorIndependent: 'Тәуелсіз тьютор',
     fp: {
       title: 'Құпия сөзді қалпына келтіру',
       enterEmail: 'Тіркелу кезінде көрсеткен email-ді енгізіңіз',
@@ -664,6 +666,7 @@ export const kz: Translations = {
       editTitle: 'Өңдеу', profileTitle: 'Пайдаланушы профилі',
       nameLabel: 'Аты', emailLabel: 'Email', roleLabel: 'Рөлі',
       subscriptionLabel: 'Жазылым',
+      schoolLabel: 'Мектеп', noSchool: 'Мектепсіз (тәуелсіз)',
       onboarding: 'Онбординг', onboardingDone: 'Аяқталған', onboardingNotDone: 'Аяқталмаған',
       registeredAt: 'Тіркелу күні', updatedAt: 'Жаңартылған',
       blockedLabel: 'Бұғатталған', blockReason: 'Себебі:', since: 'Бастап',
@@ -1123,6 +1126,9 @@ export const kz: Translations = {
     reviewsCount: 'пікірлер',
     studentsCount: 'оқушылар',
     loading: 'Жүктелуде...',
+    applyToJoin: 'Отыныш жіберу',
+    applicationPending: 'Отыныш жіберілді, қарастырылуда',
+    applicationRejected: 'Отыныш қабылданбады',
   },
 
   legal: {

@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { schoolAdminService } from '../services/schoolAdminService';
+import api from '../services/api';
 import type { SchoolDashboard, SchoolStudent, SchoolTutor, StudentAnalytics } from '../services/schoolAdminService';
 
-type View = 'dashboard' | 'students' | 'tutors' | 'student-detail';
+type TutorApp = { id: number; userId: number; userName: string; userEmail: string; status: string; message: string | null; createdAt: string; reviewedAt: string | null };
+type View = 'dashboard' | 'students' | 'tutors' | 'student-detail' | 'tutor-applications';
 
 function SchoolAdminDashboardPage() {
   const [view, setView] = useState<View>('dashboard');
@@ -13,6 +15,8 @@ function SchoolAdminDashboardPage() {
   const [studentsPage, setStudentsPage] = useState(1);
   const [selectedStudent, setSelectedStudent] = useState<StudentAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
+  const [tutorApps, setTutorApps] = useState<TutorApp[]>([]);
+  const [pendingCount, setPendingCount] = useState(0);
 
   useEffect(() => {
     schoolAdminService.getDashboard()
@@ -38,6 +42,22 @@ function SchoolAdminDashboardPage() {
     } catch { /* */ } finally { setLoading(false); }
   }, []);
 
+  const loadTutorApps = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data } = await api.get<TutorApp[]>('/tutor-school-applications/school');
+      setTutorApps(data);
+      setPendingCount(data.filter(a => a.status === 'Pending').length);
+    } catch { /* */ } finally { setLoading(false); }
+  }, []);
+
+  // Load pending count on mount
+  useEffect(() => {
+    api.get<TutorApp[]>('/tutor-school-applications/school?status=Pending')
+      .then(({ data }) => setPendingCount(data.length))
+      .catch(() => {});
+  }, []);
+
   const openStudentDetail = async (userId: number) => {
     setLoading(true);
     try {
@@ -51,6 +71,7 @@ function SchoolAdminDashboardPage() {
     setView(v);
     if (v === 'students') loadStudents();
     if (v === 'tutors') loadTutors();
+    if (v === 'tutor-applications') loadTutorApps();
   };
 
   if (loading && !dashboard) return <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>Loading...</div>;
@@ -64,13 +85,25 @@ function SchoolAdminDashboardPage() {
       </div>
 
       {/* Tab Nav */}
-      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
         {(['dashboard', 'students', 'tutors'] as View[]).map(v => (
           <button key={v} className={view === v ? 'btn btn-primary' : 'btn btn-outline'}
             onClick={() => navTo(v)} style={{ textTransform: 'capitalize' }}>
             {v === 'dashboard' ? 'Dashboard' : v === 'students' ? `Students (${dashboard.totalStudents})` : `Tutors (${dashboard.totalTutors})`}
           </button>
         ))}
+        <button
+          className={view === 'tutor-applications' ? 'btn btn-primary' : 'btn btn-outline'}
+          onClick={() => navTo('tutor-applications')}
+          style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+        >
+          Applications{pendingCount > 0 && (
+            <span style={{
+              background: '#ef4444', color: '#fff', borderRadius: '999px',
+              padding: '0.1rem 0.45rem', fontSize: '0.7rem', fontWeight: 700,
+            }}>{pendingCount}</span>
+          )}
+        </button>
         {view === 'student-detail' && (
           <button className="btn btn-outline" onClick={() => navTo('students')}>← Back</button>
         )}
@@ -177,6 +210,59 @@ function SchoolAdminDashboardPage() {
               No tutors in your school yet
             </div>
           )}
+        </div>
+      )}
+
+      {/* Tutor Applications */}
+      {view === 'tutor-applications' && (
+        <div className="card" style={{ padding: '1rem', overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
+            <thead>
+              <tr style={{ borderBottom: '2px solid var(--border-color)' }}>
+                <th style={th}>Name</th><th style={th}>Email</th><th style={th}>Message</th>
+                <th style={th}>Date</th><th style={th}>Status</th><th style={th}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {tutorApps.map(a => (
+                <tr key={a.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                  <td style={td}>{a.userName}</td>
+                  <td style={td}>{a.userEmail}</td>
+                  <td style={{ ...td, maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.message || '—'}</td>
+                  <td style={td}>{new Date(a.createdAt).toLocaleDateString()}</td>
+                  <td style={td}>
+                    <span style={{
+                      padding: '0.15rem 0.5rem', borderRadius: '999px', fontSize: '0.75rem', fontWeight: 600, color: '#fff',
+                      background: a.status === 'Pending' ? '#f59e0b' : a.status === 'Approved' ? 'var(--success-color)' : 'var(--error-color)',
+                    }}>{a.status}</span>
+                  </td>
+                  <td style={td}>
+                    {a.status === 'Pending' && (
+                      <div style={{ display: 'flex', gap: '0.35rem' }}>
+                        <button className="btn btn-primary" style={{ fontSize: '0.75rem', padding: '0.25rem 0.6rem' }}
+                          onClick={async () => {
+                            try {
+                              await api.put(`/tutor-school-applications/${a.id}/status`, { status: 'Approved' });
+                              loadTutorApps();
+                            } catch { /* */ }
+                          }}>Approve</button>
+                        <button className="btn btn-outline" style={{ fontSize: '0.75rem', padding: '0.25rem 0.6rem', color: 'var(--error-color)', borderColor: 'var(--error-color)' }}
+                          onClick={async () => {
+                            try {
+                              await api.put(`/tutor-school-applications/${a.id}/status`, { status: 'Rejected' });
+                              loadTutorApps();
+                            } catch { /* */ }
+                          }}>Reject</button>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              ))}
+              {tutorApps.length === 0 && !loading && (
+                <tr><td colSpan={6} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)' }}>No tutor applications yet</td></tr>
+              )}
+            </tbody>
+          </table>
         </div>
       )}
 

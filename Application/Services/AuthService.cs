@@ -120,6 +120,23 @@ public class AuthService : IAuthService
                 SchoolId = schoolId
             });
             await _unitOfWork.SaveChangesAsync();
+
+            // Auto-create school application if tutor selected a school during registration
+            if (dto.ApplyToSchoolId.HasValue && schoolId == null)
+            {
+                var targetSchool = await _context.TutorSchools
+                    .AnyAsync(s => s.Id == dto.ApplyToSchoolId.Value && s.IsActive);
+                if (targetSchool)
+                {
+                    _context.Set<TutorSchoolApplication>().Add(new TutorSchoolApplication
+                    {
+                        UserId = user.Id,
+                        SchoolId = dto.ApplyToSchoolId.Value,
+                        Message = "Application submitted during registration",
+                    });
+                    await _unitOfWork.SaveChangesAsync();
+                }
+            }
         }
 
         // Initialize default skill profiles for the user

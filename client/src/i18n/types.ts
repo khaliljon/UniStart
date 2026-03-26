@@ -74,6 +74,8 @@ export interface Translations {
     iAmStudent: string;
     iAmTutor: string;
     tutorRegNote: string;
+    tutorSchoolSelect: string;
+    tutorIndependent: string;
     fp: {
       title: string;
       enterEmail: string;
@@ -665,6 +667,7 @@ export interface Translations {
       found: string;
       editTitle: string; profileTitle: string;
       nameLabel: string; emailLabel: string; roleLabel: string; subscriptionLabel: string;
+      schoolLabel: string; noSchool: string;
       onboarding: string; onboardingDone: string; onboardingNotDone: string;
       registeredAt: string; updatedAt: string;
       blockedLabel: string; blockReason: string; since: string;
@@ -1120,6 +1123,9 @@ export interface Translations {
     reviewsCount: string;
     studentsCount: string;
     loading: string;
+    applyToJoin: string;
+    applicationPending: string;
+    applicationRejected: string;
   };
 
   // ─── Legal ───

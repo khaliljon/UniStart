@@ -69,6 +69,8 @@ export const ru: Translations = {
     iAmStudent: 'Я ученик',
     iAmTutor: 'Я тьютор',
     tutorRegNote: 'После регистрации заполните профиль и ожидайте верификацию администратором',
+    tutorSchoolSelect: 'Привязка к школе',
+    tutorIndependent: 'Независимый тьютор',
     fp: {
       title: 'Восстановление пароля',
       enterEmail: 'Введите email, указанный при регистрации',
@@ -665,6 +667,7 @@ export const ru: Translations = {
       editTitle: 'Редактирование', profileTitle: 'Профиль пользователя',
       nameLabel: 'Имя', emailLabel: 'Email', roleLabel: 'Роль',
       subscriptionLabel: 'Подписка',
+      schoolLabel: 'Школа', noSchool: 'Без школы (независимый)',
       onboarding: 'Онбординг', onboardingDone: 'Пройден', onboardingNotDone: 'Не завершён',
       registeredAt: 'Дата регистрации', updatedAt: 'Обновлён',
       blockedLabel: 'Заблокирован', blockReason: 'Причина:', since: 'С',
@@ -1125,6 +1128,9 @@ export const ru: Translations = {
     reviewsCount: 'отзывов',
     studentsCount: 'учеников',
     loading: 'Загрузка...',
+    applyToJoin: 'Подать заявку',
+    applicationPending: 'Заявка отправлена, ожидает рассмотрения',
+    applicationRejected: 'Заявка отклонена',
   },
 
   legal: {

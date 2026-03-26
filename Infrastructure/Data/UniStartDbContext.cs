@@ -42,6 +42,7 @@ public class UniStartDbContext : DbContext
     public DbSet<TutorStudent> TutorStudents => Set<TutorStudent>();
     public DbSet<TutorInviteCode> TutorInviteCodes => Set<TutorInviteCode>();
     public DbSet<TutorInviteCodeUsage> TutorInviteCodeUsages => Set<TutorInviteCodeUsage>();
+    public DbSet<TutorSchoolApplication> TutorSchoolApplications => Set<TutorSchoolApplication>();
 
     // Learning v2 entities
     public DbSet<LessonStep> LessonSteps => Set<LessonStep>();

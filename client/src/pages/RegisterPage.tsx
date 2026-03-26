@@ -1,4 +1,4 @@
-import { useState, FormEvent } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useAppDispatch } from '../hooks/useAppDispatch';
 import { useAppSelector } from '../hooks/useAppSelector';
@@ -7,6 +7,8 @@ import { useGoogleSignIn } from '../hooks/useGoogleSignIn';
 import { useBranding } from '../contexts/BrandingContext';
 import { register, verifyEmail, clearError } from '../store/slices/authSlice';
 import { authService } from '../services/authService';
+import { tutorService } from '../services/tutorService';
+import type { TutorSchoolCard } from '../types';
 
 function RegisterPage() {
   const dispatch = useAppDispatch();
@@ -26,8 +28,17 @@ function RegisterPage() {
   const [resendMsg, setResendMsg] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [selectedSchoolId, setSelectedSchoolId] = useState<number | null>(null);
+  const [schools, setSchools] = useState<TutorSchoolCard[]>([]);
 
   useGoogleSignIn('google-register-btn', 'signup_with');
+
+  // Load schools list for tutor registration (main site only)
+  useEffect(() => {
+    if (role === 'Tutor' && !branding) {
+      tutorService.getSchools().then(setSchools).catch(() => {});
+    }
+  }, [role, branding]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -64,7 +75,7 @@ function RegisterPage() {
       return;
     }
 
-    dispatch(register({ name, email, password, role, schoolSlug: branding?.slug }));
+    dispatch(register({ name, email, password, role, schoolSlug: branding?.slug, applyToSchoolId: selectedSchoolId ?? undefined }));
   };
 
   const handleVerify = async (e: FormEvent) => {
@@ -198,6 +209,25 @@ function RegisterPage() {
             }}>
               {t.auth.tutorRegNote}
             </p>
+          )}
+          {role === 'Tutor' && !branding && schools.length > 0 && (
+            <div className="form-group" style={{ marginBottom: '1rem' }}>
+              <label htmlFor="schoolSelect" className="form-label">
+                {t.auth.tutorSchoolSelect}
+              </label>
+              <select
+                id="schoolSelect"
+                value={selectedSchoolId ?? ''}
+                onChange={(e) => setSelectedSchoolId(e.target.value ? Number(e.target.value) : null)}
+                className="form-input"
+                style={{ width: '100%' }}
+              >
+                <option value="">{t.auth.tutorIndependent}</option>
+                {schools.map(s => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+            </div>
           )}
 
           <div className="form-group">

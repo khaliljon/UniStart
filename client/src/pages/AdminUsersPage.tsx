@@ -1,12 +1,14 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import adminService from '../services/adminService';
-import type { AdminUser, AdminUserStats } from '../types';
+import { tutorService } from '../services/tutorService';
+import type { AdminUser, AdminUserStats, TutorSchoolCard } from '../types';
 import { useTranslation } from '../hooks/useTranslation';
 import { getDateLocale } from '../i18n';
 
 const ROLE_COLORS: Record<string, string> = {
   Admin: 'var(--error-color)',
+  SchoolAdmin: '#e67e22',
   Tutor: 'var(--warning-color)',
   Student: 'var(--primary-color)',
 };
@@ -44,7 +46,11 @@ function AdminUsersPage() {
     email: '',
     role: '',
     subscriptionTier: '',
+    schoolId: null as number | null,
   });
+
+  // Schools list for role assignment
+  const [schools, setSchools] = useState<TutorSchoolCard[]>([]);
 
   // Pagination (OP-13)
   const [page, setPage] = useState(1);
@@ -83,6 +89,9 @@ function AdminUsersPage() {
 
   useEffect(() => { loadUsers(); }, [loadUsers]);
   useEffect(() => { loadStats(); }, []);
+  useEffect(() => {
+    tutorService.getSchools().then(setSchools).catch(() => {});
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -121,6 +130,7 @@ function AdminUsersPage() {
       email: selected.email,
       role: selected.role,
       subscriptionTier: selected.subscriptionTier,
+      schoolId: selected.schoolId ?? null,
     });
     setEditMode(true);
     setSuccess(null);
@@ -139,6 +149,7 @@ function AdminUsersPage() {
         email: editData.email !== selected.email ? editData.email : undefined,
         role: editData.role !== selected.role ? editData.role : undefined,
         subscriptionTier: editData.subscriptionTier !== selected.subscriptionTier ? editData.subscriptionTier : undefined,
+        schoolId: editData.schoolId ?? undefined,
       });
       setSelected(updated);
       setEditMode(false);
@@ -242,6 +253,7 @@ function AdminUsersPage() {
           <option value="">{t.admin.users.allRoles}</option>
           <option value="Student">Student</option>
           <option value="Tutor">Tutor</option>
+          <option value="SchoolAdmin">SchoolAdmin</option>
           <option value="Admin">Admin</option>
         </select>
 
@@ -402,9 +414,25 @@ function AdminUsersPage() {
                   >
                     <option value="Student">Student</option>
                     <option value="Tutor">Tutor</option>
+                    <option value="SchoolAdmin">SchoolAdmin</option>
                     <option value="Admin">Admin</option>
                   </select>
                 </label>
+                {(editData.role === 'Tutor' || editData.role === 'SchoolAdmin') && schools.length > 0 && (
+                  <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                    {t.admin.users.schoolLabel}
+                    <select
+                      value={editData.schoolId ?? ''}
+                      onChange={(e) => setEditData({ ...editData, schoolId: e.target.value ? Number(e.target.value) : null })}
+                      style={{ width: '100%', marginTop: '0.25rem' }}
+                    >
+                      <option value="">{t.admin.users.noSchool}</option>
+                      {schools.map(s => (
+                        <option key={s.id} value={s.id}>{s.name} ({s.slug})</option>
+                      ))}
+                    </select>
+                  </label>
+                )}
                 <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
                   {t.admin.users.subscriptionLabel}
                   <select
@@ -434,6 +462,9 @@ function AdminUsersPage() {
                   <InfoField label={t.admin.users.onboarding} value={selected.hasCompletedOnboarding ? t.admin.users.onboardingDone : t.admin.users.onboardingNotDone} />
                   <InfoField label={t.admin.users.registeredAt} value={new Date(selected.createdAt).toLocaleDateString(getDateLocale())} />
                   <InfoField label={t.admin.users.updatedAt} value={selected.updatedAt ? new Date(selected.updatedAt).toLocaleDateString(getDateLocale()) : '—'} />
+                  {selected.schoolName && (
+                    <InfoField label={t.admin.users.schoolLabel} value={selected.schoolName} color="#e67e22" />
+                  )}
                 </div>
 
                 {/* Block status (OP-14) */}

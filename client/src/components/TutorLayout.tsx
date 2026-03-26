@@ -20,7 +20,8 @@ function TutorLayout() {
   const [hasSchool, setHasSchool] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const { isWhiteLabel } = useBranding();
+  const { isWhiteLabel, branding } = useBranding();
+  const [wlBlocked, setWlBlocked] = useState(false);
 
   useEffect(() => {
     const loadCounts = async () => {
@@ -40,6 +41,13 @@ function TutorLayout() {
 
     // Check school ownership
     tutorService.getMySchool().then(s => setHasSchool(s !== null)).catch(() => {});
+
+    // WL access guard: check if tutor is verified for this school
+    if (isWhiteLabel && user) {
+      tutorService.getTutorProfile(user.id).then(profile => {
+        if (!profile.isVerified) setWlBlocked(true);
+      }).catch(() => setWlBlocked(true));
+    }
 
     // Live unread via SignalR
     chatService.start();
@@ -88,6 +96,25 @@ function TutorLayout() {
   const initials = user?.name
     ? user.name.split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2)
     : '?';
+
+  // WL: block unverified tutors
+  if (wlBlocked) {
+    return (
+      <div className="layout" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
+        <div className="card" style={{ padding: '2.5rem', textAlign: 'center', maxWidth: '480px' }}>
+          <h2 style={{ marginBottom: '1rem' }}>
+            {branding?.navbarTitle || branding?.name || 'School'}
+          </h2>
+          <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', lineHeight: 1.5 }}>
+            Your tutor application for this school is pending verification. The school administrator will review your application shortly.
+          </p>
+          <button className="btn btn-primary" onClick={handleLogout}>
+            Log out
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="layout">

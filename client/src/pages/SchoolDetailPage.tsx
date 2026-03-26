@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { tutorService } from '../services/tutorService';
 import { useTranslation } from '../i18n';
 import { useBranding } from '../contexts/BrandingContext';
+import { useAppSelector } from '../hooks/useAppSelector';
+import api from '../services/api';
 import type { TutorSchoolDetail, TutorCard } from '../types';
 
 export default function SchoolDetailPage() {
@@ -10,8 +12,11 @@ export default function SchoolDetailPage() {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { isWhiteLabel } = useBranding();
+  const user = useAppSelector(s => s.auth.user);
   const [school, setSchool] = useState<TutorSchoolDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [appStatus, setAppStatus] = useState<'none' | 'Pending' | 'Approved' | 'Rejected' | 'member'>('none');
+  const [applying, setApplying] = useState(false);
 
   useEffect(() => {
     if (!slug) return;
@@ -27,6 +32,33 @@ export default function SchoolDetailPage() {
       }
     })();
   }, [slug]);
+
+  // Check if current tutor already applied or is a member
+  useEffect(() => {
+    if (!school || !user || user.role !== 'Tutor') return;
+    (async () => {
+      try {
+        const { data } = await api.get('/tutor-school-applications/my');
+        const existing = (data as { schoolId: number; status: string }[])
+          .find(a => a.schoolId === school.id);
+        if (existing) setAppStatus(existing.status as 'Pending' | 'Approved' | 'Rejected');
+      } catch { /* not authenticated or error */ }
+      try {
+        const { data } = await api.get('/tutor/profile');
+        if ((data as { schoolId?: number }).schoolId === school.id) setAppStatus('member');
+      } catch { /* ignore */ }
+    })();
+  }, [school, user]);
+
+  const handleApply = useCallback(async () => {
+    if (!school) return;
+    setApplying(true);
+    try {
+      await api.post('/tutor-school-applications', { schoolId: school.id });
+      setAppStatus('Pending');
+    } catch { /* ignore */ }
+    setApplying(false);
+  }, [school]);
 
   const renderStars = (rating: number) => {
     const full = Math.floor(rating);
@@ -226,6 +258,24 @@ export default function SchoolDetailPage() {
             </a>
           )}
         </div>
+
+        {/* Apply to join — only for logged-in tutors without this school */}
+        {!isWhiteLabel && user?.role === 'Tutor' && appStatus === 'none' && (
+          <button className="btn btn-primary" disabled={applying} onClick={handleApply}
+            style={{ marginTop: '1rem' }}>
+            {applying ? '...' : t.tutor.applyToJoin}
+          </button>
+        )}
+        {appStatus === 'Pending' && (
+          <p style={{ marginTop: '1rem', color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 500 }}>
+            {t.tutor.applicationPending}
+          </p>
+        )}
+        {appStatus === 'Rejected' && (
+          <p style={{ marginTop: '1rem', color: '#ef4444', fontSize: '0.9rem', fontWeight: 500 }}>
+            {t.tutor.applicationRejected}
+          </p>
+        )}
       </div>
 
       {/* School's Tutors */}

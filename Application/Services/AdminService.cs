@@ -441,6 +441,14 @@ public class AdminService : IAdminService
             .CountAsync(a => a.UserId == id && a.AnswerOption.IsCorrect);
         var testSessions = await _db.TestSessions.CountAsync(s => s.UserId == id);
 
+        // Resolve school name for display
+        string? schoolName = null;
+        if (user.SchoolId.HasValue)
+            schoolName = await _db.TutorSchools
+                .Where(s => s.Id == user.SchoolId.Value)
+                .Select(s => s.Name)
+                .FirstOrDefaultAsync();
+
         return new AdminUserDto(
             Id: user.Id,
             Email: user.Email,
@@ -458,7 +466,9 @@ public class AdminService : IAdminService
             UpdatedAt: user.UpdatedAt,
             TotalAnswers: totalAnswers,
             CorrectAnswers: correctAnswers,
-            TestSessions: testSessions
+            TestSessions: testSessions,
+            SchoolId: user.SchoolId,
+            SchoolName: schoolName
         );
     }
 
@@ -486,8 +496,8 @@ public class AdminService : IAdminService
         {
             user.Role = role;
 
-            // Auto-create TutorProfile when role changed to Tutor
-            if (role == UserRole.Tutor)
+            // Auto-create TutorProfile when role changed to Tutor or SchoolAdmin
+            if (role == UserRole.Tutor || role == UserRole.SchoolAdmin)
             {
                 var hasProfile = await _db.TutorProfiles.AnyAsync(tp => tp.UserId == id);
                 if (!hasProfile)
@@ -499,8 +509,32 @@ public class AdminService : IAdminService
                         Bio = "",
                         Experience = "",
                         Specializations = "",
-                        IsAvailable = true
+                        IsAvailable = true,
+                        SchoolId = dto.SchoolId
                     });
+                }
+            }
+        }
+
+        // Update SchoolId binding (for SchoolAdmin / Tutor → school assignment)
+        if (dto.SchoolId.HasValue)
+        {
+            var schoolExists = await _db.TutorSchools.AnyAsync(s => s.Id == dto.SchoolId.Value && s.IsActive);
+            if (schoolExists)
+            {
+                user.SchoolId = dto.SchoolId.Value;
+
+                // Also update TutorProfile.SchoolId if exists
+                var profile = await _db.TutorProfiles.FirstOrDefaultAsync(tp => tp.UserId == id);
+                if (profile != null)
+                    profile.SchoolId = dto.SchoolId.Value;
+
+                // If promoting to SchoolAdmin, set as school owner if no owner exists
+                if (user.Role == UserRole.SchoolAdmin)
+                {
+                    var school = await _db.TutorSchools.FindAsync(dto.SchoolId.Value);
+                    if (school != null && school.OwnerUserId == null)
+                        school.OwnerUserId = id;
                 }
             }
         }

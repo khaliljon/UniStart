@@ -104,15 +104,18 @@ public record AdminUserDto(
     DateTime? UpdatedAt,
     int TotalAnswers,
     int CorrectAnswers,
-    int TestSessions
+    int TestSessions,
+    int? SchoolId = null,
+    string? SchoolName = null
 );
 
 public record AdminUpdateUserDto(
     string? Name,
     string? Email,
-    string? Role,  // "Student", "Tutor", "Admin"
+    string? Role,  // "Student", "Tutor", "Admin", "SchoolAdmin"
     string? SubscriptionTier,  // "Free", "Pro"
-    DateTime? SubscriptionExpiresAt
+    DateTime? SubscriptionExpiresAt,
+    int? SchoolId  // bind user to a specific school
 );
 
 public record BlockUserDto(

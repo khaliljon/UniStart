@@ -69,6 +69,8 @@ export const en: Translations = {
     iAmStudent: "I'm a student",
     iAmTutor: "I'm a tutor",
     tutorRegNote: 'After registration, fill out your profile and wait for admin verification',
+    tutorSchoolSelect: 'School affiliation',
+    tutorIndependent: 'Independent tutor',
     fp: {
       title: 'Reset Password',
       enterEmail: 'Enter the email you used to register',
@@ -664,6 +666,7 @@ export const en: Translations = {
       editTitle: 'Edit', profileTitle: 'User profile',
       nameLabel: 'Name', emailLabel: 'Email', roleLabel: 'Role',
       subscriptionLabel: 'Subscription',
+      schoolLabel: 'School', noSchool: 'No school (independent)',
       onboarding: 'Onboarding', onboardingDone: 'Completed', onboardingNotDone: 'Not completed',
       registeredAt: 'Registered at', updatedAt: 'Updated',
       blockedLabel: 'Blocked', blockReason: 'Reason:', since: 'Since',
@@ -1122,6 +1125,9 @@ export const en: Translations = {
     reviewsCount: 'reviews',
     studentsCount: 'students',
     loading: 'Loading...',
+    applyToJoin: 'Apply to join',
+    applicationPending: 'Application submitted, awaiting review',
+    applicationRejected: 'Application rejected',
   },
 
   legal: {

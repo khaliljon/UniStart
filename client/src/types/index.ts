@@ -35,6 +35,7 @@ export interface RegisterRequest {
   password: string;
   role?: 'Student' | 'Tutor';
   schoolSlug?: string;
+  applyToSchoolId?: number;
 }
 
 export interface VerifyEmailRequest {
@@ -517,6 +518,8 @@ export interface AdminUser {
   totalAnswers: number;
   correctAnswers: number;
   testSessions: number;
+  schoolId: number | null;
+  schoolName: string | null;
 }
 
 export interface AdminUserStats {
