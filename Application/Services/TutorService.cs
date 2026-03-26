@@ -500,6 +500,14 @@ public class TutorService : ITutorService
         var school = await _db.TutorSchools
             .Include(s => s.Tutors)
             .FirstOrDefaultAsync(s => s.OwnerUserId == ownerUserId && s.IsActive);
+        if (school == null)
+        {
+            var user = await _db.Users.FindAsync(ownerUserId);
+            if (user?.SchoolId != null)
+                school = await _db.TutorSchools
+                    .Include(s => s.Tutors)
+                    .FirstOrDefaultAsync(s => s.Id == user.SchoolId && s.IsActive);
+        }
         if (school == null) return null;
 
         var tutorCount = school.Tutors.Count(t => t.User == null || (!t.User.IsDeleted));
@@ -511,6 +519,14 @@ public class TutorService : ITutorService
         var school = await _db.TutorSchools
             .Include(s => s.Tutors)
             .FirstOrDefaultAsync(s => s.OwnerUserId == ownerUserId && s.IsActive);
+        if (school == null)
+        {
+            var user = await _db.Users.FindAsync(ownerUserId);
+            if (user?.SchoolId != null)
+                school = await _db.TutorSchools
+                    .Include(s => s.Tutors)
+                    .FirstOrDefaultAsync(s => s.Id == user.SchoolId && s.IsActive);
+        }
         if (school == null) return null;
 
         if (dto.Name != null) school.Name = InputSanitizer.Sanitize(dto.Name)!;
@@ -532,6 +548,12 @@ public class TutorService : ITutorService
     {
         var school = await _db.TutorSchools
             .FirstOrDefaultAsync(s => s.OwnerUserId == ownerUserId && s.IsActive);
+        if (school == null)
+        {
+            var user = await _db.Users.FindAsync(ownerUserId);
+            if (user?.SchoolId != null)
+                school = await _db.TutorSchools.FirstOrDefaultAsync(s => s.Id == user.SchoolId && s.IsActive);
+        }
         if (school == null) return new LinkResultDto(false, "School not found");
 
         var tutorProfile = await _db.TutorProfiles
@@ -553,6 +575,12 @@ public class TutorService : ITutorService
     {
         var school = await _db.TutorSchools
             .FirstOrDefaultAsync(s => s.OwnerUserId == ownerUserId && s.IsActive);
+        if (school == null)
+        {
+            var user = await _db.Users.FindAsync(ownerUserId);
+            if (user?.SchoolId != null)
+                school = await _db.TutorSchools.FirstOrDefaultAsync(s => s.Id == user.SchoolId && s.IsActive);
+        }
         if (school == null) return new LinkResultDto(false, "School not found");
 
         if (tutorUserId == ownerUserId)

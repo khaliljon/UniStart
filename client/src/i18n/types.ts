@@ -1305,4 +1305,48 @@ export interface Translations {
     step2: string;
     step3: string;
   };
+
+  // ─── School Admin ───
+  schoolAdmin: {
+    badge: string;
+    dashboard: string;
+    applications: string;
+    messages: string;
+    school: string;
+    settings: string;
+    logout: string;
+    students: string;
+    tutors: string;
+    active7d: string;
+    avgAccuracy: string;
+    recentStudents: string;
+    name: string;
+    email: string;
+    plan: string;
+    joined: string;
+    lastOnline: string;
+    tutor: string;
+    noStudents: string;
+    noTutors: string;
+    available: string;
+    unavailable: string;
+    verify: string;
+    unverify: string;
+    noSchool: string;
+    loading: string;
+    back: string;
+    skills: string;
+    recentSessions: string;
+    date: string;
+    questions: string;
+    correct: string;
+    accuracy: string;
+    noSessions: string;
+    approve: string;
+    reject: string;
+    message: string;
+    status: string;
+    actions: string;
+    noApplications: string;
+  };
 }

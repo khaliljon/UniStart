@@ -31,7 +31,14 @@ public class SchoolAdminController : ControllerBase
     private async Task<TutorSchool?> GetOwnedSchool()
     {
         var userId = GetUserId();
-        return await _db.TutorSchools.FirstOrDefaultAsync(s => s.OwnerUserId == userId && s.IsActive);
+        var school = await _db.TutorSchools.FirstOrDefaultAsync(s => s.OwnerUserId == userId && s.IsActive);
+        if (school == null)
+        {
+            var user = await _db.Users.FindAsync(userId);
+            if (user?.SchoolId != null)
+                school = await _db.TutorSchools.FirstOrDefaultAsync(s => s.Id == user.SchoolId && s.IsActive);
+        }
+        return school;
     }
 
     /// <summary>Dashboard summary</summary>

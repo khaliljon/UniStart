@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { schoolAdminService } from '../services/schoolAdminService';
+import { useTranslation } from '../i18n';
 import api from '../services/api';
 import type { SchoolDashboard, SchoolStudent, SchoolTutor, StudentAnalytics } from '../services/schoolAdminService';
 
@@ -7,6 +8,7 @@ type TutorApp = { id: number; userId: number; userName: string; userEmail: strin
 type View = 'dashboard' | 'students' | 'tutors' | 'student-detail' | 'tutor-applications';
 
 function SchoolAdminDashboardPage() {
+  const { t } = useTranslation();
   const [view, setView] = useState<View>('dashboard');
   const [dashboard, setDashboard] = useState<SchoolDashboard | null>(null);
   const [students, setStudents] = useState<SchoolStudent[]>([]);
@@ -74,8 +76,8 @@ function SchoolAdminDashboardPage() {
     if (v === 'tutor-applications') loadTutorApps();
   };
 
-  if (loading && !dashboard) return <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>Loading...</div>;
-  if (!dashboard) return <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>No school found. Contact admin to link your account.</div>;
+  if (loading && !dashboard) return <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>{t.schoolAdmin.loading}</div>;
+  if (!dashboard) return <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>{t.schoolAdmin.noSchool}</div>;
 
   return (
     <div>
@@ -89,7 +91,7 @@ function SchoolAdminDashboardPage() {
         {(['dashboard', 'students', 'tutors'] as View[]).map(v => (
           <button key={v} className={view === v ? 'btn btn-primary' : 'btn btn-outline'}
             onClick={() => navTo(v)} style={{ textTransform: 'capitalize' }}>
-            {v === 'dashboard' ? 'Dashboard' : v === 'students' ? `Students (${dashboard.totalStudents})` : `Tutors (${dashboard.totalTutors})`}
+            {v === 'dashboard' ? t.schoolAdmin.dashboard : v === 'students' ? `${t.schoolAdmin.students} (${dashboard.totalStudents})` : `${t.schoolAdmin.tutors} (${dashboard.totalTutors})`}
           </button>
         ))}
         <button
@@ -97,7 +99,7 @@ function SchoolAdminDashboardPage() {
           onClick={() => navTo('tutor-applications')}
           style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}
         >
-          Applications{pendingCount > 0 && (
+          {t.schoolAdmin.applications}{pendingCount > 0 && (
             <span style={{
               background: '#ef4444', color: '#fff', borderRadius: '999px',
               padding: '0.1rem 0.45rem', fontSize: '0.7rem', fontWeight: 700,
@@ -105,7 +107,7 @@ function SchoolAdminDashboardPage() {
           )}
         </button>
         {view === 'student-detail' && (
-          <button className="btn btn-outline" onClick={() => navTo('students')}>← Back</button>
+          <button className="btn btn-outline" onClick={() => navTo('students')}>&larr; {t.schoolAdmin.back}</button>
         )}
       </div>
 
@@ -113,18 +115,18 @@ function SchoolAdminDashboardPage() {
       {view === 'dashboard' && (
         <div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
-            <StatCard label="Students" value={dashboard.totalStudents} />
-            <StatCard label="Tutors" value={dashboard.totalTutors} />
-            <StatCard label="Active (7d)" value={dashboard.activeStudentsLast7Days} />
-            <StatCard label="Avg Accuracy" value={`${dashboard.averageAccuracy}%`} />
+            <StatCard label={t.schoolAdmin.students} value={dashboard.totalStudents} />
+            <StatCard label={t.schoolAdmin.tutors} value={dashboard.totalTutors} />
+            <StatCard label={t.schoolAdmin.active7d} value={dashboard.activeStudentsLast7Days} />
+            <StatCard label={t.schoolAdmin.avgAccuracy} value={`${dashboard.averageAccuracy}%`} />
           </div>
 
-          <h3>Recent Students</h3>
+          <h3>{t.schoolAdmin.recentStudents}</h3>
           <div className="card" style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
-                  <th style={th}>Name</th><th style={th}>Email</th><th style={th}>Plan</th><th style={th}>Joined</th><th style={th}>Last Online</th>
+                  <th style={th}>{t.schoolAdmin.name}</th><th style={th}>{t.schoolAdmin.email}</th><th style={th}>{t.schoolAdmin.plan}</th><th style={th}>{t.schoolAdmin.joined}</th><th style={th}>{t.schoolAdmin.lastOnline}</th>
                 </tr>
               </thead>
               <tbody>
@@ -151,7 +153,7 @@ function SchoolAdminDashboardPage() {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
-                  <th style={th}>Name</th><th style={th}>Email</th><th style={th}>Plan</th><th style={th}>Joined</th><th style={th}>Last Online</th><th style={th}>Tutor</th>
+                  <th style={th}>{t.schoolAdmin.name}</th><th style={th}>{t.schoolAdmin.email}</th><th style={th}>{t.schoolAdmin.plan}</th><th style={th}>{t.schoolAdmin.joined}</th><th style={th}>{t.schoolAdmin.lastOnline}</th><th style={th}>{t.schoolAdmin.tutor}</th>
                 </tr>
               </thead>
               <tbody>
@@ -167,7 +169,7 @@ function SchoolAdminDashboardPage() {
                   </tr>
                 ))}
                 {students.length === 0 && !loading && (
-                  <tr><td colSpan={6} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)' }}>No students yet</td></tr>
+                  <tr><td colSpan={6} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)' }}>{t.schoolAdmin.noStudents}</td></tr>
                 )}
               </tbody>
             </table>
@@ -185,48 +187,48 @@ function SchoolAdminDashboardPage() {
       {/* Tutors list */}
       {view === 'tutors' && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1rem' }}>
-          {tutors.map(t => (
-            <div key={t.userId} className="card" style={{ padding: '1.25rem' }}>
+          {tutors.map(tr => (
+            <div key={tr.userId} className="card" style={{ padding: '1.25rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
                 <div>
-                  <strong>{t.name}</strong>
-                  {t.isVerified && <span style={{ color: 'var(--success-color)', marginLeft: '0.5rem' }}>&#10003;</span>}
+                  <strong>{tr.name}</strong>
+                  {tr.isVerified && <span style={{ color: 'var(--success-color)', marginLeft: '0.5rem' }}>&#10003;</span>}
                 </div>
-                <span style={{ fontSize: '0.8rem', color: t.isAvailable ? 'var(--success-color)' : 'var(--text-secondary)' }}>
-                  {t.isAvailable ? 'Available' : 'Unavailable'}
+                <span style={{ fontSize: '0.8rem', color: tr.isAvailable ? 'var(--success-color)' : 'var(--text-secondary)' }}>
+                  {tr.isAvailable ? t.schoolAdmin.available : t.schoolAdmin.unavailable}
                 </span>
               </div>
-              <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: '0.5rem 0' }}>{t.headline}</div>
-              <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{t.email}</div>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: '0.5rem 0' }}>{tr.headline}</div>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{tr.email}</div>
               <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.75rem', fontSize: '0.8rem' }}>
-                <span>&#9733; {t.averageRating.toFixed(1)}</span>
-                <span>{t.totalStudents} students</span>
-                <span>{t.specializations.join(', ')}</span>
+                <span>&#9733; {tr.averageRating.toFixed(1)}</span>
+                <span>{tr.totalStudents} {t.schoolAdmin.students.toLowerCase()}</span>
+                <span>{tr.specializations.join(', ')}</span>
               </div>
               <div style={{ marginTop: '0.75rem' }}>
-                {t.isVerified ? (
+                {tr.isVerified ? (
                   <button className="btn btn-outline" style={{ fontSize: '0.75rem', padding: '0.25rem 0.7rem', color: 'var(--error-color)', borderColor: 'var(--error-color)' }}
                     onClick={async () => {
                       try {
-                        await api.post(`/tutor-school-applications/unverify/${t.userId}`);
+                        await api.post(`/tutor-school-applications/unverify/${tr.userId}`);
                         loadTutors();
                       } catch { /* */ }
-                    }}>Unverify</button>
+                    }}>{t.schoolAdmin.unverify}</button>
                 ) : (
                   <button className="btn btn-primary" style={{ fontSize: '0.75rem', padding: '0.25rem 0.7rem' }}
                     onClick={async () => {
                       try {
-                        await api.post(`/tutor-school-applications/verify/${t.userId}`);
+                        await api.post(`/tutor-school-applications/verify/${tr.userId}`);
                         loadTutors();
                       } catch { /* */ }
-                    }}>Verify</button>
+                    }}>{t.schoolAdmin.verify}</button>
                 )}
               </div>
             </div>
           ))}
           {tutors.length === 0 && !loading && (
             <div className="card" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
-              No tutors in your school yet
+              {t.schoolAdmin.noTutors}
             </div>
           )}
         </div>
@@ -238,8 +240,8 @@ function SchoolAdminDashboardPage() {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
             <thead>
               <tr style={{ borderBottom: '2px solid var(--border-color)' }}>
-                <th style={th}>Name</th><th style={th}>Email</th><th style={th}>Message</th>
-                <th style={th}>Date</th><th style={th}>Status</th><th style={th}>Actions</th>
+                <th style={th}>{t.schoolAdmin.name}</th><th style={th}>{t.schoolAdmin.email}</th><th style={th}>{t.schoolAdmin.message}</th>
+                <th style={th}>{t.schoolAdmin.date}</th><th style={th}>{t.schoolAdmin.status}</th><th style={th}>{t.schoolAdmin.actions}</th>
               </tr>
             </thead>
             <tbody>
@@ -264,21 +266,21 @@ function SchoolAdminDashboardPage() {
                               await api.put(`/tutor-school-applications/${a.id}/status`, { status: 'Approved' });
                               loadTutorApps();
                             } catch { /* */ }
-                          }}>Approve</button>
+                          }}>{t.schoolAdmin.approve}</button>
                         <button className="btn btn-outline" style={{ fontSize: '0.75rem', padding: '0.25rem 0.6rem', color: 'var(--error-color)', borderColor: 'var(--error-color)' }}
                           onClick={async () => {
                             try {
                               await api.put(`/tutor-school-applications/${a.id}/status`, { status: 'Rejected' });
                               loadTutorApps();
                             } catch { /* */ }
-                          }}>Reject</button>
+                          }}>{t.schoolAdmin.reject}</button>
                       </div>
                     )}
                   </td>
                 </tr>
               ))}
               {tutorApps.length === 0 && !loading && (
-                <tr><td colSpan={6} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)' }}>No tutor applications yet</td></tr>
+                <tr><td colSpan={6} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)' }}>{t.schoolAdmin.noApplications}</td></tr>
               )}
             </tbody>
           </table>
@@ -299,7 +301,7 @@ function SchoolAdminDashboardPage() {
           {/* Skills */}
           {selectedStudent.skills.length > 0 && (
             <div className="card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
-              <h3 style={{ margin: '0 0 1rem' }}>Skills</h3>
+              <h3 style={{ margin: '0 0 1rem' }}>{t.schoolAdmin.skills}</h3>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.75rem' }}>
                 {selectedStudent.skills.map(sk => (
                   <div key={sk.name} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem', borderRadius: '8px', background: 'var(--background-secondary)' }}>
@@ -313,11 +315,11 @@ function SchoolAdminDashboardPage() {
 
           {/* Recent sessions */}
           <div className="card" style={{ padding: '1.5rem', overflowX: 'auto' }}>
-            <h3 style={{ margin: '0 0 1rem' }}>Recent Sessions</h3>
+            <h3 style={{ margin: '0 0 1rem' }}>{t.schoolAdmin.recentSessions}</h3>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
-                  <th style={th}>Date</th><th style={th}>Questions</th><th style={th}>Correct</th><th style={th}>Accuracy</th>
+                  <th style={th}>{t.schoolAdmin.date}</th><th style={th}>{t.schoolAdmin.questions}</th><th style={th}>{t.schoolAdmin.correct}</th><th style={th}>{t.schoolAdmin.accuracy}</th>
                 </tr>
               </thead>
               <tbody>
@@ -330,7 +332,7 @@ function SchoolAdminDashboardPage() {
                   </tr>
                 ))}
                 {selectedStudent.recentSessions.length === 0 && (
-                  <tr><td colSpan={4} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)' }}>No sessions yet</td></tr>
+                  <tr><td colSpan={4} style={{ ...td, textAlign: 'center', color: 'var(--text-secondary)' }}>{t.schoolAdmin.noSessions}</td></tr>
                 )}
               </tbody>
             </table>

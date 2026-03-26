@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useAppDispatch } from '../hooks/useAppDispatch';
 import { useAppSelector } from '../hooks/useAppSelector';
 import { useTheme } from '../hooks/useTheme';
+import { useTranslation } from '../i18n';
 import { logout } from '../store/slices/authSlice';
 import { chatService } from '../services/chatService';
 import { messageService } from '../services/messageService';
@@ -13,6 +14,7 @@ function SchoolAdminLayout() {
   const navigate = useNavigate();
   const { user } = useAppSelector((state) => state.auth);
   const { theme, toggleTheme } = useTheme();
+  const { t } = useTranslation();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -81,30 +83,30 @@ function SchoolAdminLayout() {
               verticalAlign: 'middle',
               fontWeight: 700,
               letterSpacing: '0.05em',
-            }}>SCHOOL ADMIN</span>
+            }}>{t.schoolAdmin.badge}</span>
           </NavLink>
 
           <ul className="navbar-nav">
             <li>
               <NavLink to="/" end>
-                Dashboard
+                {t.schoolAdmin.dashboard}
               </NavLink>
             </li>
             <li>
               <NavLink to="/applications">
-                Заявки
+                {t.schoolAdmin.applications}
                 <Badge count={pendingApps} />
               </NavLink>
             </li>
             <li>
               <NavLink to="/messages">
-                Сообщения
+                {t.schoolAdmin.messages}
                 <Badge count={unreadCount} />
               </NavLink>
             </li>
             <li>
               <NavLink to="/school">
-                Школа
+                {t.schoolAdmin.school}
               </NavLink>
             </li>
           </ul>
@@ -123,9 +125,9 @@ function SchoolAdminLayout() {
                   {user?.name}
                 </div>
                 <div className="profile-dropdown-divider" />
-                <button className="profile-dropdown-item" onClick={() => goTo('/profile')}>Настройки</button>
+                <button className="profile-dropdown-item" onClick={() => goTo('/profile')}>{t.schoolAdmin.settings}</button>
                 <div className="profile-dropdown-divider" />
-                <button className="profile-dropdown-item profile-dropdown-danger" onClick={handleLogout}>Выйти</button>
+                <button className="profile-dropdown-item profile-dropdown-danger" onClick={handleLogout}>{t.schoolAdmin.logout}</button>
               </div>
             )}
           </div>
