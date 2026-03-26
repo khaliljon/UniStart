@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import { useTranslation } from '../i18n';
 import type { SchoolBranding } from '../types';
 import LanguageSwitcher from '../components/LanguageSwitcher';
@@ -15,6 +16,29 @@ function WhiteLabelLanding({ branding }: Props) {
   const localizedDesc = (locale === 'en' ? branding.descriptionEn
     : locale === 'kz' ? branding.descriptionKz
     : branding.description) || branding.description;
+
+  // Dynamic SEO meta tags for White Label subdomain
+  useEffect(() => {
+    const origin = window.location.origin;
+    document.title = `${brandName} — UniStart`;
+
+    const setMeta = (attr: string, key: string, content: string) => {
+      let el = document.querySelector(`meta[${attr}="${key}"]`) as HTMLMetaElement | null;
+      if (!el) { el = document.createElement('meta'); el.setAttribute(attr, key); document.head.appendChild(el); }
+      el.content = content;
+    };
+
+    setMeta('name', 'description', localizedDesc || `${brandName} — подготовка к экзаменам на платформе UniStart`);
+    setMeta('property', 'og:title', `${brandName} — UniStart`);
+    setMeta('property', 'og:description', localizedDesc || `${brandName} — подготовка к экзаменам`);
+    setMeta('property', 'og:url', origin);
+    setMeta('property', 'og:site_name', brandName);
+    if (branding.logoUrl) setMeta('property', 'og:image', branding.logoUrl);
+
+    let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+    if (!canonical) { canonical = document.createElement('link'); canonical.rel = 'canonical'; document.head.appendChild(canonical); }
+    canonical.href = origin;
+  }, [brandName, localizedDesc, branding.logoUrl]);
 
   const features = [
     { title: t.wl.featureAdaptive, desc: t.wl.featureAdaptiveDesc },

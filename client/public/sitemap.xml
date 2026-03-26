@@ -6,23 +6,28 @@
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://unistart.kz/tutors</loc>
+    <loc>https://unistart.kz/landing</loc>
     <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
+    <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://unistart.kz/schools</loc>
+    <loc>https://unistart.kz/for-schools</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://linhao.unistart.kz/</loc>
     <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
+    <priority>0.9</priority>
   </url>
   <url>
     <loc>https://unistart.kz/login</loc>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.5</priority>
   </url>
   <url>
     <loc>https://unistart.kz/register</loc>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.5</priority>
   </url>
 </urlset>

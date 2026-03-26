@@ -9,6 +9,7 @@ using Microsoft.FeatureManagement.Mvc;
 using System.Security.Claims;
 using UniStart.Application.DTOs;
 using UniStart.Application.Interfaces;
+using UniStart.Domain.Entities;
 using UniStart.Infrastructure.Data;
 using Asp.Versioning;
 
@@ -788,6 +789,7 @@ public class AdminController : ControllerBase
     {
         var tutors = await _db.TutorProfiles
             .Include(tp => tp.User)
+            .Where(tp => tp.User.Role == UserRole.Tutor || tp.User.Role == UserRole.SchoolAdmin)
             .OrderByDescending(tp => tp.CreatedAt)
             .Select(tp => new
             {

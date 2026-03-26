@@ -414,6 +414,14 @@ function LandingPage() {
               >
                 Telegram
               </a>
+              <a
+                href="https://linhao.unistart.kz"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: '#6366f1', fontWeight: 600, fontSize: '0.9rem', textDecoration: 'none' }}
+              >
+                {t.landing.partnerVisit}
+              </a>
             </div>
           </div>
         </div>
