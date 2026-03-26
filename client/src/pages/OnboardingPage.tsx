@@ -6,6 +6,7 @@ import { setOnboardingComplete } from '../store/slices/authSlice';
 import { setSelectedExams, setSelectedSectionIds } from '../store/slices/examSlice';
 import { onboardingService } from '../services/onboardingService';
 import { useTranslation } from '../i18n';
+import { useBranding } from '../contexts/BrandingContext';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import axios from 'axios';
 import type { ExamTypeInfo } from '../types';
@@ -33,6 +34,7 @@ function OnboardingPage() {
   const navigate = useNavigate();
   const { user } = useAppSelector((state) => state.auth);
   const { t, dateLocale } = useTranslation();
+  const { branding, isWhiteLabel } = useBranding();
 
   // ── Restore wizard state from sessionStorage ──────────
   const saved = sessionStorage.getItem('onboarding');
@@ -76,8 +78,17 @@ function OnboardingPage() {
 
   const loadExamTypes = async () => {
     try {
-      const types = await onboardingService.getExamTypes();
+      let types = await onboardingService.getExamTypes();
+      // On White Label subdomain, filter to school's specializations only
+      if (isWhiteLabel && branding?.specializations.length) {
+        const allowed = new Set(branding.specializations.map(s => s.toUpperCase()));
+        types = types.filter(e => allowed.has(e.code.toUpperCase()));
+      }
       setExamTypes(types);
+      // Auto-select if only one exam available
+      if (types.length === 1 && !selectedExam) {
+        handleExamSelect(types[0]);
+      }
     } catch {
       setError(t.common.error);
     }

@@ -570,6 +570,7 @@ export interface Translations {
       dashboard: string; questions: string; content: string; users: string;
       tutors: string; audit: string; health: string; activity: string;
       import: string; questionImport: string; trash: string; more: string; applications: string;
+      schools: string;
     };
     common: {
       loading: string; noData: string; error: string; save: string; cancel: string;

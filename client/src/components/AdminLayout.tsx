@@ -118,6 +118,7 @@ function AdminLayout() {
                     { label: t.admin.nav.applications, path: '/applications', badge: pendingApps },
                     { label: t.admin.nav.import, path: '/import' },
                     { label: t.admin.nav.questionImport, path: '/question-import' },
+                    { label: t.admin.nav.schools, path: '/schools' },
                     { label: t.admin.nav.audit, path: '/audit' },
                     { label: t.admin.nav.health, path: '/health' },
                     { label: t.admin.nav.trash, path: '/trash' },

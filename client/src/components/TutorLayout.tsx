@@ -7,6 +7,7 @@ import { logout } from '../store/slices/authSlice';
 import { tutorService } from '../services/tutorService';
 import { messageService } from '../services/messageService';
 import { chatService } from '../services/chatService';
+import { useBranding } from '../contexts/BrandingContext';
 
 function TutorLayout() {
   const dispatch = useAppDispatch();
@@ -19,6 +20,7 @@ function TutorLayout() {
   const [hasSchool, setHasSchool] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const { isWhiteLabel } = useBranding();
 
   useEffect(() => {
     const loadCounts = async () => {
@@ -138,12 +140,14 @@ function TutorLayout() {
                 Расписание
               </NavLink>
             </li>
-            <li>
-              <NavLink to="/school">
-                Школа
-              </NavLink>
-            </li>
-            {hasSchool && (
+            {!isWhiteLabel && (
+              <li>
+                <NavLink to="/school">
+                  Школа
+                </NavLink>
+              </li>
+            )}
+            {!isWhiteLabel && hasSchool && (
               <li>
                 <NavLink to="/school-admin">
                   Панель школы

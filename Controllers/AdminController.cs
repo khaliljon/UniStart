@@ -904,4 +904,49 @@ public class AdminController : ControllerBase
 
         return Ok(new { id = app.Id, status = newStatus.ToString() });
     }
+
+    // ─── School Management for Admin ─────────────────────
+
+    /// <summary>Get students in a specific school</summary>
+    [HttpGet("schools/{schoolId:int}/students")]
+    public async Task<IActionResult> GetSchoolStudents(int schoolId, [FromQuery] int page = 1, [FromQuery] int pageSize = 50)
+    {
+        var school = await _db.TutorSchools.FindAsync(schoolId);
+        if (school == null) return NotFound(new { error = "School not found" });
+
+        var query = _db.Users
+            .Where(u => u.SchoolId == schoolId && !u.IsDeleted && u.Role == Domain.Entities.UserRole.Student);
+
+        var total = await query.CountAsync();
+        var items = await query
+            .OrderByDescending(u => u.CreatedAt)
+            .Skip((page - 1) * pageSize).Take(pageSize)
+            .Select(u => new {
+                u.Id, u.Name, u.Email,
+                SubscriptionTier = u.SubscriptionTier.ToString(),
+                u.CreatedAt, u.LastSeenAt
+            })
+            .ToListAsync();
+
+        return Ok(new { items, total, page, pageSize });
+    }
+
+    /// <summary>Get tutors in a specific school</summary>
+    [HttpGet("schools/{schoolId:int}/tutors")]
+    public async Task<IActionResult> GetSchoolTutors(int schoolId)
+    {
+        var school = await _db.TutorSchools.FindAsync(schoolId);
+        if (school == null) return NotFound(new { error = "School not found" });
+
+        var tutors = await _db.TutorProfiles
+            .Include(t => t.User)
+            .Where(t => t.SchoolId == schoolId)
+            .Select(t => new {
+                t.UserId, t.User.Name, t.User.Email, t.Headline,
+                t.IsVerified, t.IsAvailable, t.TotalStudents, t.AverageRating
+            })
+            .ToListAsync();
+
+        return Ok(tutors);
+    }
 }

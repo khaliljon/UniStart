@@ -12,9 +12,9 @@ function WhiteLabelLanding({ branding }: Props) {
   const { t, locale } = useTranslation();
   const brandName = branding.navbarTitle || branding.name;
   const primary = branding.primaryColor || '#6366f1';
-  const localizedDesc = locale === 'en' ? branding.descriptionEn
+  const localizedDesc = (locale === 'en' ? branding.descriptionEn
     : locale === 'kz' ? branding.descriptionKz
-    : branding.description;
+    : branding.description) || branding.description;
 
   const features = [
     { title: t.wl.featureAdaptive, desc: t.wl.featureAdaptiveDesc },

@@ -534,6 +534,7 @@ export const ru: Translations = {
       users: 'Пользователи', tutors: 'Тьюторы', audit: 'Аудит',
       health: 'Система', activity: 'Активность', import: 'Импорт',
       questionImport: 'Загрузка вопросов', trash: 'Корзина', more: 'Ещё', applications: 'Заявки',
+      schools: 'Школы',
     },
     common: {
       loading: 'Загрузка...', noData: 'Нет данных', error: 'Ошибка',
