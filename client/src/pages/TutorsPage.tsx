@@ -9,7 +9,7 @@ function TutorsPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { t } = useTranslation();
-  const { branding } = useBranding();
+  const { branding, isWhiteLabel } = useBranding();
 
   const [result, setResult] = useState<TutorListResult | null>(null);
   const [schools, setSchools] = useState<TutorSchoolCard[]>([]);
@@ -33,7 +33,7 @@ function TutorsPage() {
           pageSize: 12,
           schoolId: branding?.id,
         }),
-        schools.length === 0 ? tutorService.getSchools() : Promise.resolve(schools),
+        !isWhiteLabel && schools.length === 0 ? tutorService.getSchools() : Promise.resolve(schools),
       ]);
       setResult(data);
       if (schools.length === 0) setSchools(schoolsData);
@@ -178,7 +178,7 @@ function TutorsPage() {
       </div>
 
       {/* Partner Schools */}
-      {schools.length > 0 && (
+      {!isWhiteLabel && schools.length > 0 && (
         <div style={{ marginBottom: '2rem' }}>
           <h2 style={{ fontSize: '1.15rem', fontWeight: '600', marginBottom: '0.75rem', color: 'var(--text-primary)' }}>
             {t.tutor.partnerSchools}

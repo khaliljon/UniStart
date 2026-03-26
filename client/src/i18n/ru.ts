@@ -1113,6 +1113,17 @@ export const ru: Translations = {
     addOption: 'Добавить вариант',
     markCorrect: 'Правильный ответ',
     mathTarget: 'Вставить в',
+    schoolNotFound: 'Школа не найдена',
+    backToTutors: 'К тьюторам',
+    partnerBadge: 'Партнёр UniStart',
+    tutorCount: 'тьютор',
+    tutorsCount: 'тьюторов',
+    schoolTutors: 'Тьюторы школы',
+    noSchoolTutors: 'Тьюторы не найдены',
+    websiteLink: 'Сайт',
+    reviewsCount: 'отзывов',
+    studentsCount: 'учеников',
+    loading: 'Загрузка...',
   },
 
   legal: {

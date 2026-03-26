@@ -169,6 +169,8 @@ public record SchoolBrandingDto(
     string Name,
     string Slug,
     string? Description,
+    string? DescriptionEn,
+    string? DescriptionKz,
     string? LogoUrl,
     string? PrimaryColor,
     string? PrimaryHoverColor,

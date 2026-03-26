@@ -618,3 +618,130 @@ TutorInviteCodeUsage {
 | Нет 2FA | Средний | Планируется S-9. Снижен rate limiting на auth |
 | Email в plain text в БД | Низкий | DB access control + SSL connection. pgcrypto при необходимости |
 | Single server | Средний | Бэкапы ежедневно. Мониторинг uptime |
+
+---
+
+## 🏫 Sprint 7 — White Label B2B (26 марта 2026)
+
+### Архитектура White Label
+
+```
+Пользователь → *.unistart.kz (wildcard SSL)
+  → nginx (wildcard server_name)
+    → React SPA (единое приложение)
+      → BrandingContext определяет subdomain по window.location.hostname
+        → GET /api/tutors/schools/branding?slug={subdomain}
+          → CSS Variables, favicon, SEO meta, фильтрация контента
+```
+
+**Ключевой принцип**: Единое SPA, единая БД, единый API. Subdomain определяет контекст через `BrandingContext`. Нет отдельных деплоев для каждой школы.
+
+### Модель данных White Label
+
+```
+User
+  ├── SchoolId (int?, FK → TutorSchools.Id, ON DELETE SET NULL)
+  │   └── Автоматически устанавливается при регистрации на subdomain
+  └── Role: Student | Tutor | Admin | SchoolAdmin
+
+TutorSchool
+  ├── OwnerUserId (int?, FK → Users.Id)
+  │   └── Владелец школы — единственный кто может управлять через SchoolAdminController
+  ├── Slug (string, unique) → используется как subdomain
+  ├── Subdomain (string?) → опциональный override
+  └── Branding: NavbarTitle, PrimaryColor, LogoUrl, Favicon, Description
+
+TutorProfile
+  └── SchoolId (int?, FK → TutorSchools.Id)
+      └── Привязка тьютора к школе (через owner или invite)
+```
+
+### Безопасность: Модель назначения SchoolAdmin
+
+#### Кто может назначить SchoolAdmin?
+
+**Только UniStart Admin** — через `AdminService.UpdateUserAsync`:
+```
+POST /api/admin/users/{id} { role: "SchoolAdmin" }
+```
+
+SchoolAdmin НЕ может:
+- Назначить другого SchoolAdmin
+- Повысить себя до Admin
+- Создать новую школу напрямую (только через API тьюторов)
+
+#### Цепочка назначения (security flow)
+
+```
+1. UniStart Admin создаёт пользователя с Role = SchoolAdmin
+   ИЛИ меняет существующему пользователю роль на SchoolAdmin
+
+2. SchoolAdmin (как Tutor) создаёт школу:
+   POST /api/tutors/school → TutorService.CreateSchoolAsync
+   → Устанавливает TutorSchool.OwnerUserId = текущий userId
+   → Привязывает свой TutorProfile.SchoolId к школе
+
+3. SchoolAdmin назначает тьюторов в школу:
+   POST /api/tutors/school/tutors/{tutorId} → AddTutorToSchoolAsync
+   → Проверка: OwnerUserId == requestUserId (ownership check)
+   → Устанавливает TutorProfile.SchoolId = school.Id
+
+4. Студенты привязываются автоматически при регистрации на subdomain:
+   POST /api/auth/register { schoolSlug: "linhao" }
+   → AuthService: User.SchoolId = school.Id
+```
+
+#### Разграничение доступа: Admin vs SchoolAdmin
+
+| Действие | UniStart Admin | SchoolAdmin |
+|----------|---------------|-------------|
+| Управление всеми пользователями | ✅ | ❌ |
+| Просмотр студентов своей школы | ✅ | ✅ (SchoolAdminController) |
+| Просмотр тьюторов своей школы | ✅ | ✅ (SchoolAdminController) |
+| Аналитика студентов школы | ✅ | ✅ (students/{id}/analytics) |
+| Назначение ролей | ✅ | ❌ |
+| Создание школы | ✅ (через API) | ✅ (только свою) |
+| Редактирование школы | ✅ (через БД) | ✅ (только свою, ownership check) |
+| Добавление тьютора в школу | ✅ (через БД) | ✅ (только в свою школу) |
+| Удаление тьютора из школы | ✅ (через БД) | ✅ (кроме себя) |
+| Управление контентом (вопросы, экзамены) | ✅ | ❌ |
+| Доступ к admin-панели /admin/* | ✅ | ❌ |
+| Dashboard школы /school-admin/* | ✅ | ✅ |
+| Управление подписками/платежами | ✅ | ❌ |
+
+#### Ownership checks в SchoolAdminController
+
+Каждый endpoint проверяет `GetOwnedSchool()`:
+```csharp
+private async Task<TutorSchool?> GetOwnedSchool()
+{
+    var userId = GetUserId(); // из JWT ClaimTypes.NameIdentifier
+    return await _db.TutorSchools.FirstOrDefaultAsync(s => s.OwnerUserId == userId && s.IsActive);
+}
+```
+Если школа не найдена → 404 "You don't own a school". Нет возможности обратиться к чужой школе.
+
+### Выполненные задачи White Label
+
+- [x] `User.SchoolId` (int?, FK) + миграция `AddUserSchoolId`
+- [x] Auto-bind при регистрации на subdomain (`AuthService` → `SchoolSlug`)
+- [x] `SchoolAdminController` — dashboard, students, tutors, analytics (4 endpoint'а)
+- [x] `SchoolAdminDashboardPage` — React страница с карточками и таблицей
+- [x] `WhiteLabelLanding` — брендированная landing page с i18n (ru/en/kz)
+- [x] `BrandingContext` — CSS variables, navbar, favicon, SEO meta
+- [x] Wildcard SSL `*.unistart.kz` + nginx конфигурация
+- [x] Rate limiting: auth 20/мин, `google-client-id` исключён (`[DisableRateLimiting]`)
+- [x] Google OAuth: поддомены добавлены в Google Cloud Console, кнопка работает на WL
+- [x] Onboarding tour: показывает имя школы вместо "UniStart" на WL (`GuidedTour`)
+- [x] TutorsPage: скрывает секцию "Партнёрские школы" на WL, тьюторы фильтруются по schoolId
+
+### Pending White Label задачи
+
+- [ ] SchoolDetailPage: i18n (сейчас hardcoded Russian), убрать бейдж "Партнёр UniStart" на WL
+- [ ] Admin-панель: вкладка управления школами (список всех школ, назначение SchoolAdmin)
+- [ ] Главная UniStart: секция "Наши школы-партнёры" с ссылками на сайты школ
+- [ ] SchoolAdmin invite flow: админ UniStart отправляет email-приглашение → пользователь получает роль SchoolAdmin
+- [ ] COOP header: `Cross-Origin-Opener-Policy: same-origin-allow-popups` для Google OAuth popup (cosmetic)
+- [ ] Аналитика по школам: сводная статистика всех школ для UniStart Admin
+- [ ] Кастомный домен для школы (school.example.com → CNAME → unistart.kz, nginx proxy)
+- [ ] Школьные тарифные планы: 49 990 ₸/год (единый тариф)

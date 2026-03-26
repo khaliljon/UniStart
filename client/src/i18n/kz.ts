@@ -1111,6 +1111,17 @@ export const kz: Translations = {
     addOption: 'Нұсқа қосу',
     markCorrect: 'Дұрыс жауап',
     mathTarget: 'Кірістіру',
+    schoolNotFound: 'Мектеп табылмады',
+    backToTutors: 'Тьюторларға',
+    partnerBadge: 'UniStart серіктесі',
+    tutorCount: 'тьютор',
+    tutorsCount: 'тьюторлар',
+    schoolTutors: 'Мектеп тьюторлары',
+    noSchoolTutors: 'Тьюторлар табылмады',
+    websiteLink: 'Сайт',
+    reviewsCount: 'пікірлер',
+    studentsCount: 'оқушылар',
+    loading: 'Жүктелуде...',
   },
 
   legal: {

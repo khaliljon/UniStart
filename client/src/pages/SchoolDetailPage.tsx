@@ -1,11 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { tutorService } from '../services/tutorService';
+import { useTranslation } from '../i18n';
+import { useBranding } from '../contexts/BrandingContext';
 import type { TutorSchoolDetail, TutorCard } from '../types';
 
 export default function SchoolDetailPage() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const { t } = useTranslation();
+  const { isWhiteLabel } = useBranding();
   const [school, setSchool] = useState<TutorSchoolDetail | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -68,11 +72,11 @@ export default function SchoolDetailPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
             <span style={{ fontWeight: 700, fontSize: '1.05rem' }}>{tutor.name}</span>
             {tutor.isVerified && (
-              <span title="Верифицирован" style={{ color: '#3b82f6', fontSize: '1rem' }}>✓</span>
+              <span title={t.tutor.verified} style={{ color: '#3b82f6', fontSize: '1rem' }}>✓</span>
             )}
           </div>
           <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {tutor.headline || 'Тьютор'}
+            {tutor.headline || t.tutor.defaultHeadline}
           </div>
         </div>
       </div>
@@ -105,11 +109,11 @@ export default function SchoolDetailPage() {
           {renderStars(tutor.averageRating)}{' '}
           <strong style={{ color: 'var(--text-primary)' }}>{tutor.averageRating.toFixed(1)}</strong>
         </span>
-        <span>{tutor.totalReviews} отзывов</span>
-        <span>{tutor.totalStudents} учеников</span>
+        <span>{tutor.totalReviews} {t.tutor.reviewsCount}</span>
+        <span>{tutor.totalStudents} {t.tutor.studentsCount}</span>
         {tutor.hourlyRate != null && (
           <span style={{ marginLeft: 'auto', fontWeight: 600, color: 'var(--primary-color)' }}>
-            {tutor.hourlyRate}₽/ч
+            {tutor.hourlyRate}{t.tutor.perHourShort}
           </span>
         )}
       </div>
@@ -118,7 +122,7 @@ export default function SchoolDetailPage() {
         fontSize: '0.75rem', fontWeight: 600,
         color: tutor.isAvailable ? '#10b981' : '#ef4444',
       }}>
-        {tutor.isAvailable ? '● Доступен' : '○ Не доступен'}
+        {tutor.isAvailable ? t.tutor.available : t.tutor.unavailable}
       </div>
     </div>
   );
@@ -126,7 +130,7 @@ export default function SchoolDetailPage() {
   if (loading) {
     return (
       <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
-        Загрузка...
+        {t.tutor.loading}
       </div>
     );
   }
@@ -134,9 +138,9 @@ export default function SchoolDetailPage() {
   if (!school) {
     return (
       <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
-        <h3>Школа не найдена</h3>
+        <h3>{t.tutor.schoolNotFound}</h3>
         <button onClick={() => navigate('/tutors')} className="btn btn-outline" style={{ marginTop: '1rem' }}>
-          ← К тьюторам
+          &larr; {t.tutor.backToTutors}
         </button>
       </div>
     );
@@ -146,7 +150,7 @@ export default function SchoolDetailPage() {
     <div className="animate-fade-in">
       {/* Back button */}
       <button onClick={() => navigate('/tutors')} className="btn btn-outline" style={{ marginBottom: '1.5rem' }}>
-        ← К тьюторам
+        &larr; {t.tutor.backToTutors}
       </button>
 
       {/* School header card */}
@@ -167,7 +171,7 @@ export default function SchoolDetailPage() {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700 }}>{school.name}</h1>
-              {school.isPartner && (
+              {!isWhiteLabel && school.isPartner && (
                 <span style={{
                   fontSize: '0.7rem',
                   fontWeight: 600,
@@ -175,11 +179,11 @@ export default function SchoolDetailPage() {
                   borderRadius: '999px',
                   backgroundColor: 'rgba(79, 70, 229, 0.1)',
                   color: 'var(--primary-color)',
-                }}>Партнёр UniStart</span>
+                }}>{t.tutor.partnerBadge}</span>
               )}
             </div>
             <p style={{ margin: '0.25rem 0 0', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-              {school.tutors.length} {school.tutors.length === 1 ? 'тьютор' : 'тьюторов'}
+              {school.tutors.length} {school.tutors.length === 1 ? t.tutor.tutorCount : t.tutor.tutorsCount}
             </p>
           </div>
         </div>
@@ -218,7 +222,7 @@ export default function SchoolDetailPage() {
           {school.websiteUrl && (
             <a href={school.websiteUrl} target="_blank" rel="noopener noreferrer"
               style={{ color: 'var(--primary-color)', textDecoration: 'none', fontWeight: 500 }}>
-              Сайт
+              {t.tutor.websiteLink}
             </a>
           )}
         </div>
@@ -226,12 +230,12 @@ export default function SchoolDetailPage() {
 
       {/* School's Tutors */}
       <h2 style={{ fontSize: '1.15rem', fontWeight: 600, marginBottom: '1rem' }}>
-        Тьюторы школы
+        {t.tutor.schoolTutors}
       </h2>
 
       {school.tutors.length === 0 ? (
         <div className="card" style={{ textAlign: 'center', padding: '2rem' }}>
-          <p style={{ color: 'var(--text-secondary)' }}>Тьюторы не найдены</p>
+          <p style={{ color: 'var(--text-secondary)' }}>{t.tutor.noSchoolTutors}</p>
         </div>
       ) : (
         <div style={{

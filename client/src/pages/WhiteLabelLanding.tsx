@@ -9,9 +9,12 @@ interface Props {
 
 function WhiteLabelLanding({ branding }: Props) {
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const brandName = branding.navbarTitle || branding.name;
   const primary = branding.primaryColor || '#6366f1';
+  const localizedDesc = locale === 'en' ? branding.descriptionEn
+    : locale === 'kz' ? branding.descriptionKz
+    : branding.description;
 
   const features = [
     { title: t.wl.featureAdaptive, desc: t.wl.featureAdaptiveDesc },
@@ -77,9 +80,9 @@ function WhiteLabelLanding({ branding }: Props) {
           <br />
           <span style={{ color: 'var(--text-primary)' }}>{t.wl.heroWith} {brandName}</span>
         </h1>
-        {branding.description && (
+        {localizedDesc && (
           <p style={{ fontSize: '1.1rem', lineHeight: 1.7, color: 'var(--text-secondary)', maxWidth: '600px', margin: '0 auto 2rem' }}>
-            {branding.description}
+            {localizedDesc}
           </p>
         )}
         <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>

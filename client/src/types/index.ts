@@ -1349,6 +1349,8 @@ export interface SchoolBranding {
   name: string;
   slug: string;
   description: string | null;
+  descriptionEn: string | null;
+  descriptionKz: string | null;
   logoUrl: string | null;
   primaryColor: string | null;
   primaryHoverColor: string | null;

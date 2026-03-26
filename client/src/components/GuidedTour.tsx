@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from '../hooks/useTranslation';
+import { useBranding } from '../contexts/BrandingContext';
 import type { Translations } from '../i18n/types';
 
 interface TourStep {
@@ -22,6 +23,7 @@ const STORAGE_KEY = 'unistart_tour_completed';
 
 export default function GuidedTour() {
   const { t } = useTranslation();
+  const { branding, isWhiteLabel } = useBranding();
   const [currentStep, setCurrentStep] = useState(0);
   const [visible, setVisible] = useState(false);
   const [tooltipPos, setTooltipPos] = useState({ top: 0, left: 0 });
@@ -184,7 +186,11 @@ export default function GuidedTour() {
         }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-          <h4 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#1e293b' }}>{t.tour[step.titleKey]}</h4>
+          <h4 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#1e293b' }}>
+            {step.titleKey === 'welcomeTitle' && isWhiteLabel && branding
+              ? t.tour.welcomeTitle.replace('UniStart', branding.navbarTitle || branding.name)
+              : t.tour[step.titleKey]}
+          </h4>
           <button
             onClick={handleClose}
             style={{

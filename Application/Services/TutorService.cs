@@ -398,8 +398,8 @@ public class TutorService : ITutorService
         return await _db.TutorSchools
             .Where(s => s.IsActive && (s.Subdomain == slug || s.Slug == slug))
             .Select(s => new SchoolBrandingDto(
-                s.Id, s.Name, s.Slug, s.Description, s.LogoUrl,
-                s.PrimaryColor, s.PrimaryHoverColor, s.AccentColor,
+                s.Id, s.Name, s.Slug, s.Description, s.DescriptionEn, s.DescriptionKz,
+                s.LogoUrl, s.PrimaryColor, s.PrimaryHoverColor, s.AccentColor,
                 s.NavbarTitle ?? s.Name,
                 s.Specializations.Split(',', System.StringSplitOptions.RemoveEmptyEntries)
             ))

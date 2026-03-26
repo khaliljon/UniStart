@@ -1107,6 +1107,18 @@ export interface Translations {
     addOption: string;
     markCorrect: string;
     mathTarget: string;
+    // School Detail Page
+    schoolNotFound: string;
+    backToTutors: string;
+    partnerBadge: string;
+    tutorCount: string;
+    tutorsCount: string;
+    schoolTutors: string;
+    noSchoolTutors: string;
+    websiteLink: string;
+    reviewsCount: string;
+    studentsCount: string;
+    loading: string;
   };
 
   // ─── Legal ───

@@ -1110,6 +1110,17 @@ export const en: Translations = {
     addOption: 'Add option',
     markCorrect: 'Correct answer',
     mathTarget: 'Insert into',
+    schoolNotFound: 'School not found',
+    backToTutors: 'Back to tutors',
+    partnerBadge: 'UniStart Partner',
+    tutorCount: 'tutor',
+    tutorsCount: 'tutors',
+    schoolTutors: 'School Tutors',
+    noSchoolTutors: 'No tutors found',
+    websiteLink: 'Website',
+    reviewsCount: 'reviews',
+    studentsCount: 'students',
+    loading: 'Loading...',
   },
 
   legal: {

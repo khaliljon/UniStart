@@ -4581,6 +4581,8 @@ General Tips:
             Name = "Школа LINHAO.CHINESE",
             Slug = "linhao-chinese",
             Description = "Первая онлайн-школа в СНГ по подготовке студентов в Китай к экзамену CSCA. Авторский курс «Мандарин» с 0 до 1 HSK за 8 уроков.",
+            DescriptionEn = "The first online school in the CIS for preparing students to study in China for the CSCA exam. The original Mandarin course from 0 to HSK 1 in 8 lessons.",
+            DescriptionKz = "ТМД-дағы алғашқы онлайн мектеп — Қытайға CSCA емтиханына дайындық. 8 сабақта 0-ден HSK 1 деңгейіне дейінгі авторлық «Мандарин» курсы.",
             LogoUrl = "/linhao-logo.png",
             WebsiteUrl = null,
             InstagramUrl = "https://www.instagram.com/linhao.chinese/",
