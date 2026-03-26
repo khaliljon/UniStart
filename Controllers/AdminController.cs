@@ -949,4 +949,37 @@ public class AdminController : ControllerBase
 
         return Ok(tutors);
     }
+
+    /// <summary>Delete a school and unbind all users/tutors from it</summary>
+    [HttpDelete("schools/{schoolId:int}")]
+    public async Task<IActionResult> DeleteSchool(int schoolId)
+    {
+        var school = await _db.TutorSchools.FindAsync(schoolId);
+        if (school == null) return NotFound(new { error = "School not found" });
+
+        // Unbind all users from this school
+        var users = await _db.Users.Where(u => u.SchoolId == schoolId).ToListAsync();
+        foreach (var u in users) u.SchoolId = null;
+
+        // Unbind all tutor profiles
+        var profiles = await _db.TutorProfiles.Where(p => p.SchoolId == schoolId).ToListAsync();
+        foreach (var p in profiles) p.SchoolId = null;
+
+        // Delete related applications
+        var apps = await _db.TutorSchoolApplications.Where(a => a.SchoolId == schoolId).ToListAsync();
+        _db.TutorSchoolApplications.RemoveRange(apps);
+
+        // Soft-delete the school
+        school.IsActive = false;
+        school.UpdatedAt = DateTime.UtcNow;
+
+        await _db.SaveChangesAsync();
+
+        var (adminId, email) = GetCurrentAdmin();
+        await _audit.LogAsync(adminId, email, "DeleteSchool", "TutorSchool", schoolId.ToString(),
+            oldValues: new { school.Name, school.Slug },
+            ipAddress: GetClientIp());
+
+        return Ok(new { deleted = true, schoolId, school.Name });
+    }
 }

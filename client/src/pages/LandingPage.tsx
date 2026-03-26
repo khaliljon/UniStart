@@ -441,6 +441,46 @@ function LandingPage() {
         </div>
       </section>
 
+      {/* ═══ Become a Tutor ═══ */}
+      <section style={{
+        padding: '3rem 2rem',
+        maxWidth: '800px',
+        margin: '0 auto',
+        textAlign: 'center',
+      }}>
+        <h2 style={{ fontSize: '1.8rem', fontWeight: 700, marginBottom: '0.75rem' }}>
+          {t.landing.becomeTutorTitle}
+        </h2>
+        <p style={{
+          color: 'var(--text-secondary)',
+          fontSize: '1rem',
+          lineHeight: 1.6,
+          marginBottom: '1.5rem',
+          maxWidth: '600px',
+          margin: '0 auto 1.5rem',
+        }}>
+          {t.landing.becomeTutorDesc}
+        </p>
+        <button
+          onClick={() => navigate('/register?role=Tutor')}
+          style={{
+            padding: '0.85rem 2rem',
+            borderRadius: '0.75rem',
+            border: '2px solid #8b5cf6',
+            background: 'transparent',
+            color: '#8b5cf6',
+            fontWeight: 600,
+            fontSize: '0.95rem',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = '#8b5cf6'; e.currentTarget.style.color = '#fff'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#8b5cf6'; }}
+        >
+          {t.landing.becomeTutorBtn}
+        </button>
+      </section>
+
       {/* ═══ CTA ═══ */}
       <section style={{
         padding: '4rem 2rem',

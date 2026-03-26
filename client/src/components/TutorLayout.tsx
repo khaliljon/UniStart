@@ -9,6 +9,8 @@ import { messageService } from '../services/messageService';
 import { chatService } from '../services/chatService';
 import { useBranding } from '../contexts/BrandingContext';
 import { useTranslation } from '../i18n';
+import api from '../services/api';
+import type { TutorSchoolCard } from '../types';
 
 function TutorLayout() {
   const dispatch = useAppDispatch();
@@ -23,7 +25,12 @@ function TutorLayout() {
   const menuRef = useRef<HTMLDivElement>(null);
   const { isWhiteLabel, branding } = useBranding();
   const { t } = useTranslation();
-  const [wlBlocked, setWlBlocked] = useState(false);
+  const [tutorBlocked, setTutorBlocked] = useState(false);
+  const [gateSchools, setGateSchools] = useState<TutorSchoolCard[]>([]);
+  const [gateApps, setGateApps] = useState<{ id: number; schoolId: number; schoolName: string; status: string }[]>([]);
+  const [applyMsg, setApplyMsg] = useState('');
+  const [applyingTo, setApplyingTo] = useState<number | null>(null);
+  const [applyError, setApplyError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadCounts = async () => {
@@ -44,11 +51,16 @@ function TutorLayout() {
     // Check school ownership
     tutorService.getMySchool().then(s => setHasSchool(s !== null)).catch(() => {});
 
-    // WL access guard: check if tutor is verified for this school
-    if (isWhiteLabel && user && user.role === 'Tutor') {
+    // Tutor verification gate: block unverified tutors everywhere
+    if (user && user.role === 'Tutor') {
       tutorService.getTutorProfile(user.id).then(profile => {
-        if (!profile.isVerified) setWlBlocked(true);
-      }).catch(() => setWlBlocked(true));
+        if (!profile.isVerified) {
+          setTutorBlocked(true);
+          // Load schools list and my applications for the gate UI
+          tutorService.getSchools().then(s => setGateSchools(s)).catch(() => {});
+          api.get('/tutor-school-applications/my').then(r => setGateApps(r.data)).catch(() => {});
+        }
+      }).catch(() => setTutorBlocked(true));
     }
 
     // Live unread via SignalR
@@ -99,20 +111,100 @@ function TutorLayout() {
     ? user.name.split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2)
     : '?';
 
-  // WL: block unverified tutors
-  if (wlBlocked) {
+  // Tutor verification gate
+  if (tutorBlocked) {
+    const hasPending = gateApps.some(a => a.status === 'Pending');
+    const appliedSchoolIds = new Set(gateApps.map(a => a.schoolId));
+
+    const handleApply = async (schoolId: number) => {
+      setApplyError(null);
+      try {
+        await api.post('/tutor-school-applications', { schoolId, message: applyMsg || undefined });
+        setApplyingTo(null);
+        setApplyMsg('');
+        const r = await api.get('/tutor-school-applications/my');
+        setGateApps(r.data);
+      } catch (e: any) {
+        setApplyError(e.response?.data?.error || 'Error');
+      }
+    };
+
     return (
-      <div className="layout" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
-        <div className="card" style={{ padding: '2.5rem', textAlign: 'center', maxWidth: '480px' }}>
-          <h2 style={{ marginBottom: '1rem' }}>
-            {branding?.navbarTitle || branding?.name || 'School'}
+      <div className="layout" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', padding: '1rem' }}>
+        <div className="card" style={{ padding: '2.5rem', maxWidth: '600px', width: '100%' }}>
+          <h2 style={{ marginBottom: '0.5rem', textAlign: 'center' }}>
+            {isWhiteLabel ? (branding?.navbarTitle || branding?.name || 'School') : 'UniStart'}
           </h2>
-          <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', lineHeight: 1.5 }}>
-            {t.wl.pendingVerification}
+          <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', lineHeight: 1.5, textAlign: 'center' }}>
+            {hasPending ? t.tutorGate.pendingDesc : t.tutorGate.description}
           </p>
-          <button className="btn btn-primary" onClick={handleLogout}>
-            {t.wl.logoutBtn}
-          </button>
+
+          {/* My applications */}
+          {gateApps.length > 0 && (
+            <div style={{ marginBottom: '1.5rem' }}>
+              <h4 style={{ marginBottom: '0.5rem' }}>{t.tutorGate.myApps}</h4>
+              {gateApps.map(a => (
+                <div key={a.id} style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  padding: '0.5rem 0.75rem', borderRadius: '8px', background: 'var(--bg-secondary)', marginBottom: '0.4rem',
+                }}>
+                  <span style={{ fontWeight: 500 }}>{a.schoolName}</span>
+                  <span style={{
+                    fontSize: '0.75rem', fontWeight: 600, padding: '0.15rem 0.5rem', borderRadius: '999px',
+                    background: a.status === 'Pending' ? '#f59e0b22' : a.status === 'Approved' ? '#10b98122' : '#ef444422',
+                    color: a.status === 'Pending' ? '#f59e0b' : a.status === 'Approved' ? '#10b981' : '#ef4444',
+                  }}>
+                    {a.status === 'Pending' ? t.tutorGate.statusPending : a.status === 'Approved' ? t.tutorGate.statusApproved : t.tutorGate.statusRejected}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Available schools to apply */}
+          {gateSchools.filter(s => !appliedSchoolIds.has(s.id)).length > 0 && (
+            <div style={{ marginBottom: '1.5rem' }}>
+              <h4 style={{ marginBottom: '0.5rem' }}>{t.tutorGate.availableSchools}</h4>
+              {gateSchools.filter(s => !appliedSchoolIds.has(s.id)).map(s => (
+                <div key={s.id} style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  padding: '0.5rem 0.75rem', borderRadius: '8px', background: 'var(--bg-secondary)', marginBottom: '0.4rem',
+                }}>
+                  <div>
+                    <span style={{ fontWeight: 500 }}>{s.name}</span>
+                    {s.description && <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>{s.description.slice(0, 80)}{s.description.length > 80 ? '...' : ''}</div>}
+                  </div>
+                  {applyingTo === s.id ? (
+                    <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center' }}>
+                      <input
+                        value={applyMsg}
+                        onChange={e => setApplyMsg(e.target.value)}
+                        placeholder={t.tutorGate.messagePlaceholder}
+                        style={{ fontSize: '0.8rem', padding: '0.3rem 0.5rem', borderRadius: '6px', border: '1px solid var(--border)', width: '140px' }}
+                      />
+                      <button className="btn btn-primary" style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem' }} onClick={() => handleApply(s.id)}>
+                        {t.tutorGate.send}
+                      </button>
+                      <button className="btn" style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem' }} onClick={() => { setApplyingTo(null); setApplyMsg(''); }}>
+                        &times;
+                      </button>
+                    </div>
+                  ) : (
+                    <button className="btn btn-primary" style={{ fontSize: '0.75rem', padding: '0.3rem 0.8rem' }} onClick={() => setApplyingTo(s.id)}>
+                      {t.tutorGate.applyBtn}
+                    </button>
+                  )}
+                </div>
+              ))}
+              {applyError && <p style={{ color: '#ef4444', fontSize: '0.8rem', marginTop: '0.5rem' }}>{applyError}</p>}
+            </div>
+          )}
+
+          <div style={{ textAlign: 'center' }}>
+            <button className="btn btn-primary" onClick={handleLogout}>
+              {t.tutorGate.logoutBtn}
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -169,14 +261,14 @@ function TutorLayout() {
                 Расписание
               </NavLink>
             </li>
-            {!isWhiteLabel && (
+            {!isWhiteLabel && user?.role === 'SchoolAdmin' && (
               <li>
                 <NavLink to="/school">
                   Школа
                 </NavLink>
               </li>
             )}
-            {!isWhiteLabel && hasSchool && (
+            {!isWhiteLabel && user?.role === 'SchoolAdmin' && hasSchool && (
               <li>
                 <NavLink to="/school-admin">
                   Панель школы

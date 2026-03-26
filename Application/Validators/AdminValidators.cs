@@ -144,7 +144,7 @@ public class BulkImportDtoValidator : AbstractValidator<BulkImportDto>
 
 public class AdminUpdateUserDtoValidator : AbstractValidator<AdminUpdateUserDto>
 {
-    private static readonly string[] ValidRoles = { "Student", "Tutor", "Admin" };
+    private static readonly string[] ValidRoles = { "Student", "Tutor", "Admin", "SchoolAdmin" };
     private static readonly string[] ValidTiers = { "Free", "Pro" };
 
     public AdminUpdateUserDtoValidator()
@@ -161,7 +161,7 @@ public class AdminUpdateUserDtoValidator : AbstractValidator<AdminUpdateUserDto>
 
         RuleFor(x => x.Role)
             .Must(r => ValidRoles.Contains(r!))
-            .WithMessage("Role must be one of: Student, Tutor, Admin.")
+            .WithMessage("Role must be one of: Student, Tutor, Admin, SchoolAdmin.")
             .When(x => x.Role is not null);
 
         RuleFor(x => x.SubscriptionTier)

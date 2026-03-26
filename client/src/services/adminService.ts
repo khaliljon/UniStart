@@ -290,6 +290,9 @@ const adminService = {
   unverifyTutor: (tutorProfileId: number) =>
     api.post<{ verified: boolean; tutorProfileId: number }>(`/admin/tutors/${tutorProfileId}/unverify`).then(r => r.data),
 
+  deleteSchool: (schoolId: number) =>
+    api.delete(`/admin/schools/${schoolId}`).then(r => r.data),
+
   // ─── Content Management ──────────────────────────────
 
   // Lessons

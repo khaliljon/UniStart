@@ -891,6 +891,9 @@ export interface Translations {
     partnerLinHaoDesc: string;
     partnerVisit: string;
     partnerCta: string;
+    becomeTutorTitle: string;
+    becomeTutorDesc: string;
+    becomeTutorBtn: string;
     testimonialsTitle: string;
     ctaTitle: string;
     ctaDesc: string;
@@ -1271,5 +1274,20 @@ export interface Translations {
     pendingVerification: string;
     logoutBtn: string;
     poweredBy: string;
+  };
+
+  // ─── Tutor Verification Gate ───
+  tutorGate: {
+    description: string;
+    pendingDesc: string;
+    myApps: string;
+    availableSchools: string;
+    applyBtn: string;
+    send: string;
+    messagePlaceholder: string;
+    statusPending: string;
+    statusApproved: string;
+    statusRejected: string;
+    logoutBtn: string;
   };
 }

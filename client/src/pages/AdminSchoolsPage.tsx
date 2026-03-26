@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../i18n';
 import { tutorService } from '../services/tutorService';
+import adminService from '../services/adminService';
 import api from '../services/api';
 import type { TutorSchoolCard } from '../types';
 
@@ -53,6 +54,18 @@ function AdminSchoolsPage() {
       setDetailLoading(false);
     }
   }, []);
+
+  const handleDeleteSchool = useCallback(async (school: TutorSchoolCard) => {
+    if (!confirm(`${t.admin.common.deleteConfirm}: ${school.name}?`)) return;
+    try {
+      await adminService.deleteSchool(school.id);
+      setSchools(prev => prev.filter(s => s.id !== school.id));
+      setSelected(null);
+      setDetail(null);
+    } catch {
+      alert(t.admin.common.deleteError);
+    }
+  }, [t]);
 
   if (loading) {
     return <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>{t.admin.common.loading}</div>;
@@ -133,9 +146,18 @@ function AdminSchoolsPage() {
           <div className="card" style={{ padding: '1.5rem', alignSelf: 'start' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
               <h2 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 700 }}>{selected.name}</h2>
-              <button onClick={() => setSelected(null)} style={{
-                background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--text-secondary)',
-              }}>&times;</button>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                <button
+                  onClick={() => handleDeleteSchool(selected)}
+                  className="btn btn-outline"
+                  style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem', color: '#dc2626', borderColor: '#dc2626' }}
+                >
+                  {t.admin.common.delete}
+                </button>
+                <button onClick={() => setSelected(null)} style={{
+                  background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--text-secondary)',
+                }}>&times;</button>
+              </div>
             </div>
 
             <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
