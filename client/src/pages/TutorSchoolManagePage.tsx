@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { tutorService } from '../services/tutorService';
-import type { SchoolAdmin, CreateSchoolRequest, UpdateSchoolRequest } from '../types';
+import type { SchoolAdmin, UpdateSchoolRequest } from '../types';
 
 const EXAM_OPTIONS = ['SAT', 'TOEFL', 'IELTS', 'NUET', 'CSCA'];
 
 function TutorSchoolManagePage() {
+  const navigate = useNavigate();
   const [school, setSchool] = useState<SchoolAdmin | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -14,6 +16,8 @@ function TutorSchoolManagePage() {
   // Form fields
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [descriptionEn, setDescriptionEn] = useState('');
+  const [descriptionKz, setDescriptionKz] = useState('');
   const [logoUrl, setLogoUrl] = useState('');
   const [websiteUrl, setWebsiteUrl] = useState('');
   const [instagramUrl, setInstagramUrl] = useState('');
@@ -34,6 +38,8 @@ function TutorSchoolManagePage() {
   const populateForm = (s: SchoolAdmin) => {
     setName(s.name);
     setDescription(s.description || '');
+    setDescriptionEn(s.descriptionEn || '');
+    setDescriptionKz(s.descriptionKz || '');
     setLogoUrl(s.logoUrl || '');
     setWebsiteUrl(s.websiteUrl || '');
     setInstagramUrl(s.instagramUrl || '');
@@ -57,37 +63,6 @@ function TutorSchoolManagePage() {
     loadSchool();
   }, [loadSchool]);
 
-  const handleCreate = async () => {
-    if (!name.trim()) {
-      setError('Введите название школы');
-      return;
-    }
-    setSaving(true);
-    setError('');
-    try {
-      const data: CreateSchoolRequest = {
-        name: name.trim(),
-        description: description.trim() || undefined,
-        logoUrl: logoUrl.trim() || undefined,
-        websiteUrl: websiteUrl.trim() || undefined,
-        instagramUrl: instagramUrl.trim() || undefined,
-        telegramUrl: telegramUrl.trim() || undefined,
-        specializations: specializations.length > 0 ? specializations.join(',') : undefined,
-      };
-      const created = await tutorService.createSchool(data);
-      setSchool(created);
-      populateForm(created);
-      setSaved(true);
-      clearTimeout(savedTimerRef.current);
-      savedTimerRef.current = setTimeout(() => setSaved(false), 3000);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Не удалось создать школу';
-      setError(msg);
-    } finally {
-      setSaving(false);
-    }
-  };
-
   const handleUpdate = async () => {
     if (!name.trim()) {
       setError('Введите название школы');
@@ -99,6 +74,8 @@ function TutorSchoolManagePage() {
       const data: UpdateSchoolRequest = {
         name: name.trim(),
         description: description.trim() || undefined,
+        descriptionEn: descriptionEn.trim() || undefined,
+        descriptionKz: descriptionKz.trim() || undefined,
         logoUrl: logoUrl.trim() || undefined,
         websiteUrl: websiteUrl.trim() || undefined,
         instagramUrl: instagramUrl.trim() || undefined,
@@ -174,31 +151,17 @@ function TutorSchoolManagePage() {
     return <div className="animate-fade-in" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>Загрузка...</div>;
   }
 
-  // ─── No school yet — creation form ───
+  // ─── No school yet — browse schools ───
   if (!school) {
     return (
-      <div className="animate-fade-in">
-        <h1 style={{ marginBottom: '1.5rem' }}>Создать школу</h1>
-
-        {error && (
-          <div style={{ background: '#fef2f2', color: '#dc2626', padding: '0.75rem 1rem', borderRadius: '0.5rem', marginBottom: '1rem', fontSize: '0.85rem' }}>
-            {error}
-          </div>
-        )}
-
-        <div className="card" style={{ maxWidth: '600px' }}>
-          <SchoolForm
-            name={name} setName={setName}
-            description={description} setDescription={setDescription}
-            logoUrl={logoUrl} setLogoUrl={setLogoUrl}
-            websiteUrl={websiteUrl} setWebsiteUrl={setWebsiteUrl}
-            instagramUrl={instagramUrl} setInstagramUrl={setInstagramUrl}
-            telegramUrl={telegramUrl} setTelegramUrl={setTelegramUrl}
-            specializations={specializations} toggleSpec={toggleSpec}
-            onSaved={() => setSaved(false)}
-          />
-          <button className="btn btn-primary" onClick={handleCreate} disabled={saving} style={{ marginTop: '1rem', width: '100%' }}>
-            {saving ? 'Создание...' : 'Создать школу'}
+      <div className="animate-fade-in" style={{ textAlign: 'center', padding: '3rem' }}>
+        <div className="card" style={{ maxWidth: '500px', margin: '0 auto', padding: '2.5rem' }}>
+          <h2 style={{ marginBottom: '0.75rem' }}>Школа</h2>
+          <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', lineHeight: 1.5 }}>
+            У вас пока нет школы. Вы можете найти школу и подать заявку на вступление.
+          </p>
+          <button className="btn btn-primary" onClick={() => navigate('/tutors')}>
+            Найти школу
           </button>
         </div>
       </div>
@@ -232,6 +195,8 @@ function TutorSchoolManagePage() {
             <SchoolForm
               name={name} setName={setName}
               description={description} setDescription={setDescription}
+              descriptionEn={descriptionEn} setDescriptionEn={setDescriptionEn}
+              descriptionKz={descriptionKz} setDescriptionKz={setDescriptionKz}
               logoUrl={logoUrl} setLogoUrl={setLogoUrl}
               websiteUrl={websiteUrl} setWebsiteUrl={setWebsiteUrl}
               instagramUrl={instagramUrl} setInstagramUrl={setInstagramUrl}
@@ -329,6 +294,8 @@ function TutorSchoolManagePage() {
 interface SchoolFormProps {
   name: string; setName: (v: string) => void;
   description: string; setDescription: (v: string) => void;
+  descriptionEn: string; setDescriptionEn: (v: string) => void;
+  descriptionKz: string; setDescriptionKz: (v: string) => void;
   logoUrl: string; setLogoUrl: (v: string) => void;
   websiteUrl: string; setWebsiteUrl: (v: string) => void;
   instagramUrl: string; setInstagramUrl: (v: string) => void;
@@ -337,7 +304,7 @@ interface SchoolFormProps {
   onSaved: () => void;
 }
 
-function SchoolForm({ name, setName, description, setDescription, logoUrl, setLogoUrl, websiteUrl, setWebsiteUrl, instagramUrl, setInstagramUrl, telegramUrl, setTelegramUrl, specializations, toggleSpec, onSaved }: SchoolFormProps) {
+function SchoolForm({ name, setName, description, setDescription, descriptionEn, setDescriptionEn, descriptionKz, setDescriptionKz, logoUrl, setLogoUrl, websiteUrl, setWebsiteUrl, instagramUrl, setInstagramUrl, telegramUrl, setTelegramUrl, specializations, toggleSpec, onSaved }: SchoolFormProps) {
   return (
     <>
       <div className="form-group" style={{ marginBottom: '0.75rem' }}>
@@ -349,6 +316,16 @@ function SchoolForm({ name, setName, description, setDescription, logoUrl, setLo
         <label className="form-label">Описание</label>
         <textarea className="form-input" rows={3} value={description} onChange={e => { setDescription(e.target.value); onSaved(); }} placeholder="Краткое описание школы..." maxLength={2000} />
         <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', textAlign: 'right' }}>{description.length}/2000</div>
+      </div>
+
+      <div className="form-group" style={{ marginBottom: '0.75rem' }}>
+        <label className="form-label">Description (English)</label>
+        <textarea className="form-input" rows={2} value={descriptionEn} onChange={e => { setDescriptionEn(e.target.value); onSaved(); }} placeholder="School description in English..." maxLength={2000} />
+      </div>
+
+      <div className="form-group" style={{ marginBottom: '0.75rem' }}>
+        <label className="form-label">Сипаттама (Қазақша)</label>
+        <textarea className="form-input" rows={2} value={descriptionKz} onChange={e => { setDescriptionKz(e.target.value); onSaved(); }} placeholder="Мектептің қысқаша сипаттамасы..." maxLength={2000} />
       </div>
 
       <div className="form-group" style={{ marginBottom: '0.75rem' }}>

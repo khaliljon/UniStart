@@ -512,6 +512,8 @@ public class TutorService : ITutorService
 
         if (dto.Name != null) school.Name = InputSanitizer.Sanitize(dto.Name)!;
         if (dto.Description != null) school.Description = InputSanitizer.Sanitize(dto.Description) ?? string.Empty;
+        if (dto.DescriptionEn != null) school.DescriptionEn = InputSanitizer.Sanitize(dto.DescriptionEn);
+        if (dto.DescriptionKz != null) school.DescriptionKz = InputSanitizer.Sanitize(dto.DescriptionKz);
         if (dto.LogoUrl != null) school.LogoUrl = dto.LogoUrl;
         if (dto.WebsiteUrl != null) school.WebsiteUrl = dto.WebsiteUrl;
         if (dto.InstagramUrl != null) school.InstagramUrl = dto.InstagramUrl;
@@ -568,7 +570,8 @@ public class TutorService : ITutorService
     private static SchoolAdminDto MapToSchoolAdminDto(TutorSchool school, int tutorCount)
     {
         return new SchoolAdminDto(
-            school.Id, school.Name, school.Slug, school.Description, school.LogoUrl,
+            school.Id, school.Name, school.Slug, school.Description,
+            school.DescriptionEn, school.DescriptionKz, school.LogoUrl,
             school.InstagramUrl, school.TelegramUrl, school.WebsiteUrl,
             school.Specializations.Length > 0
                 ? school.Specializations.Split(',', StringSplitOptions.RemoveEmptyEntries)

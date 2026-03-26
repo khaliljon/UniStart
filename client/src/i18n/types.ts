@@ -1265,6 +1265,11 @@ export interface Translations {
     featureTutorsDesc: string;
     ctaTitle: string;
     ctaButton: string;
+    becomeTutorTitle: string;
+    becomeTutorDesc: string;
+    becomeTutorBtn: string;
+    pendingVerification: string;
+    logoutBtn: string;
     poweredBy: string;
   };
 }

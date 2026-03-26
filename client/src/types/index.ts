@@ -1314,6 +1314,8 @@ export interface SchoolAdmin {
   name: string;
   slug: string;
   description: string;
+  descriptionEn: string | null;
+  descriptionKz: string | null;
   logoUrl: string | null;
   instagramUrl: string | null;
   telegramUrl: string | null;
@@ -1339,6 +1341,8 @@ export interface CreateSchoolRequest {
 export interface UpdateSchoolRequest {
   name?: string;
   description?: string;
+  descriptionEn?: string;
+  descriptionKz?: string;
   logoUrl?: string;
   websiteUrl?: string;
   instagramUrl?: string;

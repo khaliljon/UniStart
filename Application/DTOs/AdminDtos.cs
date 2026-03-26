@@ -110,12 +110,13 @@ public record AdminUserDto(
 );
 
 public record AdminUpdateUserDto(
-    string? Name,
-    string? Email,
-    string? Role,  // "Student", "Tutor", "Admin", "SchoolAdmin"
-    string? SubscriptionTier,  // "Free", "Pro"
-    DateTime? SubscriptionExpiresAt,
-    int? SchoolId  // bind user to a specific school
+    string? Name = null,
+    string? Email = null,
+    string? Role = null,  // "Student", "Tutor", "Admin", "SchoolAdmin"
+    string? SubscriptionTier = null,  // "Free", "Pro"
+    DateTime? SubscriptionExpiresAt = null,
+    int? SchoolId = null,  // bind user to a specific school
+    bool ClearSchool = false  // explicitly unbind from school
 );
 
 public record BlockUserDto(

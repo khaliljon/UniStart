@@ -1265,6 +1265,11 @@ export const en: Translations = {
     featureTutorsDesc: 'Connect with verified tutors for personalized guidance',
     ctaTitle: 'Ready to start preparing?',
     ctaButton: 'Register Now →',
+    becomeTutorTitle: 'Want to become a tutor?',
+    becomeTutorDesc: 'Join our teaching team. Register as a tutor and the school administration will review your application.',
+    becomeTutorBtn: 'Become a tutor',
+    pendingVerification: 'Your application to join this school is pending review. The school administrator will review your application shortly.',
+    logoutBtn: 'Log out',
     poweredBy: 'Powered by',
   },
 };

@@ -120,6 +120,35 @@ function WhiteLabelLanding({ branding }: Props) {
         </div>
       </section>
 
+      {/* Become a tutor */}
+      <section style={{
+        padding: '3rem 2rem', maxWidth: '700px', margin: '0 auto', textAlign: 'center',
+      }}>
+        <div className="card" style={{
+          padding: '2.5rem', borderTop: `3px solid ${primary}`,
+          background: 'var(--card-bg)',
+        }}>
+          <h2 style={{ fontWeight: 700, fontSize: '1.35rem', marginBottom: '0.75rem' }}>
+            {t.wl.becomeTutorTitle}
+          </h2>
+          <p style={{
+            color: 'var(--text-secondary)', fontSize: '0.95rem', lineHeight: 1.6,
+            marginBottom: '1.5rem', maxWidth: '500px', margin: '0 auto 1.5rem',
+          }}>
+            {t.wl.becomeTutorDesc}
+          </p>
+          <button onClick={() => navigate('/register?role=Tutor')}
+            style={{
+              padding: '0.75rem 2rem', background: 'transparent',
+              color: primary, border: `2px solid ${primary}`,
+              borderRadius: '0.75rem', fontSize: '0.95rem',
+              fontWeight: 600, cursor: 'pointer',
+            }}>
+            {t.wl.becomeTutorBtn}
+          </button>
+        </div>
+      </section>
+
       {/* CTA */}
       <section style={{ textAlign: 'center', padding: '3rem 2rem 5rem' }}>
         <h2 style={{ fontWeight: 700, fontSize: '1.5rem', marginBottom: '1rem' }}>

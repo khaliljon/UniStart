@@ -76,6 +76,7 @@ const adminService = {
     subscriptionTier?: string;
     subscriptionExpiresAt?: string;
     schoolId?: number;
+    clearSchool?: boolean;
   }) => api.put<AdminUser>(`/admin/users/${id}`, data).then(r => r.data),
 
   deleteUser: (id: number) =>

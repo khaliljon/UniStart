@@ -8,6 +8,7 @@ import { tutorService } from '../services/tutorService';
 import { messageService } from '../services/messageService';
 import { chatService } from '../services/chatService';
 import { useBranding } from '../contexts/BrandingContext';
+import { useTranslation } from '../i18n';
 
 function TutorLayout() {
   const dispatch = useAppDispatch();
@@ -21,6 +22,7 @@ function TutorLayout() {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const { isWhiteLabel, branding } = useBranding();
+  const { t } = useTranslation();
   const [wlBlocked, setWlBlocked] = useState(false);
 
   useEffect(() => {
@@ -43,7 +45,7 @@ function TutorLayout() {
     tutorService.getMySchool().then(s => setHasSchool(s !== null)).catch(() => {});
 
     // WL access guard: check if tutor is verified for this school
-    if (isWhiteLabel && user) {
+    if (isWhiteLabel && user && user.role === 'Tutor') {
       tutorService.getTutorProfile(user.id).then(profile => {
         if (!profile.isVerified) setWlBlocked(true);
       }).catch(() => setWlBlocked(true));
@@ -106,10 +108,10 @@ function TutorLayout() {
             {branding?.navbarTitle || branding?.name || 'School'}
           </h2>
           <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', lineHeight: 1.5 }}>
-            Your tutor application for this school is pending verification. The school administrator will review your application shortly.
+            {t.wl.pendingVerification}
           </p>
           <button className="btn btn-primary" onClick={handleLogout}>
-            Log out
+            {t.wl.logoutBtn}
           </button>
         </div>
       </div>

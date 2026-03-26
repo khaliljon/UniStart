@@ -144,13 +144,20 @@ function AdminUsersPage() {
     if (!selected) return;
     try {
       setError(null);
-      const updated = await adminService.updateUser(selected.id, {
-        name: editData.name !== selected.name ? editData.name : undefined,
-        email: editData.email !== selected.email ? editData.email : undefined,
-        role: editData.role !== selected.role ? editData.role : undefined,
-        subscriptionTier: editData.subscriptionTier !== selected.subscriptionTier ? editData.subscriptionTier : undefined,
-        schoolId: editData.schoolId ?? undefined,
-      });
+      const payload: Parameters<typeof adminService.updateUser>[1] = {};
+      if (editData.name !== selected.name) payload.name = editData.name;
+      if (editData.email !== selected.email) payload.email = editData.email;
+      if (editData.role !== selected.role) payload.role = editData.role;
+      if (editData.subscriptionTier !== selected.subscriptionTier) payload.subscriptionTier = editData.subscriptionTier;
+      // School assignment: always send when role is Tutor/SchoolAdmin
+      if (editData.role === 'Tutor' || editData.role === 'SchoolAdmin') {
+        if (editData.schoolId) {
+          payload.schoolId = editData.schoolId;
+        } else if (selected.schoolId) {
+          payload.clearSchool = true;
+        }
+      }
+      const updated = await adminService.updateUser(selected.id, payload);
       setSelected(updated);
       setEditMode(false);
       setSuccess(t.admin.users.userUpdated);

@@ -221,13 +221,15 @@ public record CreateSchoolDto(
 );
 
 public record UpdateSchoolDto(
-    string? Name,
-    string? Description,
-    string? LogoUrl,
-    string? WebsiteUrl,
-    string? InstagramUrl,
-    string? TelegramUrl,
-    string? Specializations
+    string? Name = null,
+    string? Description = null,
+    string? DescriptionEn = null,
+    string? DescriptionKz = null,
+    string? LogoUrl = null,
+    string? WebsiteUrl = null,
+    string? InstagramUrl = null,
+    string? TelegramUrl = null,
+    string? Specializations = null
 );
 
 public record SchoolAdminDto(
@@ -235,6 +237,8 @@ public record SchoolAdminDto(
     string Name,
     string Slug,
     string Description,
+    string? DescriptionEn,
+    string? DescriptionKz,
     string? LogoUrl,
     string? InstagramUrl,
     string? TelegramUrl,

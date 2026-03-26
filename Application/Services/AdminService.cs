@@ -517,7 +517,14 @@ public class AdminService : IAdminService
         }
 
         // Update SchoolId binding (for SchoolAdmin / Tutor → school assignment)
-        if (dto.SchoolId.HasValue)
+        if (dto.ClearSchool)
+        {
+            user.SchoolId = null;
+            var profile = await _db.TutorProfiles.FirstOrDefaultAsync(tp => tp.UserId == id);
+            if (profile != null)
+                profile.SchoolId = null;
+        }
+        else if (dto.SchoolId.HasValue)
         {
             var schoolExists = await _db.TutorSchools.AnyAsync(s => s.Id == dto.SchoolId.Value && s.IsActive);
             if (schoolExists)
