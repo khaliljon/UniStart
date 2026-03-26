@@ -20,7 +20,6 @@ function TutorLayout() {
 
   const [pendingCount, setPendingCount] = useState(0);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [hasSchool, setHasSchool] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const { isWhiteLabel, branding } = useBranding();
@@ -47,9 +46,6 @@ function TutorLayout() {
     };
     loadCounts();
     const interval = setInterval(loadCounts, 30000);
-
-    // Check school ownership
-    tutorService.getMySchool().then(s => setHasSchool(s !== null)).catch(() => {});
 
     // Tutor verification gate: only block WL-bound unverified tutors
     if (user && user.role === 'Tutor' && isWhiteLabel) {
@@ -261,20 +257,6 @@ function TutorLayout() {
                 Расписание
               </NavLink>
             </li>
-            {!isWhiteLabel && user?.role === 'SchoolAdmin' && (
-              <li>
-                <NavLink to="/school">
-                  Школа
-                </NavLink>
-              </li>
-            )}
-            {!isWhiteLabel && user?.role === 'SchoolAdmin' && hasSchool && (
-              <li>
-                <NavLink to="/school-admin">
-                  Панель школы
-                </NavLink>
-              </li>
-            )}
             <li>
               <NavLink to="/content">
                 Контент

@@ -190,7 +190,7 @@ function SchoolAdminDashboardPage() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
                 <div>
                   <strong>{t.name}</strong>
-                  {t.isVerified && <span style={{ color: 'var(--success-color)', marginLeft: '0.5rem' }}>✓</span>}
+                  {t.isVerified && <span style={{ color: 'var(--success-color)', marginLeft: '0.5rem' }}>&#10003;</span>}
                 </div>
                 <span style={{ fontSize: '0.8rem', color: t.isAvailable ? 'var(--success-color)' : 'var(--text-secondary)' }}>
                   {t.isAvailable ? 'Available' : 'Unavailable'}
@@ -199,9 +199,28 @@ function SchoolAdminDashboardPage() {
               <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: '0.5rem 0' }}>{t.headline}</div>
               <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{t.email}</div>
               <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.75rem', fontSize: '0.8rem' }}>
-                <span>★ {t.averageRating.toFixed(1)}</span>
+                <span>&#9733; {t.averageRating.toFixed(1)}</span>
                 <span>{t.totalStudents} students</span>
                 <span>{t.specializations.join(', ')}</span>
+              </div>
+              <div style={{ marginTop: '0.75rem' }}>
+                {t.isVerified ? (
+                  <button className="btn btn-outline" style={{ fontSize: '0.75rem', padding: '0.25rem 0.7rem', color: 'var(--error-color)', borderColor: 'var(--error-color)' }}
+                    onClick={async () => {
+                      try {
+                        await api.post(`/tutor-school-applications/unverify/${t.userId}`);
+                        loadTutors();
+                      } catch { /* */ }
+                    }}>Unverify</button>
+                ) : (
+                  <button className="btn btn-primary" style={{ fontSize: '0.75rem', padding: '0.25rem 0.7rem' }}
+                    onClick={async () => {
+                      try {
+                        await api.post(`/tutor-school-applications/verify/${t.userId}`);
+                        loadTutors();
+                      } catch { /* */ }
+                    }}>Verify</button>
+                )}
               </div>
             </div>
           ))}

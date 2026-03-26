@@ -4,6 +4,7 @@ import { useAppSelector } from './hooks/useAppSelector'
 import Layout from './components/Layout'
 import AdminLayout from './components/AdminLayout'
 import TutorLayout from './components/TutorLayout'
+import SchoolAdminLayout from './components/SchoolAdminLayout'
 import CookieBanner from './components/CookieBanner'
 import { ToastProvider } from './components/Toast'
 
@@ -121,7 +122,6 @@ function TutorRoutes() {
       <Route path="messages" element={<MessagesPage />} />
       <Route path="schedule" element={<TutorSchedulePage />} />
       <Route path="school" element={<TutorSchoolManagePage />} />
-      <Route path="school-admin" element={<SchoolAdminDashboardPage />} />
       <Route path="content" element={<TutorContentPage />} />
       <Route path="reviews" element={<TutorReviewsPage />} />
       <Route path="my-profile" element={<TutorProfileEditPage />} />
@@ -132,11 +132,25 @@ function TutorRoutes() {
   )
 }
 
+function SchoolAdminRoutes() {
+  return (
+    <Route path="/" element={<SchoolAdminLayout />}>
+      <Route index element={<SchoolAdminDashboardPage />} />
+      <Route path="applications" element={<SchoolAdminDashboardPage />} />
+      <Route path="school" element={<TutorSchoolManagePage />} />
+      <Route path="messages" element={<MessagesPage />} />
+      <Route path="profile" element={<ProfilePage />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Route>
+  )
+}
+
 function App() {
   const { isAuthenticated, user } = useAppSelector((state) => state.auth)
   const isAdmin = user?.role === 'Admin'
-  const isTutor = user?.role === 'Tutor' || user?.role === 'SchoolAdmin'
-  const needsOnboarding = isAuthenticated && !isAdmin && !isTutor && !user?.hasCompletedOnboarding
+  const isTutor = user?.role === 'Tutor'
+  const isSchoolAdmin = user?.role === 'SchoolAdmin'
+  const needsOnboarding = isAuthenticated && !isAdmin && !isTutor && !isSchoolAdmin && !user?.hasCompletedOnboarding
 
   return (
     <ToastProvider>
@@ -155,7 +169,7 @@ function App() {
         needsOnboarding ? (
           <Route path="*" element={<Navigate to="/onboarding" />} />
         ) : (
-          isAdmin ? AdminRoutes() : isTutor ? TutorRoutes() : StudentRoutes()
+          isAdmin ? AdminRoutes() : isSchoolAdmin ? SchoolAdminRoutes() : isTutor ? TutorRoutes() : StudentRoutes()
         )
       ) : (
         <Route path="*" element={<Navigate to="/landing" />} />

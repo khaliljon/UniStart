@@ -167,6 +167,38 @@ public class TutorSchoolApplicationController : ControllerBase
         return Ok(new { id = app.Id, status = newStatus.ToString() });
     }
 
+    /// <summary>Verify a tutor in my school (SchoolAdmin)</summary>
+    [HttpPost("verify/{tutorUserId:int}")]
+    [Authorize(Roles = "SchoolAdmin,Admin")]
+    public async Task<IActionResult> VerifySchoolTutor(int tutorUserId)
+    {
+        var school = await GetOwnedSchool();
+        if (school == null) return NotFound(new { error = "You don't own a school" });
+
+        var profile = await _db.TutorProfiles.FirstOrDefaultAsync(p => p.UserId == tutorUserId && p.SchoolId == school.Id);
+        if (profile == null) return NotFound(new { error = "Tutor not found in your school" });
+
+        profile.IsVerified = true;
+        await _db.SaveChangesAsync();
+        return Ok(new { verified = true });
+    }
+
+    /// <summary>Unverify a tutor in my school (SchoolAdmin)</summary>
+    [HttpPost("unverify/{tutorUserId:int}")]
+    [Authorize(Roles = "SchoolAdmin,Admin")]
+    public async Task<IActionResult> UnverifySchoolTutor(int tutorUserId)
+    {
+        var school = await GetOwnedSchool();
+        if (school == null) return NotFound(new { error = "You don't own a school" });
+
+        var profile = await _db.TutorProfiles.FirstOrDefaultAsync(p => p.UserId == tutorUserId && p.SchoolId == school.Id);
+        if (profile == null) return NotFound(new { error = "Tutor not found in your school" });
+
+        profile.IsVerified = false;
+        await _db.SaveChangesAsync();
+        return Ok(new { verified = false });
+    }
+
     // ─── Helpers ────────────────────────────────────────
 
     private async Task<TutorSchool?> GetOwnedSchool()
