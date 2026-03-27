@@ -79,6 +79,8 @@ public class UniStartDbContext : DbContext
             entity.ToTable("Users");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Email).IsRequired().HasMaxLength(255);
+            entity.Property(e => e.FirstName).HasMaxLength(50).HasDefaultValue("");
+            entity.Property(e => e.LastName).HasMaxLength(50).HasDefaultValue("");
             entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
             entity.Property(e => e.PasswordHash).IsRequired();
             entity.HasIndex(e => e.Email).IsUnique();

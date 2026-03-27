@@ -2,6 +2,8 @@
 export interface User {
   id: number;
   email: string;
+  firstName: string;
+  lastName: string;
   name: string;
   role: string;
   hasCompletedOnboarding: boolean;
@@ -14,6 +16,8 @@ export interface User {
 export interface AuthResponse {
   userId: number;
   email: string;
+  firstName: string;
+  lastName: string;
   name: string;
   role: string;
   hasCompletedOnboarding: boolean;
@@ -32,7 +36,8 @@ export interface LoginRequest {
 
 export interface RegisterRequest {
   email: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   password: string;
   role?: 'Student' | 'Tutor';
   schoolSlug?: string;

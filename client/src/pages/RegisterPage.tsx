@@ -17,7 +17,8 @@ function RegisterPage() {
   const { t } = useTranslation();
   const [searchParams] = useSearchParams();
 
-  const [name, setName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -57,8 +58,32 @@ function RegisterPage() {
       return;
     }
 
-    if (password.length < 8) {
-      setValidationError('Password must be at least 8 characters');
+    if (firstName.trim().length < 2) {
+      setValidationError('First name must be at least 2 characters');
+      return;
+    }
+    if (/\d/.test(firstName)) {
+      setValidationError('First name must not contain digits');
+      return;
+    }
+    if (lastName.trim().length < 2) {
+      setValidationError('Last name must be at least 2 characters');
+      return;
+    }
+    if (/\d/.test(lastName)) {
+      setValidationError('Last name must not contain digits');
+      return;
+    }
+
+    // Basic email domain check (server does full DNS validation)
+    const emailDomain = email.split('@')[1];
+    if (!emailDomain || !emailDomain.includes('.') || emailDomain.endsWith('.')) {
+      setValidationError('Please enter a valid email address with an existing domain');
+      return;
+    }
+
+    if (password.length < 10) {
+      setValidationError('Password must be at least 10 characters');
       return;
     }
     if (!/[A-Z]/.test(password)) {
@@ -78,7 +103,7 @@ function RegisterPage() {
       return;
     }
 
-    dispatch(register({ name, email, password, role, schoolSlug: branding?.slug, applyToSchoolId: selectedSchoolId ?? undefined }));
+    dispatch(register({ firstName: firstName.trim(), lastName: lastName.trim(), email, password, role, schoolSlug: branding?.slug, applyToSchoolId: selectedSchoolId ?? undefined }));
   };
 
   const handleVerify = async (e: FormEvent) => {
@@ -234,19 +259,37 @@ function RegisterPage() {
           )}
 
           <div className="form-group">
-            <label htmlFor="name" className="form-label">
+            <label htmlFor="firstName" className="form-label">
               {t.auth.firstName}
             </label>
             <input
               type="text"
-              id="name"
+              id="firstName"
               className="form-input"
-              value={name}
+              value={firstName}
               onChange={(e) => {
-                setName(e.target.value);
+                setFirstName(e.target.value);
                 handleInputChange();
               }}
-              placeholder="Enter your full name"
+              placeholder={t.auth.firstName}
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="lastName" className="form-label">
+              {t.auth.lastName}
+            </label>
+            <input
+              type="text"
+              id="lastName"
+              className="form-input"
+              value={lastName}
+              onChange={(e) => {
+                setLastName(e.target.value);
+                handleInputChange();
+              }}
+              placeholder={t.auth.lastName}
               required
             />
           </div>

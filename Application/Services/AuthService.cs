@@ -33,6 +33,13 @@ public class AuthService : IAuthService
         // S-4: Password complexity check
         ValidatePasswordComplexity(dto.Password);
 
+        // Name validation: no digits, min 2 chars each
+        ValidateName(dto.FirstName, "First name");
+        ValidateName(dto.LastName, "Last name");
+
+        // Verify email domain exists (MX / A record)
+        await ValidateEmailDomainAsync(dto.Email);
+
         // Check if user already exists (including soft-deleted)
         var existingUser = await _context.Users
             .IgnoreQueryFilters()
@@ -45,7 +52,9 @@ public class AuthService : IAuthService
                 existingUser.IsDeleted = false;
                 existingUser.DeletedAt = null;
                 existingUser.DeletedBy = null;
-                existingUser.Name = InputSanitizer.Sanitize(dto.Name)!;
+                existingUser.FirstName = InputSanitizer.Sanitize(dto.FirstName)!;
+                existingUser.LastName = InputSanitizer.Sanitize(dto.LastName)!;
+                existingUser.Name = $"{existingUser.FirstName} {existingUser.LastName}".Trim();
                 existingUser.PasswordHash = BC.HashPassword(dto.Password);
                 existingUser.HasCompletedOnboarding = false;
                 existingUser.CreatedAt = DateTime.UtcNow;
@@ -57,6 +66,8 @@ public class AuthService : IAuthService
                 return new AuthResponseDto(
                     existingUser.Id,
                     existingUser.Email,
+                    existingUser.FirstName,
+                    existingUser.LastName,
                     existingUser.Name,
                     existingUser.Role.ToString(),
                     existingUser.HasCompletedOnboarding,
@@ -91,10 +102,15 @@ public class AuthService : IAuthService
             if (school != null) schoolId = school.Id;
         }
 
+        var firstName = InputSanitizer.Sanitize(dto.FirstName)!;
+        var lastName = InputSanitizer.Sanitize(dto.LastName)!;
+
         var user = new User
         {
             Email = dto.Email,
-            Name = InputSanitizer.Sanitize(dto.Name)!,
+            FirstName = firstName,
+            LastName = lastName,
+            Name = $"{firstName} {lastName}".Trim(),
             PasswordHash = BC.HashPassword(dto.Password),
             Role = role,
             SchoolId = schoolId,
@@ -182,6 +198,8 @@ public class AuthService : IAuthService
         return new AuthResponseDto(
             user.Id,
             user.Email,
+            user.FirstName,
+            user.LastName,
             user.Name,
             user.Role.ToString(),
             user.HasCompletedOnboarding,
@@ -237,6 +255,8 @@ public class AuthService : IAuthService
         return new AuthResponseDto(
             user.Id,
             user.Email,
+            user.FirstName,
+            user.LastName,
             user.Name,
             user.Role.ToString(),
             user.HasCompletedOnboarding,
@@ -261,6 +281,8 @@ public class AuthService : IAuthService
         return new AuthResponseDto(
             user.Id,
             user.Email,
+            user.FirstName,
+            user.LastName,
             user.Name,
             user.Role.ToString(),
             user.HasCompletedOnboarding,
@@ -302,7 +324,7 @@ public class AuthService : IAuthService
         var expiresAt = DateTime.UtcNow.AddHours(24);
         var verifySub = await GetSchoolSubdomainAsync(user);
         return new AuthResponseDto(
-            user.Id, user.Email, user.Name, user.Role.ToString(),
+            user.Id, user.Email, user.FirstName, user.LastName, user.Name, user.Role.ToString(),
             user.HasCompletedOnboarding, user.SubscriptionTier.ToString(),
             user.SubscriptionExpiresAt, user.EmailVerified, token, expiresAt,
             verifySub
@@ -329,8 +351,11 @@ public class AuthService : IAuthService
     {
         var payload = await Google.Apis.Auth.GoogleJsonWebSignature.ValidateAsync(dto.IdToken);
         var email = payload.Email;
-        var name = payload.Name ?? email.Split('@')[0];
+        var fullName = payload.Name ?? email.Split('@')[0];
         var googleId = payload.Subject;
+        var nameParts = fullName.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
+        var gFirstName = InputSanitizer.Sanitize(nameParts[0]) ?? "";
+        var gLastName = nameParts.Length > 1 ? (InputSanitizer.Sanitize(nameParts[1]) ?? "") : "";
 
         var user = await _context.Users
             .IgnoreQueryFilters()
@@ -341,7 +366,9 @@ public class AuthService : IAuthService
             user = new User
             {
                 Email = email,
-                Name = InputSanitizer.Sanitize(name)!,
+                FirstName = gFirstName,
+                LastName = gLastName,
+                Name = $"{gFirstName} {gLastName}".Trim(),
                 PasswordHash = BC.HashPassword(Guid.NewGuid().ToString()),
                 Role = UserRole.Student,
                 CreatedAt = DateTime.UtcNow,
@@ -387,7 +414,7 @@ public class AuthService : IAuthService
         var expiresAt = DateTime.UtcNow.AddHours(24);
         var googleSub = await GetSchoolSubdomainAsync(user);
         return new AuthResponseDto(
-            user.Id, user.Email, user.Name, user.Role.ToString(),
+            user.Id, user.Email, user.FirstName, user.LastName, user.Name, user.Role.ToString(),
             user.HasCompletedOnboarding, user.SubscriptionTier.ToString(),
             user.SubscriptionExpiresAt, user.EmailVerified, token, expiresAt,
             googleSub
@@ -408,11 +435,11 @@ public class AuthService : IAuthService
             .FirstOrDefaultAsync();
     }
 
-    /// <summary>S-4: Password must be 8+ chars with uppercase, lowercase, digit, and special character</summary>
+    /// <summary>S-4: Password must be 10+ chars with uppercase, lowercase, digit, and special character</summary>
     private static void ValidatePasswordComplexity(string password)
     {
-        if (string.IsNullOrEmpty(password) || password.Length < 8)
-            throw new InvalidOperationException("Password must be at least 8 characters long");
+        if (string.IsNullOrEmpty(password) || password.Length < 10)
+            throw new InvalidOperationException("Password must be at least 10 characters long");
         if (!password.Any(char.IsUpper))
             throw new InvalidOperationException("Password must contain at least one uppercase letter");
         if (!password.Any(char.IsLower))
@@ -421,6 +448,35 @@ public class AuthService : IAuthService
             throw new InvalidOperationException("Password must contain at least one digit");
         if (!password.Any(c => !char.IsLetterOrDigit(c)))
             throw new InvalidOperationException("Password must contain at least one special character");
+    }
+
+    private static void ValidateName(string name, string fieldName)
+    {
+        if (string.IsNullOrWhiteSpace(name) || name.Trim().Length < 2)
+            throw new InvalidOperationException($"{fieldName} must be at least 2 characters");
+        if (name.Any(char.IsDigit))
+            throw new InvalidOperationException($"{fieldName} must not contain digits");
+    }
+
+    /// <summary>Check that the email domain has valid DNS records (MX or A) so it can receive mail</summary>
+    private static async Task ValidateEmailDomainAsync(string email)
+    {
+        var parts = email.Split('@');
+        if (parts.Length != 2 || string.IsNullOrWhiteSpace(parts[1]))
+            throw new InvalidOperationException("Invalid email format");
+
+        var domain = parts[1].Trim().ToLowerInvariant();
+
+        try
+        {
+            var addresses = await System.Net.Dns.GetHostAddressesAsync(domain);
+            if (addresses.Length == 0)
+                throw new InvalidOperationException("Email domain does not exist. Please use a valid email address.");
+        }
+        catch (System.Net.Sockets.SocketException)
+        {
+            throw new InvalidOperationException("Email domain does not exist. Please use a valid email address.");
+        }
     }
 
     public async Task<UserDto?> GetUserByIdAsync(int userId)
@@ -443,8 +499,12 @@ public class AuthService : IAuthService
         var user = await _context.Users.FindAsync(userId);
         if (user == null) return null;
 
-        if (!string.IsNullOrWhiteSpace(dto.Name))
-            user.Name = InputSanitizer.Sanitize(dto.Name)!;
+        if (!string.IsNullOrWhiteSpace(dto.FirstName))
+            user.FirstName = InputSanitizer.Sanitize(dto.FirstName)!;
+        if (!string.IsNullOrWhiteSpace(dto.LastName))
+            user.LastName = InputSanitizer.Sanitize(dto.LastName)!;
+        if (!string.IsNullOrWhiteSpace(dto.FirstName) || !string.IsNullOrWhiteSpace(dto.LastName))
+            user.Name = $"{user.FirstName} {user.LastName}".Trim();
         
         if (!string.IsNullOrWhiteSpace(dto.Email))
         {

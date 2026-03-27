@@ -8,7 +8,7 @@ import type { TutorSchoolCard } from '../types';
 
 interface SchoolDetail {
   students: { total: number; items: Array<{ userId: number; name: string; email: string; subscriptionTier: string; createdAt: string; lastSeenAt: string | null }> };
-  tutors: Array<{ userId: number; name: string; email: string; headline: string; isVerified: boolean; isAvailable: boolean; totalStudents: number; averageRating: number }>;
+  tutors: Array<{ userId: number; name: string; email: string; headline: string; isVerified: boolean; isAvailable: boolean; totalStudents: number; averageRating: number; role?: string }>;
 }
 
 function AdminSchoolsPage() {
@@ -200,6 +200,12 @@ function AdminSchoolsPage() {
                       }}>
                         <div>
                           <span style={{ fontWeight: 600 }}>{tutor.name}</span>
+                          {tutor.role === 'SchoolAdmin' && (
+                            <span style={{
+                              fontSize: '0.65rem', padding: '0.1rem 0.4rem', borderRadius: '999px', marginLeft: '0.4rem',
+                              background: 'rgba(245, 158, 11, 0.15)', color: '#d97706', fontWeight: 600,
+                            }}>SchoolAdmin</span>
+                          )}
                           {tutor.isVerified && <span style={{ color: '#3b82f6', marginLeft: '0.3rem' }}>✓</span>}
                           {tutor.email && <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginLeft: '0.5rem' }}>{tutor.email}</span>}
                         </div>

@@ -6,6 +6,7 @@ import { fetchExams, fetchExamSections, toggleExamSelection, setSelectedSectionI
 import { subscriptionService } from '../services/subscriptionService';
 import { tutorService } from '../services/tutorService';
 import { authService } from '../services/authService';
+import api from '../services/api';
 import { useToast } from '../components/Toast';
 import { PricingModal } from '../components/PricingModal';
 import type { SubscriptionStatus, ExamSection, LinkedTutorInfo } from '../types';
@@ -40,6 +41,13 @@ function ProfilePage() {
   const [emailError, setEmailError] = useState<string | null>(null);
   const [emailSuccess, setEmailSuccess] = useState<string | null>(null);
   const [emailLoading, setEmailLoading] = useState(false);
+
+  // Name change
+  const [editFirstName, setEditFirstName] = useState(user?.firstName || '');
+  const [editLastName, setEditLastName] = useState(user?.lastName || '');
+  const [nameError, setNameError] = useState<string | null>(null);
+  const [nameSuccess, setNameSuccess] = useState<string | null>(null);
+  const [nameLoading, setNameLoading] = useState(false);
 
   useEffect(() => {
     dispatch(fetchExams());
@@ -153,6 +161,28 @@ function ProfilePage() {
     } finally { setEmailLoading(false); }
   };
 
+  const handleChangeName = async (e: FormEvent) => {
+    e.preventDefault();
+    setNameError(null);
+    setNameSuccess(null);
+    if (editFirstName.trim().length < 2) { setNameError('First name must be at least 2 characters'); return; }
+    if (/\d/.test(editFirstName)) { setNameError('First name must not contain digits'); return; }
+    if (editLastName.trim().length < 2) { setNameError('Last name must be at least 2 characters'); return; }
+    if (/\d/.test(editLastName)) { setNameError('Last name must not contain digits'); return; }
+    try {
+      setNameLoading(true);
+      await api.put(`/users/${user?.id}`, { firstName: editFirstName.trim(), lastName: editLastName.trim() });
+      setNameSuccess(t.common.save + ' ✓');
+      // Update localStorage user
+      if (user) {
+        const updated = { ...user, firstName: editFirstName.trim(), lastName: editLastName.trim(), name: `${editFirstName.trim()} ${editLastName.trim()}`.trim() };
+        localStorage.setItem('user', JSON.stringify(updated));
+      }
+    } catch (err: unknown) {
+      setNameError((err as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Error');
+    } finally { setNameLoading(false); }
+  };
+
   return (
     <>
     <div className="animate-fade-in" style={{ maxWidth: '640px', margin: '0 auto', padding: '2rem 0' }}>
@@ -179,6 +209,26 @@ function ProfilePage() {
           <InfoRow label={t.profilePage.personalInfo} value={user?.role === 'Student' ? t.nav.home : user?.role === 'Tutor' ? t.tutor.editProfile : user?.role || '—'} />
           <InfoRow label={t.profilePage.registeredAt} value={user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : '—'} />
         </div>
+      </div>
+
+      {/* ─── Edit Name ─── */}
+      <div className="card" style={{ padding: '1.5rem', marginBottom: '1.25rem' }}>
+        <h3 style={{ margin: '0 0 1rem', fontSize: '1rem' }}>{t.auth.firstName} / {t.auth.lastName}</h3>
+        {nameError && <div style={{ color: 'var(--error-color)', marginBottom: '0.75rem', padding: '0.5rem 0.75rem', background: 'var(--error-bg)', borderRadius: '6px', fontSize: '0.85rem' }}>{nameError}</div>}
+        {nameSuccess && <div style={{ color: 'var(--success-color)', marginBottom: '0.75rem', padding: '0.5rem 0.75rem', background: 'rgba(16,185,129,0.08)', borderRadius: '6px', fontSize: '0.85rem' }}>✓ {nameSuccess}</div>}
+        <form onSubmit={handleChangeName} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          <div>
+            <label className="form-label">{t.auth.firstName}</label>
+            <input type="text" className="form-input" value={editFirstName} onChange={e => setEditFirstName(e.target.value)} style={{ width: '100%' }} />
+          </div>
+          <div>
+            <label className="form-label">{t.auth.lastName}</label>
+            <input type="text" className="form-input" value={editLastName} onChange={e => setEditLastName(e.target.value)} style={{ width: '100%' }} />
+          </div>
+          <button type="submit" className="btn btn-primary" disabled={nameLoading || !editFirstName.trim() || !editLastName.trim()} style={{ alignSelf: 'flex-start', fontSize: '0.9rem' }}>
+            {nameLoading ? '...' : t.common.save}
+          </button>
+        </form>
       </div>
 
       {/* ─── Subscription (student only) ─── */}

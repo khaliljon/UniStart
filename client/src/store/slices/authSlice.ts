@@ -2,20 +2,47 @@ import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { authService } from '../../services/authService';
 import type { User, LoginRequest, RegisterRequest, AuthResponse, VerifyEmailRequest, GoogleLoginRequest } from '../../types';
 
-function redirectToSchoolSubdomain(response: AuthResponse): boolean {
-  if (!response.schoolSubdomain) return false;
+function getSubdomain(): string | null {
+  const match = window.location.hostname.match(/^([a-z0-9-]+)\.unistart\.kz$/i);
+  return match ? match[1] : null;
+}
+
+function redirectAfterAuth(response: AuthResponse): boolean {
   const hostname = window.location.hostname;
-  if (hostname !== 'unistart.kz' && hostname !== 'www.unistart.kz') return false;
-  const user = {
-    id: response.userId, email: response.email, name: response.name,
-    role: response.role, hasCompletedOnboarding: response.hasCompletedOnboarding,
-    subscriptionTier: response.subscriptionTier || 'Free',
-    subscriptionExpiresAt: response.subscriptionExpiresAt || null,
-    emailVerified: response.emailVerified, createdAt: new Date().toISOString(),
+  const currentSubdomain = getSubdomain();
+  const isMainDomain = hostname === 'unistart.kz' || hostname === 'www.unistart.kz';
+
+  const buildTransfer = () => {
+    const user = {
+      id: response.userId, email: response.email,
+      firstName: response.firstName, lastName: response.lastName, name: response.name,
+      role: response.role, hasCompletedOnboarding: response.hasCompletedOnboarding,
+      subscriptionTier: response.subscriptionTier || 'Free',
+      subscriptionExpiresAt: response.subscriptionExpiresAt || null,
+      emailVerified: response.emailVerified, createdAt: new Date().toISOString(),
+    };
+    return encodeURIComponent(JSON.stringify({ token: response.token, expiresAt: response.expiresAt, user }));
   };
-  const transfer = JSON.stringify({ token: response.token, expiresAt: response.expiresAt, user });
-  window.location.href = `https://${response.schoolSubdomain}.unistart.kz?authTransfer=${encodeURIComponent(transfer)}`;
-  return true;
+
+  // On main domain → redirect school users to their subdomain
+  if (isMainDomain && response.schoolSubdomain) {
+    window.location.href = `https://${response.schoolSubdomain}.unistart.kz?authTransfer=${buildTransfer()}`;
+    return true;
+  }
+
+  // On subdomain → redirect non-school users to the main domain
+  if (currentSubdomain && !response.schoolSubdomain) {
+    window.location.href = `https://unistart.kz?authTransfer=${buildTransfer()}`;
+    return true;
+  }
+
+  // On subdomain → redirect user who belongs to a DIFFERENT school
+  if (currentSubdomain && response.schoolSubdomain && response.schoolSubdomain !== currentSubdomain) {
+    window.location.href = `https://${response.schoolSubdomain}.unistart.kz?authTransfer=${buildTransfer()}`;
+    return true;
+  }
+
+  return false;
 }
 
 interface AuthState {
@@ -63,7 +90,7 @@ export const login = createAsyncThunk(
   async (data: LoginRequest, { rejectWithValue }) => {
     try {
       const response = await authService.login(data);
-      redirectToSchoolSubdomain(response);
+      redirectAfterAuth(response);
       return response;
     } catch (error: unknown) {
       const err = error as { response?: { data?: { error?: string } } };
@@ -90,6 +117,7 @@ export const verifyEmail = createAsyncThunk(
   async (data: VerifyEmailRequest, { rejectWithValue }) => {
     try {
       const response = await authService.verifyEmail(data);
+      redirectAfterAuth(response);
       return response;
     } catch (error: unknown) {
       const err = error as { response?: { data?: { error?: string } } };
@@ -103,7 +131,7 @@ export const googleLogin = createAsyncThunk(
   async (data: GoogleLoginRequest, { rejectWithValue }) => {
     try {
       const response = await authService.googleLogin(data);
-      redirectToSchoolSubdomain(response);
+      redirectAfterAuth(response);
       return response;
     } catch (error: unknown) {
       const err = error as { response?: { data?: { error?: string } } };
@@ -155,6 +183,8 @@ const authSlice = createSlice({
       state.user = {
         id: action.payload.userId,
         email: action.payload.email,
+        firstName: action.payload.firstName,
+        lastName: action.payload.lastName,
         name: action.payload.name,
         role: action.payload.role,
         hasCompletedOnboarding: action.payload.hasCompletedOnboarding,

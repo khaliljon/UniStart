@@ -5,8 +5,9 @@ namespace UniStart.Application.DTOs;
 // Auth DTOs
 public record RegisterDto(
     [Required][EmailAddress] string Email,
-    [Required][MinLength(2)] string Name,
-    [Required][MinLength(8)] string Password,
+    [Required][MinLength(2)] string FirstName,
+    [Required][MinLength(2)] string LastName,
+    [Required][MinLength(10)] string Password,
     string? Role = null,
     string? SchoolSlug = null,
     int? ApplyToSchoolId = null  // Tutor: submit application to join this school on registration
@@ -20,6 +21,8 @@ public record LoginDto(
 public record AuthResponseDto(
     int UserId,
     string Email,
+    string FirstName,
+    string LastName,
     string Name,
     string Role,
     bool HasCompletedOnboarding,
@@ -46,7 +49,7 @@ public record GoogleLoginDto(
 
 public record ChangePasswordDto(
     [Required] string CurrentPassword,
-    [Required][MinLength(8)] string NewPassword
+    [Required][MinLength(10)] string NewPassword
 );
 
 public record ChangeEmailDto(
@@ -61,7 +64,7 @@ public record ForgotPasswordDto(
 public record ResetPasswordDto(
     [Required][EmailAddress] string Email,
     [Required][StringLength(6, MinimumLength = 6)] string Code,
-    [Required][MinLength(8)] string NewPassword
+    [Required][MinLength(10)] string NewPassword
 );
 
 // User DTOs
@@ -75,6 +78,7 @@ public record UserDto(
 );
 
 public record UpdateUserDto(
-    string? Name,
+    string? FirstName,
+    string? LastName,
     string? Email
 );

@@ -789,7 +789,7 @@ public class AdminController : ControllerBase
     {
         var tutors = await _db.TutorProfiles
             .Include(tp => tp.User)
-            .Where(tp => tp.User.Role == UserRole.Tutor || tp.User.Role == UserRole.SchoolAdmin)
+            .Where(tp => tp.User.Role == UserRole.Tutor)
             .OrderByDescending(tp => tp.CreatedAt)
             .Select(tp => new
             {
@@ -963,14 +963,31 @@ public class AdminController : ControllerBase
 
         var tutors = await _db.TutorProfiles
             .Include(t => t.User)
-            .Where(t => t.SchoolId == schoolId)
+            .Where(t => t.SchoolId == schoolId && t.User.Role == UserRole.Tutor)
             .Select(t => new {
                 t.UserId, t.User.Name, t.User.Email, t.Headline,
-                t.IsVerified, t.IsAvailable, t.TotalStudents, t.AverageRating
+                t.IsVerified, t.IsAvailable, t.TotalStudents, t.AverageRating,
+                role = "Tutor"
             })
             .ToListAsync();
 
-        return Ok(tutors);
+        // Also include the SchoolAdmin (owner)
+        var owner = await _db.Users
+            .Where(u => u.Id == school.OwnerUserId)
+            .Select(u => new {
+                UserId = u.Id, u.Name, u.Email,
+                Headline = "SchoolAdmin",
+                IsVerified = true, IsAvailable = true,
+                TotalStudents = 0, AverageRating = 0.0,
+                role = "SchoolAdmin"
+            })
+            .FirstOrDefaultAsync();
+
+        var result = owner != null
+            ? new object[] { owner }.Concat(tutors.Cast<object>()).ToList()
+            : tutors.Cast<object>().ToList();
+
+        return Ok(result);
     }
 
     /// <summary>Delete a school and unbind all users/tutors from it</summary>
