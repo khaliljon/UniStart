@@ -22,9 +22,17 @@ public class TutorService : ITutorService
         pageSize = Math.Clamp(pageSize, 1, 50);
         page = Math.Max(1, page);
 
+        var now = DateTime.UtcNow;
         var query = _db.TutorProfiles
             .Include(tp => tp.User)
-            .Where(tp => tp.User.Role == UserRole.Tutor && !tp.User.IsDeleted && !tp.User.IsBlocked && tp.IsVerified);
+            .Include(tp => tp.School)
+            .Where(tp => tp.User.Role == UserRole.Tutor && !tp.User.IsDeleted && !tp.User.IsBlocked && tp.IsVerified)
+            // Must have active subscription: either school with active sub, or independent tutor with paid sub
+            .Where(tp =>
+                (tp.SchoolId != null && tp.School != null && tp.School.IsActive
+                    && tp.School.SubscriptionExpiresAt != null && tp.School.SubscriptionExpiresAt > now)
+                || (tp.HasPaidSubscription && tp.SubscriptionExpiresAt != null && tp.SubscriptionExpiresAt > now)
+            );
 
         if (schoolId.HasValue)
             query = query.Where(tp => tp.SchoolId == schoolId.Value);
@@ -90,6 +98,7 @@ public class TutorService : ITutorService
     {
         var tp = await _db.TutorProfiles
             .Include(x => x.User)
+            .Include(x => x.School)
             .Include(x => x.Schedule)
             .Include(x => x.Reviews.OrderByDescending(r => r.CreatedAt).Take(10))
                 .ThenInclude(r => r.Student)
@@ -125,6 +134,7 @@ public class TutorService : ITutorService
 
         var tp = await _db.TutorProfiles
             .Include(x => x.User)
+            .Include(x => x.School)
             .Include(x => x.Schedule)
             .Include(x => x.Reviews.OrderByDescending(r => r.CreatedAt).Take(10))
                 .ThenInclude(r => r.Student)
@@ -149,6 +159,7 @@ public class TutorService : ITutorService
     {
         var tp = await _db.TutorProfiles
             .Include(x => x.User)
+            .Include(x => x.School)
             .Include(x => x.Schedule)
             .Include(x => x.Reviews.OrderByDescending(r => r.CreatedAt).Take(10))
                 .ThenInclude(r => r.Student)
@@ -395,7 +406,10 @@ public class TutorService : ITutorService
             tp.SchoolId,
             tp.TeachingSections.Length > 0
                 ? tp.TeachingSections.Split(',', StringSplitOptions.RemoveEmptyEntries)
-                : Array.Empty<string>()
+                : Array.Empty<string>(),
+            tp.SubscriptionExpiresAt,
+            tp.School != null && tp.School.IsActive
+                && tp.School.SubscriptionExpiresAt != null && tp.School.SubscriptionExpiresAt > DateTime.UtcNow
         );
     }
 

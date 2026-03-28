@@ -19,6 +19,10 @@ interface TutorItem {
   totalStudents: number;
   hourlyRate: number | null;
   createdAt: string;
+  verificationRequestedAt: string | null;
+  hasPaidSubscription: boolean;
+  subscriptionExpiresAt: string | null;
+  schoolId: number | null;
 }
 
 interface ContentAssignment {
@@ -100,6 +104,22 @@ function AdminTutorsPage() {
       }
     } catch {
       alert(t.admin.tutors.blockError);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleToggleSubscription = async (tutor: TutorItem) => {
+    setActionLoading(tutor.tutorProfileId);
+    try {
+      await adminService.toggleTutorSubscription(tutor.tutorProfileId);
+      const newHasPaid = !tutor.hasPaidSubscription;
+      const newExpires = newHasPaid ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString() : null;
+      setTutors(prev => prev.map(x => x.tutorProfileId === tutor.tutorProfileId
+        ? { ...x, hasPaidSubscription: newHasPaid, subscriptionExpiresAt: newExpires }
+        : x));
+    } catch {
+      alert(t.admin.tutors.subscriptionError);
     } finally {
       setActionLoading(null);
     }
@@ -231,11 +251,26 @@ function AdminTutorsPage() {
                   <span>{formatDate(tutor.createdAt)}</span>
                   {tutor.specializations && <span>{tutor.specializations}</span>}
                 </div>
-                {tutor.isBlocked && tutor.blockReason && (
+                  {tutor.isBlocked && tutor.blockReason && (
                   <div style={{ fontSize: '0.8rem', color: '#dc2626', marginTop: '0.25rem' }}>
                     {t.admin.tutors.reason} {tutor.blockReason}
                   </div>
                 )}
+                {/* Subscription info */}
+                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem', fontSize: '0.78rem', flexWrap: 'wrap' }}>
+                  {tutor.schoolId ? (
+                    <span style={{ color: '#6366f1' }}>{t.admin.tutors.schoolTutor}</span>
+                  ) : tutor.hasPaidSubscription && tutor.subscriptionExpiresAt ? (
+                    <span style={{ color: new Date(tutor.subscriptionExpiresAt) > new Date() ? '#22c55e' : '#ef4444' }}>
+                      {t.admin.tutors.subscriptionLabel}: {new Date(tutor.subscriptionExpiresAt).toLocaleDateString(getDateLocale())}
+                    </span>
+                  ) : (
+                    <span style={{ color: '#f59e0b' }}>{t.admin.tutors.noSubscription}</span>
+                  )}
+                  {tutor.verificationRequestedAt && !tutor.isVerified && (
+                    <span style={{ color: '#f59e0b' }}>{t.admin.tutors.verificationRequested}</span>
+                  )}
+                </div>
               </div>
 
               {/* Actions */}
@@ -268,6 +303,22 @@ function AdminTutorsPage() {
                 >
                   {actionLoading === tutor.tutorProfileId ? '...' : tutor.isBlocked ? t.admin.tutors.unblock : t.admin.tutors.block}
                 </button>
+                {!tutor.schoolId && (
+                  <button
+                    onClick={() => handleToggleSubscription(tutor)}
+                    disabled={actionLoading === tutor.tutorProfileId}
+                    className="btn"
+                    style={{
+                      padding: '0.4rem 0.75rem', fontSize: '0.82rem',
+                      background: tutor.hasPaidSubscription ? '#fef2f2' : '#eff6ff',
+                      color: tutor.hasPaidSubscription ? '#dc2626' : '#2563eb',
+                      border: 'none',
+                    }}
+                    title={tutor.hasPaidSubscription ? t.admin.tutors.deactivateSub : t.admin.tutors.activateSub}
+                  >
+                    {actionLoading === tutor.tutorProfileId ? '...' : tutor.hasPaidSubscription ? t.admin.tutors.deactivateSub : t.admin.tutors.activateSub}
+                  </button>
+                )}
               </div>
             </div>
           ))}

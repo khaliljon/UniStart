@@ -517,7 +517,12 @@ public class UniStartDbContext : DbContext
             entity.Property(e => e.Specializations).HasMaxLength(100);
             entity.Property(e => e.IsActive).HasDefaultValue(true);
             entity.Property(e => e.IsPartner).HasDefaultValue(true);
+            entity.Property(e => e.RequireApproval).HasDefaultValue(true);
+            entity.Property(e => e.SchoolInviteCode).HasMaxLength(20);
             entity.HasIndex(e => e.Slug).IsUnique();
+            entity.HasIndex(e => e.SchoolInviteCode).IsUnique()
+                  .HasFilter("\"SchoolInviteCode\" IS NOT NULL")
+                  .HasDatabaseName("IX_TutorSchools_InviteCode");
             entity.HasOne(e => e.Owner)
                   .WithMany()
                   .HasForeignKey(e => e.OwnerUserId)

@@ -34,6 +34,7 @@ function RegisterPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [selectedSchoolId, setSelectedSchoolId] = useState<number | null>(null);
   const [schools, setSchools] = useState<TutorSchoolCard[]>([]);
+  const [schoolInviteCode, setSchoolInviteCode] = useState('');
 
   useGoogleSignIn('google-register-btn', 'signup_with');
 
@@ -103,7 +104,7 @@ function RegisterPage() {
       return;
     }
 
-    dispatch(register({ firstName: firstName.trim(), lastName: lastName.trim(), email, password, role, schoolSlug: branding?.slug, applyToSchoolId: selectedSchoolId ?? undefined }));
+    dispatch(register({ firstName: firstName.trim(), lastName: lastName.trim(), email, password, role, schoolSlug: branding?.slug, applyToSchoolId: selectedSchoolId ?? undefined, schoolInviteCode: schoolInviteCode.trim() || undefined }));
   };
 
   const handleVerify = async (e: FormEvent) => {
@@ -255,6 +256,25 @@ function RegisterPage() {
                   <option key={s.id} value={s.id}>{s.name}</option>
                 ))}
               </select>
+            </div>
+          )}
+          {role === 'Tutor' && !branding && (
+            <div className="form-group" style={{ marginBottom: '1rem' }}>
+              <label htmlFor="inviteCode" className="form-label">
+                {t.auth.schoolInviteCode}
+              </label>
+              <input
+                type="text"
+                id="inviteCode"
+                className="form-input"
+                value={schoolInviteCode}
+                onChange={(e) => {
+                  setSchoolInviteCode(e.target.value.replace(/[^A-Za-z0-9]/g, '').slice(0, 8));
+                  handleInputChange();
+                }}
+                placeholder={t.auth.schoolInviteCodePlaceholder}
+                maxLength={8}
+              />
             </div>
           )}
 

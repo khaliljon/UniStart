@@ -10,7 +10,8 @@ public record RegisterDto(
     [Required][MinLength(10)] string Password,
     string? Role = null,
     string? SchoolSlug = null,
-    int? ApplyToSchoolId = null  // Tutor: submit application to join this school on registration
+    int? ApplyToSchoolId = null,  // Tutor: submit application to join this school on registration
+    string? SchoolInviteCode = null  // Tutor: join school via invite code
 );
 
 public record LoginDto(

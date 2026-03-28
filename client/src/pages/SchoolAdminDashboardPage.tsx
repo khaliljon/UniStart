@@ -1,19 +1,62 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { schoolAdminService } from '../services/schoolAdminService';
 import { useTranslation } from '../i18n';
+import { getDateLocale } from '../i18n';
 import type { SchoolDashboard } from '../services/schoolAdminService';
 
 function SchoolAdminDashboardPage() {
   const { t } = useTranslation();
   const [dashboard, setDashboard] = useState<SchoolDashboard | null>(null);
   const [loading, setLoading] = useState(true);
+  const [inviteCode, setInviteCode] = useState<string | null>(null);
+  const [requireApproval, setRequireApproval] = useState(true);
+  const [subscription, setSubscription] = useState<{ subscriptionExpiresAt: string | null; isActive: boolean } | null>(null);
+  const [generatingCode, setGeneratingCode] = useState(false);
+  const [togglingApproval, setTogglingApproval] = useState(false);
+  const [codeCopied, setCodeCopied] = useState(false);
+
+  const loadExtras = useCallback(async () => {
+    try {
+      const [ic, sub] = await Promise.all([
+        schoolAdminService.getInviteCode().catch(() => null),
+        schoolAdminService.getSubscription().catch(() => null),
+      ]);
+      if (ic) { setInviteCode(ic.inviteCode); setRequireApproval(ic.requireApproval); }
+      if (sub) setSubscription(sub);
+    } catch { /* ignore */ }
+  }, []);
 
   useEffect(() => {
     schoolAdminService.getDashboard()
       .then(setDashboard)
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, []);
+    loadExtras();
+  }, [loadExtras]);
+
+  const handleGenerateCode = async () => {
+    setGeneratingCode(true);
+    try {
+      const { inviteCode: code } = await schoolAdminService.generateInviteCode();
+      setInviteCode(code);
+    } catch { /* ignore */ } finally { setGeneratingCode(false); }
+  };
+
+  const handleToggleApproval = async () => {
+    setTogglingApproval(true);
+    try {
+      await schoolAdminService.toggleApproval(!requireApproval);
+      setRequireApproval(!requireApproval);
+    } catch { /* ignore */ } finally { setTogglingApproval(false); }
+  };
+
+  const handleCopyCode = () => {
+    if (inviteCode) {
+      navigator.clipboard.writeText(inviteCode);
+      setCodeCopied(true);
+      setTimeout(() => setCodeCopied(false), 2000);
+    }
+  };
 
   if (loading && !dashboard) return <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>{t.schoolAdmin.loading}</div>;
   if (!dashboard) return <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>{t.schoolAdmin.noSchool}</div>;
@@ -27,6 +70,72 @@ function SchoolAdminDashboardPage() {
         <StatCard label={t.schoolAdmin.tutors} value={dashboard.totalTutors} />
         <StatCard label={t.schoolAdmin.active7d} value={dashboard.activeStudentsLast7Days} />
         <StatCard label={t.schoolAdmin.avgAccuracy} value={`${dashboard.averageAccuracy}%`} />
+      </div>
+
+      {/* Subscription status */}
+      {subscription && (
+        <div className="card" style={{
+          padding: '1rem 1.25rem', marginBottom: '1rem',
+          border: '1px solid',
+          borderColor: subscription.isActive ? '#22c55e44' : '#f59e0b44',
+          background: subscription.isActive ? '#22c55e11' : '#f59e0b11',
+        }}>
+          <div style={{ fontWeight: 600, marginBottom: '0.25rem' }}>
+            {t.schoolAdmin.subscriptionTitle}
+          </div>
+          <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+            {subscription.isActive
+              ? `${t.schoolAdmin.subscriptionActive} ${subscription.subscriptionExpiresAt ? new Date(subscription.subscriptionExpiresAt).toLocaleDateString(getDateLocale()) : ''}`
+              : t.schoolAdmin.subscriptionInactive}
+          </div>
+        </div>
+      )}
+
+      {/* Invite code management */}
+      <div className="card" style={{ padding: '1rem 1.25rem', marginBottom: '1.5rem' }}>
+        <div style={{ fontWeight: 600, marginBottom: '0.5rem' }}>{t.schoolAdmin.inviteCodeTitle}</div>
+        <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>
+          {t.schoolAdmin.inviteCodeDesc}
+        </div>
+
+        {inviteCode ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+            <code style={{
+              fontSize: '1.2rem', fontWeight: 700, letterSpacing: '0.15rem',
+              padding: '0.5rem 1rem', borderRadius: '8px',
+              background: 'var(--bg-secondary)', border: '1px solid var(--border-color)',
+            }}>{inviteCode}</code>
+            <button className="btn btn-outline" style={{ fontSize: '0.82rem' }} onClick={handleCopyCode}>
+              {codeCopied ? t.common.success : t.schoolAdmin.copyCode}
+            </button>
+            <button className="btn btn-outline" style={{ fontSize: '0.82rem' }} onClick={handleGenerateCode} disabled={generatingCode}>
+              {generatingCode ? t.common.loading : t.schoolAdmin.regenerateCode}
+            </button>
+          </div>
+        ) : (
+          <button className="btn btn-primary" style={{ fontSize: '0.85rem' }} onClick={handleGenerateCode} disabled={generatingCode}>
+            {generatingCode ? t.common.loading : t.schoolAdmin.generateCode}
+          </button>
+        )}
+
+        <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+            {t.schoolAdmin.requireApprovalLabel}
+          </label>
+          <button
+            className="btn"
+            style={{
+              fontSize: '0.78rem', padding: '0.25rem 0.6rem',
+              background: requireApproval ? '#22c55e22' : '#f59e0b22',
+              color: requireApproval ? '#22c55e' : '#f59e0b',
+              border: 'none',
+            }}
+            onClick={handleToggleApproval}
+            disabled={togglingApproval}
+          >
+            {requireApproval ? t.common.yes : t.common.no}
+          </button>
+        </div>
       </div>
 
       <h3>{t.schoolAdmin.recentStudents}</h3>

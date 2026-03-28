@@ -19,6 +19,14 @@ public class TutorSchool
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
 
+    // ── Subscription ─────────────────────────────────────
+    public DateTime? SubscriptionExpiresAt { get; set; }  // null = no active subscription
+    public DateTime? SubscriptionPaidAt { get; set; }     // last payment date
+
+    // ── School Invite Code ───────────────────────────────
+    public string? SchoolInviteCode { get; set; }         // for tutor self-registration
+    public bool RequireApproval { get; set; } = true;     // require SchoolAdmin approval for code registrations
+
     // ── White Label Branding ──────────────────────────────
     public string? Subdomain { get; set; }          // e.g. "linhao" → linhao.unistart.kz
     public string? CustomDomain { get; set; }       // e.g. "prep.linhao.cn"

@@ -205,10 +205,10 @@ export default function TutorAssignmentsPage() {
                   </div>
                   {a.description && <p style={{ margin: '0 0 0.5rem', opacity: 0.7, fontSize: '0.9rem' }}>{a.description}</p>}
                   <div style={{ display: 'flex', gap: '1.5rem', fontSize: '0.85rem', opacity: 0.7 }}>
-                    <span>📝 {a.questionCount} вопросов</span>
-                    <span>👤 {a.studentCount} учеников</span>
-                    <span>✅ {a.completedCount} выполнено</span>
-                    {a.deadline && <span>📅 до {fmt(a.deadline)}</span>}
+                    <span>{a.questionCount} вопросов</span>
+                    <span>{a.studentCount} учеников</span>
+                    <span>{a.completedCount} выполнено</span>
+                    {a.deadline && <span>до {fmt(a.deadline)}</span>}
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: '0.5rem' }} onClick={e => e.stopPropagation()}>
@@ -264,9 +264,9 @@ export default function TutorAssignmentsPage() {
           <button className="btn btn-sm btn-danger" onClick={() => handleDelete(detail.id)}>Удалить</button>
         </div>
         <div style={{ display: 'flex', gap: '1.5rem', fontSize: '0.85rem', opacity: 0.7, marginTop: '0.75rem' }}>
-          {detail.deadline && <span>📅 Дедлайн: {fmtDt(detail.deadline)}</span>}
+          {detail.deadline && <span>Дедлайн: {fmtDt(detail.deadline)}</span>}
           <span>Создано: {fmt(detail.createdAt)}</span>
-          <span>{detail.isActive ? '✅ Активно' : '⏸ Неактивно'}</span>
+          <span>{detail.isActive ? 'Активно' : 'Неактивно'}</span>
         </div>
       </div>
 

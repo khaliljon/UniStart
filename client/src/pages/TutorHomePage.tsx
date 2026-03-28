@@ -267,6 +267,51 @@ function TutorHomePage() {
         </div>
       )}
 
+      {/* Subscription status banner — for verified tutors */}
+      {profile && profile.isVerified && (() => {
+        const hasSchoolSub = profile.schoolHasActiveSubscription;
+        const hasOwnSub = profile.subscriptionExpiresAt && new Date(profile.subscriptionExpiresAt) > new Date();
+        const isActive = hasSchoolSub || hasOwnSub;
+
+        if (isActive) {
+          return (
+            <div className="card" style={{
+              padding: '1rem 1.25rem', marginBottom: '1rem',
+              border: '1px solid #22c55e44', background: '#22c55e11',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ fontSize: '1.1rem', color: '#22c55e' }}>&#10003;</span>
+                <div>
+                  <div style={{ fontWeight: 600 }}>{t.tutorSubscription.activeTitle}</div>
+                  <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
+                    {hasSchoolSub
+                      ? t.tutorSubscription.schoolCovers
+                      : `${t.tutorSubscription.expiresAt} ${new Date(profile.subscriptionExpiresAt!).toLocaleDateString(getDateLocale())}`}
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        }
+        // Not active — show payment needed
+        return (
+          <div className="card" style={{
+            padding: '1rem 1.25rem', marginBottom: '1rem',
+            border: '1px solid #f59e0b44', background: '#f59e0b11',
+          }}>
+            <div style={{ fontWeight: 600 }}>{t.tutorSubscription.title}</div>
+            <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
+              {profile.schoolId ? t.tutorSubscription.schoolPendingSub : t.tutorSubscription.independentPayNote}
+            </div>
+            <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>
+              <strong>{t.tutorSubscription.howTo}</strong>
+              <div>{t.tutorSubscription.step2}</div>
+              <div>{t.tutorSubscription.step3}</div>
+            </div>
+          </div>
+        );
+      })()}
+
       {profile && (
         <div className="card">
           <h2 style={{ margin: '0 0 0.75rem', fontSize: '1.15rem' }}>{t.tutor.myProfile}</h2>

@@ -282,6 +282,10 @@ const adminService = {
       totalStudents: number;
       hourlyRate: number | null;
       createdAt: string;
+      verificationRequestedAt: string | null;
+      hasPaidSubscription: boolean;
+      subscriptionExpiresAt: string | null;
+      schoolId: number | null;
     }>>('/admin/tutors').then(r => r.data),
 
   verifyTutor: (tutorProfileId: number) =>
@@ -289,6 +293,16 @@ const adminService = {
 
   unverifyTutor: (tutorProfileId: number) =>
     api.post<{ verified: boolean; tutorProfileId: number }>(`/admin/tutors/${tutorProfileId}/unverify`).then(r => r.data),
+
+  toggleTutorSubscription: (tutorProfileId: number) =>
+    api.post<{ hasPaidSubscription: boolean; subscriptionExpiresAt: string | null; tutorProfileId: number }>(
+      `/admin/tutors/${tutorProfileId}/toggle-subscription`).then(r => r.data),
+
+  activateSchoolSubscription: (schoolId: number) =>
+    api.post<{ schoolId: number; subscriptionExpiresAt: string }>(`/admin/schools/${schoolId}/activate-subscription`).then(r => r.data),
+
+  deactivateSchoolSubscription: (schoolId: number) =>
+    api.post<{ schoolId: number; subscriptionExpiresAt: null }>(`/admin/schools/${schoolId}/deactivate-subscription`).then(r => r.data),
 
   deleteSchool: (schoolId: number) =>
     api.delete(`/admin/schools/${schoolId}`).then(r => r.data),

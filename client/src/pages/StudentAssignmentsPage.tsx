@@ -135,9 +135,9 @@ export default function StudentAssignmentsPage() {
                   {a.description && <p style={{ margin: '0 0 0.5rem', opacity: 0.7, fontSize: '0.9rem' }}>{a.description}</p>}
                   <div style={{ display: 'flex', gap: '1.5rem', fontSize: '0.85rem', opacity: 0.7 }}>
                     <span>Тьютор: {a.tutorName}</span>
-                    <span>📝 {a.answeredCount}/{a.totalQuestions}</span>
-                    {a.score !== null && <span>🏆 {a.score}%</span>}
-                    {a.deadline && <span>📅 до {fmt(a.deadline)}</span>}
+                    <span>{a.answeredCount}/{a.totalQuestions}</span>
+                    {a.score !== null && <span>{a.score}%</span>}
+                    {a.deadline && <span>до {fmt(a.deadline)}</span>}
                   </div>
                 </div>
               </div>
@@ -259,13 +259,13 @@ export default function StudentAssignmentsPage() {
               background: lastResult.isCorrect ? '#dcfce7' : '#fee2e2',
               border: `1px solid ${lastResult.isCorrect ? '#22c55e' : '#ef4444'}`,
             }}>
-              <strong>{lastResult.isCorrect ? '✅ Верно!' : '❌ Неверно'}</strong>
+              <strong>{lastResult.isCorrect ? 'Верно!' : 'Неверно'}</strong>
               {lastResult.explanation && (
                 <p style={{ margin: '0.5rem 0 0', fontSize: '0.9rem' }}>{lastResult.explanation}</p>
               )}
               {lastResult.isCompleted && (
                 <p style={{ margin: '0.5rem 0 0', fontWeight: 600 }}>
-                  🎉 Задание завершено! Итоговый балл: {lastResult.score}%
+                  Задание завершено! Итоговый балл: {lastResult.score}%
                 </p>
               )}
             </div>
@@ -303,7 +303,7 @@ export default function StudentAssignmentsPage() {
       {/* Completion summary */}
       {allAnswered && isCompleted && (
         <div className="card" style={{ padding: '1.5rem', marginTop: '1.5rem', textAlign: 'center' }}>
-          <h3>🎉 Задание выполнено!</h3>
+          <h3>Задание выполнено!</h3>
           <div style={{ fontSize: '2rem', fontWeight: 700, color: '#8b5cf6', margin: '0.5rem 0' }}>
             {detail.questions.filter(qq => qq.isCorrect).length}/{detail.totalQuestions}
           </div>

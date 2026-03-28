@@ -220,7 +220,7 @@ function TutorsPage() {
                     {school.logoUrl ? (
                       <img src={school.logoUrl} alt={school.name} style={{ width: '100%', height: '100%', borderRadius: '0.75rem', objectFit: 'cover' }} />
                     ) : (
-                      '🏫'
+                      school.name.charAt(0).toUpperCase()
                     )}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>

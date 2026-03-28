@@ -76,6 +76,8 @@ export interface Translations {
     tutorRegNote: string;
     tutorSchoolSelect: string;
     tutorIndependent: string;
+    schoolInviteCode: string;
+    schoolInviteCodePlaceholder: string;
     fp: {
       title: string;
       enterEmail: string;
@@ -697,6 +699,9 @@ export interface Translations {
       unverify: string; verify: string; unverifyShort: string;
       unblock: string; block: string;
       verifyError: string; blockReasonPrompt: string; blockError: string;
+      subscriptionError: string; schoolTutor: string; subscriptionLabel: string;
+      noSubscription: string; verificationRequested: string;
+      activateSub: string; deactivateSub: string;
     };
     audit: {
       title: string;
@@ -1324,6 +1329,11 @@ export interface Translations {
     step1: string;
     step2: string;
     step3: string;
+    activeTitle: string;
+    schoolCovers: string;
+    expiresAt: string;
+    schoolPendingSub: string;
+    independentPayNote: string;
   };
 
   // ─── School Admin ───
@@ -1380,5 +1390,14 @@ export interface Translations {
     deadline: string;
     noQuestions: string;
     private: string;
+    subscriptionTitle: string;
+    subscriptionActive: string;
+    subscriptionInactive: string;
+    inviteCodeTitle: string;
+    inviteCodeDesc: string;
+    copyCode: string;
+    regenerateCode: string;
+    generateCode: string;
+    requireApprovalLabel: string;
   };
 }

@@ -42,6 +42,7 @@ export interface RegisterRequest {
   role?: 'Student' | 'Tutor';
   schoolSlug?: string;
   applyToSchoolId?: number;
+  schoolInviteCode?: string;
 }
 
 export interface VerifyEmailRequest {
@@ -933,6 +934,8 @@ export interface TutorProfileDetail {
   hasPaidSubscription: boolean;
   schoolId: number | null;
   teachingSections: string[] | null;
+  subscriptionExpiresAt: string | null;
+  schoolHasActiveSubscription: boolean;
 }
 
 export interface ScheduleSlot {

@@ -26,8 +26,10 @@ public class TutorProfile : IAuditable
     // Verification request (for free tutors requesting admin review)
     public DateTime? VerificationRequestedAt { get; set; }
 
-    // Paid subscription (gates content publishing for free tutors)
+    // Paid subscription (gates content publishing for independent tutors)
     public bool HasPaidSubscription { get; set; } = false;
+    public DateTime? SubscriptionExpiresAt { get; set; }  // 19990 ₸/year for independent tutors
+    public DateTime? SubscriptionPaidAt { get; set; }     // last payment date
 
     // Cached aggregates (updated on review CRUD)
     public decimal AverageRating { get; set; } = 0;

@@ -810,6 +810,7 @@ public class AdminController : ControllerBase
                 createdAt = tp.CreatedAt,
                 verificationRequestedAt = tp.VerificationRequestedAt,
                 hasPaidSubscription = tp.HasPaidSubscription,
+                subscriptionExpiresAt = tp.SubscriptionExpiresAt,
                 schoolId = tp.SchoolId
             })
             .ToListAsync();
@@ -853,22 +854,73 @@ public class AdminController : ControllerBase
         return Ok(new { verified = false, tutorProfileId = id });
     }
 
-    /// <summary>Toggle tutor paid subscription</summary>
+    /// <summary>Toggle tutor paid subscription (19,990 ₸/year for independent tutors)</summary>
     [HttpPost("tutors/{id:int}/toggle-subscription")]
     public async Task<IActionResult> ToggleTutorSubscription(int id)
     {
         var profile = await _db.TutorProfiles.Include(tp => tp.User).FirstOrDefaultAsync(tp => tp.Id == id);
         if (profile == null) return NotFound(new { error = "Tutor profile not found" });
 
-        profile.HasPaidSubscription = !profile.HasPaidSubscription;
+        if (profile.HasPaidSubscription)
+        {
+            // Deactivate
+            profile.HasPaidSubscription = false;
+            profile.SubscriptionExpiresAt = null;
+        }
+        else
+        {
+            // Activate for 1 year
+            profile.HasPaidSubscription = true;
+            profile.SubscriptionPaidAt = DateTime.UtcNow;
+            profile.SubscriptionExpiresAt = DateTime.UtcNow.AddYears(1);
+        }
         await _db.SaveChangesAsync();
 
         var (adminId, adminEmail) = GetCurrentAdmin();
         await _audit.LogAsync(adminId, adminEmail, "ToggleTutorSubscription", "TutorProfile", id.ToString(),
-            newValues: new { profile.UserId, profile.User.Name, profile.HasPaidSubscription },
+            newValues: new { profile.UserId, profile.User.Name, profile.HasPaidSubscription, profile.SubscriptionExpiresAt },
             ipAddress: GetClientIp());
 
-        return Ok(new { hasPaidSubscription = profile.HasPaidSubscription, tutorProfileId = id });
+        return Ok(new { hasPaidSubscription = profile.HasPaidSubscription, subscriptionExpiresAt = profile.SubscriptionExpiresAt, tutorProfileId = id });
+    }
+
+    /// <summary>Activate school subscription (50,000 ₸/year)</summary>
+    [HttpPost("schools/{schoolId:int}/activate-subscription")]
+    public async Task<IActionResult> ActivateSchoolSubscription(int schoolId)
+    {
+        var school = await _db.TutorSchools.FindAsync(schoolId);
+        if (school == null) return NotFound(new { error = "School not found" });
+
+        school.SubscriptionPaidAt = DateTime.UtcNow;
+        school.SubscriptionExpiresAt = DateTime.UtcNow.AddYears(1);
+        school.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+
+        var (adminId, adminEmail) = GetCurrentAdmin();
+        await _audit.LogAsync(adminId, adminEmail, "ActivateSchoolSubscription", "TutorSchool", schoolId.ToString(),
+            newValues: new { school.Name, school.SubscriptionExpiresAt },
+            ipAddress: GetClientIp());
+
+        return Ok(new { schoolId, subscriptionExpiresAt = school.SubscriptionExpiresAt });
+    }
+
+    /// <summary>Deactivate school subscription</summary>
+    [HttpPost("schools/{schoolId:int}/deactivate-subscription")]
+    public async Task<IActionResult> DeactivateSchoolSubscription(int schoolId)
+    {
+        var school = await _db.TutorSchools.FindAsync(schoolId);
+        if (school == null) return NotFound(new { error = "School not found" });
+
+        school.SubscriptionExpiresAt = null;
+        school.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+
+        var (adminId, adminEmail) = GetCurrentAdmin();
+        await _audit.LogAsync(adminId, adminEmail, "DeactivateSchoolSubscription", "TutorSchool", schoolId.ToString(),
+            newValues: new { school.Name },
+            ipAddress: GetClientIp());
+
+        return Ok(new { schoolId, subscriptionExpiresAt = (DateTime?)null });
     }
 
     // ───────────────────────────────────────────────────────

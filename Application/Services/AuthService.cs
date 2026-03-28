@@ -144,11 +144,30 @@ public class AuthService : IAuthService
 
         // Auto-bind to school if registering from White Label subdomain
         int? schoolId = null;
+        TutorSchool? inviteSchool = null;
+        bool autoApproveSchool = false;
+
         if (!string.IsNullOrWhiteSpace(dto.SchoolSlug))
         {
             var school = await _context.TutorSchools
                 .FirstOrDefaultAsync(s => s.IsActive && (s.Subdomain == dto.SchoolSlug || s.Slug == dto.SchoolSlug));
             if (school != null) schoolId = school.Id;
+        }
+
+        // School invite code: bind tutor to school (auto-approve if RequireApproval is false)
+        if (!string.IsNullOrWhiteSpace(dto.SchoolInviteCode) && role == UserRole.Tutor)
+        {
+            inviteSchool = await _context.TutorSchools
+                .FirstOrDefaultAsync(s => s.IsActive && s.SchoolInviteCode == dto.SchoolInviteCode.Trim().ToUpperInvariant());
+            if (inviteSchool != null)
+            {
+                schoolId = inviteSchool.Id;
+                autoApproveSchool = !inviteSchool.RequireApproval;
+            }
+            else
+            {
+                throw new InvalidOperationException("Invalid school invite code");
+            }
         }
 
         var firstName = InputSanitizer.Sanitize(dto.FirstName)!;
@@ -204,6 +223,22 @@ public class AuthService : IAuthService
                     });
                     await _unitOfWork.SaveChangesAsync();
                 }
+            }
+            // School invite code registration — auto-approve or pending based on school setting
+            else if (inviteSchool != null)
+            {
+                var appStatus = autoApproveSchool
+                    ? TutorSchoolApplicationStatus.Approved
+                    : TutorSchoolApplicationStatus.Pending;
+                _context.TutorSchoolApplications.Add(new TutorSchoolApplication
+                {
+                    UserId = user.Id,
+                    SchoolId = inviteSchool.Id,
+                    Message = "Joined via school invite code",
+                    Status = appStatus,
+                    ReviewedAt = autoApproveSchool ? DateTime.UtcNow : null,
+                });
+                await _unitOfWork.SaveChangesAsync();
             }
             // Auto-create application for WL subdomain registration
             else if (schoolId != null)

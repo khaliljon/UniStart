@@ -41,7 +41,9 @@ public record TutorProfileDetailDto(
     DateTime? VerificationRequestedAt = null,
     bool HasPaidSubscription = false,
     int? SchoolId = null,
-    string[]? TeachingSections = null
+    string[]? TeachingSections = null,
+    DateTime? SubscriptionExpiresAt = null,
+    bool SchoolHasActiveSubscription = false
 );
 
 public record ScheduleSlotDto(

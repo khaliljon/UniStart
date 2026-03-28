@@ -101,4 +101,23 @@ export const schoolAdminService = {
     const { data } = await api.get<TutorContentResult>('/school-admin/tutor-content', { params });
     return data;
   },
+
+  async generateInviteCode(): Promise<{ inviteCode: string }> {
+    const { data } = await api.post<{ inviteCode: string }>('/school-admin/invite-code');
+    return data;
+  },
+
+  async getInviteCode(): Promise<{ inviteCode: string | null; requireApproval: boolean }> {
+    const { data } = await api.get<{ inviteCode: string | null; requireApproval: boolean }>('/school-admin/invite-code');
+    return data;
+  },
+
+  async toggleApproval(requireApproval: boolean): Promise<void> {
+    await api.put('/school-admin/invite-code/approval', { requireApproval });
+  },
+
+  async getSubscription(): Promise<{ schoolName: string; subscriptionExpiresAt: string | null; subscriptionPaidAt: string | null; isActive: boolean }> {
+    const { data } = await api.get('/school-admin/subscription');
+    return data;
+  },
 };

@@ -226,4 +226,69 @@ public class SchoolAdminController : ControllerBase
             page, pageSize
         });
     }
+
+    // ─── School Invite Code ─────────────────────────────
+
+    /// <summary>Generate or regenerate school invite code</summary>
+    [HttpPost("invite-code")]
+    public async Task<IActionResult> GenerateInviteCode()
+    {
+        var school = await GetOwnedSchool();
+        if (school == null) return NotFound(new { error = "You don't own a school" });
+
+        const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+        var rng = System.Security.Cryptography.RandomNumberGenerator.Create();
+        var bytes = new byte[8];
+        rng.GetBytes(bytes);
+        var code = new char[8];
+        for (int i = 0; i < 8; i++)
+            code[i] = chars[bytes[i] % chars.Length];
+
+        school.SchoolInviteCode = new string(code);
+        school.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+
+        return Ok(new { inviteCode = school.SchoolInviteCode, requireApproval = school.RequireApproval });
+    }
+
+    /// <summary>Get current school invite code</summary>
+    [HttpGet("invite-code")]
+    public async Task<IActionResult> GetInviteCode()
+    {
+        var school = await GetOwnedSchool();
+        if (school == null) return NotFound(new { error = "You don't own a school" });
+
+        return Ok(new { inviteCode = school.SchoolInviteCode, requireApproval = school.RequireApproval });
+    }
+
+    /// <summary>Toggle whether school invite code requires admin approval</summary>
+    [HttpPut("invite-code/approval")]
+    public async Task<IActionResult> ToggleApproval([FromBody] ToggleApprovalDto dto)
+    {
+        var school = await GetOwnedSchool();
+        if (school == null) return NotFound(new { error = "You don't own a school" });
+
+        school.RequireApproval = dto.RequireApproval;
+        school.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+
+        return Ok(new { requireApproval = school.RequireApproval });
+    }
+
+    /// <summary>Get school subscription status</summary>
+    [HttpGet("subscription")]
+    public async Task<IActionResult> GetSubscription()
+    {
+        var school = await GetOwnedSchool();
+        if (school == null) return NotFound(new { error = "You don't own a school" });
+
+        return Ok(new
+        {
+            subscriptionExpiresAt = school.SubscriptionExpiresAt,
+            subscriptionPaidAt = school.SubscriptionPaidAt,
+            isActive = school.SubscriptionExpiresAt != null && school.SubscriptionExpiresAt > DateTime.UtcNow
+        });
+    }
 }
+
+public record ToggleApprovalDto(bool RequireApproval);
