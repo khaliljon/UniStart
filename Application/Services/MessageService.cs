@@ -132,7 +132,7 @@ public class MessageService : IMessageService
         // Check tutor exists and is a tutor
         var tutor = await _db.Users.FindAsync(tutorId)
             ?? throw new KeyNotFoundException("Tutor not found");
-        if (tutor.Role != UserRole.Tutor)
+        if (tutor.Role != UserRole.Tutor && tutor.Role != UserRole.SchoolTutor)
             throw new ArgumentException("User is not a tutor");
 
         var student = await _db.Users.FindAsync(studentId)

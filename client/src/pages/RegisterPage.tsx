@@ -22,8 +22,8 @@ function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [role, setRole] = useState<'Student' | 'Tutor'>(() =>
-    searchParams.get('role') === 'Tutor' ? 'Tutor' : 'Student'
+  const [role, setRole] = useState<'Student' | 'Tutor' | 'SchoolAdmin'>(() =>
+    searchParams.get('role') === 'Tutor' ? 'Tutor' : searchParams.get('role') === 'SchoolAdmin' ? 'SchoolAdmin' : 'Student'
   );
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [validationError, setValidationError] = useState('');
@@ -35,6 +35,7 @@ function RegisterPage() {
   const [selectedSchoolId, setSelectedSchoolId] = useState<number | null>(null);
   const [schools, setSchools] = useState<TutorSchoolCard[]>([]);
   const [schoolInviteCode, setSchoolInviteCode] = useState('');
+  const [schoolName, setSchoolName] = useState('');
 
   useGoogleSignIn('google-register-btn', 'signup_with');
 
@@ -104,7 +105,7 @@ function RegisterPage() {
       return;
     }
 
-    dispatch(register({ firstName: firstName.trim(), lastName: lastName.trim(), email, password, role, schoolSlug: branding?.slug, applyToSchoolId: selectedSchoolId ?? undefined, schoolInviteCode: schoolInviteCode.trim() || undefined }));
+    dispatch(register({ firstName: firstName.trim(), lastName: lastName.trim(), email, password, role, schoolSlug: branding?.slug, applyToSchoolId: selectedSchoolId ?? undefined, schoolInviteCode: schoolInviteCode.trim() || undefined, schoolName: schoolName.trim() || undefined }));
   };
 
   const handleVerify = async (e: FormEvent) => {
@@ -214,7 +215,7 @@ function RegisterPage() {
             display: 'flex', gap: '0.5rem', marginBottom: '1.25rem',
             background: 'var(--bg-secondary)', borderRadius: '10px', padding: '4px',
           }}>
-            {(['Student', 'Tutor'] as const).map((r) => (
+            {(['Student', 'Tutor', 'SchoolAdmin'] as const).map((r) => (
               <button
                 key={r}
                 type="button"
@@ -226,10 +227,21 @@ function RegisterPage() {
                   color: role === r ? '#fff' : 'var(--text-secondary)',
                 }}
               >
-                {r === 'Student' ? t.auth.iAmStudent : t.auth.iAmTutor}
+                {r === 'Student' ? t.auth.iAmStudent : r === 'Tutor' ? t.auth.iAmTutor : t.auth.iAmSchoolAdmin}
               </button>
             ))}
           </div>
+
+          {/* Role-specific onboarding note */}
+          {role === 'Student' && (
+            <p style={{
+              fontSize: '0.8rem', color: 'var(--text-secondary)', margin: '-0.5rem 0 1rem',
+              padding: '0.5rem 0.75rem', borderRadius: '8px',
+              background: 'var(--bg-secondary)', lineHeight: 1.4,
+            }}>
+              {t.auth.studentRegNote}
+            </p>
+          )}
           {role === 'Tutor' && (
             <p style={{
               fontSize: '0.8rem', color: 'var(--text-secondary)', margin: '-0.5rem 0 1rem',
@@ -237,6 +249,19 @@ function RegisterPage() {
               background: 'var(--bg-secondary)', lineHeight: 1.4,
             }}>
               {t.auth.tutorRegNote}
+              <br />
+              <strong style={{ color: 'var(--text-primary)' }}>{t.auth.tutorPricing}</strong>
+            </p>
+          )}
+          {role === 'SchoolAdmin' && (
+            <p style={{
+              fontSize: '0.8rem', color: 'var(--text-secondary)', margin: '-0.5rem 0 1rem',
+              padding: '0.5rem 0.75rem', borderRadius: '8px',
+              background: 'var(--bg-secondary)', lineHeight: 1.4,
+            }}>
+              {t.auth.schoolAdminRegNote}
+              <br />
+              <strong style={{ color: 'var(--text-primary)' }}>{t.auth.schoolAdminPricing}</strong>
             </p>
           )}
           {role === 'Tutor' && !branding && schools.length > 0 && (
@@ -274,6 +299,25 @@ function RegisterPage() {
                 }}
                 placeholder={t.auth.schoolInviteCodePlaceholder}
                 maxLength={8}
+              />
+            </div>
+          )}
+          {role === 'SchoolAdmin' && (
+            <div className="form-group" style={{ marginBottom: '1rem' }}>
+              <label htmlFor="schoolName" className="form-label">
+                {t.auth.schoolNameLabel}
+              </label>
+              <input
+                type="text"
+                id="schoolName"
+                className="form-input"
+                value={schoolName}
+                onChange={(e) => {
+                  setSchoolName(e.target.value);
+                  handleInputChange();
+                }}
+                placeholder={t.auth.schoolNamePlaceholder}
+                required
               />
             </div>
           )}

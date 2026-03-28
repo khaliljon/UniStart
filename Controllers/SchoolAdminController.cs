@@ -14,7 +14,7 @@ namespace UniStart.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/school-admin")]
-[Authorize(Roles = "Tutor,Admin,SchoolAdmin")]
+[Authorize(Roles = "Tutor,SchoolTutor,Admin,SchoolAdmin")]
 [ApiVersion("1.0")]
 public class SchoolAdminController : ControllerBase
 {
@@ -54,7 +54,7 @@ public class SchoolAdminController : ControllerBase
             .Where(u => u.SchoolId == school.Id && !u.IsDeleted && u.Role == UserRole.Student)
             .ToListAsync();
 
-        var tutorCount = await _db.TutorProfiles.CountAsync(t => t.SchoolId == school.Id && t.User.Role == UserRole.Tutor);
+        var tutorCount = await _db.TutorProfiles.CountAsync(t => t.SchoolId == school.Id && (t.User.Role == UserRole.Tutor || t.User.Role == UserRole.SchoolTutor));
 
         var activeStudents = students.Count(s => s.LastSeenAt > sevenDaysAgo);
 
@@ -76,7 +76,7 @@ public class SchoolAdminController : ControllerBase
 
         return Ok(new SchoolDashboardDto(
             school.Id, school.Name, students.Count, tutorCount,
-            activeStudents, Math.Round(avgAccuracy, 1), recentStudents));
+            activeStudents, Math.Round(avgAccuracy, 1), recentStudents, school.IsApproved));
     }
 
     /// <summary>All students in the school</summary>
@@ -111,7 +111,7 @@ public class SchoolAdminController : ControllerBase
 
         var tutors = await _db.TutorProfiles
             .Include(t => t.User)
-            .Where(t => t.SchoolId == school.Id && t.User.Role == UserRole.Tutor)
+            .Where(t => t.SchoolId == school.Id && (t.User.Role == UserRole.Tutor || t.User.Role == UserRole.SchoolTutor))
             .Select(t => new SchoolTutorDto(
                 t.UserId, t.User.Name, t.User.Email, t.Headline,
                 t.Specializations.Split(',', System.StringSplitOptions.RemoveEmptyEntries),
@@ -167,7 +167,7 @@ public class SchoolAdminController : ControllerBase
         if (school == null) return NotFound(new { error = "You don't own a school" });
 
         var tutorIds = await _db.TutorProfiles
-            .Where(t => t.SchoolId == school.Id && t.User.Role == UserRole.Tutor)
+            .Where(t => t.SchoolId == school.Id && (t.User.Role == UserRole.Tutor || t.User.Role == UserRole.SchoolTutor))
             .Select(t => t.UserId)
             .ToListAsync();
 

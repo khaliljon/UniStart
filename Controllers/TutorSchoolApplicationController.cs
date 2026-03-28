@@ -34,7 +34,7 @@ public class TutorSchoolApplicationController : ControllerBase
 
     /// <summary>Submit application to join a school (for tutors)</summary>
     [HttpPost]
-    [Authorize(Roles = "Tutor")]
+    [Authorize(Roles = "Tutor,SchoolTutor")]
     public async Task<IActionResult> SubmitApplication([FromBody] SubmitTutorSchoolAppDto dto)
     {
         var userId = GetUserId();
@@ -70,7 +70,7 @@ public class TutorSchoolApplicationController : ControllerBase
 
     /// <summary>Get my applications (for tutors)</summary>
     [HttpGet("my")]
-    [Authorize(Roles = "Tutor")]
+    [Authorize(Roles = "Tutor,SchoolTutor")]
     public async Task<IActionResult> GetMyApplications()
     {
         var userId = GetUserId();

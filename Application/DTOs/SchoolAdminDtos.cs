@@ -11,7 +11,8 @@ public record SchoolDashboardDto(
     int TotalTutors,
     int ActiveStudentsLast7Days,
     double AverageAccuracy,
-    List<SchoolStudentDto> RecentStudents
+    List<SchoolStudentDto> RecentStudents,
+    bool IsApproved
 );
 
 public record SchoolStudentDto(

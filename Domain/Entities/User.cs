@@ -69,7 +69,8 @@ public enum UserRole
     Student,
     Tutor,
     Admin,
-    SchoolAdmin
+    SchoolAdmin,
+    SchoolTutor
 }
 
 public enum SubscriptionTier

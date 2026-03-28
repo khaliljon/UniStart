@@ -26,7 +26,7 @@ public class TutorService : ITutorService
         var query = _db.TutorProfiles
             .Include(tp => tp.User)
             .Include(tp => tp.School)
-            .Where(tp => tp.User.Role == UserRole.Tutor && !tp.User.IsDeleted && !tp.User.IsBlocked && tp.IsVerified)
+            .Where(tp => (tp.User.Role == UserRole.Tutor || tp.User.Role == UserRole.SchoolTutor) && !tp.User.IsDeleted && !tp.User.IsBlocked && tp.IsVerified)
             // Must have active subscription: either school with active sub, or independent tutor with paid sub
             .Where(tp =>
                 (tp.SchoolId != null && tp.School != null && tp.School.IsActive
@@ -107,7 +107,7 @@ public class TutorService : ITutorService
         // Auto-create TutorProfile if user has Tutor role but no profile yet
         if (tp == null)
         {
-            var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId && u.Role == UserRole.Tutor && !u.IsDeleted);
+            var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId && (u.Role == UserRole.Tutor || u.Role == UserRole.SchoolTutor) && !u.IsDeleted);
             if (user == null) return null;
 
             tp = new TutorProfile
@@ -250,7 +250,7 @@ public class TutorService : ITutorService
         if (!exists)
         {
             var user = await _db.Users.FindAsync(userId);
-            if (user == null || user.Role != UserRole.Tutor) return;
+            if (user == null || (user.Role != UserRole.Tutor && user.Role != UserRole.SchoolTutor)) return;
 
             _db.TutorProfiles.Add(new TutorProfile
             {
@@ -438,7 +438,7 @@ public class TutorService : ITutorService
                     ? s.Specializations.Split(',', StringSplitOptions.RemoveEmptyEntries)
                     : Array.Empty<string>(),
                 s.IsPartner,
-                s.Tutors.Count(t => t.User.Role == UserRole.Tutor && !t.User.IsDeleted)
+                s.Tutors.Count(t => (t.User.Role == UserRole.Tutor || t.User.Role == UserRole.SchoolTutor) && !t.User.IsDeleted)
             ))
             .ToListAsync();
     }
@@ -452,7 +452,7 @@ public class TutorService : ITutorService
         if (school == null) return null;
 
         var tutorCards = school.Tutors
-            .Where(t => t.User.Role == UserRole.Tutor && !t.User.IsDeleted && !t.User.IsBlocked)
+            .Where(t => (t.User.Role == UserRole.Tutor || t.User.Role == UserRole.SchoolTutor) && !t.User.IsDeleted && !t.User.IsBlocked)
             .Select(t => new TutorCardDto(
                 t.UserId, t.User.Name, t.Headline, t.Bio,
                 t.Specializations.Length > 0
@@ -576,7 +576,7 @@ public class TutorService : ITutorService
 
         var tutorProfile = await _db.TutorProfiles
             .Include(p => p.User)
-            .FirstOrDefaultAsync(p => p.UserId == tutorUserId && p.User.Role == UserRole.Tutor && !p.User.IsDeleted);
+            .FirstOrDefaultAsync(p => p.UserId == tutorUserId && (p.User.Role == UserRole.Tutor || p.User.Role == UserRole.SchoolTutor) && !p.User.IsDeleted);
         if (tutorProfile == null) return new LinkResultDto(false, "Tutor not found");
 
         if (tutorProfile.SchoolId == school.Id)
@@ -758,7 +758,7 @@ public class TutorService : ITutorService
         // Try to find via new TutorInviteCode table first (S-6)
         var inviteEntity = await _db.TutorInviteCodes
             .Include(c => c.TutorUser)
-            .FirstOrDefaultAsync(c => c.Code == inviteCode && c.IsActive && c.TutorUser.Role == UserRole.Tutor && !c.TutorUser.IsDeleted);
+            .FirstOrDefaultAsync(c => c.Code == inviteCode && c.IsActive && (c.TutorUser.Role == UserRole.Tutor || c.TutorUser.Role == UserRole.SchoolTutor) && !c.TutorUser.IsDeleted);
 
         TutorProfile? profile;
         if (inviteEntity != null)
@@ -793,7 +793,7 @@ public class TutorService : ITutorService
             // Fallback: legacy TutorProfile.InviteCode lookup
             profile = await _db.TutorProfiles
                 .Include(p => p.User)
-                .FirstOrDefaultAsync(p => p.InviteCode == inviteCode && p.User.Role == UserRole.Tutor && !p.User.IsDeleted);
+                .FirstOrDefaultAsync(p => p.InviteCode == inviteCode && (p.User.Role == UserRole.Tutor || p.User.Role == UserRole.SchoolTutor) && !p.User.IsDeleted);
             if (profile == null) return new LinkResultDto(false, "Invalid invite code");
         }
 

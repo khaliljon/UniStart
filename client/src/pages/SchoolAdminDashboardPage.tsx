@@ -65,6 +65,23 @@ function SchoolAdminDashboardPage() {
     <div>
       <h1 style={{ marginBottom: '1.5rem' }}>{dashboard.schoolName}</h1>
 
+      {/* Pending approval banner */}
+      {!dashboard.isApproved && (
+        <div className="card" style={{
+          padding: '1.25rem', marginBottom: '1.5rem',
+          border: '1px solid #f59e0b44', background: '#f59e0b11',
+          textAlign: 'center',
+        }}>
+          <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>&#9203;</div>
+          <div style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: '0.35rem' }}>
+            {t.schoolAdmin.pendingApprovalTitle}
+          </div>
+          <div style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+            {t.schoolAdmin.pendingApprovalDesc}
+          </div>
+        </div>
+      )}
+
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
         <StatCard label={t.schoolAdmin.students} value={dashboard.totalStudents} />
         <StatCard label={t.schoolAdmin.tutors} value={dashboard.totalTutors} />
@@ -88,6 +105,12 @@ function SchoolAdminDashboardPage() {
               ? `${t.schoolAdmin.subscriptionActive} ${subscription.subscriptionExpiresAt ? new Date(subscription.subscriptionExpiresAt).toLocaleDateString(getDateLocale()) : ''}`
               : t.schoolAdmin.subscriptionInactive}
           </div>
+          {!subscription.isActive && (
+            <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>
+              <strong>{t.schoolAdmin.pricingInfo}</strong>
+              <div>{t.schoolAdmin.paymentInstructions}</div>
+            </div>
+          )}
         </div>
       )}
 

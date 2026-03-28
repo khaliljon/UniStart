@@ -54,7 +54,7 @@ public class TutorController : ControllerBase
 
     /// <summary>Обновить свой профиль тьютора</summary>
     [HttpPut("profile")]
-    [Authorize(Roles = "Tutor,Admin")]
+    [Authorize(Roles = "Tutor,SchoolTutor,Admin")]
     public async Task<IActionResult> UpdateProfile([FromBody] UpdateTutorProfileDto dto)
     {
         var userId = GetUserId();
@@ -64,7 +64,7 @@ public class TutorController : ControllerBase
 
     /// <summary>Request verification from platform admin (for free tutors)</summary>
     [HttpPost("request-verification")]
-    [Authorize(Roles = "Tutor")]
+    [Authorize(Roles = "Tutor,SchoolTutor")]
     public async Task<IActionResult> RequestVerification()
     {
         var userId = GetUserId();
@@ -82,7 +82,7 @@ public class TutorController : ControllerBase
 
     /// <summary>Установить расписание</summary>
     [HttpPut("schedule")]
-    [Authorize(Roles = "Tutor,Admin")]
+    [Authorize(Roles = "Tutor,SchoolTutor,Admin")]
     public async Task<IActionResult> SetSchedule([FromBody] SetScheduleDto dto)
     {
         var userId = GetUserId();
@@ -101,7 +101,7 @@ public class TutorController : ControllerBase
 
     /// <summary>Мои студенты (для тьютора)</summary>
     [HttpGet("my-students")]
-    [Authorize(Roles = "Tutor,Admin")]
+    [Authorize(Roles = "Tutor,SchoolTutor,Admin")]
     public async Task<IActionResult> GetMyStudents()
     {
         var userId = GetUserId();
@@ -111,7 +111,7 @@ public class TutorController : ControllerBase
 
     /// <summary>Ожидающие заявки от студентов</summary>
     [HttpGet("requests/pending")]
-    [Authorize(Roles = "Tutor,Admin")]
+    [Authorize(Roles = "Tutor,SchoolTutor,Admin")]
     public async Task<IActionResult> GetPendingRequests()
     {
         var userId = GetUserId();
@@ -121,7 +121,7 @@ public class TutorController : ControllerBase
 
     /// <summary>Принять заявку студента</summary>
     [HttpPost("requests/{conversationId:int}/accept")]
-    [Authorize(Roles = "Tutor,Admin")]
+    [Authorize(Roles = "Tutor,SchoolTutor,Admin")]
     public async Task<IActionResult> AcceptStudent(int conversationId)
     {
         var userId = GetUserId();
@@ -148,7 +148,7 @@ public class TutorController : ControllerBase
 
     /// <summary>Отклонить заявку студента</summary>
     [HttpPost("requests/{conversationId:int}/decline")]
-    [Authorize(Roles = "Tutor,Admin")]
+    [Authorize(Roles = "Tutor,SchoolTutor,Admin")]
     public async Task<IActionResult> DeclineStudent(int conversationId, [FromBody] DeclineRequestDto? dto)
     {
         var userId = GetUserId();
@@ -207,7 +207,7 @@ public class TutorController : ControllerBase
 
     /// <summary>Создать школу (тьютор)</summary>
     [HttpPost("schools")]
-    [Authorize(Roles = "Tutor,Admin")]
+    [Authorize(Roles = "Tutor,SchoolTutor,Admin")]
     public async Task<IActionResult> CreateSchool([FromBody] CreateSchoolDto dto)
     {
         var userId = GetUserId();
@@ -217,7 +217,7 @@ public class TutorController : ControllerBase
 
     /// <summary>Получить свою школу (владелец)</summary>
     [HttpGet("my-school")]
-    [Authorize(Roles = "Tutor,Admin")]
+    [Authorize(Roles = "Tutor,SchoolTutor,Admin")]
     public async Task<IActionResult> GetMySchool()
     {
         var userId = GetUserId();
@@ -228,7 +228,7 @@ public class TutorController : ControllerBase
 
     /// <summary>Обновить свою школу (владелец)</summary>
     [HttpPut("my-school")]
-    [Authorize(Roles = "Tutor,Admin")]
+    [Authorize(Roles = "Tutor,SchoolTutor,Admin")]
     public async Task<IActionResult> UpdateMySchool([FromBody] UpdateSchoolDto dto)
     {
         var userId = GetUserId();
@@ -239,7 +239,7 @@ public class TutorController : ControllerBase
 
     /// <summary>Добавить тьютора в школу (владелец)</summary>
     [HttpPost("my-school/tutors/{tutorUserId}")]
-    [Authorize(Roles = "Tutor,Admin")]
+    [Authorize(Roles = "Tutor,SchoolTutor,Admin")]
     public async Task<IActionResult> AddTutorToSchool(int tutorUserId)
     {
         var userId = GetUserId();
@@ -249,7 +249,7 @@ public class TutorController : ControllerBase
 
     /// <summary>Удалить тьютора из школы (владелец)</summary>
     [HttpDelete("my-school/tutors/{tutorUserId}")]
-    [Authorize(Roles = "Tutor,Admin")]
+    [Authorize(Roles = "Tutor,SchoolTutor,Admin")]
     public async Task<IActionResult> RemoveTutorFromSchool(int tutorUserId)
     {
         var userId = GetUserId();
@@ -261,7 +261,7 @@ public class TutorController : ControllerBase
 
     /// <summary>Генерация инвайт-кода (тьютор)</summary>
     [HttpPost("invite-code")]
-    [Authorize(Roles = "Tutor,Admin")]
+    [Authorize(Roles = "Tutor,SchoolTutor,Admin")]
     public async Task<IActionResult> GenerateInviteCode()
     {
         var userId = GetUserId();
@@ -271,7 +271,7 @@ public class TutorController : ControllerBase
 
     /// <summary>Получить текущий инвайт-код (тьютор)</summary>
     [HttpGet("invite-code")]
-    [Authorize(Roles = "Tutor,Admin")]
+    [Authorize(Roles = "Tutor,SchoolTutor,Admin")]
     public async Task<IActionResult> GetInviteCode()
     {
         var userId = GetUserId();
@@ -282,7 +282,7 @@ public class TutorController : ControllerBase
 
     /// <summary>Список всех инвайт-кодов тьютора (S-6)</summary>
     [HttpGet("invite-codes")]
-    [Authorize(Roles = "Tutor,Admin")]
+    [Authorize(Roles = "Tutor,SchoolTutor,Admin")]
     public async Task<IActionResult> GetInviteCodes()
     {
         var userId = GetUserId();
@@ -291,7 +291,7 @@ public class TutorController : ControllerBase
 
     /// <summary>Создать инвайт-код с параметрами (S-6)</summary>
     [HttpPost("invite-codes")]
-    [Authorize(Roles = "Tutor,Admin")]
+    [Authorize(Roles = "Tutor,SchoolTutor,Admin")]
     public async Task<IActionResult> CreateInviteCode([FromBody] CreateInviteCodeDto dto)
     {
         var userId = GetUserId();
@@ -300,7 +300,7 @@ public class TutorController : ControllerBase
 
     /// <summary>Деактивировать инвайт-код (S-6)</summary>
     [HttpDelete("invite-codes/{codeId}")]
-    [Authorize(Roles = "Tutor,Admin")]
+    [Authorize(Roles = "Tutor,SchoolTutor,Admin")]
     public async Task<IActionResult> DeactivateInviteCode(int codeId)
     {
         var userId = GetUserId();
@@ -319,7 +319,7 @@ public class TutorController : ControllerBase
 
     /// <summary>Отвязать ученика (тьютор)</summary>
     [HttpDelete("students/{studentUserId}/unlink")]
-    [Authorize(Roles = "Tutor,Admin")]
+    [Authorize(Roles = "Tutor,SchoolTutor,Admin")]
     public async Task<IActionResult> UnlinkStudent(int studentUserId)
     {
         var userId = GetUserId();
@@ -338,7 +338,7 @@ public class TutorController : ControllerBase
 
     /// <summary>Привязанные ученики (тьютор)</summary>
     [HttpGet("linked-students")]
-    [Authorize(Roles = "Tutor,Admin")]
+    [Authorize(Roles = "Tutor,SchoolTutor,Admin")]
     public async Task<IActionResult> GetLinkedStudents()
     {
         var userId = GetUserId();
@@ -361,7 +361,7 @@ public class TutorController : ControllerBase
 
     /// <summary>Создать вопрос (тьютор)</summary>
     [HttpPost("questions")]
-    [Authorize(Roles = "Tutor,Admin")]
+    [Authorize(Roles = "Tutor,SchoolTutor,Admin")]
     public async Task<IActionResult> CreateQuestion([FromBody] CreateQuestionDto dto)
     {
         var userId = GetUserId();
@@ -371,7 +371,7 @@ public class TutorController : ControllerBase
 
     /// <summary>Обновить вопрос (тьютор)</summary>
     [HttpPut("questions/{questionId}")]
-    [Authorize(Roles = "Tutor,Admin")]
+    [Authorize(Roles = "Tutor,SchoolTutor,Admin")]
     public async Task<IActionResult> UpdateQuestion(int questionId, [FromBody] UpdateQuestionDto dto)
     {
         var userId = GetUserId();
@@ -381,7 +381,7 @@ public class TutorController : ControllerBase
 
     /// <summary>Удалить вопрос (тьютор)</summary>
     [HttpDelete("questions/{questionId}")]
-    [Authorize(Roles = "Tutor,Admin")]
+    [Authorize(Roles = "Tutor,SchoolTutor,Admin")]
     public async Task<IActionResult> DeleteQuestion(int questionId)
     {
         var userId = GetUserId();
@@ -391,7 +391,7 @@ public class TutorController : ControllerBase
 
     /// <summary>Мои вопросы (тьютор)</summary>
     [HttpGet("questions")]
-    [Authorize(Roles = "Tutor,Admin")]
+    [Authorize(Roles = "Tutor,SchoolTutor,Admin")]
     public async Task<IActionResult> GetMyQuestions(
         [FromQuery] string? search, [FromQuery] string? examType,
         [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
@@ -403,7 +403,7 @@ public class TutorController : ControllerBase
 
     /// <summary>Деталь вопроса (тьютор)</summary>
     [HttpGet("questions/{questionId}")]
-    [Authorize(Roles = "Tutor,Admin")]
+    [Authorize(Roles = "Tutor,SchoolTutor,Admin")]
     public async Task<IActionResult> GetQuestion(int questionId)
     {
         var userId = GetUserId();
@@ -413,7 +413,7 @@ public class TutorController : ControllerBase
 
     /// <summary>Список тем для тьютора</summary>
     [HttpGet("topics")]
-    [Authorize(Roles = "Tutor,Admin")]
+    [Authorize(Roles = "Tutor,SchoolTutor,Admin")]
     public async Task<IActionResult> GetTopics()
     {
         var result = await _tutorService.GetTopicsAsync();
@@ -426,7 +426,7 @@ public class TutorController : ControllerBase
 
     /// <summary>Создать задание</summary>
     [HttpPost("assignments")]
-    [Authorize(Roles = "Tutor,Admin")]
+    [Authorize(Roles = "Tutor,SchoolTutor,Admin")]
     public async Task<IActionResult> CreateAssignment([FromBody] CreateAssignmentDto dto)
     {
         var userId = GetUserId();
@@ -440,7 +440,7 @@ public class TutorController : ControllerBase
 
     /// <summary>Обновить задание</summary>
     [HttpPut("assignments/{assignmentId}")]
-    [Authorize(Roles = "Tutor,Admin")]
+    [Authorize(Roles = "Tutor,SchoolTutor,Admin")]
     public async Task<IActionResult> UpdateAssignment(int assignmentId, [FromBody] UpdateAssignmentDto dto)
     {
         var userId = GetUserId();
@@ -450,7 +450,7 @@ public class TutorController : ControllerBase
 
     /// <summary>Удалить задание</summary>
     [HttpDelete("assignments/{assignmentId}")]
-    [Authorize(Roles = "Tutor,Admin")]
+    [Authorize(Roles = "Tutor,SchoolTutor,Admin")]
     public async Task<IActionResult> DeleteAssignment(int assignmentId)
     {
         var userId = GetUserId();
@@ -460,7 +460,7 @@ public class TutorController : ControllerBase
 
     /// <summary>Список заданий тьютора</summary>
     [HttpGet("assignments")]
-    [Authorize(Roles = "Tutor,Admin")]
+    [Authorize(Roles = "Tutor,SchoolTutor,Admin")]
     public async Task<IActionResult> GetAssignments()
     {
         var userId = GetUserId();
@@ -470,7 +470,7 @@ public class TutorController : ControllerBase
 
     /// <summary>Деталь задания (тьютор)</summary>
     [HttpGet("assignments/{assignmentId}")]
-    [Authorize(Roles = "Tutor,Admin")]
+    [Authorize(Roles = "Tutor,SchoolTutor,Admin")]
     public async Task<IActionResult> GetAssignment(int assignmentId)
     {
         var userId = GetUserId();
@@ -513,7 +513,7 @@ public class TutorController : ControllerBase
 
     /// <summary>Get allowed specializations and sections for the current tutor</summary>
     [HttpGet("my-school-specs")]
-    [Authorize(Roles = "Tutor")]
+    [Authorize(Roles = "Tutor,SchoolTutor")]
     public async Task<IActionResult> GetMySchoolSpecs()
     {
         var userId = GetUserId();

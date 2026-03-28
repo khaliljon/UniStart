@@ -218,7 +218,7 @@ public class AdminController : ControllerBase
 
     /// <summary>List all topics with question counts</summary>
     [HttpGet("topics")]
-    [Authorize(Roles = "Admin,Tutor")]
+    [Authorize(Roles = "Admin,Tutor,SchoolTutor")]
     public async Task<IActionResult> GetTopics()
     {
         var result = await _svc.GetTopicsAsync();
@@ -789,7 +789,7 @@ public class AdminController : ControllerBase
     {
         var tutors = await _db.TutorProfiles
             .Include(tp => tp.User)
-            .Where(tp => tp.User.Role == UserRole.Tutor)
+            .Where(tp => (tp.User.Role == UserRole.Tutor || tp.User.Role == UserRole.SchoolTutor))
             .OrderByDescending(tp => tp.CreatedAt)
             .Select(tp => new
             {
@@ -1015,7 +1015,7 @@ public class AdminController : ControllerBase
 
         var tutors = await _db.TutorProfiles
             .Include(t => t.User)
-            .Where(t => t.SchoolId == schoolId && t.User.Role == UserRole.Tutor)
+            .Where(t => t.SchoolId == schoolId && (t.User.Role == UserRole.Tutor || t.User.Role == UserRole.SchoolTutor))
             .Select(t => new {
                 t.UserId, t.User.Name, t.User.Email, t.Headline,
                 t.IsVerified, t.IsAvailable, t.TotalStudents, t.AverageRating,
@@ -1073,5 +1073,53 @@ public class AdminController : ControllerBase
             ipAddress: GetClientIp());
 
         return Ok(new { deleted = true, schoolId, school.Name });
+    }
+
+    /// <summary>Get pending (unapproved) schools created by SchoolAdmin self-registration</summary>
+    [HttpGet("schools/pending")]
+    public async Task<IActionResult> GetPendingSchools()
+    {
+        var schools = await _db.TutorSchools
+            .Where(s => s.IsActive && !s.IsApproved)
+            .OrderByDescending(s => s.CreatedAt)
+            .Select(s => new
+            {
+                s.Id, s.Name, s.Slug, s.CreatedAt,
+                ownerName = s.Owner != null ? s.Owner.Name : null,
+                ownerEmail = s.Owner != null ? s.Owner.Email : null,
+            })
+            .ToListAsync();
+        return Ok(schools);
+    }
+
+    /// <summary>Approve a school (self-registered SchoolAdmin)</summary>
+    [HttpPost("schools/{schoolId:int}/approve")]
+    public async Task<IActionResult> ApproveSchool(int schoolId)
+    {
+        var school = await _db.TutorSchools.FindAsync(schoolId);
+        if (school == null) return NotFound(new { error = "School not found" });
+        school.IsApproved = true;
+        school.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+
+        var (adminId, email) = GetCurrentAdmin();
+        await _audit.LogAsync(adminId, email, "ApproveSchool", "TutorSchool", schoolId.ToString(),
+            newValues: new { school.Name, IsApproved = true },
+            ipAddress: GetClientIp());
+
+        return Ok(new { approved = true, schoolId, school.Name });
+    }
+
+    /// <summary>Reject (deactivate) a pending school</summary>
+    [HttpPost("schools/{schoolId:int}/reject")]
+    public async Task<IActionResult> RejectSchool(int schoolId)
+    {
+        var school = await _db.TutorSchools.FindAsync(schoolId);
+        if (school == null) return NotFound(new { error = "School not found" });
+        school.IsActive = false;
+        school.IsApproved = false;
+        school.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+        return Ok(new { rejected = true, schoolId });
     }
 }

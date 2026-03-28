@@ -131,12 +131,14 @@ public class AuthService : IAuthService
             throw new InvalidOperationException("User with this email already exists");
         }
 
-        // Determine role (only Student or Tutor allowed from registration)
+        // Determine role (Student, Tutor, or SchoolAdmin allowed from registration)
         var role = UserRole.Student;
-        if (!string.IsNullOrWhiteSpace(dto.Role) &&
-            string.Equals(dto.Role, "Tutor", StringComparison.OrdinalIgnoreCase))
+        if (!string.IsNullOrWhiteSpace(dto.Role))
         {
-            role = UserRole.Tutor;
+            if (string.Equals(dto.Role, "Tutor", StringComparison.OrdinalIgnoreCase))
+                role = UserRole.Tutor;
+            else if (string.Equals(dto.Role, "SchoolAdmin", StringComparison.OrdinalIgnoreCase))
+                role = UserRole.SchoolAdmin;
         }
 
         // Create new user with verification code
@@ -151,7 +153,12 @@ public class AuthService : IAuthService
         {
             var school = await _context.TutorSchools
                 .FirstOrDefaultAsync(s => s.IsActive && (s.Subdomain == dto.SchoolSlug || s.Slug == dto.SchoolSlug));
-            if (school != null) schoolId = school.Id;
+            if (school != null)
+            {
+                schoolId = school.Id;
+                // Tutor registering from school subdomain → SchoolTutor
+                if (role == UserRole.Tutor) role = UserRole.SchoolTutor;
+            }
         }
 
         // School invite code: bind tutor to school (auto-approve if RequireApproval is false)
@@ -163,6 +170,7 @@ public class AuthService : IAuthService
             {
                 schoolId = inviteSchool.Id;
                 autoApproveSchool = !inviteSchool.RequireApproval;
+                role = UserRole.SchoolTutor; // tutor with school → SchoolTutor role
             }
             else
             {
@@ -192,7 +200,7 @@ public class AuthService : IAuthService
         await _unitOfWork.SaveChangesAsync();
 
         // Auto-create TutorProfile for tutor registrations
-        if (role == UserRole.Tutor)
+        if (role == UserRole.Tutor || role == UserRole.SchoolTutor)
         {
             _context.TutorProfiles.Add(new TutorProfile
             {
@@ -251,6 +259,49 @@ public class AuthService : IAuthService
                 });
                 await _unitOfWork.SaveChangesAsync();
             }
+        }
+
+        // Auto-create school for SchoolAdmin registrations
+        if (role == UserRole.SchoolAdmin && !string.IsNullOrWhiteSpace(dto.SchoolName))
+        {
+            var schoolName = InputSanitizer.Sanitize(dto.SchoolName)!.Trim();
+            var slug = schoolName.ToLowerInvariant()
+                .Replace(" ", "-")
+                .Replace("ё", "e").Replace("й", "y").Replace("ц", "ts").Replace("у", "u")
+                .Replace("к", "k").Replace("е", "e").Replace("н", "n").Replace("г", "g")
+                .Replace("ш", "sh").Replace("щ", "sch").Replace("з", "z").Replace("х", "h")
+                .Replace("ъ", "").Replace("ф", "f").Replace("ы", "y").Replace("в", "v")
+                .Replace("а", "a").Replace("п", "p").Replace("р", "r").Replace("о", "o")
+                .Replace("л", "l").Replace("д", "d").Replace("ж", "zh").Replace("э", "e")
+                .Replace("я", "ya").Replace("ч", "ch").Replace("с", "s").Replace("м", "m")
+                .Replace("и", "i").Replace("т", "t").Replace("ь", "").Replace("б", "b")
+                .Replace("ю", "yu");
+            slug = System.Text.RegularExpressions.Regex.Replace(slug, @"[^a-z0-9\-]", "");
+            slug = System.Text.RegularExpressions.Regex.Replace(slug, @"-+", "-").Trim('-');
+            if (string.IsNullOrWhiteSpace(slug)) slug = $"school-{DateTime.UtcNow.Ticks}";
+
+            // Ensure unique slug
+            var baseSlug = slug;
+            var counter = 1;
+            while (await _context.TutorSchools.AnyAsync(s => s.Slug == slug))
+            {
+                slug = $"{baseSlug}-{counter++}";
+            }
+
+            var newSchool = new TutorSchool
+            {
+                Name = schoolName,
+                Slug = slug,
+                IsActive = true,
+                IsApproved = false, // pending admin approval
+                OwnerUserId = user.Id,
+                CreatedAt = DateTime.UtcNow,
+            };
+            _context.TutorSchools.Add(newSchool);
+            await _unitOfWork.SaveChangesAsync();
+
+            user.SchoolId = newSchool.Id;
+            await _unitOfWork.SaveChangesAsync();
         }
 
         // Initialize default skill profiles for the user

@@ -518,6 +518,7 @@ public class UniStartDbContext : DbContext
             entity.Property(e => e.IsActive).HasDefaultValue(true);
             entity.Property(e => e.IsPartner).HasDefaultValue(true);
             entity.Property(e => e.RequireApproval).HasDefaultValue(true);
+            entity.Property(e => e.IsApproved).HasDefaultValue(false);
             entity.Property(e => e.SchoolInviteCode).HasMaxLength(20);
             entity.HasIndex(e => e.Slug).IsUnique();
             entity.HasIndex(e => e.SchoolInviteCode).IsUnique()

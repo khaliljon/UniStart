@@ -73,7 +73,14 @@ export interface Translations {
     orContinueWith: string;
     iAmStudent: string;
     iAmTutor: string;
+    iAmSchoolAdmin: string;
+    studentRegNote: string;
     tutorRegNote: string;
+    tutorPricing: string;
+    schoolAdminRegNote: string;
+    schoolAdminPricing: string;
+    schoolNameLabel: string;
+    schoolNamePlaceholder: string;
     tutorSchoolSelect: string;
     tutorIndependent: string;
     schoolInviteCode: string;
@@ -779,6 +786,9 @@ export interface Translations {
       emptyConfirm: string;
       restoreError: string; deleteError: string; emptyError: string;
     };
+    schools: {
+      pendingTitle: string;
+    };
   };
 
   // ─── Onboarding ───
@@ -1399,5 +1409,9 @@ export interface Translations {
     regenerateCode: string;
     generateCode: string;
     requireApprovalLabel: string;
+    pendingApprovalTitle: string;
+    pendingApprovalDesc: string;
+    pricingInfo: string;
+    paymentInstructions: string;
   };
 }

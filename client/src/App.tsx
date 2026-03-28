@@ -153,7 +153,7 @@ function SchoolAdminRoutes() {
 function App() {
   const { isAuthenticated, user } = useAppSelector((state) => state.auth)
   const isAdmin = user?.role === 'Admin'
-  const isTutor = user?.role === 'Tutor'
+  const isTutor = user?.role === 'Tutor' || user?.role === 'SchoolTutor'
   const isSchoolAdmin = user?.role === 'SchoolAdmin'
   const needsOnboarding = isAuthenticated && !isAdmin && !isTutor && !isSchoolAdmin && !user?.hasCompletedOnboarding
 

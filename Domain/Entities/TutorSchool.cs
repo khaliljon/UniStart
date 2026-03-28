@@ -26,6 +26,7 @@ public class TutorSchool
     // ── School Invite Code ───────────────────────────────
     public string? SchoolInviteCode { get; set; }         // for tutor self-registration
     public bool RequireApproval { get; set; } = true;     // require SchoolAdmin approval for code registrations
+    public bool IsApproved { get; set; } = false;           // admin-approved school (self-registered schools start unapproved)
 
     // ── White Label Branding ──────────────────────────────
     public string? Subdomain { get; set; }          // e.g. "linhao" → linhao.unistart.kz

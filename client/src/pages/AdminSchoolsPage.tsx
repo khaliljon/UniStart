@@ -19,9 +19,11 @@ function AdminSchoolsPage() {
   const [selected, setSelected] = useState<TutorSchoolCard | null>(null);
   const [detail, setDetail] = useState<SchoolDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [pendingSchools, setPendingSchools] = useState<Array<{ id: number; name: string; slug: string; ownerName: string; ownerEmail: string; createdAt: string }>>([]);
 
   useEffect(() => {
     tutorService.getSchools().then(setSchools).catch(console.error).finally(() => setLoading(false));
+    adminService.getPendingSchools().then(setPendingSchools).catch(() => {});
   }, []);
 
   const loadSchoolDetail = useCallback(async (school: TutorSchoolCard) => {
@@ -67,6 +69,22 @@ function AdminSchoolsPage() {
     }
   }, [t]);
 
+  const handleApproveSchool = useCallback(async (id: number) => {
+    try {
+      await adminService.approveSchool(id);
+      setPendingSchools(prev => prev.filter(s => s.id !== id));
+      tutorService.getSchools().then(setSchools).catch(() => {});
+    } catch { alert('Error approving school'); }
+  }, []);
+
+  const handleRejectSchool = useCallback(async (id: number) => {
+    if (!confirm(t.admin.common.deleteConfirm + '?')) return;
+    try {
+      await adminService.rejectSchool(id);
+      setPendingSchools(prev => prev.filter(s => s.id !== id));
+    } catch { alert('Error rejecting school'); }
+  }, [t]);
+
   if (loading) {
     return <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>{t.admin.common.loading}</div>;
   }
@@ -79,6 +97,42 @@ function AdminSchoolsPage() {
           {schools.length}
         </span>
       </h1>
+
+      {/* Pending school applications */}
+      {pendingSchools.length > 0 && (
+        <div className="card" style={{ padding: '1.25rem', marginBottom: '1.5rem', border: '1px solid #f59e0b44', background: '#f59e0b11' }}>
+          <h2 style={{ margin: '0 0 0.75rem', fontSize: '1.1rem', fontWeight: 700 }}>
+            {t.admin.schools.pendingTitle}
+            <span style={{ background: '#f59e0b', color: '#fff', borderRadius: '999px', padding: '0.1rem 0.5rem', fontSize: '0.75rem', fontWeight: 700, marginLeft: '0.5rem' }}>
+              {pendingSchools.length}
+            </span>
+          </h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            {pendingSchools.map(s => (
+              <div key={s.id} style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem',
+                padding: '0.75rem', borderRadius: '8px', background: 'var(--bg-secondary)',
+              }}>
+                <div>
+                  <strong>{s.name}</strong>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginLeft: '0.5rem' }}>{s.slug}</span>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                    {s.ownerName} ({s.ownerEmail}) · {new Date(s.createdAt).toLocaleDateString()}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button className="btn btn-primary" style={{ padding: '0.35rem 0.8rem', fontSize: '0.8rem' }} onClick={() => handleApproveSchool(s.id)}>
+                    {t.schoolAdmin.approve}
+                  </button>
+                  <button className="btn btn-outline" style={{ padding: '0.35rem 0.8rem', fontSize: '0.8rem', color: '#ef4444', borderColor: '#ef4444' }} onClick={() => handleRejectSchool(s.id)}>
+                    {t.schoolAdmin.reject}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: selected ? '1fr 1.2fr' : '1fr', gap: '1.5rem' }}>
         {/* Schools list */}

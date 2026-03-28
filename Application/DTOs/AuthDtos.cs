@@ -11,7 +11,8 @@ public record RegisterDto(
     string? Role = null,
     string? SchoolSlug = null,
     int? ApplyToSchoolId = null,  // Tutor: submit application to join this school on registration
-    string? SchoolInviteCode = null  // Tutor: join school via invite code
+    string? SchoolInviteCode = null,  // Tutor: join school via invite code
+    string? SchoolName = null  // SchoolAdmin: name for new school
 );
 
 public record LoginDto(

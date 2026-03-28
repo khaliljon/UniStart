@@ -39,10 +39,11 @@ export interface RegisterRequest {
   firstName: string;
   lastName: string;
   password: string;
-  role?: 'Student' | 'Tutor';
+  role?: 'Student' | 'Tutor' | 'SchoolAdmin';
   schoolSlug?: string;
   applyToSchoolId?: number;
   schoolInviteCode?: string;
+  schoolName?: string;
 }
 
 export interface VerifyEmailRequest {

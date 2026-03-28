@@ -307,6 +307,16 @@ const adminService = {
   deleteSchool: (schoolId: number) =>
     api.delete(`/admin/schools/${schoolId}`).then(r => r.data),
 
+  // ─── Pending Schools (approval flow) ─────────────────
+  getPendingSchools: () =>
+    api.get<Array<{ id: number; name: string; slug: string; ownerName: string; ownerEmail: string; createdAt: string }>>('/admin/schools/pending').then(r => r.data),
+
+  approveSchool: (schoolId: number) =>
+    api.post(`/admin/schools/${schoolId}/approve`).then(r => r.data),
+
+  rejectSchool: (schoolId: number) =>
+    api.post(`/admin/schools/${schoolId}/reject`).then(r => r.data),
+
   // ─── Content Management ──────────────────────────────
 
   // Lessons

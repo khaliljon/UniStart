@@ -507,8 +507,8 @@ public class AdminService : IAdminService
         {
             user.Role = role;
 
-            // Auto-create TutorProfile when role changed to Tutor or SchoolAdmin
-            if (role == UserRole.Tutor || role == UserRole.SchoolAdmin)
+            // Auto-create TutorProfile when role changed to Tutor, SchoolTutor or SchoolAdmin
+            if (role == UserRole.Tutor || role == UserRole.SchoolTutor || role == UserRole.SchoolAdmin)
             {
                 var hasProfile = await _db.TutorProfiles.AnyAsync(tp => tp.UserId == id);
                 if (!hasProfile)
@@ -566,7 +566,7 @@ public class AdminService : IAdminService
 
                 // Auto-create approved application so tutor shows up correctly in school admin panel
                 // (no Pending notification — admin assignment bypasses the application flow)
-                if (user.Role == UserRole.Tutor)
+                if (user.Role == UserRole.Tutor || user.Role == UserRole.SchoolTutor)
                 {
                     var hasPending = await _db.TutorSchoolApplications
                         .AnyAsync(a => a.UserId == id && a.SchoolId == dto.SchoolId.Value
@@ -666,7 +666,7 @@ public class AdminService : IAdminService
         return new AdminUserStatsDto(
             TotalUsers: total,
             Students: roleCounts.GetValueOrDefault(UserRole.Student),
-            Tutors: roleCounts.GetValueOrDefault(UserRole.Tutor),
+            Tutors: roleCounts.GetValueOrDefault(UserRole.Tutor) + roleCounts.GetValueOrDefault(UserRole.SchoolTutor),
             Admins: roleCounts.GetValueOrDefault(UserRole.Admin),
             ProUsers: proCount,
             ActiveLast7Days: activeUserIds

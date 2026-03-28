@@ -8,6 +8,7 @@ export interface SchoolDashboard {
   activeStudentsLast7Days: number;
   averageAccuracy: number;
   recentStudents: SchoolStudent[];
+  isApproved: boolean;
 }
 
 export interface SchoolStudent {

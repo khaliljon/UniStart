@@ -150,7 +150,7 @@ function AdminUsersPage() {
       if (editData.role !== selected.role) payload.role = editData.role;
       if (editData.subscriptionTier !== selected.subscriptionTier) payload.subscriptionTier = editData.subscriptionTier;
       // School assignment: always send when role is Tutor/SchoolAdmin
-      if (editData.role === 'Tutor' || editData.role === 'SchoolAdmin') {
+      if (editData.role === 'Tutor' || editData.role === 'SchoolTutor' || editData.role === 'SchoolAdmin') {
         if (editData.schoolId) {
           payload.schoolId = editData.schoolId;
         } else if (selected.schoolId) {
@@ -421,11 +421,12 @@ function AdminUsersPage() {
                   >
                     <option value="Student">Student</option>
                     <option value="Tutor">Tutor</option>
+                    <option value="SchoolTutor">SchoolTutor</option>
                     <option value="SchoolAdmin">SchoolAdmin</option>
                     <option value="Admin">Admin</option>
                   </select>
                 </label>
-                {(editData.role === 'Tutor' || editData.role === 'SchoolAdmin') && schools.length > 0 && (
+                {(editData.role === 'Tutor' || editData.role === 'SchoolTutor' || editData.role === 'SchoolAdmin') && schools.length > 0 && (
                   <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
                     {t.admin.users.schoolLabel}
                     <select
