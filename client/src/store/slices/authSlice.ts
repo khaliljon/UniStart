@@ -30,6 +30,12 @@ function redirectAfterAuth(response: AuthResponse): boolean {
     return true;
   }
 
+  // Admin must ALWAYS go to main domain, regardless of schoolSubdomain
+  if (currentSubdomain && response.role === 'Admin') {
+    window.location.href = `https://unistart.kz?authTransfer=${buildTransfer()}`;
+    return true;
+  }
+
   // On subdomain → redirect non-school users to the main domain
   if (currentSubdomain && !response.schoolSubdomain) {
     window.location.href = `https://unistart.kz?authTransfer=${buildTransfer()}`;
@@ -90,7 +96,10 @@ export const login = createAsyncThunk(
   async (data: LoginRequest, { rejectWithValue }) => {
     try {
       const response = await authService.login(data);
-      redirectAfterAuth(response);
+      if (redirectAfterAuth(response)) {
+        // Prevent Redux state update while page redirects
+        await new Promise<never>(() => {});
+      }
       return response;
     } catch (error: unknown) {
       const err = error as { response?: { data?: { error?: string } } };
@@ -117,7 +126,9 @@ export const verifyEmail = createAsyncThunk(
   async (data: VerifyEmailRequest, { rejectWithValue }) => {
     try {
       const response = await authService.verifyEmail(data);
-      redirectAfterAuth(response);
+      if (redirectAfterAuth(response)) {
+        await new Promise<never>(() => {});
+      }
       return response;
     } catch (error: unknown) {
       const err = error as { response?: { data?: { error?: string } } };
@@ -131,7 +142,9 @@ export const googleLogin = createAsyncThunk(
   async (data: GoogleLoginRequest, { rejectWithValue }) => {
     try {
       const response = await authService.googleLogin(data);
-      redirectAfterAuth(response);
+      if (redirectAfterAuth(response)) {
+        await new Promise<never>(() => {});
+      }
       return response;
     } catch (error: unknown) {
       const err = error as { response?: { data?: { error?: string } } };

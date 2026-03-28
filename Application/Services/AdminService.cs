@@ -563,6 +563,42 @@ public class AdminService : IAdminService
                     if (school != null && school.OwnerUserId == null)
                         school.OwnerUserId = id;
                 }
+
+                // Auto-create approved application so tutor shows up correctly in school admin panel
+                // (no Pending notification — admin assignment bypasses the application flow)
+                if (user.Role == UserRole.Tutor)
+                {
+                    var hasPending = await _db.TutorSchoolApplications
+                        .AnyAsync(a => a.UserId == id && a.SchoolId == dto.SchoolId.Value
+                            && a.Status == TutorSchoolApplicationStatus.Pending);
+                    if (hasPending)
+                    {
+                        // Auto-approve existing pending application
+                        var pending = await _db.TutorSchoolApplications
+                            .FirstAsync(a => a.UserId == id && a.SchoolId == dto.SchoolId.Value
+                                && a.Status == TutorSchoolApplicationStatus.Pending);
+                        pending.Status = TutorSchoolApplicationStatus.Approved;
+                        pending.ReviewedAt = DateTime.UtcNow;
+                    }
+                    else
+                    {
+                        // Create pre-approved application record
+                        var hasAny = await _db.TutorSchoolApplications
+                            .AnyAsync(a => a.UserId == id && a.SchoolId == dto.SchoolId.Value
+                                && a.Status == TutorSchoolApplicationStatus.Approved);
+                        if (!hasAny)
+                        {
+                            _db.TutorSchoolApplications.Add(new TutorSchoolApplication
+                            {
+                                UserId = id,
+                                SchoolId = dto.SchoolId.Value,
+                                Message = "Назначен администратором UniStart",
+                                Status = TutorSchoolApplicationStatus.Approved,
+                                ReviewedAt = DateTime.UtcNow,
+                            });
+                        }
+                    }
+                }
             }
         }
 
