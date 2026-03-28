@@ -51,7 +51,7 @@ function SchoolAdminTutorsPage() {
           {t.schoolAdmin.tutors}
         </button>
         <button style={tabStyle(tab === 'content')} onClick={() => setTab('content')}>
-          Контент
+          {t.schoolAdmin.content}
         </button>
       </div>
 
@@ -110,21 +110,21 @@ function SchoolAdminTutorsPage() {
           {tutors.length > 0 && (
             <div style={{ marginBottom: '1rem' }}>
               <select className="form-input" style={{ maxWidth: '300px' }} value={filterTutor ?? ''} onChange={e => setFilterTutor(e.target.value ? Number(e.target.value) : undefined)}>
-                <option value="">Все тьюторы</option>
+                <option value="">{t.schoolAdmin.allTutors}</option>
                 {tutors.map(tr => <option key={tr.userId} value={tr.userId}>{tr.name}</option>)}
               </select>
             </div>
           )}
 
           {contentLoading ? (
-            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>Загрузка...</div>
+            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>{t.schoolAdmin.loading}</div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
               {/* Assignments section */}
               <div>
-                <h3 style={{ margin: '0 0 0.75rem', fontSize: '1rem' }}>Задания ({assignments.length})</h3>
+                <h3 style={{ margin: '0 0 0.75rem', fontSize: '1rem' }}>{t.schoolAdmin.assignments} ({assignments.length})</h3>
                 {assignments.length === 0 ? (
-                  <div className="card" style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--text-secondary)' }}>Заданий пока нет</div>
+                  <div className="card" style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--text-secondary)' }}>{t.schoolAdmin.noAssignments}</div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                     {assignments.map(a => (
@@ -137,15 +137,15 @@ function SchoolAdminTutorsPage() {
                             </span>
                           </div>
                           <span style={{ fontSize: '0.72rem', color: a.isActive ? 'var(--success-color)' : 'var(--text-secondary)' }}>
-                            {a.isActive ? 'Активно' : 'Неактивно'}
+                            {a.isActive ? t.schoolAdmin.active : t.schoolAdmin.inactive}
                           </span>
                         </div>
                         {a.description && <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.35rem' }}>{a.description}</div>}
                         <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                          <span>Вопросов: {a.questionCount}</span>
-                          <span>Учеников: {a.studentCount}</span>
-                          <span>Выполнили: {a.completedCount}</span>
-                          {a.deadline && <span>Дедлайн: {new Date(a.deadline).toLocaleDateString()}</span>}
+                          <span>{t.schoolAdmin.questionsCount}: {a.questionCount}</span>
+                          <span>{t.schoolAdmin.studentsCount}: {a.studentCount}</span>
+                          <span>{t.schoolAdmin.completedCount}: {a.completedCount}</span>
+                          {a.deadline && <span>{t.schoolAdmin.deadline}: {new Date(a.deadline).toLocaleDateString()}</span>}
                         </div>
                       </div>
                     ))}
@@ -155,9 +155,9 @@ function SchoolAdminTutorsPage() {
 
               {/* Questions section */}
               <div>
-                <h3 style={{ margin: '0 0 0.75rem', fontSize: '1rem' }}>Вопросы ({questions.length})</h3>
+                <h3 style={{ margin: '0 0 0.75rem', fontSize: '1rem' }}>{t.schoolAdmin.questions} ({questions.length})</h3>
                 {questions.length === 0 ? (
-                  <div className="card" style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--text-secondary)' }}>Вопросов пока нет</div>
+                  <div className="card" style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--text-secondary)' }}>{t.schoolAdmin.noQuestions}</div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                     {questions.map(q => (
@@ -171,7 +171,7 @@ function SchoolAdminTutorsPage() {
                           </div>
                           {q.isPrivate && (
                             <span style={{ fontSize: '0.7rem', padding: '0.15rem 0.4rem', borderRadius: '4px', background: 'var(--bg-secondary)', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
-                              Приватный
+                              {t.schoolAdmin.private}
                             </span>
                           )}
                         </div>

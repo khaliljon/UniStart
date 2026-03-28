@@ -193,7 +193,9 @@ function WhiteLabelLanding({ branding }: Props) {
         textAlign: 'center', padding: '1.5rem 2rem', borderTop: '1px solid var(--border-color)',
         fontSize: '0.8rem', color: 'var(--text-secondary)',
       }}>
-        {t.wl.poweredBy} <span style={{ color: '#6366f1', fontWeight: 600 }}>UniStart</span> \u00b7 {new Date().getFullYear()}
+        {t.wl.footerBrand.split('{brand}')[0]}
+        <span style={{ color: '#6366f1', fontWeight: 600 }}>UniStart</span>
+        {t.wl.footerBrand.split('{brand}')[1]} &middot; {new Date().getFullYear()}
       </footer>
     </div>
   );

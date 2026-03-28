@@ -254,7 +254,6 @@ function TutorQuestionsPage() {
         <div className="alert alert-error">{error}</div>
       ) : questions.length === 0 ? (
         <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
-          <p style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>📝</p>
           <h3>{t.tutor.noQuestions}</h3>
           <p style={{ color: 'var(--text-secondary)' }}>{t.tutor.noQuestionsDesc}</p>
           <button className="btn btn-primary" onClick={openCreate} style={{ marginTop: '1rem' }}>+ {t.tutor.createQuestion}</button>

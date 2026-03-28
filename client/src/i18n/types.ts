@@ -1129,6 +1129,25 @@ export interface Translations {
     applyToJoin: string;
     applicationPending: string;
     applicationRejected: string;
+    home: string;
+    newRequests: string;
+    unreadMessages: string;
+    noNewRequests: string;
+    accept: string;
+    decline: string;
+    acceptError: string;
+    declineError: string;
+    declineReasonPrompt: string;
+    myProfile: string;
+    headline: string;
+    statusLabel: string;
+    partnerSchoolsDesc: string;
+    myApplications: string;
+    appPending: string;
+    appApproved: string;
+    appRejected: string;
+    messagePlaceholder: string;
+    send: string;
   };
 
   // ─── Legal ───
@@ -1274,6 +1293,7 @@ export interface Translations {
     pendingVerification: string;
     logoutBtn: string;
     poweredBy: string;
+    footerBrand: string;
   };
 
   // ─── Tutor Verification Gate ───
@@ -1348,5 +1368,17 @@ export interface Translations {
     status: string;
     actions: string;
     noApplications: string;
+    content: string;
+    allTutors: string;
+    assignments: string;
+    noAssignments: string;
+    active: string;
+    inactive: string;
+    questionsCount: string;
+    studentsCount: string;
+    completedCount: string;
+    deadline: string;
+    noQuestions: string;
+    private: string;
   };
 }

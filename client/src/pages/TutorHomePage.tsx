@@ -5,9 +5,10 @@ import { messageService } from '../services/messageService';
 import { useBranding } from '../contexts/BrandingContext';
 import api from '../services/api';
 import type { TutorProfileDetail, PendingRequest, TutorSchoolCard } from '../types';
-import { getDateLocale } from '../i18n';
+import { getDateLocale, useTranslation } from '../i18n';
 
 function TutorHomePage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { isWhiteLabel } = useBranding();
   const [profile, setProfile] = useState<TutorProfileDetail | null>(null);
@@ -20,6 +21,7 @@ function TutorHomePage() {
   const [applyingTo, setApplyingTo] = useState<number | null>(null);
   const [applyMsg, setApplyMsg] = useState('');
   const [applyError, setApplyError] = useState<string | null>(null);
+  const [requestingVerification, setRequestingVerification] = useState(false);
 
   const loadData = useCallback(async () => {
     try {
@@ -81,26 +83,41 @@ function TutorHomePage() {
     }
   };
 
+  const handleRequestVerification = async () => {
+    setRequestingVerification(true);
+    try {
+      await api.post('/tutors/request-verification');
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        const data = await tutorService.getTutorProfile(user.id);
+        setProfile(data);
+      }
+    } catch { /* ignore */ } finally {
+      setRequestingVerification(false);
+    }
+  };
+
   const handleAccept = async (conversationId: number) => {
     setActionLoading(conversationId);
     try {
       await tutorService.acceptStudent(conversationId);
       setPending(prev => prev.filter(p => p.conversationId !== conversationId));
     } catch {
-      alert('Не удалось принять заявку');
+      alert(t.tutor.acceptError);
     } finally {
       setActionLoading(null);
     }
   };
 
   const handleDecline = async (conversationId: number) => {
-    const reason = prompt('Причина отклонения (необязательно):');
+    const reason = prompt(t.tutor.declineReasonPrompt);
     setActionLoading(conversationId);
     try {
       await tutorService.declineStudent(conversationId, reason || undefined);
       setPending(prev => prev.filter(p => p.conversationId !== conversationId));
     } catch {
-      alert('Не удалось отклонить заявку');
+      alert(t.tutor.declineError);
     } finally {
       setActionLoading(null);
     }
@@ -112,20 +129,20 @@ function TutorHomePage() {
   };
 
   if (loading) {
-    return <div className="animate-fade-in" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>Загрузка...</div>;
+    return <div className="animate-fade-in" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>{t.schoolAdmin.loading}</div>;
   }
 
   return (
     <div className="animate-fade-in">
-      <h1 style={{ marginBottom: '1.5rem' }}>Главная</h1>
+      <h1 style={{ marginBottom: '1.5rem' }}>{t.tutor.home}</h1>
 
       {/* Stat cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
         {[
-          { label: 'Новые заявки', value: pending.length, icon: '', color: '#f59e0b', onClick: () => {} },
-          { label: 'Непрочитанные', value: unreadCount, icon: '', color: '#3b82f6', onClick: () => navigate('/messages') },
-          { label: 'Рейтинг', value: profile ? profile.averageRating.toFixed(1) : '—', icon: '', color: '#10b981', onClick: () => navigate('/reviews') },
-          { label: 'Учеников', value: profile?.totalStudents ?? 0, icon: '', color: '#8b5cf6', onClick: () => navigate('/students') },
+          { label: t.tutor.newRequests, value: pending.length, icon: '', color: '#f59e0b', onClick: () => {} },
+          { label: t.tutor.unreadMessages, value: unreadCount, icon: '', color: '#3b82f6', onClick: () => navigate('/messages') },
+          { label: t.tutor.rating, value: profile ? profile.averageRating.toFixed(1) : '—', icon: '', color: '#10b981', onClick: () => navigate('/reviews') },
+          { label: t.tutor.studentsCount, value: profile?.totalStudents ?? 0, icon: '', color: '#8b5cf6', onClick: () => navigate('/students') },
         ].map((stat, i) => (
           <div
             key={i}
@@ -143,14 +160,14 @@ function TutorHomePage() {
       {/* Pending requests */}
       <div className="card" style={{ marginBottom: '1rem' }}>
         <h2 style={{ margin: '0 0 1rem', fontSize: '1.15rem' }}>
-          Новые заявки {pending.length > 0 && <span style={{
+          {t.tutor.newRequests} {pending.length > 0 && <span style={{
             background: '#f59e0b', color: '#fff', borderRadius: '999px',
             padding: '0.15rem 0.5rem', fontSize: '0.75rem', fontWeight: 700, marginLeft: '0.5rem',
           }}>{pending.length}</span>}
         </h2>
 
         {pending.length === 0 ? (
-          <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Нет новых заявок</p>
+          <p style={{ color: 'var(--text-secondary)', margin: 0 }}>{t.tutor.noNewRequests}</p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             {pending.map(req => (
@@ -195,7 +212,7 @@ function TutorHomePage() {
                     disabled={actionLoading === req.conversationId}
                     style={{ padding: '0.4rem 1rem', fontSize: '0.85rem' }}
                   >
-                    Принять
+                    {t.tutor.accept}
                   </button>
                   <button
                     className="btn btn-outline"
@@ -203,7 +220,7 @@ function TutorHomePage() {
                     disabled={actionLoading === req.conversationId}
                     style={{ padding: '0.4rem 1rem', fontSize: '0.85rem' }}
                   >
-                    Отклонить
+                    {t.tutor.decline}
                   </button>
                 </div>
               </div>
@@ -213,20 +230,57 @@ function TutorHomePage() {
       </div>
 
       {/* Quick info */}
+      {/* Verification banner */}
+      {profile && !profile.isVerified && (
+        <div className="card" style={{
+          padding: '1rem 1.25rem', marginBottom: '1rem',
+          border: '1px solid',
+          borderColor: profile.verificationRequestedAt ? '#f59e0b44' : '#3b82f644',
+          background: profile.verificationRequestedAt ? '#f59e0b11' : '#3b82f611',
+        }}>
+          {profile.verificationRequestedAt ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span style={{ fontSize: '1.1rem' }}>&#9203;</span>
+              <div>
+                <div style={{ fontWeight: 600 }}>{t.tutorVerification.pendingTitle}</div>
+                <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
+                  {t.tutorVerification.pendingDesc}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
+              <div>
+                <div style={{ fontWeight: 600 }}>{t.tutorVerification.notVerifiedTitle}</div>
+                <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
+                  {t.tutorVerification.notVerifiedDesc}
+                </div>
+              </div>
+              <button
+                className="btn btn-primary"
+                style={{ whiteSpace: 'nowrap', fontSize: '0.85rem' }}
+                onClick={handleRequestVerification}
+                disabled={requestingVerification}
+              >{t.tutorVerification.requestBtn}</button>
+            </div>
+          )}
+        </div>
+      )}
+
       {profile && (
         <div className="card">
-          <h2 style={{ margin: '0 0 0.75rem', fontSize: '1.15rem' }}>Мой профиль</h2>
+          <h2 style={{ margin: '0 0 0.75rem', fontSize: '1.15rem' }}>{t.tutor.myProfile}</h2>
           <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', fontSize: '0.9rem' }}>
-            <div><strong>Заголовок:</strong> {profile.headline}</div>
-            <div><strong>Статус:</strong> {profile.isAvailable ? '● Доступен' : '○ Недоступен'}</div>
-            {profile.isVerified && <div>✓ Верифицирован</div>}
+            <div><strong>{t.tutor.headline}:</strong> {profile.headline}</div>
+            <div><strong>{t.tutor.statusLabel}:</strong> {profile.isAvailable ? t.tutor.available : t.tutor.unavailable}</div>
+            {profile.isVerified && <div style={{ color: 'var(--success-color)', fontWeight: 600 }}>{t.tutor.verified}</div>}
           </div>
           <button
             className="btn btn-outline"
             onClick={() => navigate('/my-profile')}
             style={{ marginTop: '0.75rem', fontSize: '0.85rem' }}
           >
-            Редактировать профиль
+            {t.tutor.editProfile}
           </button>
         </div>
       )}
@@ -234,15 +288,15 @@ function TutorHomePage() {
       {/* Partner Schools — for free tutors not bound to any school */}
       {!isWhiteLabel && profile && !profile.schoolId && schools.length > 0 && (
         <div className="card" style={{ marginTop: '1rem' }}>
-          <h2 style={{ margin: '0 0 0.5rem', fontSize: '1.15rem' }}>Школы-партнеры</h2>
+          <h2 style={{ margin: '0 0 0.5rem', fontSize: '1.15rem' }}>{t.tutor.partnerSchools}</h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: '0 0 1rem' }}>
-            Присоединяйтесь к школе, чтобы получать учеников и работать в команде
+            {t.tutor.partnerSchoolsDesc}
           </p>
 
           {/* My applications */}
           {myApps.length > 0 && (
             <div style={{ marginBottom: '1rem' }}>
-              <h4 style={{ margin: '0 0 0.5rem', fontSize: '0.95rem' }}>Мои заявки</h4>
+              <h4 style={{ margin: '0 0 0.5rem', fontSize: '0.95rem' }}>{t.tutor.myApplications}</h4>
               {myApps.map(a => (
                 <div key={a.id} style={{
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -254,7 +308,7 @@ function TutorHomePage() {
                     background: a.status === 'Pending' ? '#f59e0b22' : a.status === 'Approved' ? '#10b98122' : '#ef444422',
                     color: a.status === 'Pending' ? '#f59e0b' : a.status === 'Approved' ? '#10b981' : '#ef4444',
                   }}>
-                    {a.status === 'Pending' ? 'На рассмотрении' : a.status === 'Approved' ? 'Одобрена' : 'Отклонена'}
+                    {a.status === 'Pending' ? t.tutor.appPending : a.status === 'Approved' ? t.tutor.appApproved : t.tutor.appRejected}
                   </span>
                 </div>
               ))}
@@ -270,11 +324,11 @@ function TutorHomePage() {
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '0.5rem' }}>
                   <strong>{s.name}</strong>
-                  {s.isPartner && <span style={{ fontSize: '0.7rem', background: 'var(--primary-color)', color: '#fff', padding: '0.1rem 0.4rem', borderRadius: '999px' }}>Партнер</span>}
+                  {s.isPartner && <span style={{ fontSize: '0.7rem', background: 'var(--primary-color)', color: '#fff', padding: '0.1rem 0.4rem', borderRadius: '999px' }}>{t.tutor.partner}</span>}
                 </div>
                 {s.description && <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>{s.description.slice(0, 100)}{s.description.length > 100 ? '...' : ''}</div>}
                 <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>
-                  {s.tutorCount} тьюторов
+                  {s.tutorCount} {t.tutor.tutorsCount}
                   {s.specializations && s.specializations.length > 0 && ` · ${s.specializations.join(', ')}`}
                 </div>
                 {applyingTo === s.id ? (
@@ -282,19 +336,19 @@ function TutorHomePage() {
                     <input
                       value={applyMsg}
                       onChange={e => setApplyMsg(e.target.value)}
-                      placeholder="Сообщение (необязательно)"
+                      placeholder={t.tutor.messagePlaceholder}
                       style={{ flex: 1, minWidth: '120px', fontSize: '0.82rem', padding: '0.35rem 0.5rem', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)' }}
                     />
                     <button className="btn btn-primary" style={{ fontSize: '0.78rem', padding: '0.35rem 0.7rem' }} onClick={() => handleApplyToSchool(s.id)}>
-                      Отправить
+                      {t.tutor.send}
                     </button>
                     <button className="btn btn-outline" style={{ fontSize: '0.78rem', padding: '0.35rem 0.5rem' }} onClick={() => { setApplyingTo(null); setApplyMsg(''); setApplyError(null); }}>
-                      Отмена
+                      {t.tutor.cancel}
                     </button>
                   </div>
                 ) : (
                   <button className="btn btn-primary" style={{ fontSize: '0.82rem', padding: '0.35rem 0.9rem' }} onClick={() => setApplyingTo(s.id)}>
-                    Подать заявку
+                    {t.tutor.applyToJoin}
                   </button>
                 )}
               </div>
