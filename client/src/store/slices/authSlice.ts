@@ -233,9 +233,14 @@ const authSlice = createSlice({
         state.error = null;
       })
       .addCase(register.fulfilled, (state, action: PayloadAction<AuthResponse>) => {
-        state.isLoading = false;
-        state.pendingVerificationEmail = action.payload.email;
-        // Do NOT save token yet — only after email verification
+        if (action.payload.emailVerified) {
+          // Already verified (e.g. restored account) — full login
+          handleAuthFulfilled(state, action);
+        } else {
+          state.isLoading = false;
+          state.pendingVerificationEmail = action.payload.email;
+          // Do NOT save token yet — only after email verification
+        }
       })
       .addCase(register.rejected, (state, action) => {
         state.isLoading = false;

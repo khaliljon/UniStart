@@ -48,7 +48,8 @@ public class AuthService : IAuthService
         {
             if (existingUser.IsDeleted)
             {
-                // Restore soft-deleted user with new credentials
+                // Restore soft-deleted user with new credentials — require re-verification
+                var restoreCode = GenerateVerificationCode();
                 existingUser.IsDeleted = false;
                 existingUser.DeletedAt = null;
                 existingUser.DeletedBy = null;
@@ -58,7 +59,16 @@ public class AuthService : IAuthService
                 existingUser.PasswordHash = BC.HashPassword(dto.Password);
                 existingUser.HasCompletedOnboarding = false;
                 existingUser.CreatedAt = DateTime.UtcNow;
+                existingUser.EmailVerified = false;
+                existingUser.EmailVerificationCode = restoreCode;
+                existingUser.EmailVerificationCodeExpiresAt = DateTime.UtcNow.AddMinutes(10);
                 await _unitOfWork.SaveChangesAsync();
+
+                _ = Task.Run(async () =>
+                {
+                    try { await _emailService.SendVerificationCodeAsync(existingUser.Email, existingUser.Name, restoreCode); }
+                    catch { /* logged inside EmailService */ }
+                });
 
                 var restoredToken = _jwtService.GenerateToken(existingUser);
                 var restoredExpiresAt = DateTime.UtcNow.AddHours(24);
@@ -79,6 +89,45 @@ public class AuthService : IAuthService
                     restoredSub
                 );
             }
+
+            // Existing unverified user — update credentials and resend verification code
+            if (!existingUser.EmailVerified)
+            {
+                var reCode = GenerateVerificationCode();
+                existingUser.FirstName = InputSanitizer.Sanitize(dto.FirstName)!;
+                existingUser.LastName = InputSanitizer.Sanitize(dto.LastName)!;
+                existingUser.Name = $"{existingUser.FirstName} {existingUser.LastName}".Trim();
+                existingUser.PasswordHash = BC.HashPassword(dto.Password);
+                existingUser.EmailVerificationCode = reCode;
+                existingUser.EmailVerificationCodeExpiresAt = DateTime.UtcNow.AddMinutes(10);
+                await _unitOfWork.SaveChangesAsync();
+
+                _ = Task.Run(async () =>
+                {
+                    try { await _emailService.SendVerificationCodeAsync(existingUser.Email, existingUser.Name, reCode); }
+                    catch { /* logged inside EmailService */ }
+                });
+
+                var reToken = _jwtService.GenerateToken(existingUser);
+                var reExpiresAt = DateTime.UtcNow.AddHours(24);
+                var reSub = await GetSchoolSubdomainAsync(existingUser);
+                return new AuthResponseDto(
+                    existingUser.Id,
+                    existingUser.Email,
+                    existingUser.FirstName,
+                    existingUser.LastName,
+                    existingUser.Name,
+                    existingUser.Role.ToString(),
+                    existingUser.HasCompletedOnboarding,
+                    existingUser.SubscriptionTier.ToString(),
+                    existingUser.SubscriptionExpiresAt,
+                    existingUser.EmailVerified,
+                    reToken,
+                    reExpiresAt,
+                    reSub
+                );
+            }
+
             throw new InvalidOperationException("User with this email already exists");
         }
 
