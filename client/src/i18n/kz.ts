@@ -1374,6 +1374,7 @@ export const kz: Translations = {
     unavailable: 'Қол жетімсіз',
     verify: 'Верификациялау',
     unverify: 'Верификацияны алу',
+    notRequestedVerification: 'Верификация сұралмаған',
     noSchool: 'Мектеп табылмады. Аккаунтты байланыстыру үшін әкімшіге хабарласыңыз.',
     loading: 'Жүктелуде...',
     back: 'Артқа',

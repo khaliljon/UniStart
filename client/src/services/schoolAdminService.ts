@@ -33,6 +33,7 @@ export interface SchoolTutor {
   totalStudents: number;
   averageRating: number;
   createdAt: string;
+  verificationRequestedAt: string | null;
 }
 
 export interface StudentAnalytics {

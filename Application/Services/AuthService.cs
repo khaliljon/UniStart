@@ -293,7 +293,7 @@ public class AuthService : IAuthService
                 Name = schoolName,
                 Slug = slug,
                 IsActive = true,
-                IsApproved = false, // pending admin approval
+                IsApproved = true, // auto-approved; access gated by subscription
                 OwnerUserId = user.Id,
                 CreatedAt = DateTime.UtcNow,
             };

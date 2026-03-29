@@ -84,7 +84,7 @@ function SchoolAdminTutorsPage() {
                         loadTutors();
                       } catch { /* */ }
                     }}>{t.schoolAdmin.unverify}</button>
-                ) : (
+                ) : tr.verificationRequestedAt ? (
                   <button className="btn btn-primary" style={{ fontSize: '0.75rem', padding: '0.25rem 0.7rem' }}
                     onClick={async () => {
                       try {
@@ -92,6 +92,8 @@ function SchoolAdminTutorsPage() {
                         loadTutors();
                       } catch { /* */ }
                     }}>{t.schoolAdmin.verify}</button>
+                ) : (
+                  <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>{t.schoolAdmin.notRequestedVerification}</span>
                 )}
               </div>
             </div>

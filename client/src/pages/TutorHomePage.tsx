@@ -240,7 +240,6 @@ function TutorHomePage() {
         }}>
           {profile.verificationRequestedAt ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span style={{ fontSize: '1.1rem' }}>&#9203;</span>
               <div>
                 <div style={{ fontWeight: 600 }}>{t.tutorVerification.pendingTitle}</div>
                 <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>

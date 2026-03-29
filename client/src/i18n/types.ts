@@ -1372,6 +1372,7 @@ export interface Translations {
     unavailable: string;
     verify: string;
     unverify: string;
+    notRequestedVerification: string;
     noSchool: string;
     loading: string;
     back: string;

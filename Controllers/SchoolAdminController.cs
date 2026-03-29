@@ -116,7 +116,7 @@ public class SchoolAdminController : ControllerBase
                 t.UserId, t.User.Name, t.User.Email, t.Headline,
                 t.Specializations.Split(',', System.StringSplitOptions.RemoveEmptyEntries),
                 t.IsVerified, t.IsAvailable, t.TotalStudents,
-                t.AverageRating, t.CreatedAt))
+                t.AverageRating, t.CreatedAt, t.VerificationRequestedAt))
             .ToListAsync();
 
         return Ok(tutors);

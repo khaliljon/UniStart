@@ -1373,6 +1373,7 @@ export const en: Translations = {
     unavailable: 'Unavailable',
     verify: 'Verify',
     unverify: 'Unverify',
+    notRequestedVerification: 'Verification not requested',
     noSchool: 'No school found. Contact admin to link your account.',
     loading: 'Loading...',
     back: 'Back',

@@ -36,5 +36,6 @@ public record SchoolTutorDto(
     bool IsAvailable,
     int TotalStudents,
     decimal AverageRating,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    DateTime? VerificationRequestedAt
 );

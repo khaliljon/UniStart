@@ -1377,6 +1377,7 @@ export const ru: Translations = {
     unavailable: 'Недоступен',
     verify: 'Верифицировать',
     unverify: 'Снять верификацию',
+    notRequestedVerification: 'Верификация не запрошена',
     noSchool: 'Школа не найдена. Обратитесь к администратору для привязки аккаунта.',
     loading: 'Загрузка...',
     back: 'Назад',
