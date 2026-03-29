@@ -31,7 +31,6 @@ const AdminQuestionImportPage = lazy(() => import('./pages/AdminQuestionImportPa
 const AdminContentPage = lazy(() => import('./pages/AdminContentPage'))
 const AdminTrashPage = lazy(() => import('./pages/AdminTrashPage'))
 const AdminProfilePage = lazy(() => import('./pages/AdminProfilePage'))
-const AdminApplicationsPage = lazy(() => import('./pages/AdminApplicationsPage'))
 const AdminSchoolsPage = lazy(() => import('./pages/AdminSchoolsPage'))
 const LandingPage = lazy(() => import('./pages/LandingPage'))
 const TutorsPage = lazy(() => import('./pages/TutorsPage'))
@@ -54,7 +53,6 @@ const SchoolAdminTutorsPage = lazy(() => import('./pages/SchoolAdminTutorsPage')
 const SchoolAdminApplicationsPage = lazy(() => import('./pages/SchoolAdminApplicationsPage'))
 const TutorContentPage = lazy(() => import('./pages/TutorContentPage'))
 const StudentAssignmentsPage = lazy(() => import('./pages/StudentAssignmentsPage'))
-const ForSchoolsPage = lazy(() => import('./pages/ForSchoolsPage'))
 const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'))
 
 // ── Suspense fallback ───────────────────────────────────
@@ -107,7 +105,6 @@ function AdminRoutes() {
       <Route path="import" element={<AdminImportPage />} />
       <Route path="question-import" element={<AdminQuestionImportPage />} />
       <Route path="trash" element={<AdminTrashPage />} />
-      <Route path="applications" element={<AdminApplicationsPage />} />
       <Route path="schools" element={<AdminSchoolsPage />} />
       <Route path="profile" element={<AdminProfilePage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
@@ -165,7 +162,6 @@ function App() {
       <Route path="/login" element={!isAuthenticated ? <LoginPage /> : <Navigate to={needsOnboarding ? '/onboarding' : '/'} />} />
       <Route path="/register" element={!isAuthenticated ? <RegisterPage /> : <Navigate to={needsOnboarding ? '/onboarding' : '/'} />} />
       <Route path="/forgot-password" element={!isAuthenticated ? <ForgotPasswordPage /> : <Navigate to="/" replace />} />
-      <Route path="/for-schools" element={<ForSchoolsPage />} />
       <Route path="/privacy" element={<PrivacyPage />} />
       <Route path="/terms" element={<TermsPage />} />
       <Route path="/onboarding" element={needsOnboarding ? <OnboardingPage /> : <Navigate to="/" replace />} />

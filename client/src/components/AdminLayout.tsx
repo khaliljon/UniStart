@@ -6,7 +6,6 @@ import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
 import { logout } from '../store/slices/authSlice';
 import { chatService } from '../services/chatService';
-import api from '../services/api';
 import LanguageSwitcher from './LanguageSwitcher';
 
 function AdminLayout() {
@@ -17,7 +16,6 @@ function AdminLayout() {
   const { t } = useTranslation();
   const [moreOpen, setMoreOpen] = useState(false);
   const moreRef = useRef<HTMLLIElement>(null);
-  const [pendingApps, setPendingApps] = useState(0);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -27,18 +25,6 @@ function AdminLayout() {
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
-  }, []);
-
-  useEffect(() => {
-    const loadPending = async () => {
-      try {
-        const { data } = await api.get('/admin/school-applications?status=Pending&pageSize=1');
-        setPendingApps(data.total);
-      } catch { /* ignore */ }
-    };
-    loadPending();
-    const interval = setInterval(loadPending, 60000);
-    return () => clearInterval(interval);
   }, []);
 
   const handleLogout = () => {
@@ -100,12 +86,7 @@ function AdminLayout() {
                   gap: '0.25rem',
                 }}
               >
-                {t.admin.nav.more} {pendingApps > 0 && (
-                  <span style={{
-                    background: '#ef4444', width: '0.5rem', height: '0.5rem',
-                    borderRadius: '50%', display: 'inline-block', marginLeft: '0.25rem',
-                  }} />
-                )}<span style={{ fontSize: '0.55rem', opacity: 0.6 }}>▼</span>
+                {t.admin.nav.more} <span style={{ fontSize: '0.55rem', opacity: 0.6 }}>▼</span>
               </NavLink>
               {moreOpen && (
                 <div style={{
@@ -115,7 +96,6 @@ function AdminLayout() {
                   zIndex: 100, padding: '0.35rem 0', marginTop: '0.25rem',
                 }}>
                   {[
-                    { label: t.admin.nav.applications, path: '/applications', badge: pendingApps },
                     { label: t.admin.nav.import, path: '/import' },
                     { label: t.admin.nav.questionImport, path: '/question-import' },
                     { label: t.admin.nav.schools, path: '/schools' },

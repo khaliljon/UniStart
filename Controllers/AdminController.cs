@@ -923,63 +923,6 @@ public class AdminController : ControllerBase
         return Ok(new { schoolId, subscriptionExpiresAt = (DateTime?)null });
     }
 
-    // ───────────────────────────────────────────────────────
-    //  SCHOOL APPLICATIONS
-    // ───────────────────────────────────────────────────────
-
-    [HttpGet("school-applications")]
-    public async Task<IActionResult> GetSchoolApplications(
-        [FromQuery] string? status = null,
-        [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 20)
-    {
-        var query = _db.SchoolApplications.AsQueryable();
-
-        if (!string.IsNullOrEmpty(status) && Enum.TryParse<Domain.Entities.SchoolApplicationStatus>(status, true, out var parsed))
-            query = query.Where(a => a.Status == parsed);
-
-        var total = await query.CountAsync();
-        var items = await query
-            .OrderByDescending(a => a.CreatedAt)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .Select(a => new SchoolApplicationDto(
-                a.Id, a.ContactName, a.Email, a.Phone, a.SchoolName,
-                a.Message, a.Status.ToString(), a.CreatedAt, a.ReviewedAt, a.ReviewedByUserId))
-            .ToListAsync();
-
-        return Ok(new { items, total, page, pageSize });
-    }
-
-    [HttpPut("school-applications/{id:int}/status")]
-    public async Task<IActionResult> UpdateSchoolApplicationStatus(
-        int id, [FromBody] UpdateSchoolApplicationStatusDto dto)
-    {
-        var app = await _db.SchoolApplications.FindAsync(id);
-        if (app == null) return NotFound();
-
-        if (!Enum.TryParse<Domain.Entities.SchoolApplicationStatus>(dto.Status, true, out var newStatus)
-            || newStatus == Domain.Entities.SchoolApplicationStatus.Pending)
-            return BadRequest(new { error = "Status must be 'Approved' or 'Rejected'" });
-
-        var (adminId, adminEmail) = GetCurrentAdmin();
-        app.Status = newStatus;
-        app.ReviewedAt = DateTime.UtcNow;
-        app.ReviewedByUserId = adminId;
-        await _db.SaveChangesAsync();
-
-        await _audit.LogAsync(adminId, adminEmail, "UpdateSchoolApplication", "SchoolApplication", id.ToString(),
-            newValues: new { app.SchoolName, Status = newStatus.ToString() },
-            ipAddress: GetClientIp());
-
-        // Notify applicant
-        _ = _email.SendSchoolApplicationStatusAsync(
-            app.Email, app.ContactName, app.SchoolName,
-            newStatus == Domain.Entities.SchoolApplicationStatus.Approved);
-
-        return Ok(new { id = app.Id, status = newStatus.ToString() });
-    }
-
     // ─── School Management for Admin ─────────────────────
 
     /// <summary>Get students in a specific school</summary>

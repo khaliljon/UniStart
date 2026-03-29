@@ -429,7 +429,7 @@ function LandingPage() {
         {/* Partner CTA */}
         <div style={{ textAlign: 'center', marginTop: '2rem' }}>
           <a
-            href="/for-schools"
+            href="/register?role=SchoolAdmin"
             style={{
               display: 'inline-block',
               padding: '0.85rem 2rem',

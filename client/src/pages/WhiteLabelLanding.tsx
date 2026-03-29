@@ -65,10 +65,6 @@ function WhiteLabelLanding({ branding }: Props) {
           <span style={{ fontWeight: 800, fontSize: '1.5rem', color: primary }}>{brandName}</span>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-          <a href="https://unistart.kz" target="_blank" rel="noopener noreferrer"
-            style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', textDecoration: 'none', marginRight: '0.25rem' }}>
-            {t.wl.poweredBy} <span style={{ color: '#6366f1', fontWeight: 600 }}>UniStart</span>
-          </a>
           <LanguageSwitcher />
           <button onClick={() => navigate('/login')}
             style={{
