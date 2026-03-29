@@ -815,6 +815,7 @@ public class AdminController : ControllerBase
                 schoolId = tp.SchoolId,
                 schoolName = tp.School != null ? tp.School.Name : null,
                 schoolSubscriptionExpiresAt = tp.School != null ? tp.School.SubscriptionExpiresAt : null,
+                teachingSections = tp.TeachingSections,
             })
             .ToListAsync();
 

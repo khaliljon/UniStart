@@ -154,8 +154,8 @@ function AdminUsersPage() {
       if (editData.email !== selected.email) payload.email = editData.email;
       if (editData.role !== selected.role) payload.role = editData.role;
       if (editData.subscriptionTier !== selected.subscriptionTier) payload.subscriptionTier = editData.subscriptionTier;
-      // School assignment: always send when role is Tutor/SchoolAdmin
-      if (editData.role === 'SchoolTutor' || editData.role === 'SchoolAdmin') {
+      // School assignment: always send when role is Tutor/SchoolAdmin/Student
+      if (editData.role === 'SchoolTutor' || editData.role === 'SchoolAdmin' || editData.role === 'Student') {
         if (editData.schoolId) {
           payload.schoolId = editData.schoolId;
         } else if (selected.schoolId) {
@@ -431,15 +431,15 @@ function AdminUsersPage() {
                     <option value="Admin">Admin</option>
                   </select>
                 </label>
-                {(editData.role === 'SchoolTutor' || editData.role === 'SchoolAdmin') && schools.length > 0 && (
+                {(editData.role === 'SchoolTutor' || editData.role === 'SchoolAdmin' || editData.role === 'Student') && schools.length > 0 && (
                   <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                    {t.admin.users.schoolLabel} *
+                    {t.admin.users.schoolLabel}{(editData.role === 'SchoolTutor' || editData.role === 'SchoolAdmin') ? ' *' : ''}
                     <select
                       value={editData.schoolId ?? ''}
                       onChange={(e) => setEditData({ ...editData, schoolId: e.target.value ? Number(e.target.value) : null })}
                       style={{ width: '100%', marginTop: '0.25rem' }}
                     >
-                      <option value="" disabled>— Выберите школу —</option>
+                      <option value="">{editData.role === 'Student' ? '— Без школы —' : '— Выберите школу —'}</option>
                       {schools.map(s => (
                         <option key={s.id} value={s.id}>{s.name} ({s.slug})</option>
                       ))}

@@ -31,11 +31,11 @@ function AdminLayout() {
   }, []);
 
   useEffect(() => {
-    adminService.getPendingCounts().then(setPendingCounts).catch(() => {});
-    const interval = setInterval(() => {
-      adminService.getPendingCounts().then(setPendingCounts).catch(() => {});
-    }, 60000);
-    return () => clearInterval(interval);
+    const refresh = () => adminService.getPendingCounts().then(setPendingCounts).catch(() => {});
+    refresh();
+    const interval = setInterval(refresh, 60000);
+    window.addEventListener('admin-badge-refresh', refresh);
+    return () => { clearInterval(interval); window.removeEventListener('admin-badge-refresh', refresh); };
   }, []);
 
   const handleLogout = () => {

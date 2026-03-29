@@ -25,6 +25,7 @@ interface TutorItem {
   schoolId: number | null;
   schoolName: string | null;
   schoolSubscriptionExpiresAt: string | null;
+  teachingSections: string | null;
 }
 
 interface ContentAssignment {
@@ -84,8 +85,9 @@ function AdminTutorsPage() {
         setTutors(prev => prev.map(x => x.tutorProfileId === tutor.tutorProfileId ? { ...x, isVerified: false } : x));
       } else {
         await adminService.verifyTutor(tutor.tutorProfileId);
-        setTutors(prev => prev.map(x => x.tutorProfileId === tutor.tutorProfileId ? { ...x, isVerified: true } : x));
+        setTutors(prev => prev.map(x => x.tutorProfileId === tutor.tutorProfileId ? { ...x, isVerified: true, verificationRequestedAt: null } : x));
       }
+      window.dispatchEvent(new Event('admin-badge-refresh'));
     } catch {
       alert(t.admin.tutors.verifyError);
     } finally {
@@ -263,6 +265,16 @@ function AdminTutorsPage() {
                   <span>{formatDate(tutor.createdAt)}</span>
                   {tutor.specializations && <span>{tutor.specializations}</span>}
                 </div>
+                {tutor.teachingSections && (
+                  <div style={{ display: 'flex', gap: '0.3rem', marginTop: '0.25rem', flexWrap: 'wrap' }}>
+                    {tutor.teachingSections.split(',').filter(Boolean).map(s => (
+                      <span key={s} style={{
+                        fontSize: '0.7rem', padding: '0.1rem 0.45rem', borderRadius: '999px',
+                        background: 'var(--bg-secondary)', color: 'var(--text-secondary)',
+                      }}>{s.trim()}</span>
+                    ))}
+                  </div>
+                )}
                   {tutor.isBlocked && tutor.blockReason && (
                   <div style={{ fontSize: '0.8rem', color: '#dc2626', marginTop: '0.25rem' }}>
                     {t.admin.tutors.reason} {tutor.blockReason}

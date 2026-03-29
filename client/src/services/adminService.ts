@@ -288,6 +288,7 @@ const adminService = {
       schoolId: number | null;
       schoolName: string | null;
       schoolSubscriptionExpiresAt: string | null;
+      teachingSections: string | null;
     }>>('/admin/tutors').then(r => r.data),
 
   verifyTutor: (tutorProfileId: number) =>

@@ -157,7 +157,7 @@ function TutorProfilePage() {
             </div>
             <div><strong>{profile.totalStudents}</strong> учеников</div>
             {profile.hourlyRate != null && (
-              <div style={{ color: 'var(--primary-color)', fontWeight: 600 }}>{profile.hourlyRate}₽/час</div>
+              <div style={{ color: 'var(--primary-color)', fontWeight: 600 }}>{profile.hourlyRate}₸/час</div>
             )}
             <div style={{ color: 'var(--text-secondary)' }}>
               {profile.contactPreference === 'Chat' ? 'Чат' : profile.contactPreference === 'Email' ? 'Email' : 'Чат / Email'}
@@ -171,6 +171,16 @@ function TutorProfilePage() {
                 <span key={s} style={{
                   fontSize: '0.78rem', padding: '0.2rem 0.6rem', borderRadius: '999px',
                   background: 'var(--bg-secondary)', color: 'var(--text-secondary)', fontWeight: 500,
+                }}>{s}</span>
+              ))}
+            </div>
+          )}
+          {profile.teachingSections && profile.teachingSections.length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', marginTop: '0.35rem' }}>
+              {profile.teachingSections.map(s => (
+                <span key={s} style={{
+                  fontSize: '0.78rem', padding: '0.2rem 0.6rem', borderRadius: '999px',
+                  background: 'rgba(99,102,241,0.1)', color: '#6366f1', fontWeight: 500,
                 }}>{s}</span>
               ))}
             </div>
