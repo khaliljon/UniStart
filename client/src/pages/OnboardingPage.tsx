@@ -62,12 +62,20 @@ function OnboardingPage() {
   const setTargetScore = (s: number) => { _setTargetScore(s); persist({ score: s }); };
   const setSelectedSections = (ss: string[]) => { _setSelectedSections(ss); persist({ sections: ss }); };
 
-  // Redirect if already onboarded
+  // Redirect if already onboarded (also check server in case completed on another device)
   useEffect(() => {
     if (user?.hasCompletedOnboarding) {
       navigate('/', { replace: true });
+      return;
     }
-  }, [user, navigate]);
+    // Server-side check: onboarding may have been completed on another device
+    onboardingService.getStatus().then(status => {
+      if (status.hasCompletedOnboarding) {
+        dispatch(setOnboardingComplete());
+        navigate('/', { replace: true });
+      }
+    }).catch(() => {});
+  }, [user, navigate, dispatch]);
 
   // Load exam types when entering exam step
   useEffect(() => {
