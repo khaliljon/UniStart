@@ -22,9 +22,7 @@ public class SeoController : ControllerBase
     public IActionResult Robots()
     {
         var host = Request.Host.Value ?? "unistart.kz";
-        var scheme = Request.Headers["X-Forwarded-Proto"].FirstOrDefault() ?? Request.Scheme;
-        if (scheme == "http") scheme = "https";
-        var origin = $"{scheme}://{host}";
+        var origin = $"https://{host}";
 
         var isSubdomain = host.Contains('.') &&
             !host.Equals("unistart.kz", StringComparison.OrdinalIgnoreCase) &&
@@ -87,9 +85,7 @@ public class SeoController : ControllerBase
     public async Task<IActionResult> Sitemap()
     {
         var host = Request.Host.Value ?? "unistart.kz";
-        var scheme = Request.Headers["X-Forwarded-Proto"].FirstOrDefault() ?? Request.Scheme;
-        if (scheme == "http") scheme = "https";
-        var origin = $"{scheme}://{host}";
+        var origin = $"https://{host}";
 
         var isSubdomain = host.Contains('.') &&
             !host.Equals("unistart.kz", StringComparison.OrdinalIgnoreCase) &&
