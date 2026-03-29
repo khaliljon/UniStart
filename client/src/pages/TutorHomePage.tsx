@@ -6,6 +6,7 @@ import { useBranding } from '../contexts/BrandingContext';
 import api from '../services/api';
 import type { TutorProfileDetail, PendingRequest, TutorSchoolCard } from '../types';
 import { getDateLocale, useTranslation } from '../i18n';
+import ContactForm from '../components/ContactForm';
 
 function TutorHomePage() {
   const { t } = useTranslation();
@@ -302,14 +303,26 @@ function TutorHomePage() {
             <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
               {profile.schoolId ? t.tutorSubscription.schoolPendingSub : t.tutorSubscription.independentPayNote}
             </div>
-            <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>
-              <strong>{t.tutorSubscription.howTo}</strong>
-              <div>{t.tutorSubscription.step2}</div>
-              <div>{t.tutorSubscription.step3}</div>
-            </div>
+            {!profile.schoolId && (
+              <div style={{ fontSize: '0.85rem', marginTop: '0.5rem' }}>
+                <div style={{ fontWeight: 600, color: 'var(--primary-color)' }}>{t.tutorSubscription.priceLabel}</div>
+                <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
+                  <strong>{t.tutorSubscription.howTo}</strong>
+                  <div>{t.tutorSubscription.step2}</div>
+                  <div>{t.tutorSubscription.step3}</div>
+                </div>
+                <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: '0.35rem' }}>
+                  {t.tutorSubscription.contactEmail}
+                </div>
+              </div>
+            )}
           </div>
         );
       })()}
+
+      <div style={{ marginBottom: '1rem' }}>
+        <ContactForm />
+      </div>
 
       {profile && (
         <div className="card">

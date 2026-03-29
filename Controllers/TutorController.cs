@@ -20,12 +20,14 @@ public class TutorController : ControllerBase
     private readonly ITutorService _tutorService;
     private readonly IHubContext<ChatHub> _hubContext;
     private readonly UniStartDbContext _db;
+    private readonly IEmailService _email;
 
-    public TutorController(ITutorService tutorService, IHubContext<ChatHub> hubContext, UniStartDbContext db)
+    public TutorController(ITutorService tutorService, IHubContext<ChatHub> hubContext, UniStartDbContext db, IEmailService email)
     {
         _tutorService = tutorService;
         _hubContext = hubContext;
         _db = db;
+        _email = email;
     }
 
     /// <summary>Каталог тьюторов с фильтрами и пагинацией</summary>
@@ -76,6 +78,16 @@ public class TutorController : ControllerBase
 
         profile.VerificationRequestedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync();
+
+        // Notify admin via email
+        try
+        {
+            var user = await _db.Users.FindAsync(userId);
+            var adminEmail = "unistart.kz@gmail.com";
+            if (user != null)
+                await _email.SendVerificationRequestNotificationAsync(adminEmail, user.Name, user.Email);
+        }
+        catch { /* don't fail the request if email fails */ }
 
         return Ok(new { requested = true, requestedAt = profile.VerificationRequestedAt });
     }

@@ -13,4 +13,6 @@ public interface IEmailService
     Task SendAchievementEmailAsync(string toEmail, string userName, string achievementTitle, string achievementIcon);
     Task SendNewSchoolApplicationNotificationAsync(string adminEmail, string schoolName, string contactName, string contactEmail);
     Task SendSchoolApplicationStatusAsync(string toEmail, string contactName, string schoolName, bool approved);
+    Task SendVerificationRequestNotificationAsync(string adminEmail, string tutorName, string tutorEmail);
+    Task SendContactFormAsync(string adminEmail, string senderName, string senderEmail, string message);
 }

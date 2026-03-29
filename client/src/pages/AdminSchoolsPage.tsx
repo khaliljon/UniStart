@@ -72,6 +72,17 @@ function AdminSchoolsPage() {
     finally { setActionLoading(null); }
   };
 
+  const handleUnapprove = async (school: AdminSchool) => {
+    if (!confirm(`Отменить верификацию школы "${school.name}"?`)) return;
+    setActionLoading(school.id);
+    try {
+      await adminService.unapproveSchool(school.id);
+      setSchools(prev => prev.map(s => s.id === school.id ? { ...s, isApproved: false } : s));
+      if (selected?.id === school.id) setSelected(prev => prev ? { ...prev, isApproved: false } : prev);
+    } catch { alert('Ошибка'); }
+    finally { setActionLoading(null); }
+  };
+
   const handleReject = async (school: AdminSchool) => {
     if (!confirm(`Отклонить школу "${school.name}"?`)) return;
     setActionLoading(school.id);
@@ -237,7 +248,7 @@ function AdminSchoolsPage() {
 
                 {/* Quick Actions */}
                 <div style={{ display: 'flex', gap: '0.35rem', flexShrink: 0, flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
-                  {!school.isApproved && (
+                  {!school.isApproved ? (
                     <button
                       onClick={() => handleApprove(school)}
                       disabled={actionLoading === school.id}
@@ -246,19 +257,30 @@ function AdminSchoolsPage() {
                     >
                       {actionLoading === school.id ? '...' : '✓ Одобрить'}
                     </button>
+                  ) : (
+                    <button
+                      onClick={() => handleUnapprove(school)}
+                      disabled={actionLoading === school.id}
+                      className="btn"
+                      style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem', background: '#fef9c3', color: '#ca8a04', border: 'none' }}
+                    >
+                      {actionLoading === school.id ? '...' : '✕ Снять верификацию'}
+                    </button>
                   )}
-                  <button
-                    onClick={() => handleToggleSubscription(school)}
-                    disabled={actionLoading === school.id}
-                    className="btn"
-                    style={{
-                      padding: '0.3rem 0.6rem', fontSize: '0.75rem', border: 'none',
-                      background: isPaid(school) ? '#fef2f2' : '#eff6ff',
-                      color: isPaid(school) ? '#dc2626' : '#2563eb',
-                    }}
-                  >
-                    {actionLoading === school.id ? '...' : isPaid(school) ? 'Снять подписку' : 'Активировать'}
-                  </button>
+                  {school.isApproved && (
+                    <button
+                      onClick={() => handleToggleSubscription(school)}
+                      disabled={actionLoading === school.id}
+                      className="btn"
+                      style={{
+                        padding: '0.3rem 0.6rem', fontSize: '0.75rem', border: 'none',
+                        background: isPaid(school) ? '#fef2f2' : '#eff6ff',
+                        color: isPaid(school) ? '#dc2626' : '#2563eb',
+                      }}
+                    >
+                      {actionLoading === school.id ? '...' : isPaid(school) ? 'Подписка −' : 'Подписка +'}
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -282,7 +304,7 @@ function AdminSchoolsPage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
               <h2 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 700 }}>{selected.name}</h2>
               <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                {!selected.isApproved && (
+                {!selected.isApproved ? (
                   <>
                     <button onClick={() => handleApprove(selected)} className="btn" style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem', background: '#dcfce7', color: '#16a34a', border: 'none' }}>
                       Одобрить
@@ -291,6 +313,10 @@ function AdminSchoolsPage() {
                       Отклонить
                     </button>
                   </>
+                ) : (
+                  <button onClick={() => handleUnapprove(selected)} className="btn" style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem', background: '#fef9c3', color: '#ca8a04', border: 'none' }}>
+                    Снять верификацию
+                  </button>
                 )}
                 <button
                   onClick={() => handleDeleteSchool(selected)}

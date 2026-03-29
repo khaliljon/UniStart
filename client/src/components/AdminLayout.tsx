@@ -7,6 +7,7 @@ import { useTranslation } from '../hooks/useTranslation';
 import { logout } from '../store/slices/authSlice';
 import { chatService } from '../services/chatService';
 import LanguageSwitcher from './LanguageSwitcher';
+import adminService from '../services/adminService';
 
 function AdminLayout() {
   const dispatch = useAppDispatch();
@@ -17,6 +18,7 @@ function AdminLayout() {
   const [moreOpen, setMoreOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const moreRef = useRef<HTMLLIElement>(null);
+  const [pendingCounts, setPendingCounts] = useState<{ pendingSchools: number; pendingVerifications: number; total: number }>({ pendingSchools: 0, pendingVerifications: 0, total: 0 });
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -26,6 +28,14 @@ function AdminLayout() {
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  useEffect(() => {
+    adminService.getPendingCounts().then(setPendingCounts).catch(() => {});
+    const interval = setInterval(() => {
+      adminService.getPendingCounts().then(setPendingCounts).catch(() => {});
+    }, 60000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleLogout = () => {
@@ -83,8 +93,17 @@ function AdminLayout() {
                 </NavLink>
               </li>
               <li>
-                <NavLink to="/tutors" onClick={() => setMenuOpen(false)}>
+                <NavLink to="/tutors" onClick={() => setMenuOpen(false)} style={{ position: 'relative' }}>
                   {t.admin.nav.tutors}
+                  {pendingCounts.pendingVerifications > 0 && (
+                    <span style={{
+                      position: 'absolute', top: '-4px', right: '-10px',
+                      background: '#ef4444', color: '#fff', fontSize: '0.6rem', fontWeight: 700,
+                      borderRadius: '999px', minWidth: '16px', height: '16px',
+                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                      padding: '0 4px',
+                    }}>{pendingCounts.pendingVerifications}</span>
+                  )}
                 </NavLink>
               </li>
               <li ref={moreRef} style={{ position: 'relative' }}>
@@ -94,9 +113,19 @@ function AdminLayout() {
                   className={({ isActive: _unused }) => ''}
                   style={{
                     gap: '0.25rem',
+                    position: 'relative',
                   }}
                 >
                   {t.admin.nav.more} <span style={{ fontSize: '0.55rem', opacity: 0.6 }}>▼</span>
+                  {pendingCounts.pendingSchools > 0 && (
+                    <span style={{
+                      position: 'absolute', top: '-4px', right: '-10px',
+                      background: '#ef4444', color: '#fff', fontSize: '0.6rem', fontWeight: 700,
+                      borderRadius: '999px', minWidth: '16px', height: '16px',
+                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                      padding: '0 4px',
+                    }}>{pendingCounts.pendingSchools}</span>
+                  )}
                 </NavLink>
                 {moreOpen && (
                   <div style={{

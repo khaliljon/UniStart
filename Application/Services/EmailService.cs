@@ -81,6 +81,20 @@ public class EmailService : IEmailService
         await SendEmailAsync(toEmail, subject, body);
     }
 
+    public async Task SendVerificationRequestNotificationAsync(string adminEmail, string tutorName, string tutorEmail)
+    {
+        var subject = $"Запрос верификации тьютора: {tutorName} — UniStart";
+        var body = $"<h2>Новый запрос верификации</h2><p>Тьютор <strong>{tutorName}</strong> ({tutorEmail}) запросил верификацию.</p><p>Перейдите в панель администратора для проверки.</p>";
+        await SendEmailAsync(adminEmail, subject, body);
+    }
+
+    public async Task SendContactFormAsync(string adminEmail, string senderName, string senderEmail, string message)
+    {
+        var subject = $"Обратная связь от {senderName} — UniStart";
+        var body = $"<h2>Обратная связь</h2><p><strong>Имя:</strong> {System.Net.WebUtility.HtmlEncode(senderName)}</p><p><strong>Email:</strong> {System.Net.WebUtility.HtmlEncode(senderEmail)}</p><p><strong>Сообщение:</strong></p><p>{System.Net.WebUtility.HtmlEncode(message)}</p>";
+        await SendEmailAsync(adminEmail, subject, body);
+    }
+
     // ─── Core Send Method ─────────────────────────────────
 
     private async Task SendEmailAsync(string toEmail, string subject, string htmlBody)

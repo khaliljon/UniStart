@@ -996,27 +996,11 @@ public class AdminController : ControllerBase
             .Select(t => new {
                 t.UserId, t.User.Name, t.User.Email, t.Headline,
                 t.IsVerified, t.IsAvailable, t.TotalStudents, t.AverageRating,
-                role = "Tutor"
+                role = t.User.Role.ToString()
             })
             .ToListAsync();
 
-        // Also include the SchoolAdmin (owner)
-        var owner = await _db.Users
-            .Where(u => u.Id == school.OwnerUserId)
-            .Select(u => new {
-                UserId = u.Id, u.Name, u.Email,
-                Headline = "SchoolAdmin",
-                IsVerified = true, IsAvailable = true,
-                TotalStudents = 0, AverageRating = 0.0,
-                role = "SchoolAdmin"
-            })
-            .FirstOrDefaultAsync();
-
-        var result = owner != null
-            ? new object[] { owner }.Concat(tutors.Cast<object>()).ToList()
-            : tutors.Cast<object>().ToList();
-
-        return Ok(result);
+        return Ok(tutors);
     }
 
     /// <summary>Delete a school and unbind all users/tutors from it</summary>
@@ -1085,6 +1069,33 @@ public class AdminController : ControllerBase
             ipAddress: GetClientIp());
 
         return Ok(new { approved = true, schoolId, school.Name });
+    }
+
+    /// <summary>Revoke school verification</summary>
+    [HttpPost("schools/{schoolId:int}/unapprove")]
+    public async Task<IActionResult> UnapproveSchool(int schoolId)
+    {
+        var school = await _db.TutorSchools.FindAsync(schoolId);
+        if (school == null) return NotFound(new { error = "School not found" });
+        school.IsApproved = false;
+        school.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+
+        var (adminId, email) = GetCurrentAdmin();
+        await _audit.LogAsync(adminId, email, "UnapproveSchool", "TutorSchool", schoolId.ToString(),
+            newValues: new { school.Name, IsApproved = false },
+            ipAddress: GetClientIp());
+
+        return Ok(new { unapproved = true, schoolId, school.Name });
+    }
+
+    /// <summary>Get pending counts for admin navbar badges</summary>
+    [HttpGet("pending-counts")]
+    public async Task<IActionResult> GetPendingCounts()
+    {
+        var pendingSchools = await _db.TutorSchools.CountAsync(s => s.IsActive && !s.IsApproved);
+        var pendingVerifications = await _db.TutorProfiles.CountAsync(p => p.VerificationRequestedAt != null && !p.IsVerified);
+        return Ok(new { pendingSchools, pendingVerifications, total = pendingSchools + pendingVerifications });
     }
 
     /// <summary>Reject (deactivate) a pending school</summary>

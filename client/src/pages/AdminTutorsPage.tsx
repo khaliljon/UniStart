@@ -43,7 +43,7 @@ function AdminTutorsPage() {
   const [tab, setTab] = useState<'tutors' | 'content'>('tutors');
   const [tutors, setTutors] = useState<TutorItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'verified' | 'unverified' | 'blocked'>('all');
+  const [filter, setFilter] = useState<'all' | 'verified' | 'unverified' | 'blocked' | 'paid' | 'unpaid'>('all');
   const [actionLoading, setActionLoading] = useState<number | null>(null);
 
   // Content state
@@ -127,10 +127,18 @@ function AdminTutorsPage() {
     }
   };
 
+  const isTutorPaid = (tutor: TutorItem) => {
+    if (tutor.hasPaidSubscription && tutor.subscriptionExpiresAt && new Date(tutor.subscriptionExpiresAt) > new Date()) return true;
+    if (tutor.schoolSubscriptionExpiresAt && new Date(tutor.schoolSubscriptionExpiresAt) > new Date()) return true;
+    return false;
+  };
+
   const filteredTutors = tutors.filter(tutor => {
     if (filter === 'verified') return tutor.isVerified;
     if (filter === 'unverified') return !tutor.isVerified;
     if (filter === 'blocked') return tutor.isBlocked;
+    if (filter === 'paid') return isTutorPaid(tutor);
+    if (filter === 'unpaid') return !isTutorPaid(tutor);
     return true;
   });
 
@@ -164,7 +172,7 @@ function AdminTutorsPage() {
       {tab === 'tutors' && (<>
       {/* Filters */}
       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
-        {(['all', 'verified', 'unverified', 'blocked'] as const).map(f => (
+        {(['all', 'verified', 'unverified', 'blocked', 'paid', 'unpaid'] as const).map(f => (
           <button
             key={f}
             onClick={() => setFilter(f)}
@@ -175,11 +183,13 @@ function AdminTutorsPage() {
               color: filter === f ? '#fff' : undefined,
             }}
           >
-            {f === 'all' ? t.admin.tutors.filterAll : f === 'verified' ? t.admin.tutors.filterVerified : f === 'unverified' ? t.admin.tutors.filterUnverified : t.admin.tutors.filterBlocked}
+            {f === 'all' ? t.admin.tutors.filterAll : f === 'verified' ? t.admin.tutors.filterVerified : f === 'unverified' ? t.admin.tutors.filterUnverified : f === 'blocked' ? t.admin.tutors.filterBlocked : f === 'paid' ? 'Оплачены' : 'Не оплачены'}
             {' '}({tutors.filter(tutor => {
               if (f === 'verified') return tutor.isVerified;
               if (f === 'unverified') return !tutor.isVerified;
               if (f === 'blocked') return tutor.isBlocked;
+              if (f === 'paid') return isTutorPaid(tutor);
+              if (f === 'unpaid') return !isTutorPaid(tutor);
               return true;
             }).length})
           </button>

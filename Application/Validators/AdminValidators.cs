@@ -144,7 +144,7 @@ public class BulkImportDtoValidator : AbstractValidator<BulkImportDto>
 
 public class AdminUpdateUserDtoValidator : AbstractValidator<AdminUpdateUserDto>
 {
-    private static readonly string[] ValidRoles = { "Student", "Tutor", "Admin", "SchoolAdmin" };
+    private static readonly string[] ValidRoles = { "Student", "Tutor", "Admin", "SchoolAdmin", "SchoolTutor" };
     private static readonly string[] ValidTiers = { "Free", "Pro" };
 
     public AdminUpdateUserDtoValidator()

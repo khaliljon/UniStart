@@ -3,6 +3,7 @@ import { schoolAdminService } from '../services/schoolAdminService';
 import { useTranslation } from '../i18n';
 import { getDateLocale } from '../i18n';
 import type { SchoolDashboard } from '../services/schoolAdminService';
+import ContactForm from '../components/ContactForm';
 
 function SchoolAdminDashboardPage() {
   const { t } = useTranslation();
@@ -84,6 +85,10 @@ function SchoolAdminDashboardPage() {
             ))}
           </tbody>
         </table>
+      </div>
+
+      <div style={{ marginTop: '1.5rem' }}>
+        <ContactForm />
       </div>
     </div>
   );

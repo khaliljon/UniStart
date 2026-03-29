@@ -1344,6 +1344,18 @@ export interface Translations {
     expiresAt: string;
     schoolPendingSub: string;
     independentPayNote: string;
+    priceLabel: string;
+    contactEmail: string;
+  };
+
+  contact: {
+    title: string;
+    namePlaceholder: string;
+    messagePlaceholder: string;
+    send: string;
+    sent: string;
+    error: string;
+    emailDirect: string;
   };
 
   // ─── School Admin ───
