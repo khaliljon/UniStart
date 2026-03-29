@@ -789,6 +789,7 @@ public class AdminController : ControllerBase
     {
         var tutors = await _db.TutorProfiles
             .Include(tp => tp.User)
+            .Include(tp => tp.School)
             .Where(tp => (tp.User.Role == UserRole.Tutor || tp.User.Role == UserRole.SchoolTutor))
             .OrderByDescending(tp => tp.CreatedAt)
             .Select(tp => new
@@ -811,7 +812,9 @@ public class AdminController : ControllerBase
                 verificationRequestedAt = tp.VerificationRequestedAt,
                 hasPaidSubscription = tp.HasPaidSubscription,
                 subscriptionExpiresAt = tp.SubscriptionExpiresAt,
-                schoolId = tp.SchoolId
+                schoolId = tp.SchoolId,
+                schoolName = tp.School != null ? tp.School.Name : null,
+                schoolSubscriptionExpiresAt = tp.School != null ? tp.School.SubscriptionExpiresAt : null,
             })
             .ToListAsync();
 
@@ -882,6 +885,37 @@ public class AdminController : ControllerBase
             ipAddress: GetClientIp());
 
         return Ok(new { hasPaidSubscription = profile.HasPaidSubscription, subscriptionExpiresAt = profile.SubscriptionExpiresAt, tutorProfileId = id });
+    }
+
+    /// <summary>List all schools for admin with verification & subscription status</summary>
+    [HttpGet("schools")]
+    public async Task<IActionResult> GetAllSchools()
+    {
+        var schools = await _db.TutorSchools
+            .Where(s => s.IsActive)
+            .OrderByDescending(s => s.CreatedAt)
+            .Select(s => new
+            {
+                s.Id,
+                s.Name,
+                s.Slug,
+                s.LogoUrl,
+                s.IsPartner,
+                s.IsApproved,
+                s.IsActive,
+                s.Specializations,
+                s.WebsiteUrl,
+                s.SubscriptionExpiresAt,
+                s.SubscriptionPaidAt,
+                s.CreatedAt,
+                ownerUserId = s.OwnerUserId,
+                ownerName = s.Owner != null ? s.Owner.Name : null,
+                ownerEmail = s.Owner != null ? s.Owner.Email : null,
+                tutorCount = s.Tutors.Count,
+                studentCount = _db.Users.Count(u => u.SchoolId == s.Id && !u.IsDeleted && u.Role == UserRole.Student),
+            })
+            .ToListAsync();
+        return Ok(schools);
     }
 
     /// <summary>Activate school subscription (50,000 ₸/year)</summary>

@@ -286,6 +286,8 @@ const adminService = {
       hasPaidSubscription: boolean;
       subscriptionExpiresAt: string | null;
       schoolId: number | null;
+      schoolName: string | null;
+      schoolSubscriptionExpiresAt: string | null;
     }>>('/admin/tutors').then(r => r.data),
 
   verifyTutor: (tutorProfileId: number) =>
@@ -297,6 +299,18 @@ const adminService = {
   toggleTutorSubscription: (tutorProfileId: number) =>
     api.post<{ hasPaidSubscription: boolean; subscriptionExpiresAt: string | null; tutorProfileId: number }>(
       `/admin/tutors/${tutorProfileId}/toggle-subscription`).then(r => r.data),
+
+  // ─── Schools (all) ───────────────────────────────────
+  getAllSchools: () =>
+    api.get<Array<{
+      id: number; name: string; slug: string; logoUrl: string | null;
+      isPartner: boolean; isApproved: boolean; isActive: boolean;
+      specializations: string; websiteUrl: string | null;
+      subscriptionExpiresAt: string | null; subscriptionPaidAt: string | null;
+      createdAt: string;
+      ownerUserId: number | null; ownerName: string | null; ownerEmail: string | null;
+      tutorCount: number; studentCount: number;
+    }>>('/admin/schools').then(r => r.data),
 
   activateSchoolSubscription: (schoolId: number) =>
     api.post<{ schoolId: number; subscriptionExpiresAt: string }>(`/admin/schools/${schoolId}/activate-subscription`).then(r => r.data),

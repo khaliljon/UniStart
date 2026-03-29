@@ -23,6 +23,8 @@ interface TutorItem {
   hasPaidSubscription: boolean;
   subscriptionExpiresAt: string | null;
   schoolId: number | null;
+  schoolName: string | null;
+  schoolSubscriptionExpiresAt: string | null;
 }
 
 interface ContentAssignment {
@@ -259,7 +261,16 @@ function AdminTutorsPage() {
                 {/* Subscription info */}
                 <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem', fontSize: '0.78rem', flexWrap: 'wrap' }}>
                   {tutor.schoolId ? (
-                    <span style={{ color: '#6366f1' }}>{t.admin.tutors.schoolTutor}</span>
+                    <>
+                      <span style={{ color: '#6366f1' }}>{tutor.schoolName || t.admin.tutors.schoolTutor}</span>
+                      {tutor.schoolSubscriptionExpiresAt ? (
+                        <span style={{ color: new Date(tutor.schoolSubscriptionExpiresAt) > new Date() ? '#22c55e' : '#ef4444' }}>
+                          Подписка школы: {new Date(tutor.schoolSubscriptionExpiresAt).toLocaleDateString(getDateLocale())}
+                        </span>
+                      ) : (
+                        <span style={{ color: '#f59e0b' }}>Школа не оплачена</span>
+                      )}
+                    </>
                   ) : tutor.hasPaidSubscription && tutor.subscriptionExpiresAt ? (
                     <span style={{ color: new Date(tutor.subscriptionExpiresAt) > new Date() ? '#22c55e' : '#ef4444' }}>
                       {t.admin.tutors.subscriptionLabel}: {new Date(tutor.subscriptionExpiresAt).toLocaleDateString(getDateLocale())}

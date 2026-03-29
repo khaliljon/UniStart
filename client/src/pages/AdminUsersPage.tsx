@@ -1,7 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import adminService from '../services/adminService';
-import { tutorService } from '../services/tutorService';
 import type { AdminUser, AdminUserStats, TutorSchoolCard } from '../types';
 import { useTranslation } from '../hooks/useTranslation';
 import { getDateLocale } from '../i18n';
@@ -91,7 +90,7 @@ function AdminUsersPage() {
   useEffect(() => { loadUsers(); }, [loadUsers]);
   useEffect(() => { loadStats(); }, []);
   useEffect(() => {
-    tutorService.getSchools().then(setSchools).catch(() => {});
+    adminService.getAllSchools().then(list => setSchools(list.map(s => ({ id: s.id, name: s.name, slug: s.slug, logoUrl: s.logoUrl, description: '', tutorCount: s.tutorCount, specializations: s.specializations ? s.specializations.split(',').filter(Boolean) : [], isPartner: s.isPartner, websiteUrl: s.websiteUrl, instagramUrl: null, telegramUrl: null })))).catch(() => {});
   }, []);
 
   const handleSearch = (e: React.FormEvent) => {
@@ -143,6 +142,11 @@ function AdminUsersPage() {
 
   const saveUser = async () => {
     if (!selected) return;
+    // Require school for SchoolAdmin/SchoolTutor
+    if ((editData.role === 'SchoolAdmin' || editData.role === 'SchoolTutor') && !editData.schoolId) {
+      setError('Для роли SchoolAdmin / SchoolTutor необходимо выбрать школу');
+      return;
+    }
     try {
       setError(null);
       const payload: Parameters<typeof adminService.updateUser>[1] = {};
@@ -429,13 +433,13 @@ function AdminUsersPage() {
                 </label>
                 {(editData.role === 'SchoolTutor' || editData.role === 'SchoolAdmin') && schools.length > 0 && (
                   <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                    {t.admin.users.schoolLabel}
+                    {t.admin.users.schoolLabel} *
                     <select
                       value={editData.schoolId ?? ''}
                       onChange={(e) => setEditData({ ...editData, schoolId: e.target.value ? Number(e.target.value) : null })}
                       style={{ width: '100%', marginTop: '0.25rem' }}
                     >
-                      {editData.role !== 'SchoolTutor' && <option value="">{t.admin.users.noSchool}</option>}
+                      <option value="" disabled>— Выберите школу —</option>
                       {schools.map(s => (
                         <option key={s.id} value={s.id}>{s.name} ({s.slug})</option>
                       ))}

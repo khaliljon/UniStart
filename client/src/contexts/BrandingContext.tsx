@@ -69,16 +69,31 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
         const logoAbsolute = data.logoUrl.startsWith('http') ? data.logoUrl : `${origin}${data.logoUrl}`;
         setMeta('og:image', logoAbsolute, true);
         setMeta('twitter:image', logoAbsolute, true);
-        // Dynamic favicon — remove static icons so the branded one wins
+        // Dynamic favicon — draw logo as circle with transparent background
         document.querySelectorAll<HTMLLinkElement>('link[rel="icon"]:not([data-brand])').forEach(l => l.remove());
-        let link = document.querySelector<HTMLLinkElement>('link[rel="icon"][data-brand]');
-        if (!link) {
-          link = document.createElement('link');
-          link.rel = 'icon';
-          link.setAttribute('data-brand', 'true');
-          document.head.appendChild(link);
-        }
-        link.href = logoAbsolute;
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+          const size = 64;
+          const canvas = document.createElement('canvas');
+          canvas.width = size;
+          canvas.height = size;
+          const ctx = canvas.getContext('2d')!;
+          ctx.beginPath();
+          ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+          ctx.closePath();
+          ctx.clip();
+          ctx.drawImage(img, 0, 0, size, size);
+          let link = document.querySelector<HTMLLinkElement>('link[rel="icon"][data-brand]');
+          if (!link) {
+            link = document.createElement('link');
+            link.rel = 'icon';
+            link.setAttribute('data-brand', 'true');
+            document.head.appendChild(link);
+          }
+          link.href = canvas.toDataURL('image/png');
+        };
+        img.src = logoAbsolute;
       }
 
       if (data.primaryColor) {
