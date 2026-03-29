@@ -2,32 +2,25 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { tutorService } from '../services/tutorService';
 import { useTranslation } from '../hooks/useTranslation';
-import { useToast } from '../components/Toast';
 import type { StudentInfo, TutorStudentInfo } from '../types';
 import { getDateLocale } from '../i18n';
 
 function TutorStudentsPage() {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { showToast } = useToast();
   const [students, setStudents] = useState<StudentInfo[]>([]);
   const [linkedStudents, setLinkedStudents] = useState<TutorStudentInfo[]>([]);
-  const [inviteCode, setInviteCode] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [codeLoading, setCodeLoading] = useState(false);
-  const [copied, setCopied] = useState(false);
   const [unlinkingId, setUnlinkingId] = useState<number | null>(null);
 
   const loadData = useCallback(async () => {
     try {
-      const [studentsData, linked, code] = await Promise.all([
+      const [studentsData, linked] = await Promise.all([
         tutorService.getMyStudents(),
         tutorService.getLinkedStudents().catch(() => []),
-        tutorService.getInviteCode().catch(() => null),
       ]);
       setStudents(studentsData);
       setLinkedStudents(linked);
-      if (code) setInviteCode(code.inviteCode);
     } catch (err) {
       console.error('Failed to load students:', err);
     } finally {
@@ -38,27 +31,6 @@ function TutorStudentsPage() {
   useEffect(() => {
     loadData();
   }, [loadData]);
-
-  const handleGenerateCode = async () => {
-    setCodeLoading(true);
-    try {
-      const result = await tutorService.generateInviteCode();
-      setInviteCode(result.inviteCode);
-      showToast(t.tutor.codeGenerated);
-    } catch {
-      showToast(t.tutor.codeGenerateError, 'error');
-    } finally {
-      setCodeLoading(false);
-    }
-  };
-
-  const handleCopyCode = async () => {
-    if (!inviteCode) return;
-    await navigator.clipboard.writeText(inviteCode);
-    showToast(t.tutor.codeCopied);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
 
   const handleUnlinkStudent = async (studentUserId: number) => {
     if (!confirm(t.tutor.confirmUnlinkStudent)) return;
@@ -100,57 +72,6 @@ function TutorStudentsPage() {
   return (
     <div className="animate-fade-in">
       <h1 style={{ marginBottom: '1.5rem' }}>{t.tutor.myStudents}</h1>
-
-      {/* ─── Invite Code Card ─── */}
-      <div className="card" style={{ padding: '1.5rem', marginBottom: '1.25rem' }}>
-        <h2 style={{ margin: '0 0 0.75rem', fontSize: '1.15rem' }}>{t.tutor.inviteCode}</h2>
-        {inviteCode ? (
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-              <div style={{
-                padding: '0.6rem 1.2rem', borderRadius: '10px',
-                background: 'var(--bg-secondary)', border: '2px dashed var(--primary-color)',
-                fontFamily: 'monospace', fontSize: '1.4rem', fontWeight: 700,
-                letterSpacing: '0.15em', color: 'var(--primary-color)',
-              }}>
-                {inviteCode}
-              </div>
-              <button
-                className="btn btn-outline"
-                onClick={handleCopyCode}
-                style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}
-              >
-                {copied ? t.tutor.codeCopied : t.tutor.copyCode}
-              </button>
-              <button
-                className="btn btn-outline"
-                onClick={handleGenerateCode}
-                disabled={codeLoading}
-                style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}
-              >
-                {t.tutor.regenerateCode}
-              </button>
-            </div>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.82rem', margin: '0.75rem 0 0', lineHeight: 1.5 }}>
-              Отправьте этот код ученику. Ученик вводит его в разделе <strong>Профиль → Мой тьютор</strong>, чтобы привязаться к вам и получить скидку на подписку.
-            </p>
-          </div>
-        ) : (
-          <div>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', margin: '0 0 0.75rem' }}>
-              {t.tutor.noCodeYet}
-            </p>
-            <button
-              className="btn btn-primary"
-              onClick={handleGenerateCode}
-              disabled={codeLoading}
-              style={{ fontSize: '0.85rem' }}
-            >
-              {t.tutor.generateCode}
-            </button>
-          </div>
-        )}
-      </div>
 
       {/* ─── Linked Students (via invite code) ─── */}
       {linkedStudents.length > 0 && (

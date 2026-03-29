@@ -9,6 +9,7 @@ import { getDateLocale } from '../i18n';
 const ROLE_COLORS: Record<string, string> = {
   Admin: 'var(--error-color)',
   SchoolAdmin: '#e67e22',
+  SchoolTutor: '#0ea5e9',
   Tutor: 'var(--warning-color)',
   Student: 'var(--primary-color)',
 };
@@ -150,7 +151,7 @@ function AdminUsersPage() {
       if (editData.role !== selected.role) payload.role = editData.role;
       if (editData.subscriptionTier !== selected.subscriptionTier) payload.subscriptionTier = editData.subscriptionTier;
       // School assignment: always send when role is Tutor/SchoolAdmin
-      if (editData.role === 'Tutor' || editData.role === 'SchoolTutor' || editData.role === 'SchoolAdmin') {
+      if (editData.role === 'SchoolTutor' || editData.role === 'SchoolAdmin') {
         if (editData.schoolId) {
           payload.schoolId = editData.schoolId;
         } else if (selected.schoolId) {
@@ -426,7 +427,7 @@ function AdminUsersPage() {
                     <option value="Admin">Admin</option>
                   </select>
                 </label>
-                {(editData.role === 'Tutor' || editData.role === 'SchoolTutor' || editData.role === 'SchoolAdmin') && schools.length > 0 && (
+                {(editData.role === 'SchoolTutor' || editData.role === 'SchoolAdmin') && schools.length > 0 && (
                   <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
                     {t.admin.users.schoolLabel}
                     <select
@@ -434,7 +435,7 @@ function AdminUsersPage() {
                       onChange={(e) => setEditData({ ...editData, schoolId: e.target.value ? Number(e.target.value) : null })}
                       style={{ width: '100%', marginTop: '0.25rem' }}
                     >
-                      <option value="">{t.admin.users.noSchool}</option>
+                      {editData.role !== 'SchoolTutor' && <option value="">{t.admin.users.noSchool}</option>}
                       {schools.map(s => (
                         <option key={s.id} value={s.id}>{s.name} ({s.slug})</option>
                       ))}

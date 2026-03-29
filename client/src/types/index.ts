@@ -42,7 +42,6 @@ export interface RegisterRequest {
   role?: 'Student' | 'Tutor' | 'SchoolAdmin';
   schoolSlug?: string;
   applyToSchoolId?: number;
-  schoolInviteCode?: string;
   schoolName?: string;
 }
 
@@ -1256,9 +1255,6 @@ export interface LinkResult {
   message: string;
 }
 
-export interface InviteCodeInfo {
-  inviteCode: string;
-}
 
 // ─── Tutor Questions (Этап 2) ───────────────────────────
 export interface TutorQuestionListItem {

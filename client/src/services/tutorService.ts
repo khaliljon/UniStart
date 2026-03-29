@@ -10,7 +10,6 @@ import type {
   AcceptDeclineResult,
   TutorSchoolCard,
   TutorSchoolDetail,
-  InviteCodeInfo,
   LinkResult,
   TutorStudentInfo,
   LinkedTutorInfo,
@@ -119,17 +118,7 @@ export const tutorService = {
     return response.data;
   },
 
-  // ── Invite code & binding ──
-
-  async generateInviteCode(): Promise<InviteCodeInfo> {
-    const response = await api.post<InviteCodeInfo>('/tutors/invite-code');
-    return response.data;
-  },
-
-  async getInviteCode(): Promise<InviteCodeInfo> {
-    const response = await api.get<InviteCodeInfo>('/tutors/invite-code');
-    return response.data;
-  },
+  // ── Binding ──
 
   async linkByInviteCode(inviteCode: string): Promise<LinkResult> {
     const response = await api.post<LinkResult>('/tutors/link', { inviteCode });
