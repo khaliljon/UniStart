@@ -15,6 +15,7 @@ function AdminLayout() {
   const { theme, toggleTheme } = useTheme();
   const { t } = useTranslation();
   const [moreOpen, setMoreOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const moreRef = useRef<HTMLLIElement>(null);
 
   useEffect(() => {
@@ -51,102 +52,103 @@ function AdminLayout() {
             }}>ADMIN</span>
           </NavLink>
 
-          <ul className="navbar-nav">
-            <li>
-              <NavLink to="/" end>
-                {t.admin.nav.dashboard}
-              </NavLink>
-            </li>
-            <li>
-              <NavLink to="/questions">
-                {t.admin.nav.questions}
-              </NavLink>
-            </li>
-            <li>
-              <NavLink to="/content">
-                {t.admin.nav.content}
-              </NavLink>
-            </li>
-            <li>
-              <NavLink to="/users">
-                {t.admin.nav.users}
-              </NavLink>
-            </li>
-            <li>
-              <NavLink to="/tutors">
-                {t.admin.nav.tutors}
-              </NavLink>
-            </li>
-            <li ref={moreRef} style={{ position: 'relative' }}>
-              <NavLink
-                to="#"
-                onClick={(e) => { e.preventDefault(); setMoreOpen(!moreOpen); }}
-                className={({ isActive: _unused }) => ''}
-                style={{
-                  gap: '0.25rem',
-                }}
-              >
-                {t.admin.nav.more} <span style={{ fontSize: '0.55rem', opacity: 0.6 }}>▼</span>
-              </NavLink>
-              {moreOpen && (
-                <div style={{
-                  position: 'absolute', top: '100%', right: 0, minWidth: '170px',
-                  background: 'var(--card-background)', border: '1px solid var(--border-color)',
-                  borderRadius: '8px', boxShadow: '0 4px 16px rgba(0,0,0,0.18)',
-                  zIndex: 100, padding: '0.35rem 0', marginTop: '0.25rem',
-                }}>
-                  {[
-                    { label: t.admin.nav.import, path: '/import' },
-                    { label: t.admin.nav.questionImport, path: '/question-import' },
-                    { label: t.admin.nav.schools, path: '/schools' },
-                    { label: t.admin.nav.audit, path: '/audit' },
-                    { label: t.admin.nav.health, path: '/health' },
-                    { label: t.admin.nav.trash, path: '/trash' },
-                  ].map(item => (
-                    <NavLink
-                      key={item.path}
-                      to={item.path}
-                      onClick={() => setMoreOpen(false)}
-                      style={({ isActive }) => ({
-                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                        padding: '0.5rem 1rem', fontSize: '0.88rem',
-                        color: isActive ? 'var(--primary-color)' : 'var(--text-primary)',
-                        fontWeight: isActive ? 600 : 400,
-                        textDecoration: 'none',
-                      })}
-                    >
-                      {item.label}
-                      {'badge' in item && (item as { badge?: number }).badge! > 0 && (
-                        <span style={{
-                          background: '#ef4444', color: '#fff', borderRadius: '999px',
-                          padding: '0.1rem 0.45rem', fontSize: '0.65rem', fontWeight: 700,
-                          lineHeight: 1, marginLeft: '0.5rem', minWidth: '1.1rem', textAlign: 'center',
-                        }}>
-                          {(item as { badge?: number }).badge! > 99 ? '99+' : (item as { badge?: number }).badge}
-                        </span>
-                      )}
-                    </NavLink>
-                  ))}
-                </div>
-              )}
-            </li>
-          </ul>
+          <button
+            className="burger-btn"
+            onClick={() => setMenuOpen(!menuOpen)}
+            aria-label="Toggle menu"
+          >
+            <span className={`burger-icon ${menuOpen ? 'open' : ''}`} />
+          </button>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <LanguageSwitcher />
-            <button
-              onClick={toggleTheme}
-              className="theme-toggle"
-              title={theme === 'light' ? t.nav.darkMode : t.nav.lightMode}
-            >
-              {theme === 'light' ? '◑' : '○'}
-            </button>
-            <NavLink to="/profile" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>
-              {user?.name}
-            </NavLink>
-            <button onClick={handleLogout} className="btn btn-outline">
-              {t.nav.logout}
-            </button>
+          <div className={`navbar-collapse ${menuOpen ? 'show' : ''}`}>
+            <ul className="navbar-nav">
+              <li>
+                <NavLink to="/" end onClick={() => setMenuOpen(false)}>
+                  {t.admin.nav.dashboard}
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/questions" onClick={() => setMenuOpen(false)}>
+                  {t.admin.nav.questions}
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/content" onClick={() => setMenuOpen(false)}>
+                  {t.admin.nav.content}
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/users" onClick={() => setMenuOpen(false)}>
+                  {t.admin.nav.users}
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/tutors" onClick={() => setMenuOpen(false)}>
+                  {t.admin.nav.tutors}
+                </NavLink>
+              </li>
+              <li ref={moreRef} style={{ position: 'relative' }}>
+                <NavLink
+                  to="#"
+                  onClick={(e) => { e.preventDefault(); setMoreOpen(!moreOpen); }}
+                  className={({ isActive: _unused }) => ''}
+                  style={{
+                    gap: '0.25rem',
+                  }}
+                >
+                  {t.admin.nav.more} <span style={{ fontSize: '0.55rem', opacity: 0.6 }}>▼</span>
+                </NavLink>
+                {moreOpen && (
+                  <div style={{
+                    position: 'absolute', top: '100%', right: 0, minWidth: '170px',
+                    background: 'var(--card-background)', border: '1px solid var(--border-color)',
+                    borderRadius: '8px', boxShadow: '0 4px 16px rgba(0,0,0,0.18)',
+                    zIndex: 100, padding: '0.35rem 0', marginTop: '0.25rem',
+                  }}>
+                    {[
+                      { label: t.admin.nav.import, path: '/import' },
+                      { label: t.admin.nav.questionImport, path: '/question-import' },
+                      { label: t.admin.nav.schools, path: '/schools' },
+                      { label: t.admin.nav.audit, path: '/audit' },
+                      { label: t.admin.nav.health, path: '/health' },
+                      { label: t.admin.nav.trash, path: '/trash' },
+                    ].map(item => (
+                      <NavLink
+                        key={item.path}
+                        to={item.path}
+                        onClick={() => { setMoreOpen(false); setMenuOpen(false); }}
+                        style={({ isActive }) => ({
+                          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                          padding: '0.5rem 1rem', fontSize: '0.88rem',
+                          color: isActive ? 'var(--primary-color)' : 'var(--text-primary)',
+                          fontWeight: isActive ? 600 : 400,
+                          textDecoration: 'none',
+                        })}
+                      >
+                        {item.label}
+                      </NavLink>
+                    ))}
+                  </div>
+                )}
+              </li>
+            </ul>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <LanguageSwitcher />
+              <button
+                onClick={toggleTheme}
+                className="theme-toggle"
+                title={theme === 'light' ? t.nav.darkMode : t.nav.lightMode}
+              >
+                {theme === 'light' ? '◑' : '○'}
+              </button>
+              <NavLink to="/profile" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }} onClick={() => setMenuOpen(false)}>
+                {user?.name}
+              </NavLink>
+              <button onClick={handleLogout} className="btn btn-outline">
+                {t.nav.logout}
+              </button>
+            </div>
           </div>
         </div>
       </nav>

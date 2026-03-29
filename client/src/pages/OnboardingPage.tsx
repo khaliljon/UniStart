@@ -126,7 +126,18 @@ function OnboardingPage() {
       dispatch(setSelectedSectionIds(sectionIds));
       setStep('ready');
     } catch (err: unknown) {
-      setError(axios.isAxiosError(err) ? err.response?.data?.error || t.common.error : t.common.error);
+      if (axios.isAxiosError(err)) {
+        const data = err.response?.data;
+        // FluentValidation returns { errors: { Field: ["msg"] } }
+        if (data?.errors) {
+          const msgs = Object.values(data.errors).flat();
+          setError(msgs.join('. ') || t.common.error);
+        } else {
+          setError(data?.error || t.common.error);
+        }
+      } else {
+        setError(t.common.error);
+      }
     } finally {
       setIsLoading(false);
     }

@@ -124,7 +124,7 @@ public class CompleteOnboardingDtoValidator : AbstractValidator<CompleteOnboardi
             .MaximumLength(20).WithMessage("ExamTypeCode must not exceed 20 characters.");
 
         RuleFor(x => x.TargetDate)
-            .GreaterThan(DateTime.UtcNow.Date)
+            .Must(d => d.Date > DateTime.UtcNow.Date)
             .WithMessage("TargetDate must be in the future.");
 
         RuleFor(x => x.TargetScore)

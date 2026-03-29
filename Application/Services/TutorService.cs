@@ -430,7 +430,7 @@ public class TutorService : ITutorService
     public async Task<List<TutorSchoolCardDto>> GetSchoolsAsync()
     {
         return await _db.TutorSchools
-            .Where(s => s.IsActive)
+            .Where(s => s.IsActive && s.SubscriptionExpiresAt != null && s.SubscriptionExpiresAt > DateTime.UtcNow)
             .Select(s => new TutorSchoolCardDto(
                 s.Id, s.Name, s.Slug, s.Description, s.LogoUrl,
                 s.InstagramUrl, s.TelegramUrl, s.WebsiteUrl,

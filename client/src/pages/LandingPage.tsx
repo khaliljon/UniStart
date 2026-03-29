@@ -51,25 +51,25 @@ function LandingPage() {
         padding: '1rem 2rem',
         maxWidth: '1200px',
         margin: '0 auto',
-        flexWrap: 'wrap',
         gap: '0.5rem',
       }}>
-        <div style={{ fontWeight: 800, fontSize: '1.5rem', color: '#6366f1' }}>
+        <div style={{ fontWeight: 800, fontSize: '1.5rem', color: '#6366f1', flexShrink: 0 }}>
           UniStart
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexShrink: 0 }}>
           <LanguageSwitcher />
           <button
             onClick={() => navigate('/login')}
             style={{
-              padding: '0.4rem 0.9rem',
+              padding: '0.4rem 0.7rem',
               border: '1px solid var(--border-color)',
               borderRadius: '0.5rem',
               background: 'transparent',
               cursor: 'pointer',
               fontWeight: 500,
               color: 'var(--text-primary)',
-              fontSize: '0.85rem',
+              fontSize: '0.8rem',
+              whiteSpace: 'nowrap',
             }}
           >
             {t.landing.login}
@@ -77,14 +77,15 @@ function LandingPage() {
           <button
             onClick={() => navigate('/register')}
             style={{
-              padding: '0.4rem 0.9rem',
+              padding: '0.4rem 0.7rem',
               border: 'none',
               borderRadius: '0.5rem',
               background: '#6366f1',
               color: '#fff',
               cursor: 'pointer',
               fontWeight: 600,
-              fontSize: '0.85rem',
+              fontSize: '0.8rem',
+              whiteSpace: 'nowrap',
             }}
           >
             {t.landing.register}

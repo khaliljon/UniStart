@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useAppDispatch } from '../hooks/useAppDispatch';
 import { useAppSelector } from '../hooks/useAppSelector';
 import { useTheme } from '../hooks/useTheme';
@@ -21,7 +21,6 @@ function TutorLayout() {
   const [pendingCount, setPendingCount] = useState(0);
   const [unreadCount, setUnreadCount] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
   const { isWhiteLabel, branding } = useBranding();
   const { t } = useTranslation();
   const [tutorBlocked, setTutorBlocked] = useState(false);
@@ -71,25 +70,10 @@ function TutorLayout() {
     };
   }, []);
 
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setMenuOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
-
   const handleLogout = () => {
     chatService.stop();
     dispatch(logout());
     navigate('/login');
-  };
-
-  const goTo = (path: string) => {
-    setMenuOpen(false);
-    navigate(path);
   };
 
   const Badge = ({ count }: { count: number }) =>
@@ -102,10 +86,6 @@ function TutorLayout() {
         {count > 99 ? '99+' : count}
       </span>
     ) : null;
-
-  const initials = user?.name
-    ? user.name.split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2)
-    : '?';
 
   // Tutor verification gate
   if (tutorBlocked) {
@@ -224,77 +204,76 @@ function TutorLayout() {
             }}>ТЬЮТОР</span>
           </NavLink>
 
-          <ul className="navbar-nav">
-            <li>
-              <NavLink to="/" end>
-                Главная
-                <Badge count={pendingCount} />
-              </NavLink>
-            </li>
-            <li>
-              <NavLink to="/students">
-                Ученики
-              </NavLink>
-            </li>
-            <li>
-              <NavLink to="/questions">
-                Вопросы
-              </NavLink>
-            </li>
-            <li>
-              <NavLink to="/assignments">
-                Задания
-              </NavLink>
-            </li>
-            <li>
-              <NavLink to="/messages">
-                Сообщения
-                <Badge count={unreadCount} />
-              </NavLink>
-            </li>
-            <li>
-              <NavLink to="/schedule">
-                Расписание
-              </NavLink>
-            </li>
-            <li>
-              <NavLink to="/content">
-                Контент
-              </NavLink>
-            </li>
-          </ul>
+          <button
+            className="burger-btn"
+            onClick={() => setMenuOpen(!menuOpen)}
+            aria-label="Toggle menu"
+          >
+            <span className={`burger-icon ${menuOpen ? 'open' : ''}`} />
+          </button>
 
-          <div ref={menuRef} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <button
-              onClick={toggleTheme}
-              className="theme-toggle"
-              title={theme === 'light' ? 'Тёмная тема' : 'Светлая тема'}
-            >
-              {theme === 'light' ? '◑' : '○'}
-            </button>
-            <button
-              onClick={() => setMenuOpen(!menuOpen)}
-              className="profile-trigger"
-              title="Меню"
-            >
-              <span className="profile-avatar" style={{ width: '32px', height: '32px', fontSize: '0.75rem' }}>
-                {initials}
-              </span>
-              <span style={{ fontSize: '0.6rem', opacity: 0.6 }}>▼</span>
-            </button>
-            {menuOpen && (
-              <div className="profile-dropdown" style={{ minWidth: '160px' }}>
-                <div style={{ padding: '0.5rem 1rem', fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 500 }}>
-                  {user?.name}
-                </div>
-                <div className="profile-dropdown-divider" />
-                <button className="profile-dropdown-item" onClick={() => goTo('/reviews')}>Отзывы</button>
-                <button className="profile-dropdown-item" onClick={() => goTo('/my-profile')}>Профиль тьютора</button>
-                <button className="profile-dropdown-item" onClick={() => goTo('/profile')}>Настройки</button>
-                <div className="profile-dropdown-divider" />
-                <button className="profile-dropdown-item profile-dropdown-danger" onClick={handleLogout}>Выйти</button>
-              </div>
-            )}
+          <div className={`navbar-collapse ${menuOpen ? 'show' : ''}`}>
+            <ul className="navbar-nav">
+              <li>
+                <NavLink to="/" end onClick={() => setMenuOpen(false)}>
+                  Главная
+                  <Badge count={pendingCount} />
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/students" onClick={() => setMenuOpen(false)}>
+                  Ученики
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/questions" onClick={() => setMenuOpen(false)}>
+                  Вопросы
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/assignments" onClick={() => setMenuOpen(false)}>
+                  Задания
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/messages" onClick={() => setMenuOpen(false)}>
+                  Сообщения
+                  <Badge count={unreadCount} />
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/schedule" onClick={() => setMenuOpen(false)}>
+                  Расписание
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/content" onClick={() => setMenuOpen(false)}>
+                  Контент
+                </NavLink>
+              </li>
+            </ul>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <button
+                onClick={toggleTheme}
+                className="theme-toggle"
+                title={theme === 'light' ? 'Тёмная тема' : 'Светлая тема'}
+              >
+                {theme === 'light' ? '◑' : '○'}
+              </button>
+              <NavLink to="/reviews" style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontSize: '0.85rem' }} onClick={() => setMenuOpen(false)}>
+                Отзывы
+              </NavLink>
+              <NavLink to="/my-profile" style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontSize: '0.85rem' }} onClick={() => setMenuOpen(false)}>
+                Профиль
+              </NavLink>
+              <NavLink to="/profile" style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontSize: '0.85rem' }} onClick={() => setMenuOpen(false)}>
+                {user?.name}
+              </NavLink>
+              <button onClick={handleLogout} className="btn btn-outline">
+                Выйти
+              </button>
+            </div>
           </div>
         </div>
       </nav>

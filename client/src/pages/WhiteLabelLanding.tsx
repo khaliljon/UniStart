@@ -32,6 +32,7 @@ function WhiteLabelLanding({ branding }: Props) {
     setMeta('property', 'og:title', `${brandName} — UniStart`);
     setMeta('property', 'og:description', localizedDesc || `${brandName} — подготовка к экзаменам`);
     setMeta('property', 'og:url', origin);
+    setMeta('property', 'og:type', 'website');
     setMeta('property', 'og:site_name', brandName);
     if (branding.logoUrl) setMeta('property', 'og:image', branding.logoUrl);
 
