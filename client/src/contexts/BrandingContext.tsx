@@ -69,7 +69,8 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
         const logoAbsolute = data.logoUrl.startsWith('http') ? data.logoUrl : `${origin}${data.logoUrl}`;
         setMeta('og:image', logoAbsolute, true);
         setMeta('twitter:image', logoAbsolute, true);
-        // Dynamic favicon
+        // Dynamic favicon — remove static icons so the branded one wins
+        document.querySelectorAll<HTMLLinkElement>('link[rel="icon"]:not([data-brand])').forEach(l => l.remove());
         let link = document.querySelector<HTMLLinkElement>('link[rel="icon"][data-brand]');
         if (!link) {
           link = document.createElement('link');
@@ -77,7 +78,7 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
           link.setAttribute('data-brand', 'true');
           document.head.appendChild(link);
         }
-        link.href = data.logoUrl;
+        link.href = logoAbsolute;
       }
 
       if (data.primaryColor) {
