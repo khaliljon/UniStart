@@ -65,7 +65,7 @@ function WhiteLabelLanding({ branding }: Props) {
           )}
           <span style={{ fontWeight: 800, fontSize: '1.5rem', color: primary }}>{brandName}</span>
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap', marginLeft: 'auto' }}>
           <LanguageSwitcher />
           <button onClick={() => navigate('/login')}
             style={{

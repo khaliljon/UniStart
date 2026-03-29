@@ -893,7 +893,6 @@ public class AdminController : ControllerBase
     public async Task<IActionResult> GetAllSchools()
     {
         var schools = await _db.TutorSchools
-            .Where(s => s.IsActive)
             .OrderByDescending(s => s.CreatedAt)
             .Select(s => new
             {
@@ -1110,5 +1109,23 @@ public class AdminController : ControllerBase
         school.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync();
         return Ok(new { rejected = true, schoolId });
+    }
+
+    /// <summary>Restore a deactivated/rejected school</summary>
+    [HttpPost("schools/{schoolId:int}/restore")]
+    public async Task<IActionResult> RestoreSchool(int schoolId)
+    {
+        var school = await _db.TutorSchools.FindAsync(schoolId);
+        if (school == null) return NotFound(new { error = "School not found" });
+        school.IsActive = true;
+        school.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+
+        var (adminId, email) = GetCurrentAdmin();
+        await _audit.LogAsync(adminId, email, "RestoreSchool", "TutorSchool", schoolId.ToString(),
+            newValues: new { school.Name, IsActive = true },
+            ipAddress: GetClientIp());
+
+        return Ok(new { restored = true, schoolId, school.Name });
     }
 }

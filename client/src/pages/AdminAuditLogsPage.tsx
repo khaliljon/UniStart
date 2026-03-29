@@ -24,6 +24,17 @@ const ACTION_COLORS: Record<string, string> = {
   Block: '#f97316',
   Unblock: '#06b6d4',
   BulkImport: '#8b5cf6',
+  HardDelete: '#dc2626',
+  EmptyTrash: '#991b1b',
+  VerifyTutor: '#16a34a',
+  UnverifyTutor: '#ea580c',
+  ToggleTutorSubscription: '#0891b2',
+  ActivateSchoolSubscription: '#059669',
+  DeactivateSchoolSubscription: '#d97706',
+  DeleteSchool: '#b91c1c',
+  ApproveSchool: '#15803d',
+  UnapproveSchool: '#c2410c',
+  RestoreSchool: '#7c3aed',
 };
 
 function AdminAuditLogsPage() {
@@ -113,6 +124,17 @@ function AdminAuditLogsPage() {
             <option value="Block">Block</option>
             <option value="Unblock">Unblock</option>
             <option value="BulkImport">BulkImport</option>
+            <option value="HardDelete">HardDelete</option>
+            <option value="EmptyTrash">EmptyTrash</option>
+            <option value="VerifyTutor">VerifyTutor</option>
+            <option value="UnverifyTutor">UnverifyTutor</option>
+            <option value="ToggleTutorSubscription">ToggleTutorSubscription</option>
+            <option value="ActivateSchoolSubscription">ActivateSchoolSubscription</option>
+            <option value="DeactivateSchoolSubscription">DeactivateSchoolSubscription</option>
+            <option value="DeleteSchool">DeleteSchool</option>
+            <option value="ApproveSchool">ApproveSchool</option>
+            <option value="UnapproveSchool">UnapproveSchool</option>
+            <option value="RestoreSchool">RestoreSchool</option>
           </select>
         </div>
 
@@ -128,6 +150,9 @@ function AdminAuditLogsPage() {
             <option value="Question">Question</option>
             <option value="User">User</option>
             <option value="Topic">Topic</option>
+            <option value="Section">Section</option>
+            <option value="TutorProfile">TutorProfile</option>
+            <option value="TutorSchool">TutorSchool</option>
           </select>
         </div>
 

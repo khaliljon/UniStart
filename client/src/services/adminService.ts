@@ -335,6 +335,9 @@ const adminService = {
   rejectSchool: (schoolId: number) =>
     api.post(`/admin/schools/${schoolId}/reject`).then(r => r.data),
 
+  restoreSchool: (schoolId: number) =>
+    api.post(`/admin/schools/${schoolId}/restore`).then(r => r.data),
+
   getPendingCounts: () =>
     api.get<{ pendingSchools: number; pendingVerifications: number; total: number }>('/admin/pending-counts').then(r => r.data),
 

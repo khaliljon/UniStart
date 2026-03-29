@@ -136,4 +136,73 @@ public class SeoController : ControllerBase
 
         return Content(xml.TrimStart(), "application/xml");
     }
+
+    /// <summary>
+    /// Returns a minimal HTML page with dynamic OG meta tags for social media crawlers.
+    /// Nginx routes bot user-agents here for subdomain requests.
+    /// </summary>
+    [HttpGet("/og")]
+    [ResponseCache(Duration = 600)]
+    public async Task<IActionResult> OpenGraph()
+    {
+        var host = Request.Host.Value ?? "unistart.kz";
+        var origin = $"https://{host}";
+
+        var isSubdomain = host.Contains('.') &&
+            !host.Equals("unistart.kz", StringComparison.OrdinalIgnoreCase) &&
+            !host.StartsWith("www.", StringComparison.OrdinalIgnoreCase);
+
+        string title = "UniStart — Адаптивная подготовка к экзаменам";
+        string description = "Персонализированные тесты, аналитика прогресса и умная система обучения. Готовьтесь к экзаменам эффективно с UniStart.";
+        string image = $"{origin}/og-image.png";
+        string siteName = "UniStart";
+
+        if (isSubdomain)
+        {
+            var slug = host.Split('.')[0];
+            var school = await _db.TutorSchools
+                .Where(s => s.Slug == slug && s.IsActive)
+                .Select(s => new { s.Name, s.Description, s.LogoUrl, s.NavbarTitle })
+                .FirstOrDefaultAsync();
+
+            if (school != null)
+            {
+                siteName = school.NavbarTitle ?? school.Name;
+                title = $"{school.Name} — Подготовка к экзаменам на UniStart";
+                if (!string.IsNullOrWhiteSpace(school.Description))
+                    description = school.Description;
+                if (!string.IsNullOrWhiteSpace(school.LogoUrl))
+                    image = school.LogoUrl.StartsWith("http") ? school.LogoUrl : $"{origin}{school.LogoUrl}";
+            }
+        }
+
+        var safeTitle = System.Net.WebUtility.HtmlEncode(title);
+        var safeDesc = System.Net.WebUtility.HtmlEncode(description);
+        var safeSite = System.Net.WebUtility.HtmlEncode(siteName);
+
+        var html = $"""
+            <!DOCTYPE html>
+            <html lang="ru">
+            <head>
+            <meta charset="utf-8"/>
+            <title>{safeTitle}</title>
+            <meta name="description" content="{safeDesc}"/>
+            <meta property="og:title" content="{safeTitle}"/>
+            <meta property="og:description" content="{safeDesc}"/>
+            <meta property="og:type" content="website"/>
+            <meta property="og:url" content="{origin}"/>
+            <meta property="og:image" content="{System.Net.WebUtility.HtmlEncode(image)}"/>
+            <meta property="og:site_name" content="{safeSite}"/>
+            <meta property="og:locale" content="ru_RU"/>
+            <meta name="twitter:card" content="summary_large_image"/>
+            <meta name="twitter:title" content="{safeTitle}"/>
+            <meta name="twitter:description" content="{safeDesc}"/>
+            <meta name="twitter:image" content="{System.Net.WebUtility.HtmlEncode(image)}"/>
+            </head>
+            <body><p>{safeDesc}</p></body>
+            </html>
+            """;
+
+        return Content(html.TrimStart(), "text/html");
+    }
 }

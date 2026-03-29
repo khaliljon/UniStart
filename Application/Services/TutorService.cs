@@ -417,7 +417,7 @@ public class TutorService : ITutorService
     public async Task<SchoolBrandingDto?> GetSchoolBrandingAsync(string slug)
     {
         return await _db.TutorSchools
-            .Where(s => s.IsActive && (s.Subdomain == slug || s.Slug == slug))
+            .Where(s => s.Subdomain == slug || s.Slug == slug)
             .Select(s => new SchoolBrandingDto(
                 s.Id, s.Name, s.Slug, s.Description, s.DescriptionEn, s.DescriptionKz,
                 s.LogoUrl, s.PrimaryColor, s.PrimaryHoverColor, s.AccentColor,

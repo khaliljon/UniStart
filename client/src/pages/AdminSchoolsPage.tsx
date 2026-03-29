@@ -84,13 +84,13 @@ function AdminSchoolsPage() {
     finally { setActionLoading(null); }
   };
 
-  const handleReject = async (school: AdminSchool) => {
-    if (!confirm(`Отклонить школу "${school.name}"?`)) return;
+  const handleRestore = async (school: AdminSchool) => {
     setActionLoading(school.id);
     try {
-      await adminService.rejectSchool(school.id);
-      setSchools(prev => prev.filter(s => s.id !== school.id));
-      if (selected?.id === school.id) { setSelected(null); setDetail(null); }
+      await adminService.restoreSchool(school.id);
+      setSchools(prev => prev.map(s => s.id === school.id ? { ...s, isActive: true } : s));
+      if (selected?.id === school.id) setSelected(prev => prev ? { ...prev, isActive: true } : prev);
+      window.dispatchEvent(new Event('admin-badge-refresh'));
     } catch { alert('Ошибка'); }
     finally { setActionLoading(null); }
   };
@@ -231,6 +231,12 @@ function AdminSchoolsPage() {
                         borderRadius: '999px', fontSize: '0.7rem', fontWeight: 700,
                       }}>Не оплачена</span>
                     )}
+                    {!school.isActive && (
+                      <span style={{
+                        background: '#fef2f2', color: '#dc2626', padding: '0.1rem 0.5rem',
+                        borderRadius: '999px', fontSize: '0.7rem', fontWeight: 700,
+                      }}>Отклонена</span>
+                    )}
                   </div>
                   <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
                     {school.slug} · {school.tutorCount} тьюторов · {school.studentCount} учеников
@@ -249,6 +255,16 @@ function AdminSchoolsPage() {
 
                 {/* Quick Actions */}
                 <div style={{ display: 'flex', gap: '0.35rem', flexShrink: 0 }} onClick={e => e.stopPropagation()}>
+                  {!school.isActive ? (
+                    <button
+                      onClick={() => handleRestore(school)}
+                      disabled={actionLoading === school.id}
+                      className="btn"
+                      style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem', border: 'none', background: '#dcfce7', color: '#16a34a' }}
+                    >
+                      {actionLoading === school.id ? '...' : 'Восстановить'}
+                    </button>
+                  ) : (<>
                   <button
                     onClick={() => school.isApproved ? handleUnapprove(school) : handleApprove(school)}
                     disabled={actionLoading === school.id}
@@ -275,6 +291,7 @@ function AdminSchoolsPage() {
                       {actionLoading === school.id ? '...' : isPaid(school) ? 'Подписка −' : 'Подписка +'}
                     </button>
                   )}
+                  </>)}
                 </div>
               </div>
 
@@ -298,6 +315,16 @@ function AdminSchoolsPage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
               <h2 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 700 }}>{selected.name}</h2>
               <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                {!selected.isActive ? (
+                  <button
+                    onClick={() => handleRestore(selected)}
+                    disabled={actionLoading === selected.id}
+                    className="btn"
+                    style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem', border: 'none', background: '#dcfce7', color: '#16a34a' }}
+                  >
+                    {actionLoading === selected.id ? '...' : 'Восстановить'}
+                  </button>
+                ) : (<>
                 <button
                   onClick={() => selected.isApproved ? handleUnapprove(selected) : handleApprove(selected)}
                   className="btn"
@@ -309,11 +336,7 @@ function AdminSchoolsPage() {
                 >
                   {selected.isApproved ? 'Снять ✓' : 'Верифицировать'}
                 </button>
-                {!selected.isApproved && (
-                  <button onClick={() => handleReject(selected)} className="btn" style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem', background: '#fef2f2', color: '#dc2626', border: 'none' }}>
-                    Отклонить
-                  </button>
-                )}
+
                 <button
                   onClick={() => handleDeleteSchool(selected)}
                   className="btn btn-outline"
@@ -321,6 +344,7 @@ function AdminSchoolsPage() {
                 >
                   {t.admin.common.delete}
                 </button>
+                </>)}
                 <button onClick={() => setSelected(null)} style={{
                   background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--text-secondary)',
                 }}>&times;</button>
@@ -341,7 +365,7 @@ function AdminSchoolsPage() {
                 background: selected.isApproved ? '#dcfce7' : '#fef9c3',
                 color: selected.isApproved ? '#16a34a' : '#ca8a04',
               }}>
-                {selected.isApproved ? '✓ Верифицирована' : '⏳ Не верифицирована'}
+                {selected.isApproved ? '✓ Верифицирована' : 'Не верифицирована'}
               </span>
               <span style={{
                 padding: '0.2rem 0.6rem', borderRadius: '999px', fontSize: '0.75rem', fontWeight: 600,
@@ -350,6 +374,14 @@ function AdminSchoolsPage() {
               }}>
                 {isPaid(selected) ? `Оплачена до ${formatDate(selected.subscriptionExpiresAt!)}` : 'Не оплачена'}
               </span>
+              {!selected.isActive && (
+                <span style={{
+                  padding: '0.2rem 0.6rem', borderRadius: '999px', fontSize: '0.75rem', fontWeight: 600,
+                  background: '#fef2f2', color: '#dc2626',
+                }}>
+                  Отклонена
+                </span>
+              )}
             </div>
 
             {detailLoading ? (
