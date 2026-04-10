@@ -19,6 +19,8 @@ function AdminLayout() {
   const [menuOpen, setMenuOpen] = useState(false);
   const moreRef = useRef<HTMLLIElement>(null);
   const [pendingCounts, setPendingCounts] = useState<{ pendingSchools: number; pendingVerifications: number; total: number }>({ pendingSchools: 0, pendingVerifications: 0, total: 0 });
+  const [showSchoolBadge, setShowSchoolBadge] = useState(false);
+  const [showTutorBadge, setShowTutorBadge] = useState(false);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -31,12 +33,28 @@ function AdminLayout() {
   }, []);
 
   useEffect(() => {
-    const refresh = () => adminService.getPendingCounts().then(setPendingCounts).catch(() => {});
+    const refresh = () => adminService.getPendingCounts().then(counts => {
+      setPendingCounts(counts);
+      const seenSchools = Number(localStorage.getItem('admin_seen_schools') || '0');
+      const seenVerifications = Number(localStorage.getItem('admin_seen_verifications') || '0');
+      setShowSchoolBadge(counts.pendingSchools > 0 && counts.pendingSchools > seenSchools);
+      setShowTutorBadge(counts.pendingVerifications > 0 && counts.pendingVerifications > seenVerifications);
+    }).catch(() => {});
     refresh();
     const interval = setInterval(refresh, 60000);
     window.addEventListener('admin-badge-refresh', refresh);
     return () => { clearInterval(interval); window.removeEventListener('admin-badge-refresh', refresh); };
   }, []);
+
+  const dismissSchoolBadge = () => {
+    localStorage.setItem('admin_seen_schools', String(pendingCounts.pendingSchools));
+    setShowSchoolBadge(false);
+  };
+
+  const dismissTutorBadge = () => {
+    localStorage.setItem('admin_seen_verifications', String(pendingCounts.pendingVerifications));
+    setShowTutorBadge(false);
+  };
 
   const handleLogout = () => {
     chatService.stop();
@@ -93,9 +111,9 @@ function AdminLayout() {
                 </NavLink>
               </li>
               <li>
-                <NavLink to="/tutors" onClick={() => setMenuOpen(false)} style={{ position: 'relative' }}>
+                <NavLink to="/tutors" onClick={() => { setMenuOpen(false); dismissTutorBadge(); }} style={{ position: 'relative' }}>
                   {t.admin.nav.tutors}
-                  {pendingCounts.pendingVerifications > 0 && (
+                  {showTutorBadge && (
                     <span style={{
                       position: 'absolute', top: '-4px', right: '-10px',
                       background: '#ef4444', color: '#fff', fontSize: '0.6rem', fontWeight: 700,
@@ -117,7 +135,7 @@ function AdminLayout() {
                   }}
                 >
                   {t.admin.nav.more} <span style={{ fontSize: '0.55rem', opacity: 0.6 }}>▼</span>
-                  {pendingCounts.pendingSchools > 0 && (
+                  {showSchoolBadge && (
                     <span style={{
                       position: 'absolute', top: '-4px', right: '-10px',
                       background: '#ef4444', color: '#fff', fontSize: '0.6rem', fontWeight: 700,
@@ -145,7 +163,7 @@ function AdminLayout() {
                       <NavLink
                         key={item.path}
                         to={item.path}
-                        onClick={() => { setMoreOpen(false); setMenuOpen(false); }}
+                        onClick={() => { setMoreOpen(false); setMenuOpen(false); if (item.path === '/schools') dismissSchoolBadge(); }}
                         style={({ isActive }) => ({
                           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                           padding: '0.5rem 1rem', fontSize: '0.88rem',

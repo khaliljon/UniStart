@@ -573,6 +573,19 @@ export interface Translations {
     linking: string;
     unlinking: string;
     confirmUnlink: string;
+    referralTitle: string;
+    referralYourCode: string;
+    referralCopy: string;
+    referralCopied: string;
+    referralReferred: string;
+    referralPaid: string;
+    referralDays: string;
+    referralEarned: string;
+    referralMoneyDesc: string;
+    referralDaysDesc: string;
+    referralTermsLink: string;
+    referralInactiveDesc: string;
+    referralActivate: string;
   };
 
   // ─── Admin ───
@@ -909,6 +922,11 @@ export interface Translations {
     becomeTutorTitle: string;
     becomeTutorDesc: string;
     becomeTutorBtn: string;
+    referralTitle: string;
+    referralDesc: string;
+    referralStudents: string;
+    referralTutors: string;
+    referralCta: string;
     testimonialsTitle: string;
     ctaTitle: string;
     ctaDesc: string;
@@ -1261,6 +1279,9 @@ export interface Translations {
     // Registration consent
     consentText: string;
     consentRequired: string;
+    // Referral Terms
+    referralTermsTitle: string;
+    referralTermsDate: string;
   };
   tour: {
     welcomeTitle: string;

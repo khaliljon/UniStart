@@ -538,6 +538,19 @@ export const ru: Translations = {
     linking: 'Привязка...',
     unlinking: 'Отвязка...',
     confirmUnlink: 'Вы уверены, что хотите отвязаться от тьютора? Скидка на подписку будет потеряна.',
+    referralTitle: 'Реферальная программа',
+    referralYourCode: 'Ваш код',
+    referralCopy: 'Копировать ссылку',
+    referralCopied: 'Скопировано!',
+    referralReferred: 'Приглашено',
+    referralPaid: 'Оплатили',
+    referralDays: 'дней Pro',
+    referralEarned: 'Заработано',
+    referralMoneyDesc: 'За каждого оплатившего пользователя — 500 ₸',
+    referralDaysDesc: 'За каждого оплатившего друга — +5 дней Pro',
+    referralTermsLink: 'Условия партнёрской программы',
+    referralInactiveDesc: 'Приглашайте друзей и получайте бонусы за каждого оплатившего пользователя.',
+    referralActivate: 'Активировать программу',
   },
   admin: {
     nav: {
@@ -941,6 +954,11 @@ export const ru: Translations = {
     faqPrice: 'Сколько стоит?',
     faqPriceAnswer: 'Бесплатно, Pro от 9 990 ₸/мес',
     allRights: 'Все права защищены.',
+    referralTitle: 'Приглашай друзей — получай бонусы',
+    referralDesc: 'Студенты получают +5 дней Pro, тьюторы и школы — 500 ₸ за каждого оплатившего пользователя.',
+    referralStudents: 'Студентам: +5 дней Pro за каждого друга',
+    referralTutors: 'Тьюторам и школам: 500 ₸ за каждого',
+    referralCta: 'Зарегистрируйтесь и начните приглашать',
   },
   forSchools: {
     heroTitle: 'Разместите свою школу на UniStart',
@@ -1270,6 +1288,8 @@ export const ru: Translations = {
     // Registration consent
     consentText: 'Я согласен с Пользовательским соглашением и Политикой конфиденциальности',
     consentRequired: 'Необходимо принять условия для регистрации',
+    referralTermsTitle: 'Условия реферальной программы',
+    referralTermsDate: '11 февраля 2025',
   },
   tour: {
     welcomeTitle: 'Добро пожаловать в UniStart!',

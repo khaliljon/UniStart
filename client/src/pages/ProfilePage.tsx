@@ -5,6 +5,7 @@ import { useTranslation } from '../hooks/useTranslation';
 import { fetchExams, fetchExamSections, toggleExamSelection, setSelectedSectionIds } from '../store/slices/examSlice';
 import { subscriptionService } from '../services/subscriptionService';
 import { tutorService } from '../services/tutorService';
+import { referralService, type ReferralStats } from '../services/referralService';
 import { authService } from '../services/authService';
 import api from '../services/api';
 import { useToast } from '../components/Toast';
@@ -26,6 +27,11 @@ function ProfilePage() {
   const [linkError, setLinkError] = useState<string | null>(null);
   const [unlinkLoading, setUnlinkLoading] = useState(false);
   const isStudent = user?.role === 'Student';
+
+  // Referral program
+  const [refStats, setRefStats] = useState<ReferralStats | null>(null);
+  const [refActivating, setRefActivating] = useState(false);
+  const [refCopied, setRefCopied] = useState(false);
 
   // Password change
   const [currentPassword, setCurrentPassword] = useState('');
@@ -55,6 +61,7 @@ function ProfilePage() {
     if (user?.role === 'Student') {
       tutorService.getMyTutor().then(setLinkedTutor).catch(() => {});
     }
+    referralService.getStats().then(setRefStats).catch(() => {});
   }, [dispatch]);
 
   // Load sections for all selected exams
@@ -129,6 +136,24 @@ function ProfilePage() {
     } finally {
       setUnlinkLoading(false);
     }
+  };
+
+  const handleActivateReferral = async () => {
+    setRefActivating(true);
+    try {
+      const res = await referralService.activate();
+      setRefStats(prev => prev ? { ...prev, code: res.code, isActive: true } : null);
+      referralService.getStats().then(setRefStats).catch(() => {});
+    } catch { /* ignore */ } finally { setRefActivating(false); }
+  };
+
+  const handleCopyReferral = () => {
+    if (!refStats?.code) return;
+    const link = `${window.location.origin}/register?ref=${refStats.code}`;
+    navigator.clipboard.writeText(link).then(() => {
+      setRefCopied(true);
+      setTimeout(() => setRefCopied(false), 2000);
+    });
   };
 
   const handleChangePassword = async (e: FormEvent) => {
@@ -354,6 +379,61 @@ function ProfilePage() {
           )}
         </div>
       )}
+
+      {/* ─── Referral Program ─── */}
+      <div className="card" style={{ padding: '1.5rem', marginBottom: '1.25rem' }}>
+        <h3 style={{ margin: '0 0 0.75rem', fontSize: '1rem' }}>{t.profilePage.referralTitle}</h3>
+        {refStats?.code ? (
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{t.profilePage.referralYourCode}:</span>
+              <code style={{
+                background: 'var(--primary-color)', color: '#fff', padding: '0.3rem 0.6rem',
+                borderRadius: '6px', fontWeight: 700, letterSpacing: '0.1em', fontSize: '0.95rem',
+              }}>
+                {refStats.code}
+              </code>
+              <button className="btn btn-outline" onClick={handleCopyReferral} style={{ padding: '0.3rem 0.6rem', fontSize: '0.8rem' }}>
+                {refCopied ? '✓' : t.profilePage.referralCopy}
+              </button>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '0.5rem', marginBottom: '0.75rem' }}>
+              <div style={{ background: 'var(--background-color)', borderRadius: '8px', padding: '0.6rem', textAlign: 'center' }}>
+                <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--primary-color)' }}>{refStats.totalReferred}</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{t.profilePage.referralReferred}</div>
+              </div>
+              <div style={{ background: 'var(--background-color)', borderRadius: '8px', padding: '0.6rem', textAlign: 'center' }}>
+                <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--primary-color)' }}>{refStats.totalPaid}</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{t.profilePage.referralPaid}</div>
+              </div>
+              <div style={{ background: 'var(--background-color)', borderRadius: '8px', padding: '0.6rem', textAlign: 'center' }}>
+                <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--primary-color)' }}>
+                  {refStats.rewardType === 'money' ? `${refStats.totalEarned} ₸` : `+${refStats.bonusDays} ${t.profilePage.referralDays}`}
+                </div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{t.profilePage.referralEarned}</div>
+              </div>
+            </div>
+
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0 }}>
+              {refStats.rewardType === 'money'
+                ? t.profilePage.referralMoneyDesc
+                : t.profilePage.referralDaysDesc}
+              {' '}<a href="/referral-terms" style={{ color: 'var(--primary-color)' }}>{t.profilePage.referralTermsLink}</a>
+            </p>
+          </div>
+        ) : (
+          <div>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>
+              {t.profilePage.referralInactiveDesc}
+            </p>
+            <button className="btn btn-primary" onClick={handleActivateReferral} disabled={refActivating}
+              style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
+              {refActivating ? '...' : t.profilePage.referralActivate}
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* ─── Selected Exams (student only) ─── */}
       {isStudent && (<>

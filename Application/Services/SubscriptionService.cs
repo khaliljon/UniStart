@@ -11,6 +11,7 @@ public class SubscriptionService : ISubscriptionService
 {
     private readonly UniStartDbContext _context;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IReferralService _referralService;
 
     // ── Tier configuration ──
 
@@ -34,10 +35,11 @@ public class SubscriptionService : ISubscriptionService
         ),
     };
 
-    public SubscriptionService(UniStartDbContext context, IUnitOfWork unitOfWork)
+    public SubscriptionService(UniStartDbContext context, IUnitOfWork unitOfWork, IReferralService referralService)
     {
         _context = context;
         _unitOfWork = unitOfWork;
+        _referralService = referralService;
     }
 
     public async Task<SubscriptionStatusDto> GetStatusAsync(int userId)
@@ -159,6 +161,9 @@ public class SubscriptionService : ISubscriptionService
             user.UpdatedAt = DateTime.UtcNow;
             await _unitOfWork.SaveChangesAsync();
 
+            // Grant referral reward to referrer
+            await _referralService.GrantRewardForProUpgradeAsync(userId);
+
             var price = hasTutorDiscount ? "6 990 ₸" : "9 990 ₸";
             return new UpgradeResponseDto(
                 Success: true,
@@ -176,6 +181,9 @@ public class SubscriptionService : ISubscriptionService
             user.SubscriptionExpiresAt = DateTime.UtcNow.AddDays(365);
             user.UpdatedAt = DateTime.UtcNow;
             await _unitOfWork.SaveChangesAsync();
+
+            // Grant referral reward to referrer
+            await _referralService.GrantRewardForProUpgradeAsync(userId);
 
             return new UpgradeResponseDto(
                 Success: true,

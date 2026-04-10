@@ -538,6 +538,19 @@ export const kz: Translations = {
     linking: 'Байланыстыру...',
     unlinking: 'Ажырату...',
     confirmUnlink: 'Тьютордан ажыратқыңыз келетініне сенімдісіз бе? Жазылым жеңілдігі жойылады.',
+    referralTitle: 'Реферал бағдарламасы',
+    referralYourCode: 'Сіздің кодыңыз',
+    referralCopy: 'Сілтемені көшіру',
+    referralCopied: 'Көшірілді!',
+    referralReferred: 'Шақырылды',
+    referralPaid: 'Төледі',
+    referralDays: 'Pro күндер',
+    referralEarned: 'Тапқан',
+    referralMoneyDesc: 'Әр төлеген пайдаланушы үшін — 500 ₸',
+    referralDaysDesc: 'Әр төлеген досыңыз үшін — +5 Pro күн',
+    referralTermsLink: 'Серіктестік бағдарлама шарттары',
+    referralInactiveDesc: 'Достарыңызды шақырыңыз және әр төлеген пайдаланушы үшін бонус алыңыз.',
+    referralActivate: 'Бағдарламаны белсендіру',
   },
   admin: {
     nav: {
@@ -939,6 +952,11 @@ export const kz: Translations = {
     faqPrice: 'Қанша тұрады?',
     faqPriceAnswer: 'Тегін, Pro 9 990 ₸/ай-дан',
     allRights: 'Барлық құқықтар қорғалған.',
+    referralTitle: 'Достарыңды шақыр — бонус ал',
+    referralDesc: 'Студенттер +5 Pro күн алады, тьюторлар мен мектептер — әр төлеген пайдаланушы үшін 500 ₸.',
+    referralStudents: 'Студенттерге: әр дос үшін +5 Pro күн',
+    referralTutors: 'Тьюторлар мен мектептерге: әрқайсысы үшін 500 ₸',
+    referralCta: 'Тіркеліңіз және шақыруды бастаңыз',
   },
   forSchools: {
     heroTitle: 'Мектебіңізді UniStart-та орналастырыңыз',
@@ -1267,6 +1285,8 @@ export const kz: Translations = {
     // Registration consent
     consentText: 'Мен Пайдаланушы келісімімен және Құпиялылық саясатымен келісемін',
     consentRequired: 'Тіркелу үшін шарттарды қабылдау қажет',
+    referralTermsTitle: 'Реферал бағдарламасының шарттары',
+    referralTermsDate: '2025 жылғы 11 ақпан',
   },
   tour: {
     welcomeTitle: 'UniStart-қа қош келдіңіз!',

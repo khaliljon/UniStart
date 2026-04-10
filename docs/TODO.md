@@ -745,3 +745,261 @@ private async Task<TutorSchool?> GetOwnedSchool()
 - [ ] Аналитика по школам: сводная статистика всех школ для UniStart Admin
 - [ ] Кастомный домен для школы (school.example.com → CNAME → unistart.kz, nginx proxy)
 - [ ] Школьные тарифные планы: 49 990 ₸/год (единый тариф)
+
+---
+
+## 🎁 Sprint 8 — Реферальная программа и юридический аудит (апрель 2026)
+
+### Анализ юридических документов
+
+#### 1. PrivacyPolicy.md — Политика конфиденциальности
+- **Основание**: Закон РК «О персональных данных» №94-V от 21.05.2013
+- **Оператор**: ИП Каландаров (БИН/ИИН и адрес — шаблонные `__________________`, НУЖНО ЗАПОЛНИТЬ)
+- **Собираемые данные**: имя, email, пароль (bcrypt), ответы на тесты, IP, cookies (JWT, язык, тема)
+- **НЕ собираемые**: биометрия, банковские данные (обрабатывает Kaspi Pay), данные <14 лет
+- **Хранение**: до удаления аккаунта; при неактивности >2 лет — уведомление + 30 дней; IP-логи до 12 мес
+- **Удаление**: по запросу — 30 дней из БД, 60 дней из бэкапов, уведомление после уничтожения
+- **Права пользователя**: информирование, уточнение, блокировка, уничтожение, отзыв согласия, обжалование
+- **Передача**: только с согласия, для исполнения договора (платёжные системы), по закону РК
+
+#### 2. EmployerAgreement.md — Пользовательское соглашение
+- **11 разделов**: предмет, аккаунт, права/обязанности, AI IP, персональные данные, ответственность, споры
+- **Подписки**: Free (ограниченный), Pro (10 000 ₸/мес, 99 990 ₸/год), с тьютором (7 000 ₸/мес)
+- **Возврат**: 14 дней с даты оплаты (ЗРК «О защите прав потребителей»)
+- **Удаление аккаунта**: пользователь может запросить через unistart.kz@gmail.com
+- **Возраст**: 14+ (несовершеннолетние с согласия родителей)
+- **AI контент**: ИС генерируемого контента принадлежит UniStart
+- **Споры**: досудебная претензия 30 дней → суд по месту регистрации оператора
+
+#### 3. ReferralAgreement.md — Партнёрский договор реферальной программы
+- **Принятие оферты**: активация промокода в личном кабинете = заключение договора
+- **Типы партнёров**: Тьютор, Школа, Студент
+- **Условия начисления**: только НОВЫЙ пользователь + оплата Pro подписки
+- **Вознаграждения**:
+  - Тьютор: 500 ₸ за каждого привлечённого, вывод от 5 000 ₸
+  - Школа: 500 ₸ за каждого привлечённого, вывод от 10 000 ₸
+  - Студент: 5 дней Pro за каждого привлечённого (без денежных выплат!)
+- **Антифрод**: запрет спама, купонных агрегаторов, платной рекламы без согласования, дубликатов аккаунтов
+- **Аннулирование**: при возврате подписки, при нарушении условий, если промокод на агрегаторе
+- **Срок хранения**: невостребованное вознаграждение аннулируется через 12 месяцев
+- **Выплаты**: на расчётный счёт, реквизиты на unistart.kz@gmail.com, партнёр сам платит налоги
+- **Расторжение**: админ — с уведомлением за 14 дней, партнёр — в любое время
+
+---
+
+### Юридический аудит: что реализовано vs что требуется
+
+| Требование | Документ | Статус | Что нужно |
+|------------|----------|--------|-----------|
+| Согласие на обработку ПД при регистрации | Privacy §2.1.1 | ✅ | Чекбокс + ссылки /terms, /privacy |
+| Ссылки на Политику в футере | Privacy §10 | ✅ | Footer на LandingPage |
+| Cookie consent | Privacy §4.5 | ✅ | CookieBanner компонент |
+| Удаление аккаунта по запросу | Privacy §9 | ⚠️ | Нет кнопки «Удалить аккаунт» в профиле. Только через email |
+| Экспорт данных (ЗРК/GDPR) | Privacy §7 | ❌ | Нет функции «Скачать мои данные» |
+| Маскировка email у других пользователей | Privacy §5.4 | ⚠️ | Email виден тьютору, админу. Маскировка не реализована |
+| Возврат подписки (14 дней) | Terms §5.3 | ❌ | Нет механизма возврата (нет платёжной интеграции) |
+| Ограничение возраста 14+ | Terms §4.2 | ⚠️ | Нет проверки возраста на фронте, только в соглашении |
+| Реферальная программа | Referral | ❌ | Полностью отсутствует — нужна реализация |
+| Промокод в личном кабинете | Referral §1 | ❌ | Нет секции реферальной программы в ProfilePage |
+| Отслеживание рефералов | Referral §1.4 | ❌ | Нет сущностей и API |
+| Выплаты/начисления | Referral §2 | ❌ | Нет бэкенд-логики |
+| БИН/ИИН/адрес оператора | Privacy §3.1 | ⚠️ | Заглушки `__________________` — ЗАПОЛНИТЬ |
+
+---
+
+### Реферальная система — Архитектура и план реализации
+
+#### Новые сущности (Domain)
+
+```csharp
+// Domain/Entities/ReferralCode.cs
+public class ReferralCode
+{
+    public int Id { get; set; }
+    public int OwnerUserId { get; set; }         // FK → Users.Id (партнёр)
+    public User Owner { get; set; } = null!;
+    public string Code { get; set; } = "";        // Уникальный код, 8 символов (UPPER + цифры)
+    public bool IsActive { get; set; } = true;
+    public DateTime CreatedAt { get; set; }
+    public int UsedCount { get; set; } = 0;       // Денормализация для быстрого отображения
+}
+
+// Domain/Entities/ReferralUsage.cs
+public class ReferralUsage
+{
+    public int Id { get; set; }
+    public int ReferralCodeId { get; set; }       // FK → ReferralCodes.Id
+    public ReferralCode ReferralCode { get; set; } = null!;
+    public int ReferredUserId { get; set; }       // FK → Users.Id (привлечённый)
+    public User ReferredUser { get; set; } = null!;
+    public DateTime RegisteredAt { get; set; }    // Когда зарегистрировался
+    public DateTime? PaidAt { get; set; }         // Когда оплатил Pro (null = ещё не оплатил)
+    public bool RewardGranted { get; set; }       // Вознаграждение начислено?
+}
+
+// Domain/Entities/ReferralReward.cs
+public class ReferralReward
+{
+    public int Id { get; set; }
+    public int OwnerUserId { get; set; }          // FK → Users.Id (получатель)
+    public User Owner { get; set; } = null!;
+    public int ReferralUsageId { get; set; }      // FK → ReferralUsages.Id
+    public ReferralUsage Usage { get; set; } = null!;
+    public string RewardType { get; set; } = "";  // "money" или "days"
+    public decimal Amount { get; set; }           // 500 (₸) или 5 (дней)
+    public bool IsPaidOut { get; set; }           // Выплачено?
+    public DateTime GrantedAt { get; set; }
+    public DateTime? PaidOutAt { get; set; }
+    public DateTime ExpiresAt { get; set; }       // GrantedAt + 12 месяцев
+}
+```
+
+#### Новые поля в User
+
+```csharp
+// User.cs — добавить
+public string? ReferralCode { get; set; }         // Промокод, если есть (связь 1:1 с ReferralCode)
+public int? ReferredByCodeId { get; set; }        // Через какой промокод зарегистрировался
+```
+
+#### API Endpoints
+
+```
+POST   /api/referral/activate          — Активировать реферальную программу (генерация кода)
+GET    /api/referral/my                — Мой промокод, статистика, вознаграждения
+GET    /api/referral/stats             — Детальная статистика: привлечённые, оплатившие, суммы
+POST   /api/referral/withdraw          — Запрос на вывод вознаграждения
+POST   /api/auth/register              — Обновить: принимать ?ref=ПРОМОКОД → ReferredByCodeId
+```
+
+#### Бизнес-логика (ReferralService.cs)
+
+1. **Активация**: Пользователь нажимает «Активировать» → генерация `ReferralCode` (8 символов, UPPER + цифры), привязка к пользователю
+2. **Регистрация по коду**: `?ref=CODE` → `AuthService.RegisterAsync` записывает `ReferredByCodeId`, создаёт `ReferralUsage` с `PaidAt = null`
+3. **Оплата Pro**: `SubscriptionService` при оплате проверяет `ReferredByCodeId` → если есть и `ReferralUsage.PaidAt == null`:
+   - `PaidAt = now`, `RewardGranted = true`
+   - Создаёт `ReferralReward`:
+     - Если владелец кода = Tutor/SchoolAdmin → `RewardType = "money"`, `Amount = 500`
+     - Если владелец кода = Student → `RewardType = "days"`, `Amount = 5`
+   - Инкрементирует `ReferralCode.UsedCount`
+4. **Вывод**: Партнёр запрашивает вывод → admin видит заявку → manual payout (пока нет автоматики)
+
+#### Frontend — ProfilePage: секция «Реферальная программа»
+
+```
+┌─────────────────────────────────────────────────┐
+│  🎁 Реферальная программа                        │
+│                                                   │
+│  [Ваш промокод ещё не активирован]               │
+│  [Активировать программу]                        │
+│                                                   │
+│  — ПОСЛЕ АКТИВАЦИИ: —                            │
+│                                                   │
+│  Ваш промокод: ABC12345   [📋 Копировать]        │
+│  Ссылка: unistart.kz/register?ref=ABC12345       │
+│                                                   │
+│  📊 Статистика:                                   │
+│  Привлечено: 12 | Оплатили Pro: 5                │
+│  Ваше вознаграждение: 2 500 ₸ (или +25 дней Pro) │
+│  К выплате: 2 500 ₸ [Вывести]                   │
+│                                                   │
+│  ℹ️ Условия:                                      │
+│  • Тьюторы/школы: 500 ₸ за каждого               │
+│  • Студенты: 5 дней Pro за каждого                │
+│  • Подробнее: /referral-terms                     │
+└─────────────────────────────────────────────────┘
+```
+
+#### Frontend — LandingPage: секция «Реферальная программа»
+
+Добавить ПЕРЕД секцией «Партнёрство» (или заменить CTA внутри неё):
+
+```
+┌─────────────────────────────────────────────────┐
+│  🎁 Приглашай друзей — получай бонусы            │
+│                                                   │
+│  Студенты: +5 дней Pro за каждого друга          │
+│  Тьюторы: 500 ₸ за каждого ученика              │
+│  Школы: 500 ₸ за каждого учащегося              │
+│                                                   │
+│  [Зарегистрироваться и получить промокод]        │
+└─────────────────────────────────────────────────┘
+```
+
+#### Frontend — RegisterPage: параметр ?ref=
+
+```
+// RegisterPage.tsx — уже есть useSearchParams
+const refCode = searchParams.get('ref');
+
+// При handleSubmit → добавить referralCode в payload:
+dispatch(register({ ..., referralCode: refCode || undefined }));
+```
+
+#### Frontend — Новая страница /referral-terms
+
+Публичная страница `ReferralTermsPage.tsx` — рендер Партнёрского договора (аналогично TermsPage/PrivacyPage). Контент из ReferralAgreement.md, но в i18n формате.
+
+---
+
+### Этапы реализации реферальной программы
+
+#### Этап 1 — Backend (Domain + Migration + Service)
+- [ ] `Domain/Entities/ReferralCode.cs` + `ReferralUsage.cs` + `ReferralReward.cs`
+- [ ] `User.ReferralCode`, `User.ReferredByCodeId` — новые поля
+- [ ] EF Core конфигурация в `UniStartDbContext` + DbSets
+- [ ] Миграция `AddReferralSystem`
+- [ ] `Application/Interfaces/IReferralService.cs`
+- [ ] `Application/Services/ReferralService.cs` — Activate, GetMyStats, RecordUsage, GrantReward
+- [ ] `Application/DTOs/ReferralDtos.cs` — ReferralStatsDto, ReferralActivateDto
+- [ ] `Controllers/ReferralController.cs` — 4 endpoints
+- [ ] Обновить `AuthService.RegisterAsync` — обработка `referralCode` параметра
+- [ ] Обновить `SubscriptionService` — при оплате Pro → начислить реферальное вознаграждение
+
+#### Этап 2 — Frontend (Profile + Landing + Register)
+- [ ] `ProfilePage.tsx` — секция «Реферальная программа» (активация, промокод, статистика)
+- [ ] `services/referralService.ts` — API клиент (activate, getMyStats, withdraw)
+- [ ] `LandingPage.tsx` — секция «Приглашай друзей» перед партнёрством
+- [ ] `RegisterPage.tsx` — обработка `?ref=` параметра, передача в API
+- [ ] `ReferralTermsPage.tsx` — публичная страница с Партнёрским договором
+- [ ] `App.tsx` — роут `/referral-terms`
+- [ ] i18n: секция `referral` (ru/en/kz) — ~30 ключей
+
+#### Этап 3 — Админка
+- [ ] `AdminReferralPage.tsx` — просмотр всех рефералов, заявки на вывод, ручное одобрение выплат
+- [ ] `adminService.ts` — getReferralStats, approveWithdrawal
+- [ ] `AdminController.cs` — endpoint'ы для управления реферальной программой
+
+---
+
+### Исправления, реализованные в текущем спринте (апрель 2026)
+
+- [x] **Admin badge dismiss**: Красный бейдж в AdminLayout теперь сохраняется до первого посещения страницы (localStorage: `admin_seen_schools`, `admin_seen_verifications`). При клике на «Тьюторы» — dismiss тьюторского бейджа, при клике на «Школы» в dropdown — dismiss школьного бейджа
+- [x] **User counts fix**: `AdminService.GetUserStatsAsync()` — теперь Admins = Admin + SchoolAdmin (было только Admin). Tutors = Tutor + SchoolTutor (было уже корректно)
+- [x] **School soft-delete**: Работает корректно — публичный список (`TutorService.GetSchoolsAsync`) фильтрует по `IsActive`, админ-панель показывает все школы. Восстановление через `handleRestore` / `RestoreSchool` endpoint
+- [x] **School branding**: `GetSchoolBrandingAsync` — убран фильтр `IsActive`, subdomain-брендинг работает для всех школ (даже отклонённых)
+- [x] **Registration page**: Уже содержит чекбокс согласия + ссылки на /terms и /privacy (FIX-43)
+
+---
+
+### Приоритетные TODO (ближайшие действия)
+
+#### Критичные (перед запуском реферальной программы)
+1. ⬜ Заполнить БИН/ИИН и адрес в PrivacyPolicy.md (заглушки `__________________`)
+2. ⬜ Конвертировать PrivacyPolicy.md и ReferralAgreement.md из CP-1251 в UTF-8
+3. ⬜ Реализовать кнопку «Удалить аккаунт» в ProfilePage (Privacy §9, Terms §4.3.3)
+4. ⬜ Создать страницу /referral-terms (рендер Партнёрского договора)
+5. ⬜ Добавить ссылку на /referral-terms в Footer (рядом с /terms и /privacy)
+
+#### Важные (первый месяц)
+6. ⬜ Backend реферальной системы (entities, migration, service, controller)
+7. ⬜ Frontend реферальной программы (profile секция, landing секция, register ?ref=)
+8. ⬜ Админка реферальной программы (просмотр, одобрение выплат)
+9. ⬜ Email-уведомления: «Ваш реферал оплатил Pro» / «Вознаграждение начислено»
+10. ⬜ Экспорт данных «Скачать мои данные» (Privacy §7, ЗРК о ПД)
+
+#### Желательные (расширение)
+11. ⬜ Автоматические выплаты (интеграция с банковским API)
+12. ⬜ Реферальный дашборд для тьюторов (в TutorLayout)
+13. ⬜ A/B тестирование реферальных бонусов (500₸ vs 1000₸)
+14. ⬜ Push/email-напоминания неактивным партнёрам

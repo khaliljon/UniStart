@@ -450,6 +450,64 @@ function LandingPage() {
         </div>
       </section>
 
+      {/* ═══ Referral Program ═══ */}
+      <section style={{
+        padding: '4rem 2rem',
+        maxWidth: '800px',
+        margin: '0 auto',
+        textAlign: 'center',
+      }}>
+        <h2 style={{ fontSize: '2rem', fontWeight: 700, marginBottom: '0.75rem' }}>
+          {t.landing.referralTitle}
+        </h2>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '1.05rem', marginBottom: '2rem', lineHeight: 1.6 }}>
+          {t.landing.referralDesc}
+        </p>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+          gap: '1.5rem',
+          marginBottom: '2rem',
+        }}>
+          <div style={{
+            padding: '1.5rem',
+            borderRadius: '1rem',
+            border: '1px solid var(--border-color)',
+            background: 'var(--card-bg)',
+          }}>
+            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🎓</div>
+            <p style={{ fontWeight: 600, fontSize: '0.95rem' }}>{t.landing.referralStudents}</p>
+          </div>
+          <div style={{
+            padding: '1.5rem',
+            borderRadius: '1rem',
+            border: '1px solid var(--border-color)',
+            background: 'var(--card-bg)',
+          }}>
+            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>💰</div>
+            <p style={{ fontWeight: 600, fontSize: '0.95rem' }}>{t.landing.referralTutors}</p>
+          </div>
+        </div>
+        <button
+          onClick={() => navigate('/register')}
+          style={{
+            padding: '0.85rem 2rem',
+            borderRadius: '0.75rem',
+            border: '2px solid var(--primary-color)',
+            background: 'transparent',
+            color: 'var(--primary-color)',
+            fontWeight: 600,
+            fontSize: '0.95rem',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'var(--primary-color)'; e.currentTarget.style.color = '#fff'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--primary-color)'; }}
+        >
+          {t.landing.referralCta}
+        </button>
+      </section>
+
       {/* ═══ Become a Tutor ═══ */}
       <section style={{
         padding: '3rem 2rem',

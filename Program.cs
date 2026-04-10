@@ -104,6 +104,9 @@ try
     builder.Services.AddScoped<ITutorService, TutorService>();
     builder.Services.AddScoped<IMessageService, MessageService>();
 
+    // Referral program (Sprint 8)
+    builder.Services.AddScoped<IReferralService, ReferralService>();
+
     // Learning v2 services (TH-1..TH-6)
     builder.Services.AddScoped<IFormulaService, FormulaService>();
     builder.Services.AddScoped<IFlashcardService, FlashcardService>();

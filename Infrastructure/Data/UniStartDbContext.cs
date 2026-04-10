@@ -69,6 +69,11 @@ public class UniStartDbContext : DbContext
     public DbSet<AssignmentStudent> AssignmentStudents => Set<AssignmentStudent>();
     public DbSet<AssignmentAnswer> AssignmentAnswers => Set<AssignmentAnswer>();
 
+    // Referral program (Sprint 8)
+    public DbSet<ReferralCode> ReferralCodes => Set<ReferralCode>();
+    public DbSet<ReferralUsage> ReferralUsages => Set<ReferralUsage>();
+    public DbSet<ReferralReward> ReferralRewards => Set<ReferralReward>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -1022,6 +1027,72 @@ public class UniStartDbContext : DbContext
             entity.HasIndex(e => new { e.InviteCodeId, e.StudentUserId })
                   .IsUnique()
                   .HasDatabaseName("IX_TutorInviteCodeUsages_Code_Student");
+        });
+
+        // ═══════════════════════════════════════════════════════
+        //  REFERRAL PROGRAM (Sprint 8)
+        // ═══════════════════════════════════════════════════════
+
+        modelBuilder.Entity<ReferralCode>(entity =>
+        {
+            entity.ToTable("ReferralCodes");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Code).IsRequired().HasMaxLength(8);
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.UsedCount).HasDefaultValue(0);
+            entity.HasOne(e => e.Owner)
+                  .WithMany()
+                  .HasForeignKey(e => e.OwnerUserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(e => e.Code)
+                  .IsUnique()
+                  .HasDatabaseName("IX_ReferralCodes_Code");
+            entity.HasIndex(e => e.OwnerUserId)
+                  .IsUnique()
+                  .HasDatabaseName("IX_ReferralCodes_OwnerUserId");
+        });
+
+        modelBuilder.Entity<ReferralUsage>(entity =>
+        {
+            entity.ToTable("ReferralUsages");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.RewardGranted).HasDefaultValue(false);
+            entity.HasOne(e => e.ReferralCode)
+                  .WithMany()
+                  .HasForeignKey(e => e.ReferralCodeId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.ReferredUser)
+                  .WithMany()
+                  .HasForeignKey(e => e.ReferredUserId)
+                  .OnDelete(DeleteBehavior.Restrict);
+            entity.HasIndex(e => e.ReferredUserId)
+                  .IsUnique()
+                  .HasDatabaseName("IX_ReferralUsages_ReferredUserId");
+        });
+
+        modelBuilder.Entity<ReferralReward>(entity =>
+        {
+            entity.ToTable("ReferralRewards");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.RewardType).IsRequired().HasMaxLength(10);
+            entity.Property(e => e.Amount).HasPrecision(18, 2);
+            entity.Property(e => e.IsPaidOut).HasDefaultValue(false);
+            entity.HasOne(e => e.Owner)
+                  .WithMany()
+                  .HasForeignKey(e => e.OwnerUserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Usage)
+                  .WithOne()
+                  .HasForeignKey<ReferralReward>(e => e.ReferralUsageId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<User>(entity =>
+        {
+            entity.HasOne(e => e.ReferredByCode)
+                  .WithMany()
+                  .HasForeignKey(e => e.ReferredByCodeId)
+                  .OnDelete(DeleteBehavior.SetNull);
         });
 
         // Seed exam types

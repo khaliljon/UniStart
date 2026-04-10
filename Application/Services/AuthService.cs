@@ -199,6 +199,24 @@ public class AuthService : IAuthService
         _context.Users.Add(user);
         await _unitOfWork.SaveChangesAsync();
 
+        // Referral program: track referral usage
+        if (!string.IsNullOrWhiteSpace(dto.ReferralCode))
+        {
+            var refCode = await _context.ReferralCodes
+                .FirstOrDefaultAsync(r => r.Code == dto.ReferralCode.Trim().ToUpperInvariant() && r.IsActive);
+            if (refCode != null && refCode.OwnerUserId != user.Id)
+            {
+                user.ReferredByCodeId = refCode.Id;
+                _context.ReferralUsages.Add(new ReferralUsage
+                {
+                    ReferralCodeId = refCode.Id,
+                    ReferredUserId = user.Id,
+                    RegisteredAt = DateTime.UtcNow
+                });
+                await _unitOfWork.SaveChangesAsync();
+            }
+        }
+
         // Auto-create TutorProfile for tutor registrations
         if (role == UserRole.Tutor || role == UserRole.SchoolTutor)
         {

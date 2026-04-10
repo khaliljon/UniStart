@@ -54,6 +54,7 @@ const SchoolAdminApplicationsPage = lazy(() => import('./pages/SchoolAdminApplic
 const TutorContentPage = lazy(() => import('./pages/TutorContentPage'))
 const StudentAssignmentsPage = lazy(() => import('./pages/StudentAssignmentsPage'))
 const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'))
+const ReferralTermsPage = lazy(() => import('./pages/ReferralTermsPage'))
 
 // ── Suspense fallback ───────────────────────────────────
 const PageLoader = () => (
@@ -164,6 +165,7 @@ function App() {
       <Route path="/forgot-password" element={!isAuthenticated ? <ForgotPasswordPage /> : <Navigate to="/" replace />} />
       <Route path="/privacy" element={<PrivacyPage />} />
       <Route path="/terms" element={<TermsPage />} />
+      <Route path="/referral-terms" element={<ReferralTermsPage />} />
       <Route path="/onboarding" element={needsOnboarding ? <OnboardingPage /> : <Navigate to="/" replace />} />
 
       {isAuthenticated ? (

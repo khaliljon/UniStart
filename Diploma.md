@@ -111,6 +111,8 @@ UniStart -- это веб-платформа адаптивной подгото
 
 ### Многослойная архитектура (Clean Architecture)
 
+Система построена на принципах **Clean Architecture** с четким разделением ответственности между слоями:
+
 ```
 ┌─────────────────────────────────┐
 │  Presentation Layer             │
@@ -133,34 +135,160 @@ UniStart -- это веб-платформа адаптивной подгото
 └─────────────────────────────────┘
 ```
 
+### Схема взаимодействия компонентов (см. скриншот)
+
+```
+React 19 SPA ──► Nginx (Reverse Proxy + SSL) ──► ASP.NET Core API (.NET 8 / Kestrel) ──► PostgreSQL 17 (EF Core)
+     │                                                │
+     │ (WebSocket)                                     ├──► SignalR Hub (чат в реальном времени)
+     └─────────────────────────────────────────────────┤
+                                                       └──► Hangfire (фоновые задачи: напоминания, подписки)
+```
+
+| Компонент | Роль в системе |
+|-----------|----------------|
+| **React 19 SPA** | Клиентское приложение (TypeScript, Vite). Выполняет рендеринг интерфейса, управление состоянием через Redux Toolkit, маршрутизацию и i18n (3 языка) |
+| **Nginx** | Reverse proxy: терминирует HTTPS (Let's Encrypt), маршрутизирует запросы к API, отдает статику SPA, обрабатывает WebSocket upgrade для SignalR, маршрутизирует поддомены (White-Label) |
+| **ASP.NET Core API** | Бизнес-логика: IRT-движок, CAT-алгоритм, учебный план, аналитика, подписки, JWT-аутентификация. 15+ контроллеров, 20+ сервисов |
+| **PostgreSQL 17** | Реляционная БД: 54 таблицы, связи FK, индексы, JSON-поля для хранения динамических данных (баллы mock-экзаменов, параметры импорта) |
+| **SignalR Hub** | Двусторонняя связь в реальном времени: чат тьютор↔ученик, статус набора текста, индикатор онлайн, статус прочтения |
+| **Hangfire** | Фоновые задачи: проверка истечения подписок, отправка email-уведомлений, автозавершение mock-экзаменов по таймеру |
+
 **Паттерны**: Repository, Unit of Work, Dependency Injection, CQRS-элементы
 
-> **[Скриншот]**: диаграмма архитектуры (нарисовать в draw.io или PowerPoint) — клиент, API-сервер, БД, SignalR, Hangfire
+> **[Скриншот]**: диаграмма архитектуры — клиент, Nginx, API-сервер, БД, SignalR, Hangfire
 
 ---
 
 ## Слайд 8 — Структура базы данных
 
-### Основные сущности (30+ таблиц)
+### 54 сущности, организованные в 8 доменных групп
 
-**Ядро системы:**
-- Users (id, email, name, role, schoolId, subscriptionTier)
-- ExamTypes (code: SAT, TOEFL, IELTS, NUET, CSCA)
-- ExamSections (id, examTypeCode, name, minScore, maxScore)
-- Skills (13 навыков: чтение, письмо, аудирование, математика, физика, химия и др.)
-- Topics (привязка к навыкам и секциям, с зависимостями)
-- Questions (id, topicId, text, difficulty, IRT-параметры: a, b, c)
-- AnswerOptions, UserAnswers, UserSkillProfiles
+---
 
-**Тьюторская система:**
-- TutorProfiles, TutorSchools, TutorSchoolApplications
-- Conversations, Messages
-- Assignments, AssignmentQuestions, AssignmentStudents
+#### 1. Ядро и аутентификация (3 сущности)
 
-**Контент:**
-- TopicLessons, LessonSteps, FlashcardDecks, FormulaCards
-- MockExams, MockExamSections, MockExamAttempts
-- ReadingPassages, StrategyGuides, DrillTemplates
+| Сущность | Ключевые поля | Назначение |
+|----------|---------------|------------|
+| **User** | email, name, role, subscriptionTier, schoolId | Центральная сущность. Роли: Student, Tutor, Admin, SchoolAdmin, SchoolTutor. Привязка к школе и тьютору. Поддержка soft-delete |
+| **NotificationPreferences** | userId, streaks, digests | Настройки email-уведомлений пользователя |
+| **AuditLog** | userId, action, entityType, oldValues (JSON), newValues (JSON) | Журнал действий администратора для аудита |
+
+---
+
+#### 2. Система экзаменов и оценки (5 сущностей)
+
+| Сущность | Ключевые поля | Назначение |
+|----------|---------------|------------|
+| **ExamType** | code (PK: SAT, TOEFL, IELTS, NUET, CSCA) | Определение экзамена. 5 поддерживаемых экзаменов |
+| **ExamSection** | examTypeCode, name, minScore, maxScore | Секция экзамена (напр. Reading & Writing, Math). Задает шкалу оценок |
+| **Skill** | code, name | 13 навыков: чтение, письмо, аудирование, математика, физика, химия и др. |
+| **Topic** | skillId, sectionId, name | Тема обучения с привязкой к навыку и секции. Поддерживает зависимости |
+| **TopicDependency** | topicId, prerequisiteTopicId, weight | Граф зависимостей между темами для топологической сортировки учебного плана |
+
+---
+
+#### 3. Контент и вопросы (4 сущности)
+
+| Сущность | Ключевые поля | Назначение |
+|----------|---------------|------------|
+| **Question** | topicId, text, **IRT-параметры: a (дискриминация), b (сложность), c (угадывание)** | Вопрос с калиброванными параметрами IRT 3PL. Поддерживает приватные вопросы тьюторов |
+| **AnswerOption** | questionId, text, isCorrect | Вариант ответа (множественный выбор) |
+| **ReadingPassage** | topicId, title, content | Текстовый пассаж для вопросов типа TOEFL Reading |
+| **UserAnswer** | userId, questionId, answerOptionId, timeSpentSeconds | Ответ ученика с временем — основа для IRT-оценки θ |
+
+---
+
+#### 4. Тестирование и профили знаний (6 сущностей)
+
+| Сущность | Ключевые поля | Назначение |
+|----------|---------------|------------|
+| **TestSession** | userId, examTypeCode, mode (practice / exam) | Сессия адаптивного тестирования (CAT-движок) |
+| **UserSkillProfile** | userId + skillId, **theta (θ), thetaSE**, level | Профиль знаний ученика: IRT-оценка θ по каждому навыку с доверительным интервалом |
+| **MockExam** | examTypeCode, title, totalTimeMinutes | Шаблон пробного экзамена (полноформатный SAT, TOEFL и др.) |
+| **MockExamSection** | mockExamId, sectionId, timeLimitMinutes, questionCount | Секция mock-экзамена с посекционным таймером |
+| **MockExamAttempt** | userId, mockExamId, status, sectionScoresJson | Попытка прохождения mock-экзамена с результатами по секциям |
+| **MockExamAnswer** | attemptId, questionId, selectedOptionId | Ответ в рамках mock-экзамена |
+
+---
+
+#### 5. Учебный план и достижения (4 сущности)
+
+| Сущность | Ключевые поля | Назначение |
+|----------|---------------|------------|
+| **StudyGoal** | userId, examTypeCode, targetDate, targetScore, hoursPerDay | Цель ученика: экзамен, дедлайн, желаемый балл |
+| **StudyPlan** | userId, goalId, isActive | Сгенерированный адаптивный план (3 прохода: основные → повторение → заполнение) |
+| **StudyPlanEntry** | planId, topicId, date, type (New / Review / Practice / Weakness), recommendedMinutes | Запись дневного плана: какую тему изучать, сколько минут, сколько вопросов |
+| **UserMilestone** | userId, code, title, icon | Достижения: STREAK_7, Q100, MASTERY_ALGEBRA |
+
+---
+
+#### 6. Образовательный контент (9 сущностей)
+
+| Сущность | Ключевые поля | Назначение |
+|----------|---------------|------------|
+| **TopicLesson** | topicId, title, content, videoUrl | Урок по теме (теория, примеры, видео) |
+| **LessonStep** | lessonId, stepType (Theory / Example / Quiz / Summary), content | Шаг урока: последовательное обучение |
+| **UserLessonProgress** | userId, lessonStepId | Прогресс прохождения уроков |
+| **FlashcardDeck** | examTypeCode, topicId, title | Набор флеш-карточек (системный или созданный тьютором) |
+| **Flashcard** | deckId, front, back | Карточка (вопрос — ответ) |
+| **UserFlashcardProgress** | userId, flashcardId, easeFactor, intervalDays, nextReviewAt | Интервальное повторение SM-2: фактор легкости, интервал, дата следующего повторения |
+| **FormulaCard** | topicId, title, formula (KaTeX), description | Формулы с LaTeX-рендерингом |
+| **StrategyGuide** | examTypeCode, title, content, category | Стратегические гайды: тайм-менеджмент, техники решения |
+| **DrillTemplate** | drillType (Speed / Marathon / Streak), questionCount, timeLimitMinutes | Шаблоны тренировок: на скорость, марафон, серия без ошибок |
+
+---
+
+#### 7. Тьюторская система (12 сущностей)
+
+| Сущность | Ключевые поля | Назначение |
+|----------|---------------|------------|
+| **TutorProfile** | userId, headline, bio, hourlyRate, specializations (CSV), isVerified | Профиль тьютора в маркетплейсе: опыт, цена, верификация |
+| **TutorSchool** | name, slug, logoUrl, primaryColor, subdomain, ownerId | **White-Label школа**: брендинг, поддомен (linhao.unistart.kz), цвета интерфейса |
+| **TutorStudent** | tutorUserId, studentUserId, inviteCode, status | Привязка ученик↔тьютор через инвайт-код |
+| **TutorScheduleSlot** | profileId, dayOfWeek, startTime, endTime | Расписание тьютора (еженедельные слоты) |
+| **TutorReview** | profileId, studentId, rating (1-5), comment | Отзывы учеников о тьюторах |
+| **TutorInviteCode** | tutorUserId, code, maxUses, expiresAt | Инвайт-коды с лимитом использований |
+| **TutorSchoolApplication** | userId, schoolId, message, status | Заявка тьютора на вступление в школу |
+| **Conversation** | studentId, tutorId, status, lastMessageAt | Чат-беседа с подсчетом непрочитанных |
+| **Message** | conversationId, senderId, text, type, readAt | Сообщение в чате (text / system), статус прочтения |
+| **Assignment** | tutorUserId, title, deadline | Домашнее задание от тьютора |
+| **AssignmentQuestion** | assignmentId, questionId, orderIndex | Вопрос в составе задания |
+| **AssignmentStudent** | assignmentId, studentUserId, status, score | Прогресс ученика по заданию |
+
+---
+
+#### 8. Импорт контента (3 сущности)
+
+| Сущность | Ключевые поля | Назначение |
+|----------|---------------|------------|
+| **QuestionImportJob** | adminUserId, fileName, fileType (PDF/DOCX/XLSX), status | Пакетный импорт вопросов из файлов |
+| **ImportJobFile** | importJobId, fileName, role (Questions / Answers / Mixed) | Файл в составе мульти-файлового импорта |
+| **ImportedQuestionDraft** | importJobId, questionText, optionsJson, IRT-параметры, status | Черновик вопроса на модерацию администратором |
+
+---
+
+### Ключевые связи между сущностями
+
+```
+User ──► UserSkillProfile ──► Skill
+  │                              ▲
+  │                              │
+  ├──► UserAnswer ──► Question ──► Topic ──► TopicDependency
+  │                     │                       │
+  ├──► TestSession      ├──► AnswerOption       ├──► TopicLesson ──► LessonStep
+  │                     │                       │
+  ├──► MockExamAttempt  ├──► IRT params (a,b,c) └──► FlashcardDeck ──► Flashcard
+  │                     │
+  ├──► StudyGoal ──► StudyPlan ──► StudyPlanEntry ──► Topic
+  │
+  ├──► TutorProfile ──► TutorSchool (White-Label)
+  │         │
+  │         ├──► TutorScheduleSlot
+  │         └──► TutorReview
+  │
+  └──► Conversation ──► Message
+```
 
 > **[Скриншот]**: ER-диаграмма из pgAdmin или DBeaver (основные таблицы и связи)
 

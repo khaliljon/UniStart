@@ -52,6 +52,10 @@ public class User : ISoftDeletable, IAuditable
     public int FailedLoginAttempts { get; set; }
     public DateTime? LockoutEnd { get; set; }
 
+    // Referral program
+    public int? ReferredByCodeId { get; set; }
+    public virtual ReferralCode? ReferredByCode { get; set; }
+
     // Navigation properties
     public virtual ICollection<UserAnswer> UserAnswers { get; set; } = new List<UserAnswer>();
     public virtual ICollection<UserSkillProfile> SkillProfiles { get; set; } = new List<UserSkillProfile>();

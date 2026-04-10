@@ -667,7 +667,7 @@ public class AdminService : IAdminService
             TotalUsers: total,
             Students: roleCounts.GetValueOrDefault(UserRole.Student),
             Tutors: roleCounts.GetValueOrDefault(UserRole.Tutor) + roleCounts.GetValueOrDefault(UserRole.SchoolTutor),
-            Admins: roleCounts.GetValueOrDefault(UserRole.Admin),
+            Admins: roleCounts.GetValueOrDefault(UserRole.Admin) + roleCounts.GetValueOrDefault(UserRole.SchoolAdmin),
             ProUsers: proCount,
             ActiveLast7Days: activeUserIds
         );

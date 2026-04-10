@@ -538,6 +538,19 @@ export const en: Translations = {
     linking: 'Linking...',
     unlinking: 'Unlinking...',
     confirmUnlink: 'Are you sure you want to unlink from tutor? Subscription discount will be lost.',
+    referralTitle: 'Referral Program',
+    referralYourCode: 'Your code',
+    referralCopy: 'Copy link',
+    referralCopied: 'Copied!',
+    referralReferred: 'Referred',
+    referralPaid: 'Paid',
+    referralDays: 'Pro days',
+    referralEarned: 'Earned',
+    referralMoneyDesc: 'For each paying user — 500 ₸',
+    referralDaysDesc: 'For each paying friend — +5 Pro days',
+    referralTermsLink: 'Partner program terms',
+    referralInactiveDesc: 'Invite friends and earn bonuses for each paying user.',
+    referralActivate: 'Activate program',
   },
   admin: {
     nav: {
@@ -938,6 +951,11 @@ export const en: Translations = {
     faqPrice: 'How much does it cost?',
     faqPriceAnswer: 'Free, Pro from 9 990 ₸/mo',
     allRights: 'All rights reserved.',
+    referralTitle: 'Invite friends — earn bonuses',
+    referralDesc: 'Students get +5 Pro days, tutors and schools — 500 ₸ for each paying user.',
+    referralStudents: 'Students: +5 Pro days per friend',
+    referralTutors: 'Tutors & schools: 500 ₸ per referral',
+    referralCta: 'Register and start inviting',
   },
   forSchools: {
     heroTitle: 'Launch your school on UniStart',
@@ -1266,6 +1284,8 @@ export const en: Translations = {
     // Registration consent
     consentText: 'I agree to the Terms of Service and Privacy Policy',
     consentRequired: 'You must accept the terms to register',
+    referralTermsTitle: 'Referral Program Terms',
+    referralTermsDate: 'February 11, 2025',
   },
   tour: {
     welcomeTitle: 'Welcome to UniStart!',

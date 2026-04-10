@@ -104,7 +104,7 @@ function RegisterPage() {
       return;
     }
 
-    dispatch(register({ firstName: firstName.trim(), lastName: lastName.trim(), email, password, role, schoolSlug: branding?.slug, applyToSchoolId: selectedSchoolId ?? undefined, schoolName: schoolName.trim() || undefined }));
+    dispatch(register({ firstName: firstName.trim(), lastName: lastName.trim(), email, password, role, schoolSlug: branding?.slug, applyToSchoolId: selectedSchoolId ?? undefined, schoolName: schoolName.trim() || undefined, referralCode: searchParams.get('ref') || undefined }));
   };
 
   const handleVerify = async (e: FormEvent) => {

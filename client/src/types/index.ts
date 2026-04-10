@@ -43,6 +43,7 @@ export interface RegisterRequest {
   schoolSlug?: string;
   applyToSchoolId?: number;
   schoolName?: string;
+  referralCode?: string;
 }
 
 export interface VerifyEmailRequest {
