@@ -559,7 +559,7 @@ export const kz: Translations = {
       users: 'Пайдаланушылар', tutors: 'Тьюторлар', audit: 'Аудит',
       health: 'Жүйе', activity: 'Белсенділік', import: 'Импорт',
       questionImport: 'Сұрақтарды жүктеу', trash: 'Қоқыс жәшігі', more: 'Тағы', applications: 'Өтінімдер',
-      schools: 'Мектептер',
+      schools: 'Мектептер', advisorConfig: 'Советник',
     },
     common: {
       loading: 'Жүктелуде...', noData: 'Деректер жоқ', error: 'Қате',

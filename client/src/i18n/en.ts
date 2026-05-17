@@ -559,7 +559,7 @@ export const en: Translations = {
       users: 'Users', tutors: 'Tutors', audit: 'Audit',
       health: 'System', activity: 'Activity', import: 'Import',
       questionImport: 'Question import', trash: 'Trash', more: 'More', applications: 'Applications',
-      schools: 'Schools',
+      schools: 'Schools', advisorConfig: 'Advisor config',
     },
     common: {
       loading: 'Loading...', noData: 'No data', error: 'Error',
