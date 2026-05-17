@@ -15,18 +15,12 @@ type Step = 'welcome' | 'exam' | 'target' | 'ready';
 
 const EXAM_ICONS: Record<string, string> = {
   SAT: '',
-  TOEFL: '',
   NUET: '',
-  IELTS: '',
-  CSCA: '',
 };
 
 const EXAM_COLORS: Record<string, string> = {
   SAT: '#6366f1',
-  TOEFL: '#8b5cf6',
   NUET: '#f59e0b',
-  IELTS: '#ef4444',
-  CSCA: '#10b981',
 };
 
 function OnboardingPage() {
@@ -428,7 +422,7 @@ function OnboardingPage() {
             )}
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-              {/* Section selection (for exams with multiple sections like CSCA) */}
+              {/* Section selection for multi-part exams */}
               {selectedExam.sections.length > 1 && (
                 <div>
                   <label style={{

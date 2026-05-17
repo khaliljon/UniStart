@@ -329,10 +329,7 @@ function TutorsPage() {
         >
           <option value="">{t.tutor.allExams}</option>
           <option value="SAT">SAT</option>
-          <option value="TOEFL">TOEFL</option>
-          <option value="IELTS">IELTS</option>
           <option value="NUET">NUET</option>
-          <option value="CSCA">CSCA</option>
         </select>
 
         <select

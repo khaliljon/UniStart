@@ -110,7 +110,7 @@ function LandingPage() {
           fontSize: '0.85rem',
           marginBottom: '1.5rem',
         }}>
-          SAT • TOEFL • NUET • CSCA • IELTS
+          SAT • NUET
         </div>
         <h1 style={{
           fontSize: 'clamp(2rem, 5vw, 3.5rem)',

@@ -16,6 +16,7 @@ const DashboardPage = lazy(() => import('./pages/DashboardPage'))
 const LearnPage = lazy(() => import('./pages/LearnPage'))
 const ProgressPage = lazy(() => import('./pages/ProgressPage'))
 const StudyPlanPage = lazy(() => import('./pages/StudyPlanPage'))
+const UniversityAdvisorPage = lazy(() => import('./pages/UniversityAdvisorPage'))
 const ProfilePage = lazy(() => import('./pages/ProfilePage'))
 const NotificationSettingsPage = lazy(() => import('./pages/NotificationSettingsPage'))
 const DiagnosticTestPage = lazy(() => import('./pages/DiagnosticTestPage'))
@@ -68,6 +69,7 @@ function StudentRoutes() {
       <Route path="learn" element={<LearnPage />} />
       <Route path="progress" element={<ProgressPage />} />
       <Route path="plan" element={<StudyPlanPage />} />
+      <Route path="advisor" element={<UniversityAdvisorPage />} />
       <Route path="profile" element={<ProfilePage />} />
       <Route path="profile/notifications" element={<NotificationSettingsPage />} />
       <Route path="diagnostic" element={<DiagnosticTestPage />} />

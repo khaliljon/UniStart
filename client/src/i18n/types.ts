@@ -34,6 +34,7 @@ export interface Translations {
     learn: string;
     progress: string;
     plan: string;
+    advisor: string;
     profile: string;
     messages: string;
     tutors: string;

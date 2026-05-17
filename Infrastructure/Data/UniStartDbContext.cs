@@ -1098,10 +1098,7 @@ public class UniStartDbContext : DbContext
         // Seed exam types
         modelBuilder.Entity<ExamType>().HasData(
             new ExamType { Code = "SAT", Name = "SAT (Scholastic Assessment Test)" },
-            new ExamType { Code = "TOEFL", Name = "TOEFL (Test of English as a Foreign Language)" },
-            new ExamType { Code = "NUET", Name = "NUET (Nazarbayev University Entrance Test)" },
-            new ExamType { Code = "IELTS", Name = "IELTS Academic" },
-            new ExamType { Code = "CSCA", Name = "Gaokao (China College Admission)" }
+            new ExamType { Code = "NUET", Name = "NUET (Nazarbayev University Entrance Test)" }
         );
     }
 

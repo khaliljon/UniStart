@@ -38,18 +38,12 @@ const DIFFICULTY_COLORS: Record<string, string> = {
 // Maps each exam to the skill codes it uses
 const EXAM_SKILL_MAP: Record<string, string[]> = {
   SAT: ['SK_READ', 'SK_WRITE', 'SK_MATH'],
-  TOEFL: ['SK_READ', 'SK_WRITE', 'SK_LISTEN', 'SK_SPEAK'],
   NUET: ['SK_MATH', 'SK_CRIT'],
-  IELTS: ['SK_READ', 'SK_WRITE', 'SK_LISTEN', 'SK_SPEAK'],
-  CSCA: ['SK_MATH', 'SK_PHYS', 'SK_CHEM', 'SK_MATH_CN', 'SK_PHYS_CN', 'SK_CHEM_CN', 'SK_CN_TECH', 'SK_CN_HUM'],
 };
 
 const EXAM_LABELS: Record<string, string> = {
   SAT: 'SAT',
-  TOEFL: 'TOEFL',
   NUET: 'NUET',
-  IELTS: 'IELTS',
-  CSCA: 'CSCA',
 };
 
 function AnalyticsPage() {

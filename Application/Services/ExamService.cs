@@ -23,7 +23,9 @@ public class ExamService : IExamService
         return await _cache.GetOrCreateAsync("exams:all", async entry =>
         {
             entry.AbsoluteExpirationRelativeToNow = CacheTtl;
-            var exams = await _context.ExamTypes.ToListAsync();
+            var exams = await _context.ExamTypes
+                .Where(e => e.Code == "SAT" || e.Code == "NUET")
+                .ToListAsync();
             return exams.Select(e => new ExamTypeDto(e.Code, e.Name)).ToList();
         }) ?? [];
     }

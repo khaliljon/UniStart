@@ -46,6 +46,7 @@ public class OnboardingService : IOnboardingService
     public async Task<IEnumerable<ExamTypeInfoDto>> GetExamTypesInfoAsync(string lang = "ru")
     {
         var examTypes = await _context.ExamTypes
+            .Where(e => e.Code == "SAT" || e.Code == "NUET")
             .Include(e => e.Sections)
             .ToListAsync();
 
@@ -57,30 +58,12 @@ public class OnboardingService : IOnboardingService
                 ["kz"] = "АҚШ университеттеріне түсу үшін стандартты тест. Оқу, жазу және математика дағдыларын бағалайды.",
                 ["en"] = "Standardized test for admission to US universities. Assesses reading, writing, and math skills.",
             },
-            ["TOEFL"] = new()
-            {
-                ["ru"] = "Тест на знание английского языка для иностранных студентов. Проверяет чтение, аудирование, говорение и письмо.",
-                ["kz"] = "Шетелдік студенттер үшін ағылшын тілін білу тесті. Оқу, тыңдау, сөйлеу және жазуды тексереді.",
-                ["en"] = "English proficiency test for international students. Assesses reading, listening, speaking, and writing.",
-            },
             ["NUET"] = new()
             {
                 ["ru"] = "Национальный единый тест Казахстана. Оценивает математику и критическое мышление.",
                 ["kz"] = "Қазақстанның Ұлттық бірыңғай тесті. Математика мен сыни ойлауды бағалайды.",
                 ["en"] = "National Unified Educational Test of Kazakhstan. Assesses mathematics and critical thinking.",
-            },
-            ["IELTS"] = new()
-            {
-                ["ru"] = "Международный тест по английскому языку. Оценивает чтение, аудирование, письмо и говорение.",
-                ["kz"] = "Халықаралық ағылшын тілі тесті. Оқу, тыңдау, жазу және сөйлеуді бағалайды.",
-                ["en"] = "International English Language Testing System. Assesses reading, listening, writing, and speaking.",
-            },
-            ["CSCA"] = new()
-            {
-                ["ru"] = "Комплексный оценочный тест для поступления в университеты Китая. Оценивает математику, языки и естественные науки.",
-                ["kz"] = "Қытай университеттеріне түсу үшін кешенді бағалау тесті. Математика, тілдер және жаратылыстану ғылымдарын бағалайды.",
-                ["en"] = "Comprehensive assessment test for admission to Chinese universities. Assesses math, languages, and natural sciences.",
-            },
+            }
         };
 
         return examTypes.Select(et =>
@@ -116,7 +99,7 @@ public class OnboardingService : IOnboardingService
         // Validate exam type
         var examType = await _context.ExamTypes
             .Include(e => e.Sections)
-            .FirstOrDefaultAsync(e => e.Code == dto.ExamTypeCode);
+            .FirstOrDefaultAsync(e => (e.Code == "SAT" || e.Code == "NUET") && e.Code == dto.ExamTypeCode);
         if (examType == null)
             throw new InvalidOperationException($"Invalid exam type: {dto.ExamTypeCode}");
 

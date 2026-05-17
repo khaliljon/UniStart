@@ -680,11 +680,8 @@ function StatsTab({ stats }: { stats: PlanStats }) {
 // ─── Modals ───────────────────────────────────────────────
 
 const EXAM_SCORE_CONFIG: Record<string, { min: number; max: number; step: number; default: number }> = {
-  SAT:   { min: 400, max: 1600, step: 10,  default: 1200 },
-  TOEFL: { min: 0,   max: 120,  step: 1,   default: 90 },
-  NUET:  { min: 0,   max: 200,  step: 1,   default: 150 },
-  IELTS: { min: 0,   max: 9,    step: 0.5, default: 7 },
-  CSCA:  { min: 0,   max: 100,  step: 1,   default: 70 },
+  SAT:  { min: 400, max: 1600, step: 10, default: 1200 },
+  NUET: { min: 0,   max: 200,  step: 1,  default: 150 },
 };
 const DEFAULT_SCORE_CONFIG = { min: 0, max: 100, step: 1, default: 70 };
 

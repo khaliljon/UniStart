@@ -230,7 +230,7 @@ public static class UniStartStartupExtensions
             {
                 Title = "UniStart API",
                 Version = "v1",
-                Description = "Adaptive SAT/TOEFL/NUET Preparation Platform API"
+                Description = "Adaptive SAT and NUET Preparation Platform API"
             });
 
             c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme

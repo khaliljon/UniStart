@@ -415,9 +415,6 @@ export default function TutorAssignmentsPage() {
             <option value="">Все экзамены</option>
             <option value="SAT">SAT</option>
             <option value="NUET">NUET</option>
-            <option value="IELTS">IELTS</option>
-            <option value="TOEFL">TOEFL</option>
-            <option value="CSCA">CSCA</option>
           </select>
         </div>
 

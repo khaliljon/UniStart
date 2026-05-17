@@ -4,7 +4,7 @@ import type { TutorQuestionListItem, TutorQuestionDetail, AdminTopicSummary, Adm
 import { useTranslation } from '../hooks/useTranslation';
 
 const EXAM_COLORS: Record<string, string> = {
-  SAT: '#4f46e5', TOEFL: '#0891b2', NUET: '#7c3aed', IELTS: '#059669', CSCA: '#dc2626',
+  SAT: '#4f46e5', NUET: '#7c3aed',
 };
 const DIFF_COLORS: Record<string, string> = {
   Easy: 'var(--success-color)', Medium: 'var(--warning-color)', Hard: 'var(--error-color)',

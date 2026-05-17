@@ -11,7 +11,7 @@ public class TutorProfile : IAuditable
     public string Experience { get; set; } = string.Empty;      // ≤1000
     public string? AvatarUrl { get; set; }
 
-    // Specializations stored as comma-separated ExamTypeCodes: "SAT,TOEFL,NUET"
+    // Specializations stored as comma-separated ExamTypeCodes: "SAT,NUET"
     public string Specializations { get; set; } = string.Empty;
 
     // Teaching sections within specializations: "Reading & Writing,Math (No Calculator),Reading"

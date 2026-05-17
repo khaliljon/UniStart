@@ -138,7 +138,7 @@ function TutorProfileEditPage() {
                 className="form-input"
                 value={headline}
                 onChange={e => { setHeadline(e.target.value); setSaved(false); }}
-                placeholder="Сертифицированный TOEFL-тьютор"
+                placeholder="Сертифицированный SAT/NUET-тьютор"
                 maxLength={200}
               />
             </div>

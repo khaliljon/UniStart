@@ -10,7 +10,7 @@ public interface IMockExamService
     /// <summary>Get full mock exam details with sections</summary>
     Task<MockExamDetailDto?> GetMockExamDetailAsync(int mockExamId);
 
-    /// <summary>Start a new mock exam attempt (optionally with selected section IDs for configurable exams like CSCA)</summary>
+    /// <summary>Start a new mock exam attempt (optionally with selected section IDs for configurable exams)</summary>
     Task<MockExamAttemptDto> StartMockExamAsync(int userId, int mockExamId, List<int>? selectedSectionIds = null);
 
     /// <summary>Get the current section's questions for an active attempt</summary>

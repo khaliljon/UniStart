@@ -118,7 +118,7 @@ public class MockExamService : IMockExamService
             old.CompletedAt = DateTime.UtcNow;
         }
 
-        // Filter sections if selectedSectionIds provided (for configurable exams like CSCA)
+        // Filter sections if selectedSectionIds provided (used for configurable mock exam sections)
         var allSections = exam.Sections.OrderBy(s => s.SortOrder).ToList();
         var sections = selectedSectionIds != null && selectedSectionIds.Count > 0
             ? allSections.Where(s => selectedSectionIds.Contains(s.Id)).OrderBy(s => s.SortOrder).ToList()

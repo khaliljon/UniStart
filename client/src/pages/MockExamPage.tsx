@@ -39,7 +39,6 @@ function MockExamPage() {
 
   // Detail phase
   const [examDetail, setExamDetail] = useState<MockExamDetail | null>(null);
-  const [selectedSectionIds, setSelectedSectionIds] = useState<number[]>([]);
 
   // Active attempt
   const [attempt, setAttempt] = useState<MockExamAttempt | null>(null);
@@ -140,7 +139,6 @@ function MockExamPage() {
     try {
       const detail = await mockExamService.getMockExamDetail(examId);
       setExamDetail(detail);
-      setSelectedSectionIds([]);
       setPhase('detail');
     } catch (e) { console.error(e); }
     setLoading(false);
@@ -149,14 +147,9 @@ function MockExamPage() {
   // ── Start exam ────────────────────────────────────────
   const handleStartExam = async () => {
     if (!examDetail) return;
-    const isCsca = examDetail.examTypeCode === 'CSCA';
-    if (isCsca && selectedSectionIds.length === 0) return;
     setLoading(true);
     try {
-      const att = await mockExamService.startMockExam(
-        examDetail.id,
-        isCsca ? selectedSectionIds : undefined
-      );
+      const att = await mockExamService.startMockExam(examDetail.id);
       setAttempt(att);
       // Load first section
       const section = await mockExamService.getCurrentSection(att.attemptId);
@@ -386,18 +379,8 @@ function MockExamPage() {
   //  RENDER PHASE: DETAIL (exam info before starting)
   // ══════════════════════════════════════════════════════
   if (phase === 'detail' && examDetail) {
-    const isCsca = examDetail.examTypeCode === 'CSCA';
-    const toggleSection = (id: number) => {
-      setSelectedSectionIds(prev =>
-        prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
-      );
-    };
-    const selectedSections = isCsca
-      ? examDetail.sections.filter(s => selectedSectionIds.includes(s.id))
-      : examDetail.sections;
-    const totalTime = selectedSections.reduce((sum, s) => sum + s.timeLimitMinutes, 0);
-    const totalQuestions = selectedSections.reduce((sum, s) => sum + s.questionCount, 0);
-    const canStart = isCsca ? selectedSectionIds.length > 0 : true;
+    const totalTime = examDetail.sections.reduce((sum, s) => sum + s.timeLimitMinutes, 0);
+    const totalQuestions = examDetail.sections.reduce((sum, s) => sum + s.questionCount, 0);
 
     return (
       <div style={{ maxWidth: 700, margin: '0 auto' }}>
@@ -413,73 +396,40 @@ function MockExamPage() {
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{examDetail.description}</p>
           <div style={{ display: 'flex', justifyContent: 'center', gap: '2rem', marginTop: '1rem' }}>
             <Stat label="Total Time" value={`${totalTime} min`} />
-            <Stat label={isCsca ? 'Selected' : 'Sections'} value={isCsca ? `${selectedSectionIds.length} / ${examDetail.sections.length}` : examDetail.sections.length} />
-            {isCsca && <Stat label="Questions" value={totalQuestions} />}
+            <Stat label="Sections" value={examDetail.sections.length} />
+            <Stat label="Questions" value={totalQuestions} />
           </div>
         </div>
 
-        <h2 style={{ fontSize: '1.1rem', marginBottom: '0.75rem' }}>
-          {isCsca ? 'Choose Subjects' : 'Sections'}
-        </h2>
-        {isCsca && (
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1rem' }}>
-            Select any combination of subjects for your practice test. Time and questions adjust automatically.
-          </p>
-        )}
-        {examDetail.sections.map((s, i) => {
-          const isSelected = selectedSectionIds.includes(s.id);
-          return (
-            <div
-              key={s.id}
-              className="card"
-              style={{
-                marginBottom: '0.75rem',
-                cursor: isCsca ? 'pointer' : 'default',
-                border: isCsca && isSelected ? '2px solid var(--accent)' : undefined,
-                opacity: isCsca && !isSelected ? 0.7 : 1,
-              }}
-              onClick={isCsca ? () => toggleSection(s.id) : undefined}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  {isCsca && (
-                    <input
-                      type="checkbox"
-                      checked={isSelected}
-                      onChange={() => toggleSection(s.id)}
-                      onClick={e => e.stopPropagation()}
-                      style={{ width: 18, height: 18, accentColor: 'var(--accent)' }}
-                    />
-                  )}
-                  <div>
-                    <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
-                      {isCsca ? '' : `Section ${i + 1}`}
-                    </span>
-                    <h3 style={{ margin: '0.25rem 0', fontSize: '1rem' }}>{s.name}</h3>
-                  </div>
-                </div>
-                <div style={{ display: 'flex', gap: '1.5rem' }}>
-                  <Stat label="Questions" value={s.questionCount} />
-                  <Stat label="Time" value={`${s.timeLimitMinutes}m`} />
-                </div>
+        <h2 style={{ fontSize: '1.1rem', marginBottom: '0.75rem' }}>Sections</h2>
+        {examDetail.sections.map((s, i) => (
+          <div key={s.id} className="card" style={{ marginBottom: '0.75rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>{`Section ${i + 1}`}</span>
+                <h3 style={{ margin: '0.25rem 0', fontSize: '1rem' }}>{s.name}</h3>
               </div>
-              {s.instructions && (
-                <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginTop: '0.5rem', lineHeight: 1.5 }}>
-                  {s.instructions}
-                </p>
-              )}
+              <div style={{ display: 'flex', gap: '1.5rem' }}>
+                <Stat label="Questions" value={s.questionCount} />
+                <Stat label="Time" value={`${s.timeLimitMinutes}m`} />
+              </div>
             </div>
-          );
-        })}
+            {s.instructions && (
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginTop: '0.5rem', lineHeight: 1.5 }}>
+                {s.instructions}
+              </p>
+            )}
+          </div>
+        ))}
 
         <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
           <button
             className="btn btn-primary"
             style={{ padding: '0.75rem 2rem', fontSize: '1rem', width: '100%', maxWidth: '320px' }}
             onClick={handleStartExam}
-            disabled={loading || !canStart}
+            disabled={loading}
           >
-            {loading ? 'Starting...' : !canStart ? 'Select at least 1 subject' : 'Start Exam'}
+            {loading ? 'Starting...' : 'Start Exam'}
           </button>
         </div>
       </div>
@@ -876,10 +826,7 @@ function Stat({ label, value }: { label: string; value: string | number }) {
 function examBadgeColor(code: string): string {
   switch (code) {
     case 'SAT': return '#3498db';
-    case 'TOEFL': return '#9b59b6';
     case 'NUET': return '#e67e22';
-    case 'IELTS': return '#e74c3c';
-    case 'CSCA': return '#10b981';
     default: return '#95a5a6';
   }
 }

@@ -538,10 +538,7 @@ export default function AdminContentPage() {
                 <select value={deckForm.examTypeCode} onChange={e => setDeckForm(p => ({ ...p, examTypeCode: e.target.value }))} style={{ padding: '0.5rem' }}>
                   <option value="">{t.admin.content.noBinding}</option>
                   <option value="SAT">SAT</option>
-                  <option value="TOEFL">TOEFL</option>
                   <option value="NUET">NUET</option>
-                  <option value="IELTS">IELTS</option>
-                  <option value="CSCA">CSCA</option>
                 </select>
               </div>
               <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -715,10 +712,7 @@ export default function AdminContentPage() {
                   <span style={label}>{t.admin.content.exam} *</span>
                   <select value={strategyForm.examTypeCode} onChange={e => setStrategyForm(p => ({ ...p, examTypeCode: e.target.value }))} style={{ padding: '0.5rem' }} disabled={!!editingStrategyId}>
                     <option value="SAT">SAT</option>
-                    <option value="TOEFL">TOEFL</option>
                     <option value="NUET">NUET</option>
-                    <option value="IELTS">IELTS</option>
-                    <option value="CSCA">CSCA</option>
                   </select>
                 </div>
                 <div style={formRow}>
@@ -823,10 +817,7 @@ export default function AdminContentPage() {
                   <select value={drillForm.examTypeCode} onChange={e => setDrillForm(p => ({ ...p, examTypeCode: e.target.value }))} style={{ padding: '0.5rem' }}>
                     <option value="">{t.admin.content.noBinding}</option>
                     <option value="SAT">SAT</option>
-                    <option value="TOEFL">TOEFL</option>
                     <option value="NUET">NUET</option>
-                    <option value="IELTS">IELTS</option>
-                    <option value="CSCA">CSCA</option>
                   </select>
                 </div>
               </div>

@@ -3,7 +3,7 @@ import { questionImportService } from '../services/questionImportService';
 import type { QuestionImportJob, ImportedQuestionDraft, UpdateDraftPayload, FileRole, BatchFileEntry } from '../services/questionImportService';
 import { useTranslation } from '../hooks/useTranslation';
 
-const EXAM_TYPES = ['SAT', 'TOEFL', 'NUET', 'IELTS', 'CSCA'];
+const EXAM_TYPES = ['SAT', 'NUET'];
 
 const STATUS_COLORS: Record<string, string> = {
   Pending: 'var(--warning-color)',

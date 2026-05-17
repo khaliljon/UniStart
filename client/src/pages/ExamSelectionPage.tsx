@@ -27,7 +27,6 @@ function ExamSelectionPage() {
 
   const examDescriptions: Record<string, string> = {
     SAT: 'Comprehensive test covering Reading, Writing, and Math sections for college admissions in the United States.',
-    TOEFL: 'Test of English as a Foreign Language - measures English proficiency for non-native speakers.',
     NUET: 'Nazarbayev University Entrance Test - Critical thinking, quantitative reasoning, and English proficiency.',
   };
 

@@ -532,15 +532,18 @@ public class TutorController : ControllerBase
         var profile = await _db.TutorProfiles.FirstOrDefaultAsync(p => p.UserId == userId);
         string[] allowedExams;
 
+        var supportedExams = new[] { "SAT", "NUET" };
+
         if (profile?.SchoolId != null)
         {
             var school = await _db.TutorSchools.FindAsync(profile.SchoolId);
             allowedExams = school?.Specializations?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                ?? Array.Empty<string>();
+                .Where(code => supportedExams.Contains(code))
+                .ToArray() ?? Array.Empty<string>();
         }
         else
         {
-            allowedExams = new[] { "SAT", "TOEFL", "IELTS", "NUET", "CSCA" };
+            allowedExams = supportedExams;
         }
 
         var sections = await _db.ExamSections

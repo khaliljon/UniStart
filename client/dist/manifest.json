@@ -1,7 +1,7 @@
 {
   "name": "UniStart",
   "short_name": "UniStart",
-  "description": "Адаптивная подготовка к NUET, SAT, IELTS, CSCA",
+  "description": "Адаптивная подготовка к NUET и SAT",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0f172a",

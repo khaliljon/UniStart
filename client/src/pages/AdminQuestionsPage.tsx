@@ -5,10 +5,7 @@ import { useTranslation } from '../hooks/useTranslation';
 
 const EXAM_COLORS: Record<string, string> = {
   SAT: '#4f46e5',
-  TOEFL: '#0891b2',
   NUET: '#7c3aed',
-  IELTS: '#059669',
-  CSCA: '#dc2626',
 };
 
 const DIFF_COLORS: Record<string, string> = {
@@ -533,10 +530,7 @@ function AdminQuestionsPage() {
           <select value={filterExam} onChange={e => { setFilterExam(e.target.value); setFilterSection(''); setPage(1); }} style={{ padding: '0.5rem' }}>
             <option value="">{t.admin.common.allExams}</option>
             <option value="SAT">SAT</option>
-            <option value="TOEFL">TOEFL</option>
             <option value="NUET">NUET</option>
-            <option value="IELTS">IELTS</option>
-            <option value="CSCA">CSCA</option>
           </select>
           <select value={filterSection} onChange={e => { setFilterSection(e.target.value); setPage(1); }} style={{ padding: '0.5rem' }}>
             <option value="">{t.admin.common.allSections}</option>
@@ -566,10 +560,7 @@ function AdminQuestionsPage() {
           <select value={topicFilterExam} onChange={e => { setTopicFilterExam(e.target.value); setTopicFilterSection(''); setTopicPage(1); }} style={{ padding: '0.5rem' }}>
             <option value="">{t.admin.common.allExams}</option>
             <option value="SAT">SAT</option>
-            <option value="TOEFL">TOEFL</option>
             <option value="NUET">NUET</option>
-            <option value="IELTS">IELTS</option>
-            <option value="CSCA">CSCA</option>
           </select>
           <select value={topicFilterSection} onChange={e => { setTopicFilterSection(e.target.value); setTopicPage(1); }} style={{ padding: '0.5rem' }}>
             <option value="">{t.admin.common.allSections}</option>
@@ -754,10 +745,7 @@ function AdminQuestionsPage() {
             <select value={sectionFilterExam} onChange={e => { setSectionFilterExam(e.target.value); setSectionPage(1); }} style={{ padding: '0.5rem' }}>
               <option value="">{t.admin.common.allExams}</option>
               <option value="SAT">SAT</option>
-              <option value="TOEFL">TOEFL</option>
               <option value="NUET">NUET</option>
-              <option value="IELTS">IELTS</option>
-              <option value="CSCA">CSCA</option>
             </select>
           </div>
           {(() => {
@@ -1337,10 +1325,7 @@ function AdminQuestionsPage() {
                   >
                     <option value="">{t.admin.questions.selectExamType}...</option>
                     <option value="SAT">SAT</option>
-                    <option value="TOEFL">TOEFL</option>
                     <option value="NUET">NUET</option>
-                    <option value="IELTS">IELTS</option>
-                    <option value="CSCA">CSCA</option>
                   </select>
                 </FormField>
               )}

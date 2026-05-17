@@ -171,7 +171,7 @@ public class EmailService : IEmailService
     <!-- Header -->
     <div style=""background:linear-gradient(135deg,#6c5ce7,#a855f7);padding:32px 24px;text-align:center;"">
       <h1 style=""margin:0;color:#fff;font-size:28px;font-weight:700;"">UniStart</h1>
-      <p style=""margin:8px 0 0;color:rgba(255,255,255,0.85);font-size:14px;"">Adaptive CSCA / NUET Preparation</p>
+      <p style=""margin:8px 0 0;color:rgba(255,255,255,0.85);font-size:14px;"">Adaptive SAT / NUET Preparation</p>
     </div>
     <!-- Content -->
     <div style=""padding:32px 24px;"">

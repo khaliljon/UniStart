@@ -4,7 +4,7 @@ import { useTranslation } from '../i18n';
 import api from '../services/api';
 import type { SchoolAdmin, UpdateSchoolRequest, TutorSchoolCard } from '../types';
 
-const EXAM_OPTIONS = ['SAT', 'TOEFL', 'IELTS', 'NUET', 'CSCA'];
+const EXAM_OPTIONS = ['SAT', 'NUET'];
 
 function TutorSchoolManagePage() {
   const [school, setSchool] = useState<SchoolAdmin | null>(null);

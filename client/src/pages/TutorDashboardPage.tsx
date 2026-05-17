@@ -298,7 +298,7 @@ function TutorDashboardPage() {
                 value={specializations}
                 onChange={(e) => setSpecializations(e.target.value)}
                 className="form-input"
-                placeholder="e.g. SAT, TOEFL, IELTS"
+                placeholder="e.g. SAT, NUET"
                 style={{ width: '100%', padding: '0.5rem 0.75rem' }}
               />
             </div>
