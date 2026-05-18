@@ -8,8 +8,7 @@ import {
 } from 'react-simple-maps';
 import type { AdvisorUniversity } from '../advisorConfig';
 
-const GEO_URL =
-  'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json';
+const GEO_URL = '/countries-110m.json';
 
 type Props = {
   universities: AdvisorUniversity[];
