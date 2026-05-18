@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
+import AdvisorWorldMap from '../components/AdvisorWorldMap';
 import { AdvisorCategory, AdvisorUniversity, loadAdvisorConfig } from '../advisorConfig';
 
 function normalizeText(text: string | null | undefined): string {
@@ -9,56 +10,112 @@ function matchesSpecialty(
   university: AdvisorUniversity,
   selectedCategories: string[],
   selectedSpecialties: string[],
-  categories: AdvisorCategory[]
+  categories: AdvisorCategory[],
 ): boolean {
   if (selectedCategories.length === 0 && selectedSpecialties.length === 0) {
     return true;
   }
-
-  const activeSpecialties = selectedSpecialties.length > 0
-    ? selectedSpecialties
-    : selectedCategories.flatMap((categoryKey) =>
-        categories.find((category) => category.key === categoryKey)?.specialties ?? []
-      );
-
-  const normalizedUniversity = university.specialties.map(normalizeText);
-  const normalizedSelected = activeSpecialties.map(normalizeText);
-
-  return normalizedSelected.some((selected) =>
-    normalizedUniversity.some((specialty) => specialty.includes(selected) || selected.includes(specialty))
+  const activeSpecialties =
+    selectedSpecialties.length > 0
+      ? selectedSpecialties
+      : selectedCategories.flatMap(
+          (categoryKey) =>
+            categories.find((c) => c.key === categoryKey)?.specialties ?? [],
+        );
+  const normUni = university.specialties.map(normalizeText);
+  const normSel = activeSpecialties.map(normalizeText);
+  return normSel.some((sel) =>
+    normUni.some((sp) => sp.includes(sel) || sel.includes(sp)),
   );
 }
 
 function matchesCountry(
   university: AdvisorUniversity,
   selectedCountries: string[],
-  exam: 'SAT' | 'NUET' | ''
+  exam: 'SAT' | 'NUET' | '',
 ): boolean {
   if (selectedCountries.length === 0) return true;
-  const normalizedCountry = normalizeText(university.country);
+  const normCountry = normalizeText(university.country);
   return selectedCountries.some((selected) => {
-    const value = normalizeText(selected);
-    if (exam === 'NUET' && !value.includes('kazakh') && !value.includes('kz')) {
+    const val = normalizeText(selected);
+    if (exam === 'NUET' && !val.includes('kazakh') && !val.includes('kz')) {
       return false;
     }
-    return normalizedCountry.includes(value) || value.includes(normalizedCountry);
+    return normCountry.includes(val) || val.includes(normCountry);
   });
 }
 
-function matchesLanguage(university: AdvisorUniversity, selectedLanguages: string[]): boolean {
+function matchesLanguage(
+  university: AdvisorUniversity,
+  selectedLanguages: string[],
+): boolean {
   if (selectedLanguages.length === 0) return true;
-  const normalizedLanguage = normalizeText(university.language);
-  return selectedLanguages.some((language) => {
-    const selected = normalizeText(language);
-    if (selected === 'other') {
-      return !normalizedLanguage.includes('english') && !normalizedLanguage.includes('japanese');
+  const normLang = normalizeText(university.language);
+  return selectedLanguages.some((lang) => {
+    const sel = normalizeText(lang);
+    if (sel === 'other') {
+      return !normLang.includes('english') && !normLang.includes('japanese');
     }
-    return normalizedLanguage.includes(selected);
+    return normLang.includes(sel);
   });
+}
+
+function getSelectedValues(event: React.ChangeEvent<HTMLSelectElement>) {
+  return Array.from(event.target.selectedOptions).map((o) => o.value);
+}
+
+function UniCard({
+  uni,
+  highlighted,
+  refProp,
+}: {
+  uni: AdvisorUniversity;
+  highlighted: boolean;
+  refProp?: React.RefObject<HTMLDivElement | null>;
+}) {
+  return (
+    <div
+      ref={refProp}
+      className="card"
+      style={{
+        marginBottom: '1rem',
+        outline: highlighted ? '2px solid var(--accent-color)' : undefined,
+        transition: 'outline 0.2s',
+      }}
+    >
+      <h3 style={{ margin: '0 0 0.5rem' }}>
+        {uni.name} вЂ” {uni.city}
+      </h3>
+      <div style={{ display: 'grid', gap: '0.35rem', fontSize: '0.9rem' }}>
+        <p style={{ margin: 0 }}><strong>РЎС‚СЂР°РЅР°:</strong> {uni.country}</p>
+        <p style={{ margin: 0 }}><strong>РЎРїРµС†РёР°Р»СЊРЅРѕСЃС‚Рё:</strong> {uni.specialties.join(', ')}</p>
+        <p style={{ margin: 0 }}><strong>РЇР·С‹Рє:</strong> {uni.language}</p>
+        {uni.minScore != null && (
+          <p style={{ margin: 0 }}><strong>РњРёРЅ. Р±Р°Р»Р» ({uni.exam}):</strong> {uni.minScore}</p>
+        )}
+        {uni.grants && (
+          <p style={{ margin: 0 }}><strong>Р“СЂР°РЅС‚С‹:</strong> {uni.grants}</p>
+        )}
+        {uni.plus && (
+          <p style={{ margin: 0, color: 'var(--success-color)' }}>+ {uni.plus}</p>
+        )}
+        {uni.minus && (
+          <p style={{ margin: 0, color: 'var(--error-color)' }}>в€’ {uni.minus}</p>
+        )}
+        {uni.procedure && (
+          <p style={{ margin: 0 }}><strong>РџРѕРґР°С‡Р°:</strong> {uni.procedure}</p>
+        )}
+        {uni.deadlines && (
+          <p style={{ margin: 0, color: 'var(--text-secondary)' }}><strong>РЎСЂРѕРєРё:</strong> {uni.deadlines}</p>
+        )}
+      </div>
+    </div>
+  );
 }
 
 function UniversityAdvisorPage() {
   const config = useMemo(() => loadAdvisorConfig(), []);
+
   const [exam, setExam] = useState<'SAT' | 'NUET' | ''>('');
   const [currentScore, setCurrentScore] = useState('');
   const [goalScore, setGoalScore] = useState('');
@@ -67,88 +124,122 @@ function UniversityAdvisorPage() {
   const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
   const [grant, setGrant] = useState<'any' | 'yes' | 'no'>('any');
-  const [difficulty, setDifficulty] = useState('Любая');
+  const [difficulty, setDifficulty] = useState('Р›СЋР±РѕР№');
   const [submitted, setSubmitted] = useState(false);
+  const [markerFocusId, setMarkerFocusId] = useState<string | null>(null);
+  const cardRefs = useRef<Record<string, React.RefObject<HTMLDivElement | null>>>({});
 
   const specialtyOptions = useMemo(() => {
     if (selectedCategories.length === 0) {
-      return Array.from(new Set(config.categories.flatMap((category) => category.specialties)));
+      return Array.from(new Set(config.categories.flatMap((c) => c.specialties)));
     }
-    return Array.from(new Set(selectedCategories.flatMap((categoryKey) =>
-      config.categories.find((category) => category.key === categoryKey)?.specialties ?? []
-    )));
+    return Array.from(new Set(
+      selectedCategories.flatMap(
+        (key) => config.categories.find((c) => c.key === key)?.specialties ?? [],
+      ),
+    ));
   }, [config.categories, selectedCategories]);
 
   const countryIsValidForNuet = useMemo(() => {
     if (exam !== 'NUET') return true;
     if (selectedCountries.length === 0) return true;
-    return selectedCountries.some((country) => {
-      const normalized = normalizeText(country);
-      return normalized.includes('kazakh') || normalized.includes('kz');
+    return selectedCountries.some((c) => {
+      const n = normalizeText(c);
+      return n.includes('kazakh') || n.includes('kz');
     });
   }, [exam, selectedCountries]);
 
-  const getSelectedValues = (event: React.ChangeEvent<HTMLSelectElement>) =>
-    Array.from(event.target.selectedOptions).map((option) => option.value);
-
   const filteredResult = useMemo(() => {
     if (!submitted) return null;
-    if (!exam) return { error: 'Укажите SAT или NUET.' };
-    if (!currentScore) return { error: 'Укажите текущий балл по экзамену.' };
+    if (!exam) return { error: 'Р’С‹Р±РµСЂРёС‚Рµ SAT РёР»Рё NUET.' };
+    if (!currentScore) return { error: 'Р’РІРµРґРёС‚Рµ С‚РµРєСѓС‰РёР№ Р±Р°Р»Р».' };
     const score = Number(currentScore);
-    if (Number.isNaN(score) || score <= 0) return { error: 'Введите корректный числовой балл.' };
-    if (exam === 'SAT' && score > 1600) return { error: 'Для SAT допустим балл до 1600.' };
-    if (exam === 'NUET' && score > 200) return { error: 'Для NUET допустим балл до 200.' };
-    if (!countryIsValidForNuet) return { error: 'NUET работает только для Казахстана. Укажите Казахстан или оставьте поле страны пустым.' };
+    if (Number.isNaN(score) || score <= 0) return { error: 'Р’РІРµРґРёС‚Рµ РєРѕСЂСЂРµРєС‚РЅРѕРµ Р·РЅР°С‡РµРЅРёРµ.' };
+    if (exam === 'SAT' && score > 1600) return { error: 'РњР°РєСЃРёРјР°Р»СЊРЅС‹Р№ Р±Р°Р»Р» SAT вЂ” 1600.' };
+    if (exam === 'NUET' && score > 200) return { error: 'РњР°РєСЃРёРјР°Р»СЊРЅС‹Р№ Р±Р°Р»Р» NUET вЂ” 200.' };
+    if (!countryIsValidForNuet) return { error: 'NUET РґРѕСЃС‚СѓРїРµРЅ С‚РѕР»СЊРєРѕ РІ РљР°Р·Р°С…СЃС‚Р°РЅРµ.' };
 
-    const available = config.universities.filter((uni) => uni.exam === exam);
-    const filtered = available.filter((uni) => {
-      if (!matchesSpecialty(uni, selectedCategories, selectedSpecialties, config.categories)) return false;
-      if (!matchesCountry(uni, selectedCountries, exam)) return false;
-      if (!matchesLanguage(uni, selectedLanguages)) return false;
-      if (grant === 'yes' && !uni.grants) return false;
-      if (grant === 'no' && uni.grants) return false;
-      if (difficulty !== 'Любая' && normalizeText(uni.level) !== normalizeText(difficulty)) return false;
+    const available = config.universities.filter((u) => u.exam === exam);
+    const filtered = available.filter((u) => {
+      if (!matchesSpecialty(u, selectedCategories, selectedSpecialties, config.categories)) return false;
+      if (!matchesCountry(u, selectedCountries, exam)) return false;
+      if (!matchesLanguage(u, selectedLanguages)) return false;
+      if (grant === 'yes' && !u.grants) return false;
+      if (grant === 'no' && u.grants) return false;
+      if (difficulty !== 'Р›СЋР±РѕР№' && normalizeText(u.level) !== normalizeText(difficulty)) return false;
       return true;
     });
 
-    const already = filtered.filter((uni) => uni.minScore !== null && score >= uni.minScore).sort((a, b) => (a.minScore ?? 0) - (b.minScore ?? 0));
-    const goals = filtered.filter((uni) => uni.minScore !== null && score < uni.minScore && (uni.minScore ?? 0) <= score + 100).sort((a, b) => (a.minScore ?? 0) - (b.minScore ?? 0));
-    const fallback = filtered.filter((uni) => uni.minScore === null);
+    const already = filtered
+      .filter((u) => u.minScore !== null && score >= u.minScore)
+      .sort((a, b) => (a.minScore ?? 0) - (b.minScore ?? 0));
 
-    return {
-      score,
-      goal: goalScore ? Number(goalScore) : null,
-      filtered,
-      already,
-      goals,
-      fallback,
-    };
-  }, [submitted, exam, currentScore, goalScore, selectedCategories, selectedSpecialties, selectedCountries, selectedLanguages, grant, difficulty, config.universities, config.categories, countryIsValidForNuet]);
+    const goals = filtered
+      .filter((u) => u.minScore !== null && score < u.minScore && (u.minScore ?? 0) <= score + 100)
+      .sort((a, b) => (a.minScore ?? 0) - (b.minScore ?? 0));
 
-  const handleCategoryChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const values = getSelectedValues(event);
-    setSelectedCategories(values);
-    setSelectedSpecialties((current) => current.filter((specialty) => specialtyOptions.includes(specialty)));
+    const fallback = filtered.filter((u) => u.minScore === null);
+
+    return { score, goal: goalScore ? Number(goalScore) : null, filtered, already, goals, fallback };
+  }, [submitted, exam, currentScore, goalScore, selectedCategories, selectedSpecialties,
+      selectedCountries, selectedLanguages, grant, difficulty, config.universities,
+      config.categories, countryIsValidForNuet]);
+
+  const highlightedIds = useMemo<Set<string>>(() => {
+    if (!filteredResult || 'error' in filteredResult) return new Set();
+    return new Set(filteredResult.filtered.map((u) => u.id));
+  }, [filteredResult]);
+
+  const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const vals = getSelectedValues(e);
+    setSelectedCategories(vals);
+    setSelectedSpecialties((prev) => prev.filter((s) => specialtyOptions.includes(s)));
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     setSubmitted(true);
+    setMarkerFocusId(null);
   };
+
+  const handleMarkerClick = (id: string) => {
+    setMarkerFocusId(id);
+    const ref = cardRefs.current[id];
+    if (ref?.current) {
+      ref.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  };
+
+  const allDisplayedUnis = useMemo(() => {
+    if (!filteredResult || 'error' in filteredResult) return [];
+    return [...filteredResult.already, ...filteredResult.goals, ...filteredResult.fallback];
+  }, [filteredResult]);
+
+  allDisplayedUnis.forEach((u) => {
+    if (!cardRefs.current[u.id]) {
+      cardRefs.current[u.id] = { current: null };
+    }
+  });
 
   return (
-    <div style={{ maxWidth: 960, margin: '0 auto' }}>
-      <h1>Академический советник UniStart</h1>
+    <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+      <h1>РђРєР°РґРµРјРёС‡РµСЃРєРёР№ СЃРѕРІРµС‚РЅРёРє UniStart</h1>
       <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
-        Помогаем подобрать подходящие SAT/NUET направления и университеты по категориям, странам, языку и уровню сложности.
+        РџРѕРґР±РѕСЂ СѓРЅРёРІРµСЂСЃРёС‚РµС‚Р° РЅР° РѕСЃРЅРѕРІРµ SAT РёР»Рё NUET.
+        РќР°РІРµРґРёС‚Рµ РЅР° РјР°СЂРєРµСЂ РґР»СЏ РїСЂРµРґРїСЂРѕСЃРјРѕС‚СЂР°, РЅР°Р¶РјРёС‚Рµ вЂ” РїРµСЂРµР№РґС‘С‚ Рє РєР°СЂС‚РѕС‡РєРµ.
       </p>
+
+      <AdvisorWorldMap
+        universities={config.universities}
+        highlightedIds={highlightedIds}
+        onMarkerClick={handleMarkerClick}
+      />
 
       <form onSubmit={handleSubmit} style={{ display: 'grid', gap: '1rem', marginBottom: '2rem' }}>
         <div className="form-group">
-          <label>Экзамен</label>
+          <label>Р­РєР·Р°РјРµРЅ</label>
           <select className="form-input" value={exam} onChange={(e) => setExam(e.target.value as 'SAT' | 'NUET' | '')}>
-            <option value="">Выберите экзамен</option>
+            <option value="">Р’С‹Р±РµСЂРёС‚Рµ СЌРєР·Р°РјРµРЅ</option>
             <option value="SAT">SAT</option>
             <option value="NUET">NUET</option>
           </select>
@@ -156,129 +247,94 @@ function UniversityAdvisorPage() {
 
         <div className="form-grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
           <div className="form-group">
-            <label>Текущий балл</label>
-            <input
-              className="form-input"
-              type="number"
-              min={0}
-              value={currentScore}
+            <label>РўРµРєСѓС‰РёР№ Р±Р°Р»Р»</label>
+            <input className="form-input" type="number" min={0} value={currentScore}
               onChange={(e) => setCurrentScore(e.target.value)}
-              placeholder={exam === 'NUET' ? '0–200' : '0–1600'}
-            />
+              placeholder={exam === 'NUET' ? '0вЂ“200' : '0вЂ“1600'} />
           </div>
           <div className="form-group">
-            <label>Целевой балл (необязательно)</label>
-            <input
-              className="form-input"
-              type="number"
-              min={0}
-              value={goalScore}
+            <label>Р¦РµР»РµРІРѕР№ Р±Р°Р»Р» (РЅРµРѕР±СЏР·Р°С‚РµР»СЊРЅРѕ)</label>
+            <input className="form-input" type="number" min={0} value={goalScore}
               onChange={(e) => setGoalScore(e.target.value)}
-              placeholder={exam === 'NUET' ? '0–200' : '0–1600'}
-            />
+              placeholder={exam === 'NUET' ? '0вЂ“200' : '0вЂ“1600'} />
           </div>
         </div>
 
         <div className="form-grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
           <div className="form-group">
-            <label>Категории</label>
-            <select
-              className="form-input"
-              multiple
-              size={6}
-              value={selectedCategories}
-              onChange={handleCategoryChange}
-            >
-              {config.categories.map((category) => (
-                <option key={category.key} value={category.key}>
-                  {category.label}
-                </option>
+            <label>РљР°С‚РµРіРѕСЂРёСЏ</label>
+            <select className="form-input" multiple size={6} value={selectedCategories} onChange={handleCategoryChange}>
+              {config.categories.map((c) => (
+                <option key={c.key} value={c.key}>{c.label}</option>
               ))}
             </select>
-            <p style={{ margin: '0.5rem 0 0', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-              Выберите одну или несколько категорий. Оставьте пустым, чтобы выбрать все направления.
+            <p style={{ margin: '0.4rem 0 0', color: 'var(--text-secondary)', fontSize: '0.82rem' }}>
+              Р—Р°Р¶РјРёС‚Рµ Ctrl, С‡С‚РѕР±С‹ РІС‹Р±СЂР°С‚СЊ РЅРµСЃРєРѕР»СЊРєРѕ РєР°С‚РµРіРѕСЂРёР№.
             </p>
           </div>
-
           <div className="form-group">
-            <label>Специальности</label>
-            <select
-              className="form-input"
-              multiple
-              size={8}
-              value={selectedSpecialties}
-              onChange={(event) => setSelectedSpecialties(getSelectedValues(event))}
-            >
-              {specialtyOptions.map((specialty) => (
-                <option key={specialty} value={specialty}>{specialty}</option>
+            <label>РЎРїРµС†РёР°Р»СЊРЅРѕСЃС‚СЊ</label>
+            <select className="form-input" multiple size={8} value={selectedSpecialties}
+              onChange={(e) => setSelectedSpecialties(getSelectedValues(e))}>
+              {specialtyOptions.map((sp) => (
+                <option key={sp} value={sp}>{sp}</option>
               ))}
             </select>
-            <p style={{ margin: '0.5rem 0 0', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-              Оставьте пустым, чтобы выбирать все специальности из выбранных категорий.
+            <p style={{ margin: '0.4rem 0 0', color: 'var(--text-secondary)', fontSize: '0.82rem' }}>
+              Р—Р°Р¶РјРёС‚Рµ Ctrl, С‡С‚РѕР±С‹ РІС‹Р±СЂР°С‚СЊ РЅРµСЃРєРѕР»СЊРєРѕ СЃРїРµС†РёР°Р»СЊРЅРѕСЃС‚РµР№.
             </p>
           </div>
         </div>
 
         <div className="form-grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
           <div className="form-group">
-            <label>Страны</label>
-            <select
-              className="form-input"
-              multiple
-              size={5}
-              value={selectedCountries}
-              onChange={(event) => setSelectedCountries(getSelectedValues(event))}
-            >
-              {config.countries.map((countryOption) => (
-                <option key={countryOption} value={countryOption}>{countryOption}</option>
+            <label>РЎС‚СЂР°РЅР°</label>
+            <select className="form-input" multiple size={5} value={selectedCountries}
+              onChange={(e) => setSelectedCountries(getSelectedValues(e))}>
+              {config.countries.map((c) => (
+                <option key={c} value={c}>{c}</option>
               ))}
             </select>
-            <p style={{ margin: '0.5rem 0 0', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-              Оставьте пустым для всех стран. Для NUET выбирайте Казахстан.
+            <p style={{ margin: '0.4rem 0 0', color: 'var(--text-secondary)', fontSize: '0.82rem' }}>
+              РњРѕР¶РЅРѕ РІС‹Р±СЂР°С‚СЊ РЅРµСЃРєРѕР»СЊРєРѕ СЃС‚СЂР°РЅ. Р”Р»СЏ NUET вЂ” С‚РѕР»СЊРєРѕ РљР°Р·Р°С…СЃС‚Р°РЅ.
             </p>
           </div>
-
           <div className="form-group">
-            <label>Язык обучения</label>
-            <select
-              className="form-input"
-              multiple
-              size={4}
-              value={selectedLanguages}
-              onChange={(event) => setSelectedLanguages(getSelectedValues(event))}
-            >
-              {config.languages.map((languageOption) => (
-                <option key={languageOption} value={languageOption}>{languageOption}</option>
+            <label>РЇР·С‹Рє РѕР±СѓС‡РµРЅРёСЏ</label>
+            <select className="form-input" multiple size={4} value={selectedLanguages}
+              onChange={(e) => setSelectedLanguages(getSelectedValues(e))}>
+              {config.languages.map((l) => (
+                <option key={l} value={l}>{l}</option>
               ))}
             </select>
-            <p style={{ margin: '0.5rem 0 0', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-              Оставьте пустым, чтобы выбрать все языки.
+            <p style={{ margin: '0.4rem 0 0', color: 'var(--text-secondary)', fontSize: '0.82rem' }}>
+              Р—Р°Р¶РјРёС‚Рµ Ctrl, С‡С‚РѕР±С‹ РІС‹Р±СЂР°С‚СЊ РЅРµСЃРєРѕР»СЊРєРѕ СЏР·С‹РєРѕРІ.
             </p>
           </div>
         </div>
 
         <div className="form-grid" style={{ gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
           <div className="form-group">
-            <label>Грант</label>
+            <label>Р“СЂР°РЅС‚</label>
             <select className="form-input" value={grant} onChange={(e) => setGrant(e.target.value as 'any' | 'yes' | 'no')}>
-              <option value="any">Любой</option>
-              <option value="yes">Только с грантом</option>
-              <option value="no">Без учета гранта</option>
+              <option value="any">Р›СЋР±РѕР№</option>
+              <option value="yes">РўРѕР»СЊРєРѕ СЃ РіСЂР°РЅС‚РѕРј</option>
+              <option value="no">Р‘РµР· РіСЂР°РЅС‚Р°</option>
             </select>
           </div>
           <div className="form-group">
-            <label>Сложность</label>
+            <label>РЎР»РѕР¶РЅРѕСЃС‚СЊ РїРѕСЃС‚СѓРїР»РµРЅРёСЏ</label>
             <select className="form-input" value={difficulty} onChange={(e) => setDifficulty(e.target.value)}>
-              <option>Любая</option>
-              <option>Несложно</option>
-              <option>Умеренно</option>
-              <option>Сложно</option>
-              <option>Очень сложно</option>
+              <option>Р›СЋР±РѕР№</option>
+              <option>РќРµСЃР»РѕР¶РЅРѕ</option>
+              <option>РЎСЂРµРґРЅРµ</option>
+              <option>РЎР»РѕР¶РЅРѕ</option>
+              <option>РћС‡РµРЅСЊ СЃР»РѕР¶РЅРѕ</option>
             </select>
           </div>
           <div className="form-group" style={{ alignSelf: 'end' }}>
             <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>
-              Подобрать университеты
+              РџРѕРґРѕР±СЂР°С‚СЊ СѓРЅРёРІРµСЂСЃРёС‚РµС‚С‹
             </button>
           </div>
         </div>
@@ -294,79 +350,51 @@ function UniversityAdvisorPage() {
             <>
               <div className="card" style={{ marginBottom: '1rem' }}>
                 <p style={{ margin: 0 }}>
-                  <strong>Экзамен:</strong> {exam} · Текущий балл: {filteredResult.score}
-                  {filteredResult.goal ? ` · Цель: ${filteredResult.goal}` : ''}
+                  <strong>Р­РєР·Р°РјРµРЅ:</strong> {exam}
+                  {' В· '}<strong>Р‘Р°Р»Р»:</strong> {filteredResult.score}
+                  {filteredResult.goal ? ` В· Р¦РµР»СЊ: ${filteredResult.goal}` : ''}
                 </p>
-                <p style={{ margin: '0.75rem 0 0', color: 'var(--text-secondary)' }}>
-                  Это ориентировочные рекомендации. Окончательное решение зависит от требований каждого университета.
+                <p style={{ margin: '0.6rem 0 0', color: 'var(--text-secondary)', fontSize: '0.88rem' }}>
+                  Р РµРєРѕРјРµРЅРґР°С†РёРё РЅРѕСЃСЏС‚ РѕСЂРёРµРЅС‚РёСЂРѕРІРѕС‡РЅС‹Р№ С…Р°СЂР°РєС‚РµСЂ.
+                  РџСЂРѕРІРµСЂСЏР№С‚Рµ Р°РєС‚СѓР°Р»СЊРЅС‹Рµ С‚СЂРµР±РѕРІР°РЅРёСЏ РЅР° РѕС„РёС†РёР°Р»СЊРЅС‹С… СЃР°Р№С‚Р°С….
                 </p>
               </div>
 
               {exam === 'NUET' && (
                 <div className="card" style={{ background: '#eff6ff', color: '#1e3a8a', padding: '1rem', marginBottom: '1rem' }}>
-                  Раздел NUET поддерживает подбор по вузам Казахстана. В ближайшее время расширим список вузов и направлений.
-                </div>
-              )}
-
-              {exam === 'SAT' && selectedCountries.length > 0 && !selectedCountries.some((country) => normalizeText(country).includes('japan')) && (
-                <div className="card" style={{ background: '#fff4e5', color: '#92400e', padding: '1rem', marginBottom: '1rem' }}>
-                  SAT подбор по другим странам пока в разработке. Сейчас доступны рекомендации по японским университетам.
+                  NUET РїСЂРёРЅРёРјР°РµС‚СЃСЏ С‚РѕР»СЊРєРѕ РІ РІСѓР·Р°С… РљР°Р·Р°С…СЃС‚Р°РЅР°.
                 </div>
               )}
 
               {filteredResult.already.length > 0 && (
                 <div style={{ marginBottom: '1.5rem' }}>
-                  <h2 style={{ marginBottom: '0.75rem' }}>Уже подходит</h2>
-                  {filteredResult.already.map((university) => (
-                    <div key={university.id} className="card" style={{ marginBottom: '1rem' }}>
-                      <h3 style={{ margin: '0 0 0.5rem' }}>{university.name} — {university.city}</h3>
-                      <div style={{ display: 'grid', gap: '0.5rem' }}>
-                        <p style={{ margin: 0 }}>Страна: {university.country}</p>
-                        <p style={{ margin: 0 }}>Специальности: {university.specialties.join(', ')}</p>
-                        <p style={{ margin: 0 }}>Язык: {university.language}</p>
-                        <p style={{ margin: 0 }}>Гранты: {university.grants}</p>
-                        <p style={{ margin: 0 }}>Плюсы: {university.plus}</p>
-                        <p style={{ margin: 0 }}>Минусы: {university.minus}</p>
-                        {university.procedure && <p style={{ margin: 0 }}>Подача: {university.procedure}</p>}
-                        {university.deadlines && <p style={{ margin: 0, color: 'var(--text-secondary)' }}>Сроки: {university.deadlines}</p>}
-                      </div>
-                    </div>
+                  <h2 style={{ marginBottom: '0.75rem' }}>
+                    вњ… РЈР¶Рµ РїСЂРѕС…РѕРґРёС‚Рµ ({filteredResult.already.length})
+                  </h2>
+                  {filteredResult.already.map((u) => (
+                    <UniCard key={u.id} uni={u} highlighted={markerFocusId === u.id} refProp={cardRefs.current[u.id]} />
                   ))}
                 </div>
               )}
 
               {filteredResult.goals.length > 0 && (
                 <div style={{ marginBottom: '1.5rem' }}>
-                  <h2 style={{ marginBottom: '0.75rem' }}>Цели на вырост</h2>
-                  {filteredResult.goals.map((university) => (
-                    <div key={university.id} className="card" style={{ marginBottom: '1rem' }}>
-                      <h3 style={{ margin: '0 0 0.5rem' }}>{university.name} — {university.city}</h3>
-                      <div style={{ display: 'grid', gap: '0.5rem' }}>
-                        <p style={{ margin: 0 }}>Мин. балл: {university.minScore}</p>
-                        <p style={{ margin: 0 }}>Специальности: {university.specialties.join(', ')}</p>
-                        <p style={{ margin: 0 }}>Язык: {university.language}</p>
-                        <p style={{ margin: 0 }}>Плюсы: {university.plus}</p>
-                        <p style={{ margin: 0 }}>Минусы: {university.minus}</p>
-                      </div>
-                    </div>
+                  <h2 style={{ marginBottom: '0.75rem' }}>
+                    рџЋЇ Р¦РµР»СЊ ({filteredResult.goals.length})
+                  </h2>
+                  {filteredResult.goals.map((u) => (
+                    <UniCard key={u.id} uni={u} highlighted={markerFocusId === u.id} refProp={cardRefs.current[u.id]} />
                   ))}
                 </div>
               )}
 
-              {filteredResult.already.length === 0 && filteredResult.goals.length === 0 && filteredResult.filtered.length > 0 && (
-                <div>
-                  <h2 style={{ marginBottom: '0.75rem' }}>Рекомендации</h2>
-                  {filteredResult.filtered.map((university) => (
-                    <div key={university.id} className="card" style={{ marginBottom: '1rem' }}>
-                      <h3 style={{ margin: '0 0 0.5rem' }}>{university.name} — {university.city}</h3>
-                      <div style={{ display: 'grid', gap: '0.5rem' }}>
-                        <p style={{ margin: 0 }}>Специальности: {university.specialties.join(', ')}</p>
-                        <p style={{ margin: 0 }}>Язык: {university.language}</p>
-                        <p style={{ margin: 0 }}>Гранты: {university.grants}</p>
-                        <p style={{ margin: 0 }}>Плюсы: {university.plus}</p>
-                        <p style={{ margin: 0 }}>Минусы: {university.minus}</p>
-                      </div>
-                    </div>
+              {filteredResult.fallback.length > 0 && (
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <h2 style={{ marginBottom: '0.75rem' }}>
+                    рџ“‹ Р РµРєРѕРјРµРЅРґСѓРµС‚СЃСЏ ({filteredResult.fallback.length})
+                  </h2>
+                  {filteredResult.fallback.map((u) => (
+                    <UniCard key={u.id} uni={u} highlighted={markerFocusId === u.id} refProp={cardRefs.current[u.id]} />
                   ))}
                 </div>
               )}
@@ -374,7 +402,8 @@ function UniversityAdvisorPage() {
               {filteredResult.filtered.length === 0 && (
                 <div className="card" style={{ padding: '1rem' }}>
                   <p style={{ margin: 0 }}>
-                    Для выбранных фильтров пока нет рекомендаций. Попробуйте расширить выбор категорий, стран или языков.
+                    РќРµС‚ СѓРЅРёРІРµСЂСЃРёС‚РµС‚РѕРІ РїРѕ РІС‹Р±СЂР°РЅРЅС‹Рј РєСЂРёС‚РµСЂРёСЏРј.
+                    РџРѕРїСЂРѕР±СѓР№С‚Рµ СЂР°СЃС€РёСЂРёС‚СЊ С„РёР»СЊС‚СЂС‹.
                   </p>
                 </div>
               )}

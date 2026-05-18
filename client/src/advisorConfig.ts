@@ -20,6 +20,8 @@ export type AdvisorUniversity = {
   videoUrl?: string;
   photoUrl?: string;
   description?: string;
+  lat?: number;
+  lng?: number;
 };
 
 export type AdvisorCategory = {
@@ -121,6 +123,8 @@ const DEFAULT_UNIVERSITIES: AdvisorUniversity[] = [
     ranking: 'Топ частных вузов Японии',
     procedure: 'Обычная подача через сайт университета.',
     photoUrl: '',
+    lat: 33.2846,
+    lng: 131.4909,
   },
   {
     id: 'toyo',
@@ -140,6 +144,8 @@ const DEFAULT_UNIVERSITIES: AdvisorUniversity[] = [
     ranking: 'Хороший региональный рейтинг',
     procedure: 'Подача через онлайн-портал.',
     photoUrl: '',
+    lat: 35.6895,
+    lng: 139.6917,
   },
   {
     id: 'kanazawa',
@@ -159,6 +165,8 @@ const DEFAULT_UNIVERSITIES: AdvisorUniversity[] = [
     ranking: 'Национальный университет',
     procedure: 'Сбор документов и подача через международный офис.',
     photoUrl: '',
+    lat: 36.5611,
+    lng: 136.6601,
   },
   {
     id: 'aiu',
@@ -178,6 +186,8 @@ const DEFAULT_UNIVERSITIES: AdvisorUniversity[] = [
     ranking: 'Международный частный вуз',
     procedure: 'Подача документов через отдел международных программ.',
     photoUrl: '',
+    lat: 39.7186,
+    lng: 140.1023,
   },
   {
     id: 'nug',
@@ -197,6 +207,8 @@ const DEFAULT_UNIVERSITIES: AdvisorUniversity[] = [
     ranking: 'Топ вузов Казахстана',
     procedure: 'Подача через NUG портал.',
     photoUrl: '',
+    lat: 51.1804,
+    lng: 71.4460,
   },
   {
     id: 'kbtu',
@@ -216,6 +228,8 @@ const DEFAULT_UNIVERSITIES: AdvisorUniversity[] = [
     ranking: 'Известен техническими специальностями',
     procedure: 'Подача через приемную комиссию.',
     photoUrl: '',
+    lat: 43.2565,
+    lng: 76.9285,
   },
 ];
 
