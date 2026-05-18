@@ -7,7 +7,7 @@ FROM node:20-alpine AS build
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
-RUN [ -f package-lock.json ] && npm ci || npm install
+RUN [ -f package-lock.json ] && npm ci --legacy-peer-deps || npm install --legacy-peer-deps
 
 COPY . .
 RUN npm run build
