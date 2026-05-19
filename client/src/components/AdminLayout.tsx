@@ -89,7 +89,7 @@ function AdminLayout() {
           </button>
 
           <div className={`navbar-collapse ${menuOpen ? 'show' : ''}`}>
-            <ul className="navbar-nav">
+            <ul className="navbar-nav" style={{ marginLeft: '1.5rem' }}>
               <li>
                 <NavLink to="/" end onClick={() => setMenuOpen(false)}>
                   {t.admin.nav.dashboard}

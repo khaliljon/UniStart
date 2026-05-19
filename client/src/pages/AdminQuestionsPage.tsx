@@ -90,6 +90,9 @@ function AdminQuestionsPage() {
   // Section selector in question edit/create
   const [formSectionId, setFormSectionId] = useState<number>(0);
 
+  // Bulk selection (table view)
+  const [selectedQuestions, setSelectedQuestions] = useState<Set<number>>(new Set());
+
   // ─── Load ────────────────────
 
   const loadQuestions = useCallback(async () => {
@@ -138,6 +141,7 @@ function AdminQuestionsPage() {
 
   useEffect(() => {
     if (viewMode === 'topics') loadTopicViewQuestions();
+    setSelectedQuestions(new Set());
   }, [viewMode, loadTopicViewQuestions]);
 
   // ─── Inline Topic Rename ─────
@@ -363,6 +367,39 @@ function AdminQuestionsPage() {
     setModalMode('view');
   };
 
+  const bulkDeleteQuestions = async () => {
+    const ids = [...selectedQuestions];
+    if (!ids.length || !confirm(`Удалить ${ids.length} вопросов? Это действие нельзя отменить.`)) return;
+    try {
+      await Promise.all(ids.map(id => adminService.deleteQuestion(id)));
+      setSelectedQuestions(new Set());
+      setSuccess(t.admin.questions.questionDeleted);
+      loadQuestions();
+      loadTopics();
+      if (viewMode === 'topics') loadTopicViewQuestions();
+    } catch { setError(t.admin.questions.questionDeleteError); }
+  };
+
+  const deleteTopic = async (topicId: number) => {
+    if (!confirm('Удалить эту тему и все её вопросы? Это действие нельзя отменить.')) return;
+    try {
+      await adminService.deleteTopic(topicId);
+      setSuccess('Тема удалена');
+      loadTopics();
+      if (viewMode === 'topics') loadTopicViewQuestions();
+    } catch { setError(t.admin.common.deleteError); }
+  };
+
+  const deleteSectionWithCascade = async (sectionId: number) => {
+    if (!confirm('Удалить эту секцию, все её темы и вопросы? Это действие нельзя отменить.')) return;
+    try {
+      await adminService.deleteSection(sectionId);
+      setSuccess('Секция удалена');
+      loadSectionsAndSkills();
+      loadTopics();
+    } catch { setError(t.admin.common.deleteError); }
+  };
+
   // ─── Form helpers ────────────
 
   const updateOption = (idx: number, field: 'text' | 'isCorrect', value: string | boolean) => {
@@ -581,9 +618,19 @@ function AdminQuestionsPage() {
       {/* ─── TABLE VIEW ─── */}
       {viewMode === 'table' && (
         <div style={{ overflowX: 'auto' }}>
+          {selectedQuestions.size > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.5rem 0.75rem', marginBottom: '0.5rem', background: 'var(--primary-color)', borderRadius: '8px', color: '#fff', fontSize: '0.85rem' }}>
+              <span>Выбрано: {selectedQuestions.size}</span>
+              <button className="btn" style={{ fontSize: '0.8rem', padding: '0.2rem 0.6rem', background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.5)', color: '#fff', cursor: 'pointer' }} onClick={bulkDeleteQuestions}>Удалить выбранные</button>
+              <button style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontSize: '1rem' }} onClick={() => setSelectedQuestions(new Set())}>✕</button>
+            </div>
+          )}
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
             <thead>
               <tr style={{ borderBottom: '2px solid var(--border-color)', textAlign: 'left' }}>
+                <th style={{ padding: '0.5rem', width: '2rem' }}>
+                  <input type="checkbox" checked={questions.length > 0 && questions.every(q => selectedQuestions.has(q.id))} onChange={e => setSelectedQuestions(e.target.checked ? new Set(questions.map(q => q.id)) : new Set())} />
+                </th>
                 <th style={thStyle}>ID</th>
                 <th style={thStyle}>{t.admin.questions.examSection}</th>
                 <th style={thStyle}>{t.admin.questions.topicName}</th>
@@ -601,6 +648,9 @@ function AdminQuestionsPage() {
                   onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-secondary)'}
                   onMouseLeave={e => e.currentTarget.style.background = ''}
                 >
+                  <td style={{ ...tdStyle, width: '2rem' }} onClick={e => e.stopPropagation()}>
+                    <input type="checkbox" checked={selectedQuestions.has(q.id)} onChange={e => { e.stopPropagation(); setSelectedQuestions(prev => { const s = new Set(prev); e.target.checked ? s.add(q.id) : s.delete(q.id); return s; }); }} />
+                  </td>
                   <td style={tdStyle}><span style={{ color: 'var(--text-muted, var(--text-secondary))' }}>#{q.id}</span></td>
                   <td style={tdStyle}>
                     <Badge bg={EXAM_COLORS[q.examTypeCode]}>{q.examTypeCode}</Badge>
@@ -690,6 +740,14 @@ function AdminQuestionsPage() {
                           onClick={() => startCreate(tp.id)}
                         >
                           {t.admin.questions.newQuestion}
+                        </button>
+                        <button
+                          className="btn btn-outline"
+                          style={{ fontSize: '0.8rem', padding: '0.3rem 0.7rem', color: 'var(--error-color)' }}
+                          onClick={() => deleteTopic(tp.id)}
+                          title="Удалить тему и все вопросы"
+                        >
+                          🗑
                         </button>
                       </div>
                       {/* Questions list */}
@@ -790,6 +848,14 @@ function AdminQuestionsPage() {
                             ({sectionTopics.length} {t.admin.questions.topicsCount} • {totalQ} {t.admin.questions.questionsShort})
                           </span>
                         </div>
+                        <button
+                          className="btn btn-outline"
+                          style={{ fontSize: '0.8rem', padding: '0.3rem 0.7rem', color: 'var(--error-color)', flexShrink: 0 }}
+                          onClick={() => deleteSectionWithCascade(s.id)}
+                          title="Удалить секцию, все темы и вопросы"
+                        >
+                          🗑
+                        </button>
                       </div>
                       {sectionTopics.length > 0 && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>

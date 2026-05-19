@@ -786,6 +786,20 @@ public class AdminService : IAdminService
         );
     }
 
+    public async Task<bool> DeleteTopicAsync(int id)
+    {
+        var topic = await _db.Topics.FindAsync(id);
+        if (topic == null) return false;
+
+        // DB cascade (DeleteBehavior.Cascade) will hard-delete all questions in this topic
+        _db.Topics.Remove(topic);
+        await _db.SaveChangesAsync();
+        _cache.Remove("admin:sections");
+
+        _logger.LogInformation("Deleted topic {TopicId} (questions cascade-deleted)", id);
+        return true;
+    }
+
     // ═══════════════════════════════════════════════════════
     //  SECTIONS & SKILLS (for dropdowns)
     // ═══════════════════════════════════════════════════════
@@ -857,6 +871,27 @@ public class AdminService : IAdminService
         _cache.Remove("admin:sections");
 
         return new AdminSectionDto(section.Id, section.Name, section.ExamTypeCode);
+    }
+
+    public async Task<bool> DeleteSectionAsync(int id)
+    {
+        var section = await _db.ExamSections
+            .Include(s => s.Topics)
+            .FirstOrDefaultAsync(s => s.Id == id);
+
+        if (section == null) return false;
+
+        // Section→Topics uses SetNull, so explicitly delete topics first.
+        // Topic→Questions uses Cascade, so deleting a topic hard-deletes its questions.
+        if (section.Topics?.Any() == true)
+            _db.Topics.RemoveRange(section.Topics);
+
+        _db.ExamSections.Remove(section);
+        await _db.SaveChangesAsync();
+        _cache.Remove("admin:sections");
+
+        _logger.LogInformation("Deleted section {SectionId}", id);
+        return true;
     }
 
     // ═══════════════════════════════════════════════════════

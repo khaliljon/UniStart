@@ -264,6 +264,18 @@ public class AdminController : ControllerBase
         }
     }
 
+    /// <summary>Delete a topic and soft-delete all its questions</summary>
+    [HttpDelete("topics/{id:int}")]
+    public async Task<IActionResult> DeleteTopic(int id)
+    {
+        var ok = await _svc.DeleteTopicAsync(id);
+        if (!ok) return NotFound();
+        var (adminId, email) = GetCurrentAdmin();
+        await _audit.LogAsync(adminId, email, "Delete", "Topic", id.ToString(),
+            ipAddress: GetClientIp());
+        return NoContent();
+    }
+
     /// <summary>List all exam sections (for dropdowns)</summary>
     [HttpGet("sections")]
     public async Task<IActionResult> GetSections()
@@ -309,6 +321,18 @@ public class AdminController : ControllerBase
         {
             return BadRequest(new { error = ex.Message });
         }
+    }
+
+    /// <summary>Delete a section and cascade soft-delete all its topics' questions</summary>
+    [HttpDelete("sections/{id:int}")]
+    public async Task<IActionResult> DeleteSection(int id)
+    {
+        var ok = await _svc.DeleteSectionAsync(id);
+        if (!ok) return NotFound();
+        var (adminId, email) = GetCurrentAdmin();
+        await _audit.LogAsync(adminId, email, "Delete", "Section", id.ToString(),
+            ipAddress: GetClientIp());
+        return NoContent();
     }
 
     /// <summary>List all skills (for dropdowns)</summary>

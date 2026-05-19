@@ -98,6 +98,9 @@ const adminService = {
   updateTopic: (id: number, data: { name?: string }) =>
     api.put<AdminTopicSummary>(`/admin/topics/${id}`, data).then(r => r.data),
 
+  deleteTopic: (id: number) =>
+    api.delete(`/admin/topics/${id}`),
+
   getSections: () =>
     api.get<AdminSection[]>('/admin/sections').then(r => r.data),
 
@@ -106,6 +109,9 @@ const adminService = {
 
   updateSection: (id: number, data: { name?: string }) =>
     api.put<AdminSection>(`/admin/sections/${id}`, data).then(r => r.data),
+
+  deleteSection: (id: number) =>
+    api.delete(`/admin/sections/${id}`),
 
   getSkills: () =>
     api.get<AdminSkill[]>('/admin/skills').then(r => r.data),

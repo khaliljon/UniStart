@@ -70,6 +70,13 @@ export default function AdminContentPage() {
   const [drillForm, setDrillForm] = useState({ title: '', description: '', drillType: 'Speed', examTypeCode: '', topicId: 0, questionCount: 10, timeLimitMinutes: 0, isActive: true, sortOrder: 0 });
   const [editingDrillId, setEditingDrillId] = useState<number | null>(null);
 
+  // Bulk selection
+  const [selectedLessons, setSelectedLessons] = useState<Set<number>>(new Set());
+  const [selectedFormulas, setSelectedFormulas] = useState<Set<number>>(new Set());
+  const [selectedStrategies, setSelectedStrategies] = useState<Set<number>>(new Set());
+  const [selectedDrills, setSelectedDrills] = useState<Set<number>>(new Set());
+  const [selectedDecks, setSelectedDecks] = useState<Set<number>>(new Set());
+
   // Load topics on mount
   useEffect(() => {
     adminService.getTopics().then(setTopics).catch(() => {});
@@ -109,6 +116,11 @@ export default function AdminContentPage() {
   useEffect(() => {
     setError(null);
     setSuccess(null);
+    setSelectedLessons(new Set());
+    setSelectedFormulas(new Set());
+    setSelectedStrategies(new Set());
+    setSelectedDrills(new Set());
+    setSelectedDecks(new Set());
     if (tab === 'lessons') loadLessons();
     else if (tab === 'flashcards') loadDecks();
     else if (tab === 'formulas') loadFormulas();
@@ -381,6 +393,42 @@ export default function AdminContentPage() {
     catch { setError(t.admin.common.deleteError); }
   };
 
+  // ─── Bulk delete actions ─────────────────
+  const bulkDeleteLessons = async () => {
+    const ids = [...selectedLessons];
+    if (!ids.length || !confirm(`Удалить ${ids.length} уроков?`)) return;
+    try { await Promise.all(ids.map(id => adminService.deleteLesson(id))); setSelectedLessons(new Set()); loadLessons(); }
+    catch { setError(t.admin.common.deleteError); }
+  };
+
+  const bulkDeleteFormulas = async () => {
+    const ids = [...selectedFormulas];
+    if (!ids.length || !confirm(`Удалить ${ids.length} формул?`)) return;
+    try { await Promise.all(ids.map(id => adminService.deleteFormula(id))); setSelectedFormulas(new Set()); loadFormulas(); }
+    catch { setError(t.admin.common.deleteError); }
+  };
+
+  const bulkDeleteStrategies = async () => {
+    const ids = [...selectedStrategies];
+    if (!ids.length || !confirm(`Удалить ${ids.length} стратегий?`)) return;
+    try { await Promise.all(ids.map(id => adminService.deleteStrategy(id))); setSelectedStrategies(new Set()); loadStrategies(); }
+    catch { setError(t.admin.common.deleteError); }
+  };
+
+  const bulkDeleteDrills = async () => {
+    const ids = [...selectedDrills];
+    if (!ids.length || !confirm(`Удалить ${ids.length} тренировок?`)) return;
+    try { await Promise.all(ids.map(id => adminService.deleteDrill(id))); setSelectedDrills(new Set()); loadDrills(); }
+    catch { setError(t.admin.common.deleteError); }
+  };
+
+  const bulkDeleteDecks = async () => {
+    const ids = [...selectedDecks];
+    if (!ids.length || !confirm(`Удалить ${ids.length} колод?`)) return;
+    try { await Promise.all(ids.map(id => adminService.deleteDeck(id))); setSelectedDecks(new Set()); loadDecks(); }
+    catch { setError(t.admin.common.deleteError); }
+  };
+
   // ─── Exam filter logic ────────────────
   const examCodes = [...new Set(topics.map(tp => tp.examTypeCode))].sort();
   const topicExamMap = new Map(topics.map(tp => [tp.id, tp.examTypeCode]));
@@ -483,33 +531,48 @@ export default function AdminContentPage() {
           {lessonsLoading ? (
             <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>{t.admin.common.loading}</div>
           ) : (
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
-              <thead>
-                <tr style={{ borderBottom: '2px solid var(--border-color)', textAlign: 'left' }}>
-                  <th style={{ padding: '0.5rem' }}>ID</th>
-                  <th style={{ padding: '0.5rem' }}>{t.admin.content.exam}</th>
-                  <th style={{ padding: '0.5rem' }}>{t.admin.content.topic}</th>
-                  <th style={{ padding: '0.5rem' }}>{t.admin.content.name}</th>
-                  <th style={{ padding: '0.5rem' }}>{t.admin.content.steps}</th>
-                  <th style={{ padding: '0.5rem' }}></th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredLessons.map(l => (
-                  <tr key={l.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                    <td style={{ padding: '0.5rem', color: 'var(--text-secondary)' }}>#{l.id}</td>
-                    <td style={{ padding: '0.5rem', fontSize: '0.8rem' }}>{topicExamMap.get(l.topicId) || '—'}</td>
-                    <td style={{ padding: '0.5rem' }}>{l.topicName}</td>
-                    <td style={{ padding: '0.5rem', fontWeight: 500 }}>{l.title}</td>
-                    <td style={{ padding: '0.5rem' }}>{l.stepCount}</td>
-                    <td style={{ padding: '0.5rem', display: 'flex', gap: '0.25rem' }}>
-                      <button className="btn btn-outline" style={editBtn} onClick={() => openLessonEdit(l)}>✎</button>
-                      <button className="btn btn-outline" style={{ ...editBtn, color: 'var(--error-color)' }} onClick={() => deleteLesson(l.id)}>✕</button>
-                    </td>
+            <>
+              {selectedLessons.size > 0 && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.5rem 0.75rem', marginBottom: '0.5rem', background: 'var(--primary-color)', borderRadius: '8px', color: '#fff', fontSize: '0.85rem' }}>
+                  <span>Выбрано: {selectedLessons.size}</span>
+                  <button className="btn" style={{ fontSize: '0.8rem', padding: '0.2rem 0.6rem', background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.5)', color: '#fff', cursor: 'pointer' }} onClick={bulkDeleteLessons}>Удалить выбранные</button>
+                  <button style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontSize: '1rem' }} onClick={() => setSelectedLessons(new Set())}>✕</button>
+                </div>
+              )}
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid var(--border-color)', textAlign: 'left' }}>
+                    <th style={{ padding: '0.5rem', width: '2rem' }}>
+                      <input type="checkbox" checked={filteredLessons.length > 0 && filteredLessons.every(l => selectedLessons.has(l.id))} onChange={e => setSelectedLessons(e.target.checked ? new Set(filteredLessons.map(l => l.id)) : new Set())} />
+                    </th>
+                    <th style={{ padding: '0.5rem' }}>ID</th>
+                    <th style={{ padding: '0.5rem' }}>{t.admin.content.exam}</th>
+                    <th style={{ padding: '0.5rem' }}>{t.admin.content.topic}</th>
+                    <th style={{ padding: '0.5rem' }}>{t.admin.content.name}</th>
+                    <th style={{ padding: '0.5rem' }}>{t.admin.content.steps}</th>
+                    <th style={{ padding: '0.5rem' }}></th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {filteredLessons.map(l => (
+                    <tr key={l.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                      <td style={{ padding: '0.5rem' }}>
+                        <input type="checkbox" checked={selectedLessons.has(l.id)} onChange={e => setSelectedLessons(prev => { const s = new Set(prev); e.target.checked ? s.add(l.id) : s.delete(l.id); return s; })} />
+                      </td>
+                      <td style={{ padding: '0.5rem', color: 'var(--text-secondary)' }}>#{l.id}</td>
+                      <td style={{ padding: '0.5rem', fontSize: '0.8rem' }}>{topicExamMap.get(l.topicId) || '—'}</td>
+                      <td style={{ padding: '0.5rem' }}>{l.topicName}</td>
+                      <td style={{ padding: '0.5rem', fontWeight: 500 }}>{l.title}</td>
+                      <td style={{ padding: '0.5rem' }}>{l.stepCount}</td>
+                      <td style={{ padding: '0.5rem', display: 'flex', gap: '0.25rem' }}>
+                        <button className="btn btn-outline" style={editBtn} onClick={() => openLessonEdit(l)}>✎</button>
+                        <button className="btn btn-outline" style={{ ...editBtn, color: 'var(--error-color)' }} onClick={() => deleteLesson(l.id)}>✕</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
           )}
         </div>
       )}
@@ -551,22 +614,33 @@ export default function AdminContentPage() {
           {decksLoading ? (
             <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>{t.admin.common.loading}</div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              {filteredDecks.map(d => (
-                <div key={d.id} className="card" style={{ padding: '1rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }} onClick={() => toggleDeck(d.id)}>
-                    <div>
-                      <div style={{ fontWeight: 600 }}>{d.title}</div>
-                      <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                        {d.examTypeCode || '—'} • {d.cardCount} {t.admin.content.cardsLabel} {d.topicName ? `• ${d.topicName}` : ''}
+            <>
+              {selectedDecks.size > 0 && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.5rem 0.75rem', marginBottom: '0.5rem', background: 'var(--primary-color)', borderRadius: '8px', color: '#fff', fontSize: '0.85rem' }}>
+                  <span>Выбрано: {selectedDecks.size}</span>
+                  <button className="btn" style={{ fontSize: '0.8rem', padding: '0.2rem 0.6rem', background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.5)', color: '#fff', cursor: 'pointer' }} onClick={bulkDeleteDecks}>Удалить выбранные</button>
+                  <button style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontSize: '1rem' }} onClick={() => setSelectedDecks(new Set())}>✕</button>
+                </div>
+              )}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {filteredDecks.map(d => (
+                  <div key={d.id} className="card" style={{ padding: '1rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }} onClick={() => toggleDeck(d.id)}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <input type="checkbox" checked={selectedDecks.has(d.id)} onChange={e => { e.stopPropagation(); setSelectedDecks(prev => { const s = new Set(prev); e.target.checked ? s.add(d.id) : s.delete(d.id); return s; }); }} onClick={e => e.stopPropagation()} />
+                        <div>
+                          <div style={{ fontWeight: 600 }}>{d.title}</div>
+                          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                            {d.examTypeCode || '—'} • {d.cardCount} {t.admin.content.cardsLabel} {d.topicName ? `• ${d.topicName}` : ''}
+                          </div>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.9rem' }}>{expandedDeck === d.id ? '▼' : '▶'}</span>
+                        <button className="btn btn-outline" style={editBtn} onClick={e => { e.stopPropagation(); openDeckEdit(d); }}>✎</button>
+                        <button className="btn btn-outline" style={{ ...editBtn, color: 'var(--error-color)' }} onClick={e => { e.stopPropagation(); deleteDeck(d.id); }}>✕</button>
                       </div>
                     </div>
-                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                      <span style={{ fontSize: '0.9rem' }}>{expandedDeck === d.id ? '▼' : '▶'}</span>
-                      <button className="btn btn-outline" style={editBtn} onClick={e => { e.stopPropagation(); openDeckEdit(d); }}>✎</button>
-                      <button className="btn btn-outline" style={{ ...editBtn, color: 'var(--error-color)' }} onClick={e => { e.stopPropagation(); deleteDeck(d.id); }}>✕</button>
-                    </div>
-                  </div>
 
                   {expandedDeck === d.id && (
                     <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)' }}>
@@ -617,6 +691,7 @@ export default function AdminContentPage() {
                 </div>
               ))}
             </div>
+            </>
           )}
         </div>
       )}
@@ -663,35 +738,50 @@ export default function AdminContentPage() {
           {formulasLoading ? (
             <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>{t.admin.common.loading}</div>
           ) : (
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
-              <thead>
-                <tr style={{ borderBottom: '2px solid var(--border-color)', textAlign: 'left' }}>
-                  <th style={{ padding: '0.5rem' }}>ID</th>
-                  <th style={{ padding: '0.5rem' }}>{t.admin.content.exam}</th>
-                  <th style={{ padding: '0.5rem' }}>{t.admin.content.topic}</th>
-                  <th style={{ padding: '0.5rem' }}>{t.admin.content.name}</th>
-                  <th style={{ padding: '0.5rem' }}>{t.admin.content.formulaCol}</th>
-                  <th style={{ padding: '0.5rem' }}></th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredFormulas.map(f => (
-                  <tr key={f.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                    <td style={{ padding: '0.5rem', color: 'var(--text-secondary)' }}>#{f.id}</td>
-                    <td style={{ padding: '0.5rem', fontSize: '0.8rem' }}>{topicExamMap.get(f.topicId) || '—'}</td>
-                    <td style={{ padding: '0.5rem' }}>{f.topicName}</td>
-                    <td style={{ padding: '0.5rem', fontWeight: 500 }}>{f.title}</td>
-                    <td style={{ padding: '0.5rem', fontFamily: 'monospace', fontSize: '0.8rem' }}>{f.formula}</td>
-                    <td style={{ padding: '0.5rem' }}>
-                      <div style={{ display: 'flex', gap: '0.25rem' }}>
-                        <button className="btn btn-outline" style={editBtn} onClick={() => openFormulaEdit(f)}>✎</button>
-                        <button className="btn btn-outline" style={{ ...editBtn, color: 'var(--error-color)' }} onClick={() => deleteFormula(f.id)}>✕</button>
-                      </div>
-                    </td>
+            <>
+              {selectedFormulas.size > 0 && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.5rem 0.75rem', marginBottom: '0.5rem', background: 'var(--primary-color)', borderRadius: '8px', color: '#fff', fontSize: '0.85rem' }}>
+                  <span>Выбрано: {selectedFormulas.size}</span>
+                  <button className="btn" style={{ fontSize: '0.8rem', padding: '0.2rem 0.6rem', background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.5)', color: '#fff', cursor: 'pointer' }} onClick={bulkDeleteFormulas}>Удалить выбранные</button>
+                  <button style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontSize: '1rem' }} onClick={() => setSelectedFormulas(new Set())}>✕</button>
+                </div>
+              )}
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid var(--border-color)', textAlign: 'left' }}>
+                    <th style={{ padding: '0.5rem', width: '2rem' }}>
+                      <input type="checkbox" checked={filteredFormulas.length > 0 && filteredFormulas.every(f => selectedFormulas.has(f.id))} onChange={e => setSelectedFormulas(e.target.checked ? new Set(filteredFormulas.map(f => f.id)) : new Set())} />
+                    </th>
+                    <th style={{ padding: '0.5rem' }}>ID</th>
+                    <th style={{ padding: '0.5rem' }}>{t.admin.content.exam}</th>
+                    <th style={{ padding: '0.5rem' }}>{t.admin.content.topic}</th>
+                    <th style={{ padding: '0.5rem' }}>{t.admin.content.name}</th>
+                    <th style={{ padding: '0.5rem' }}>{t.admin.content.formulaCol}</th>
+                    <th style={{ padding: '0.5rem' }}></th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {filteredFormulas.map(f => (
+                    <tr key={f.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                      <td style={{ padding: '0.5rem' }}>
+                        <input type="checkbox" checked={selectedFormulas.has(f.id)} onChange={e => setSelectedFormulas(prev => { const s = new Set(prev); e.target.checked ? s.add(f.id) : s.delete(f.id); return s; })} />
+                      </td>
+                      <td style={{ padding: '0.5rem', color: 'var(--text-secondary)' }}>#{f.id}</td>
+                      <td style={{ padding: '0.5rem', fontSize: '0.8rem' }}>{topicExamMap.get(f.topicId) || '—'}</td>
+                      <td style={{ padding: '0.5rem' }}>{f.topicName}</td>
+                      <td style={{ padding: '0.5rem', fontWeight: 500 }}>{f.title}</td>
+                      <td style={{ padding: '0.5rem', fontFamily: 'monospace', fontSize: '0.8rem' }}>{f.formula}</td>
+                      <td style={{ padding: '0.5rem' }}>
+                        <div style={{ display: 'flex', gap: '0.25rem' }}>
+                          <button className="btn btn-outline" style={editBtn} onClick={() => openFormulaEdit(f)}>✎</button>
+                          <button className="btn btn-outline" style={{ ...editBtn, color: 'var(--error-color)' }} onClick={() => deleteFormula(f.id)}>✕</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
           )}
         </div>
       )}
@@ -751,35 +841,50 @@ export default function AdminContentPage() {
           {strategiesLoading ? (
             <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>{t.admin.common.loading}</div>
           ) : (
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
-              <thead>
-                <tr style={{ borderBottom: '2px solid var(--border-color)', textAlign: 'left' }}>
-                  <th style={{ padding: '0.5rem' }}>ID</th>
-                  <th style={{ padding: '0.5rem' }}>{t.admin.content.exam}</th>
-                  <th style={{ padding: '0.5rem' }}>{t.admin.content.category}</th>
-                  <th style={{ padding: '0.5rem' }}>{t.admin.content.name}</th>
-                  <th style={{ padding: '0.5rem' }}>{t.admin.content.min}</th>
-                  <th style={{ padding: '0.5rem' }}></th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredStrategies.map(s => (
-                  <tr key={s.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                    <td style={{ padding: '0.5rem', color: 'var(--text-secondary)' }}>#{s.id}</td>
-                    <td style={{ padding: '0.5rem' }}>{s.examTypeCode}</td>
-                    <td style={{ padding: '0.5rem', fontSize: '0.8rem' }}>{s.category}</td>
-                    <td style={{ padding: '0.5rem', fontWeight: 500 }}>{s.title}</td>
-                    <td style={{ padding: '0.5rem' }}>{s.estimatedReadMinutes}</td>
-                    <td style={{ padding: '0.5rem' }}>
-                      <div style={{ display: 'flex', gap: '0.25rem' }}>
-                        <button className="btn btn-outline" style={editBtn} onClick={() => openStrategyEdit(s)}>✎</button>
-                        <button className="btn btn-outline" style={{ ...editBtn, color: 'var(--error-color)' }} onClick={() => deleteStrategy(s.id)}>✕</button>
-                      </div>
-                    </td>
+            <>
+              {selectedStrategies.size > 0 && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.5rem 0.75rem', marginBottom: '0.5rem', background: 'var(--primary-color)', borderRadius: '8px', color: '#fff', fontSize: '0.85rem' }}>
+                  <span>Выбрано: {selectedStrategies.size}</span>
+                  <button className="btn" style={{ fontSize: '0.8rem', padding: '0.2rem 0.6rem', background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.5)', color: '#fff', cursor: 'pointer' }} onClick={bulkDeleteStrategies}>Удалить выбранные</button>
+                  <button style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontSize: '1rem' }} onClick={() => setSelectedStrategies(new Set())}>✕</button>
+                </div>
+              )}
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid var(--border-color)', textAlign: 'left' }}>
+                    <th style={{ padding: '0.5rem', width: '2rem' }}>
+                      <input type="checkbox" checked={filteredStrategies.length > 0 && filteredStrategies.every(s => selectedStrategies.has(s.id))} onChange={e => setSelectedStrategies(e.target.checked ? new Set(filteredStrategies.map(s => s.id)) : new Set())} />
+                    </th>
+                    <th style={{ padding: '0.5rem' }}>ID</th>
+                    <th style={{ padding: '0.5rem' }}>{t.admin.content.exam}</th>
+                    <th style={{ padding: '0.5rem' }}>{t.admin.content.category}</th>
+                    <th style={{ padding: '0.5rem' }}>{t.admin.content.name}</th>
+                    <th style={{ padding: '0.5rem' }}>{t.admin.content.min}</th>
+                    <th style={{ padding: '0.5rem' }}></th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {filteredStrategies.map(s => (
+                    <tr key={s.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                      <td style={{ padding: '0.5rem' }}>
+                        <input type="checkbox" checked={selectedStrategies.has(s.id)} onChange={e => setSelectedStrategies(prev => { const st = new Set(prev); e.target.checked ? st.add(s.id) : st.delete(s.id); return st; })} />
+                      </td>
+                      <td style={{ padding: '0.5rem', color: 'var(--text-secondary)' }}>#{s.id}</td>
+                      <td style={{ padding: '0.5rem' }}>{s.examTypeCode}</td>
+                      <td style={{ padding: '0.5rem', fontSize: '0.8rem' }}>{s.category}</td>
+                      <td style={{ padding: '0.5rem', fontWeight: 500 }}>{s.title}</td>
+                      <td style={{ padding: '0.5rem' }}>{s.estimatedReadMinutes}</td>
+                      <td style={{ padding: '0.5rem' }}>
+                        <div style={{ display: 'flex', gap: '0.25rem' }}>
+                          <button className="btn btn-outline" style={editBtn} onClick={() => openStrategyEdit(s)}>✎</button>
+                          <button className="btn btn-outline" style={{ ...editBtn, color: 'var(--error-color)' }} onClick={() => deleteStrategy(s.id)}>✕</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
           )}
         </div>
       )}
@@ -858,39 +963,54 @@ export default function AdminContentPage() {
           {drillsLoading ? (
             <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>{t.admin.common.loading}</div>
           ) : (
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
-              <thead>
-                <tr style={{ borderBottom: '2px solid var(--border-color)', textAlign: 'left' }}>
-                  <th style={{ padding: '0.5rem' }}>ID</th>
-                  <th style={{ padding: '0.5rem' }}>{t.admin.content.name}</th>
-                  <th style={{ padding: '0.5rem' }}>{t.admin.content.drillType}</th>
-                  <th style={{ padding: '0.5rem' }}>{t.admin.content.exam}</th>
-                  <th style={{ padding: '0.5rem' }}>{t.admin.content.questionsCount}</th>
-                  <th style={{ padding: '0.5rem' }}>{t.admin.content.min}</th>
-                  <th style={{ padding: '0.5rem' }}>{t.admin.content.active}</th>
-                  <th style={{ padding: '0.5rem' }}></th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredDrills.map(d => (
-                  <tr key={d.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                    <td style={{ padding: '0.5rem', color: 'var(--text-secondary)' }}>#{d.id}</td>
-                    <td style={{ padding: '0.5rem', fontWeight: 500 }}>{d.title}</td>
-                    <td style={{ padding: '0.5rem' }}>{d.drillType}</td>
-                    <td style={{ padding: '0.5rem' }}>{d.examTypeCode || '—'}</td>
-                    <td style={{ padding: '0.5rem' }}>{d.questionCount}</td>
-                    <td style={{ padding: '0.5rem' }}>{d.timeLimitMinutes ?? '—'}</td>
-                    <td style={{ padding: '0.5rem' }}>{d.isActive ? '✓' : '✕'}</td>
-                    <td style={{ padding: '0.5rem' }}>
-                      <div style={{ display: 'flex', gap: '0.25rem' }}>
-                        <button className="btn btn-outline" style={editBtn} onClick={() => openDrillEdit(d)}>✎</button>
-                        <button className="btn btn-outline" style={{ ...editBtn, color: 'var(--error-color)' }} onClick={() => deleteDrill(d.id)}>✕</button>
-                      </div>
-                    </td>
+            <>
+              {selectedDrills.size > 0 && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.5rem 0.75rem', marginBottom: '0.5rem', background: 'var(--primary-color)', borderRadius: '8px', color: '#fff', fontSize: '0.85rem' }}>
+                  <span>Выбрано: {selectedDrills.size}</span>
+                  <button className="btn" style={{ fontSize: '0.8rem', padding: '0.2rem 0.6rem', background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.5)', color: '#fff', cursor: 'pointer' }} onClick={bulkDeleteDrills}>Удалить выбранные</button>
+                  <button style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontSize: '1rem' }} onClick={() => setSelectedDrills(new Set())}>✕</button>
+                </div>
+              )}
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid var(--border-color)', textAlign: 'left' }}>
+                    <th style={{ padding: '0.5rem', width: '2rem' }}>
+                      <input type="checkbox" checked={filteredDrills.length > 0 && filteredDrills.every(d => selectedDrills.has(d.id))} onChange={e => setSelectedDrills(e.target.checked ? new Set(filteredDrills.map(d => d.id)) : new Set())} />
+                    </th>
+                    <th style={{ padding: '0.5rem' }}>ID</th>
+                    <th style={{ padding: '0.5rem' }}>{t.admin.content.name}</th>
+                    <th style={{ padding: '0.5rem' }}>{t.admin.content.drillType}</th>
+                    <th style={{ padding: '0.5rem' }}>{t.admin.content.exam}</th>
+                    <th style={{ padding: '0.5rem' }}>{t.admin.content.questionsCount}</th>
+                    <th style={{ padding: '0.5rem' }}>{t.admin.content.min}</th>
+                    <th style={{ padding: '0.5rem' }}>{t.admin.content.active}</th>
+                    <th style={{ padding: '0.5rem' }}></th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {filteredDrills.map(d => (
+                    <tr key={d.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                      <td style={{ padding: '0.5rem' }}>
+                        <input type="checkbox" checked={selectedDrills.has(d.id)} onChange={e => setSelectedDrills(prev => { const s = new Set(prev); e.target.checked ? s.add(d.id) : s.delete(d.id); return s; })} />
+                      </td>
+                      <td style={{ padding: '0.5rem', color: 'var(--text-secondary)' }}>#{d.id}</td>
+                      <td style={{ padding: '0.5rem', fontWeight: 500 }}>{d.title}</td>
+                      <td style={{ padding: '0.5rem' }}>{d.drillType}</td>
+                      <td style={{ padding: '0.5rem' }}>{d.examTypeCode || '—'}</td>
+                      <td style={{ padding: '0.5rem' }}>{d.questionCount}</td>
+                      <td style={{ padding: '0.5rem' }}>{d.timeLimitMinutes ?? '—'}</td>
+                      <td style={{ padding: '0.5rem' }}>{d.isActive ? '✓' : '✕'}</td>
+                      <td style={{ padding: '0.5rem' }}>
+                        <div style={{ display: 'flex', gap: '0.25rem' }}>
+                          <button className="btn btn-outline" style={editBtn} onClick={() => openDrillEdit(d)}>✎</button>
+                          <button className="btn btn-outline" style={{ ...editBtn, color: 'var(--error-color)' }} onClick={() => deleteDrill(d.id)}>✕</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
           )}
         </div>
       )}

@@ -31,12 +31,14 @@ public interface IAdminService
     // Topics
     Task<AdminTopicSummaryDto> CreateTopicAsync(CreateTopicDto dto);
     Task<AdminTopicSummaryDto?> UpdateTopicAsync(int id, UpdateTopicDto dto);
+    Task<bool> DeleteTopicAsync(int id);
     Task<List<AdminSectionDto>> GetSectionsAsync();
     Task<List<AdminSkillDto>> GetSkillsAsync();
 
     // Sections
     Task<AdminSectionDto> CreateSectionAsync(CreateSectionDto dto);
     Task<AdminSectionDto?> UpdateSectionAsync(int id, UpdateSectionDto dto);
+    Task<bool> DeleteSectionAsync(int id);
 
     // Soft Delete restore (OP-9)
     Task<bool> RestoreQuestionAsync(int id);
