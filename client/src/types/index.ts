@@ -87,6 +87,7 @@ export interface Question {
   topicName: string;
   options: AnswerOption[];
   hasHint?: boolean;
+  imageUrl?: string | null;
 }
 
 export interface NextQuestionResponse {

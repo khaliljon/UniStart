@@ -366,7 +366,8 @@ public class AdaptiveEngineService : IAdaptiveEngineService
             question.TopicId,
             question.Topic.Name,
             question.AnswerOptions.Select(o => new AnswerOptionDto(o.Id, o.Text)),
-            HasHint: !string.IsNullOrEmpty(question.Hint)
+            HasHint: !string.IsNullOrEmpty(question.Hint),
+            ImageUrl: question.ImageUrl
         );
     }
 

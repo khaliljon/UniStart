@@ -646,6 +646,14 @@ export default function TopicsPage() {
           {currentQuestion.text}
         </h2>
 
+        {currentQuestion.imageUrl && (
+          <img
+            src={currentQuestion.imageUrl}
+            alt="question"
+            style={{ maxWidth: '100%', maxHeight: '360px', objectFit: 'contain', borderRadius: 8, marginBottom: '1.5rem', display: 'block' }}
+          />
+        )}
+
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
           {currentQuestion.options.map((option) => {
             let style: React.CSSProperties = { 

@@ -8,7 +8,8 @@ public record QuestionDto(
     int TopicId,
     string TopicName,
     IEnumerable<AnswerOptionDto> Options,
-    bool HasHint = false
+    bool HasHint = false,
+    string? ImageUrl = null
 );
 
 public record AnswerOptionDto(
