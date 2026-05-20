@@ -18,6 +18,15 @@ const adminService = {
   getQuestion: (id: number) =>
     api.get<QuestionDetail>(`/admin/questions/${id}`).then(r => r.data),
 
+  uploadImage: async (file: File): Promise<string> => {
+    const form = new FormData();
+    form.append('file', file);
+    const r = await api.post<{ url: string }>('/admin/upload-image', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return r.data.url;
+  },
+
   createQuestion: (data: {
     topicId: number;
     text: string;

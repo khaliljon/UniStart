@@ -45,6 +45,7 @@ function TutorQuestionsPage() {
   const [modalMode, setModalMode] = useState<ModalMode>('view');
   const [form, setForm] = useState(emptyForm);
   const [formSectionId, setFormSectionId] = useState<number>(0);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   // Math keyboard
   const MATH_SYMBOLS: Record<string, string[]> = {
@@ -515,13 +516,39 @@ function TutorQuestionsPage() {
                 {/* Image URL */}
                 <div style={{ marginBottom: '0.75rem' }}>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.25rem' }}>URL изображения (необязательно)</label>
-                  <input
-                    type="url"
-                    value={form.imageUrl}
-                    onChange={e => setForm(prev => ({ ...prev, imageUrl: e.target.value }))}
-                    placeholder="https://..."
-                    style={{ width: '100%', padding: '0.5rem', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--card-bg)', color: 'var(--text-primary)' }}
-                  />
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    <input
+                      type="url"
+                      value={form.imageUrl}
+                      onChange={e => setForm(prev => ({ ...prev, imageUrl: e.target.value }))}
+                      placeholder="https://..."
+                      style={{ flex: 1, padding: '0.5rem', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--card-bg)', color: 'var(--text-primary)' }}
+                    />
+                    <label style={{ cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,image/gif"
+                        style={{ display: 'none' }}
+                        onChange={async e => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          setUploadingImage(true);
+                          try {
+                            const url = await tutorService.uploadImage(file);
+                            setForm(prev => ({ ...prev, imageUrl: url }));
+                          } catch {
+                            setError('Не удалось загрузить изображение');
+                          } finally {
+                            setUploadingImage(false);
+                            e.target.value = '';
+                          }
+                        }}
+                      />
+                      <span className="btn btn-secondary" style={{ pointerEvents: 'none', fontSize: '0.85rem' }}>
+                        {uploadingImage ? 'Загрузка...' : 'С диска'}
+                      </span>
+                    </label>
+                  </div>
                   {form.imageUrl && (
                     <img src={form.imageUrl} alt="preview" style={{ marginTop: '0.5rem', maxWidth: '100%', maxHeight: '200px', borderRadius: '8px', objectFit: 'contain' }} />
                   )}

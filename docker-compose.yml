@@ -65,6 +65,9 @@ services:
       CorsOrigins__0: ${CORS_ORIGIN:-http://localhost}
       GoogleAuth__ClientId: ${GOOGLE_CLIENT_ID:-}
       GoogleAuth__ClientSecret: ${GOOGLE_CLIENT_SECRET:-}
+      R2__AccessKeyId: ${R2_ACCESS_KEY_ID:-}
+      R2__SecretAccessKey: ${R2_SECRET_ACCESS_KEY:-}
+      R2__PublicUrl: ${R2_PUBLIC_URL:-}
     ports:
       - "${API_PORT:-5009}:5009"
 

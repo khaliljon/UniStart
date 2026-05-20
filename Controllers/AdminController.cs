@@ -26,14 +26,36 @@ public class AdminController : ControllerBase
     private readonly UniStartDbContext _db;
     private readonly HealthCheckService _healthCheck;
     private readonly IEmailService _email;
+    private readonly IImageUploadService _imageUpload;
 
-    public AdminController(IAdminService svc, IAuditService audit, UniStartDbContext db, HealthCheckService healthCheck, IEmailService email)
+    public AdminController(IAdminService svc, IAuditService audit, UniStartDbContext db, HealthCheckService healthCheck, IEmailService email, IImageUploadService imageUpload)
     {
         _svc = svc;
         _audit = audit;
         _db = db;
         _healthCheck = healthCheck;
         _email = email;
+        _imageUpload = imageUpload;
+    }
+
+    /// <summary>Upload an image to Cloudflare R2 and return its public URL</summary>
+    [HttpPost("upload-image")]
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> UploadImage(IFormFile file, CancellationToken ct)
+    {
+        try
+        {
+            var url = await _imageUpload.UploadAsync(file, ct);
+            return Ok(new { url });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return StatusCode(503, new { error = ex.Message });
+        }
     }
 
     /// <summary>List questions with optional filters</summary>

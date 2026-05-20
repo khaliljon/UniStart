@@ -53,6 +53,7 @@ function AdminQuestionsPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   // Topic view — independent state
   const [topicPage, setTopicPage] = useState(1);
@@ -1354,14 +1355,40 @@ function AdminQuestionsPage() {
 
                   {/* Image URL */}
                   <FormField label="URL изображения (необязательно)">
-                    <input
-                      type="url"
-                      value={form.imageUrl}
-                      onChange={e => setForm({ ...form, imageUrl: e.target.value })}
-                      className="form-input"
-                      style={{ width: '100%' }}
-                      placeholder="https://..."
-                    />
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                      <input
+                        type="url"
+                        value={form.imageUrl}
+                        onChange={e => setForm({ ...form, imageUrl: e.target.value })}
+                        className="form-input"
+                        style={{ flex: 1 }}
+                        placeholder="https://..."
+                      />
+                      <label style={{ cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp,image/gif"
+                          style={{ display: 'none' }}
+                          onChange={async e => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            setUploadingImage(true);
+                            try {
+                              const url = await adminService.uploadImage(file);
+                              setForm(f => ({ ...f, imageUrl: url }));
+                            } catch {
+                              setError('Не удалось загрузить изображение');
+                            } finally {
+                              setUploadingImage(false);
+                              e.target.value = '';
+                            }
+                          }}
+                        />
+                        <span className="btn btn-secondary" style={{ pointerEvents: 'none' }}>
+                          {uploadingImage ? 'Загрузка...' : 'С диска'}
+                        </span>
+                      </label>
+                    </div>
                     {form.imageUrl && (
                       <img src={form.imageUrl} alt="preview" style={{ marginTop: '0.5rem', maxWidth: '100%', maxHeight: '200px', borderRadius: '0.5rem', objectFit: 'contain' }} />
                     )}

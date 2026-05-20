@@ -155,6 +155,15 @@ export const tutorService = {
     return response.data;
   },
 
+  async uploadImage(file: File): Promise<string> {
+    const form = new FormData();
+    form.append('file', file);
+    const r = await api.post<{ url: string }>('/tutors/upload-image', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return r.data.url;
+  },
+
   async createQuestion(data: {
     topicId: number;
     text: string;

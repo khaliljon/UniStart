@@ -21,13 +21,36 @@ public class TutorController : ControllerBase
     private readonly IHubContext<ChatHub> _hubContext;
     private readonly UniStartDbContext _db;
     private readonly IEmailService _email;
+    private readonly IImageUploadService _imageUpload;
 
-    public TutorController(ITutorService tutorService, IHubContext<ChatHub> hubContext, UniStartDbContext db, IEmailService email)
+    public TutorController(ITutorService tutorService, IHubContext<ChatHub> hubContext, UniStartDbContext db, IEmailService email, IImageUploadService imageUpload)
     {
         _tutorService = tutorService;
         _hubContext = hubContext;
         _db = db;
         _email = email;
+        _imageUpload = imageUpload;
+    }
+
+    /// <summary>Upload an image to Cloudflare R2 and return its public URL</summary>
+    [HttpPost("upload-image")]
+    [Authorize(Roles = "Tutor,Admin")]
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> UploadImage(IFormFile file, CancellationToken ct)
+    {
+        try
+        {
+            var url = await _imageUpload.UploadAsync(file, ct);
+            return Ok(new { url });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return StatusCode(503, new { error = ex.Message });
+        }
     }
 
     /// <summary>Каталог тьюторов с фильтрами и пагинацией</summary>
