@@ -791,7 +791,39 @@ public class AdminService : IAdminService
         var topic = await _db.Topics.FindAsync(id);
         if (topic == null) return false;
 
-        // DB cascade (DeleteBehavior.Cascade) will hard-delete all questions in this topic
+        // Phase 1: clear Restrict-FK rows that block Topic→Question cascade
+        var questionIds = await _db.Questions
+            .Where(q => q.TopicId == id)
+            .Select(q => q.Id)
+            .ToListAsync();
+
+        if (questionIds.Count > 0)
+        {
+            // MockExamAnswer.QuestionId is Restrict
+            var mockAnswers = await _db.MockExamAnswers
+                .Where(a => questionIds.Contains(a.QuestionId))
+                .ToListAsync();
+            if (mockAnswers.Count > 0)
+                _db.MockExamAnswers.RemoveRange(mockAnswers);
+
+            // AssignmentAnswer.QuestionId is Restrict (also SelectedOptionId Restrict on AnswerOption)
+            var assignAnswers = await _db.AssignmentAnswers
+                .Where(a => questionIds.Contains(a.QuestionId))
+                .ToListAsync();
+            if (assignAnswers.Count > 0)
+                _db.AssignmentAnswers.RemoveRange(assignAnswers);
+        }
+
+        // StudyPlanEntry.TopicId is Restrict
+        var planEntries = await _db.StudyPlanEntries
+            .Where(e => e.TopicId == id)
+            .ToListAsync();
+        if (planEntries.Count > 0)
+            _db.StudyPlanEntries.RemoveRange(planEntries);
+
+        await _db.SaveChangesAsync(); // commit phase 1 before Topic cascades to Questions
+
+        // Phase 2: delete topic (DB cascade deletes Questions → AnswerOptions/UserAnswers)
         _db.Topics.Remove(topic);
         await _db.SaveChangesAsync();
         _cache.Remove("admin:sections");
