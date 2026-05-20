@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   ComposableMap,
   Geographies,
@@ -22,15 +23,17 @@ export default function AdvisorWorldMap({
   highlightedIds,
   onMarkerClick,
 }: Props) {
+  const navigate = useNavigate();
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [pinnedId, setPinnedId] = useState<string | null>(null);
 
   const withCoords = universities.filter(
     (u) => u.lat != null && u.lng != null,
   );
-  const hoveredUni = hoveredId
-    ? withCoords.find((u) => u.id === hoveredId)
-    : null;
 
+  // Pinned takes priority over hover for the tooltip
+  const activeId = pinnedId ?? hoveredId;
+  const activeUni = activeId ? withCoords.find((u) => u.id === activeId) : null;
   const hasHighlights = highlightedIds.size > 0;
 
   return (
@@ -106,18 +109,23 @@ export default function AdvisorWorldMap({
             const isHighlighted =
               !hasHighlights || highlightedIds.has(uni.id);
             const isHovered = hoveredId === uni.id;
+            const isPinned = pinnedId === uni.id;
 
-            const fillColor = isHovered
-              ? '#818cf8'
-              : isHighlighted
-                ? '#6366f1'
-                : '#253555';
-            const strokeColor = isHovered
-              ? '#c7d2fe'
-              : isHighlighted
-                ? '#a5b4fc'
-                : '#3b526e';
-            const radius = isHovered ? 10 : isHighlighted ? 7 : 4;
+            const fillColor = isPinned
+              ? '#f59e0b'
+              : isHovered
+                ? '#818cf8'
+                : isHighlighted
+                  ? '#6366f1'
+                  : '#253555';
+            const strokeColor = isPinned
+              ? '#fcd34d'
+              : isHovered
+                ? '#c7d2fe'
+                : isHighlighted
+                  ? '#a5b4fc'
+                  : '#3b526e';
+            const radius = isPinned ? 11 : isHovered ? 10 : isHighlighted ? 7 : 4;
 
             return (
               <Marker
@@ -125,10 +133,17 @@ export default function AdvisorWorldMap({
                 coordinates={[uni.lng!, uni.lat!]}
                 onMouseEnter={() => setHoveredId(uni.id)}
                 onMouseLeave={() => setHoveredId(null)}
-                onClick={() => onMarkerClick?.(uni.id)}
+                onClick={() => {
+                  if (pinnedId === uni.id) {
+                    setPinnedId(null);
+                  } else {
+                    setPinnedId(uni.id);
+                    onMarkerClick?.(uni.id);
+                  }
+                }}
               >
                 {/* Pulse ring for highlighted */}
-                {isHighlighted && !isHovered && hasHighlights && (
+                {isHighlighted && !isHovered && !isPinned && hasHighlights && (
                   <circle
                     r={13}
                     fill="none"
@@ -137,21 +152,31 @@ export default function AdvisorWorldMap({
                     opacity={0.35}
                   />
                 )}
+                {/* Pulse ring for pinned */}
+                {isPinned && (
+                  <circle
+                    r={16}
+                    fill="none"
+                    stroke="#f59e0b"
+                    strokeWidth={1.5}
+                    opacity={0.5}
+                  />
+                )}
                 <circle
                   r={radius}
                   fill={fillColor}
                   stroke={strokeColor}
-                  strokeWidth={isHovered ? 2.5 : 1.5}
+                  strokeWidth={isHovered || isPinned ? 2.5 : 1.5}
                   style={{ cursor: 'pointer', transition: 'r 0.15s, fill 0.15s' }}
                 />
-                {/* Label shown on hover */}
-                {isHovered && (
+                {/* Label shown on hover or pinned */}
+                {(isHovered || isPinned) && (
                   <text
-                    y={-16}
+                    y={-18}
                     textAnchor="middle"
                     style={{
                       fontSize: '10px',
-                      fill: '#e2e8f0',
+                      fill: isPinned ? '#fcd34d' : '#e2e8f0',
                       fontWeight: 600,
                       pointerEvents: 'none',
                       textShadow: '0 1px 3px #000',
@@ -166,50 +191,85 @@ export default function AdvisorWorldMap({
         </ZoomableGroup>
       </ComposableMap>
 
-      {/* Hover tooltip at bottom of map */}
-      {hoveredUni && (
+      {/* Tooltip / Pinned card at bottom of map */}
+      {activeUni && (
         <div
           style={{
             position: 'absolute',
             bottom: '1rem',
             left: '50%',
             transform: 'translateX(-50%)',
-            background: 'rgba(7, 17, 31, 0.92)',
-            border: '1px solid #2d4a6a',
+            background: pinnedId ? 'rgba(7, 17, 31, 0.97)' : 'rgba(7, 17, 31, 0.92)',
+            border: `1px solid ${pinnedId ? '#f59e0b' : '#2d4a6a'}`,
             borderRadius: 10,
             padding: '0.75rem 1.25rem',
             minWidth: 260,
-            maxWidth: 340,
-            pointerEvents: 'none',
+            maxWidth: 360,
+            pointerEvents: pinnedId ? 'auto' : 'none',
             backdropFilter: 'blur(8px)',
             zIndex: 10,
           }}
         >
-          <div style={{ fontWeight: 700, color: '#e2e8f0', fontSize: '0.95rem' }}>
-            {hoveredUni.name}
-          </div>
-          <div style={{ fontSize: '0.82rem', color: '#64748b', marginTop: '0.2rem' }}>
-            {hoveredUni.city}, {hoveredUni.country}
-          </div>
-          <div style={{ fontSize: '0.82rem', color: '#94a3b8', marginTop: '0.15rem' }}>
-            {hoveredUni.exam}
-            {hoveredUni.minScore ? ` · мин. балл ${hoveredUni.minScore}` : ' · балл не указан'}
-            {' · '}
-            {hoveredUni.language}
-          </div>
-          {hoveredUni.specialties.length > 0 && (
-            <div
+          {/* Close button when pinned */}
+          {pinnedId && (
+            <button
+              onClick={() => setPinnedId(null)}
               style={{
-                fontSize: '0.78rem',
-                color: '#818cf8',
-                marginTop: '0.4rem',
+                position: 'absolute',
+                top: '0.4rem',
+                right: '0.5rem',
+                background: 'none',
+                border: 'none',
+                color: '#64748b',
+                cursor: 'pointer',
+                fontSize: '1rem',
+                lineHeight: 1,
+                padding: '0.1rem 0.3rem',
               }}
             >
-              {hoveredUni.specialties.slice(0, 4).join(' · ')}
-              {hoveredUni.specialties.length > 4
-                ? ` +${hoveredUni.specialties.length - 4}`
+              ✕
+            </button>
+          )}
+          <div style={{ fontWeight: 700, color: '#e2e8f0', fontSize: '0.95rem', paddingRight: pinnedId ? '1.5rem' : 0 }}>
+            {activeUni.name}
+          </div>
+          <div style={{ fontSize: '0.82rem', color: '#64748b', marginTop: '0.2rem' }}>
+            {activeUni.city}, {activeUni.country}
+          </div>
+          <div style={{ fontSize: '0.82rem', color: '#94a3b8', marginTop: '0.15rem' }}>
+            {activeUni.exam}
+            {activeUni.minScore ? ` · мин. балл ${activeUni.minScore}` : ' · балл не указан'}
+            {' · '}
+            {activeUni.language}
+          </div>
+          {activeUni.specialties.length > 0 && (
+            <div style={{ fontSize: '0.78rem', color: '#818cf8', marginTop: '0.4rem' }}>
+              {activeUni.specialties.slice(0, 4).join(' · ')}
+              {activeUni.specialties.length > 4
+                ? ` +${activeUni.specialties.length - 4}`
                 : ''}
             </div>
+          )}
+          {/* Open detail page button — only when pinned */}
+          {pinnedId && (
+            <button
+              onClick={() => navigate(`/advisor/university/${activeUni.id}`)}
+              style={{
+                marginTop: '0.75rem',
+                width: '100%',
+                padding: '0.45rem 0.75rem',
+                background: '#f59e0b',
+                color: '#1a1a1a',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontWeight: 700,
+                fontSize: '0.82rem',
+                letterSpacing: '0.02em',
+              }}
+            >
+              Открыть страницу вуза →
+            </button>
           )}
         </div>
       )}

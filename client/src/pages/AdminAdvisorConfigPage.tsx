@@ -367,42 +367,18 @@ function AdminAdvisorConfigPage() {
           ))}
         </div>
         {/* Custom countries not in predefined list */}
-        {config.countries
-          .filter((c) => !WORLD_COUNTRIES.includes(c))
-          .map((c) => (
-            <span
-              key={c}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.3rem',
-                padding: '0.28rem 0.65rem',
-                borderRadius: '999px',
-                background: 'var(--accent-color)',
-                color: '#fff',
-                fontSize: '0.82rem',
-                marginRight: '0.4rem',
-                marginBottom: '0.4rem',
-              }}
-            >
-              {c}
-              <button
-                type="button"
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginTop: '0.4rem' }}>
+          {config.countries
+            .filter((c) => !WORLD_COUNTRIES.includes(c))
+            .map((c) => (
+              <TagBtn
+                key={c}
+                label={c}
+                active={true}
                 onClick={() => toggleCountry(c)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#fff',
-                  cursor: 'pointer',
-                  padding: 0,
-                  fontSize: '1rem',
-                  lineHeight: 1,
-                }}
-              >
-                ×
-              </button>
-            </span>
-          ))}
+              />
+            ))}
+        </div>
         <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
           <input
             className="form-input"
@@ -474,7 +450,11 @@ function AdminAdvisorConfigPage() {
                 className="btn"
                 type="button"
                 style={{ color: 'var(--error-color)', borderColor: 'var(--error-color)' }}
-                onClick={() => deleteCategory(idx)}
+                onClick={() => {
+                  if (window.confirm(`Удалить категорию «${cat.label}»?`)) {
+                    deleteCategory(idx);
+                  }
+                }}
               >
                 Удалить
               </button>
@@ -760,6 +740,22 @@ function AdminAdvisorConfigPage() {
                   />
                 </div>
               </div>
+
+              {/* Map preview */}
+              {editUni.lat != null && editUni.lng != null && (
+                <div style={{ marginBottom: '0.75rem' }}>
+                  <p style={{ margin: '0 0 0.4rem', fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+                    Предпросмотр на карте
+                  </p>
+                  <iframe
+                    key={`${editUni.lat},${editUni.lng}`}
+                    title="map-preview"
+                    src={`https://www.openstreetmap.org/export/embed.html?bbox=${editUni.lng - 0.5}%2C${editUni.lat - 0.3}%2C${editUni.lng + 0.5}%2C${editUni.lat + 0.3}&layer=mapnik&marker=${editUni.lat}%2C${editUni.lng}`}
+                    style={{ width: '100%', height: 240, border: '1px solid var(--border-color)', borderRadius: '8px' }}
+                    loading="lazy"
+                  />
+                </div>
+              )}
 
               {/* Specialties */}
               <div className="form-group" style={{ marginBottom: '0.75rem' }}>
