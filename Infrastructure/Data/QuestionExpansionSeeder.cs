@@ -28,12 +28,16 @@ public class QuestionExpansionSeeder
         var topics = await _context.Topics.ToDictionaryAsync(t => t.Name, t => t);
         var questions = new List<Question>();
 
+        // Skip a topic block gracefully if the topic was deleted from the DB
+        IEnumerable<Question> Seed(string name, QuestionDef[] defs) =>
+            topics.TryGetValue(name, out var t) ? MakeQuestions(t, defs) : [];
+
         // ════════════════════════════════════════════════════
         //  SAT READING & WRITING
         // ════════════════════════════════════════════════════
 
         // ── Main Idea & Summary (3 new) ─────────────────
-        questions.AddRange(MakeQuestions(topics["Main Idea & Summary"], new[]
+        questions.AddRange(Seed("Main Idea & Summary", new[]
         {
             Q("The passage primarily discusses the relationship between urban planning and public health. Which of the following best states the main idea?",
               new[] { ("Urban planning can significantly impact public health outcomes", true), ("Cities are unhealthy places to live", false), ("Public health funding is insufficient", false), ("Architecture determines life expectancy", false) },
@@ -52,7 +56,7 @@ public class QuestionExpansionSeeder
         }));
 
         // ── Grammar & Sentence Structure (3 new) ────────
-        questions.AddRange(MakeQuestions(topics["Grammar & Sentence Structure"], new[]
+        questions.AddRange(Seed("Grammar & Sentence Structure", new[]
         {
             Q("Select the version that best maintains parallel structure: 'The study revealed that exercise improves mood, _____ cognitive function, and longevity.'",
               new[] { ("enhances", true), ("it enhances", false), ("enhancing", false), ("which enhances", false) },
@@ -71,7 +75,7 @@ public class QuestionExpansionSeeder
         }));
 
         // ── Vocabulary in Context (4 new) ────────────────
-        questions.AddRange(MakeQuestions(topics["Vocabulary in Context"], new[]
+        questions.AddRange(Seed("Vocabulary in Context", new[]
         {
             Q("In the sentence 'The diplomat's remarks were deliberately ambiguous to avoid committing to either side,' what does 'ambiguous' most nearly mean?",
               new[] { ("Hostile", false), ("Open to multiple interpretations", true), ("Eloquent", false), ("Brief", false) },
@@ -99,7 +103,7 @@ public class QuestionExpansionSeeder
         // ════════════════════════════════════════════════════
 
         // ── Linear Equations (4 new) ─────────────────────
-        questions.AddRange(MakeQuestions(topics["Linear Equations"], new[]
+        questions.AddRange(Seed("Linear Equations", new[]
         {
             Q("If 3(x − 2) = 12, what is the value of x?",
               new[] { ("4", false), ("6", true), ("2", false), ("8", false) },
@@ -123,7 +127,7 @@ public class QuestionExpansionSeeder
         }));
 
         // ── Geometry (4 new) ─────────────────────────────
-        questions.AddRange(MakeQuestions(topics["Geometry"], new[]
+        questions.AddRange(Seed("Geometry", new[]
         {
             Q("A rectangle has a length of 12 cm and a width of 5 cm. What is its perimeter?",
               new[] { ("34 cm", true), ("60 cm", false), ("17 cm", false), ("24 cm", false) },
@@ -147,7 +151,7 @@ public class QuestionExpansionSeeder
         }));
 
         // ── Data Analysis (4 new) ────────────────────────
-        questions.AddRange(MakeQuestions(topics["Data Analysis"], new[]
+        questions.AddRange(Seed("Data Analysis", new[]
         {
             Q("The mean of five numbers is 20. If four of the numbers are 15, 18, 22, and 25, what is the fifth number?",
               new[] { ("20", true), ("18", false), ("22", false), ("15", false) },
@@ -171,7 +175,7 @@ public class QuestionExpansionSeeder
         }));
 
         // ── Quadratic Equations (3 new) ──────────────────
-        questions.AddRange(MakeQuestions(topics["Quadratic Equations"], new[]
+        questions.AddRange(Seed("Quadratic Equations", new[]
         {
             Q("What are the solutions of x² − 5x + 6 = 0?",
               new[] { ("x = 2 and x = 3", true), ("x = −2 and x = −3", false), ("x = 1 and x = 6", false), ("x = −1 and x = −6", false) },
@@ -194,7 +198,7 @@ public class QuestionExpansionSeeder
         // ════════════════════════════════════════════════════
 
         // ── Academic Reading (4 new) ─────────────────────
-        questions.AddRange(MakeQuestions(topics["Academic Reading"], new[]
+        questions.AddRange(Seed("Academic Reading", new[]
         {
             Q("According to the passage about photosynthesis, which factor does the author identify as the primary limitation on plant growth in tropical forests?",
               new[] { ("Water availability", false), ("Light penetration through canopy layers", true), ("Soil nutrient content", false), ("Temperature fluctuations", false) },
@@ -218,7 +222,7 @@ public class QuestionExpansionSeeder
         }));
 
         // ── Lecture Comprehension (4 new) ────────────────
-        questions.AddRange(MakeQuestions(topics["Lecture Comprehension"], new[]
+        questions.AddRange(Seed("Lecture Comprehension", new[]
         {
             Q("In the lecture about plate tectonics, the professor explains that mid-ocean ridges form because:",
               new[] { ("Plates collide and push upward", false), ("Magma rises through divergent plate boundaries", true), ("Ocean currents erode the seafloor", false), ("Earthquakes create underwater mountains", false) },
@@ -242,7 +246,7 @@ public class QuestionExpansionSeeder
         }));
 
         // ── Conversation Understanding (5 new — previously empty!) ──
-        questions.AddRange(MakeQuestions(topics["Conversation Understanding"], new[]
+        questions.AddRange(Seed("Conversation Understanding", new[]
         {
             Q("Why does the student go to the professor's office?",
               new[] { ("To submit a late assignment", false), ("To ask for clarification on the research paper requirements", true), ("To complain about a grade", false), ("To request a letter of recommendation", false) },
@@ -271,7 +275,7 @@ public class QuestionExpansionSeeder
         }));
 
         // ── Independent Speaking (5 new — previously empty!) ──
-        questions.AddRange(MakeQuestions(topics["Independent Speaking"], new[]
+        questions.AddRange(Seed("Independent Speaking", new[]
         {
             Q("Which of the following is the BEST approach for structuring an independent speaking response about 'the most important quality of a leader'?",
               new[] { ("List as many qualities as possible", false), ("State your opinion, give a specific reason, and provide a concrete example", true), ("Describe a famous leader without stating your opinion", false), ("Repeat the question and speak slowly to fill time", false) },
@@ -300,7 +304,7 @@ public class QuestionExpansionSeeder
         }));
 
         // ── Integrated Writing (5 new — previously empty!) ──
-        questions.AddRange(MakeQuestions(topics["Integrated Writing"], new[]
+        questions.AddRange(Seed("Integrated Writing", new[]
         {
             Q("In an integrated writing task, the reading passage supports renewable energy. The lecture contradicts each point. What is the BEST way to organize the response?",
               new[] { ("Summarize the reading, then summarize the lecture separately", false), ("For each reading point, present the corresponding lecture counterargument", true), ("Write your own opinion about renewable energy", false), ("Only summarize the lecture since it is more recent", false) },
@@ -333,7 +337,7 @@ public class QuestionExpansionSeeder
         // ════════════════════════════════════════════════════
 
         // ── Algebra & Functions (5 new) ──────────────────
-        questions.AddRange(MakeQuestions(topics["Algebra & Functions"], new[]
+        questions.AddRange(Seed("Algebra & Functions", new[]
         {
             Q("If f(x) = 3x − 7, what is f(4)?",
               new[] { ("5", true), ("12", false), ("19", false), ("−4", false) },
@@ -362,7 +366,7 @@ public class QuestionExpansionSeeder
         }));
 
         // ── Problem Solving (4 new) ──────────────────────
-        questions.AddRange(MakeQuestions(topics["Problem Solving"], new[]
+        questions.AddRange(Seed("Problem Solving", new[]
         {
             Q("A train travels at 60 km/h for 2.5 hours. How far does it travel?",
               new[] { ("120 km", false), ("150 km", true), ("125 km", false), ("180 km", false) },
@@ -386,7 +390,7 @@ public class QuestionExpansionSeeder
         }));
 
         // ── Logical Reasoning (5 new) ────────────────────
-        questions.AddRange(MakeQuestions(topics["Logical Reasoning"], new[]
+        questions.AddRange(Seed("Logical Reasoning", new[]
         {
             Q("All mammals are warm-blooded. All dogs are mammals. Therefore:",
               new[] { ("All warm-blooded animals are dogs", false), ("All dogs are warm-blooded", true), ("Some mammals are dogs", false), ("No dogs are cold-blooded", false) },
@@ -415,7 +419,7 @@ public class QuestionExpansionSeeder
         }));
 
         // ── Argument Analysis (5 new) ────────────────────
-        questions.AddRange(MakeQuestions(topics["Argument Analysis"], new[]
+        questions.AddRange(Seed("Argument Analysis", new[]
         {
             Q("'We should invest in space exploration because it drives technological innovation.' What unstated assumption does this argument rely on?",
               new[] { ("Space exploration is dangerous", false), ("Technological innovation is valuable and desirable", true), ("Space exploration is inexpensive", false), ("No other activities drive innovation", false) },
