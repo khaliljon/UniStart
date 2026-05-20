@@ -23,28 +23,52 @@ public class ImageUploadService : IImageUploadService, IDisposable
     };
     private const long MaxBytes = 5 * 1024 * 1024; // 5 MB
 
-    private readonly AmazonS3Client _s3;
+    private readonly string _endpoint;
+    private readonly string _keyId;
+    private readonly string _secret;
     private readonly string _bucket;
     private readonly string _publicUrl;
+
+    private AmazonS3Client? _s3;
+    private readonly object _lock = new();
 
     public ImageUploadService(IConfiguration configuration)
     {
         var section = configuration.GetSection("R2");
-        var endpoint  = section["Endpoint"] ?? throw new InvalidOperationException("R2:Endpoint not configured");
-        var keyId     = section["AccessKeyId"] ?? throw new InvalidOperationException("R2:AccessKeyId not configured");
-        var secret    = section["SecretAccessKey"] ?? throw new InvalidOperationException("R2:SecretAccessKey not configured");
-        _bucket    = section["BucketName"] ?? throw new InvalidOperationException("R2:BucketName not configured");
+        _endpoint  = section["Endpoint"] ?? "";
+        _keyId     = section["AccessKeyId"] ?? "";
+        _secret    = section["SecretAccessKey"] ?? "";
+        _bucket    = section["BucketName"] ?? "";
         _publicUrl = (section["PublicUrl"] ?? "").TrimEnd('/');
+    }
 
-        var credentials = new BasicAWSCredentials(keyId, secret);
-        var config = new AmazonS3Config
+    private AmazonS3Client GetClient()
+    {
+        if (_s3 is not null) return _s3;
+        lock (_lock)
         {
-            ServiceURL         = endpoint,
-            ForcePathStyle     = true,
-            SignatureVersion   = "4",
-            AuthenticationRegion = "auto",
-        };
-        _s3 = new AmazonS3Client(credentials, config);
+            if (_s3 is not null) return _s3;
+            if (string.IsNullOrWhiteSpace(_keyId))
+                throw new InvalidOperationException("R2:AccessKeyId is not configured. Set R2__AccessKeyId environment variable.");
+            if (string.IsNullOrWhiteSpace(_secret))
+                throw new InvalidOperationException("R2:SecretAccessKey is not configured. Set R2__SecretAccessKey environment variable.");
+            if (string.IsNullOrWhiteSpace(_endpoint))
+                throw new InvalidOperationException("R2:Endpoint is not configured.");
+            if (string.IsNullOrWhiteSpace(_bucket))
+                throw new InvalidOperationException("R2:BucketName is not configured.");
+
+            var credentials = new BasicAWSCredentials(_keyId, _secret);
+            var config = new AmazonS3Config
+            {
+                ServiceURL           = _endpoint,
+                ForcePathStyle       = true,
+                SignatureVersion      = "4",
+                AuthenticationRegion = "auto",
+                UseChunkEncoding     = false,
+            };
+            _s3 = new AmazonS3Client(credentials, config);
+            return _s3;
+        }
     }
 
     public async Task<string> UploadAsync(IFormFile file, CancellationToken ct = default)
@@ -59,7 +83,9 @@ public class ImageUploadService : IImageUploadService, IDisposable
             throw new ArgumentException("File exceeds maximum allowed size of 5 MB.");
 
         if (string.IsNullOrWhiteSpace(_publicUrl))
-            throw new InvalidOperationException("R2:PublicUrl is not configured. Enable public access on your R2 bucket and set the URL in configuration.");
+            throw new InvalidOperationException("R2:PublicUrl is not configured. Set R2__PublicUrl environment variable.");
+
+        var client = GetClient();
 
         var ext = _mimeToExt.TryGetValue(file.ContentType, out var e) ? e : ".jpg";
         var key = $"questions/{Guid.NewGuid():N}{ext}";
@@ -73,10 +99,20 @@ public class ImageUploadService : IImageUploadService, IDisposable
             ContentType = file.ContentType,
         };
 
-        await _s3.PutObjectAsync(request, ct);
+        try
+        {
+            await client.PutObjectAsync(request, ct);
+        }
+        catch (Amazon.S3.AmazonS3Exception ex)
+        {
+            throw new InvalidOperationException($"R2 upload failed ({(int)ex.StatusCode}): {ex.Message}", ex);
+        }
 
         return $"{_publicUrl}/{key}";
     }
 
-    public void Dispose() => _s3.Dispose();
+    public void Dispose()
+    {
+        lock (_lock) { _s3?.Dispose(); _s3 = null; }
+    }
 }
