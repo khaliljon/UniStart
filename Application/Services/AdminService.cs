@@ -792,7 +792,10 @@ public class AdminService : IAdminService
         if (topic == null) return false;
 
         // Phase 1: clear Restrict-FK rows that block Topic→Question cascade
+        // IgnoreQueryFilters to include soft-deleted questions (IsDeleted=true) —
+        // they still exist in the DB and their FK dependents must be cleared too.
         var questionIds = await _db.Questions
+            .IgnoreQueryFilters()
             .Where(q => q.TopicId == id)
             .Select(q => q.Id)
             .ToListAsync();
@@ -812,6 +815,13 @@ public class AdminService : IAdminService
                 .ToListAsync();
             if (assignAnswers.Count > 0)
                 _db.AssignmentAnswers.RemoveRange(assignAnswers);
+
+            // UserAnswer.AnswerOptionId is Restrict on AnswerOption (AnswerOption cascades from Question)
+            var userAnswers = await _db.UserAnswers
+                .Where(a => questionIds.Contains(a.QuestionId))
+                .ToListAsync();
+            if (userAnswers.Count > 0)
+                _db.UserAnswers.RemoveRange(userAnswers);
         }
 
         // StudyPlanEntry.TopicId is Restrict
@@ -925,7 +935,9 @@ public class AdminService : IAdminService
             var topicIds = section.Topics.Select(t => t.Id).ToList();
 
             // Load questionIds — needed to clear Restrict-FK rows before Topics cascade to Questions
+            // IgnoreQueryFilters to include soft-deleted questions that still exist in the DB.
             var questionIds = await _db.Questions
+                .IgnoreQueryFilters()
                 .Where(q => topicIds.Contains(q.TopicId))
                 .Select(q => q.Id)
                 .ToListAsync();
@@ -945,6 +957,13 @@ public class AdminService : IAdminService
                     .ToListAsync();
                 if (assignAnswers.Count > 0)
                     _db.AssignmentAnswers.RemoveRange(assignAnswers);
+
+                // UserAnswer.AnswerOptionId is Restrict on AnswerOption (AnswerOption cascades from Question)
+                var userAnswers = await _db.UserAnswers
+                    .Where(a => questionIds.Contains(a.QuestionId))
+                    .ToListAsync();
+                if (userAnswers.Count > 0)
+                    _db.UserAnswers.RemoveRange(userAnswers);
             }
 
             // StudyPlanEntry.TopicId is Restrict
@@ -1025,7 +1044,9 @@ public class AdminService : IAdminService
         if (topicIds.Count > 0)
         {
             // Load questionIds to clear per-question Restrict rows
+            // IgnoreQueryFilters to include soft-deleted questions that still exist in the DB.
             var questionIds = await _db.Questions
+                .IgnoreQueryFilters()
                 .Where(q => topicIds.Contains(q.TopicId))
                 .Select(q => q.Id)
                 .ToListAsync();
@@ -1045,6 +1066,13 @@ public class AdminService : IAdminService
                     .ToListAsync();
                 if (assignAnswers.Count > 0)
                     _db.AssignmentAnswers.RemoveRange(assignAnswers);
+
+                // UserAnswer.AnswerOptionId is Restrict on AnswerOption (AnswerOption cascades from Question)
+                var userAnswers = await _db.UserAnswers
+                    .Where(a => questionIds.Contains(a.QuestionId))
+                    .ToListAsync();
+                if (userAnswers.Count > 0)
+                    _db.UserAnswers.RemoveRange(userAnswers);
             }
 
             // StudyPlanEntry.TopicId is Restrict
