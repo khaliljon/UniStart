@@ -664,6 +664,8 @@ function TestPage() {
 
         <p className="question-text">{currentQuestion.text}</p>
 
+        {currentQuestion.imageUrl && <img src={currentQuestion.imageUrl} alt="question" style={{ maxWidth: "100%", borderRadius: "8px", margin: "12px 0" }} />}
+
         <div className="options-list">
           {currentQuestion.options.map((option) => (
             <button
