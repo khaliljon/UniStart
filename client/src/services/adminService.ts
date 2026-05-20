@@ -23,6 +23,7 @@ const adminService = {
     text: string;
     difficulty: string;
     explanation?: string;
+    imageUrl?: string;
     difficultyParam?: number;
     discriminationParam?: number;
     guessParam?: number;
@@ -34,6 +35,7 @@ const adminService = {
     text?: string;
     difficulty?: string;
     explanation?: string;
+    imageUrl?: string;
     difficultyParam?: number;
     discriminationParam?: number;
     guessParam?: number;

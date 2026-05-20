@@ -160,6 +160,7 @@ export const tutorService = {
     text: string;
     difficulty: string;
     explanation?: string;
+    imageUrl?: string;
     answerOptions: { text: string; isCorrect: boolean }[];
   }): Promise<TutorQuestionDetail> {
     const response = await api.post<TutorQuestionDetail>('/tutors/questions', data);
@@ -171,6 +172,7 @@ export const tutorService = {
     text?: string;
     difficulty?: string;
     explanation?: string;
+    imageUrl?: string;
     answerOptions?: { text: string; isCorrect: boolean }[];
   }): Promise<TutorQuestionDetail> {
     const response = await api.put<TutorQuestionDetail>(`/tutors/questions/${questionId}`, data);

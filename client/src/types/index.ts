@@ -476,6 +476,7 @@ export interface QuestionDetail {
   text: string;
   difficulty: string;
   explanation: string | null;
+  imageUrl: string | null;
   difficultyParam: number;
   discriminationParam: number;
   guessParam: number;
@@ -1278,6 +1279,7 @@ export interface TutorQuestionDetail {
   text: string;
   difficulty: string;
   explanation: string | null;
+  imageUrl: string | null;
   createdAt: string;
   answerOptions: AdminAnswerOption[];
 }
