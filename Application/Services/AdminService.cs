@@ -881,18 +881,41 @@ public class AdminService : IAdminService
 
         if (section == null) return false;
 
-        // Section→Topics uses SetNull, so explicitly delete topics first.
-        // Topic→Questions uses Cascade, so deleting a topic hard-deletes its questions.
         if (section.Topics?.Any() == true)
         {
             var topicIds = section.Topics.Select(t => t.Id).ToList();
 
-            // StudyPlanEntry → Topic is Restrict — must delete entries before topics
+            // Load questionIds — needed to clear Restrict-FK rows before Topics cascade to Questions
+            var questionIds = await _db.Questions
+                .Where(q => topicIds.Contains(q.TopicId))
+                .Select(q => q.Id)
+                .ToListAsync();
+
+            if (questionIds.Count > 0)
+            {
+                // MockExamAnswer.QuestionId is Restrict
+                var mockAnswers = await _db.MockExamAnswers
+                    .Where(a => questionIds.Contains(a.QuestionId))
+                    .ToListAsync();
+                if (mockAnswers.Count > 0)
+                    _db.MockExamAnswers.RemoveRange(mockAnswers);
+
+                // AssignmentAnswer.QuestionId is Restrict (also SelectedOptionId Restrict on AnswerOption)
+                var assignAnswers = await _db.AssignmentAnswers
+                    .Where(a => questionIds.Contains(a.QuestionId))
+                    .ToListAsync();
+                if (assignAnswers.Count > 0)
+                    _db.AssignmentAnswers.RemoveRange(assignAnswers);
+            }
+
+            // StudyPlanEntry.TopicId is Restrict
             var planEntries = await _db.StudyPlanEntries
                 .Where(e => topicIds.Contains(e.TopicId))
                 .ToListAsync();
             if (planEntries.Count > 0)
                 _db.StudyPlanEntries.RemoveRange(planEntries);
+
+            await _db.SaveChangesAsync(); // commit phase 1 before Topics cascade-delete Questions
 
             _db.Topics.RemoveRange(section.Topics);
         }
@@ -950,13 +973,35 @@ public class AdminService : IAdminService
             .ToList();
 
         // ── Phase 1: delete all Restrict-FK dependents and commit ─────────────────
-        // This MUST be a separate SaveChangesAsync before Phase 2, because:
-        // Phase 2 deletes Topics → DB cascades to Questions → MockExamAnswer.QuestionId
-        // has Restrict, so MockExams (→Attempts→Answers) must be gone first.
+        // Phase 2 deletes Topics → DB cascades Questions; anything with a Restrict FK
+        // on QuestionId or TopicId must be explicitly deleted here first.
 
-        // StudyPlanEntry → Topic is Restrict
         if (topicIds.Count > 0)
         {
+            // Load questionIds to clear per-question Restrict rows
+            var questionIds = await _db.Questions
+                .Where(q => topicIds.Contains(q.TopicId))
+                .Select(q => q.Id)
+                .ToListAsync();
+
+            if (questionIds.Count > 0)
+            {
+                // MockExamAnswer.QuestionId is Restrict (catches cross-exam answers to these questions)
+                var mockAnswers = await _db.MockExamAnswers
+                    .Where(a => questionIds.Contains(a.QuestionId))
+                    .ToListAsync();
+                if (mockAnswers.Count > 0)
+                    _db.MockExamAnswers.RemoveRange(mockAnswers);
+
+                // AssignmentAnswer.QuestionId is Restrict (also SelectedOptionId Restrict on AnswerOption)
+                var assignAnswers = await _db.AssignmentAnswers
+                    .Where(a => questionIds.Contains(a.QuestionId))
+                    .ToListAsync();
+                if (assignAnswers.Count > 0)
+                    _db.AssignmentAnswers.RemoveRange(assignAnswers);
+            }
+
+            // StudyPlanEntry.TopicId is Restrict
             var planEntries = await _db.StudyPlanEntries
                 .Where(e => topicIds.Contains(e.TopicId))
                 .ToListAsync();
