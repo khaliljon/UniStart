@@ -40,6 +40,12 @@ public interface IAdminService
     Task<AdminSectionDto?> UpdateSectionAsync(int id, UpdateSectionDto dto);
     Task<bool> DeleteSectionAsync(int id);
 
+    // Exam Types
+    Task<List<ExamTypeDto>> GetExamTypesAsync();
+    Task<ExamTypeDto> CreateExamTypeAsync(CreateExamTypeDto dto);
+    Task<ExamTypeDto?> UpdateExamTypeAsync(string code, UpdateExamTypeDto dto);
+    Task<bool> DeleteExamTypeAsync(string code);
+
     // Soft Delete restore (OP-9)
     Task<bool> RestoreQuestionAsync(int id);
     Task<bool> RestoreUserAsync(int id);

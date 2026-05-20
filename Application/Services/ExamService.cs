@@ -24,7 +24,7 @@ public class ExamService : IExamService
         {
             entry.AbsoluteExpirationRelativeToNow = CacheTtl;
             var exams = await _context.ExamTypes
-                .Where(e => e.Code == "SAT" || e.Code == "NUET")
+                .OrderBy(e => e.Code)
                 .ToListAsync();
             return exams.Select(e => new ExamTypeDto(e.Code, e.Name)).ToList();
         }) ?? [];

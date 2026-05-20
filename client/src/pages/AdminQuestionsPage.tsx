@@ -14,7 +14,7 @@ const DIFF_COLORS: Record<string, string> = {
   Hard: 'var(--error-color)',
 };
 
-type ViewMode = 'table' | 'topics' | 'sections';
+type ViewMode = 'table' | 'topics' | 'sections' | 'examTypes';
 type ModalMode = 'view' | 'edit' | 'create';
 
 const emptyForm = {
@@ -92,6 +92,14 @@ function AdminQuestionsPage() {
 
   // Bulk selection (table view)
   const [selectedQuestions, setSelectedQuestions] = useState<Set<number>>(new Set());
+  const [selectionMode, setSelectionMode] = useState(false);
+
+  // Exam types CRUD
+  const [examTypes, setExamTypes] = useState<{ code: string; name: string }[]>([]);
+  const [examTypesLoading, setExamTypesLoading] = useState(false);
+  const [showExamTypeForm, setShowExamTypeForm] = useState(false);
+  const [examTypeForm, setExamTypeForm] = useState({ code: '', name: '' });
+  const [editingExamTypeCode, setEditingExamTypeCode] = useState<string | null>(null);
 
   // ─── Load ────────────────────
 
@@ -125,8 +133,44 @@ function AdminQuestionsPage() {
     } catch { /* ignore */ }
   };
 
+  const loadExamTypes = async () => {
+    setExamTypesLoading(true);
+    try { setExamTypes(await adminService.getExamTypes()); }
+    catch { setError(t.admin.common.loadError); }
+    finally { setExamTypesLoading(false); }
+  };
+
+  const saveExamType = async () => {
+    if (!examTypeForm.name.trim()) { setError('Введите название'); return; }
+    try {
+      if (editingExamTypeCode) {
+        await adminService.updateExamType(editingExamTypeCode, { name: examTypeForm.name });
+        setSuccess('Тип экзамена обновлён');
+      } else {
+        if (!examTypeForm.code.trim()) { setError('Введите код (напр. SAT)'); return; }
+        await adminService.createExamType({ code: examTypeForm.code.trim().toUpperCase(), name: examTypeForm.name });
+        setSuccess('Тип экзамена создан');
+      }
+      setShowExamTypeForm(false);
+      setEditingExamTypeCode(null);
+      setExamTypeForm({ code: '', name: '' });
+      loadExamTypes();
+      loadSectionsAndSkills();
+    } catch { setError(t.admin.common.saveError || 'Ошибка сохранения'); }
+  };
+
+  const handleDeleteExamType = async (code: string) => {
+    if (!confirm(`Удалить тип экзамена "${code}"? Все секции, темы и вопросы этого типа будут удалены.`)) return;
+    try {
+      await adminService.deleteExamType(code);
+      setSuccess(`Тип экзамена ${code} удалён`);
+      loadExamTypes();
+      loadSectionsAndSkills();
+    } catch { setError(t.admin.common.deleteError); }
+  };
+
   useEffect(() => { loadQuestions(); }, [loadQuestions]);
-  useEffect(() => { loadTopics(); loadSectionsAndSkills(); }, []);
+  useEffect(() => { loadTopics(); loadSectionsAndSkills(); loadExamTypes(); }, []);
 
   // Load topic view questions independently
   const loadTopicViewQuestions = useCallback(async () => {
@@ -141,7 +185,9 @@ function AdminQuestionsPage() {
 
   useEffect(() => {
     if (viewMode === 'topics') loadTopicViewQuestions();
+    if (viewMode === 'examTypes') loadExamTypes();
     setSelectedQuestions(new Set());
+    setSelectionMode(false);
   }, [viewMode, loadTopicViewQuestions]);
 
   // ─── Inline Topic Rename ─────
@@ -373,6 +419,7 @@ function AdminQuestionsPage() {
     try {
       await Promise.all(ids.map(id => adminService.deleteQuestion(id)));
       setSelectedQuestions(new Set());
+      setSelectionMode(false);
       setSuccess(t.admin.questions.questionDeleted);
       loadQuestions();
       loadTopics();
@@ -558,6 +605,15 @@ function AdminQuestionsPage() {
               color: viewMode === 'sections' ? '#fff' : 'var(--text-secondary)',
             }}
           >{t.admin.questions.sectionsView}</button>
+          <button
+            onClick={() => setViewMode('examTypes')}
+            style={{
+              padding: '0.4rem 0.75rem', border: 'none', cursor: 'pointer', fontSize: '0.85rem',
+              borderLeft: '1px solid var(--border-color)',
+              background: viewMode === 'examTypes' ? 'var(--primary-color)' : 'var(--card-background)',
+              color: viewMode === 'examTypes' ? '#fff' : 'var(--text-secondary)',
+            }}
+          >Типы экзаменов</button>
         </div>
       </div>
 
@@ -566,8 +622,7 @@ function AdminQuestionsPage() {
         <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', flexWrap: 'wrap', alignItems: 'center' }}>
           <select value={filterExam} onChange={e => { setFilterExam(e.target.value); setFilterSection(''); setPage(1); }} style={{ padding: '0.5rem' }}>
             <option value="">{t.admin.common.allExams}</option>
-            <option value="SAT">SAT</option>
-            <option value="NUET">NUET</option>
+            {examTypes.map(et => <option key={et.code} value={et.code}>{et.code}</option>)}
           </select>
           <select value={filterSection} onChange={e => { setFilterSection(e.target.value); setPage(1); }} style={{ padding: '0.5rem' }}>
             <option value="">{t.admin.common.allSections}</option>
@@ -596,8 +651,7 @@ function AdminQuestionsPage() {
         <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', flexWrap: 'wrap', alignItems: 'center' }}>
           <select value={topicFilterExam} onChange={e => { setTopicFilterExam(e.target.value); setTopicFilterSection(''); setTopicPage(1); }} style={{ padding: '0.5rem' }}>
             <option value="">{t.admin.common.allExams}</option>
-            <option value="SAT">SAT</option>
-            <option value="NUET">NUET</option>
+            {examTypes.map(et => <option key={et.code} value={et.code}>{et.code}</option>)}
           </select>
           <select value={topicFilterSection} onChange={e => { setTopicFilterSection(e.target.value); setTopicPage(1); }} style={{ padding: '0.5rem' }}>
             <option value="">{t.admin.common.allSections}</option>
@@ -618,19 +672,24 @@ function AdminQuestionsPage() {
       {/* ─── TABLE VIEW ─── */}
       {viewMode === 'table' && (
         <div style={{ overflowX: 'auto' }}>
-          {selectedQuestions.size > 0 && (
+          {selectionMode && selectedQuestions.size > 0 && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.5rem 0.75rem', marginBottom: '0.5rem', background: 'var(--primary-color)', borderRadius: '8px', color: '#fff', fontSize: '0.85rem' }}>
               <span>Выбрано: {selectedQuestions.size}</span>
               <button className="btn" style={{ fontSize: '0.8rem', padding: '0.2rem 0.6rem', background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.5)', color: '#fff', cursor: 'pointer' }} onClick={bulkDeleteQuestions}>Удалить выбранные</button>
-              <button style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontSize: '1rem' }} onClick={() => setSelectedQuestions(new Set())}>✕</button>
+              <button style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontSize: '1rem' }} onClick={() => { setSelectedQuestions(new Set()); setSelectionMode(false); }}>✕</button>
+            </div>
+          )}
+          {!selectionMode && (
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.5rem' }}>
+              <button className="btn btn-outline" style={{ fontSize: '0.85rem' }} onClick={() => setSelectionMode(true)}>Выбрать несколько</button>
             </div>
           )}
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
             <thead>
               <tr style={{ borderBottom: '2px solid var(--border-color)', textAlign: 'left' }}>
-                <th style={{ padding: '0.5rem', width: '2rem' }}>
+                {selectionMode && <th style={{ padding: '0.5rem', width: '2rem' }}>
                   <input type="checkbox" checked={questions.length > 0 && questions.every(q => selectedQuestions.has(q.id))} onChange={e => setSelectedQuestions(e.target.checked ? new Set(questions.map(q => q.id)) : new Set())} />
-                </th>
+                </th>}
                 <th style={thStyle}>ID</th>
                 <th style={thStyle}>{t.admin.questions.examSection}</th>
                 <th style={thStyle}>{t.admin.questions.topicName}</th>
@@ -649,7 +708,7 @@ function AdminQuestionsPage() {
                   onMouseLeave={e => e.currentTarget.style.background = ''}
                 >
                   <td style={{ ...tdStyle, width: '2rem' }} onClick={e => e.stopPropagation()}>
-                    <input type="checkbox" checked={selectedQuestions.has(q.id)} onChange={e => { e.stopPropagation(); setSelectedQuestions(prev => { const s = new Set(prev); e.target.checked ? s.add(q.id) : s.delete(q.id); return s; }); }} />
+                    {selectionMode && <input type="checkbox" checked={selectedQuestions.has(q.id)} onChange={e => { e.stopPropagation(); setSelectedQuestions(prev => { const s = new Set(prev); e.target.checked ? s.add(q.id) : s.delete(q.id); return s; }); }} />}
                   </td>
                   <td style={tdStyle}><span style={{ color: 'var(--text-muted, var(--text-secondary))' }}>#{q.id}</span></td>
                   <td style={tdStyle}>
@@ -802,8 +861,7 @@ function AdminQuestionsPage() {
           <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', flexWrap: 'wrap', alignItems: 'center' }}>
             <select value={sectionFilterExam} onChange={e => { setSectionFilterExam(e.target.value); setSectionPage(1); }} style={{ padding: '0.5rem' }}>
               <option value="">{t.admin.common.allExams}</option>
-              <option value="SAT">SAT</option>
-              <option value="NUET">NUET</option>
+              {examTypes.map(et => <option key={et.code} value={et.code}>{et.code}</option>)}
             </select>
           </div>
           {(() => {
@@ -914,6 +972,61 @@ function AdminQuestionsPage() {
             );
           })()}
         </>
+      )}
+
+      {/* ═══ EXAM TYPES VIEW ═══ */}
+      {viewMode === 'examTypes' && (
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{examTypes.length} типов экзаменов</span>
+            <button className="btn btn-primary" onClick={() => { setEditingExamTypeCode(null); setExamTypeForm({ code: '', name: '' }); setShowExamTypeForm(true); }}>
+              + Тип экзамена
+            </button>
+          </div>
+
+          {showExamTypeForm && (
+            <div className="card" style={{ marginBottom: '1rem', padding: '1.5rem' }}>
+              <h3 style={{ margin: '0 0 1rem' }}>{editingExamTypeCode ? 'Редактировать тип' : 'Новый тип экзамена'}</h3>
+              {!editingExamTypeCode && (
+                <div style={{ marginBottom: '0.75rem' }}>
+                  <div style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>Код (напр. SAT, NUET) *</div>
+                  <input className="form-input" value={examTypeForm.code} onChange={e => setExamTypeForm(p => ({ ...p, code: e.target.value }))} placeholder="SAT" style={{ textTransform: 'uppercase' }} />
+                </div>
+              )}
+              <div style={{ marginBottom: '0.75rem' }}>
+                <div style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>Название *</div>
+                <input className="form-input" value={examTypeForm.name} onChange={e => setExamTypeForm(p => ({ ...p, name: e.target.value }))} placeholder="Scholastic Assessment Test" />
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button className="btn btn-primary" onClick={saveExamType}>{editingExamTypeCode ? 'Сохранить' : 'Создать'}</button>
+                <button className="btn btn-outline" onClick={() => { setShowExamTypeForm(false); setEditingExamTypeCode(null); }}>Отмена</button>
+              </div>
+            </div>
+          )}
+
+          {examTypesLoading ? (
+            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>{t.admin.common.loading}</div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {examTypes.map(et => (
+                <div key={et.code} className="card" style={{ padding: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: '1rem' }}>{et.code}</div>
+                    <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{et.name}</div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted, var(--text-secondary))', marginTop: '0.25rem' }}>
+                      {sections.filter(s => s.examTypeCode === et.code).length} секций
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button className="btn btn-outline" style={{ fontSize: '0.8rem' }} onClick={() => { setEditingExamTypeCode(et.code); setExamTypeForm({ code: et.code, name: et.name }); setShowExamTypeForm(true); }}>✎</button>
+                    <button className="btn btn-outline" style={{ fontSize: '0.8rem', color: 'var(--error-color)' }} onClick={() => handleDeleteExamType(et.code)}>✕</button>
+                  </div>
+                </div>
+              ))}
+              {examTypes.length === 0 && <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>Нет типов экзаменов</div>}
+            </div>
+          )}
+        </div>
       )}
 
       {/* ═══ MODAL: View / Edit / Create ═══ */}
@@ -1390,8 +1503,7 @@ function AdminQuestionsPage() {
                     style={{ width: '100%' }}
                   >
                     <option value="">{t.admin.questions.selectExamType}...</option>
-                    <option value="SAT">SAT</option>
-                    <option value="NUET">NUET</option>
+                    {examTypes.map(et => <option key={et.code} value={et.code}>{et.code}</option>)}
                   </select>
                 </FormField>
               )}

@@ -113,6 +113,19 @@ const adminService = {
   deleteSection: (id: number) =>
     api.delete(`/admin/sections/${id}`),
 
+  // ─── Exam Types ──────────────────────────────────────────
+  getExamTypes: () =>
+    api.get<{ code: string; name: string }[]>('/admin/exam-types').then(r => r.data),
+
+  createExamType: (data: { code: string; name: string }) =>
+    api.post<{ code: string; name: string }>('/admin/exam-types', data).then(r => r.data),
+
+  updateExamType: (code: string, data: { name: string }) =>
+    api.put<{ code: string; name: string }>(`/admin/exam-types/${code}`, data).then(r => r.data),
+
+  deleteExamType: (code: string) =>
+    api.delete(`/admin/exam-types/${code}`),
+
   getSkills: () =>
     api.get<AdminSkill[]>('/admin/skills').then(r => r.data),
 

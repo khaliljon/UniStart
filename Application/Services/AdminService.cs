@@ -895,6 +895,63 @@ public class AdminService : IAdminService
     }
 
     // ═══════════════════════════════════════════════════════
+    //  EXAM TYPES — CRUD
+    // ═══════════════════════════════════════════════════════
+
+    public async Task<List<ExamTypeDto>> GetExamTypesAsync()
+    {
+        var types = await _db.ExamTypes.OrderBy(e => e.Code).ToListAsync();
+        return types.Select(e => new ExamTypeDto(e.Code, e.Name)).ToList();
+    }
+
+    public async Task<ExamTypeDto> CreateExamTypeAsync(CreateExamTypeDto dto)
+    {
+        var code = dto.Code.Trim().ToUpper();
+        var entity = new ExamType { Code = code, Name = dto.Name.Trim() };
+        _db.ExamTypes.Add(entity);
+        await _db.SaveChangesAsync();
+        _cache.Remove("exams:all");
+        return new ExamTypeDto(entity.Code, entity.Name);
+    }
+
+    public async Task<ExamTypeDto?> UpdateExamTypeAsync(string code, UpdateExamTypeDto dto)
+    {
+        var entity = await _db.ExamTypes.FindAsync(code);
+        if (entity == null) return null;
+        entity.Name = dto.Name.Trim();
+        await _db.SaveChangesAsync();
+        _cache.Remove("exams:all");
+        _cache.Remove($"exams:sections:{code}");
+        return new ExamTypeDto(entity.Code, entity.Name);
+    }
+
+    public async Task<bool> DeleteExamTypeAsync(string code)
+    {
+        var entity = await _db.ExamTypes
+            .Include(e => e.Sections)
+                .ThenInclude(s => s.Topics)
+            .FirstOrDefaultAsync(e => e.Code == code);
+        if (entity == null) return false;
+
+        // Cascade: manually delete topics (Section→Topics is SetNull, not Cascade)
+        foreach (var section in entity.Sections)
+        {
+            if (section.Topics?.Any() == true)
+                _db.Topics.RemoveRange(section.Topics);
+        }
+        // ExamType→Sections should be Cascade in DB, but explicitly remove for clarity
+        _db.ExamSections.RemoveRange(entity.Sections);
+        _db.ExamTypes.Remove(entity);
+        await _db.SaveChangesAsync();
+
+        _cache.Remove("exams:all");
+        _cache.Remove($"exams:sections:{code}");
+        _cache.Remove("admin:sections");
+        _logger.LogInformation("Deleted exam type {Code}", code);
+        return true;
+    }
+
+    // ═══════════════════════════════════════════════════════
     //  RESTORE (Soft Delete — OP-9)
     // ═══════════════════════════════════════════════════════
 

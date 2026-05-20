@@ -335,6 +335,53 @@ public class AdminController : ControllerBase
         return NoContent();
     }
 
+    // ═══════════════════════════════════════════════════════
+    //  EXAM TYPES — CRUD
+    // ═══════════════════════════════════════════════════════
+
+    /// <summary>List all exam types</summary>
+    [HttpGet("exam-types")]
+    public async Task<IActionResult> GetExamTypes()
+    {
+        var result = await _svc.GetExamTypesAsync();
+        return Ok(result);
+    }
+
+    /// <summary>Create a new exam type</summary>
+    [HttpPost("exam-types")]
+    public async Task<IActionResult> CreateExamType([FromBody] CreateExamTypeDto dto)
+    {
+        var result = await _svc.CreateExamTypeAsync(dto);
+        var (adminId, email) = GetCurrentAdmin();
+        await _audit.LogAsync(adminId, email, "Create", "ExamType", result.Code,
+            newValues: new { result.Code, result.Name }, ipAddress: GetClientIp());
+        return CreatedAtAction(nameof(GetExamTypes), result);
+    }
+
+    /// <summary>Update an exam type's name</summary>
+    [HttpPut("exam-types/{code}")]
+    public async Task<IActionResult> UpdateExamType(string code, [FromBody] UpdateExamTypeDto dto)
+    {
+        var result = await _svc.UpdateExamTypeAsync(code, dto);
+        if (result == null) return NotFound();
+        var (adminId, email) = GetCurrentAdmin();
+        await _audit.LogAsync(adminId, email, "Update", "ExamType", code,
+            newValues: new { result.Name }, ipAddress: GetClientIp());
+        return Ok(result);
+    }
+
+    /// <summary>Delete an exam type (cascades to sections, topics, questions)</summary>
+    [HttpDelete("exam-types/{code}")]
+    public async Task<IActionResult> DeleteExamType(string code)
+    {
+        var ok = await _svc.DeleteExamTypeAsync(code);
+        if (!ok) return NotFound();
+        var (adminId, email) = GetCurrentAdmin();
+        await _audit.LogAsync(adminId, email, "Delete", "ExamType", code,
+            ipAddress: GetClientIp());
+        return NoContent();
+    }
+
     /// <summary>List all skills (for dropdowns)</summary>
     [HttpGet("skills")]
     public async Task<IActionResult> GetSkills()
