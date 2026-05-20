@@ -73,7 +73,8 @@ public record MockExamQuestionDto(
     int? SelectedOptionId,      // Previously selected answer (for navigation)
     int? ReadingPassageId,
     string? PassageTitle,
-    string? PassageContent
+    string? PassageContent,
+    string? ImageUrl
 );
 
 /// <summary>Answer option</summary>

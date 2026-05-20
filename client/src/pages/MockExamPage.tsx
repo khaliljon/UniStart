@@ -604,6 +604,14 @@ function MockExamPage() {
               {currentQuestion.text}
             </p>
 
+            {currentQuestion.imageUrl && (
+              <img
+                src={currentQuestion.imageUrl}
+                alt="question"
+                style={{ maxWidth: '100%', maxHeight: '360px', objectFit: 'contain', borderRadius: 8, marginBottom: '1.25rem', display: 'block' }}
+              />
+            )}
+
             {/* Options */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               {currentQuestion.options.map((opt, i) => {

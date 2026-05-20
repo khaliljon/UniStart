@@ -676,6 +676,7 @@ export interface MockExamQuestion {
   readingPassageId: number | null;
   passageTitle: string | null;
   passageContent: string | null;
+  imageUrl: string | null;
 }
 
 export interface MockExamOption {

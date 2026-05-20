@@ -262,7 +262,8 @@ public class MockExamService : IMockExamService
                 a.SelectedOptionId,
                 a.Question.ReadingPassageId,
                 a.Question.ReadingPassage?.Title,
-                a.Question.ReadingPassage?.Content
+                a.Question.ReadingPassage?.Content,
+                a.Question.ImageUrl
             );
         });
 
