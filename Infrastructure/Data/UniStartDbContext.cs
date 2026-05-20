@@ -172,6 +172,8 @@ public class UniStartDbContext : DbContext
                   .OnDelete(DeleteBehavior.SetNull);
             entity.HasIndex(e => e.CreatedByTutorId).HasDatabaseName("IX_Questions_CreatedByTutorId");
 
+            entity.Property(e => e.ImageUrl).HasMaxLength(1000);
+
             // Performance index (OP-8)
             entity.HasIndex(e => e.TopicId).HasDatabaseName("IX_Questions_TopicId");
         });

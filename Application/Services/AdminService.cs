@@ -1339,7 +1339,6 @@ public class AdminService : IAdminService
     {
         var deletedQuestions = await _db.Questions
             .IgnoreQueryFilters()
-            .Include(q => q.AnswerOptions)
             .Where(q => q.IsDeleted)
             .ToListAsync();
 
@@ -1351,20 +1350,57 @@ public class AdminService : IAdminService
         var count = deletedQuestions.Count + deletedUsers.Count;
 
         if (deletedQuestions.Count > 0)
+        {
+            var questionIds = deletedQuestions.Select(q => q.Id).ToList();
+
+            // UserAnswer.AnswerOptionId is Restrict on AnswerOption (cascades from Question)
+            var userAnswers = await _db.UserAnswers
+                .Where(a => questionIds.Contains(a.QuestionId))
+                .ToListAsync();
+            if (userAnswers.Count > 0) _db.UserAnswers.RemoveRange(userAnswers);
+
+            // MockExamAnswer.QuestionId is Restrict
+            var mockAnswers = await _db.MockExamAnswers
+                .Where(a => questionIds.Contains(a.QuestionId))
+                .ToListAsync();
+            if (mockAnswers.Count > 0) _db.MockExamAnswers.RemoveRange(mockAnswers);
+
+            // AssignmentAnswer.QuestionId is Restrict
+            var assignAnswers = await _db.AssignmentAnswers
+                .Where(a => questionIds.Contains(a.QuestionId))
+                .ToListAsync();
+            if (assignAnswers.Count > 0) _db.AssignmentAnswers.RemoveRange(assignAnswers);
+
             _db.Questions.RemoveRange(deletedQuestions);
+        }
 
         if (deletedUsers.Count > 0)
         {
             var userIds = deletedUsers.Select(u => u.Id).ToList();
 
+            // Message.SenderId is Restrict
             var messages = await _db.Messages.Where(m => userIds.Contains(m.SenderId)).ToListAsync();
             if (messages.Count > 0) _db.Messages.RemoveRange(messages);
 
+            // Conversation.TutorId is Restrict
             var conversations = await _db.Conversations.Where(c => userIds.Contains(c.TutorId)).ToListAsync();
             if (conversations.Count > 0) _db.Conversations.RemoveRange(conversations);
 
+            // QuestionImportJob.AdminUserId is Restrict
             var importJobs = await _db.QuestionImportJobs.Where(j => userIds.Contains(j.AdminUserId)).ToListAsync();
             if (importJobs.Count > 0) _db.QuestionImportJobs.RemoveRange(importJobs);
+
+            // TutorStudent.StudentUserId is Restrict
+            var tutorStudents = await _db.TutorStudents.Where(ts => userIds.Contains(ts.StudentUserId)).ToListAsync();
+            if (tutorStudents.Count > 0) _db.TutorStudents.RemoveRange(tutorStudents);
+
+            // TutorInviteCodeUsage.StudentUserId is Restrict
+            var inviteUsages = await _db.TutorInviteCodeUsages.Where(u => userIds.Contains(u.StudentUserId)).ToListAsync();
+            if (inviteUsages.Count > 0) _db.TutorInviteCodeUsages.RemoveRange(inviteUsages);
+
+            // ReferralUsage.ReferredUserId is Restrict
+            var referralUsages = await _db.ReferralUsages.Where(r => userIds.Contains(r.ReferredUserId)).ToListAsync();
+            if (referralUsages.Count > 0) _db.ReferralUsages.RemoveRange(referralUsages);
 
             _db.Users.RemoveRange(deletedUsers);
         }

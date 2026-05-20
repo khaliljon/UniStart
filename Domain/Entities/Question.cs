@@ -9,6 +9,7 @@ public class Question : ISoftDeletable, IAuditable
     public string? Explanation { get; set; }
     public string? Hint { get; set; }
     public string? VideoUrl { get; set; }
+    public string? ImageUrl { get; set; }
     public int? ReadingPassageId { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
