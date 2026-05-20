@@ -884,7 +884,18 @@ public class AdminService : IAdminService
         // Section→Topics uses SetNull, so explicitly delete topics first.
         // Topic→Questions uses Cascade, so deleting a topic hard-deletes its questions.
         if (section.Topics?.Any() == true)
+        {
+            var topicIds = section.Topics.Select(t => t.Id).ToList();
+
+            // StudyPlanEntry → Topic is Restrict — must delete entries before topics
+            var planEntries = await _db.StudyPlanEntries
+                .Where(e => topicIds.Contains(e.TopicId))
+                .ToListAsync();
+            if (planEntries.Count > 0)
+                _db.StudyPlanEntries.RemoveRange(planEntries);
+
             _db.Topics.RemoveRange(section.Topics);
+        }
 
         _db.ExamSections.Remove(section);
         await _db.SaveChangesAsync();
@@ -933,13 +944,50 @@ public class AdminService : IAdminService
             .FirstOrDefaultAsync(e => e.Code == code);
         if (entity == null) return false;
 
+        var topicIds = entity.Sections
+            .SelectMany(s => s.Topics ?? [])
+            .Select(t => t.Id)
+            .ToList();
+
+        // StudyPlanEntry → Topic is Restrict — delete entries before topics
+        if (topicIds.Count > 0)
+        {
+            var planEntries = await _db.StudyPlanEntries
+                .Where(e => topicIds.Contains(e.TopicId))
+                .ToListAsync();
+            if (planEntries.Count > 0)
+                _db.StudyPlanEntries.RemoveRange(planEntries);
+        }
+
         // Cascade: manually delete topics (Section→Topics is SetNull, not Cascade)
         foreach (var section in entity.Sections)
         {
             if (section.Topics?.Any() == true)
                 _db.Topics.RemoveRange(section.Topics);
         }
-        // ExamType→Sections should be Cascade in DB, but explicitly remove for clarity
+
+        // TestSession → ExamType is Restrict — delete sessions before exam type
+        var testSessions = await _db.TestSessions
+            .Where(s => s.ExamTypeCode == code)
+            .ToListAsync();
+        if (testSessions.Count > 0)
+            _db.TestSessions.RemoveRange(testSessions);
+
+        // StudyGoal → ExamType is Restrict — delete goals (cascades to StudyPlans→Entries)
+        var studyGoals = await _db.StudyGoals
+            .Where(g => g.ExamTypeCode == code)
+            .ToListAsync();
+        if (studyGoals.Count > 0)
+            _db.StudyGoals.RemoveRange(studyGoals);
+
+        // MockExam → ExamType is Restrict — delete mock exams (cascades to Sections, Attempts)
+        var mockExams = await _db.MockExams
+            .Where(m => m.ExamTypeCode == code)
+            .ToListAsync();
+        if (mockExams.Count > 0)
+            _db.MockExams.RemoveRange(mockExams);
+
+        // ExamType→Sections is Cascade in DB, but explicitly remove for safety
         _db.ExamSections.RemoveRange(entity.Sections);
         _db.ExamTypes.Remove(entity);
         await _db.SaveChangesAsync();
