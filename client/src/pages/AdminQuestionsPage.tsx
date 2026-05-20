@@ -22,6 +22,7 @@ const emptyForm = {
   text: '',
   difficulty: 'Medium',
   explanation: '',
+  imageUrl: '',
   answerOptions: [
     { text: '', isCorrect: true },
     { text: '', isCorrect: false },
@@ -315,6 +316,7 @@ function AdminQuestionsPage() {
       text: selected.text,
       difficulty: selected.difficulty,
       explanation: selected.explanation || '',
+      imageUrl: selected.imageUrl || '',
       answerOptions: selected.answerOptions.map(o => ({ text: o.text, isCorrect: o.isCorrect })),
     });
     // Find section for the selected topic
@@ -352,6 +354,7 @@ function AdminQuestionsPage() {
         text: form.text,
         difficulty: form.difficulty,
         explanation: form.explanation || undefined,
+        imageUrl: form.imageUrl || undefined,
         answerOptions: form.answerOptions.filter(o => o.text.trim()),
       });
       setSelected(updated);
@@ -379,6 +382,7 @@ function AdminQuestionsPage() {
         text: form.text,
         difficulty: form.difficulty,
         explanation: form.explanation || undefined,
+        imageUrl: form.imageUrl || undefined,
         answerOptions: validOptions,
       });
       setSelected(created);
@@ -1346,6 +1350,21 @@ function AdminQuestionsPage() {
                         </button>
                       )}
                     </div>
+                  </FormField>
+
+                  {/* Image URL */}
+                  <FormField label="URL изображения (необязательно)">
+                    <input
+                      type="url"
+                      value={form.imageUrl}
+                      onChange={e => setForm({ ...form, imageUrl: e.target.value })}
+                      className="form-input"
+                      style={{ width: '100%' }}
+                      placeholder="https://..."
+                    />
+                    {form.imageUrl && (
+                      <img src={form.imageUrl} alt="preview" style={{ marginTop: '0.5rem', maxWidth: '100%', maxHeight: '200px', borderRadius: '0.5rem', objectFit: 'contain' }} />
+                    )}
                   </FormField>
 
                   {/* Explanation */}

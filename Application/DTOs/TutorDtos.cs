@@ -334,6 +334,7 @@ public record TutorQuestionDetailDto(
     string Text,
     string Difficulty,
     string? Explanation,
+    string? ImageUrl,
     DateTime CreatedAt,
     List<AdminAnswerOptionDto> AnswerOptions
 );

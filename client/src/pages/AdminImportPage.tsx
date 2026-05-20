@@ -38,7 +38,7 @@ function AdminImportPage() {
           value={importJson}
           onChange={e => setImportJson(e.target.value)}
           rows={14}
-          placeholder={`[\n  {\n    "topicId": 1,\n    "text": "What is 2+2?",\n    "difficulty": "Easy",\n    "explanation": "Basic addition",\n    "answerOptions": [\n      { "text": "3", "isCorrect": false },\n      { "text": "4", "isCorrect": true },\n      { "text": "5", "isCorrect": false },\n      { "text": "6", "isCorrect": false }\n    ]\n  }\n]`}
+          placeholder={`[\n  {\n    "topicId": 1,\n    "text": "What is 2+2?",\n    "difficulty": "Easy",\n    "explanation": "Basic addition",\n    "imageUrl": "https://example.com/image.png",\n    "answerOptions": [\n      { "text": "3", "isCorrect": false },\n      { "text": "4", "isCorrect": true },\n      { "text": "5", "isCorrect": false },\n      { "text": "6", "isCorrect": false }\n    ]\n  }\n]`}
           style={{
             width: '100%', fontFamily: 'monospace', fontSize: '0.85rem', padding: '0.75rem',
             borderRadius: '0.5rem', border: '1px solid var(--border-color)',
@@ -85,6 +85,7 @@ function AdminImportPage() {
   "text": string,          ${t.admin.import.commentQuestionText}
   "difficulty": string,    ${t.admin.import.commentDifficulty}
   "explanation": string?,  ${t.admin.import.commentExplanation}
+  "imageUrl": string?,     // URL изображения к вопросу (необязательно)
   "answerOptions": [       ${t.admin.import.commentOptions}
     { "text": string, "isCorrect": boolean }
   ]

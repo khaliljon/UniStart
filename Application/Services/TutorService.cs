@@ -908,6 +908,7 @@ public class TutorService : ITutorService
             Text = InputSanitizer.Sanitize(dto.Text)!,
             Difficulty = difficulty,
             Explanation = dto.Explanation,
+            ImageUrl = dto.ImageUrl,
             DifficultyParam = dto.DifficultyParam ?? IrtMath.DifficultyToParam(difficulty),
             DiscriminationParam = dto.DiscriminationParam ?? IrtMath.DifficultyToDiscrimination(difficulty),
             GuessParam = dto.GuessParam ?? (1.0 / dto.AnswerOptions.Count),
@@ -945,6 +946,7 @@ public class TutorService : ITutorService
 
         if (dto.Text != null) question.Text = InputSanitizer.Sanitize(dto.Text)!;
         if (dto.Explanation != null) question.Explanation = dto.Explanation;
+        if (dto.ImageUrl != null) question.ImageUrl = dto.ImageUrl == string.Empty ? null : dto.ImageUrl;
         if (dto.Difficulty != null && Enum.TryParse<QuestionDifficulty>(dto.Difficulty, true, out var diff))
             question.Difficulty = diff;
         if (dto.DifficultyParam.HasValue) question.DifficultyParam = dto.DifficultyParam.Value;
@@ -1049,7 +1051,7 @@ public class TutorService : ITutorService
         return new TutorQuestionDetailDto(
             q.Id, q.TopicId, topic.Name,
             topic.Section?.Name ?? "", topic.Section?.ExamTypeCode ?? "",
-            q.Text, q.Difficulty.ToString(), q.Explanation, q.CreatedAt,
+            q.Text, q.Difficulty.ToString(), q.Explanation, q.ImageUrl, q.CreatedAt,
             q.AnswerOptions.Select(a => new AdminAnswerOptionDto(a.Id, a.Text, a.IsCorrect)).ToList()
         );
     }

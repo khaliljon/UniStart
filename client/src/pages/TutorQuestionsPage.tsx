@@ -17,6 +17,7 @@ const emptyForm = {
   text: '',
   difficulty: 'Medium',
   explanation: '',
+  imageUrl: '',
   answerOptions: [
     { text: '', isCorrect: true },
     { text: '', isCorrect: false },
@@ -113,6 +114,7 @@ function TutorQuestionsPage() {
       text: selected.text,
       difficulty: selected.difficulty,
       explanation: selected.explanation || '',
+      imageUrl: selected.imageUrl || '',
       answerOptions: selected.answerOptions.length > 0
         ? selected.answerOptions.map(a => ({ text: a.text, isCorrect: a.isCorrect }))
         : emptyForm.answerOptions.map(o => ({ ...o })),
@@ -137,6 +139,7 @@ function TutorQuestionsPage() {
           text: form.text,
           difficulty: form.difficulty,
           explanation: form.explanation || undefined,
+          imageUrl: form.imageUrl || undefined,
           answerOptions: options,
         });
         setSuccess(t.tutor.questionCreated);
@@ -146,6 +149,7 @@ function TutorQuestionsPage() {
           text: form.text,
           difficulty: form.difficulty,
           explanation: form.explanation || undefined,
+          imageUrl: form.imageUrl || undefined,
           answerOptions: options,
         });
         setSelected(detail);
@@ -505,6 +509,21 @@ function TutorQuestionsPage() {
                   ))}
                   {form.answerOptions.length < 6 && (
                     <button className="btn btn-sm" onClick={addOption} style={{ marginTop: '0.25rem', fontSize: '0.8rem' }}>+ {t.tutor.addOption}</button>
+                  )}
+                </div>
+
+                {/* Image URL */}
+                <div style={{ marginBottom: '0.75rem' }}>
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.25rem' }}>URL изображения (необязательно)</label>
+                  <input
+                    type="url"
+                    value={form.imageUrl}
+                    onChange={e => setForm(prev => ({ ...prev, imageUrl: e.target.value }))}
+                    placeholder="https://..."
+                    style={{ width: '100%', padding: '0.5rem', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--card-bg)', color: 'var(--text-primary)' }}
+                  />
+                  {form.imageUrl && (
+                    <img src={form.imageUrl} alt="preview" style={{ marginTop: '0.5rem', maxWidth: '100%', maxHeight: '200px', borderRadius: '8px', objectFit: 'contain' }} />
                   )}
                 </div>
 

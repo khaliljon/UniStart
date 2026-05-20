@@ -129,6 +129,7 @@ public class AdminService : IAdminService
             Text = dto.Text,
             Difficulty = difficulty,
             Explanation = dto.Explanation,
+            ImageUrl = dto.ImageUrl,
             DifficultyParam = dto.DifficultyParam ?? IrtMath.DifficultyToParam(difficulty),
             DiscriminationParam = dto.DiscriminationParam ?? IrtMath.DifficultyToDiscrimination(difficulty),
             GuessParam = dto.GuessParam ?? (1.0 / dto.AnswerOptions.Count),
@@ -171,6 +172,7 @@ public class AdminService : IAdminService
 
         if (dto.Text != null) question.Text = dto.Text;
         if (dto.Explanation != null) question.Explanation = dto.Explanation;
+        if (dto.ImageUrl != null) question.ImageUrl = dto.ImageUrl == string.Empty ? null : dto.ImageUrl;
         if (dto.DifficultyParam.HasValue) question.DifficultyParam = dto.DifficultyParam.Value;
         if (dto.DiscriminationParam.HasValue) question.DiscriminationParam = dto.DiscriminationParam.Value;
         if (dto.GuessParam.HasValue) question.GuessParam = dto.GuessParam.Value;
@@ -340,6 +342,7 @@ public class AdminService : IAdminService
         Text: q.Text,
         Difficulty: q.Difficulty.ToString(),
         Explanation: q.Explanation,
+        ImageUrl: q.ImageUrl,
         DifficultyParam: Math.Round(q.DifficultyParam, 3),
         DiscriminationParam: Math.Round(q.DiscriminationParam, 3),
         GuessParam: Math.Round(q.GuessParam, 3),

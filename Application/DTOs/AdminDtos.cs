@@ -24,6 +24,7 @@ public record QuestionDetailDto(
     string Text,
     string Difficulty,
     string? Explanation,
+    string? ImageUrl,
     double DifficultyParam,
     double DiscriminationParam,
     double GuessParam,
@@ -42,6 +43,7 @@ public record CreateQuestionDto(
     string Text,
     string Difficulty,  // "Easy", "Medium", "Hard"
     string? Explanation,
+    string? ImageUrl,
     double? DifficultyParam,
     double? DiscriminationParam,
     double? GuessParam,
@@ -58,6 +60,7 @@ public record UpdateQuestionDto(
     string? Text,
     string? Difficulty,
     string? Explanation,
+    string? ImageUrl,
     double? DifficultyParam,
     double? DiscriminationParam,
     double? GuessParam,
