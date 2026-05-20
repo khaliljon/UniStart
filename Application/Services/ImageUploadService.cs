@@ -64,7 +64,6 @@ public class ImageUploadService : IImageUploadService, IDisposable
                 ForcePathStyle       = true,
                 SignatureVersion      = "4",
                 AuthenticationRegion = "auto",
-                UseChunkEncoding     = false,
             };
             _s3 = new AmazonS3Client(credentials, config);
             return _s3;
@@ -93,10 +92,11 @@ public class ImageUploadService : IImageUploadService, IDisposable
         using var stream = file.OpenReadStream();
         var request = new PutObjectRequest
         {
-            BucketName  = _bucket,
-            Key         = key,
-            InputStream = stream,
-            ContentType = file.ContentType,
+            BucketName            = _bucket,
+            Key                   = key,
+            InputStream           = stream,
+            ContentType           = file.ContentType,
+            DisablePayloadSigning = true,
         };
 
         try
