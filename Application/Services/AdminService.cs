@@ -821,6 +821,13 @@ public class AdminService : IAdminService
         if (planEntries.Count > 0)
             _db.StudyPlanEntries.RemoveRange(planEntries);
 
+        // TopicDependency.PrerequisiteTopicId is Restrict
+        var prereqDeps = await _db.TopicDependencies
+            .Where(d => d.PrerequisiteTopicId == id)
+            .ToListAsync();
+        if (prereqDeps.Count > 0)
+            _db.TopicDependencies.RemoveRange(prereqDeps);
+
         await _db.SaveChangesAsync(); // commit phase 1 before Topic cascades to Questions
 
         // Phase 2: delete topic (DB cascade deletes Questions → AnswerOptions/UserAnswers)
@@ -947,6 +954,13 @@ public class AdminService : IAdminService
             if (planEntries.Count > 0)
                 _db.StudyPlanEntries.RemoveRange(planEntries);
 
+            // TopicDependency.PrerequisiteTopicId is Restrict
+            var prereqDeps = await _db.TopicDependencies
+                .Where(d => topicIds.Contains(d.PrerequisiteTopicId))
+                .ToListAsync();
+            if (prereqDeps.Count > 0)
+                _db.TopicDependencies.RemoveRange(prereqDeps);
+
             await _db.SaveChangesAsync(); // commit phase 1 before Topics cascade-delete Questions
 
             _db.Topics.RemoveRange(section.Topics);
@@ -1039,6 +1053,13 @@ public class AdminService : IAdminService
                 .ToListAsync();
             if (planEntries.Count > 0)
                 _db.StudyPlanEntries.RemoveRange(planEntries);
+
+            // TopicDependency.PrerequisiteTopicId is Restrict
+            var prereqDeps = await _db.TopicDependencies
+                .Where(d => topicIds.Contains(d.PrerequisiteTopicId))
+                .ToListAsync();
+            if (prereqDeps.Count > 0)
+                _db.TopicDependencies.RemoveRange(prereqDeps);
         }
 
         // TestSession → ExamType is Restrict
