@@ -949,7 +949,12 @@ public class AdminService : IAdminService
             .Select(t => t.Id)
             .ToList();
 
-        // StudyPlanEntry → Topic is Restrict — delete entries before topics
+        // ── Phase 1: delete all Restrict-FK dependents and commit ─────────────────
+        // This MUST be a separate SaveChangesAsync before Phase 2, because:
+        // Phase 2 deletes Topics → DB cascades to Questions → MockExamAnswer.QuestionId
+        // has Restrict, so MockExams (→Attempts→Answers) must be gone first.
+
+        // StudyPlanEntry → Topic is Restrict
         if (topicIds.Count > 0)
         {
             var planEntries = await _db.StudyPlanEntries
@@ -959,35 +964,36 @@ public class AdminService : IAdminService
                 _db.StudyPlanEntries.RemoveRange(planEntries);
         }
 
-        // Cascade: manually delete topics (Section→Topics is SetNull, not Cascade)
-        foreach (var section in entity.Sections)
-        {
-            if (section.Topics?.Any() == true)
-                _db.Topics.RemoveRange(section.Topics);
-        }
-
-        // TestSession → ExamType is Restrict — delete sessions before exam type
+        // TestSession → ExamType is Restrict
         var testSessions = await _db.TestSessions
             .Where(s => s.ExamTypeCode == code)
             .ToListAsync();
         if (testSessions.Count > 0)
             _db.TestSessions.RemoveRange(testSessions);
 
-        // StudyGoal → ExamType is Restrict — delete goals (cascades to StudyPlans→Entries)
+        // StudyGoal → ExamType is Restrict (cascades StudyPlan→StudyPlanEntry at DB level)
         var studyGoals = await _db.StudyGoals
             .Where(g => g.ExamTypeCode == code)
             .ToListAsync();
         if (studyGoals.Count > 0)
             _db.StudyGoals.RemoveRange(studyGoals);
 
-        // MockExam → ExamType is Restrict — delete mock exams (cascades to Sections, Attempts)
+        // MockExam → ExamType is Restrict (cascades MockExamAttempt→MockExamAnswer at DB level)
         var mockExams = await _db.MockExams
             .Where(m => m.ExamTypeCode == code)
             .ToListAsync();
         if (mockExams.Count > 0)
             _db.MockExams.RemoveRange(mockExams);
 
-        // ExamType→Sections is Cascade in DB, but explicitly remove for safety
+        await _db.SaveChangesAsync(); // commit phase 1 before any Topics are deleted
+
+        // ── Phase 2: delete Topics, Sections, ExamType ───────────────────────────
+        // Topics cascade to Questions at DB level; all MockExamAnswers are already gone.
+        foreach (var section in entity.Sections)
+        {
+            if (section.Topics?.Any() == true)
+                _db.Topics.RemoveRange(section.Topics);
+        }
         _db.ExamSections.RemoveRange(entity.Sections);
         _db.ExamTypes.Remove(entity);
         await _db.SaveChangesAsync();
