@@ -611,7 +611,11 @@ function MessagesPage() {
                       {msg.senderName}
                     </div>
                   )}
-                  <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{msg.text}</div>
+                  <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                    {msg.type === 'System' && activeConv?.otherUserRole !== 'Tutor' && msg.text.endsWith('принял(а) вашу заявку. Можете начать общение!')
+                      ? 'Вы приняли заявку. Можете начать общение!'
+                      : msg.text}
+                  </div>
                   <div style={{
                     fontSize: '0.68rem', marginTop: '0.2rem',
                     opacity: 0.6, textAlign: 'right',
@@ -660,7 +664,9 @@ function MessagesPage() {
             background: 'var(--bg-secondary)',
           }}>
             {activeConv.status === 'Pending'
-              ? 'Тьютор ещё не принял заявку. Сообщения будут доступны после принятия.'
+              ? activeConv.otherUserRole === 'Tutor'
+                ? 'Тьютор ещё не принял заявку. Сообщения будут доступны после принятия.'
+                : 'Вы ещё не приняли заявку. Сообщения будут доступны после принятия.'
               : activeConv.status === 'Declined'
                 ? 'Заявка отклонена. Отправка сообщений невозможна.'
                 : 'Диалог архивирован.'}
