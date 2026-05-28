@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ComposableMap,
@@ -8,6 +8,20 @@ import {
   ZoomableGroup,
 } from 'react-simple-maps';
 import type { AdvisorUniversity } from '../advisorConfig';
+
+function useIsDark() {
+  const [isDark, setIsDark] = useState(
+    () => document.documentElement.getAttribute('data-theme') !== 'light',
+  );
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      setIsDark(document.documentElement.getAttribute('data-theme') !== 'light');
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    return () => observer.disconnect();
+  }, []);
+  return isDark;
+}
 
 const GEO_URL = '/countries-110m.json';
 
@@ -24,8 +38,44 @@ export default function AdvisorWorldMap({
   onMarkerClick,
 }: Props) {
   const navigate = useNavigate();
+  const isDark = useIsDark();
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [pinnedId, setPinnedId] = useState<string | null>(null);
+
+  // Palette switches with theme
+  const palette = isDark
+    ? {
+        mapBg: 'linear-gradient(180deg, #07111f 0%, #0d1f3a 100%)',
+        geoFill: '#162236',
+        geoStroke: '#1e3554',
+        geoHover: '#1e3050',
+        hintText: '#2d4a6a',
+        labelText: '#2d4a6a',
+        legendText: '#3b526e',
+        dimMarker: '#253555',
+        dimStroke: '#3b526e',
+        tooltipBg: (pinned: boolean) => pinned ? 'rgba(7, 17, 31, 0.97)' : 'rgba(7, 17, 31, 0.92)',
+        tooltipBorder: (pinned: boolean) => pinned ? '#f59e0b' : '#2d4a6a',
+        tooltipName: '#e2e8f0',
+        tooltipSub: '#64748b',
+        tooltipMeta: '#94a3b8',
+      }
+    : {
+        mapBg: 'linear-gradient(180deg, #dce6f5 0%, #c9d8ee 100%)',
+        geoFill: '#bfcfe6',
+        geoStroke: '#9fb8d8',
+        geoHover: '#adc2db',
+        hintText: '#4a6fa5',
+        labelText: '#4a6fa5',
+        legendText: '#4a6fa5',
+        dimMarker: '#8faecf',
+        dimStroke: '#6b90b8',
+        tooltipBg: (pinned: boolean) => pinned ? 'rgba(255,255,255,0.98)' : 'rgba(255,255,255,0.94)',
+        tooltipBorder: (pinned: boolean) => pinned ? '#d97706' : '#9fb8d8',
+        tooltipName: '#1e3a5f',
+        tooltipSub: '#4a6fa5',
+        tooltipMeta: '#4a6fa5',
+      };
 
   const withCoords = universities.filter(
     (u) => u.lat != null && u.lng != null,
@@ -40,7 +90,7 @@ export default function AdvisorWorldMap({
     <div
       style={{
         position: 'relative',
-        background: 'linear-gradient(180deg, #07111f 0%, #0d1f3a 100%)',
+        background: palette.mapBg,
         borderRadius: 16,
         overflow: 'hidden',
         marginBottom: '2rem',
@@ -54,7 +104,7 @@ export default function AdvisorWorldMap({
           top: '0.85rem',
           left: '1.25rem',
           fontSize: '0.8rem',
-          color: '#4a6fa5',
+          color: palette.hintText,
           fontWeight: 600,
           letterSpacing: '0.07em',
           textTransform: 'uppercase',
@@ -72,7 +122,7 @@ export default function AdvisorWorldMap({
           top: '0.85rem',
           right: '1.25rem',
           fontSize: '0.75rem',
-          color: '#2d4a6a',
+          color: palette.labelText,
           zIndex: 2,
           pointerEvents: 'none',
         }}
@@ -92,12 +142,13 @@ export default function AdvisorWorldMap({
                 <Geography
                   key={geo.rsmKey}
                   geography={geo}
-                  fill="#162236"
-                  stroke="#1e3554"
+                  fill={palette.geoFill}
+                  stroke={palette.geoStroke}
                   strokeWidth={0.4}
                   style={{
                     default: { outline: 'none' },
-                    hover: { outline: 'none', fill: '#1e3050' },
+                    hover: { outline: 'none', fill: palette.geoHover },
+                    // @ts-ignore: pressed is valid
                     pressed: { outline: 'none' },
                   }}
                 />
@@ -117,14 +168,14 @@ export default function AdvisorWorldMap({
                 ? '#818cf8'
                 : isHighlighted
                   ? '#6366f1'
-                  : '#253555';
+                  : palette.dimMarker;
             const strokeColor = isPinned
               ? '#fcd34d'
               : isHovered
                 ? '#c7d2fe'
                 : isHighlighted
                   ? '#a5b4fc'
-                  : '#3b526e';
+                  : palette.dimStroke;
             const radius = isPinned ? 11 : isHovered ? 10 : isHighlighted ? 7 : 4;
 
             return (
@@ -176,7 +227,7 @@ export default function AdvisorWorldMap({
                     textAnchor="middle"
                     style={{
                       fontSize: '10px',
-                      fill: isPinned ? '#fcd34d' : '#e2e8f0',
+                        fill: isPinned ? '#fcd34d' : (isDark ? '#e2e8f0' : '#1e3a5f'),
                       fontWeight: 600,
                       pointerEvents: 'none',
                       textShadow: '0 1px 3px #000',
@@ -199,8 +250,8 @@ export default function AdvisorWorldMap({
             bottom: '1rem',
             left: '50%',
             transform: 'translateX(-50%)',
-            background: pinnedId ? 'rgba(7, 17, 31, 0.97)' : 'rgba(7, 17, 31, 0.92)',
-            border: `1px solid ${pinnedId ? '#f59e0b' : '#2d4a6a'}`,
+            background: palette.tooltipBg(!!pinnedId),
+            border: `1px solid ${palette.tooltipBorder(!!pinnedId)}`,
             borderRadius: 10,
             padding: '0.75rem 1.25rem',
             minWidth: 260,
@@ -230,13 +281,13 @@ export default function AdvisorWorldMap({
               ✕
             </button>
           )}
-          <div style={{ fontWeight: 700, color: '#e2e8f0', fontSize: '0.95rem', paddingRight: pinnedId ? '1.5rem' : 0 }}>
+          <div style={{ fontWeight: 700, color: palette.tooltipName, fontSize: '0.95rem', paddingRight: pinnedId ? '1.5rem' : 0 }}>
             {activeUni.name}
           </div>
-          <div style={{ fontSize: '0.82rem', color: '#64748b', marginTop: '0.2rem' }}>
+          <div style={{ fontSize: '0.82rem', color: palette.tooltipSub, marginTop: '0.2rem' }}>
             {activeUni.city}, {activeUni.country}
           </div>
-          <div style={{ fontSize: '0.82rem', color: '#94a3b8', marginTop: '0.15rem' }}>
+          <div style={{ fontSize: '0.82rem', color: palette.tooltipMeta, marginTop: '0.15rem' }}>
             {activeUni.exam}
             {activeUni.minScore ? ` · мин. балл ${activeUni.minScore}` : ' · балл не указан'}
             {' · '}
@@ -283,7 +334,7 @@ export default function AdvisorWorldMap({
           display: 'flex',
           gap: '1rem',
           fontSize: '0.73rem',
-          color: '#3b526e',
+          color: palette.legendText,
           zIndex: 2,
         }}
       >
