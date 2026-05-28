@@ -614,7 +614,9 @@ function MessagesPage() {
                   <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
                     {msg.type === 'System' && activeConv?.otherUserRole !== 'Tutor' && msg.text.endsWith('принял(а) вашу заявку. Можете начать общение!')
                       ? 'Вы приняли заявку. Можете начать общение!'
-                      : msg.text}
+                      : msg.type === 'System' && activeConv?.otherUserRole === 'Tutor' && msg.text.endsWith('отправил(а) заявку на обучение')
+                        ? 'Вы отправили(а) заявку на обучение'
+                        : msg.text}
                   </div>
                   <div style={{
                     fontSize: '0.68rem', marginTop: '0.2rem',
