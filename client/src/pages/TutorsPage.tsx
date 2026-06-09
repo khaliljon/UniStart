@@ -153,7 +153,7 @@ function TutorsPage() {
         <span>{tutor.totalStudents}</span>
         {tutor.hourlyRate != null && (
           <span style={{ marginLeft: 'auto', fontWeight: 600, color: 'var(--primary-color)' }}>
-            {tutor.hourlyRate}{t.tutor.perHourShort}
+            {tutor.hourlyRate}₸/ч
           </span>
         )}
       </div>

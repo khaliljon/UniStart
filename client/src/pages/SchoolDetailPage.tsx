@@ -145,7 +145,7 @@ export default function SchoolDetailPage() {
         <span>{tutor.totalStudents} {t.tutor.studentsCount}</span>
         {tutor.hourlyRate != null && (
           <span style={{ marginLeft: 'auto', fontWeight: 600, color: 'var(--primary-color)' }}>
-            {tutor.hourlyRate}{t.tutor.perHourShort}
+            {tutor.hourlyRate}₸/ч
           </span>
         )}
       </div>
