@@ -161,6 +161,23 @@ function TimedDrillPage() {
     if (activeDrill) loadNextQuestion(activeDrill.id);
   };
 
+  const handleExit = async () => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    if (marathonTimerRef.current) clearInterval(marathonTimerRef.current);
+    const drill = activeDrillRef.current;
+    if (drill) {
+      try {
+        const final = await drillService.completeDrill(drill.id);
+        setFinalResult(final);
+        setView('result');
+      } catch {
+        setView('menu');
+      }
+    } else {
+      setView('menu');
+    }
+  };
+
   const loadHistory = async () => {
     try {
       const data = await drillService.getHistory();
@@ -181,6 +198,16 @@ function TimedDrillPage() {
             {answerResult && answerResult.currentStreak > 1 && ` | Streak: ${answerResult.currentStreak}`}
           </div>
           <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            <button
+              onClick={handleExit}
+              style={{
+                background: 'none', border: '1px solid var(--border-color)',
+                borderRadius: '6px', padding: '0.25rem 0.75rem',
+                fontSize: '0.8rem', color: 'var(--text-secondary)', cursor: 'pointer'
+              }}
+            >
+              Выйти
+            </button>
             {activeDrillType === 'Marathon' && (
               <div style={{
                 fontSize: '1.5rem', fontWeight: 700, fontVariantNumeric: 'tabular-nums',
