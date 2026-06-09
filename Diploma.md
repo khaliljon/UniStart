@@ -911,96 +911,656 @@ Dashboard — это центральная точка входа для авт�
 
 ## Приложение А. Листинг программной реализации
 
-### А.1 Реализация трёхпараметрической модели IRT (IrtMath.cs)
+### А.1 Точка входа и конфигурация приложения (Program.cs)
 
 ```csharp
-/// <summary>
-/// Вычисляет вероятность правильного ответа по модели 3PL IRT.
-/// P(θ) = c + (1-c) / (1 + exp(-a*(θ-b)))
-/// </summary>
-public static double Probability(double theta, double a, double b, double c)
-{
-    return c + (1.0 - c) / (1.0 + Math.Exp(-a * (theta - b)));
-}
+using System.Diagnostics;
+using System.Text;
+using System.Threading.RateLimiting;
+using Hangfire;
+using Hangfire.PostgreSql;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
+using Serilog;
+using Serilog.Events;
+using UniStart.Infrastructure.Startup;
 
-/// <summary>
-/// Информация Фишера для вопроса при данном θ.
-/// </summary>
-public static double FisherInformation(double theta, double a, double b, double c)
-{
-    double p = Probability(theta, a, b, c);
-    double q = 1.0 - p;
-    double pStar = (p - c) / (1.0 - c);
-    return (a * a * pStar * pStar * q) / p;
-}
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
+    .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
+    .Enrich.FromLogContext()
+    .Enrich.WithMachineName()
+    .Enrich.WithThreadId()
+    .WriteTo.Console(outputTemplate:
+        "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}")
+    .WriteTo.File("logs/unistart-.log",
+        rollingInterval: RollingInterval.Day,
+        retainedFileCountLimit: 14,
+        outputTemplate:
+        "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] [{SourceContext}] " +
+        "{Message:lj} {Properties:j}{NewLine}{Exception}")
+    .CreateLogger();
 
-/// <summary>
-/// Оценка θ методом максимального правдоподобия (MLE).
-/// </summary>
-public static double EstimateTheta(IList<(double a, double b, double c)> items,
-                                    IList<bool> responses,
-                                    double initialTheta = 0.0)
+try
 {
-    double theta = initialTheta;
-    for (int iter = 0; iter < 50; iter++)
+    Log.Information("Starting UniStart application");
+
+    var builder = WebApplication.CreateBuilder(args);
+
+    builder.Configuration.AddJsonFile(
+        $"appsettings.{builder.Environment.EnvironmentName}.local.json",
+        optional: true, reloadOnChange: true);
+
+    builder.Host.UseSerilog();
+
+    builder.WebHost.ConfigureKestrel(options =>
     {
-        double num = 0, den = 0;
-        for (int i = 0; i < items.Count; i++)
+        options.Limits.MaxRequestBodySize = 100_000_000;
+    });
+
+    builder.Services.Configure<FormOptions>(options =>
+    {
+        options.MultipartBodyLengthLimit = 100_000_000;
+    });
+
+    var connectionString = Environment.GetEnvironmentVariable("UNISTART_DB_CONNECTION")
+                           ?? builder.Configuration.GetConnectionString("DefaultConnection");
+
+    builder.Services.AddUniStartServices(builder.Configuration, connectionString!);
+
+    var app = builder.Build();
+
+    app.UseExceptionHandler(errorApp =>
+    {
+        errorApp.Run(async context =>
         {
-            var (a, b, c) = items[i];
-            double p = Probability(theta, a, b, c);
-            double q = 1.0 - p;
-            double w = (p - c) / (1.0 - c);
-            double u = responses[i] ? 1.0 : 0.0;
-            num += a * w * (u - p) / (p * q + 1e-10);
-            den += a * a * w * w * q / (p + 1e-10);
-        }
-        if (Math.Abs(den) < 1e-10) break;
-        double delta = num / den;
-        theta += delta;
-        theta = Math.Max(-4.0, Math.Min(4.0, theta));
-        if (Math.Abs(delta) < 1e-6) break;
+            var exceptionFeature = context.Features.Get<IExceptionHandlerFeature>();
+            var exception = exceptionFeature?.Error;
+            var requestId = Activity.Current?.Id ?? context.TraceIdentifier;
+
+            Log.Error(exception,
+                "Unhandled exception for request {RequestId} {Method} {Path}",
+                requestId, context.Request.Method, context.Request.Path);
+
+            var (statusCode, title) = exception switch
+            {
+                UnauthorizedAccessException => (StatusCodes.Status401Unauthorized, "Unauthorized"),
+                ArgumentException           => (StatusCodes.Status400BadRequest,   "Bad Request"),
+                KeyNotFoundException        => (StatusCodes.Status404NotFound,     "Not Found"),
+                InvalidOperationException   => (StatusCodes.Status409Conflict,     "Conflict"),
+                _                          => (StatusCodes.Status500InternalServerError,
+                                               "Internal Server Error")
+            };
+
+            context.Response.StatusCode  = statusCode;
+            context.Response.ContentType = "application/problem+json";
+
+            var problem = new ProblemDetails
+            {
+                Status = statusCode,
+                Title  = title,
+                Type   = $"https://httpstatuses.com/{statusCode}",
+                Extensions = { ["requestId"] = requestId }
+            };
+
+            if (app.Environment.IsDevelopment() && exception != null)
+            {
+                problem.Detail = exception.Message;
+                problem.Extensions["stackTrace"] = exception.StackTrace;
+            }
+            else if (statusCode < 500 && exception != null)
+            {
+                problem.Detail = exception.Message;
+            }
+
+            await context.Response.WriteAsJsonAsync(problem);
+        });
+    });
+
+    app.UseUniStartPipeline();
+
+    await app.MigrateAndSeedAsync();
+
+    await app.RunAsync();
+}
+catch (Exception ex) when (ex is not HostAbortedException)
+{
+    Log.Fatal(ex, "Application terminated unexpectedly");
+}
+finally
+{
+    Log.CloseAndFlush();
+}
+```
+
+### А.2 Математические функции IRT — трёхпараметрическая модель (IrtMath.cs)
+
+```csharp
+using UniStart.Domain.Entities;
+
+namespace UniStart.Application.Services;
+
+/// <summary>
+/// Item Response Theory (IRT) mathematical functions.
+/// Implements 3-Parameter Logistic (3PL) model with EAP ability estimation.
+///
+/// 3PL Model: P(θ) = c + (1 - c) / (1 + exp(-a(θ - b)))
+///   where:
+///     θ = student ability (latent trait)
+///     a = item discrimination
+///     b = item difficulty
+///     c = guessing parameter (lower asymptote)
+/// </summary>
+public static class IrtMath
+{
+    public static double Probability(double theta, double a, double b, double c)
+    {
+        var logistic = 1.0 / (1.0 + Math.Exp(-a * (theta - b)));
+        return c + (1.0 - c) * logistic;
     }
-    return theta;
+
+    public static double Probability(double theta, Question item)
+        => Probability(theta, item.DiscriminationParam, item.DifficultyParam, item.GuessParam);
+
+    /// <summary>
+    /// Fisher information of an item at ability θ.
+    /// I(θ) = a² * (P - c)² * (1 - P) / ((1 - c)² * P)
+    /// </summary>
+    public static double Information(double theta, double a, double b, double c)
+    {
+        var p = Probability(theta, a, b, c);
+        if (p <= c || p >= 1.0) return 0.0;
+        var numerator   = a * a * Math.Pow(p - c, 2) * (1.0 - p);
+        var denominator = Math.Pow(1.0 - c, 2) * p;
+        return denominator > 0 ? numerator / denominator : 0.0;
+    }
+
+    public static double Information(double theta, Question item)
+        => Information(theta, item.DiscriminationParam, item.DifficultyParam, item.GuessParam);
+
+    /// <summary>
+    /// Expected A Posteriori (EAP) estimation of ability θ.
+    /// Uses numerical integration with a normal prior.
+    /// Returns (thetaEstimate, standardError).
+    /// </summary>
+    public static (double theta, double se) EstimateAbilityEAP(
+        IList<(Question item, bool correct)> responses,
+        double priorMean  = 0.0,
+        double priorSD    = 1.5,
+        int    quadPoints = 81)
+    {
+        if (responses.Count == 0)
+            return (priorMean, priorSD);
+
+        var thetaRange  = Linspace(-5.0, 5.0, quadPoints);
+        var numerator   = 0.0;
+        var numerator2  = 0.0;
+        var denominator = 0.0;
+
+        foreach (var thetaQ in thetaRange)
+        {
+            var logPrior      = -0.5 * Math.Pow((thetaQ - priorMean) / priorSD, 2);
+            var logLikelihood = 0.0;
+
+            foreach (var (item, correct) in responses)
+            {
+                var p = Math.Clamp(Probability(thetaQ, item), 1e-10, 1.0 - 1e-10);
+                logLikelihood += correct ? Math.Log(p) : Math.Log(1.0 - p);
+            }
+
+            var posterior = Math.Exp(logPrior + logLikelihood);
+            numerator   += thetaQ * posterior;
+            numerator2  += thetaQ * thetaQ * posterior;
+            denominator += posterior;
+        }
+
+        if (denominator < 1e-300)
+        {
+            if (quadPoints < 161)
+                return EstimateAbilityEAP(responses, priorMean, priorSD * 1.5, 161);
+            return (priorMean, priorSD);
+        }
+
+        var thetaEAP = numerator  / denominator;
+        var variance = (numerator2 / denominator) - (thetaEAP * thetaEAP);
+        var se       = Math.Sqrt(Math.Max(variance, 1e-10));
+
+        return (thetaEAP, se);
+    }
+
+    /// <summary>
+    /// Converts IRT theta (-4..+4) to display level (0..100).
+    /// level = 100 / (1 + exp(-1.5 * θ))
+    /// </summary>
+    public static int ThetaToLevel(double theta)
+    {
+        var level = 100.0 / (1.0 + Math.Exp(-1.5 * theta));
+        return (int)Math.Clamp(Math.Round(level), 0, 100);
+    }
+
+    public static double LevelToTheta(int level)
+    {
+        var clamped = Math.Clamp(level, 1, 99);
+        return Math.Log(clamped / (100.0 - clamped)) / 1.5;
+    }
+
+    /// <summary>
+    /// Retention probability based on Ebbinghaus forgetting curve.
+    /// R(t) = e^(-t/S)
+    /// </summary>
+    public static double RetentionProbability(double daysSinceReview, double stability)
+    {
+        if (stability <= 0) return 0.0;
+        return Math.Exp(-daysSinceReview / stability);
+    }
+
+    public static double CalculateStability(
+        int successCount, double baseStability = 1.0, double factor = 1.5)
+        => baseStability * Math.Pow(1.0 + factor, successCount);
+
+    /// <summary>
+    /// Selects next item using randomized maximum-information strategy (CAT).
+    /// Picks randomly from items whose information is within topFraction of the best.
+    /// </summary>
+    public static Question? SelectNextItemRandomized(
+        double theta,
+        IList<Question> availableItems,
+        double topFraction = 0.8)
+    {
+        if (availableItems.Count == 0) return null;
+
+        var itemInfos = availableItems
+            .Select(item => (item, info: Information(theta, item)))
+            .OrderByDescending(x => x.info)
+            .ToList();
+
+        var maxInfo   = itemInfos[0].info;
+        var threshold = maxInfo * topFraction;
+        var topItems  = itemInfos.Where(x => x.info >= threshold).ToList();
+
+        if (topItems.Count == 0) topItems = itemInfos.Take(1).ToList();
+        return topItems[Random.Shared.Next(topItems.Count)].item;
+    }
+
+    private static double[] Linspace(double start, double end, int count)
+    {
+        var step   = (end - start) / (count - 1);
+        var result = new double[count];
+        for (var i = 0; i < count; i++)
+            result[i] = start + step * i;
+        return result;
+    }
 }
 ```
 
-### А.2 Выбор вопроса по максимуму информации Фишера (AdaptiveEngineService.cs)
+### А.3 Адаптивный движок — выбор вопроса и обработка ответа (AdaptiveEngineService.cs)
 
 ```csharp
-private Question SelectByMaximumInformation(
-    IEnumerable<Question> candidates, double theta)
+using Microsoft.EntityFrameworkCore;
+using UniStart.Application.DTOs;
+using UniStart.Application.Interfaces;
+using UniStart.Domain.Entities;
+using UniStart.Domain.Interfaces;
+using UniStart.Infrastructure.Data;
+
+namespace UniStart.Application.Services;
+
+public class AdaptiveEngineService : IAdaptiveEngineService
 {
-    return candidates
-        .OrderByDescending(q => IrtMath.FisherInformation(
-            theta,
-            q.DiscriminationParam,
-            q.DifficultyParam,
-            q.GuessParam))
-        .First();
+    private readonly UniStartDbContext _context;
+    private readonly IUnitOfWork _unitOfWork;
+
+    private const int EasyThreshold   = 40;
+    private const int MediumThreshold = 70;
+
+    public AdaptiveEngineService(UniStartDbContext context, IUnitOfWork unitOfWork)
+    {
+        _context    = context;
+        _unitOfWork = unitOfWork;
+    }
+
+    public QuestionDifficulty GetDifficultyForSkillLevel(int skillLevel)
+    {
+        if (skillLevel < EasyThreshold)   return QuestionDifficulty.Easy;
+        if (skillLevel < MediumThreshold) return QuestionDifficulty.Medium;
+        return QuestionDifficulty.Hard;
+    }
+
+    /// <summary>
+    /// Selects next question using Computerized Adaptive Testing (CAT).
+    /// Uses maximum Fisher information criterion with randomized top-fraction selection.
+    /// </summary>
+    public async Task<QuestionDto?> GetNextQuestionAsync(
+        int userId, string[] examTypeCodes,
+        int? sectionId = null, int[]? sectionIds = null, int? topicId = null)
+    {
+        var answeredQuestionIds = await _context.UserAnswers
+            .Where(ua => ua.UserId == userId)
+            .Select(ua => ua.QuestionId)
+            .Distinct()
+            .ToListAsync();
+
+        var questionsQuery = _context.Questions
+            .Include(q => q.Topic).ThenInclude(t => t.Section)
+            .Include(q => q.AnswerOptions)
+            .Where(q => !answeredQuestionIds.Contains(q.Id));
+
+        if (examTypeCodes.Length > 0)
+            questionsQuery = questionsQuery.Where(q =>
+                q.Topic.Section != null &&
+                examTypeCodes.Contains(q.Topic.Section.ExamTypeCode));
+
+        if (sectionIds is { Length: > 0 })
+            questionsQuery = questionsQuery.Where(q =>
+                q.Topic.SectionId != null &&
+                sectionIds.Contains(q.Topic.SectionId.Value));
+        else if (sectionId.HasValue)
+            questionsQuery = questionsQuery.Where(q =>
+                q.Topic.SectionId == sectionId.Value);
+
+        if (topicId.HasValue)
+            questionsQuery = questionsQuery.Where(q => q.TopicId == topicId.Value);
+
+        var availableQuestions = await questionsQuery.ToListAsync();
+
+        if (availableQuestions.Count == 0)
+        {
+            // Recycle previously answered questions that are not yet mastered
+            var recycleQuery = _context.Questions
+                .Include(q => q.Topic).ThenInclude(t => t.Section)
+                .Include(q => q.AnswerOptions)
+                .Where(q => answeredQuestionIds.Contains(q.Id));
+
+            if (examTypeCodes.Length > 0)
+                recycleQuery = recycleQuery.Where(q =>
+                    q.Topic.Section != null &&
+                    examTypeCodes.Contains(q.Topic.Section.ExamTypeCode));
+            if (sectionIds is { Length: > 0 })
+                recycleQuery = recycleQuery.Where(q =>
+                    q.Topic.SectionId != null &&
+                    sectionIds.Contains(q.Topic.SectionId.Value));
+            else if (sectionId.HasValue)
+                recycleQuery = recycleQuery.Where(q =>
+                    q.Topic.SectionId == sectionId.Value);
+            if (topicId.HasValue)
+                recycleQuery = recycleQuery.Where(q => q.TopicId == topicId.Value);
+
+            var allRecyclable  = await recycleQuery.ToListAsync();
+            if (allRecyclable.Count == 0) return null;
+
+            var recyclableIds = allRecyclable.Select(q => q.Id).ToList();
+            var rawAnswers    = await _context.UserAnswers
+                .Where(ua => ua.UserId == userId &&
+                             recyclableIds.Contains(ua.QuestionId))
+                .Include(ua => ua.AnswerOption)
+                .OrderByDescending(ua => ua.AnsweredAt)
+                .ToListAsync();
+
+            var lastAnswers = rawAnswers
+                .GroupBy(ua => ua.QuestionId)
+                .Select(g =>
+                {
+                    var ordered = g.ToList();
+                    var streak  = 0;
+                    foreach (var ua in ordered)
+                    {
+                        if (ua.AnswerOption?.IsCorrect == true) streak++;
+                        else break;
+                    }
+                    return new
+                    {
+                        QuestionId   = g.Key,
+                        LastAnswered = ordered.First().AnsweredAt,
+                        WasCorrect   = ordered.First().AnswerOption?.IsCorrect == true,
+                        CorrectStreak = streak
+                    };
+                })
+                .ToList();
+
+            var lookup = lastAnswers.ToDictionary(a => a.QuestionId);
+
+            availableQuestions = allRecyclable
+                .Where(q => !lookup.TryGetValue(q.Id, out var a) || a.CorrectStreak < 2)
+                .OrderBy(q =>  lookup.TryGetValue(q.Id, out var a) && a.WasCorrect ? 1 : 0)
+                .ThenBy(q => lookup.TryGetValue(q.Id, out var a)
+                    ? a.LastAnswered : DateTime.MinValue)
+                .ToList();
+
+            if (availableQuestions.Count == 0)
+                availableQuestions = allRecyclable
+                    .OrderBy(q => lookup.TryGetValue(q.Id, out var a)
+                        ? a.LastAnswered : DateTime.MinValue)
+                    .ToList();
+
+            var candidateCount = Math.Min(
+                availableQuestions.Count,
+                Math.Max(5, availableQuestions.Count / 2));
+            availableQuestions = availableQuestions.Take(candidateCount).ToList();
+        }
+
+        var theta    = await GetUserThetaAsync(userId);
+        var selected = IrtMath.SelectNextItemRandomized(theta, availableQuestions,
+                           topFraction: 0.7);
+
+        selected ??= availableQuestions[Random.Shared.Next(availableQuestions.Count)];
+        return MapToQuestionDto(selected);
+    }
+
+    /// <summary>
+    /// Processes answer and updates skill using IRT EAP estimation.
+    /// </summary>
+    public async Task<AnswerResultDto> ProcessAnswerAsync(int userId, SubmitAnswerDto answer)
+    {
+        if (answer.TestSessionId.HasValue)
+        {
+            var session = await _context.TestSessions
+                .FirstOrDefaultAsync(s => s.Id == answer.TestSessionId.Value);
+            if (session == null)
+                throw new ArgumentException("Test session not found");
+            if (session.UserId != userId)
+                throw new ArgumentException("Test session does not belong to this user");
+            if (session.CompletedAt != null)
+                throw new ArgumentException("Test session is already completed");
+        }
+
+        var question = await _context.Questions
+            .Include(q => q.AnswerOptions)
+            .Include(q => q.Topic)
+            .FirstOrDefaultAsync(q => q.Id == answer.QuestionId)
+            ?? throw new ArgumentException("Question not found");
+
+        var selectedOption = question.AnswerOptions
+            .FirstOrDefault(o => o.Id == answer.AnswerOptionId)
+            ?? throw new ArgumentException("Answer option not found");
+
+        var duplicateCutoff = DateTime.UtcNow.AddSeconds(-1);
+        var recentDuplicate = await _context.UserAnswers
+            .AnyAsync(ua => ua.UserId        == userId
+                         && ua.QuestionId    == answer.QuestionId
+                         && ua.AnswerOptionId == answer.AnswerOptionId
+                         && ua.AnsweredAt    > duplicateCutoff);
+        if (recentDuplicate)
+            throw new ArgumentException("Вы уже ответили на этот вопрос");
+
+        var correctOption = question.AnswerOptions.First(o => o.IsCorrect);
+        var isCorrect     = selectedOption.IsCorrect;
+
+        _context.UserAnswers.Add(new UserAnswer
+        {
+            UserId          = userId,
+            QuestionId      = question.Id,
+            AnswerOptionId  = answer.AnswerOptionId,
+            AnsweredAt      = DateTime.UtcNow,
+            TimeSpentSeconds = answer.TimeSpentSeconds,
+            TestSessionId   = answer.TestSessionId
+        });
+
+        var (newLevel, change, theta, thetaSE) =
+            await UpdateSkillLevelAsync(userId, question.Topic.SkillId, isCorrect);
+
+        var confLow  = IrtMath.ThetaToLevel(theta - 1.96 * thetaSE);
+        var confHigh = IrtMath.ThetaToLevel(theta + 1.96 * thetaSE);
+
+        await _unitOfWork.SaveChangesAsync();
+
+        return new AnswerResultDto(
+            isCorrect, correctOption.Id, correctOption.Text,
+            question.Explanation, newLevel, change,
+            theta, thetaSE, confLow, confHigh);
+    }
+
+    /// <summary>
+    /// Updates skill level using Bayesian EAP estimation of θ.
+    /// Replays all answers for this skill and recomputes θ from scratch.
+    /// </summary>
+    public async Task<(int newLevel, int change, double theta, double thetaSE)>
+        UpdateSkillLevelAsync(int userId, int skillId, bool isCorrect)
+    {
+        var profile = await _context.UserSkillProfiles
+            .FirstOrDefaultAsync(p => p.UserId == userId && p.SkillId == skillId);
+
+        if (profile == null)
+        {
+            profile = new UserSkillProfile
+            {
+                UserId   = userId,
+                SkillId  = skillId,
+                Level    = 50,
+                Theta    = 0.0,
+                ThetaSE  = 1.0
+            };
+            _context.UserSkillProfiles.Add(profile);
+        }
+
+        var oldLevel = profile.Level;
+
+        var skillAnswers = await _context.UserAnswers
+            .Include(ua => ua.Question).ThenInclude(q => q.Topic)
+            .Include(ua => ua.AnswerOption)
+            .Where(ua => ua.UserId == userId &&
+                         ua.Question.Topic.SkillId == skillId)
+            .OrderBy(ua => ua.AnsweredAt)
+            .ToListAsync();
+
+        if (skillAnswers.Count == 0)
+        {
+            profile.Level    = 50;
+            profile.Theta    = 0.0;
+            profile.ThetaSE  = 1.0;
+            profile.LastUpdated = DateTime.UtcNow;
+            return (profile.Level, 0, profile.Theta, profile.ThetaSE);
+        }
+
+        var responses = skillAnswers
+            .Select(ua => (ua.Question, ua.AnswerOption.IsCorrect))
+            .ToList();
+
+        var (theta, se) = IrtMath.EstimateAbilityEAP(
+            responses, priorMean: 0.0, priorSD: 1.5);
+
+        profile.Theta       = theta;
+        profile.ThetaSE     = se;
+        profile.Level       = IrtMath.ThetaToLevel(theta);
+        profile.LastUpdated = DateTime.UtcNow;
+
+        return (profile.Level, profile.Level - oldLevel, profile.Theta, profile.ThetaSE);
+    }
 }
 ```
 
-### А.3 Регистрация сервисов (UniStartStartupExtensions.cs, фрагмент)
+### А.4 Сервис JWT-аутентификации (JwtService.cs)
 
 ```csharp
-public static IServiceCollection AddUniStartServices(
-    this IServiceCollection services,
-    IConfiguration configuration,
-    string connectionString)
-{
-    services.AddDbContext<UniStartDbContext>(options =>
-        options.UseNpgsql(connectionString));
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
+using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
+using UniStart.Application.Interfaces;
+using UniStart.Domain.Entities;
 
-    services.AddScoped<IAdaptiveEngineService, AdaptiveEngineService>();
-    services.AddScoped<IMockExamService, MockExamService>();
-    services.AddScoped<IAuthService, AuthService>();
-    services.AddScoped<ITutorService, TutorService>();
-    services.AddScoped<IAdminService, AdminService>();
-    services.AddScoped<ISubscriptionService, SubscriptionService>();
-    services.AddScoped<IScorePredictionService, ScorePredictionService>();
-    services.AddSingleton<IImageUploadService, ImageUploadService>();
-    // ... прочие сервисы
-    return services;
+namespace UniStart.Application.Services;
+
+public class JwtService : IJwtService
+{
+    private readonly IConfiguration _configuration;
+
+    public JwtService(IConfiguration configuration)
+    {
+        _configuration = configuration;
+    }
+
+    public string GenerateToken(User user)
+    {
+        var jwtSettings       = _configuration.GetSection("JwtSettings");
+        var secretKey         = jwtSettings["SecretKey"]
+            ?? throw new InvalidOperationException("JWT SecretKey not configured");
+        var issuer            = jwtSettings["Issuer"];
+        var audience          = jwtSettings["Audience"];
+        var expirationMinutes = int.Parse(jwtSettings["ExpirationMinutes"] ?? "60");
+
+        var key         = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
+        var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+        var claims = new[]
+        {
+            new Claim(JwtRegisteredClaimNames.Sub,   user.Id.ToString()),
+            new Claim(JwtRegisteredClaimNames.Email, user.Email),
+            new Claim(ClaimTypes.Name,               user.Name),
+            new Claim(ClaimTypes.Role,               user.Role.ToString()),
+            new Claim(JwtRegisteredClaimNames.Jti,   Guid.NewGuid().ToString())
+        };
+
+        var token = new JwtSecurityToken(
+            issuer:             issuer,
+            audience:           audience,
+            claims:             claims,
+            expires:            DateTime.UtcNow.AddMinutes(expirationMinutes),
+            signingCredentials: credentials
+        );
+
+        return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+
+    public int? ValidateToken(string token)
+    {
+        try
+        {
+            var jwtSettings = _configuration.GetSection("JwtSettings");
+            var secretKey   = jwtSettings["SecretKey"]
+                ?? throw new InvalidOperationException("JWT SecretKey not configured");
+
+            var key          = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
+            var tokenHandler = new JwtSecurityTokenHandler();
+
+            tokenHandler.ValidateToken(token, new TokenValidationParameters
+            {
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey         = key,
+                ValidateIssuer           = true,
+                ValidIssuer              = jwtSettings["Issuer"],
+                ValidateAudience         = true,
+                ValidAudience            = jwtSettings["Audience"],
+                ClockSkew                = TimeSpan.Zero
+            }, out var validatedToken);
+
+            var jwtToken = (JwtSecurityToken)validatedToken;
+            return int.Parse(
+                jwtToken.Claims
+                    .First(x => x.Type == JwtRegisteredClaimNames.Sub).Value);
+        }
+        catch
+        {
+            return null;
+        }
+    }
 }
 ```
+

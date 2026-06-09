@@ -523,7 +523,7 @@ function AdminUsersPage() {
                             </span>
                             {tutor.hourlyRate != null && (
                               <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                                {tutor.hourlyRate} $/час
+                                {tutor.hourlyRate} ₸/час
                               </span>
                             )}
                           </div>

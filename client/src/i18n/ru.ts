@@ -1105,7 +1105,7 @@ export const ru: Translations = {
     prev: '← Назад',
     next: 'Вперёд →',
     website: 'Сайт',
-    perHourShort: '₽/ч',
+    perHourShort: '₸/ч',
     defaultHeadline: 'Тьютор',
     inviteCode: 'Инвайт-код',
     generateCode: 'Сгенерировать код',

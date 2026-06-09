@@ -1102,7 +1102,7 @@ export const en: Translations = {
     prev: '← Back',
     next: 'Next →',
     website: 'Website',
-    perHourShort: '$/hr',
+    perHourShort: '₸/hr',
     defaultHeadline: 'Tutor',
     inviteCode: 'Invite Code',
     generateCode: 'Generate code',
