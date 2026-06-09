@@ -151,7 +151,8 @@ public class DatabaseSeeder
     /// </summary>
     private async Task EnsureExamTypesAsync()
     {
-        var existing = await _context.ExamTypes.Select(e => e.Code).ToHashSetAsync();
+        var existing = new HashSet<string>(
+            await _context.ExamTypes.Select(e => e.Code).ToListAsync());
         var missing = new List<ExamType>();
 
         void Ensure(string code, string name)
