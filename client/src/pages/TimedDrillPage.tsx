@@ -103,8 +103,8 @@ function TimedDrillPage() {
         }, 1000);
       }
 
-      await loadNextQuestion(result.id);
-      setView('playing');
+      const questionLoaded = await loadNextQuestion(result.id);
+      if (questionLoaded) setView('playing');
     } catch (err) {
       console.error('Failed to start drill:', err);
     } finally {
@@ -112,7 +112,7 @@ function TimedDrillPage() {
     }
   };
 
-  const loadNextQuestion = async (drillId: number) => {
+  const loadNextQuestion = async (drillId: number): Promise<boolean> => {
     setAnswerResult(null);
     setSelectedOption(null);
     setTimer(0);
@@ -126,9 +126,10 @@ function TimedDrillPage() {
       const final = await drillService.completeDrill(drillId);
       setFinalResult(final);
       setView('result');
-      return;
+      return false;
     }
     setQuestion(q);
+    return true;
   };
 
   const handleAnswer = async (optionId: number) => {
