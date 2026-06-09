@@ -20,11 +20,16 @@ public class TimedDrillService : ITimedDrillService
         if (!Enum.TryParse<DrillType>(request.DrillType, true, out var drillType))
             throw new ArgumentException($"Invalid drill type: {request.DrillType}");
 
+        // Only store ExamTypeCode if it actually exists in the DB (FK constraint)
+        var examTypeCode = request.ExamTypeCodes?.FirstOrDefault();
+        if (examTypeCode != null && !await _context.ExamTypes.AnyAsync(e => e.Code == examTypeCode))
+            examTypeCode = null;
+
         var result = new TimedDrillResult
         {
             UserId = userId,
             DrillType = drillType,
-            ExamTypeCode = request.ExamTypeCodes?.FirstOrDefault(),
+            ExamTypeCode = examTypeCode,
             TopicId = request.TopicId,
             StartedAt = DateTime.UtcNow
         };

@@ -40,6 +40,10 @@ public class DatabaseSeeder
         {
             await SeedExamTypesAsync();
         }
+        else
+        {
+            await EnsureExamTypesAsync();
+        }
 
         if (!await _context.Users.AnyAsync())
         {
@@ -130,12 +134,41 @@ public class DatabaseSeeder
     {
         var examTypes = new List<ExamType>
         {
-            new ExamType { Code = "SAT", Name = "SAT (English + Mathematics)" },
-            new ExamType { Code = "NUET", Name = "NUET (Mathematics + Critical Thinking)" }
+            new ExamType { Code = "SAT",  Name = "SAT (English + Mathematics)" },
+            new ExamType { Code = "NUET", Name = "NUET (Mathematics + Critical Thinking)" },
+            new ExamType { Code = "CSCA", Name = "CSCA (China Standardized College Admission)" },
+            new ExamType { Code = "IELTS", Name = "IELTS (International English Language Testing System)" },
+            new ExamType { Code = "TOEFL", Name = "TOEFL (Test of English as a Foreign Language)" },
         };
 
         await _context.ExamTypes.AddRangeAsync(examTypes);
         await _context.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Ensures CSCA / IELTS / TOEFL exist even if the table was already partially seeded.
+    /// Needed after the AddImageUrlToQuestion migration removed them from HasData.
+    /// </summary>
+    private async Task EnsureExamTypesAsync()
+    {
+        var existing = await _context.ExamTypes.Select(e => e.Code).ToHashSetAsync();
+        var missing = new List<ExamType>();
+
+        void Ensure(string code, string name)
+        {
+            if (!existing.Contains(code))
+                missing.Add(new ExamType { Code = code, Name = name });
+        }
+
+        Ensure("CSCA",  "CSCA (China Standardized College Admission)");
+        Ensure("IELTS", "IELTS (International English Language Testing System)");
+        Ensure("TOEFL", "TOEFL (Test of English as a Foreign Language)");
+
+        if (missing.Count > 0)
+        {
+            await _context.ExamTypes.AddRangeAsync(missing);
+            await _context.SaveChangesAsync();
+        }
     }
 
     private async Task SeedExamSectionsAsync()
