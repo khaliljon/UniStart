@@ -31,6 +31,9 @@ public class DatabaseSeeder
         if (totalQuestions > 0 && questionsWithExplanation < totalQuestions)
         {
             _context.UserAnswers.RemoveRange(_context.UserAnswers);
+            _context.MockExamAnswers.RemoveRange(_context.MockExamAnswers);
+            _context.MockExamAttempts.RemoveRange(_context.MockExamAttempts);
+            _context.TimedDrillResults.RemoveRange(_context.TimedDrillResults);
             _context.AnswerOptions.RemoveRange(_context.AnswerOptions);
             _context.Questions.RemoveRange(_context.Questions);
             await _context.SaveChangesAsync();
@@ -88,6 +91,9 @@ public class DatabaseSeeder
     private async Task ClearAllDataAsync()
     {
         _context.UserAnswers.RemoveRange(_context.UserAnswers);
+        _context.MockExamAnswers.RemoveRange(_context.MockExamAnswers);
+        _context.MockExamAttempts.RemoveRange(_context.MockExamAttempts);
+        _context.TimedDrillResults.RemoveRange(_context.TimedDrillResults);
         _context.UserSkillProfiles.RemoveRange(_context.UserSkillProfiles);
         _context.AnswerOptions.RemoveRange(_context.AnswerOptions);
         _context.Questions.RemoveRange(_context.Questions);

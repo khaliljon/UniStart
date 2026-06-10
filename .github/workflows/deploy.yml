@@ -38,7 +38,7 @@ jobs:
             docker compose up -d --build
             echo "Deploy completed at $(date)"
             echo "Waiting for API to start (migrations + seeding)..."
-            sleep 40
+            sleep 60
             curl -f --retry 8 --retry-delay 10 --retry-all-errors https://unistart.kz/health/ready || {
               echo "=== API logs ==="
               docker compose logs api --tail=60
