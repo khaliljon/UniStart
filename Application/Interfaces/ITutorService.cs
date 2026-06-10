@@ -35,6 +35,7 @@ public interface ITutorService
     Task<LinkResultDto> LinkStudentByCodeAsync(int studentUserId, string inviteCode);
     Task<LinkResultDto> UnlinkStudentAsync(int tutorUserId, int studentUserId);
     Task<LinkResultDto> UnlinkFromTutorAsync(int studentUserId);
+    Task<LinkResultDto> EnrollStudentAsync(int tutorUserId, int studentUserId);
     Task<List<TutorStudentDto>> GetLinkedStudentsAsync(int tutorUserId);
     Task<LinkedTutorDto?> GetLinkedTutorAsync(int studentUserId);
 

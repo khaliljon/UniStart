@@ -134,6 +134,10 @@ export const tutorService = {
     await api.delete(`/tutors/students/${studentUserId}/unlink`);
   },
 
+  async enrollStudent(studentUserId: number): Promise<void> {
+    await api.post(`/tutors/students/${studentUserId}/enroll`);
+  },
+
   async unlinkFromTutor(): Promise<void> {
     await api.delete('/tutors/unlink');
   },

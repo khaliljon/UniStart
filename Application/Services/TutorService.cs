@@ -317,7 +317,7 @@ public class TutorService : ITutorService
         {
             var studentCount = await _db.Conversations
                 .CountAsync(c => c.TutorId == tutorUserId && c.Status == ConversationStatus.Active);
-            tutorProfile.TotalStudents = studentCount; // already includes current after status change
+            tutorProfile.TotalStudents = studentCount;
         }
 
         await _db.SaveChangesAsync();
@@ -862,6 +862,43 @@ public class TutorService : ITutorService
                 ts.Status.ToString(), ts.LinkedAt, ts.RevokedAt
             ))
             .ToListAsync();
+    }
+
+    public async Task<LinkResultDto> EnrollStudentAsync(int tutorUserId, int studentUserId)
+    {
+        // Verify there's an active conversation between them
+        var conv = await _db.Conversations
+            .FirstOrDefaultAsync(c => c.TutorId == tutorUserId
+                                   && c.StudentId == studentUserId
+                                   && c.Status == ConversationStatus.Active);
+        if (conv == null)
+            return new LinkResultDto(false, "Нет активного чата с этим студентом");
+
+        var already = await _db.TutorStudents
+            .AnyAsync(ts => ts.TutorUserId == tutorUserId
+                         && ts.StudentUserId == studentUserId
+                         && ts.Status == TutorStudentStatus.Active);
+        if (already)
+            return new LinkResultDto(false, "Студент уже является вашим учеником");
+
+        _db.TutorStudents.Add(new TutorStudent
+        {
+            TutorUserId = tutorUserId,
+            StudentUserId = studentUserId,
+            InviteCode = "chat-enroll",
+            Status = TutorStudentStatus.Active,
+            LinkedAt = DateTime.UtcNow,
+        });
+
+        var student = await _db.Users.FindAsync(studentUserId);
+        if (student != null)
+        {
+            student.LinkedTutorId = tutorUserId;
+            student.UpdatedAt = DateTime.UtcNow;
+        }
+
+        await _db.SaveChangesAsync();
+        return new LinkResultDto(true, "Студент добавлен в ваш список учеников");
     }
 
     public async Task<LinkedTutorDto?> GetLinkedTutorAsync(int studentUserId)

@@ -362,6 +362,16 @@ public class TutorController : ControllerBase
         return result.Success ? Ok(result) : BadRequest(result);
     }
 
+    /// <summary>Взять студента в ученики (из чата)</summary>
+    [HttpPost("students/{studentUserId}/enroll")]
+    [Authorize(Roles = "Tutor,SchoolTutor,Admin")]
+    public async Task<IActionResult> EnrollStudent(int studentUserId)
+    {
+        var userId = GetUserId();
+        var result = await _tutorService.EnrollStudentAsync(userId, studentUserId);
+        return result.Success ? Ok(result) : BadRequest(result);
+    }
+
     /// <summary>Отвязаться от тьютора (ученик)</summary>
     [HttpDelete("unlink")]
     public async Task<IActionResult> UnlinkFromTutor()

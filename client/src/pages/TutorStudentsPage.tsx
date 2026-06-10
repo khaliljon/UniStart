@@ -4,6 +4,7 @@ import { tutorService } from '../services/tutorService';
 import { useTranslation } from '../hooks/useTranslation';
 import type { StudentInfo, TutorStudentInfo } from '../types';
 import { getDateLocale } from '../i18n';
+import api from '../services/api';
 
 function TutorStudentsPage() {
   const navigate = useNavigate();
@@ -12,6 +13,36 @@ function TutorStudentsPage() {
   const [linkedStudents, setLinkedStudents] = useState<TutorStudentInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [unlinkingId, setUnlinkingId] = useState<number | null>(null);
+  const [enrollingId, setEnrollingId] = useState<number | null>(null);
+
+  // Invite code
+  const [inviteCode, setInviteCode] = useState<string | null>(null);
+  const [codeLoading, setCodeLoading] = useState(false);
+  const [codeCopied, setCodeCopied] = useState(false);
+
+  const loadInviteCode = useCallback(async () => {
+    try {
+      const res = await api.get<{ inviteCode: string | null }>('/tutors/invite-code');
+      setInviteCode(res.data.inviteCode);
+    } catch { /* ignore */ }
+  }, []);
+
+  const handleGenerateCode = async () => {
+    setCodeLoading(true);
+    try {
+      const res = await api.post<{ inviteCode: string }>('/tutors/invite-code');
+      setInviteCode(res.data.inviteCode);
+    } catch { alert('Ошибка генерации кода'); }
+    finally { setCodeLoading(false); }
+  };
+
+  const handleCopyCode = () => {
+    if (!inviteCode) return;
+    navigator.clipboard.writeText(inviteCode).then(() => {
+      setCodeCopied(true);
+      setTimeout(() => setCodeCopied(false), 2000);
+    });
+  };
 
   const loadData = useCallback(async () => {
     try {
@@ -30,7 +61,8 @@ function TutorStudentsPage() {
 
   useEffect(() => {
     loadData();
-  }, [loadData]);
+    loadInviteCode();
+  }, [loadData, loadInviteCode]);
 
   const handleUnlinkStudent = async (studentUserId: number) => {
     if (!confirm(t.tutor.confirmUnlinkStudent)) return;
@@ -42,6 +74,18 @@ function TutorStudentsPage() {
       alert('Ошибка отвязки');
     } finally {
       setUnlinkingId(null);
+    }
+  };
+
+  const handleEnrollStudent = async (studentUserId: number) => {
+    setEnrollingId(studentUserId);
+    try {
+      await tutorService.enrollStudent(studentUserId);
+      await loadData();
+    } catch {
+      alert('Ошибка при добавлении ученика');
+    } finally {
+      setEnrollingId(null);
     }
   };
 
@@ -72,6 +116,42 @@ function TutorStudentsPage() {
   return (
     <div className="animate-fade-in">
       <h1 style={{ marginBottom: '1.5rem' }}>{t.tutor.myStudents}</h1>
+
+      {/* ─── Invite Code Block ─── */}
+      <div className="card" style={{ padding: '1.25rem', marginBottom: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
+          <div>
+            <div style={{ fontWeight: 600, marginBottom: '0.2rem' }}>Инвайт-код</div>
+            <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+              Дайте код ученику — он введёт его в своём профиле в разделе «Мой тьютор»
+            </div>
+          </div>
+          {!inviteCode && (
+            <button className="btn btn-primary" style={{ fontSize: '0.85rem', whiteSpace: 'nowrap' }}
+              onClick={handleGenerateCode} disabled={codeLoading}>
+              {codeLoading ? 'Генерация...' : 'Создать код'}
+            </button>
+          )}
+        </div>
+        {inviteCode && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+            <div style={{
+              fontFamily: 'monospace', fontSize: '1.35rem', fontWeight: 700, letterSpacing: '0.15em',
+              background: 'var(--bg-secondary)', border: '1px solid var(--border-color)',
+              borderRadius: '8px', padding: '0.5rem 1rem', color: 'var(--primary-color)',
+            }}>
+              {inviteCode}
+            </div>
+            <button className="btn btn-outline" style={{ fontSize: '0.82rem' }} onClick={handleCopyCode}>
+              {codeCopied ? '✓ Скопировано' : 'Скопировать'}
+            </button>
+            <button className="btn btn-outline" style={{ fontSize: '0.82rem' }}
+              onClick={handleGenerateCode} disabled={codeLoading}>
+              Обновить
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* ─── Linked Students (via invite code) ─── */}
       {linkedStudents.length > 0 && (
@@ -132,7 +212,9 @@ function TutorStudentsPage() {
         </div>
       ) : students.length > 0 && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1rem' }}>
-          {students.map(s => (
+          {students.map(s => {
+            const isLinked = linkedStudents.some(ls => ls.studentUserId === s.userId);
+            return (
             <div
               key={s.userId}
               className="card"
@@ -170,8 +252,25 @@ function TutorStudentsPage() {
                   "{s.lastMessagePreview}"
                 </div>
               )}
+
+              {!isLinked && (
+                <button
+                  className="btn btn-primary"
+                  style={{ marginTop: '0.85rem', width: '100%', fontSize: '0.82rem', padding: '0.4rem' }}
+                  disabled={enrollingId === s.userId}
+                  onClick={e => { e.stopPropagation(); handleEnrollStudent(s.userId); }}
+                >
+                  {enrollingId === s.userId ? 'Добавление...' : '+ Взять в ученики'}
+                </button>
+              )}
+              {isLinked && (
+                <div style={{ marginTop: '0.75rem', fontSize: '0.78rem', color: '#10b981', fontWeight: 600 }}>
+                  ✓ Ученик
+                </div>
+              )}
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

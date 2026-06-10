@@ -504,7 +504,7 @@ export default function TutorAssignmentsPage() {
         </h3>
         {students.length === 0 ? (
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', margin: 0 }}>
-            Нет привязанных учеников. Сначала привяжите учеников через инвайт-код.
+            Нет привязанных учеников. Сначала перейдите в раздел «Ученики» и нажмите «Взять в ученики».
           </p>
         ) : (
           <div style={{ borderRadius: '0.5rem', border: '1px solid var(--border-color)', overflow: 'hidden' }}>
