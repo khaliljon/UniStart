@@ -443,6 +443,11 @@ public static class UniStartStartupExtensions
             service => service.PurgeSoftDeletedRecordsAsync(),
             "0 2 * * *");
 
+        RecurringJob.AddOrUpdate<IBackgroundJobsService>(
+            "irt-calibration",
+            service => service.CalibrateIrtParametersAsync(),
+            "0 3 * * *");
+
         return app;
     }
 

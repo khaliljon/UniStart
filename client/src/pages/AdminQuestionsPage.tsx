@@ -29,7 +29,21 @@ const emptyForm = {
     { text: '', isCorrect: false },
     { text: '', isCorrect: false },
   ],
+  // IRT advanced params (null = auto from difficulty)
+  difficultyParam: null as number | null,
+  discriminationParam: null as number | null,
+  guessParam: null as number | null,
 };
+
+const IRT_PRESETS = [
+  { label: 'Авто (Easy)',      b: -1.0, a: 0.8,  c: 0.25 },
+  { label: 'Авто (Medium)',    b:  0.0, a: 1.0,  c: 0.25 },
+  { label: 'Авто (Hard)',      b:  1.5, a: 1.2,  c: 0.25 },
+  { label: 'Очень легкий',     b: -2.0, a: 0.7,  c: 0.25 },
+  { label: 'Слабая дискр.',  b:  0.0, a: 0.5,  c: 0.33 },
+  { label: 'Высокая дискр.', b:  1.0, a: 1.5,  c: 0.20 },
+  { label: 'Очень сложный',   b:  2.5, a: 1.3,  c: 0.20 },
+];
 
 function AdminQuestionsPage() {
   const { t } = useTranslation();
@@ -91,6 +105,9 @@ function AdminQuestionsPage() {
 
   // Section selector in question edit/create
   const [formSectionId, setFormSectionId] = useState<number>(0);
+
+  // Advanced IRT parameters toggle
+  const [showIrtParams, setShowIrtParams] = useState(false);
 
   // Bulk selection (table view)
   const [selectedQuestions, setSelectedQuestions] = useState<Set<number>>(new Set());
@@ -319,11 +336,15 @@ function AdminQuestionsPage() {
       explanation: selected.explanation || '',
       imageUrl: selected.imageUrl || '',
       answerOptions: selected.answerOptions.map(o => ({ text: o.text, isCorrect: o.isCorrect })),
+      difficultyParam: selected.difficultyParam ?? null,
+      discriminationParam: selected.discriminationParam ?? null,
+      guessParam: selected.guessParam ?? null,
     });
     // Find section for the selected topic
     const tp = topics.find(t => t.id === selected.topicId);
     const sec = tp ? sections.find(s => s.name === tp.sectionName && s.examTypeCode === tp.examTypeCode) : null;
     setFormSectionId(sec?.id || 0);
+    setShowIrtParams(false);
     setModalMode('edit');
     setSuccess(null);
   };
@@ -341,6 +362,7 @@ function AdminQuestionsPage() {
       ],
     });
     setFormSectionId(0);
+    setShowIrtParams(false);
     setModalMode('create');
     setSuccess(null);
     setError(null);
@@ -356,6 +378,9 @@ function AdminQuestionsPage() {
         difficulty: form.difficulty,
         explanation: form.explanation || undefined,
         imageUrl: form.imageUrl || undefined,
+        difficultyParam: showIrtParams ? form.difficultyParam ?? undefined : undefined,
+        discriminationParam: showIrtParams ? form.discriminationParam ?? undefined : undefined,
+        guessParam: showIrtParams ? form.guessParam ?? undefined : undefined,
         answerOptions: form.answerOptions.filter(o => o.text.trim()),
       });
       setSelected(updated);
@@ -384,6 +409,9 @@ function AdminQuestionsPage() {
         difficulty: form.difficulty,
         explanation: form.explanation || undefined,
         imageUrl: form.imageUrl || undefined,
+        difficultyParam: showIrtParams ? form.difficultyParam ?? undefined : undefined,
+        discriminationParam: showIrtParams ? form.discriminationParam ?? undefined : undefined,
+        guessParam: showIrtParams ? form.guessParam ?? undefined : undefined,
         answerOptions: validOptions,
       });
       setSelected(created);
@@ -1405,6 +1433,88 @@ function AdminQuestionsPage() {
                       placeholder={t.admin.questions.explanationPlaceholder}
                     />
                   </FormField>
+
+                  {/* Advanced IRT Parameters */}
+                  <div style={{ marginTop: '0.5rem' }}>
+                    <button
+                      type="button"
+                      onClick={() => setShowIrtParams(v => !v)}
+                      style={{
+                        background: 'none', border: 'none', cursor: 'pointer',
+                        fontSize: '0.82rem', color: 'var(--text-secondary)',
+                        padding: '0.25rem 0', display: 'flex', alignItems: 'center', gap: '0.4rem'
+                      }}
+                    >
+                      <span style={{ fontSize: '0.7rem' }}>{showIrtParams ? '▼' : '▶'}</span>
+                      Расширенные IRT-параметры
+                    </button>
+
+                    {showIrtParams && (
+                      <div style={{
+                        marginTop: '0.5rem', padding: '0.75rem', borderRadius: '0.5rem',
+                        background: 'var(--bg-secondary)', border: '1px solid var(--border-color)',
+                        display: 'flex', flexDirection: 'column', gap: '0.75rem'
+                      }}>
+                        {/* Presets */}
+                        <div>
+                          <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>
+                            Пресеты
+                          </div>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+                            {IRT_PRESETS.map(p => (
+                              <button
+                                key={p.label}
+                                type="button"
+                                className="btn btn-outline"
+                                style={{ fontSize: '0.75rem', padding: '0.2rem 0.6rem' }}
+                                onClick={() => setForm(f => ({ ...f, difficultyParam: p.b, discriminationParam: p.a, guessParam: p.c }))}
+                              >
+                                {p.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Numeric inputs */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem' }}>
+                          {[
+                            { key: 'difficultyParam' as const, label: 'b (сложность)', min: -4, max: 4, step: 0.1 },
+                            { key: 'discriminationParam' as const, label: 'a (дискриминация)', min: 0.3, max: 3, step: 0.05 },
+                            { key: 'guessParam' as const, label: 'c (угадываемость)', min: 0, max: 0.5, step: 0.01 },
+                          ].map(({ key, label, min, max, step }) => {
+                            const val = form[key];
+                            const invalid = val !== null && (val < min || val > max);
+                            return (
+                              <div key={key}>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.2rem' }}>{label}</div>
+                                <input
+                                  type="number"
+                                  className="form-input"
+                                  style={{ width: '100%', borderColor: invalid ? 'var(--error-color)' : undefined }}
+                                  min={min} max={max} step={step}
+                                  value={val ?? ''}
+                                  onChange={e => {
+                                    const v = e.target.value === '' ? null : parseFloat(e.target.value);
+                                    setForm(f => ({ ...f, [key]: v }));
+                                  }}
+                                  placeholder="авто"
+                                />
+                                {invalid && (
+                                  <div style={{ fontSize: '0.7rem', color: 'var(--error-color)', marginTop: '0.15rem' }}>
+                                    Диапазон: {min} … {max}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
+                          ⓘ Пустое поле = автоматически из выбранной сложности. Изменяйте только если уверены.
+                        </div>
+                      </div>
+                    )}
+                  </div>
 
                   {/* Actions */}
                   <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>

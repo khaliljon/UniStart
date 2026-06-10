@@ -297,4 +297,77 @@ public class BackgroundJobsService : IBackgroundJobsService
 
         _logger.LogInformation("Soft-delete purge complete. {Count} records permanently removed.", totalPurged);
     }
+
+    // ───────────────────────────────────────────────────────
+    //  IRT AUTO-CALIBRATION (daily at 03:00 UTC)
+    // ───────────────────────────────────────────────────────
+    /// <summary>
+    /// Recalibrates b (difficulty) for every question that has accumulated 30+ real answers.
+    /// Method: proportion-correct p → b = logit(1-p) / 1.7  (approximation to 2PL)
+    /// Only overwrites b if the new estimate differs by more than 0.15 (avoids noise churn).
+    /// Leaves a and c unchanged (manual or seeded values are kept).
+    /// Marks UpdatedAt so admins can see which questions were auto-calibrated.
+    /// </summary>
+    public async Task CalibrateIrtParametersAsync()
+    {
+        _logger.LogInformation("Hangfire: Starting IRT auto-calibration...");
+
+        const int MinAnswers = 30;
+        const double MinDelta = 0.15;
+
+        // Aggregate answer counts per question
+        var stats = await _context.UserAnswers
+            .Where(ua => ua.AnswerOption != null)
+            .GroupBy(ua => ua.QuestionId)
+            .Select(g => new
+            {
+                QuestionId = g.Key,
+                Total = g.Count(),
+                Correct = g.Count(ua => ua.AnswerOption!.IsCorrect)
+            })
+            .Where(s => s.Total >= MinAnswers)
+            .ToListAsync();
+
+        if (stats.Count == 0)
+        {
+            _logger.LogInformation("IRT calibration: no questions with {Min}+ answers yet.", MinAnswers);
+            return;
+        }
+
+        var questionIds = stats.Select(s => s.QuestionId).ToList();
+        var questions = await _context.Questions
+            .Where(q => questionIds.Contains(q.Id) && !q.IsDeleted)
+            .ToListAsync();
+
+        var updated = 0;
+        foreach (var q in questions)
+        {
+            var s = stats.First(x => x.QuestionId == q.Id);
+            if (s.Total == 0) continue;
+
+            double p = (double)s.Correct / s.Total;
+            // clamp to avoid log(0)
+            p = Math.Clamp(p, 0.01, 0.99);
+
+            // Proportion-correct → b estimate (approximation):
+            // In the 1PL model P(θ) = sigmoid(θ - b), at the average student θ≈0:
+            //   b ≈ -logit(p) = log((1-p)/p)
+            double bNew = Math.Log((1.0 - p) / p);
+
+            // Only update if estimate differs meaningfully
+            if (Math.Abs(bNew - q.DifficultyParam) > MinDelta)
+            {
+                q.DifficultyParam = Math.Round(Math.Clamp(bNew, -4.0, 4.0), 3);
+                q.UpdatedAt = DateTime.UtcNow;
+                updated++;
+            }
+        }
+
+        if (updated > 0)
+            await _context.SaveChangesAsync();
+
+        _logger.LogInformation(
+            "IRT calibration complete. {Updated} of {Checked} questions updated.",
+            updated, questions.Count);
+    }
 }

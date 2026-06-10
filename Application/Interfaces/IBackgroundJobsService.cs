@@ -22,4 +22,11 @@ public interface IBackgroundJobsService
     /// Scheduled daily at 02:00 UTC via Hangfire (OP-9 completion).
     /// </summary>
     Task PurgeSoftDeletedRecordsAsync();
+
+    /// <summary>
+    /// Auto-calibrates IRT difficulty parameter (b) for questions with 30+ real answers.
+    /// Uses proportion-correct as an empirical estimate of b.
+    /// Scheduled daily at 03:00 UTC.
+    /// </summary>
+    Task CalibrateIrtParametersAsync();
 }
