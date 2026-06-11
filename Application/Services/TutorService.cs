@@ -1109,10 +1109,17 @@ public class TutorService : ITutorService
         // Verify all questions exist (tutor's own + platform)
         var questionIds = dto.QuestionIds.Distinct().ToList();
         var questions = await _db.Questions
-            .Where(q => questionIds.Contains(q.Id) && (q.CreatedByTutorId == null || q.CreatedByTutorId == tutorUserId))
+            .IgnoreQueryFilters()
+            .Where(q => questionIds.Contains(q.Id)
+                     && !q.IsDeleted
+                     && (q.CreatedByTutorId == null || q.CreatedByTutorId == tutorUserId))
             .ToListAsync();
         if (questions.Count != questionIds.Count)
-            throw new ArgumentException("Some questions not found or not accessible");
+        {
+            var foundIds = questions.Select(q => q.Id).ToHashSet();
+            var missingIds = questionIds.Where(id => !foundIds.Contains(id)).ToList();
+            throw new ArgumentException($"Questions not found or not accessible: {string.Join(", ", missingIds)}");
+        }
 
         // Verify students are linked to this tutor
         var linkedStudentIds = await _db.TutorStudents

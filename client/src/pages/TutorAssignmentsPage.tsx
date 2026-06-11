@@ -20,8 +20,8 @@ const STATUS_COLORS: Record<string, string> = {
   Overdue: '#ef4444',
 };
 
-const DIFFICULTY_LABELS: Record<string, string> = { '1': 'Легко', '2': 'Средне', '3': 'Сложно' };
-const DIFFICULTY_COLORS: Record<string, string> = { '1': '#22c55e', '2': '#f59e0b', '3': '#ef4444' };
+const DIFFICULTY_LABELS: Record<string, string> = { Easy: 'Легко', Medium: 'Средне', Hard: 'Сложно', '1': 'Легко', '2': 'Средне', '3': 'Сложно' };
+const DIFFICULTY_COLORS: Record<string, string> = { Easy: '#22c55e', Medium: '#f59e0b', Hard: '#ef4444', '1': '#22c55e', '2': '#f59e0b', '3': '#ef4444' };
 
 export default function TutorAssignmentsPage() {
   const [assignments, setAssignments] = useState<AssignmentListItem[]>([]);
