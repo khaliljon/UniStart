@@ -128,6 +128,7 @@ function TutorQuestionsPage() {
   const saveQuestion = async () => {
     if (!form.topicId) { setError(t.tutor.selectTopic); return; }
     if (!form.text.trim()) { setError(t.tutor.enterQuestionText); return; }
+    if (form.text.trim().length < 10) { setError('Текст вопроса должен содержать минимум 10 символов.'); return; }
     if (form.answerOptions.filter(o => o.text.trim()).length < 2) { setError(t.tutor.minTwoOptions); return; }
     if (!form.answerOptions.some(o => o.isCorrect && o.text.trim())) { setError(t.tutor.markCorrectOption); return; }
 
@@ -158,7 +159,11 @@ function TutorQuestionsPage() {
       setModalMode('view');
       loadQuestions();
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || t.tutor.questionSaveError;
+      const resp = (err as { response?: { data?: { error?: string; errors?: Record<string, string[]>; title?: string } } })?.response?.data;
+      const msg = resp?.error
+        || (resp?.errors ? Object.values(resp.errors).flat().join(' ') : null)
+        || resp?.title
+        || t.tutor.questionSaveError;
       setError(msg);
     }
   };

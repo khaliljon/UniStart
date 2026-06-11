@@ -30,13 +30,19 @@ public class DatabaseSeeder
 
         if (totalQuestions > 0 && questionsWithExplanation < totalQuestions)
         {
-            _context.UserAnswers.RemoveRange(_context.UserAnswers);
-            _context.MockExamAnswers.RemoveRange(_context.MockExamAnswers);
-            _context.MockExamAttempts.RemoveRange(_context.MockExamAttempts);
-            _context.TimedDrillResults.RemoveRange(_context.TimedDrillResults);
-            _context.AnswerOptions.RemoveRange(_context.AnswerOptions);
-            _context.Questions.RemoveRange(_context.Questions);
-            await _context.SaveChangesAsync();
+            // Only wipe questions if no real user data exists (dev/empty DB).
+            // On production with MockExamAnswers/UserAnswers skip cleanup to avoid data loss.
+            var hasMockData = await _context.MockExamAnswers.AnyAsync()
+                           || await _context.MockExamAttempts.AnyAsync();
+            var hasUserData = await _context.UserAnswers.AnyAsync();
+
+            if (!hasMockData && !hasUserData)
+            {
+                _context.AnswerOptions.RemoveRange(_context.AnswerOptions);
+                _context.Questions.RemoveRange(_context.Questions);
+                await _context.SaveChangesAsync();
+            }
+            // else: skip — questions will remain as-is; new ones will be seeded below
         }
 
         if (!await _context.ExamTypes.AnyAsync())

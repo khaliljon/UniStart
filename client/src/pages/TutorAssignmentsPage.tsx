@@ -113,7 +113,12 @@ export default function TutorAssignmentsPage() {
       loadAssignments();
       setTimeout(() => setSuccess(''), 3000);
     } catch (e: any) {
-      setError(e.response?.data || 'Ошибка создания задания');
+      const d = e?.response?.data;
+      const msg = typeof d === 'string' ? d
+        : d?.error || d?.title
+        || (d?.errors ? Object.values(d.errors as Record<string, string[]>).flat().join(' ') : null)
+        || 'Ошибка создания задания';
+      setError(msg);
     }
   };
 
