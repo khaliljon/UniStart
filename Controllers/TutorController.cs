@@ -22,14 +22,16 @@ public class TutorController : ControllerBase
     private readonly UniStartDbContext _db;
     private readonly IEmailService _email;
     private readonly IImageUploadService _imageUpload;
+    private readonly ILogger<TutorController> _logger;
 
-    public TutorController(ITutorService tutorService, IHubContext<ChatHub> hubContext, UniStartDbContext db, IEmailService email, IImageUploadService imageUpload)
+    public TutorController(ITutorService tutorService, IHubContext<ChatHub> hubContext, UniStartDbContext db, IEmailService email, IImageUploadService imageUpload, ILogger<TutorController> logger)
     {
         _tutorService = tutorService;
         _hubContext = hubContext;
         _db = db;
         _email = email;
         _imageUpload = imageUpload;
+        _logger = logger;
     }
 
     /// <summary>Upload an image to Cloudflare R2 and return its public URL</summary>
@@ -481,6 +483,11 @@ public class TutorController : ControllerBase
             return Created($"/api/tutors/assignments/{result.Id}", result);
         }
         catch (ArgumentException ex) { return BadRequest(new { error = ex.Message }); }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "CreateAssignment failed for tutor {UserId}", userId);
+            return StatusCode(500, new { error = ex.Message });
+        }
     }
 
     /// <summary>Обновить задание</summary>
