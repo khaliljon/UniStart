@@ -7,9 +7,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UniStart", "UniStart.csproj
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{7FDF7A4A-57AB-40FC-950F-37264D91A95D}"
 	ProjectSection(SolutionItems) = preProject
+		Agreement.md = Agreement.md
+		Confidential.md = Confidential.md
 		Diploma.md = Diploma.md
 		DiplomaEx.md = DiplomaEx.md
 		README.md = README.md
+		Referal.md = Referal.md
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UniStart.Tests", "..\UniStart.Tests\UniStart.Tests.csproj", "{A0EC749E-D123-4465-BAA6-56B19D97B1AC}"

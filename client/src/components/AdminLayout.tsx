@@ -159,6 +159,8 @@ function AdminLayout() {
                       { label: t.admin.nav.advisorConfig, path: '/advisor-config' },
                       { label: t.admin.nav.audit, path: '/audit' },
                       { label: t.admin.nav.health, path: '/health' },
+                      { label: t.admin.nav.backups, path: '/backups' },
+                      { label: t.admin.nav.legal, path: '/legal' },
                       { label: t.admin.nav.trash, path: '/trash' },
                     ].map(item => (
                       <NavLink

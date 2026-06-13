@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { schoolAdminService } from '../services/schoolAdminService';
 import { useTranslation } from '../i18n';
 import { getDateLocale } from '../i18n';
@@ -7,6 +8,7 @@ import ContactForm from '../components/ContactForm';
 
 function SchoolAdminDashboardPage() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [dashboard, setDashboard] = useState<SchoolDashboard | null>(null);
   const [loading, setLoading] = useState(true);
   const [subscription, setSubscription] = useState<{ subscriptionExpiresAt: string | null; isActive: boolean } | null>(null);
@@ -32,6 +34,30 @@ function SchoolAdminDashboardPage() {
   return (
     <div>
       <h1 style={{ marginBottom: '1.5rem' }}>{dashboard.schoolName}</h1>
+
+      {/* Primary action: manage mock exams */}
+      <div
+        className="card"
+        onClick={() => navigate('/mocks')}
+        style={{
+          padding: '1.5rem 1.75rem', marginBottom: '2rem', cursor: 'pointer',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem',
+          border: '2px solid var(--primary-color)',
+          background: 'linear-gradient(135deg, var(--primary-color)11, transparent)',
+        }}
+      >
+        <div>
+          <div style={{ fontWeight: 700, fontSize: '1.15rem', marginBottom: '0.25rem' }}>
+            {t.schoolAdmin.mocks.title}
+          </div>
+          <div style={{ fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
+            {t.schoolAdmin.mocks.subtitle}
+          </div>
+        </div>
+        <span className="btn btn-primary" style={{ whiteSpace: 'nowrap' }}>
+          {t.schoolAdmin.mocks.nav} &rarr;
+        </span>
+      </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
         <StatCard label={t.schoolAdmin.students} value={dashboard.totalStudents} />

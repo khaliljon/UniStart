@@ -236,7 +236,12 @@ public record UpdateSchoolDto(
     string? WebsiteUrl = null,
     string? InstagramUrl = null,
     string? TelegramUrl = null,
-    string? Specializations = null
+    string? Specializations = null,
+    string? Subdomain = null,
+    string? PrimaryColor = null,
+    string? PrimaryHoverColor = null,
+    string? AccentColor = null,
+    string? NavbarTitle = null
 );
 
 public record SchoolAdminDto(
@@ -255,7 +260,12 @@ public record SchoolAdminDto(
     bool IsActive,
     int? OwnerUserId,
     int TutorCount,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    string? Subdomain = null,
+    string? PrimaryColor = null,
+    string? PrimaryHoverColor = null,
+    string? AccentColor = null,
+    string? NavbarTitle = null
 );
 
 // ═══════════════════════════════════════════════════════

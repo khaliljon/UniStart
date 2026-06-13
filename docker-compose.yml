@@ -68,6 +68,11 @@ services:
       R2__AccessKeyId: ${R2_ACCESS_KEY_ID:-}
       R2__SecretAccessKey: ${R2_SECRET_ACCESS_KEY:-}
       R2__PublicUrl: ${R2_PUBLIC_URL:-}
+      DATA_PROTECTION_KEYS_DIR: /keys
+      BACKUP_DIR: /backups
+    volumes:
+      - dpkeys:/keys
+      - backups:/backups
     ports:
       - "${API_PORT:-5009}:5009"
 
@@ -91,3 +96,5 @@ services:
 volumes:
   pgdata:
   certbot-webroot:
+  dpkeys:
+  backups:

@@ -1,5 +1,13 @@
 namespace UniStart.Application.DTOs;
 
+// ─── Database Backups ──────────────────────────────────
+
+public record BackupFileDto(
+    string FileName,
+    long SizeBytes,
+    DateTime CreatedAtUtc
+);
+
 // ─── Admin Question Management ──────────────────────────
 
 public record QuestionListDto(

@@ -20,9 +20,9 @@ RUN dotnet publish UniStart.csproj -c Release -o /app/publish --no-restore
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
 
-# Tesseract OCR runtime dependencies (for question import pipeline)
+# Tesseract OCR runtime deps (question import) + postgresql-client (DB backups)
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends libleptonica-dev libtesseract-dev && \
+    apt-get install -y --no-install-recommends libleptonica-dev libtesseract-dev postgresql-client && \
     rm -rf /var/lib/apt/lists/*
 
 COPY --from=build /app/publish .
@@ -32,6 +32,7 @@ COPY tessdata ./tessdata
 
 ENV ASPNETCORE_URLS=http://+:5009
 ENV ASPNETCORE_ENVIRONMENT=Production
+ENV BACKUP_DIR=/backups
 
 EXPOSE 5009
 

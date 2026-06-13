@@ -369,7 +369,7 @@ function UniversityAdvisorPage() {
               {filteredResult.already.length > 0 && (
                 <div style={{ marginBottom: '1.5rem' }}>
                   <h2 style={{ marginBottom: '0.75rem' }}>
-                    ✅ Уже проходите ({filteredResult.already.length})
+                    Уже проходите ({filteredResult.already.length})
                   </h2>
                   {filteredResult.already.map((u) => (
                     <UniCard key={u.id} uni={u} highlighted={markerFocusId === u.id} refProp={cardRefs.current[u.id]} />
@@ -380,7 +380,7 @@ function UniversityAdvisorPage() {
               {filteredResult.goals.length > 0 && (
                 <div style={{ marginBottom: '1.5rem' }}>
                   <h2 style={{ marginBottom: '0.75rem' }}>
-                    🎯 Цель ({filteredResult.goals.length})
+                    Цель ({filteredResult.goals.length})
                   </h2>
                   {filteredResult.goals.map((u) => (
                     <UniCard key={u.id} uni={u} highlighted={markerFocusId === u.id} refProp={cardRefs.current[u.id]} />
@@ -391,7 +391,7 @@ function UniversityAdvisorPage() {
               {filteredResult.fallback.length > 0 && (
                 <div style={{ marginBottom: '1.5rem' }}>
                   <h2 style={{ marginBottom: '0.75rem' }}>
-                    📋 Рекомендуется ({filteredResult.fallback.length})
+                    Рекомендуется ({filteredResult.fallback.length})
                   </h2>
                   {filteredResult.fallback.map((u) => (
                     <UniCard key={u.id} uni={u} highlighted={markerFocusId === u.id} refProp={cardRefs.current[u.id]} />

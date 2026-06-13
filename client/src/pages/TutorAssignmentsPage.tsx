@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { tutorService } from '../services/tutorService';
 import type {
   AssignmentListItem, AssignmentDetail, TutorStudentInfo,
@@ -24,6 +25,7 @@ const DIFFICULTY_LABELS: Record<string, string> = { Easy: 'Легко', Medium: 
 const DIFFICULTY_COLORS: Record<string, string> = { Easy: '#22c55e', Medium: '#f59e0b', Hard: '#ef4444', '1': '#22c55e', '2': '#f59e0b', '3': '#ef4444' };
 
 export default function TutorAssignmentsPage() {
+  const navigate = useNavigate();
   const [assignments, setAssignments] = useState<AssignmentListItem[]>([]);
   const [detail, setDetail] = useState<AssignmentDetail | null>(null);
   const [mode, setMode] = useState<ViewMode>('list');
@@ -425,7 +427,14 @@ export default function TutorAssignmentsPage() {
 
         {questions.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '2rem 1rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-            Нет вопросов. Создайте вопросы в разделе «Вопросы».
+            <p style={{ marginBottom: '0.5rem' }}>Нет вопросов.</p>
+            <p>Сначала создайте вопросы в разделе <strong>«Вопросы»</strong>, затем вернитесь сюда.</p>
+            <button
+              onClick={() => navigate('/questions')}
+              style={{ display: 'inline-block', marginTop: '0.75rem', padding: '0.45rem 1.1rem', borderRadius: '8px', background: 'var(--primary-color)', color: '#fff', border: 'none', cursor: 'pointer', fontSize: '0.85rem' }}
+            >
+              Создать вопросы →
+            </button>
           </div>
         ) : (
           <div style={{ maxHeight: 350, overflow: 'auto', borderRadius: '0.5rem', border: '1px solid var(--border-color)' }}>

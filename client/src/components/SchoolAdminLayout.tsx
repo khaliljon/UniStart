@@ -87,6 +87,11 @@ function SchoolAdminLayout() {
                 </NavLink>
               </li>
               <li>
+                <NavLink to="/mocks" onClick={() => setMenuOpen(false)}>
+                  {t.schoolAdmin.mocks.nav}
+                </NavLink>
+              </li>
+              <li>
                 <NavLink to="/students" onClick={() => setMenuOpen(false)}>
                   {t.schoolAdmin.students}
                 </NavLink>

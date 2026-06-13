@@ -450,6 +450,16 @@ const adminService = {
 
   getTutorContent: (params: { tutorId?: number; page?: number; pageSize?: number } = {}) =>
     api.get('/admin/content/tutor-content', { params }).then(r => r.data),
+
+  // ─── Database Backups ────────────────────────────────────
+  listBackups: () =>
+    api.get<Array<{ fileName: string; sizeBytes: number; createdAtUtc: string }>>('/admin/backups').then(r => r.data),
+  createBackup: () =>
+    api.post<{ fileName: string; sizeBytes: number; createdAtUtc: string }>('/admin/backups').then(r => r.data),
+  deleteBackup: (fileName: string) =>
+    api.delete(`/admin/backups/${encodeURIComponent(fileName)}`),
+  downloadBackup: (fileName: string) =>
+    api.get(`/admin/backups/${encodeURIComponent(fileName)}/download`, { responseType: 'blob' }).then(r => r.data as Blob),
 };
 
 export default adminService;

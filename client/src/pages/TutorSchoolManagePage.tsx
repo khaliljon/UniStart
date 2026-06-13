@@ -24,6 +24,13 @@ function TutorSchoolManagePage() {
   const [telegramUrl, setTelegramUrl] = useState('');
   const [specializations, setSpecializations] = useState<string[]>([]);
 
+  // White-label branding
+  const [subdomain, setSubdomain] = useState('');
+  const [primaryColor, setPrimaryColor] = useState('');
+  const [primaryHoverColor, setPrimaryHoverColor] = useState('');
+  const [accentColor, setAccentColor] = useState('');
+  const [navbarTitle, setNavbarTitle] = useState('');
+
   // Tutor management
   const [tutorIdInput, setTutorIdInput] = useState('');
   const [removeTutorIdInput, setRemoveTutorIdInput] = useState('');
@@ -45,6 +52,11 @@ function TutorSchoolManagePage() {
     setInstagramUrl(s.instagramUrl || '');
     setTelegramUrl(s.telegramUrl || '');
     setSpecializations(s.specializations || []);
+    setSubdomain(s.subdomain || '');
+    setPrimaryColor(s.primaryColor || '');
+    setPrimaryHoverColor(s.primaryHoverColor || '');
+    setAccentColor(s.accentColor || '');
+    setNavbarTitle(s.navbarTitle || '');
   };
 
   const loadSchool = useCallback(async () => {
@@ -81,6 +93,11 @@ function TutorSchoolManagePage() {
         instagramUrl: instagramUrl.trim() || undefined,
         telegramUrl: telegramUrl.trim() || undefined,
         specializations: specializations.length > 0 ? specializations.join(',') : undefined,
+        subdomain: subdomain.trim().toLowerCase(),
+        primaryColor: primaryColor.trim(),
+        primaryHoverColor: primaryHoverColor.trim(),
+        accentColor: accentColor.trim(),
+        navbarTitle: navbarTitle.trim(),
       };
       const updated = await tutorService.updateMySchool(data);
       setSchool(updated);
@@ -193,6 +210,44 @@ function TutorSchoolManagePage() {
               onSaved={() => setSaved(false)}
             />
           </div>
+
+          {/* White-label branding */}
+          <div className="card">
+            <h3 style={{ margin: '0 0 0.25rem', fontSize: '1rem' }}>Брендинг (White Label)</h3>
+            <p style={{ margin: '0 0 0.75rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+              Поддомен и фирменные цвета для страницы вашей школы (например <code>school.unistart.kz</code>). Цвета задаются в формате HEX, например <code>#c0392b</code>.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>
+                Поддомен
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.25rem' }}>
+                  <input
+                    className="form-input"
+                    type="text"
+                    placeholder="school"
+                    value={subdomain}
+                    onChange={e => { setSubdomain(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '')); setSaved(false); }}
+                    style={{ flex: 1 }}
+                  />
+                  <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>.unistart.kz</span>
+                </div>
+              </label>
+              <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>
+                Название в шапке
+                <input
+                  className="form-input"
+                  type="text"
+                  placeholder={name}
+                  value={navbarTitle}
+                  onChange={e => { setNavbarTitle(e.target.value); setSaved(false); }}
+                  style={{ marginTop: '0.25rem' }}
+                />
+              </label>
+              <ColorField label="Основной цвет" value={primaryColor} onChange={v => { setPrimaryColor(v); setSaved(false); }} placeholder="#c0392b" />
+              <ColorField label="Цвет при наведении" value={primaryHoverColor} onChange={v => { setPrimaryHoverColor(v); setSaved(false); }} placeholder="#e74c3c" />
+              <ColorField label="Акцентный цвет" value={accentColor} onChange={v => { setAccentColor(v); setSaved(false); }} placeholder="#d4a437" />
+            </div>
+          </div>
         </div>
 
         {/* Right: Info & Tutor Management */}
@@ -290,6 +345,32 @@ interface SchoolFormProps {
   telegramUrl: string; setTelegramUrl: (v: string) => void;
   specializations: string[]; toggleSpec: (s: string) => void;
   onSaved: () => void;
+}
+
+function ColorField({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (v: string) => void; placeholder: string }) {
+  const valid = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(value.trim());
+  return (
+    <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>
+      {label}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.25rem' }}>
+        <input
+          type="color"
+          value={valid ? value.trim() : '#6366f1'}
+          onChange={e => onChange(e.target.value)}
+          style={{ width: '2.5rem', height: '2.25rem', padding: 0, border: '1px solid var(--border-color)', borderRadius: '0.4rem', cursor: 'pointer', background: 'none' }}
+          aria-label={label}
+        />
+        <input
+          className="form-input"
+          type="text"
+          placeholder={placeholder}
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          style={{ flex: 1 }}
+        />
+      </div>
+    </label>
+  );
 }
 
 function SchoolForm({ name, setName, description, setDescription, descriptionEn, setDescriptionEn, descriptionKz, setDescriptionKz, logoUrl, setLogoUrl, websiteUrl, setWebsiteUrl, instagramUrl, setInstagramUrl, telegramUrl, setTelegramUrl, specializations, toggleSpec, onSaved }: SchoolFormProps) {

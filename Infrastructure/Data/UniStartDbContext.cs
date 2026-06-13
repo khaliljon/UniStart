@@ -74,6 +74,9 @@ public class UniStartDbContext : DbContext
     public DbSet<ReferralUsage> ReferralUsages => Set<ReferralUsage>();
     public DbSet<ReferralReward> ReferralRewards => Set<ReferralReward>();
 
+    // Editable legal documents (privacy / terms / referral)
+    public DbSet<LegalDocument> LegalDocuments => Set<LegalDocument>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -1095,6 +1098,21 @@ public class UniStartDbContext : DbContext
                   .WithMany()
                   .HasForeignKey(e => e.ReferredByCodeId)
                   .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // ═══════════════════════════════════════════════════════
+        //  LEGAL DOCUMENTS (editable from admin panel)
+        // ═══════════════════════════════════════════════════════
+        modelBuilder.Entity<LegalDocument>(entity =>
+        {
+            entity.ToTable("LegalDocuments");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Slug).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.LastUpdatedLabel).HasMaxLength(100);
+            entity.HasIndex(e => e.Slug)
+                  .IsUnique()
+                  .HasDatabaseName("IX_LegalDocuments_Slug");
         });
 
         // Seed exam types

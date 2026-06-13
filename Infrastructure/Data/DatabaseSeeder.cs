@@ -22,7 +22,19 @@ public class DatabaseSeeder
 
         if (await _context.Topics.AnyAsync() && !hasCorrectData)
         {
-            await ClearAllDataAsync();
+            // SAFETY: never wipe a database that already holds real activity.
+            // A schema/seed-marker change must not be allowed to destroy live data
+            // (user answers, mock attempts, real accounts). Only auto-reset when the
+            // DB is effectively empty of user activity (fresh/dev environment).
+            if (await HasRealUserDataAsync())
+            {
+                System.Console.WriteLine(
+                    "[Seeder] Seed marker missing but real user data detected — skipping ClearAllDataAsync to prevent data loss.");
+            }
+            else
+            {
+                await ClearAllDataAsync();
+            }
         }
 
         var totalQuestions = await _context.Questions.CountAsync();
@@ -91,7 +103,63 @@ public class DatabaseSeeder
             await SeedMockExamsAsync();
         }
 
+        await SeedLegalDocumentsAsync();
+
         await _context.SaveChangesAsync();
+    }
+
+    private async Task SeedLegalDocumentsAsync()
+    {
+        var existing = await _context.LegalDocuments
+            .Select(d => d.Slug)
+            .ToListAsync();
+
+        var docs = new[]
+        {
+            new LegalDocument
+            {
+                Slug = LegalDocumentSeedData.PrivacySlug,
+                Title = LegalDocumentSeedData.PrivacyTitle,
+                LastUpdatedLabel = LegalDocumentSeedData.PrivacyLastUpdated,
+                Content = LegalDocumentSeedData.PrivacyContent,
+            },
+            new LegalDocument
+            {
+                Slug = LegalDocumentSeedData.TermsSlug,
+                Title = LegalDocumentSeedData.TermsTitle,
+                LastUpdatedLabel = LegalDocumentSeedData.TermsLastUpdated,
+                Content = LegalDocumentSeedData.TermsContent,
+            },
+            new LegalDocument
+            {
+                Slug = LegalDocumentSeedData.ReferralSlug,
+                Title = LegalDocumentSeedData.ReferralTitle,
+                LastUpdatedLabel = LegalDocumentSeedData.ReferralLastUpdated,
+                Content = LegalDocumentSeedData.ReferralContent,
+            },
+        };
+
+        // Only insert documents that are missing — never overwrite admin edits.
+        var toAdd = docs.Where(d => !existing.Contains(d.Slug)).ToList();
+        if (toAdd.Count > 0)
+        {
+            _context.LegalDocuments.AddRange(toAdd);
+        }
+    }
+
+    private async Task<bool> HasRealUserDataAsync()
+    {
+        // Treat the DB as "live" if any student activity exists, or if there are
+        // user accounts beyond the seeded defaults (test/admin) and partner schools.
+        if (await _context.UserAnswers.AnyAsync()) return true;
+        if (await _context.MockExamAnswers.AnyAsync()) return true;
+        if (await _context.MockExamAttempts.AnyAsync()) return true;
+        if (await _context.TimedDrillResults.AnyAsync()) return true;
+        if (await _context.TutorSchools.AnyAsync()) return true;
+
+        var realUsers = await _context.Users
+            .CountAsync(u => u.Email != "test@unistart.kz" && u.Email != "admin@unistart.kz");
+        return realUsers > 0;
     }
 
     private async Task ClearAllDataAsync()

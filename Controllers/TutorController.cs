@@ -269,9 +269,16 @@ public class TutorController : ControllerBase
     public async Task<IActionResult> UpdateMySchool([FromBody] UpdateSchoolDto dto)
     {
         var userId = GetUserId();
-        var result = await _tutorService.UpdateSchoolAsync(userId, dto);
-        if (result == null) return NotFound(new { error = "School not found or not owner" });
-        return Ok(result);
+        try
+        {
+            var result = await _tutorService.UpdateSchoolAsync(userId, dto);
+            if (result == null) return NotFound(new { error = "School not found or not owner" });
+            return Ok(result);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     /// <summary>Добавить тьютора в школу (владелец)</summary>

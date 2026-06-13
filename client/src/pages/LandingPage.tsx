@@ -167,6 +167,53 @@ function LandingPage() {
             {t.landing.learnMore}
           </button>
         </div>
+
+        {/* ═══ Linhao partnership — prominent, right under the CTA ═══ */}
+        <div style={{ marginTop: '2.5rem', display: 'flex', justifyContent: 'center' }}>
+          <a
+            href="https://linhao.unistart.kz"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '1rem',
+              padding: '1rem 1.25rem',
+              maxWidth: '560px',
+              width: '100%',
+              borderRadius: '1rem',
+              textDecoration: 'none',
+              background: 'linear-gradient(135deg, rgba(99,102,241,0.10), rgba(139,92,246,0.10))',
+              border: '2px solid #6366f1',
+              boxShadow: '0 8px 28px rgba(99,102,241,0.22)',
+              textAlign: 'left',
+              transition: 'transform 0.2s, box-shadow 0.2s',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 12px 34px rgba(99,102,241,0.30)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 8px 28px rgba(99,102,241,0.22)'; }}
+          >
+            <div style={{ width: '56px', height: '56px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0 }}>
+              <img src="/linhao-logo.png" alt="LINHAO.CHINESE" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <span style={{
+                display: 'inline-block', fontSize: '0.68rem', fontWeight: 800, letterSpacing: '0.08em',
+                color: '#fff', textTransform: 'uppercase', marginBottom: '0.3rem',
+                padding: '0.15rem 0.55rem', borderRadius: '999px',
+                background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+              }}>
+                {t.landing.partnerTitle}
+              </span>
+              <div style={{ fontWeight: 700, fontSize: '1.05rem', color: 'var(--text-primary)' }}>
+                {t.landing.partnerLinHaoName}
+              </div>
+              <div style={{ color: 'var(--text-secondary)', fontSize: '0.82rem', lineHeight: 1.4 }}>
+                {t.landing.partnerLinHaoDesc}
+              </div>
+            </div>
+            <span style={{ color: '#6366f1', fontWeight: 700, fontSize: '1.4rem', flexShrink: 0 }}>→</span>
+          </a>
+        </div>
       </section>
 
       {/* ═══ Features ═══ */}
@@ -360,96 +407,6 @@ function LandingPage() {
         </div>
       </section>
 
-      {/* ═══ Partner ═══ */}
-      <section style={{
-        padding: '5rem 2rem',
-        maxWidth: '800px',
-        margin: '0 auto',
-      }}>
-        <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
-          <h2 style={{ fontSize: '2rem', fontWeight: 700, marginBottom: '0.75rem' }}>
-            {t.landing.partnerTitle}
-          </h2>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '1.05rem' }}>
-            {t.landing.partnerDesc}
-          </p>
-        </div>
-
-        <div style={{
-          padding: '2rem',
-          borderRadius: '1.25rem',
-          border: '1px solid var(--border-color)',
-          background: 'var(--card-bg)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '2rem',
-          flexWrap: 'wrap',
-        }}>
-          <div style={{
-            width: '80px', height: '80px', borderRadius: '50%',
-            overflow: 'hidden', flexShrink: 0,
-          }}>
-            <img src="/linhao-logo.png" alt="LINHAO.CHINESE" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          </div>
-          <div style={{ flex: 1, minWidth: '200px' }}>
-            <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.2rem', fontWeight: 700 }}>
-              {t.landing.partnerLinHaoName}
-            </h3>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: 1.6, margin: '0 0 0.75rem' }}>
-              {t.landing.partnerLinHaoDesc}
-            </p>
-            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
-              <a
-                href="https://instagram.com/linhao.chinese"
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ color: '#6366f1', fontWeight: 600, fontSize: '0.9rem', textDecoration: 'none' }}
-              >
-                Instagram
-              </a>
-              <a
-                href="https://t.me/linhao_chinese"
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ color: '#6366f1', fontWeight: 600, fontSize: '0.9rem', textDecoration: 'none' }}
-              >
-                Telegram
-              </a>
-              <a
-                href="https://linhao.unistart.kz"
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ color: '#6366f1', fontWeight: 600, fontSize: '0.9rem', textDecoration: 'none' }}
-              >
-                {t.landing.partnerVisit}
-              </a>
-            </div>
-          </div>
-        </div>
-
-        {/* Partner CTA */}
-        <div style={{ textAlign: 'center', marginTop: '2rem' }}>
-          <a
-            href="/register?role=SchoolAdmin"
-            style={{
-              display: 'inline-block',
-              padding: '0.85rem 2rem',
-              borderRadius: '0.75rem',
-              border: '2px solid var(--primary-color)',
-              color: 'var(--primary-color)',
-              fontWeight: 600,
-              fontSize: '0.95rem',
-              textDecoration: 'none',
-              transition: 'all 0.2s ease',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'var(--primary-color)'; e.currentTarget.style.color = '#fff'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--primary-color)'; }}
-          >
-            {t.landing.partnerCta}
-          </a>
-        </div>
-      </section>
-
       {/* ═══ Referral Program ═══ */}
       <section style={{
         padding: '4rem 2rem',
@@ -475,7 +432,6 @@ function LandingPage() {
             border: '1px solid var(--border-color)',
             background: 'var(--card-bg)',
           }}>
-            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🎓</div>
             <p style={{ fontWeight: 600, fontSize: '0.95rem' }}>{t.landing.referralStudents}</p>
           </div>
           <div style={{
@@ -484,7 +440,6 @@ function LandingPage() {
             border: '1px solid var(--border-color)',
             background: 'var(--card-bg)',
           }}>
-            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>💰</div>
             <p style={{ fontWeight: 600, fontSize: '0.95rem' }}>{t.landing.referralTutors}</p>
           </div>
         </div>

@@ -27,6 +27,8 @@ const AdminImportPage = lazy(() => import('./pages/AdminImportPage'))
 const AdminUsersPage = lazy(() => import('./pages/AdminUsersPage'))
 const AdminAuditLogsPage = lazy(() => import('./pages/AdminAuditLogsPage'))
 const AdminSystemHealthPage = lazy(() => import('./pages/AdminSystemHealthPage'))
+const AdminBackupsPage = lazy(() => import('./pages/AdminBackupsPage'))
+const AdminLegalPage = lazy(() => import('./pages/AdminLegalPage'))
 const AdminUserActivityPage = lazy(() => import('./pages/AdminUserActivityPage'))
 const AdminTutorsPage = lazy(() => import('./pages/AdminTutorsPage'))
 const AdminQuestionImportPage = lazy(() => import('./pages/AdminQuestionImportPage'))
@@ -54,6 +56,7 @@ const SchoolAdminDashboardPage = lazy(() => import('./pages/SchoolAdminDashboard
 const SchoolAdminStudentsPage = lazy(() => import('./pages/SchoolAdminStudentsPage'))
 const SchoolAdminTutorsPage = lazy(() => import('./pages/SchoolAdminTutorsPage'))
 const SchoolAdminApplicationsPage = lazy(() => import('./pages/SchoolAdminApplicationsPage'))
+const SchoolAdminMocksPage = lazy(() => import('./pages/SchoolAdminMocksPage'))
 const TutorContentPage = lazy(() => import('./pages/TutorContentPage'))
 const StudentAssignmentsPage = lazy(() => import('./pages/StudentAssignmentsPage'))
 const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'))
@@ -107,6 +110,8 @@ function AdminRoutes() {
       <Route path="tutors" element={<AdminTutorsPage />} />
       <Route path="audit" element={<AdminAuditLogsPage />} />
       <Route path="health" element={<AdminSystemHealthPage />} />
+      <Route path="backups" element={<AdminBackupsPage />} />
+      <Route path="legal" element={<AdminLegalPage />} />
       <Route path="activity" element={<AdminUserActivityPage />} />
       <Route path="import" element={<AdminImportPage />} />
       <Route path="question-import" element={<AdminQuestionImportPage />} />
@@ -143,6 +148,7 @@ function SchoolAdminRoutes() {
   return (
     <Route path="/" element={<SchoolAdminLayout />}>
       <Route index element={<SchoolAdminDashboardPage />} />
+      <Route path="mocks" element={<SchoolAdminMocksPage />} />
       <Route path="students" element={<SchoolAdminStudentsPage />} />
       <Route path="tutors" element={<SchoolAdminTutorsPage />} />
       <Route path="applications" element={<SchoolAdminApplicationsPage />} />

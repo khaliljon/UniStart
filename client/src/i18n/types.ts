@@ -595,7 +595,11 @@ export interface Translations {
       dashboard: string; questions: string; content: string; users: string;
       tutors: string; audit: string; health: string; activity: string;
       import: string; questionImport: string; trash: string; more: string; applications: string;
-      schools: string; advisorConfig: string;
+      schools: string; advisorConfig: string; backups: string;
+      legal: string;
+    };
+    legal: {
+      title: string; docTitle: string; lastUpdated: string; content: string; saved: string;
     };
     common: {
       loading: string; noData: string; error: string; save: string; cancel: string;
@@ -1331,6 +1335,15 @@ export interface Translations {
     logoutBtn: string;
     poweredBy: string;
     footerBrand: string;
+    mockTitle: string;
+    mockSubtitle: string;
+    mockPack1: string;
+    mockPack3: string;
+    mockPack5: string;
+    mockPackFull: string;
+    mockPackFullDesc: string;
+    mockPopular: string;
+    mockBuy: string;
   };
 
   // ─── Tutor Verification Gate ───
@@ -1448,5 +1461,43 @@ export interface Translations {
     pendingApprovalDesc: string;
     pricingInfo: string;
     paymentInstructions: string;
+    mocks: {
+      nav: string;
+      title: string;
+      subtitle: string;
+      createBtn: string;
+      newMock: string;
+      editMock: string;
+      fieldTitle: string;
+      fieldDescription: string;
+      fieldExamType: string;
+      fieldTotalTime: string;
+      fieldActive: string;
+      selectExamType: string;
+      sections: string;
+      addSection: string;
+      removeSection: string;
+      sectionName: string;
+      pool: string;
+      noPool: string;
+      timeLimit: string;
+      questionCount: string;
+      instructions: string;
+      save: string;
+      cancel: string;
+      saved: string;
+      deleted: string;
+      confirmDelete: string;
+      noMocks: string;
+      minutesUnit: string;
+      attempts: string;
+      sectionsCount: string;
+      questionsTotal: string;
+      statusActive: string;
+      statusInactive: string;
+      activate: string;
+      deactivate: string;
+      loadError: string;
+    };
   };
 }

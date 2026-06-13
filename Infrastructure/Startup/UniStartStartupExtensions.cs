@@ -10,6 +10,7 @@ using Hangfire.Dashboard;
 using Hangfire.PostgreSql;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.RateLimiting;
@@ -42,6 +43,20 @@ public static class UniStartStartupExtensions
     {
         services.AddHttpContextAccessor();
 
+        // ── Data Protection ──────────────────────────────────
+        // Persist keys to a stable location so they survive container
+        // restarts/rebuilds. Without this, ASP.NET regenerates the key ring on
+        // every start (ephemeral container FS), which invalidates antiforgery
+        // tokens and anything encrypted via the Data Protection API, and floods
+        // the logs with "No XML encryptor configured" / key-not-found warnings.
+        var dpBuilder = services.AddDataProtection().SetApplicationName("UniStart");
+        var keysPath = Environment.GetEnvironmentVariable("DATA_PROTECTION_KEYS_DIR");
+        if (!string.IsNullOrWhiteSpace(keysPath))
+        {
+            System.IO.Directory.CreateDirectory(keysPath);
+            dpBuilder.PersistKeysToFileSystem(new System.IO.DirectoryInfo(keysPath));
+        }
+
         services.AddDbContext<UniStartDbContext>(options =>
             options.UseNpgsql(connectionString));
 
@@ -66,6 +81,7 @@ public static class UniStartStartupExtensions
         services.AddScoped<INotificationService, NotificationService>();
         services.AddScoped<IAuditService, AuditService>();
         services.AddScoped<IBackgroundJobsService, BackgroundJobsService>();
+        services.AddScoped<IBackupService, BackupService>();
         services.AddScoped<ITutorService, TutorService>();
         services.AddScoped<IMessageService, MessageService>();
         services.AddScoped<IReferralService, ReferralService>();
@@ -447,6 +463,11 @@ public static class UniStartStartupExtensions
             "irt-calibration",
             service => service.CalibrateIrtParametersAsync(),
             "0 3 * * *");
+
+        RecurringJob.AddOrUpdate<IBackupService>(
+            "db-backup",
+            service => service.CreateBackupAsync("scheduled"),
+            "0 1 * * *");
 
         return app;
     }

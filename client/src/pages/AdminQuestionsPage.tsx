@@ -839,7 +839,7 @@ function AdminQuestionsPage() {
                           onClick={() => deleteTopic(tp.id)}
                           title="Удалить тему и все вопросы"
                         >
-                          🗑
+                          ✕
                         </button>
                       </div>
                       {/* Questions list */}
@@ -945,7 +945,7 @@ function AdminQuestionsPage() {
                           onClick={() => deleteSectionWithCascade(s.id)}
                           title="Удалить секцию, все темы и вопросы"
                         >
-                          🗑
+                          ✕
                         </button>
                       </div>
                       {sectionTopics.length > 0 && (

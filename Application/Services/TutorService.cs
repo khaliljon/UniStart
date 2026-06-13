@@ -556,6 +556,29 @@ public class TutorService : ITutorService
         if (dto.InstagramUrl != null) school.InstagramUrl = dto.InstagramUrl;
         if (dto.TelegramUrl != null) school.TelegramUrl = dto.TelegramUrl;
         if (dto.Specializations != null) school.Specializations = dto.Specializations.Trim();
+
+        // ── White-label branding ──
+        if (dto.Subdomain != null)
+        {
+            var sub = dto.Subdomain.Trim().ToLowerInvariant();
+            if (sub.Length == 0)
+            {
+                school.Subdomain = null;
+            }
+            else
+            {
+                if (!System.Text.RegularExpressions.Regex.IsMatch(sub, "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$") || sub == "www")
+                    throw new ArgumentException("Поддомен может содержать только латинские буквы, цифры и дефис (3–32 символа).");
+                var taken = await _db.TutorSchools.AnyAsync(s => s.Id != school.Id && s.Subdomain == sub);
+                if (taken)
+                    throw new ArgumentException("Этот поддомен уже занят другой школой.");
+                school.Subdomain = sub;
+            }
+        }
+        if (dto.PrimaryColor != null) school.PrimaryColor = NormalizeHexColor(dto.PrimaryColor);
+        if (dto.PrimaryHoverColor != null) school.PrimaryHoverColor = NormalizeHexColor(dto.PrimaryHoverColor);
+        if (dto.AccentColor != null) school.AccentColor = NormalizeHexColor(dto.AccentColor);
+        if (dto.NavbarTitle != null) school.NavbarTitle = string.IsNullOrWhiteSpace(dto.NavbarTitle) ? null : InputSanitizer.Sanitize(dto.NavbarTitle);
         school.UpdatedAt = DateTime.UtcNow;
 
         await _db.SaveChangesAsync();
@@ -626,8 +649,20 @@ public class TutorService : ITutorService
                 ? school.Specializations.Split(',', StringSplitOptions.RemoveEmptyEntries)
                 : Array.Empty<string>(),
             school.IsPartner, school.IsActive, school.OwnerUserId,
-            tutorCount, school.CreatedAt
+            tutorCount, school.CreatedAt,
+            school.Subdomain, school.PrimaryColor, school.PrimaryHoverColor,
+            school.AccentColor, school.NavbarTitle
         );
+    }
+
+    private static string? NormalizeHexColor(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return null;
+        var v = value.Trim();
+        if (!v.StartsWith('#')) v = "#" + v;
+        if (!System.Text.RegularExpressions.Regex.IsMatch(v, "^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$"))
+            throw new ArgumentException($"Некорректный цвет: {value}. Используйте HEX, например #c0392b.");
+        return v.ToLowerInvariant();
     }
 
     private static string GenerateSlug(string name)

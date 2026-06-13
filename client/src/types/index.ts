@@ -1342,6 +1342,11 @@ export interface SchoolAdmin {
   ownerUserId: number | null;
   tutorCount: number;
   createdAt: string;
+  subdomain: string | null;
+  primaryColor: string | null;
+  primaryHoverColor: string | null;
+  accentColor: string | null;
+  navbarTitle: string | null;
 }
 
 export interface CreateSchoolRequest {
@@ -1364,6 +1369,11 @@ export interface UpdateSchoolRequest {
   instagramUrl?: string;
   telegramUrl?: string;
   specializations?: string;
+  subdomain?: string;
+  primaryColor?: string;
+  primaryHoverColor?: string;
+  accentColor?: string;
+  navbarTitle?: string;
 }
 
 // ─── School Branding (White Label) ─────────────────────

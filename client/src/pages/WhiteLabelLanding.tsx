@@ -50,6 +50,13 @@ function WhiteLabelLanding({ branding }: Props) {
     { title: t.wl.featureTutors, desc: t.wl.featureTutorsDesc },
   ];
 
+  const mockPackages = [
+    { label: t.wl.mockPack1, price: '2 000 ₸', desc: '', highlight: false },
+    { label: t.wl.mockPack3, price: '4 000 ₸', desc: '', highlight: true },
+    { label: t.wl.mockPack5, price: '6 000 ₸', desc: '', highlight: false },
+    { label: t.wl.mockPackFull, price: '10 000 ₸', desc: t.wl.mockPackFullDesc, highlight: false },
+  ];
+
   return (
     <div style={{ background: 'var(--background-color)', color: 'var(--text-primary)', minHeight: '100vh' }}>
 
@@ -140,6 +147,61 @@ function WhiteLabelLanding({ branding }: Props) {
             <div key={i} className="card" style={{ padding: '1.5rem', borderLeft: `3px solid ${primary}` }}>
               <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.05rem' }}>{f.title}</h3>
               <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>{f.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Mock exam packages */}
+      <section style={{ padding: '3rem 2rem', maxWidth: '1000px', margin: '0 auto' }}>
+        <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+          <h2 style={{ fontWeight: 700, fontSize: '1.75rem', marginBottom: '0.5rem' }}>
+            {t.wl.mockTitle}
+          </h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '1rem' }}>
+            {t.wl.mockSubtitle}
+          </p>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.25rem' }}>
+          {mockPackages.map((p, i) => (
+            <div
+              key={i}
+              className="card"
+              style={{
+                padding: '1.75rem 1.5rem',
+                textAlign: 'center',
+                position: 'relative',
+                border: p.highlight ? `2px solid ${primary}` : '1px solid var(--border-color)',
+                boxShadow: p.highlight ? `0 8px 28px ${primary}22` : 'none',
+              }}
+            >
+              {p.highlight && (
+                <div style={{
+                  position: 'absolute', top: '-12px', left: '50%', transform: 'translateX(-50%)',
+                  background: primary, color: '#fff', padding: '0.2rem 0.8rem',
+                  borderRadius: '999px', fontSize: '0.72rem', fontWeight: 700, whiteSpace: 'nowrap',
+                }}>
+                  {t.wl.mockPopular}
+                </div>
+              )}
+              <div style={{ fontWeight: 700, fontSize: '1.05rem', marginBottom: '0.5rem' }}>{p.label}</div>
+              <div style={{ fontSize: '1.9rem', fontWeight: 800, color: primary, marginBottom: '0.25rem' }}>{p.price}</div>
+              {p.desc && (
+                <div style={{ color: 'var(--text-secondary)', fontSize: '0.82rem', marginBottom: '1rem' }}>{p.desc}</div>
+              )}
+              <button
+                onClick={() => navigate('/register')}
+                style={{
+                  marginTop: p.desc ? 0 : '1rem',
+                  width: '100%', padding: '0.65rem', borderRadius: '0.6rem',
+                  border: p.highlight ? 'none' : `2px solid ${primary}`,
+                  background: p.highlight ? primary : 'transparent',
+                  color: p.highlight ? '#fff' : primary,
+                  fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem',
+                }}
+              >
+                {t.wl.mockBuy}
+              </button>
             </div>
           ))}
         </div>
