@@ -20,9 +20,19 @@ RUN dotnet publish UniStart.csproj -c Release -o /app/publish --no-restore
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
 
-# Tesseract OCR runtime deps (question import) + postgresql-client (DB backups)
+# Tesseract OCR runtime deps (question import) + postgresql-client-17 (DB backups).
+# pg_dump must be >= the PostgreSQL server version (17), so install from the
+# official PGDG apt repo rather than Debian's default (which ships v15).
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends libleptonica-dev libtesseract-dev postgresql-client && \
+    apt-get install -y --no-install-recommends \
+        libleptonica-dev libtesseract-dev curl ca-certificates gnupg && \
+    install -d /usr/share/postgresql-common/pgdg && \
+    curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+        -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc && \
+    echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" \
+        > /etc/apt/sources.list.d/pgdg.list && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends postgresql-client-17 && \
     rm -rf /var/lib/apt/lists/*
 
 COPY --from=build /app/publish .

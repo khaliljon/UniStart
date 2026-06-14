@@ -57,6 +57,7 @@ const SchoolAdminStudentsPage = lazy(() => import('./pages/SchoolAdminStudentsPa
 const SchoolAdminTutorsPage = lazy(() => import('./pages/SchoolAdminTutorsPage'))
 const SchoolAdminApplicationsPage = lazy(() => import('./pages/SchoolAdminApplicationsPage'))
 const SchoolAdminMocksPage = lazy(() => import('./pages/SchoolAdminMocksPage'))
+const SchoolAdminBrandingPage = lazy(() => import('./pages/SchoolAdminBrandingPage'))
 const TutorContentPage = lazy(() => import('./pages/TutorContentPage'))
 const StudentAssignmentsPage = lazy(() => import('./pages/StudentAssignmentsPage'))
 const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'))
@@ -153,6 +154,7 @@ function SchoolAdminRoutes() {
       <Route path="tutors" element={<SchoolAdminTutorsPage />} />
       <Route path="applications" element={<SchoolAdminApplicationsPage />} />
       <Route path="school" element={<TutorSchoolManagePage />} />
+      <Route path="branding" element={<SchoolAdminBrandingPage />} />
       <Route path="messages" element={<MessagesPage />} />
       <Route path="profile" element={<ProfilePage />} />
       <Route path="*" element={<Navigate to="/" replace />} />

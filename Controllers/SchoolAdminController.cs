@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using UniStart.Application.DTOs;
+using UniStart.Application.Interfaces;
 using UniStart.Domain.Entities;
 using UniStart.Infrastructure.Data;
 
@@ -19,10 +20,12 @@ namespace UniStart.Controllers;
 public class SchoolAdminController : ControllerBase
 {
     private readonly UniStartDbContext _db;
+    private readonly IImageUploadService _imageUpload;
 
-    public SchoolAdminController(UniStartDbContext db)
+    public SchoolAdminController(UniStartDbContext db, IImageUploadService imageUpload)
     {
         _db = db;
+        _imageUpload = imageUpload;
     }
 
     private int GetUserId() =>
@@ -40,6 +43,93 @@ public class SchoolAdminController : ControllerBase
         }
         return school;
     }
+
+    // ══════════════════════════════════════════════
+    //  BRANDING (self-service: logo, navbar title, colours)
+    // ══════════════════════════════════════════════
+
+    /// <summary>Get the current branding of the school admin's own school.</summary>
+    [HttpGet("branding")]
+    [Authorize(Roles = "Admin,SchoolAdmin")]
+    public async Task<IActionResult> GetOwnBranding()
+    {
+        var school = await GetOwnedSchool();
+        if (school == null) return NotFound(new { error = "You don't own a school" });
+
+        return Ok(new SchoolOwnBrandingDto(
+            school.Id, school.Name, school.Slug, school.Subdomain, school.NavbarTitle,
+            school.LogoUrl, school.WebsiteUrl, school.InstagramUrl, school.TelegramUrl,
+            school.PrimaryColor, school.PrimaryHoverColor, school.AccentColor));
+    }
+
+    /// <summary>
+    /// Update the appearance of the school admin's own school (logo, navbar title,
+    /// colours, links). Governance fields (name, subdomain, approval) stay admin-only.
+    /// </summary>
+    [HttpPut("branding")]
+    [Authorize(Roles = "Admin,SchoolAdmin")]
+    public async Task<IActionResult> UpdateOwnBranding([FromBody] SchoolOwnUpdateBrandingDto dto)
+    {
+        var school = await GetOwnedSchool();
+        if (school == null) return NotFound(new { error = "You don't own a school" });
+
+        if (dto.NavbarTitle != null) school.NavbarTitle = string.IsNullOrWhiteSpace(dto.NavbarTitle) ? null : dto.NavbarTitle.Trim();
+        if (dto.LogoUrl != null) school.LogoUrl = string.IsNullOrWhiteSpace(dto.LogoUrl) ? null : dto.LogoUrl.Trim();
+        if (dto.WebsiteUrl != null) school.WebsiteUrl = string.IsNullOrWhiteSpace(dto.WebsiteUrl) ? null : dto.WebsiteUrl.Trim();
+        if (dto.InstagramUrl != null) school.InstagramUrl = string.IsNullOrWhiteSpace(dto.InstagramUrl) ? null : dto.InstagramUrl.Trim();
+        if (dto.TelegramUrl != null) school.TelegramUrl = string.IsNullOrWhiteSpace(dto.TelegramUrl) ? null : dto.TelegramUrl.Trim();
+
+        try
+        {
+            if (dto.PrimaryColor != null) school.PrimaryColor = NormalizeHex(dto.PrimaryColor);
+            if (dto.PrimaryHoverColor != null) school.PrimaryHoverColor = NormalizeHex(dto.PrimaryHoverColor);
+            if (dto.AccentColor != null) school.AccentColor = NormalizeHex(dto.AccentColor);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+
+        school.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+
+        return Ok(new { updated = true, schoolId = school.Id });
+    }
+
+    /// <summary>Upload a logo/image to Cloudflare R2 and return its public URL.</summary>
+    [HttpPost("upload-image")]
+    [Authorize(Roles = "Admin,SchoolAdmin")]
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> UploadImage(IFormFile file, CancellationToken ct)
+    {
+        var school = await GetOwnedSchool();
+        if (school == null) return NotFound(new { error = "You don't own a school" });
+
+        try
+        {
+            var url = await _imageUpload.UploadAsync(file, ct);
+            return Ok(new { url });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return StatusCode(503, new { error = ex.Message });
+        }
+    }
+
+    private static string? NormalizeHex(string? color)
+    {
+        if (string.IsNullOrWhiteSpace(color)) return null;
+        var c = color.Trim();
+        if (!c.StartsWith('#')) c = "#" + c;
+        if (!System.Text.RegularExpressions.Regex.IsMatch(c, "^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$"))
+            throw new ArgumentException($"Некорректный HEX-цвет: {color}");
+        return c.ToLowerInvariant();
+    }
+
 
     /// <summary>Dashboard summary</summary>
     [HttpGet("dashboard")]

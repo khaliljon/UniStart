@@ -13,10 +13,157 @@ namespace UniStart.Controllers;
 public class AdminContentController : ControllerBase
 {
     private readonly UniStartDbContext _db;
+    private readonly UniStart.Application.Interfaces.IContentIngestionService _ingestion;
+    private readonly UniStart.Application.Interfaces.IStudyPackParserService _parser;
+    private readonly UniStart.Application.Interfaces.IFileParserService _fileParser;
+    private readonly UniStart.Application.Interfaces.IDriveSyncService _driveSync;
 
-    public AdminContentController(UniStartDbContext db)
+    public AdminContentController(
+        UniStartDbContext db,
+        UniStart.Application.Interfaces.IContentIngestionService ingestion,
+        UniStart.Application.Interfaces.IStudyPackParserService parser,
+        UniStart.Application.Interfaces.IFileParserService fileParser,
+        UniStart.Application.Interfaces.IDriveSyncService driveSync)
     {
         _db = db;
+        _ingestion = ingestion;
+        _parser = parser;
+        _fileParser = fileParser;
+        _driveSync = driveSync;
+    }
+
+    // ══════════════════════════════════════════════
+    //  CONTENT INGESTION (Variant B: Topic = concept)
+    // ══════════════════════════════════════════════
+
+    /// <summary>
+    /// Step 1 (preview): LLM-parse a raw study-pack file into the normalized payload
+    /// WITHOUT writing to the database. Admin reviews the result, then POSTs it to /ingest.
+    /// Accepts either raw text or an uploaded file (pdf/docx/xlsx/md/txt).
+    /// </summary>
+    [HttpPost("parse")]
+    [Authorize(Roles = "Admin")]
+    [RequestSizeLimit(50 * 1024 * 1024)]
+    public async Task<IActionResult> Parse([FromForm] ParseStudyPackForm form, CancellationToken ct)
+    {
+        if (!_parser.IsConfigured)
+            return StatusCode(503, new { error = "LLM parser is not configured (LlmExtraction:ApiKey)." });
+        if (string.IsNullOrWhiteSpace(form.ExamTypeCode) || string.IsNullOrWhiteSpace(form.ExamSectionName))
+            return BadRequest(new { error = "ExamTypeCode and ExamSectionName are required." });
+
+        string text = form.Text ?? string.Empty;
+        if (form.File != null && form.File.Length > 0)
+        {
+            text = await ExtractTextFromFileAsync(form.File, ct);
+        }
+        if (string.IsNullOrWhiteSpace(text))
+            return BadRequest(new { error = "Provide either 'text' or a non-empty 'file'." });
+
+        var payload = await _parser.ParseAsync(text, form.ExamTypeCode, form.ExamSectionName, ct);
+        return Ok(payload);
+    }
+
+    /// <summary>
+    /// Step 2 (commit): idempotently ingest a normalized study-pack payload
+    /// (Skill → Topics → lesson/formulas/questions). Safe to re-run: Skill/Topic matched
+    /// by name, questions deduplicated by content hash.
+    /// </summary>
+    [HttpPost("ingest")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> Ingest([FromBody] IngestContentDto payload)
+    {
+        if (payload == null || string.IsNullOrWhiteSpace(payload.SkillName))
+            return BadRequest(new { error = "SkillName is required." });
+        if (payload.Topics == null || payload.Topics.Count == 0)
+            return BadRequest(new { error = "At least one topic is required." });
+
+        var result = await _ingestion.IngestAsync(payload);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Convenience one-shot: parse a file via LLM and immediately ingest the result.
+    /// Use /parse + /ingest separately when you want a human review step.
+    /// </summary>
+    [HttpPost("parse-and-ingest")]
+    [Authorize(Roles = "Admin")]
+    [RequestSizeLimit(50 * 1024 * 1024)]
+    public async Task<IActionResult> ParseAndIngest([FromForm] ParseStudyPackForm form, CancellationToken ct)
+    {
+        if (!_parser.IsConfigured)
+            return StatusCode(503, new { error = "LLM parser is not configured (LlmExtraction:ApiKey)." });
+        if (string.IsNullOrWhiteSpace(form.ExamTypeCode) || string.IsNullOrWhiteSpace(form.ExamSectionName))
+            return BadRequest(new { error = "ExamTypeCode and ExamSectionName are required." });
+
+        string text = form.Text ?? string.Empty;
+        if (form.File != null && form.File.Length > 0)
+        {
+            text = await ExtractTextFromFileAsync(form.File, ct);
+        }
+        if (string.IsNullOrWhiteSpace(text))
+            return BadRequest(new { error = "Provide either 'text' or a non-empty 'file'." });
+
+        var payload = await _parser.ParseAsync(text, form.ExamTypeCode, form.ExamSectionName, ct);
+        var result = await _ingestion.IngestAsync(payload);
+        return Ok(result);
+    }
+
+    /// <summary>Extracts text from an uploaded study-pack file (md/txt/pdf/docx/xlsx).</summary>
+    private async Task<string> ExtractTextFromFileAsync(IFormFile file, CancellationToken ct)
+    {
+        var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+        await using var stream = file.OpenReadStream();
+        switch (ext)
+        {
+            case ".md":
+            case ".markdown":
+            case ".txt":
+                using (var reader = new StreamReader(stream))
+                    return await reader.ReadToEndAsync(ct);
+            case ".pdf":
+                return _fileParser.ParsePdf(stream);
+            case ".docx":
+                return _fileParser.ParseDocx(stream);
+            case ".xlsx":
+                var rows = _fileParser.ParseExcel(stream);
+                return string.Join("\n", rows.Select(r => string.Join(" | ", r.Values)));
+            default:
+                throw new NotSupportedException($"Unsupported file type '{ext}'. Use md, txt, pdf, docx or xlsx.");
+        }
+    }
+
+    // ══════════════════════════════════════════════
+    //  GOOGLE DRIVE SYNC (bulk ingestion via Hangfire)
+    // ══════════════════════════════════════════════
+
+    /// <summary>
+    /// Enqueue a background sync of an entire Google Drive folder tree. Every study-pack
+    /// file (Google Doc/pdf/docx/md/txt) found under the root is parsed and ingested,
+    /// mapped under the given exam type/section. Idempotent: unchanged files are skipped.
+    /// Returns the Hangfire job id.
+    /// </summary>
+    [HttpPost("drive/sync")]
+    [Authorize(Roles = "Admin")]
+    public IActionResult StartDriveSync([FromBody] StartDriveSyncDto dto)
+    {
+        if (dto == null || string.IsNullOrWhiteSpace(dto.RootFolderId))
+            return BadRequest(new { error = "RootFolderId is required." });
+        if (string.IsNullOrWhiteSpace(dto.ExamTypeCode) || string.IsNullOrWhiteSpace(dto.ExamSectionName))
+            return BadRequest(new { error = "ExamTypeCode and ExamSectionName are required." });
+
+        var jobId = Hangfire.BackgroundJob.Enqueue<UniStart.Application.Interfaces.IDriveSyncService>(
+            s => s.SyncFolderAsync(dto.RootFolderId, dto.ExamTypeCode, dto.ExamSectionName));
+
+        return Accepted(new { jobId, message = "Drive sync enqueued." });
+    }
+
+    /// <summary>Reconciliation report: the current state of every tracked Drive file.</summary>
+    [HttpGet("drive/items")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> GetDriveItems()
+    {
+        var items = await _driveSync.GetItemsAsync();
+        return Ok(items);
     }
 
     // ══════════════════════════════════════════════

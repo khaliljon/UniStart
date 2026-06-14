@@ -52,3 +52,35 @@ public record AdminUpdateSchoolBrandingDto(
     string? PrimaryHoverColor = null,
     string? AccentColor = null
 );
+
+// School-admin self-service branding editor (own school only).
+// Read model returned by GET /api/school-admin/branding.
+public record SchoolOwnBrandingDto(
+    int Id,
+    string Name,
+    string Slug,
+    string? Subdomain,
+    string? NavbarTitle,
+    string? LogoUrl,
+    string? WebsiteUrl,
+    string? InstagramUrl,
+    string? TelegramUrl,
+    string? PrimaryColor,
+    string? PrimaryHoverColor,
+    string? AccentColor
+);
+
+// Update model for PUT /api/school-admin/branding. School admins may edit their
+// own appearance (logo, navbar title, colours, links) but NOT governance fields
+// (name, subdomain, approval/active state) which remain admin-controlled.
+public record SchoolOwnUpdateBrandingDto(
+    string? NavbarTitle = null,
+    string? LogoUrl = null,
+    string? WebsiteUrl = null,
+    string? InstagramUrl = null,
+    string? TelegramUrl = null,
+    string? PrimaryColor = null,
+    string? PrimaryHoverColor = null,
+    string? AccentColor = null
+);
+

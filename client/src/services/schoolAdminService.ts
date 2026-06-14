@@ -78,6 +78,26 @@ export interface TutorContentResult {
   pageSize: number;
 }
 
+export interface SchoolOwnBranding {
+  id: number;
+  name: string;
+  slug: string;
+  subdomain: string | null;
+  navbarTitle: string | null;
+  logoUrl: string | null;
+  websiteUrl: string | null;
+  instagramUrl: string | null;
+  telegramUrl: string | null;
+  primaryColor: string | null;
+  primaryHoverColor: string | null;
+  accentColor: string | null;
+}
+
+export type SchoolOwnUpdateBranding = Pick<
+  SchoolOwnBranding,
+  'navbarTitle' | 'logoUrl' | 'websiteUrl' | 'instagramUrl' | 'telegramUrl' | 'primaryColor' | 'primaryHoverColor' | 'accentColor'
+>;
+
 export const schoolAdminService = {
   async getDashboard(): Promise<SchoolDashboard> {
     const { data } = await api.get<SchoolDashboard>('/school-admin/dashboard');
@@ -108,4 +128,24 @@ export const schoolAdminService = {
     const { data } = await api.get('/school-admin/subscription');
     return data;
   },
+
+  async getBranding(): Promise<SchoolOwnBranding> {
+    const { data } = await api.get<SchoolOwnBranding>('/school-admin/branding');
+    return data;
+  },
+
+  async updateBranding(payload: Partial<SchoolOwnUpdateBranding>): Promise<{ updated: boolean; schoolId: number }> {
+    const { data } = await api.put('/school-admin/branding', payload);
+    return data;
+  },
+
+  async uploadImage(file: File): Promise<string> {
+    const form = new FormData();
+    form.append('file', file);
+    const { data } = await api.post<{ url: string }>('/school-admin/upload-image', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return data.url;
+  },
 };
+

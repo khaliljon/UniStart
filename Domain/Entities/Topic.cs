@@ -6,6 +6,8 @@ public class Topic : IAuditable
     public int SkillId { get; set; }
     public int? SectionId { get; set; }
     public string Name { get; set; } = string.Empty;
+    /// <summary>Ordering within a Skill (concept sequence). Lower = earlier.</summary>
+    public int SortOrder { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
 

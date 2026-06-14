@@ -63,6 +63,9 @@ public class UniStartDbContext : DbContext
     public DbSet<ImportedQuestionDraft> ImportedQuestionDrafts => Set<ImportedQuestionDraft>();
     public DbSet<ImportJobFile> ImportJobFiles => Set<ImportJobFile>();
 
+    // Google Drive content sync
+    public DbSet<DriveSyncItem> DriveSyncItems => Set<DriveSyncItem>();
+
     // Assignment entities (Sprint 7 Этап 3)
     public DbSet<Assignment> Assignments => Set<Assignment>();
     public DbSet<AssignmentQuestion> AssignmentQuestions => Set<AssignmentQuestion>();
@@ -139,6 +142,7 @@ public class UniStartDbContext : DbContext
             entity.ToTable("Topics");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.SortOrder).HasDefaultValue(0);
             entity.HasOne(e => e.Skill)
                   .WithMany(s => s.Topics)
                   .HasForeignKey(e => e.SkillId)
@@ -155,6 +159,7 @@ public class UniStartDbContext : DbContext
             entity.ToTable("Questions");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Text).IsRequired();
+            entity.Property(e => e.SortOrder).HasDefaultValue(0);
             entity.Property(e => e.DifficultyParam).HasDefaultValue(0.0);
             entity.Property(e => e.DiscriminationParam).HasDefaultValue(1.0);
             entity.Property(e => e.GuessParam).HasDefaultValue(0.25);
@@ -191,6 +196,20 @@ public class UniStartDbContext : DbContext
                   .WithMany(q => q.AnswerOptions)
                   .HasForeignKey(e => e.QuestionId)
                   .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // DriveSyncItem configuration
+        modelBuilder.Entity<DriveSyncItem>(entity =>
+        {
+            entity.ToTable("DriveSyncItems");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.DriveFileId).IsRequired().HasMaxLength(128);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(500);
+            entity.Property(e => e.MimeType).HasMaxLength(200);
+            entity.Property(e => e.FolderPath).HasMaxLength(2000);
+            entity.Property(e => e.Checksum).HasMaxLength(256);
+            entity.Property(e => e.MappedSkillName).HasMaxLength(300);
+            entity.HasIndex(e => e.DriveFileId).IsUnique().HasDatabaseName("IX_DriveSyncItems_DriveFileId");
         });
 
         // UserAnswer configuration

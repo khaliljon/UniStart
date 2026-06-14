@@ -11,6 +11,8 @@ public class Question : ISoftDeletable, IAuditable
     public string? VideoUrl { get; set; }
     public string? ImageUrl { get; set; }
     public int? ReadingPassageId { get; set; }
+    /// <summary>Ordering within a Topic (e.g. Q1..Q50). Lower = earlier.</summary>
+    public int SortOrder { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
 

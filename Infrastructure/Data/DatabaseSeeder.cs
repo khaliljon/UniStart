@@ -91,10 +91,9 @@ public class DatabaseSeeder
             await SeedTopicsAsync();
         }
 
-        if (!await _context.Questions.AnyAsync())
-        {
-            await SeedQuestionsAsync();
-        }
+        // NOTE: Question seeding has been intentionally removed. The question base is
+        // now built via the content-ingestion pipeline (admin upload / Google Drive sync),
+        // so seeded SAT/NUET sample questions are no longer re-created on startup.
 
         await UpdateIrtParametersAsync();
 

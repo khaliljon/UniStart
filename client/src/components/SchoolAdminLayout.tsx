@@ -122,6 +122,9 @@ function SchoolAdminLayout() {
               <NavLink to="/school" style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontSize: '0.85rem' }} onClick={() => setMenuOpen(false)}>
                 {t.schoolAdmin.school}
               </NavLink>
+              <NavLink to="/branding" style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontSize: '0.85rem' }} onClick={() => setMenuOpen(false)}>
+                {t.schoolAdmin.branding.nav}
+              </NavLink>
               <NavLink to="/profile" style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontSize: '0.85rem' }} onClick={() => setMenuOpen(false)}>
                 {user?.name}
               </NavLink>

@@ -93,7 +93,11 @@ public static class UniStartStartupExtensions
         services.AddScoped<IFileParserService, FileParserService>();
         services.AddScoped<IQuestionExtractorService, QuestionExtractorService>();
         services.AddScoped<IQuestionImportService, QuestionImportService>();
+        services.AddScoped<IContentIngestionService, ContentIngestionService>();
         services.AddSingleton<ILlmExtractionService, LlmExtractionService>();
+        services.AddSingleton<IStudyPackParserService, StudyPackParserService>();
+        services.AddSingleton<IGoogleDriveService, GoogleDriveService>();
+        services.AddScoped<IDriveSyncService, DriveSyncService>();
         services.AddSingleton<IImageUploadService, ImageUploadService>();
 
         services.AddSingleton<PresenceTracker>();
@@ -480,8 +484,5 @@ public static class UniStartStartupExtensions
 
         var seeder = new DatabaseSeeder(dbContext);
         await seeder.SeedAsync();
-
-        var expansionSeeder = new QuestionExpansionSeeder(dbContext);
-        await expansionSeeder.SeedAsync();
     }
 }

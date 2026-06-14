@@ -1463,6 +1463,32 @@ export interface Translations {
     pendingApprovalDesc: string;
     pricingInfo: string;
     paymentInstructions: string;
+    branding: {
+      nav: string;
+      title: string;
+      subtitle: string;
+      logo: string;
+      logoHint: string;
+      uploadLogo: string;
+      removeLogo: string;
+      navbarTitle: string;
+      navbarTitleHint: string;
+      primaryColor: string;
+      primaryHoverColor: string;
+      accentColor: string;
+      website: string;
+      instagram: string;
+      telegram: string;
+      preview: string;
+      save: string;
+      saving: string;
+      saved: string;
+      loadError: string;
+      saveError: string;
+      uploadError: string;
+      noSchool: string;
+      subdomainHint: string;
+    };
     mocks: {
       nav: string;
       title: string;

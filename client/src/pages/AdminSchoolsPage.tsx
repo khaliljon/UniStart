@@ -47,6 +47,7 @@ function AdminSchoolsPage() {
   const [brandingLoading, setBrandingLoading] = useState(false);
   const [brandingSaving, setBrandingSaving] = useState(false);
   const [brandingError, setBrandingError] = useState<string | null>(null);
+  const [logoUploading, setLogoUploading] = useState(false);
 
   // Create-school state
   const [createOpen, setCreateOpen] = useState(false);
@@ -205,6 +206,23 @@ function AdminSchoolsPage() {
       setCreateError(msg || 'Ошибка создания');
     } finally {
       setCreateSaving(false);
+    }
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !brandingForm) return;
+    setLogoUploading(true);
+    setBrandingError(null);
+    try {
+      const url = await adminService.uploadImage(file);
+      setBrandingForm({ ...brandingForm, logoUrl: url });
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
+      setBrandingError(msg || 'Ошибка загрузки изображения');
+    } finally {
+      setLogoUploading(false);
     }
   };
 
@@ -636,6 +654,15 @@ function AdminSchoolsPage() {
 
                 <label style={fieldLabel}>Логотип (URL)
                   <input value={brandingForm.logoUrl ?? ''} onChange={e => setBrandingForm({ ...brandingForm, logoUrl: e.target.value || null })} style={fieldInput} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginTop: '0.4rem' }}>
+                    {brandingForm.logoUrl && (
+                      <img src={brandingForm.logoUrl} alt="" style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--border-color)' }} />
+                    )}
+                    <label className="btn btn-outline" style={{ padding: '0.4rem 0.85rem', cursor: 'pointer', fontWeight: 600 }}>
+                      {logoUploading ? '...' : 'Загрузить'}
+                      <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" style={{ display: 'none' }} disabled={logoUploading} onChange={handleLogoUpload} />
+                    </label>
+                  </div>
                 </label>
                 <label style={fieldLabel}>Сайт (URL)
                   <input value={brandingForm.websiteUrl ?? ''} onChange={e => setBrandingForm({ ...brandingForm, websiteUrl: e.target.value || null })} style={fieldInput} />
