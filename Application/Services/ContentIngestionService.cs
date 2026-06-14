@@ -171,6 +171,11 @@ public class ContentIngestionService : IContentIngestionService
                     Explanation = string.IsNullOrWhiteSpace(q.Explanation) ? null : q.Explanation.Trim(),
                     Hint = string.IsNullOrWhiteSpace(q.Hint) ? null : q.Hint.Trim(),
                     SortOrder = q.SortOrder,
+                    // Seed IRT parameters from the difficulty so the adaptive engine has
+                    // meaningful starting values before real-response calibration.
+                    DifficultyParam = IrtMath.DifficultyToParam(difficulty),
+                    DiscriminationParam = IrtMath.DifficultyToDiscrimination(difficulty),
+                    GuessParam = IrtMath.DefaultGuessParam(opts.Count),
                 };
                 _db.Questions.Add(question);
                 await _db.SaveChangesAsync();
