@@ -23,7 +23,6 @@ const NotificationSettingsPage = lazy(() => import('./pages/NotificationSettings
 const DiagnosticTestPage = lazy(() => import('./pages/DiagnosticTestPage'))
 const AdminStatsPage = lazy(() => import('./pages/AdminStatsPage'))
 const AdminQuestionsPage = lazy(() => import('./pages/AdminQuestionsPage'))
-const AdminImportPage = lazy(() => import('./pages/AdminImportPage'))
 const AdminUsersPage = lazy(() => import('./pages/AdminUsersPage'))
 const AdminAuditLogsPage = lazy(() => import('./pages/AdminAuditLogsPage'))
 const AdminSystemHealthPage = lazy(() => import('./pages/AdminSystemHealthPage'))
@@ -31,7 +30,7 @@ const AdminBackupsPage = lazy(() => import('./pages/AdminBackupsPage'))
 const AdminLegalPage = lazy(() => import('./pages/AdminLegalPage'))
 const AdminUserActivityPage = lazy(() => import('./pages/AdminUserActivityPage'))
 const AdminTutorsPage = lazy(() => import('./pages/AdminTutorsPage'))
-const AdminQuestionImportPage = lazy(() => import('./pages/AdminQuestionImportPage'))
+const AdminContentHubPage = lazy(() => import('./pages/AdminContentHubPage'))
 const AdminContentPage = lazy(() => import('./pages/AdminContentPage'))
 const AdminTrashPage = lazy(() => import('./pages/AdminTrashPage'))
 const AdminProfilePage = lazy(() => import('./pages/AdminProfilePage'))
@@ -114,8 +113,8 @@ function AdminRoutes() {
       <Route path="backups" element={<AdminBackupsPage />} />
       <Route path="legal" element={<AdminLegalPage />} />
       <Route path="activity" element={<AdminUserActivityPage />} />
-      <Route path="import" element={<AdminImportPage />} />
-      <Route path="question-import" element={<AdminQuestionImportPage />} />
+      <Route path="import" element={<AdminContentHubPage />} />
+      <Route path="question-import" element={<Navigate to="/admin/import" replace />} />
       <Route path="trash" element={<AdminTrashPage />} />
       <Route path="schools" element={<AdminSchoolsPage />} />
       <Route path="advisor-config" element={<AdminAdvisorConfigPage />} />

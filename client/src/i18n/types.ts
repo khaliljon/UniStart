@@ -791,6 +791,20 @@ export interface Translations {
       approve: string; reject: string; saveEdit: string; cancelEdit: string;
       editBtn: string; extracted: string; approved: string; rejected: string;
     };
+    contentHub: {
+      title: string; subtitle: string;
+      tabPipeline: string; tabFile: string; tabJson: string;
+      examLabel: string; sectionLabel: string; sectionPlaceholder: string;
+      inputFile: string; inputText: string; textPlaceholder: string;
+      previewBtn: string; ingestBtn: string; oneShotBtn: string; parsing: string; ingesting: string;
+      previewTitle: string; skillLabel: string; topicsLabel: string; questionsLabel: string;
+      lessonsLabel: string; formulasLabel: string;
+      resultTitle: string; created: string; duplicates: string;
+      driveTitle: string; driveHint: string; folderLabel: string; folderPlaceholder: string;
+      syncBtn: string; syncing: string; syncQueued: string; refreshItems: string;
+      colName: string; colStatus: string; colSkill: string; colError: string;
+      sectionRequired: string; fileRequired: string; textRequired: string; folderRequired: string;
+    };
     trash: {
       title: string; subtitle: string;
       emptyBtn: string; emptying: string;

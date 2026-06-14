@@ -19,7 +19,7 @@ const DRAFT_STATUS_COLORS: Record<string, string> = {
   Rejected: 'var(--error-color)',
 };
 
-function AdminQuestionImportPage() {
+function AdminQuestionImportPage({ embedded = false }: { embedded?: boolean } = {}) {
   const { t } = useTranslation();
   const roleLabels: Record<string, string> = { Questions: t.admin.questionImport.roleQuestions, Answers: t.admin.questionImport.roleAnswers, Mixed: t.admin.questionImport.roleMixed };
 
@@ -215,11 +215,15 @@ function AdminQuestionImportPage() {
   };
 
   return (
-    <div className="animate-fade-in" style={{ padding: '2rem 0' }}>
-      <h1 style={{ marginBottom: '0.5rem' }}>{t.admin.questionImport.title}</h1>
-      <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
-        {t.admin.questionImport.subtitle}
-      </p>
+    <div className="animate-fade-in" style={{ padding: embedded ? 0 : '2rem 0' }}>
+      {!embedded && (
+        <>
+          <h1 style={{ marginBottom: '0.5rem' }}>{t.admin.questionImport.title}</h1>
+          <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
+            {t.admin.questionImport.subtitle}
+          </p>
+        </>
+      )}
 
       {error && (
         <div className="error-message" style={{ marginBottom: '1rem' }}>{error}</div>

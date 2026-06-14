@@ -2,7 +2,7 @@ import { useState } from 'react';
 import adminService from '../services/adminService';
 import { useTranslation } from '../hooks/useTranslation';
 
-function AdminImportPage() {
+function AdminImportPage({ embedded = false }: { embedded?: boolean } = {}) {
   const { t } = useTranslation();
   const [importJson, setImportJson] = useState('');
   const [importResult, setImportResult] = useState<{ imported: number; failed: number; errors: string[] } | null>(null);
@@ -24,11 +24,15 @@ function AdminImportPage() {
   };
 
   return (
-    <div className="animate-fade-in" style={{ padding: '2rem 0' }}>
-      <h1 style={{ marginBottom: '0.5rem' }}>{t.admin.import.title}</h1>
-      <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
-        {t.admin.import.subtitle}
-      </p>
+    <div className="animate-fade-in" style={{ padding: embedded ? 0 : '2rem 0' }}>
+      {!embedded && (
+        <>
+          <h1 style={{ marginBottom: '0.5rem' }}>{t.admin.import.title}</h1>
+          <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
+            {t.admin.import.subtitle}
+          </p>
+        </>
+      )}
 
       <div className="card" style={{ padding: '1.5rem' }}>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1rem' }}>
