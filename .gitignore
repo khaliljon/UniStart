@@ -6,6 +6,7 @@
 # UniStart: secrets & logs
 appsettings.*.local.json
 appsettings.Production.json
+secrets/
 logs/
 
 # User-specific files

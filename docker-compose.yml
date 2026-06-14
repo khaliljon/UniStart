@@ -62,6 +62,8 @@ services:
       LlmExtraction__ApiKey: ${LLM_API_KEY:-}
       LlmExtraction__Model: ${LLM_MODEL:-deepseek-chat}
       LlmExtraction__BaseUrl: ${LLM_BASE_URL:-https://api.deepseek.com}
+      DriveSync__ApplicationName: ${DRIVE_APP_NAME:-UniStart}
+      DriveSync__ServiceAccountJsonPath: ${DRIVE_SA_PATH:-secrets/drive-sa.json}
       CorsOrigins__0: ${CORS_ORIGIN:-http://localhost}
       GoogleAuth__ClientId: ${GOOGLE_CLIENT_ID:-}
       GoogleAuth__ClientSecret: ${GOOGLE_CLIENT_SECRET:-}
@@ -73,6 +75,8 @@ services:
     volumes:
       - dpkeys:/keys
       - backups:/backups
+      # Google Drive service-account key (gitignored host folder, read-only in container).
+      - ./secrets:/app/secrets:ro
     ports:
       - "${API_PORT:-5009}:5009"
 
