@@ -1,7 +1,9 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useTranslation } from '../hooks/useTranslation';
 import contentPipelineService from '../services/contentPipelineService';
 import type { IngestContent, IngestResult, DriveSyncItem } from '../services/contentPipelineService';
+import adminService from '../services/adminService';
+import type { AdminSection } from '../types';
 import AdminQuestionImportPage from './AdminQuestionImportPage';
 import AdminImportPage from './AdminImportPage';
 
@@ -26,6 +28,7 @@ function AdminContentHubPage() {
   // ── Pipeline state ──────────────────────────────────────
   const [examType, setExamType] = useState('SAT');
   const [section, setSection] = useState('');
+  const [sections, setSections] = useState<AdminSection[]>([]);
   const [inputMode, setInputMode] = useState<'file' | 'text'>('file');
   const [file, setFile] = useState<File | null>(null);
   const [text, setText] = useState('');
@@ -39,6 +42,13 @@ function AdminContentHubPage() {
   const [driveBusy, setDriveBusy] = useState(false);
   const [driveMsg, setDriveMsg] = useState<string | null>(null);
   const [items, setItems] = useState<DriveSyncItem[]>([]);
+
+  // Load existing exam sections once for the dropdown.
+  useEffect(() => {
+    adminService.getSections().then(setSections).catch(() => { /* non-fatal */ });
+  }, []);
+
+  const sectionsForExam = sections.filter(s => s.examTypeCode === examType);
 
   const validBase = () => {
     if (!section.trim()) { setError(c.sectionRequired); return false; }
@@ -155,7 +165,7 @@ function AdminContentHubPage() {
             <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
               <div>
                 <label style={labelStyle}>{c.examLabel}</label>
-                <select value={examType} onChange={e => setExamType(e.target.value)} style={inputStyle}>
+                <select value={examType} onChange={e => { setExamType(e.target.value); setSection(''); }} style={inputStyle}>
                   {EXAM_TYPES.map(code => <option key={code} value={code}>{code}</option>)}
                 </select>
               </div>
@@ -165,8 +175,12 @@ function AdminContentHubPage() {
                   value={section}
                   onChange={e => setSection(e.target.value)}
                   placeholder={c.sectionPlaceholder}
+                  list="content-hub-sections"
                   style={{ ...inputStyle, width: '100%' }}
                 />
+                <datalist id="content-hub-sections">
+                  {sectionsForExam.map(s => <option key={s.id} value={s.name} />)}
+                </datalist>
               </div>
             </div>
 
