@@ -443,6 +443,16 @@ public class TutorService : ITutorService
             .ToListAsync();
     }
 
+    public async Task<List<ClaimableSchoolDto>> GetClaimableSchoolsAsync()
+    {
+        // Schools pre-created by the platform admin that have no owner yet.
+        return await _db.TutorSchools
+            .Where(s => s.IsActive && s.OwnerUserId == null)
+            .OrderBy(s => s.Name)
+            .Select(s => new ClaimableSchoolDto(s.Id, s.Name, s.Subdomain))
+            .ToListAsync();
+    }
+
     public async Task<TutorSchoolDetailDto?> GetSchoolAsync(string slug)
     {
         var school = await _db.TutorSchools

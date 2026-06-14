@@ -200,6 +200,14 @@ public record TutorSchoolCardDto(
     int TutorCount
 );
 
+// Schools pre-created by the platform admin that have no owner yet —
+// shown in the SchoolAdmin registration dropdown so a new admin can claim one.
+public record ClaimableSchoolDto(
+    int Id,
+    string Name,
+    string? Subdomain
+);
+
 public record TutorSchoolDetailDto(
     int Id,
     string Name,

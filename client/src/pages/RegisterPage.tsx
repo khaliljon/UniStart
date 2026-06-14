@@ -8,7 +8,7 @@ import { useBranding } from '../contexts/BrandingContext';
 import { register, verifyEmail, clearError } from '../store/slices/authSlice';
 import { authService } from '../services/authService';
 import { tutorService } from '../services/tutorService';
-import type { TutorSchoolCard } from '../types';
+import type { TutorSchoolCard, ClaimableSchool } from '../types';
 
 function RegisterPage() {
   const dispatch = useAppDispatch();
@@ -34,6 +34,7 @@ function RegisterPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [selectedSchoolId, setSelectedSchoolId] = useState<number | null>(null);
   const [schools, setSchools] = useState<TutorSchoolCard[]>([]);
+  const [claimableSchools, setClaimableSchools] = useState<ClaimableSchool[]>([]);
   const [schoolName, setSchoolName] = useState('');
 
   useGoogleSignIn('google-register-btn', 'signup_with');
@@ -42,6 +43,13 @@ function RegisterPage() {
   useEffect(() => {
     if (role === 'Tutor' && !branding) {
       tutorService.getSchools().then(setSchools).catch(() => {});
+    }
+  }, [role, branding]);
+
+  // Load claimable (ownerless) schools for school-admin registration (main site only)
+  useEffect(() => {
+    if (role === 'SchoolAdmin' && !branding) {
+      tutorService.getClaimableSchools().then(setClaimableSchools).catch(() => {});
     }
   }, [role, branding]);
 
@@ -285,21 +293,50 @@ function RegisterPage() {
 
           {role === 'SchoolAdmin' && (
             <div className="form-group" style={{ marginBottom: '1rem' }}>
-              <label htmlFor="schoolName" className="form-label">
-                {t.auth.schoolNameLabel}
-              </label>
-              <input
-                type="text"
-                id="schoolName"
-                className="form-input"
-                value={schoolName}
-                onChange={(e) => {
-                  setSchoolName(e.target.value);
-                  handleInputChange();
-                }}
-                placeholder={t.auth.schoolNamePlaceholder}
-                required
-              />
+              {claimableSchools.length > 0 && (
+                <>
+                  <label htmlFor="claimSchoolSelect" className="form-label">
+                    {t.auth.claimSchoolSelect}
+                  </label>
+                  <select
+                    id="claimSchoolSelect"
+                    value={selectedSchoolId ?? ''}
+                    onChange={(e) => {
+                      setSelectedSchoolId(e.target.value ? Number(e.target.value) : null);
+                      if (e.target.value) setSchoolName('');
+                      handleInputChange();
+                    }}
+                    className="form-input"
+                    style={{ width: '100%', marginBottom: '0.75rem' }}
+                  >
+                    <option value="">{t.auth.claimSchoolCreateNew}</option>
+                    {claimableSchools.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name}{s.subdomain ? ` (${s.subdomain}.unistart.kz)` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </>
+              )}
+              {selectedSchoolId === null && (
+                <>
+                  <label htmlFor="schoolName" className="form-label">
+                    {t.auth.schoolNameLabel}
+                  </label>
+                  <input
+                    type="text"
+                    id="schoolName"
+                    className="form-input"
+                    value={schoolName}
+                    onChange={(e) => {
+                      setSchoolName(e.target.value);
+                      handleInputChange();
+                    }}
+                    placeholder={t.auth.schoolNamePlaceholder}
+                    required
+                  />
+                </>
+              )}
             </div>
           )}
 

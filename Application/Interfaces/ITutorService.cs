@@ -16,6 +16,7 @@ public interface ITutorService
     Task<int> GetStudentIdByConversationAsync(int conversationId);
     Task EnsureTutorProfileAsync(int userId);
     Task<List<TutorSchoolCardDto>> GetSchoolsAsync();
+    Task<List<ClaimableSchoolDto>> GetClaimableSchoolsAsync();
     Task<SchoolBrandingDto?> GetSchoolBrandingAsync(string slug);
     Task<TutorSchoolDetailDto?> GetSchoolAsync(string slug);
 

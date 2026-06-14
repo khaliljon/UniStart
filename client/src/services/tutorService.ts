@@ -25,6 +25,7 @@ import type {
   CreateSchoolRequest,
   UpdateSchoolRequest,
   SchoolBranding,
+  ClaimableSchool,
 } from '../types';
 
 export interface TutorListParams {
@@ -82,6 +83,11 @@ export const tutorService = {
 
   async getSchools(): Promise<TutorSchoolCard[]> {
     const response = await api.get<TutorSchoolCard[]>('/tutors/schools');
+    return response.data;
+  },
+
+  async getClaimableSchools(): Promise<ClaimableSchool[]> {
+    const response = await api.get<ClaimableSchool[]>('/tutors/claimable-schools');
     return response.data;
   },
 

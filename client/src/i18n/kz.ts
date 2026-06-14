@@ -77,6 +77,8 @@ export const kz: Translations = {
     schoolAdminPricing: 'Құны: 149 990 ₸/жыл мектеп үшін. Төлем үшін әкімшілікпен байланысыңыз.',
     schoolNameLabel: 'Мектеп атауы',
     schoolNamePlaceholder: 'Мектеп атауын енгізіңіз',
+    claimSchoolSelect: 'Мектепті таңдаңыз',
+    claimSchoolCreateNew: 'Жаңа мектеп құру',
     tutorSchoolSelect: 'Мектепке тіркелу',
     tutorIndependent: 'Тәуелсіз тьютор',
     schoolInviteCode: 'Мектептің шақыру коды',

@@ -219,6 +219,15 @@ public class TutorController : ControllerBase
         return Ok(schools);
     }
 
+    /// <summary>Школы без владельца (созданы админом) — для выбора при регистрации школьного админа</summary>
+    [HttpGet("claimable-schools")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetClaimableSchools()
+    {
+        var schools = await _tutorService.GetClaimableSchoolsAsync();
+        return Ok(schools);
+    }
+
     /// <summary>Брендинг школы по слагу (для White Label субдоменов)</summary>
     [HttpGet("schools/branding")]
     [AllowAnonymous]

@@ -82,6 +82,8 @@ export interface Translations {
     schoolAdminPricing: string;
     schoolNameLabel: string;
     schoolNamePlaceholder: string;
+    claimSchoolSelect: string;
+    claimSchoolCreateNew: string;
     tutorSchoolSelect: string;
     tutorIndependent: string;
     schoolInviteCode: string;

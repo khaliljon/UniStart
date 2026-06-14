@@ -77,6 +77,8 @@ export const ru: Translations = {
     schoolAdminPricing: 'Стоимость: 149 990 ₸/год за школу. Для оплаты свяжитесь с администрацией.',
     schoolNameLabel: 'Название школы',
     schoolNamePlaceholder: 'Введите название школы',
+    claimSchoolSelect: 'Выберите школу',
+    claimSchoolCreateNew: 'Создать новую школу',
     tutorSchoolSelect: 'Привязка к школе',
     tutorIndependent: 'Независимый тьютор',
     schoolInviteCode: 'Инвайт-код школы',

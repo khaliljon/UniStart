@@ -77,6 +77,8 @@ export const en: Translations = {
     schoolAdminPricing: 'Cost: 149,990 ₸/year per school. Contact administration for payment.',
     schoolNameLabel: 'School name',
     schoolNamePlaceholder: 'Enter your school name',
+    claimSchoolSelect: 'Select a school',
+    claimSchoolCreateNew: 'Create a new school',
     tutorSchoolSelect: 'School affiliation',
     tutorIndependent: 'Independent tutor',
     schoolInviteCode: 'School invite code',

@@ -279,8 +279,40 @@ public class AuthService : IAuthService
             }
         }
 
+        // School linkage for SchoolAdmin registrations
+        if (role == UserRole.SchoolAdmin && dto.ApplyToSchoolId.HasValue)
+        {
+            // Claim a school pre-created by the platform admin (must be ownerless)
+            var targetSchool = await _context.TutorSchools
+                .FirstOrDefaultAsync(s => s.Id == dto.ApplyToSchoolId.Value && s.IsActive);
+            if (targetSchool != null && targetSchool.OwnerUserId == null)
+            {
+                targetSchool.OwnerUserId = user.Id;
+                targetSchool.IsApproved = true;
+                targetSchool.UpdatedAt = DateTime.UtcNow;
+                user.SchoolId = targetSchool.Id;
+                await _unitOfWork.SaveChangesAsync();
+
+                // Notify all platform admins that a pre-created school was claimed
+                var claimAdminEmails = await _context.Users
+                    .Where(u => u.Role == UserRole.Admin && !u.IsDeleted)
+                    .Select(u => u.Email)
+                    .ToListAsync();
+                var claimedSchoolName = targetSchool.Name;
+                var claimOwnerName = user.Name;
+                var claimOwnerEmail = user.Email;
+                _ = Task.Run(async () =>
+                {
+                    foreach (var adminEmail in claimAdminEmails)
+                    {
+                        try { await _emailService.SendNewSchoolApplicationNotificationAsync(adminEmail, claimedSchoolName, claimOwnerName, claimOwnerEmail); }
+                        catch { /* logged inside EmailService */ }
+                    }
+                });
+            }
+        }
         // Auto-create school for SchoolAdmin registrations
-        if (role == UserRole.SchoolAdmin && !string.IsNullOrWhiteSpace(dto.SchoolName))
+        else if (role == UserRole.SchoolAdmin && !string.IsNullOrWhiteSpace(dto.SchoolName))
         {
             var schoolName = InputSanitizer.Sanitize(dto.SchoolName)!.Trim();
             var slug = schoolName.ToLowerInvariant()

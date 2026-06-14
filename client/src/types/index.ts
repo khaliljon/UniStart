@@ -1309,6 +1309,12 @@ export interface TutorSchoolCard {
   tutorCount: number;
 }
 
+export interface ClaimableSchool {
+  id: number;
+  name: string;
+  subdomain: string | null;
+}
+
 export interface TutorSchoolDetail {
   id: number;
   name: string;
