@@ -532,7 +532,7 @@ public class TutorService : ITutorService
         return MapToSchoolAdminDto(school, tutorCount);
     }
 
-    public async Task<SchoolAdminDto?> UpdateSchoolAsync(int ownerUserId, UpdateSchoolDto dto)
+    public async Task<SchoolAdminDto?> UpdateSchoolAsync(int ownerUserId, UpdateSchoolDto dto, bool canBrand)
     {
         var school = await _db.TutorSchools
             .Include(s => s.Tutors)
@@ -557,28 +557,31 @@ public class TutorService : ITutorService
         if (dto.TelegramUrl != null) school.TelegramUrl = dto.TelegramUrl;
         if (dto.Specializations != null) school.Specializations = dto.Specializations.Trim();
 
-        // ── White-label branding ──
-        if (dto.Subdomain != null)
+        // ── White-label branding (only SchoolAdmin / platform Admin) ──
+        if (canBrand)
         {
-            var sub = dto.Subdomain.Trim().ToLowerInvariant();
-            if (sub.Length == 0)
+            if (dto.Subdomain != null)
             {
-                school.Subdomain = null;
+                var sub = dto.Subdomain.Trim().ToLowerInvariant();
+                if (sub.Length == 0)
+                {
+                    school.Subdomain = null;
+                }
+                else
+                {
+                    if (!System.Text.RegularExpressions.Regex.IsMatch(sub, "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$") || sub == "www")
+                        throw new ArgumentException("Поддомен может содержать только латинские буквы, цифры и дефис (3–32 символа).");
+                    var taken = await _db.TutorSchools.AnyAsync(s => s.Id != school.Id && s.Subdomain == sub);
+                    if (taken)
+                        throw new ArgumentException("Этот поддомен уже занят другой школой.");
+                    school.Subdomain = sub;
+                }
             }
-            else
-            {
-                if (!System.Text.RegularExpressions.Regex.IsMatch(sub, "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$") || sub == "www")
-                    throw new ArgumentException("Поддомен может содержать только латинские буквы, цифры и дефис (3–32 символа).");
-                var taken = await _db.TutorSchools.AnyAsync(s => s.Id != school.Id && s.Subdomain == sub);
-                if (taken)
-                    throw new ArgumentException("Этот поддомен уже занят другой школой.");
-                school.Subdomain = sub;
-            }
+            if (dto.PrimaryColor != null) school.PrimaryColor = NormalizeHexColor(dto.PrimaryColor);
+            if (dto.PrimaryHoverColor != null) school.PrimaryHoverColor = NormalizeHexColor(dto.PrimaryHoverColor);
+            if (dto.AccentColor != null) school.AccentColor = NormalizeHexColor(dto.AccentColor);
+            if (dto.NavbarTitle != null) school.NavbarTitle = string.IsNullOrWhiteSpace(dto.NavbarTitle) ? null : InputSanitizer.Sanitize(dto.NavbarTitle);
         }
-        if (dto.PrimaryColor != null) school.PrimaryColor = NormalizeHexColor(dto.PrimaryColor);
-        if (dto.PrimaryHoverColor != null) school.PrimaryHoverColor = NormalizeHexColor(dto.PrimaryHoverColor);
-        if (dto.AccentColor != null) school.AccentColor = NormalizeHexColor(dto.AccentColor);
-        if (dto.NavbarTitle != null) school.NavbarTitle = string.IsNullOrWhiteSpace(dto.NavbarTitle) ? null : InputSanitizer.Sanitize(dto.NavbarTitle);
         school.UpdatedAt = DateTime.UtcNow;
 
         await _db.SaveChangesAsync();

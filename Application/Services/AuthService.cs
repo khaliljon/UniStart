@@ -320,6 +320,23 @@ public class AuthService : IAuthService
 
             user.SchoolId = newSchool.Id;
             await _unitOfWork.SaveChangesAsync();
+
+            // Notify all platform admins about the new self-registered school
+            var adminEmails = await _context.Users
+                .Where(u => u.Role == UserRole.Admin && !u.IsDeleted)
+                .Select(u => u.Email)
+                .ToListAsync();
+            var schoolNameForEmail = newSchool.Name;
+            var ownerName = user.Name;
+            var ownerEmail = user.Email;
+            _ = Task.Run(async () =>
+            {
+                foreach (var adminEmail in adminEmails)
+                {
+                    try { await _emailService.SendNewSchoolApplicationNotificationAsync(adminEmail, schoolNameForEmail, ownerName, ownerEmail); }
+                    catch { /* logged inside EmailService */ }
+                }
+            });
         }
 
         // Initialize default skill profiles for the user

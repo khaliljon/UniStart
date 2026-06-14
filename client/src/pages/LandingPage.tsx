@@ -170,19 +170,15 @@ function LandingPage() {
 
         {/* ═══ Linhao partnership — prominent, right under the CTA ═══ */}
         <div style={{ marginTop: '2.5rem', display: 'flex', justifyContent: 'center' }}>
-          <a
-            href="https://linhao.unistart.kz"
-            target="_blank"
-            rel="noopener noreferrer"
+          <div
             style={{
               display: 'flex',
-              alignItems: 'center',
-              gap: '1rem',
+              flexDirection: 'column',
+              gap: '0.85rem',
               padding: '1rem 1.25rem',
               maxWidth: '560px',
               width: '100%',
               borderRadius: '1rem',
-              textDecoration: 'none',
               background: 'linear-gradient(135deg, rgba(99,102,241,0.10), rgba(139,92,246,0.10))',
               border: '2px solid #6366f1',
               boxShadow: '0 8px 28px rgba(99,102,241,0.22)',
@@ -192,27 +188,72 @@ function LandingPage() {
             onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 12px 34px rgba(99,102,241,0.30)'; }}
             onMouseLeave={(e) => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 8px 28px rgba(99,102,241,0.22)'; }}
           >
-            <div style={{ width: '56px', height: '56px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0 }}>
-              <img src="/linhao-logo.png" alt="LINHAO.CHINESE" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <span style={{
-                display: 'inline-block', fontSize: '0.68rem', fontWeight: 800, letterSpacing: '0.08em',
-                color: '#fff', textTransform: 'uppercase', marginBottom: '0.3rem',
-                padding: '0.15rem 0.55rem', borderRadius: '999px',
-                background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-              }}>
-                {t.landing.partnerTitle}
-              </span>
-              <div style={{ fontWeight: 700, fontSize: '1.05rem', color: 'var(--text-primary)' }}>
-                {t.landing.partnerLinHaoName}
+            <a
+              href="https://linhao.unistart.kz"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ display: 'flex', alignItems: 'center', gap: '1rem', textDecoration: 'none' }}
+            >
+              <div style={{ width: '56px', height: '56px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0 }}>
+                <img src="/linhao-logo.png" alt="LINHAO.CHINESE" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               </div>
-              <div style={{ color: 'var(--text-secondary)', fontSize: '0.82rem', lineHeight: 1.4 }}>
-                {t.landing.partnerLinHaoDesc}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <span style={{
+                  display: 'inline-block', fontSize: '0.68rem', fontWeight: 800, letterSpacing: '0.08em',
+                  color: '#fff', textTransform: 'uppercase', marginBottom: '0.3rem',
+                  padding: '0.15rem 0.55rem', borderRadius: '999px',
+                  background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                }}>
+                  {t.landing.partnerTitle}
+                </span>
+                <div style={{ fontWeight: 700, fontSize: '1.05rem', color: 'var(--text-primary)' }}>
+                  {t.landing.partnerLinHaoName}
+                </div>
+                <div style={{ color: 'var(--text-secondary)', fontSize: '0.82rem', lineHeight: 1.4 }}>
+                  {t.landing.partnerLinHaoDesc}
+                </div>
               </div>
+              <span style={{ color: '#6366f1', fontWeight: 700, fontSize: '1.4rem', flexShrink: 0 }}>→</span>
+            </a>
+
+            {/* Social links */}
+            <div style={{ display: 'flex', gap: '0.6rem', paddingLeft: 'calc(56px + 1rem)' }}>
+              <a
+                href="https://www.instagram.com/linhao.chinese/"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
+                  fontSize: '0.78rem', fontWeight: 600, textDecoration: 'none',
+                  color: '#fff', padding: '0.3rem 0.7rem', borderRadius: '999px',
+                  background: 'linear-gradient(135deg, #f58529, #dd2a7b, #8134af)',
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+                  <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+                  <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+                </svg>
+                Instagram
+              </a>
+              <a
+                href="https://t.me/linhao_chinese"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
+                  fontSize: '0.78rem', fontWeight: 600, textDecoration: 'none',
+                  color: '#fff', padding: '0.3rem 0.7rem', borderRadius: '999px',
+                  background: '#229ED9',
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M21.94 4.6 18.9 19c-.23 1.02-.83 1.27-1.68.79l-4.65-3.43-2.24 2.16c-.25.25-.46.46-.93.46l.33-4.73 8.6-7.77c.37-.33-.08-.52-.58-.19L7.4 13.2l-4.58-1.43c-1-.31-1.02-1 .21-1.48l17.9-6.9c.83-.31 1.56.19 1.29 1.46z" />
+                </svg>
+                Telegram
+              </a>
             </div>
-            <span style={{ color: '#6366f1', fontWeight: 700, fontSize: '1.4rem', flexShrink: 0 }}>→</span>
-          </a>
+          </div>
         </div>
       </section>
 

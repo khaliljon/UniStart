@@ -1221,4 +1221,170 @@ public class AdminController : ControllerBase
 
         return Ok(new { restored = true, schoolId, school.Name });
     }
+
+    // ─── School Branding Editor (Admin) ──────────────────
+
+    /// <summary>Get full branding/white-label fields for a school</summary>
+    [HttpGet("schools/{schoolId:int}/branding")]
+    public async Task<IActionResult> GetSchoolBrandingForAdmin(int schoolId)
+    {
+        var s = await _db.TutorSchools.FindAsync(schoolId);
+        if (s == null) return NotFound(new { error = "School not found" });
+
+        return Ok(new AdminSchoolBrandingDto(
+            s.Id, s.Name, s.Slug, s.Subdomain, s.NavbarTitle,
+            s.Description, s.DescriptionEn, s.DescriptionKz,
+            s.LogoUrl, s.WebsiteUrl, s.InstagramUrl, s.TelegramUrl,
+            s.Specializations, s.PrimaryColor, s.PrimaryHoverColor, s.AccentColor,
+            s.IsActive, s.IsApproved, s.OwnerUserId));
+    }
+
+    /// <summary>Create a new school (admin) — usable before an owner exists</summary>
+    [HttpPost("schools")]
+    public async Task<IActionResult> CreateSchoolByAdmin([FromBody] AdminCreateSchoolDto dto)
+    {
+        if (string.IsNullOrWhiteSpace(dto.Name))
+            return BadRequest(new { error = "Name is required." });
+
+        var name = dto.Name.Trim();
+        var baseSlug = Slugify(name);
+        if (string.IsNullOrWhiteSpace(baseSlug)) baseSlug = $"school-{DateTime.UtcNow.Ticks}";
+        var slug = baseSlug;
+        var counter = 1;
+        while (await _db.TutorSchools.AnyAsync(s => s.Slug == slug))
+            slug = $"{baseSlug}-{counter++}";
+
+        string? subdomain = null;
+        if (!string.IsNullOrWhiteSpace(dto.Subdomain))
+        {
+            subdomain = dto.Subdomain.Trim().ToLowerInvariant();
+            var err = await ValidateSubdomainAsync(subdomain, null);
+            if (err != null) return BadRequest(new { error = err });
+        }
+
+        var school = new TutorSchool
+        {
+            Name = name,
+            Slug = slug,
+            Subdomain = subdomain,
+            Description = dto.Description?.Trim() ?? string.Empty,
+            Specializations = dto.Specializations?.Trim() ?? string.Empty,
+            PrimaryColor = NormalizeHex(dto.PrimaryColor),
+            PrimaryHoverColor = NormalizeHex(dto.PrimaryHoverColor),
+            AccentColor = NormalizeHex(dto.AccentColor),
+            NavbarTitle = string.IsNullOrWhiteSpace(dto.NavbarTitle) ? null : dto.NavbarTitle.Trim(),
+            LogoUrl = string.IsNullOrWhiteSpace(dto.LogoUrl) ? null : dto.LogoUrl.Trim(),
+            IsActive = true,
+            IsApproved = true,
+            IsPartner = true,
+            OwnerUserId = null,
+            CreatedAt = DateTime.UtcNow,
+        };
+        _db.TutorSchools.Add(school);
+        await _db.SaveChangesAsync();
+
+        var (adminId, adminEmail) = GetCurrentAdmin();
+        await _audit.LogAsync(adminId, adminEmail, "CreateSchool", "TutorSchool", school.Id.ToString(),
+            newValues: new { school.Name, school.Slug, school.Subdomain },
+            ipAddress: GetClientIp());
+
+        return Ok(new { school.Id, school.Name, school.Slug, school.Subdomain });
+    }
+
+    /// <summary>Update branding/white-label fields for any school (admin)</summary>
+    [HttpPut("schools/{schoolId:int}/branding")]
+    public async Task<IActionResult> UpdateSchoolBranding(int schoolId, [FromBody] AdminUpdateSchoolBrandingDto dto)
+    {
+        var school = await _db.TutorSchools.FindAsync(schoolId);
+        if (school == null) return NotFound(new { error = "School not found" });
+
+        if (dto.Name != null)
+        {
+            if (string.IsNullOrWhiteSpace(dto.Name)) return BadRequest(new { error = "Name cannot be empty." });
+            school.Name = dto.Name.Trim();
+        }
+
+        if (dto.Subdomain != null)
+        {
+            var sub = dto.Subdomain.Trim().ToLowerInvariant();
+            if (sub.Length == 0)
+            {
+                school.Subdomain = null;
+            }
+            else
+            {
+                var err = await ValidateSubdomainAsync(sub, school.Id);
+                if (err != null) return BadRequest(new { error = err });
+                school.Subdomain = sub;
+            }
+        }
+
+        if (dto.NavbarTitle != null) school.NavbarTitle = string.IsNullOrWhiteSpace(dto.NavbarTitle) ? null : dto.NavbarTitle.Trim();
+        if (dto.Description != null) school.Description = dto.Description.Trim();
+        if (dto.DescriptionEn != null) school.DescriptionEn = dto.DescriptionEn.Trim();
+        if (dto.DescriptionKz != null) school.DescriptionKz = dto.DescriptionKz.Trim();
+        if (dto.LogoUrl != null) school.LogoUrl = string.IsNullOrWhiteSpace(dto.LogoUrl) ? null : dto.LogoUrl.Trim();
+        if (dto.WebsiteUrl != null) school.WebsiteUrl = string.IsNullOrWhiteSpace(dto.WebsiteUrl) ? null : dto.WebsiteUrl.Trim();
+        if (dto.InstagramUrl != null) school.InstagramUrl = string.IsNullOrWhiteSpace(dto.InstagramUrl) ? null : dto.InstagramUrl.Trim();
+        if (dto.TelegramUrl != null) school.TelegramUrl = string.IsNullOrWhiteSpace(dto.TelegramUrl) ? null : dto.TelegramUrl.Trim();
+        if (dto.Specializations != null) school.Specializations = dto.Specializations.Trim();
+
+        try
+        {
+            if (dto.PrimaryColor != null) school.PrimaryColor = NormalizeHex(dto.PrimaryColor);
+            if (dto.PrimaryHoverColor != null) school.PrimaryHoverColor = NormalizeHex(dto.PrimaryHoverColor);
+            if (dto.AccentColor != null) school.AccentColor = NormalizeHex(dto.AccentColor);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+
+        school.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+
+        var (adminId, adminEmail) = GetCurrentAdmin();
+        await _audit.LogAsync(adminId, adminEmail, "UpdateSchoolBranding", "TutorSchool", schoolId.ToString(),
+            newValues: new { school.Name, school.Subdomain, school.PrimaryColor },
+            ipAddress: GetClientIp());
+
+        return Ok(new { updated = true, schoolId });
+    }
+
+    private async Task<string?> ValidateSubdomainAsync(string sub, int? excludeSchoolId)
+    {
+        if (!System.Text.RegularExpressions.Regex.IsMatch(sub, "^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$") || sub == "www")
+            return "Поддомен может содержать только латинские буквы, цифры и дефис (3–32 символа).";
+        var taken = await _db.TutorSchools.AnyAsync(s => s.Subdomain == sub && (excludeSchoolId == null || s.Id != excludeSchoolId));
+        if (taken) return "Этот поддомен уже занят другой школой.";
+        return null;
+    }
+
+    private static string? NormalizeHex(string? color)
+    {
+        if (string.IsNullOrWhiteSpace(color)) return null;
+        var c = color.Trim();
+        if (!c.StartsWith('#')) c = "#" + c;
+        if (!System.Text.RegularExpressions.Regex.IsMatch(c, "^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$"))
+            throw new ArgumentException($"Некорректный HEX-цвет: {color}");
+        return c.ToLowerInvariant();
+    }
+
+    private static string Slugify(string name)
+    {
+        var map = new Dictionary<char, string>
+        {
+            ['ё']="e",['й']="y",['ц']="ts",['у']="u",['к']="k",['е']="e",['н']="n",['г']="g",
+            ['ш']="sh",['щ']="sch",['з']="z",['х']="h",['ъ']="",['ф']="f",['ы']="y",['в']="v",
+            ['а']="a",['п']="p",['р']="r",['о']="o",['л']="l",['д']="d",['ж']="zh",['э']="e",
+            ['я']="ya",['ч']="ch",['с']="s",['м']="m",['и']="i",['т']="t",['ь']="",['б']="b",['ю']="yu",
+        };
+        var sb = new System.Text.StringBuilder();
+        foreach (var ch in name.ToLowerInvariant())
+            sb.Append(map.TryGetValue(ch, out var rep) ? rep : ch.ToString());
+        var slug = System.Text.RegularExpressions.Regex.Replace(sb.ToString(), @"\s+", "-");
+        slug = System.Text.RegularExpressions.Regex.Replace(slug, @"[^a-z0-9\-]", "");
+        slug = System.Text.RegularExpressions.Regex.Replace(slug, @"-+", "-").Trim('-');
+        return slug;
+    }
 }

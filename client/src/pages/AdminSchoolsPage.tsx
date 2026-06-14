@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
+import type { CSSProperties } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../i18n';
 import adminService from '../services/adminService';
+import type { AdminSchoolBranding, AdminCreateSchool } from '../services/adminService';
 import api from '../services/api';
 import { getDateLocale } from '../i18n';
 
@@ -20,6 +22,15 @@ interface SchoolDetail {
   tutors: Array<{ userId: number; name: string; email: string; headline: string; isVerified: boolean; isAvailable: boolean; totalStudents: number; averageRating: number; role?: string }>;
 }
 
+const fieldLabel: CSSProperties = {
+  display: 'flex', flexDirection: 'column', gap: '0.3rem',
+  fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-secondary)',
+};
+const fieldInput: CSSProperties = {
+  padding: '0.5rem 0.7rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)',
+  background: 'var(--bg-primary)', color: 'var(--text-primary)', fontSize: '0.9rem', fontWeight: 400,
+};
+
 function AdminSchoolsPage() {
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -30,6 +41,18 @@ function AdminSchoolsPage() {
   const [detail, setDetail] = useState<SchoolDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState<number | null>(null);
+
+  // Branding editor state
+  const [brandingForm, setBrandingForm] = useState<AdminSchoolBranding | null>(null);
+  const [brandingLoading, setBrandingLoading] = useState(false);
+  const [brandingSaving, setBrandingSaving] = useState(false);
+  const [brandingError, setBrandingError] = useState<string | null>(null);
+
+  // Create-school state
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createForm, setCreateForm] = useState<AdminCreateSchool>({ name: '' });
+  const [createSaving, setCreateSaving] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
 
   const loadSchools = useCallback(async () => {
     try {
@@ -120,6 +143,73 @@ function AdminSchoolsPage() {
     } catch { alert(t.admin.common.deleteError); }
   }, [t]);
 
+  // ─── Branding editor ──────────────────────────────────
+  const openBranding = useCallback(async (schoolId: number) => {
+    setBrandingForm(null);
+    setBrandingError(null);
+    setBrandingLoading(true);
+    try {
+      const data = await adminService.getSchoolBranding(schoolId);
+      setBrandingForm(data);
+    } catch {
+      setBrandingError('Не удалось загрузить брендинг');
+    } finally {
+      setBrandingLoading(false);
+    }
+  }, []);
+
+  const handleSaveBranding = async () => {
+    if (!brandingForm) return;
+    setBrandingSaving(true);
+    setBrandingError(null);
+    try {
+      await adminService.updateSchoolBranding(brandingForm.id, {
+        name: brandingForm.name,
+        subdomain: brandingForm.subdomain,
+        navbarTitle: brandingForm.navbarTitle,
+        description: brandingForm.description,
+        descriptionEn: brandingForm.descriptionEn,
+        descriptionKz: brandingForm.descriptionKz,
+        logoUrl: brandingForm.logoUrl,
+        websiteUrl: brandingForm.websiteUrl,
+        instagramUrl: brandingForm.instagramUrl,
+        telegramUrl: brandingForm.telegramUrl,
+        specializations: brandingForm.specializations,
+        primaryColor: brandingForm.primaryColor,
+        primaryHoverColor: brandingForm.primaryHoverColor,
+        accentColor: brandingForm.accentColor,
+      });
+      setBrandingForm(null);
+      await loadSchools();
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setBrandingError(msg || 'Ошибка сохранения');
+    } finally {
+      setBrandingSaving(false);
+    }
+  };
+
+  const handleCreateSchool = async () => {
+    if (!createForm.name.trim()) { setCreateError('Укажите название'); return; }
+    setCreateSaving(true);
+    setCreateError(null);
+    try {
+      const res = await adminService.createSchool(createForm);
+      setCreateOpen(false);
+      setCreateForm({ name: '' });
+      await loadSchools();
+      // Open branding editor for the newly created school
+      await openBranding(res.id);
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setCreateError(msg || 'Ошибка создания');
+    } finally {
+      setCreateSaving(false);
+    }
+  };
+
+  const sanitizeSubdomain = (v: string) => v.toLowerCase().replace(/[^a-z0-9-]/g, '');
+
   const filteredSchools = schools.filter(s => {
     if (filter === 'approved') return s.isApproved;
     if (filter === 'unapproved') return !s.isApproved;
@@ -142,6 +232,16 @@ function AdminSchoolsPage() {
         <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
           Верифицированы: {schools.filter(s => s.isApproved).length} | Оплачены: {schools.filter(isPaid).length}
         </span>
+      </div>
+
+      <div style={{ marginBottom: '1rem' }}>
+        <button
+          onClick={() => { setCreateForm({ name: '' }); setCreateError(null); setCreateOpen(true); }}
+          className="btn"
+          style={{ padding: '0.45rem 0.9rem', fontSize: '0.85rem', background: 'var(--primary-color)', color: '#fff', border: 'none' }}
+        >
+          + Создать школу (white-label)
+        </button>
       </div>
 
       {/* Filters */}
@@ -345,6 +445,13 @@ function AdminSchoolsPage() {
                   {t.admin.common.delete}
                 </button>
                 </>)}
+                <button
+                  onClick={() => openBranding(selected.id)}
+                  className="btn"
+                  style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem', border: 'none', background: 'var(--primary-color)', color: '#fff' }}
+                >
+                  Брендинг
+                </button>
                 <button onClick={() => setSelected(null)} style={{
                   background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--text-secondary)',
                 }}>&times;</button>
@@ -467,6 +574,160 @@ function AdminSchoolsPage() {
           </div>
         )}
       </div>
+
+      {/* ─── Branding editor modal ─── */}
+      {(brandingLoading || brandingForm) && (
+        <div
+          onClick={() => { if (!brandingSaving) setBrandingForm(null); }}
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000,
+            display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '2rem 1rem', overflowY: 'auto',
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            className="card"
+            style={{ width: '100%', maxWidth: 640, padding: '1.75rem', alignSelf: 'flex-start' }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+              <h2 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 700 }}>Брендинг школы</h2>
+              <button onClick={() => { if (!brandingSaving) setBrandingForm(null); }} style={{
+                background: 'none', border: 'none', fontSize: '1.4rem', cursor: 'pointer', color: 'var(--text-secondary)',
+              }}>&times;</button>
+            </div>
+
+            {brandingLoading ? (
+              <p style={{ color: 'var(--text-secondary)' }}>{t.admin.common.loading}</p>
+            ) : brandingForm ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {brandingError && (
+                  <div style={{ padding: '0.6rem 0.85rem', borderRadius: '0.5rem', background: '#fef2f2', color: '#dc2626', fontSize: '0.85rem' }}>{brandingError}</div>
+                )}
+
+                <label style={fieldLabel}>Название
+                  <input value={brandingForm.name} onChange={e => setBrandingForm({ ...brandingForm, name: e.target.value })} style={fieldInput} />
+                </label>
+
+                <label style={fieldLabel}>Поддомен
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <input
+                      value={brandingForm.subdomain ?? ''}
+                      onChange={e => setBrandingForm({ ...brandingForm, subdomain: sanitizeSubdomain(e.target.value) || null })}
+                      placeholder="linhao"
+                      style={{ ...fieldInput, flex: 1 }}
+                    />
+                    <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>.unistart.kz</span>
+                  </div>
+                </label>
+
+                <label style={fieldLabel}>Заголовок в навбаре
+                  <input value={brandingForm.navbarTitle ?? ''} onChange={e => setBrandingForm({ ...brandingForm, navbarTitle: e.target.value || null })} style={fieldInput} />
+                </label>
+
+                <label style={fieldLabel}>Описание (RU)
+                  <textarea value={brandingForm.description} onChange={e => setBrandingForm({ ...brandingForm, description: e.target.value })} rows={2} style={{ ...fieldInput, resize: 'vertical' }} />
+                </label>
+                <label style={fieldLabel}>Описание (EN)
+                  <textarea value={brandingForm.descriptionEn ?? ''} onChange={e => setBrandingForm({ ...brandingForm, descriptionEn: e.target.value || null })} rows={2} style={{ ...fieldInput, resize: 'vertical' }} />
+                </label>
+                <label style={fieldLabel}>Описание (KZ)
+                  <textarea value={brandingForm.descriptionKz ?? ''} onChange={e => setBrandingForm({ ...brandingForm, descriptionKz: e.target.value || null })} rows={2} style={{ ...fieldInput, resize: 'vertical' }} />
+                </label>
+
+                <label style={fieldLabel}>Логотип (URL)
+                  <input value={brandingForm.logoUrl ?? ''} onChange={e => setBrandingForm({ ...brandingForm, logoUrl: e.target.value || null })} style={fieldInput} />
+                </label>
+                <label style={fieldLabel}>Сайт (URL)
+                  <input value={brandingForm.websiteUrl ?? ''} onChange={e => setBrandingForm({ ...brandingForm, websiteUrl: e.target.value || null })} style={fieldInput} />
+                </label>
+                <label style={fieldLabel}>Instagram (URL)
+                  <input value={brandingForm.instagramUrl ?? ''} onChange={e => setBrandingForm({ ...brandingForm, instagramUrl: e.target.value || null })} placeholder="https://www.instagram.com/..." style={fieldInput} />
+                </label>
+                <label style={fieldLabel}>Telegram (URL)
+                  <input value={brandingForm.telegramUrl ?? ''} onChange={e => setBrandingForm({ ...brandingForm, telegramUrl: e.target.value || null })} placeholder="https://t.me/..." style={fieldInput} />
+                </label>
+
+                <label style={fieldLabel}>Специализации (через запятую)
+                  <input value={brandingForm.specializations} onChange={e => setBrandingForm({ ...brandingForm, specializations: e.target.value })} style={fieldInput} />
+                </label>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
+                  <label style={fieldLabel}>Основной цвет
+                    <input type="color" value={brandingForm.primaryColor || '#2563eb'} onChange={e => setBrandingForm({ ...brandingForm, primaryColor: e.target.value })} style={{ width: '100%', height: 38, padding: 0, border: '1px solid var(--border-color)', borderRadius: '0.4rem', cursor: 'pointer' }} />
+                  </label>
+                  <label style={fieldLabel}>Hover-цвет
+                    <input type="color" value={brandingForm.primaryHoverColor || '#1d4ed8'} onChange={e => setBrandingForm({ ...brandingForm, primaryHoverColor: e.target.value })} style={{ width: '100%', height: 38, padding: 0, border: '1px solid var(--border-color)', borderRadius: '0.4rem', cursor: 'pointer' }} />
+                  </label>
+                  <label style={fieldLabel}>Акцентный цвет
+                    <input type="color" value={brandingForm.accentColor || '#f59e0b'} onChange={e => setBrandingForm({ ...brandingForm, accentColor: e.target.value })} style={{ width: '100%', height: 38, padding: 0, border: '1px solid var(--border-color)', borderRadius: '0.4rem', cursor: 'pointer' }} />
+                  </label>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.6rem', marginTop: '0.5rem' }}>
+                  <button onClick={() => setBrandingForm(null)} disabled={brandingSaving} className="btn btn-outline" style={{ padding: '0.5rem 1rem' }}>{t.admin.common.cancel}</button>
+                  <button onClick={handleSaveBranding} disabled={brandingSaving} className="btn" style={{ padding: '0.5rem 1.2rem', background: 'var(--primary-color)', color: '#fff', border: 'none' }}>
+                    {brandingSaving ? '...' : t.admin.common.save}
+                  </button>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      )}
+
+      {/* ─── Create school modal ─── */}
+      {createOpen && (
+        <div
+          onClick={() => { if (!createSaving) setCreateOpen(false); }}
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000,
+            display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '2rem 1rem', overflowY: 'auto',
+          }}
+        >
+          <div onClick={e => e.stopPropagation()} className="card" style={{ width: '100%', maxWidth: 520, padding: '1.75rem', alignSelf: 'flex-start' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+              <h2 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 700 }}>Создать школу</h2>
+              <button onClick={() => { if (!createSaving) setCreateOpen(false); }} style={{
+                background: 'none', border: 'none', fontSize: '1.4rem', cursor: 'pointer', color: 'var(--text-secondary)',
+              }}>&times;</button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {createError && (
+                <div style={{ padding: '0.6rem 0.85rem', borderRadius: '0.5rem', background: '#fef2f2', color: '#dc2626', fontSize: '0.85rem' }}>{createError}</div>
+              )}
+              <label style={fieldLabel}>Название *
+                <input value={createForm.name} onChange={e => setCreateForm({ ...createForm, name: e.target.value })} style={fieldInput} />
+              </label>
+              <label style={fieldLabel}>Поддомен
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <input
+                    value={createForm.subdomain ?? ''}
+                    onChange={e => setCreateForm({ ...createForm, subdomain: sanitizeSubdomain(e.target.value) || undefined })}
+                    placeholder="linhao"
+                    style={{ ...fieldInput, flex: 1 }}
+                  />
+                  <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>.unistart.kz</span>
+                </div>
+              </label>
+              <label style={fieldLabel}>Описание
+                <textarea value={createForm.description ?? ''} onChange={e => setCreateForm({ ...createForm, description: e.target.value || undefined })} rows={2} style={{ ...fieldInput, resize: 'vertical' }} />
+              </label>
+              <label style={fieldLabel}>Специализации (через запятую)
+                <input value={createForm.specializations ?? ''} onChange={e => setCreateForm({ ...createForm, specializations: e.target.value || undefined })} style={fieldInput} />
+              </label>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0 }}>
+                Школа создаётся активной и верифицированной, без владельца. Остальной брендинг можно настроить после создания.
+              </p>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.6rem' }}>
+                <button onClick={() => setCreateOpen(false)} disabled={createSaving} className="btn btn-outline" style={{ padding: '0.5rem 1rem' }}>{t.admin.common.cancel}</button>
+                <button onClick={handleCreateSchool} disabled={createSaving} className="btn" style={{ padding: '0.5rem 1.2rem', background: 'var(--primary-color)', color: '#fff', border: 'none' }}>
+                  {createSaving ? '...' : 'Создать'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

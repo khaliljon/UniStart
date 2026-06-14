@@ -244,7 +244,7 @@ public class TutorController : ControllerBase
 
     /// <summary>Создать школу (тьютор)</summary>
     [HttpPost("schools")]
-    [Authorize(Roles = "Tutor,SchoolTutor,Admin")]
+    [Authorize(Roles = "Tutor,SchoolTutor,SchoolAdmin,Admin")]
     public async Task<IActionResult> CreateSchool([FromBody] CreateSchoolDto dto)
     {
         var userId = GetUserId();
@@ -254,7 +254,7 @@ public class TutorController : ControllerBase
 
     /// <summary>Получить свою школу (владелец)</summary>
     [HttpGet("my-school")]
-    [Authorize(Roles = "Tutor,SchoolTutor,Admin")]
+    [Authorize(Roles = "Tutor,SchoolTutor,SchoolAdmin,Admin")]
     public async Task<IActionResult> GetMySchool()
     {
         var userId = GetUserId();
@@ -265,13 +265,17 @@ public class TutorController : ControllerBase
 
     /// <summary>Обновить свою школу (владелец)</summary>
     [HttpPut("my-school")]
-    [Authorize(Roles = "Tutor,SchoolTutor,Admin")]
+    [Authorize(Roles = "Tutor,SchoolTutor,SchoolAdmin,Admin")]
     public async Task<IActionResult> UpdateMySchool([FromBody] UpdateSchoolDto dto)
     {
         var userId = GetUserId();
+        // White-label branding (subdomain, colors, navbar title) is restricted to
+        // the school's own admin and the platform admin. Other owners may still
+        // edit general school info, but branding fields are ignored for them.
+        var canBrand = User.IsInRole("SchoolAdmin") || User.IsInRole("Admin");
         try
         {
-            var result = await _tutorService.UpdateSchoolAsync(userId, dto);
+            var result = await _tutorService.UpdateSchoolAsync(userId, dto, canBrand);
             if (result == null) return NotFound(new { error = "School not found or not owner" });
             return Ok(result);
         }
@@ -283,7 +287,7 @@ public class TutorController : ControllerBase
 
     /// <summary>Добавить тьютора в школу (владелец)</summary>
     [HttpPost("my-school/tutors/{tutorUserId}")]
-    [Authorize(Roles = "Tutor,SchoolTutor,Admin")]
+    [Authorize(Roles = "Tutor,SchoolTutor,SchoolAdmin,Admin")]
     public async Task<IActionResult> AddTutorToSchool(int tutorUserId)
     {
         var userId = GetUserId();
@@ -293,7 +297,7 @@ public class TutorController : ControllerBase
 
     /// <summary>Удалить тьютора из школы (владелец)</summary>
     [HttpDelete("my-school/tutors/{tutorUserId}")]
-    [Authorize(Roles = "Tutor,SchoolTutor,Admin")]
+    [Authorize(Roles = "Tutor,SchoolTutor,SchoolAdmin,Admin")]
     public async Task<IActionResult> RemoveTutorFromSchool(int tutorUserId)
     {
         var userId = GetUserId();

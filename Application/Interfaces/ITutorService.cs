@@ -22,7 +22,7 @@ public interface ITutorService
     // School management (Этап 4)
     Task<SchoolAdminDto> CreateSchoolAsync(int ownerUserId, CreateSchoolDto dto);
     Task<SchoolAdminDto?> GetMySchoolAsync(int ownerUserId);
-    Task<SchoolAdminDto?> UpdateSchoolAsync(int ownerUserId, UpdateSchoolDto dto);
+    Task<SchoolAdminDto?> UpdateSchoolAsync(int ownerUserId, UpdateSchoolDto dto, bool canBrand);
     Task<LinkResultDto> AddTutorToSchoolAsync(int ownerUserId, int tutorUserId);
     Task<LinkResultDto> RemoveTutorFromSchoolAsync(int ownerUserId, int tutorUserId);
 

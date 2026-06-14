@@ -2,11 +2,14 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { tutorService } from '../services/tutorService';
 import { useTranslation } from '../i18n';
 import api from '../services/api';
+import { useAppSelector } from '../hooks/useAppSelector';
 import type { SchoolAdmin, UpdateSchoolRequest, TutorSchoolCard } from '../types';
 
 const EXAM_OPTIONS = ['SAT', 'NUET'];
 
 function TutorSchoolManagePage() {
+  const { user } = useAppSelector((state) => state.auth);
+  const canBrand = user?.role === 'SchoolAdmin' || user?.role === 'Admin';
   const [school, setSchool] = useState<SchoolAdmin | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -93,11 +96,14 @@ function TutorSchoolManagePage() {
         instagramUrl: instagramUrl.trim() || undefined,
         telegramUrl: telegramUrl.trim() || undefined,
         specializations: specializations.length > 0 ? specializations.join(',') : undefined,
-        subdomain: subdomain.trim().toLowerCase(),
-        primaryColor: primaryColor.trim(),
-        primaryHoverColor: primaryHoverColor.trim(),
-        accentColor: accentColor.trim(),
-        navbarTitle: navbarTitle.trim(),
+        // White-label branding is restricted to SchoolAdmin / platform Admin.
+        ...(canBrand ? {
+          subdomain: subdomain.trim().toLowerCase(),
+          primaryColor: primaryColor.trim(),
+          primaryHoverColor: primaryHoverColor.trim(),
+          accentColor: accentColor.trim(),
+          navbarTitle: navbarTitle.trim(),
+        } : {}),
       };
       const updated = await tutorService.updateMySchool(data);
       setSchool(updated);
@@ -212,6 +218,7 @@ function TutorSchoolManagePage() {
           </div>
 
           {/* White-label branding */}
+          {canBrand && (
           <div className="card">
             <h3 style={{ margin: '0 0 0.25rem', fontSize: '1rem' }}>Брендинг (White Label)</h3>
             <p style={{ margin: '0 0 0.75rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
@@ -248,6 +255,7 @@ function TutorSchoolManagePage() {
               <ColorField label="Акцентный цвет" value={accentColor} onChange={v => { setAccentColor(v); setSaved(false); }} placeholder="#d4a437" />
             </div>
           </div>
+          )}
         </div>
 
         {/* Right: Info & Tutor Management */}

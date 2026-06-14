@@ -1,6 +1,42 @@
 import api from './api';
 import type { QuestionListItem, QuestionDetail, QuestionStats, BulkImportResult, AdminUser, AdminUserStats, AdminTopicSummary, AdminDashboard, AdminSection, AdminSkill, PagedResult, TrashSummary } from '../types';
 
+export interface AdminSchoolBranding {
+  id: number;
+  name: string;
+  slug: string;
+  subdomain: string | null;
+  navbarTitle: string | null;
+  description: string;
+  descriptionEn: string | null;
+  descriptionKz: string | null;
+  logoUrl: string | null;
+  websiteUrl: string | null;
+  instagramUrl: string | null;
+  telegramUrl: string | null;
+  specializations: string;
+  primaryColor: string | null;
+  primaryHoverColor: string | null;
+  accentColor: string | null;
+  isActive: boolean;
+  isApproved: boolean;
+  ownerUserId: number | null;
+}
+
+export interface AdminCreateSchool {
+  name: string;
+  subdomain?: string;
+  description?: string;
+  specializations?: string;
+  navbarTitle?: string;
+  logoUrl?: string;
+  primaryColor?: string;
+  primaryHoverColor?: string;
+  accentColor?: string;
+}
+
+export type AdminUpdateSchoolBranding = Omit<AdminSchoolBranding, 'id' | 'slug' | 'isActive' | 'isApproved' | 'ownerUserId'>;
+
 const adminService = {
   // ─── Questions ───────────────────────────────────────────
   getQuestions: (examTypeCode?: string, topic?: string, difficulty?: string, page: number = 1, pageSize: number = 50, section?: string) => {
@@ -351,6 +387,16 @@ const adminService = {
 
   deleteSchool: (schoolId: number) =>
     api.delete(`/admin/schools/${schoolId}`).then(r => r.data),
+
+  // ─── School branding / white-label editor (admin) ────
+  getSchoolBranding: (schoolId: number) =>
+    api.get<AdminSchoolBranding>(`/admin/schools/${schoolId}/branding`).then(r => r.data),
+
+  createSchool: (data: AdminCreateSchool) =>
+    api.post<{ id: number; name: string; slug: string; subdomain: string | null }>('/admin/schools', data).then(r => r.data),
+
+  updateSchoolBranding: (schoolId: number, data: Partial<AdminUpdateSchoolBranding>) =>
+    api.put<{ updated: boolean; schoolId: number }>(`/admin/schools/${schoolId}/branding`, data).then(r => r.data),
 
   // ─── Pending Schools (approval flow) ─────────────────
   getPendingSchools: () =>
