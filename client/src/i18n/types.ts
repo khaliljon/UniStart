@@ -802,6 +802,7 @@ export interface Translations {
       resultTitle: string; created: string; duplicates: string;
       driveTitle: string; driveHint: string; folderLabel: string; folderPlaceholder: string;
       syncBtn: string; syncing: string; syncQueued: string; refreshItems: string;
+      refreshing: string; noItems: string;
       colName: string; colStatus: string; colSkill: string; colError: string;
       sectionRequired: string; fileRequired: string; textRequired: string; folderRequired: string;
     };

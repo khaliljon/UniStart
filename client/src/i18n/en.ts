@@ -824,6 +824,7 @@ export const en: Translations = {
       driveTitle: 'Google Drive sync', driveHint: 'Sync a whole Drive folder. Share the folder with the service account first.',
       folderLabel: 'Drive folder ID', folderPlaceholder: 'ID from the folder URL',
       syncBtn: 'Sync', syncing: 'Queuing...', syncQueued: 'Sync queued', refreshItems: 'Refresh',
+      refreshing: 'Refreshing...', noItems: 'No files yet. The sync has not written any results — wait and refresh again. If you just added the DeepSeek key, restart the backend.',
       colName: 'File', colStatus: 'Status', colSkill: 'Skill', colError: 'Error',
       sectionRequired: 'Section is required', fileRequired: 'Select a file', textRequired: 'Paste some text', folderRequired: 'Folder ID is required',
     },

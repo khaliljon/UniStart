@@ -824,6 +824,7 @@ export const kz: Translations = {
       driveTitle: 'Google Drive синхрондау', driveHint: 'Бүкіл Drive қалтасын синхрондайды. Алдымен қалтаны сервис-аккаунтқа ашыңыз.',
       folderLabel: 'Drive қалта ID', folderPlaceholder: 'Қалта URL-інен ID',
       syncBtn: 'Синхрондау', syncing: 'Кезекке қойылуда...', syncQueued: 'Синхрондау басталды', refreshItems: 'Жаңарту',
+      refreshing: 'Жаңартылуда...', noItems: 'Әзірге файлдар жоқ. Синхрондау нәтиже жазған жоқ — күтіп, қайта жаңартыңыз. DeepSeek кілтін жаңа қосқан болсаңыз, бэкендті қайта іске қосыңыз.',
       colName: 'Файл', colStatus: 'Күй', colSkill: 'Дағды', colError: 'Қате',
       sectionRequired: 'Бөлімді көрсетіңіз', fileRequired: 'Файл таңдаңыз', textRequired: 'Мәтін қойыңыз', folderRequired: 'Қалта ID көрсетіңіз',
     },

@@ -825,6 +825,7 @@ export const ru: Translations = {
       driveTitle: 'Синхронизация Google Drive', driveHint: 'Синхронизирует целую папку Drive. Сначала расшарьте папку на сервис-аккаунт.',
       folderLabel: 'ID папки Drive', folderPlaceholder: 'ID из URL папки',
       syncBtn: 'Синхронизировать', syncing: 'Постановка в очередь...', syncQueued: 'Синхронизация запущена', refreshItems: 'Обновить',
+      refreshing: 'Обновление...', noItems: 'Файлов пока нет. Синхронизация ещё не записала результаты — подождите и обновите ещё раз. Если только что добавили ключ DeepSeek, перезапустите бэкенд.',
       colName: 'Файл', colStatus: 'Статус', colSkill: 'Навык', colError: 'Ошибка',
       sectionRequired: 'Укажите секцию', fileRequired: 'Выберите файл', textRequired: 'Вставьте текст', folderRequired: 'Укажите ID папки',
     },

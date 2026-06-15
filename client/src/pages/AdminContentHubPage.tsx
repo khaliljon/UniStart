@@ -42,6 +42,8 @@ function AdminContentHubPage() {
   const [driveBusy, setDriveBusy] = useState(false);
   const [driveMsg, setDriveMsg] = useState<string | null>(null);
   const [items, setItems] = useState<DriveSyncItem[]>([]);
+  const [itemsBusy, setItemsBusy] = useState(false);
+  const [itemsLoaded, setItemsLoaded] = useState(false);
 
   // Load existing exam sections once for the dropdown.
   useEffect(() => {
@@ -104,8 +106,10 @@ function AdminContentHubPage() {
   };
 
   const loadItems = useCallback(async () => {
-    try { setItems(await contentPipelineService.getDriveItems()); }
+    setItemsBusy(true);
+    try { setItems(await contentPipelineService.getDriveItems()); setItemsLoaded(true); }
     catch (e) { setDriveMsg(errMsg(e)); }
+    finally { setItemsBusy(false); }
   }, []);
 
   const startSync = async () => {
@@ -278,9 +282,12 @@ function AdminContentHubPage() {
               <button className="btn btn-primary" disabled={driveBusy} onClick={startSync}>
                 {driveBusy ? c.syncing : c.syncBtn}
               </button>
-              <button className="btn btn-secondary" onClick={loadItems}>{c.refreshItems}</button>
+              <button className="btn btn-secondary" disabled={itemsBusy} onClick={loadItems}>{itemsBusy ? c.refreshing : c.refreshItems}</button>
             </div>
             {driveMsg && <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>{driveMsg}</div>}
+            {itemsLoaded && items.length === 0 && (
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>{c.noItems}</div>
+            )}
 
             {items.length > 0 && (
               <div style={{ overflowX: 'auto' }}>
