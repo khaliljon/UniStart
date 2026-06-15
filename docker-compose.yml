@@ -70,6 +70,8 @@ services:
       R2__AccessKeyId: ${R2_ACCESS_KEY_ID:-}
       R2__SecretAccessKey: ${R2_SECRET_ACCESS_KEY:-}
       R2__PublicUrl: ${R2_PUBLIC_URL:-}
+      R2__Endpoint: ${R2_ENDPOINT:-}
+      R2__BucketName: ${R2_BUCKET_NAME:-}
       DATA_PROTECTION_KEYS_DIR: /keys
       BACKUP_DIR: /backups
     volumes:
