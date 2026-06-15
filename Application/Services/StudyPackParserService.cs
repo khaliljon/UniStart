@@ -95,9 +95,9 @@ public class StudyPackParserService : IStudyPackParserService
 
         if (!response.IsSuccessStatusCode)
         {
-            _logger.LogError("LLM API {Status}: {Body}", response.StatusCode,
-                responseBody[..Math.Min(500, responseBody.Length)]);
-            throw new InvalidOperationException($"LLM API returned {response.StatusCode}.");
+            var snippet = responseBody[..Math.Min(500, responseBody.Length)];
+            _logger.LogError("LLM API {Status}: {Body}", response.StatusCode, snippet);
+            throw new InvalidOperationException($"LLM API returned {(int)response.StatusCode} {response.StatusCode}: {snippet}");
         }
 
         var completion = JsonSerializer.Deserialize<ChatCompletionResponse>(responseBody);

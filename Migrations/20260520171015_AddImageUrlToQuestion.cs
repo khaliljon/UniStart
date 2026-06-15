@@ -12,21 +12,11 @@ namespace UniStart.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DeleteData(
-                table: "ExamTypes",
-                keyColumn: "Code",
-                keyValue: "CSCA");
-
-            migrationBuilder.DeleteData(
-                table: "ExamTypes",
-                keyColumn: "Code",
-                keyValue: "IELTS");
-
-            migrationBuilder.DeleteData(
-                table: "ExamTypes",
-                keyColumn: "Code",
-                keyValue: "TOEFL");
-
+            // NOTE: the original auto-generated migration also deleted the CSCA/IELTS/TOEFL
+            // seed exam types here. That delete crashes on databases that still have rows
+            // (e.g. TestSessions) referencing those codes (FK violation). Removed — leaving
+            // unused exam types in place is harmless; they can be cleaned up separately
+            // after their dependent data is removed.
             migrationBuilder.AddColumn<string>(
                 name: "ImageUrl",
                 table: "Questions",
@@ -41,16 +31,6 @@ namespace UniStart.Migrations
             migrationBuilder.DropColumn(
                 name: "ImageUrl",
                 table: "Questions");
-
-            migrationBuilder.InsertData(
-                table: "ExamTypes",
-                columns: new[] { "Code", "Name" },
-                values: new object[,]
-                {
-                    { "CSCA", "Gaokao (China College Admission)" },
-                    { "IELTS", "IELTS Academic" },
-                    { "TOEFL", "TOEFL (Test of English as a Foreign Language)" }
-                });
         }
     }
 }
