@@ -172,7 +172,8 @@ public record ContentMappingRuleDto(
     string SkillName,
     string? Glossary,
     int SortOrder,
-    bool IsActive
+    bool IsActive,
+    bool IsIgnore
 );
 
 /// <summary>Create/update payload for a content mapping rule.</summary>
@@ -183,7 +184,8 @@ public record ContentMappingRuleInputDto(
     string SkillName,
     string? Glossary,
     int SortOrder,
-    bool IsActive
+    bool IsActive,
+    bool IsIgnore
 );
 
 // ─── TSA classification cache (per-question unit audit) ─────────────────────

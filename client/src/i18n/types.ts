@@ -816,7 +816,7 @@ export interface Translations {
       mapTitle: string; mapHint: string; mapSection: string; mapSectionPlaceholder: string;
       mapMatchType: string; mapFolder: string; mapFileName: string;
       mapPattern: string; mapPatternPlaceholder: string; mapSkill: string; mapSkillPlaceholder: string;
-      mapOrder: string; mapActive: string; mapGlossary: string; mapGlossaryPlaceholder: string;
+      mapOrder: string; mapActive: string; mapIgnore: string; mapGlossary: string; mapGlossaryPlaceholder: string;
       mapSave: string; mapAdd: string; mapCancel: string; mapLoad: string; mapEmpty: string;
       mapEdit: string; mapRequired: string; mapDeleteConfirm: string;
     };

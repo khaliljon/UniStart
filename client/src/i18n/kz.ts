@@ -842,7 +842,7 @@ export const kz: Translations = {
       mapSection: 'Бөлім', mapSectionPlaceholder: 'бос = барлығы',
       mapMatchType: 'Сәйкес', mapFolder: 'Қалта', mapFileName: 'Файл аты',
       mapPattern: 'Үлгі', mapPatternPlaceholder: 'ішкі жол', mapSkill: 'Дағды', mapSkillPlaceholder: 'мақсатты дағды',
-      mapOrder: 'Рет', mapActive: 'Белсенді', mapGlossary: 'Глоссарий (қалауы бойынша)', mapGlossaryPlaceholder: 'Бұл юнит нені тексереді (TSA жіктеуіне көмектеседі)...',
+      mapOrder: 'Рет', mapActive: 'Белсенді', mapIgnore: 'Елемеу', mapGlossary: 'Глоссарий (қалауы бойынша)', mapGlossaryPlaceholder: 'Бұл юнит нені тексереді (TSA жіктеуіне көмектеседі)...',
       mapSave: 'Сақтау', mapAdd: 'Ереже қосу', mapCancel: 'Болдырмау', mapLoad: 'Жаңарту', mapEmpty: 'Ережелер жоқ. Файлдар аты бойынша маптеледі.',
       mapEdit: 'Өңдеу', mapRequired: 'Үлгі мен дағды қажет', mapDeleteConfirm: 'Осы маппинг ережесін жою керек пе?',
     },

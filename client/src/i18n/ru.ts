@@ -843,7 +843,7 @@ export const ru: Translations = {
       mapSection: 'Секция', mapSectionPlaceholder: 'пусто = все',
       mapMatchType: 'Совпадение', mapFolder: 'Папка', mapFileName: 'Имя файла',
       mapPattern: 'Шаблон', mapPatternPlaceholder: 'подстрока', mapSkill: 'Навык', mapSkillPlaceholder: 'целевой навык',
-      mapOrder: 'Порядок', mapActive: 'Активно', mapGlossary: 'Глоссарий (опц.)', mapGlossaryPlaceholder: 'Что проверяет этот юнит (помогает классификации TSA)...',
+      mapOrder: 'Порядок', mapActive: 'Активно', mapIgnore: 'Игнор', mapGlossary: 'Глоссарий (опц.)', mapGlossaryPlaceholder: 'Что проверяет этот юнит (помогает классификации TSA)...',
       mapSave: 'Сохранить', mapAdd: 'Добавить правило', mapCancel: 'Отмена', mapLoad: 'Обновить', mapEmpty: 'Правил нет. Файлы маппятся по имени.',
       mapEdit: 'Изменить', mapRequired: 'Нужны шаблон и навык', mapDeleteConfirm: 'Удалить это правило маппинга?',
     },

@@ -841,7 +841,7 @@ export const en: Translations = {
       mapSection: 'Section', mapSectionPlaceholder: 'blank = all',
       mapMatchType: 'Match', mapFolder: 'Folder', mapFileName: 'File name',
       mapPattern: 'Pattern', mapPatternPlaceholder: 'substring', mapSkill: 'Skill', mapSkillPlaceholder: 'target skill',
-      mapOrder: 'Order', mapActive: 'Active', mapGlossary: 'Glossary (optional)', mapGlossaryPlaceholder: 'What this unit tests (helps TSA classification)...',
+      mapOrder: 'Order', mapActive: 'Active', mapIgnore: 'Ignore', mapGlossary: 'Glossary (optional)', mapGlossaryPlaceholder: 'What this unit tests (helps TSA classification)...',
       mapSave: 'Save', mapAdd: 'Add rule', mapCancel: 'Cancel', mapLoad: 'Reload', mapEmpty: 'No rules. Files fall back to name-based mapping.',
       mapEdit: 'Edit', mapRequired: 'Pattern and Skill are required', mapDeleteConfirm: 'Delete this mapping rule?',
     },

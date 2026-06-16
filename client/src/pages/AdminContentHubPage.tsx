@@ -16,7 +16,7 @@ type Tab = 'pipeline' | 'file' | 'json' | 'cleanup' | 'mappings';
 
 const EMPTY_RULE: ContentMappingRuleInput = {
   examSectionName: '', matchType: 'FolderSegment', pattern: '',
-  skillName: '', glossary: '', sortOrder: 0, isActive: true,
+  skillName: '', glossary: '', sortOrder: 0, isActive: true, isIgnore: false,
 };
 
 const DRIVE_STATUS_COLORS: Record<string, string> = {
@@ -170,7 +170,7 @@ function AdminContentHubPage() {
   }, []);
 
   const submitRule = async () => {
-    if (!ruleForm.pattern.trim() || !ruleForm.skillName.trim()) { setRulesMsg(c.mapRequired); return; }
+    if (!ruleForm.pattern.trim() || (!ruleForm.isIgnore && !ruleForm.skillName.trim())) { setRulesMsg(c.mapRequired); return; }
     setRulesBusy(true); setRulesMsg(null);
     try {
       if (editingRuleId !== null) {
@@ -190,7 +190,7 @@ function AdminContentHubPage() {
     setEditingRuleId(r.id);
     setRuleForm({
       examSectionName: r.examSectionName ?? '', matchType: r.matchType, pattern: r.pattern,
-      skillName: r.skillName, glossary: r.glossary ?? '', sortOrder: r.sortOrder, isActive: r.isActive,
+      skillName: r.skillName, glossary: r.glossary ?? '', sortOrder: r.sortOrder, isActive: r.isActive, isIgnore: r.isIgnore,
     });
   };
 
@@ -514,6 +514,10 @@ function AdminContentHubPage() {
               <input type="checkbox" checked={ruleForm.isActive} onChange={e => setRuleForm({ ...ruleForm, isActive: e.target.checked })} />
               {c.mapActive}
             </label>
+            <label style={{ ...labelStyle, display: 'flex', alignItems: 'center', gap: '0.35rem', marginBottom: '0.6rem' }}>
+              <input type="checkbox" checked={ruleForm.isIgnore} onChange={e => setRuleForm({ ...ruleForm, isIgnore: e.target.checked })} />
+              {c.mapIgnore}
+            </label>
           </div>
           <div style={{ marginBottom: '1rem' }}>
             <label style={labelStyle}>{c.mapGlossary}</label>
@@ -547,6 +551,7 @@ function AdminContentHubPage() {
                     <th style={{ padding: '0.4rem' }}>{c.mapSkill}</th>
                     <th style={{ padding: '0.4rem' }}>{c.mapOrder}</th>
                     <th style={{ padding: '0.4rem' }}>{c.mapActive}</th>
+                    <th style={{ padding: '0.4rem' }}>{c.mapIgnore}</th>
                     <th style={{ padding: '0.4rem' }}>{c.colActions}</th>
                   </tr>
                 </thead>
@@ -556,9 +561,10 @@ function AdminContentHubPage() {
                       <td style={{ padding: '0.4rem' }}>{r.examSectionName || '*'}</td>
                       <td style={{ padding: '0.4rem' }}>{r.matchType === 'FileName' ? c.mapFileName : c.mapFolder}</td>
                       <td style={{ padding: '0.4rem' }}>{r.pattern}</td>
-                      <td style={{ padding: '0.4rem' }}>{r.skillName}</td>
+                      <td style={{ padding: '0.4rem' }}>{r.isIgnore ? '—' : r.skillName}</td>
                       <td style={{ padding: '0.4rem' }}>{r.sortOrder}</td>
                       <td style={{ padding: '0.4rem' }}>{r.isActive ? '✓' : '—'}</td>
+                      <td style={{ padding: '0.4rem' }}>{r.isIgnore ? '🚫' : '—'}</td>
                       <td style={{ padding: '0.4rem', display: 'flex', gap: '0.3rem' }}>
                         <button className="btn btn-secondary" style={{ fontSize: '0.78rem', padding: '0.3rem 0.6rem' }}
                           disabled={rulesBusy} onClick={() => editRule(r)}>{c.mapEdit}</button>

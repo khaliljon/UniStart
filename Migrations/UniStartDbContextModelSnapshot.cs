@@ -267,6 +267,9 @@ namespace UniStart.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("IsIgnore")
+                        .HasColumnType("boolean");
+
                     b.Property<int>("MatchType")
                         .HasColumnType("integer");
 

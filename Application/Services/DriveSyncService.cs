@@ -199,7 +199,9 @@ public class DriveSyncService : IDriveSyncService
                 n.Id, n.Name, n.FolderPath, skill, DeriveFileOrder(n.Name),
                 ingestible, ingestible && skill != null && IsChanged(n), rule?.Pattern));
             if (ingestible && skill == null)
-                warnings.Add($"'{n.Name}' could not be mapped to a skill and would be skipped.");
+                warnings.Add(rule?.IsIgnore == true
+                    ? $"'{n.Name}' matches ignore rule '{rule.Pattern}' and will be skipped."
+                    : $"'{n.Name}' could not be mapped to a skill and would be skipped.");
         }
 
         var tsaPlan = new List<DrivePlanTsaPairDto>();
@@ -260,8 +262,11 @@ public class DriveSyncService : IDriveSyncService
         var skill = DeriveSkill(node);
         if (skill == null)
         {
+            var ignoreRule = MatchRule(node);
             item.Status = DriveSyncStatus.Unmapped;
-            item.ErrorMessage = "Could not map file to a skill; skipped to avoid garbage topics.";
+            item.ErrorMessage = ignoreRule?.IsIgnore == true
+                ? $"Ignored by mapping rule '{ignoreRule.Pattern}'."
+                : "Could not map file to a skill; skipped to avoid garbage topics.";
             item.LastSyncedAt = DateTime.UtcNow;
             await _db.SaveChangesAsync();
             return;
@@ -464,7 +469,7 @@ public class DriveSyncService : IDriveSyncService
     {
         var rule = MatchRule(node);
         if (rule != null)
-            return rule.SkillName;
+            return rule.IsIgnore ? null : rule.SkillName;
         return DeriveSkillHeuristic(node);
     }
 

@@ -198,7 +198,7 @@ public class AdminContentController : ControllerBase
             .OrderBy(r => r.SortOrder).ThenBy(r => r.Id)
             .Select(r => new ContentMappingRuleDto(
                 r.Id, r.ExamSectionName, r.MatchType.ToString(), r.Pattern,
-                r.SkillName, r.Glossary, r.SortOrder, r.IsActive))
+                r.SkillName, r.Glossary, r.SortOrder, r.IsActive, r.IsIgnore))
             .ToListAsync();
         return Ok(rules);
     }
@@ -208,8 +208,10 @@ public class AdminContentController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> CreateMapping([FromBody] ContentMappingRuleInputDto dto)
     {
-        if (dto == null || string.IsNullOrWhiteSpace(dto.Pattern) || string.IsNullOrWhiteSpace(dto.SkillName))
-            return BadRequest(new { error = "Pattern and SkillName are required." });
+        if (dto == null || string.IsNullOrWhiteSpace(dto.Pattern))
+            return BadRequest(new { error = "Pattern is required." });
+        if (!dto.IsIgnore && string.IsNullOrWhiteSpace(dto.SkillName))
+            return BadRequest(new { error = "SkillName is required unless the rule is an ignore rule." });
         if (!Enum.TryParse<ContentMatchType>(dto.MatchType, ignoreCase: true, out var matchType))
             return BadRequest(new { error = "MatchType must be 'FolderSegment' or 'FileName'." });
 
@@ -218,17 +220,18 @@ public class AdminContentController : ControllerBase
             ExamSectionName = string.IsNullOrWhiteSpace(dto.ExamSectionName) ? null : dto.ExamSectionName.Trim(),
             MatchType = matchType,
             Pattern = dto.Pattern.Trim(),
-            SkillName = dto.SkillName.Trim(),
+            SkillName = dto.SkillName?.Trim() ?? string.Empty,
             Glossary = string.IsNullOrWhiteSpace(dto.Glossary) ? null : dto.Glossary.Trim(),
             SortOrder = dto.SortOrder,
             IsActive = dto.IsActive,
+            IsIgnore = dto.IsIgnore,
         };
         _db.ContentMappingRules.Add(rule);
         await _db.SaveChangesAsync();
 
         return Ok(new ContentMappingRuleDto(
             rule.Id, rule.ExamSectionName, rule.MatchType.ToString(), rule.Pattern,
-            rule.SkillName, rule.Glossary, rule.SortOrder, rule.IsActive));
+            rule.SkillName, rule.Glossary, rule.SortOrder, rule.IsActive, rule.IsIgnore));
     }
 
     /// <summary>Update a mapping rule.</summary>
@@ -238,24 +241,27 @@ public class AdminContentController : ControllerBase
     {
         var rule = await _db.ContentMappingRules.FindAsync(id);
         if (rule == null) return NotFound(new { error = "Mapping rule not found." });
-        if (dto == null || string.IsNullOrWhiteSpace(dto.Pattern) || string.IsNullOrWhiteSpace(dto.SkillName))
-            return BadRequest(new { error = "Pattern and SkillName are required." });
+        if (dto == null || string.IsNullOrWhiteSpace(dto.Pattern))
+            return BadRequest(new { error = "Pattern is required." });
+        if (!dto.IsIgnore && string.IsNullOrWhiteSpace(dto.SkillName))
+            return BadRequest(new { error = "SkillName is required unless the rule is an ignore rule." });
         if (!Enum.TryParse<ContentMatchType>(dto.MatchType, ignoreCase: true, out var matchType))
             return BadRequest(new { error = "MatchType must be 'FolderSegment' or 'FileName'." });
 
         rule.ExamSectionName = string.IsNullOrWhiteSpace(dto.ExamSectionName) ? null : dto.ExamSectionName.Trim();
         rule.MatchType = matchType;
         rule.Pattern = dto.Pattern.Trim();
-        rule.SkillName = dto.SkillName.Trim();
+        rule.SkillName = dto.SkillName?.Trim() ?? string.Empty;
         rule.Glossary = string.IsNullOrWhiteSpace(dto.Glossary) ? null : dto.Glossary.Trim();
         rule.SortOrder = dto.SortOrder;
         rule.IsActive = dto.IsActive;
+        rule.IsIgnore = dto.IsIgnore;
         rule.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync();
 
         return Ok(new ContentMappingRuleDto(
             rule.Id, rule.ExamSectionName, rule.MatchType.ToString(), rule.Pattern,
-            rule.SkillName, rule.Glossary, rule.SortOrder, rule.IsActive));
+            rule.SkillName, rule.Glossary, rule.SortOrder, rule.IsActive, rule.IsIgnore));
     }
 
     /// <summary>Delete a mapping rule.</summary>
@@ -301,18 +307,44 @@ public class AdminContentController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> GetSkills()
     {
+        // Each metric is computed with a flat, single-level aggregate so Npgsql can
+        // translate it. (A combined projection with nested aggregates — Skill →
+        // Topic → Question → UserAnswer — cannot be translated.)
         var skills = await _db.Skills
-            .Select(s => new AdminSkillSummaryDto(
-                s.Id,
-                s.Code,
-                s.Name,
-                s.Topics.Count,
-                s.Topics.Sum(t => t.Questions.Count),
-                s.Topics.Any(t => t.Questions.Any(q => q.UserAnswers.Any()))))
             .OrderBy(s => s.Name)
+            .Select(s => new { s.Id, s.Code, s.Name })
             .ToListAsync();
 
-        return Ok(skills);
+        var topicCounts = (await _db.Topics
+            .GroupBy(t => t.SkillId)
+            .Select(g => new { SkillId = g.Key, Count = g.Count() })
+            .ToListAsync())
+            .ToDictionary(x => x.SkillId, x => x.Count);
+
+        var questionCounts = (await _db.Questions
+            .Join(_db.Topics, q => q.TopicId, t => t.Id, (q, t) => t.SkillId)
+            .GroupBy(skillId => skillId)
+            .Select(g => new { SkillId = g.Key, Count = g.Count() })
+            .ToListAsync())
+            .ToDictionary(x => x.SkillId, x => x.Count);
+
+        var activeSkillIds = (await _db.UserAnswers
+            .Select(ua => ua.Question.TopicId)
+            .Distinct()
+            .Join(_db.Topics, topicId => topicId, t => t.Id, (topicId, t) => t.SkillId)
+            .Distinct()
+            .ToListAsync())
+            .ToHashSet();
+
+        var result = skills
+            .Select(s => new AdminSkillSummaryDto(
+                s.Id, s.Code, s.Name,
+                topicCounts.GetValueOrDefault(s.Id),
+                questionCounts.GetValueOrDefault(s.Id),
+                activeSkillIds.Contains(s.Id)))
+            .ToList();
+
+        return Ok(result);
     }
 
     /// <summary>

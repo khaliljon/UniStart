@@ -122,6 +122,7 @@ export interface ContentMappingRule {
   glossary: string | null;
   sortOrder: number;
   isActive: boolean;
+  isIgnore: boolean;
 }
 
 export type ContentMappingRuleInput = Omit<ContentMappingRule, 'id'>;

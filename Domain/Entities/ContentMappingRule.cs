@@ -27,8 +27,15 @@ public class ContentMappingRule
     /// </summary>
     public string Pattern { get; set; } = string.Empty;
 
-    /// <summary>The Skill name a matching file is ingested into.</summary>
+    /// <summary>The Skill name a matching file is ingested into. Ignored when <see cref="IsIgnore"/> is true.</summary>
     public string SkillName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// When true, files matching this rule are skipped entirely (never ingested into any
+    /// skill). Use it to keep reference folders such as countries/universities out of the
+    /// content pipeline. <see cref="SkillName"/> is not required for ignore rules.
+    /// </summary>
+    public bool IsIgnore { get; set; }
 
     /// <summary>
     /// Optional 1–2 line description of the unit/skill. When the skill is a TSA unit,
