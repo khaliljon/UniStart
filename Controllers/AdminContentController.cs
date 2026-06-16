@@ -59,8 +59,21 @@ public class AdminContentController : ControllerBase
         if (string.IsNullOrWhiteSpace(text))
             return BadRequest(new { error = "Provide either 'text' or a non-empty 'file'." });
 
-        var payload = await _parser.ParseAsync(text, form.ExamTypeCode, form.ExamSectionName, ct);
-        return Ok(payload);
+        try
+        {
+            var payload = await _parser.ParseAsync(text, form.ExamTypeCode, form.ExamSectionName, ct);
+            return Ok(payload);
+        }
+        catch (UniStart.Application.Exceptions.LlmPaymentRequiredException ex)
+        {
+            return StatusCode(402, new { error = "LLM balance exhausted. Top up the provider account.", detail = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            // Upstream LLM failure (bad key, error status, malformed JSON, empty output).
+            // Surface as 502 so it is not confused with an EF 409 conflict.
+            return StatusCode(502, new { error = "LLM parsing failed.", detail = ex.Message });
+        }
     }
 
     /// <summary>
@@ -103,9 +116,20 @@ public class AdminContentController : ControllerBase
         if (string.IsNullOrWhiteSpace(text))
             return BadRequest(new { error = "Provide either 'text' or a non-empty 'file'." });
 
-        var payload = await _parser.ParseAsync(text, form.ExamTypeCode, form.ExamSectionName, ct);
-        var result = await _ingestion.IngestAsync(payload);
-        return Ok(result);
+        try
+        {
+            var payload = await _parser.ParseAsync(text, form.ExamTypeCode, form.ExamSectionName, ct);
+            var result = await _ingestion.IngestAsync(payload);
+            return Ok(result);
+        }
+        catch (UniStart.Application.Exceptions.LlmPaymentRequiredException ex)
+        {
+            return StatusCode(402, new { error = "LLM balance exhausted. Top up the provider account.", detail = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return StatusCode(502, new { error = "LLM parsing failed.", detail = ex.Message });
+        }
     }
 
     /// <summary>Extracts text from an uploaded study-pack file (md/txt/pdf/docx/xlsx).</summary>

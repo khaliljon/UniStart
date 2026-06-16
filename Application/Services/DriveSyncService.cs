@@ -161,6 +161,16 @@ public class DriveSyncService : IDriveSyncService
         if (!_parser.IsConfigured)
             warnings.Add("LLM parser is not configured (sync would not run).");
 
+        // Without Drive we cannot list anything – return an empty plan with the warning
+        // instead of throwing (which would surface as a 500).
+        if (!_drive.IsConfigured)
+            return new DriveSyncPlanDto(
+                0, 0, 0,
+                Array.Empty<string>(),
+                Array.Empty<DrivePlanFileDto>(),
+                Array.Empty<DrivePlanTsaPairDto>(),
+                warnings);
+
         var nodes = await _drive.ListFilesRecursiveAsync(rootFolderId);
         _rules = await LoadRulesAsync(examSectionName);
 
