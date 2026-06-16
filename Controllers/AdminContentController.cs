@@ -205,8 +205,17 @@ public class AdminContentController : ControllerBase
         if (string.IsNullOrWhiteSpace(dto.ExamTypeCode) || string.IsNullOrWhiteSpace(dto.ExamSectionName))
             return BadRequest(new { error = "ExamTypeCode and ExamSectionName are required." });
 
-        var plan = await _driveSync.PreviewFolderAsync(dto.RootFolderId, dto.ExamTypeCode, dto.ExamSectionName);
-        return Ok(plan);
+        try
+        {
+            var plan = await _driveSync.PreviewFolderAsync(dto.RootFolderId, dto.ExamTypeCode, dto.ExamSectionName);
+            return Ok(plan);
+        }
+        catch (Exception ex)
+        {
+            // Drive/API failures (auth, quota, folder not found) would otherwise surface
+            // as an opaque 500. Return the provider message so the admin can act on it.
+            return StatusCode(502, new { error = "Drive preview failed.", detail = ex.Message });
+        }
     }
 
     // ══════════════════════════════════════════════

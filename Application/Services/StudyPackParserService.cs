@@ -405,7 +405,36 @@ Return ONLY valid JSON.";
         PropertyNameCaseInsensitive = true,
         ReadCommentHandling = JsonCommentHandling.Skip,
         AllowTrailingCommas = true,
+        // LLMs frequently emit numbers as strings ("sortOrder": "1") and booleans as
+        // strings ("isCorrect": "true"). Tolerate both so a single bad field doesn't
+        // fail the whole parse.
+        NumberHandling = JsonNumberHandling.AllowReadingFromString,
+        Converters = { new FlexibleBoolConverter() },
     };
+
+    /// <summary>Reads bool from real JSON booleans AND string/number forms ("true"/"1"/"yes").</summary>
+    private sealed class FlexibleBoolConverter : JsonConverter<bool>
+    {
+        public override bool Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            switch (reader.TokenType)
+            {
+                case JsonTokenType.True: return true;
+                case JsonTokenType.False: return false;
+                case JsonTokenType.Number: return reader.GetDouble() != 0;
+                case JsonTokenType.String:
+                    var s = reader.GetString()?.Trim();
+                    return s is not null && (s.Equals("true", StringComparison.OrdinalIgnoreCase)
+                        || s.Equals("yes", StringComparison.OrdinalIgnoreCase)
+                        || s == "1");
+                default: return false;
+            }
+        }
+
+        public override void Write(Utf8JsonWriter writer, bool value, JsonSerializerOptions options)
+            => writer.WriteBooleanValue(value);
+    }
+
 
     private sealed class ChatCompletionResponse
     {
