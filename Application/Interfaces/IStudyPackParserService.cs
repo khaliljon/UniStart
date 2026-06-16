@@ -20,4 +20,18 @@ public interface IStudyPackParserService
         string examTypeCode,
         string examSectionName,
         CancellationToken ct = default);
+
+    /// <summary>
+    /// Parse a TSA past-paper PAIR (a questions file + its answer-key file) and
+    /// distribute the paired questions across the fixed Critical-Thinking units.
+    /// Returns one payload per unit (skillName = unit name). Does NOT write to the DB.
+    /// </summary>
+    Task<IReadOnlyList<IngestContentDto>> ParseTsaPairAsync(
+        string questionsText,
+        string answersText,
+        string examTypeCode,
+        string examSectionName,
+        IReadOnlyList<string> unitSkillNames,
+        IReadOnlyDictionary<string, string>? unitGlossary = null,
+        CancellationToken ct = default);
 }

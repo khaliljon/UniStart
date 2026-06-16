@@ -106,4 +106,97 @@ public record DriveSyncItemDto(
     DateTime? LastSyncedAt
 );
 
+// ─── Content cleanup (remove garbage skills) ────────────────────────────────
+
+/// <summary>
+/// One Skill with its content counts, used by the cleanup screen to identify and
+/// remove garbage skills created by a bad sync. <see cref="HasStudentActivity"/>
+/// flags skills whose questions already have student answers – deleting those is
+/// blocked unless explicitly forced.
+/// </summary>
+public record AdminSkillSummaryDto(
+    int Id,
+    string Code,
+    string Name,
+    int TopicCount,
+    int QuestionCount,
+    bool HasStudentActivity
+);
+
+// ─── Drive sync DRY-RUN preview (no LLM, no DB writes) ──────────────────────
+
+/// <summary>
+/// Result of a dry-run preview of a Drive folder: shows how every file WOULD be
+/// mapped before any tokens are spent. <see cref="Normal"/> lists regular study-pack
+/// files with their derived skill; <see cref="TsaPairs"/> lists the recognized
+/// question/answer pairings; <see cref="UnitNames"/> are the CT units TSA questions
+/// would be distributed across.
+/// </summary>
+public record DriveSyncPlanDto(
+    int TotalFiles,
+    int IngestibleCount,
+    int ChangedCount,
+    IReadOnlyList<string> UnitNames,
+    IReadOnlyList<DrivePlanFileDto> Normal,
+    IReadOnlyList<DrivePlanTsaPairDto> TsaPairs,
+    IReadOnlyList<string> Warnings
+);
+
+/// <summary>One normal file in the preview plan.</summary>
+public record DrivePlanFileDto(
+    string DriveFileId,
+    string Name,
+    string? FolderPath,
+    string? MappedSkillName,   // null = would be skipped as Unmapped
+    int FileOrder,
+    bool Ingestible,
+    bool Changed,              // would actually call the LLM (vs skipped unchanged)
+    string? MatchedRule        // pattern of the mapping rule that applied, if any
+);
+
+/// <summary>One recognized TSA question↔answer pairing in the preview plan.</summary>
+public record DrivePlanTsaPairDto(
+    string QuestionsName,
+    string? AnswersName,       // null = no answer key matched
+    bool Changed
+);
+
+// ─── Content mapping rules (admin-editable folder→skill config) ─────────────
+
+/// <summary>An admin-editable folder/file → Skill mapping rule (+ optional glossary).</summary>
+public record ContentMappingRuleDto(
+    int Id,
+    string? ExamSectionName,
+    string MatchType,          // "FolderSegment" | "FileName"
+    string Pattern,
+    string SkillName,
+    string? Glossary,
+    int SortOrder,
+    bool IsActive
+);
+
+/// <summary>Create/update payload for a content mapping rule.</summary>
+public record ContentMappingRuleInputDto(
+    string? ExamSectionName,
+    string MatchType,
+    string Pattern,
+    string SkillName,
+    string? Glossary,
+    int SortOrder,
+    bool IsActive
+);
+
+// ─── TSA classification cache (per-question unit audit) ─────────────────────
+
+/// <summary>One cached per-question TSA classification (read-only audit row).</summary>
+public record TsaClassificationDto(
+    int Id,
+    string SkillName,
+    string? TopicName,
+    string? ExamSectionName,
+    string? QuestionPreview,
+    DateTime CreatedAt,
+    DateTime LastSeenAt
+);
+
 

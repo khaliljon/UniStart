@@ -166,6 +166,198 @@ public class AdminContentController : ControllerBase
         return Ok(items);
     }
 
+    /// <summary>
+    /// Dry-run preview: walk the Drive folder and report how every file WOULD be mapped
+    /// (skill, file order, change status, TSA pairings) WITHOUT calling the LLM or
+    /// writing to the database. Lets the admin validate the Drive structure before
+    /// spending tokens.
+    /// </summary>
+    [HttpPost("drive/preview")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> PreviewDriveSync([FromBody] StartDriveSyncDto dto)
+    {
+        if (dto == null || string.IsNullOrWhiteSpace(dto.RootFolderId))
+            return BadRequest(new { error = "RootFolderId is required." });
+        if (string.IsNullOrWhiteSpace(dto.ExamTypeCode) || string.IsNullOrWhiteSpace(dto.ExamSectionName))
+            return BadRequest(new { error = "ExamTypeCode and ExamSectionName are required." });
+
+        var plan = await _driveSync.PreviewFolderAsync(dto.RootFolderId, dto.ExamTypeCode, dto.ExamSectionName);
+        return Ok(plan);
+    }
+
+    // ══════════════════════════════════════════════
+    //  CONTENT MAPPING RULES (folder→skill config in DB)
+    // ══════════════════════════════════════════════
+
+    /// <summary>List every folder→skill mapping rule (+ optional unit glossary).</summary>
+    [HttpGet("mappings")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> GetMappings()
+    {
+        var rules = await _db.ContentMappingRules
+            .OrderBy(r => r.SortOrder).ThenBy(r => r.Id)
+            .Select(r => new ContentMappingRuleDto(
+                r.Id, r.ExamSectionName, r.MatchType.ToString(), r.Pattern,
+                r.SkillName, r.Glossary, r.SortOrder, r.IsActive))
+            .ToListAsync();
+        return Ok(rules);
+    }
+
+    /// <summary>Create a mapping rule.</summary>
+    [HttpPost("mappings")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> CreateMapping([FromBody] ContentMappingRuleInputDto dto)
+    {
+        if (dto == null || string.IsNullOrWhiteSpace(dto.Pattern) || string.IsNullOrWhiteSpace(dto.SkillName))
+            return BadRequest(new { error = "Pattern and SkillName are required." });
+        if (!Enum.TryParse<ContentMatchType>(dto.MatchType, ignoreCase: true, out var matchType))
+            return BadRequest(new { error = "MatchType must be 'FolderSegment' or 'FileName'." });
+
+        var rule = new ContentMappingRule
+        {
+            ExamSectionName = string.IsNullOrWhiteSpace(dto.ExamSectionName) ? null : dto.ExamSectionName.Trim(),
+            MatchType = matchType,
+            Pattern = dto.Pattern.Trim(),
+            SkillName = dto.SkillName.Trim(),
+            Glossary = string.IsNullOrWhiteSpace(dto.Glossary) ? null : dto.Glossary.Trim(),
+            SortOrder = dto.SortOrder,
+            IsActive = dto.IsActive,
+        };
+        _db.ContentMappingRules.Add(rule);
+        await _db.SaveChangesAsync();
+
+        return Ok(new ContentMappingRuleDto(
+            rule.Id, rule.ExamSectionName, rule.MatchType.ToString(), rule.Pattern,
+            rule.SkillName, rule.Glossary, rule.SortOrder, rule.IsActive));
+    }
+
+    /// <summary>Update a mapping rule.</summary>
+    [HttpPut("mappings/{id:int}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> UpdateMapping(int id, [FromBody] ContentMappingRuleInputDto dto)
+    {
+        var rule = await _db.ContentMappingRules.FindAsync(id);
+        if (rule == null) return NotFound(new { error = "Mapping rule not found." });
+        if (dto == null || string.IsNullOrWhiteSpace(dto.Pattern) || string.IsNullOrWhiteSpace(dto.SkillName))
+            return BadRequest(new { error = "Pattern and SkillName are required." });
+        if (!Enum.TryParse<ContentMatchType>(dto.MatchType, ignoreCase: true, out var matchType))
+            return BadRequest(new { error = "MatchType must be 'FolderSegment' or 'FileName'." });
+
+        rule.ExamSectionName = string.IsNullOrWhiteSpace(dto.ExamSectionName) ? null : dto.ExamSectionName.Trim();
+        rule.MatchType = matchType;
+        rule.Pattern = dto.Pattern.Trim();
+        rule.SkillName = dto.SkillName.Trim();
+        rule.Glossary = string.IsNullOrWhiteSpace(dto.Glossary) ? null : dto.Glossary.Trim();
+        rule.SortOrder = dto.SortOrder;
+        rule.IsActive = dto.IsActive;
+        rule.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+
+        return Ok(new ContentMappingRuleDto(
+            rule.Id, rule.ExamSectionName, rule.MatchType.ToString(), rule.Pattern,
+            rule.SkillName, rule.Glossary, rule.SortOrder, rule.IsActive));
+    }
+
+    /// <summary>Delete a mapping rule.</summary>
+    [HttpDelete("mappings/{id:int}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> DeleteMapping(int id)
+    {
+        var rule = await _db.ContentMappingRules.FindAsync(id);
+        if (rule == null) return NotFound(new { error = "Mapping rule not found." });
+        _db.ContentMappingRules.Remove(rule);
+        await _db.SaveChangesAsync();
+        return Ok(new { deleted = true, id });
+    }
+
+    /// <summary>Read-only audit of cached per-question TSA unit classifications.</summary>
+    [HttpGet("tsa-classifications")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> GetTsaClassifications([FromQuery] string? skillName)
+    {
+        var query = _db.TsaClassifications.AsNoTracking();
+        if (!string.IsNullOrWhiteSpace(skillName))
+            query = query.Where(c => c.SkillName == skillName);
+
+        var rows = await query
+            .OrderByDescending(c => c.LastSeenAt)
+            .Take(500)
+            .Select(c => new TsaClassificationDto(
+                c.Id, c.SkillName, c.TopicName, c.ExamSectionName,
+                c.QuestionPreview, c.CreatedAt, c.LastSeenAt))
+            .ToListAsync();
+        return Ok(rows);
+    }
+
+    // ══════════════════════════════════════════════
+    //  CONTENT CLEANUP (remove garbage skills)
+    // ══════════════════════════════════════════════
+
+    /// <summary>
+    /// List every Skill with its topic/question counts and whether it already has
+    /// student activity. Used to find and remove garbage skills left by a bad sync.
+    /// </summary>
+    [HttpGet("skills")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> GetSkills()
+    {
+        var skills = await _db.Skills
+            .Select(s => new AdminSkillSummaryDto(
+                s.Id,
+                s.Code,
+                s.Name,
+                s.Topics.Count,
+                s.Topics.SelectMany(t => t.Questions).Count(),
+                s.Topics.SelectMany(t => t.Questions).SelectMany(q => q.UserAnswers).Any()))
+            .OrderBy(s => s.Name)
+            .ToListAsync();
+
+        return Ok(skills);
+    }
+
+    /// <summary>
+    /// Delete a Skill and all its content (topics → lessons/formulas/questions →
+    /// options/answers) via the configured cascade. Refuses when the skill already
+    /// has student activity unless <c>force=true</c> is passed. Returns 409 if a
+    /// restrict-FK (mock-exam/assignment/study-plan reference) blocks the delete.
+    /// </summary>
+    [HttpDelete("skills/{id:int}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> DeleteSkill(int id, [FromQuery] bool force = false)
+    {
+        var skill = await _db.Skills
+            .Include(s => s.Topics)
+                .ThenInclude(t => t.Questions)
+            .FirstOrDefaultAsync(s => s.Id == id);
+        if (skill == null)
+            return NotFound(new { error = "Skill not found." });
+
+        var hasActivity = await _db.Skills
+            .Where(s => s.Id == id)
+            .SelectMany(s => s.Topics)
+            .SelectMany(t => t.Questions)
+            .SelectMany(q => q.UserAnswers)
+            .AnyAsync();
+        if (hasActivity && !force)
+            return Conflict(new { error = "Skill has student activity. Pass force=true to delete anyway." });
+
+        try
+        {
+            _db.Skills.Remove(skill);
+            await _db.SaveChangesAsync();
+        }
+        catch (DbUpdateException ex)
+        {
+            return Conflict(new
+            {
+                error = "Skill is referenced by exam/assignment/study-plan content and cannot be deleted.",
+                detail = ex.InnerException?.Message ?? ex.Message
+            });
+        }
+
+        return Ok(new { deleted = true, skillId = id, skillName = skill.Name });
+    }
+
     // ══════════════════════════════════════════════
     //  LESSONS
     // ══════════════════════════════════════════════

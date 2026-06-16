@@ -1,7 +1,10 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useTranslation } from '../hooks/useTranslation';
 import contentPipelineService from '../services/contentPipelineService';
-import type { IngestContent, IngestResult, DriveSyncItem } from '../services/contentPipelineService';
+import type {
+  IngestContent, IngestResult, DriveSyncItem, AdminSkillSummary,
+  DriveSyncPlan, ContentMappingRule, ContentMappingRuleInput,
+} from '../services/contentPipelineService';
 import adminService from '../services/adminService';
 import type { AdminSection } from '../types';
 import AdminQuestionImportPage from './AdminQuestionImportPage';
@@ -9,7 +12,12 @@ import AdminImportPage from './AdminImportPage';
 
 const EXAM_TYPES = ['SAT', 'NUET'];
 
-type Tab = 'pipeline' | 'file' | 'json';
+type Tab = 'pipeline' | 'file' | 'json' | 'cleanup' | 'mappings';
+
+const EMPTY_RULE: ContentMappingRuleInput = {
+  examSectionName: '', matchType: 'FolderSegment', pattern: '',
+  skillName: '', glossary: '', sortOrder: 0, isActive: true,
+};
 
 const DRIVE_STATUS_COLORS: Record<string, string> = {
   Synced: 'var(--success-color)',
@@ -45,6 +53,23 @@ function AdminContentHubPage() {
   const [itemsBusy, setItemsBusy] = useState(false);
   const [itemsLoaded, setItemsLoaded] = useState(false);
 
+  // ── Cleanup state ─────────────────────────────────
+  const [skills, setSkills] = useState<AdminSkillSummary[]>([]);
+  const [skillsBusy, setSkillsBusy] = useState(false);
+  const [skillsLoaded, setSkillsLoaded] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [cleanupMsg, setCleanupMsg] = useState<string | null>(null);
+  // ── Dry-run preview state ─────────────────
+  const [plan, setPlan] = useState<DriveSyncPlan | null>(null);
+  const [planBusy, setPlanBusy] = useState(false);
+
+  // ── Mapping rules state ─────────────────
+  const [rules, setRules] = useState<ContentMappingRule[]>([]);
+  const [rulesBusy, setRulesBusy] = useState(false);
+  const [rulesLoaded, setRulesLoaded] = useState(false);
+  const [ruleForm, setRuleForm] = useState<ContentMappingRuleInput>(EMPTY_RULE);
+  const [editingRuleId, setEditingRuleId] = useState<number | null>(null);
+  const [rulesMsg, setRulesMsg] = useState<string | null>(null);
   // Load existing exam sections once for the dropdown.
   useEffect(() => {
     adminService.getSections().then(setSections).catch(() => { /* non-fatal */ });
@@ -125,9 +150,86 @@ function AdminContentHubPage() {
     } finally { setDriveBusy(false); }
   };
 
+  const doDrivePreview = async () => {
+    if (!folderId.trim()) { setDriveMsg(c.folderRequired); return; }
+    if (!section.trim()) { setDriveMsg(c.sectionRequired); return; }
+    setPlanBusy(true); setDriveMsg(null); setPlan(null);
+    try {
+      setPlan(await contentPipelineService.previewDriveSync(folderId.trim(), examType, section.trim()));
+    } catch (e) {
+      setDriveMsg(errMsg(e));
+    } finally { setPlanBusy(false); }
+  };
+
+  // ── Mapping rules ───────────────────────────────────────
+  const loadRules = useCallback(async () => {
+    setRulesBusy(true); setRulesMsg(null);
+    try { setRules(await contentPipelineService.getMappings()); setRulesLoaded(true); }
+    catch (e) { setRulesMsg(errMsg(e)); }
+    finally { setRulesBusy(false); }
+  }, []);
+
+  const submitRule = async () => {
+    if (!ruleForm.pattern.trim() || !ruleForm.skillName.trim()) { setRulesMsg(c.mapRequired); return; }
+    setRulesBusy(true); setRulesMsg(null);
+    try {
+      if (editingRuleId !== null) {
+        const updated = await contentPipelineService.updateMapping(editingRuleId, ruleForm);
+        setRules(prev => prev.map(r => (r.id === editingRuleId ? updated : r)));
+      } else {
+        const created = await contentPipelineService.createMapping(ruleForm);
+        setRules(prev => [...prev, created]);
+      }
+      setRuleForm(EMPTY_RULE); setEditingRuleId(null);
+    } catch (e) {
+      setRulesMsg(errMsg(e));
+    } finally { setRulesBusy(false); }
+  };
+
+  const editRule = (r: ContentMappingRule) => {
+    setEditingRuleId(r.id);
+    setRuleForm({
+      examSectionName: r.examSectionName ?? '', matchType: r.matchType, pattern: r.pattern,
+      skillName: r.skillName, glossary: r.glossary ?? '', sortOrder: r.sortOrder, isActive: r.isActive,
+    });
+  };
+
+  const cancelRuleEdit = () => { setRuleForm(EMPTY_RULE); setEditingRuleId(null); };
+
+  const removeRule = async (r: ContentMappingRule) => {
+    if (!window.confirm(`${r.pattern} → ${r.skillName}\n\n${c.mapDeleteConfirm}`)) return;
+    setRulesBusy(true); setRulesMsg(null);
+    try {
+      await contentPipelineService.deleteMapping(r.id);
+      setRules(prev => prev.filter(x => x.id !== r.id));
+    } catch (e) {
+      setRulesMsg(errMsg(e));
+    } finally { setRulesBusy(false); }
+  };
+
   const totalPreviewQuestions = preview
     ? preview.topics.reduce((sum, tp) => sum + (tp.questions?.length ?? 0), 0)
     : 0;
+
+  const loadSkills = useCallback(async () => {
+    setSkillsBusy(true); setCleanupMsg(null);
+    try { setSkills(await contentPipelineService.getSkills()); setSkillsLoaded(true); }
+    catch (e) { setCleanupMsg(errMsg(e)); }
+    finally { setSkillsBusy(false); }
+  }, []);
+
+  const deleteSkill = async (s: AdminSkillSummary) => {
+    const msg = s.hasStudentActivity ? c.deleteForceConfirm : c.deleteConfirm;
+    if (!window.confirm(`${s.name}\n\n${msg}`)) return;
+    setDeletingId(s.id); setCleanupMsg(null);
+    try {
+      await contentPipelineService.deleteSkill(s.id, s.hasStudentActivity);
+      setSkills(prev => prev.filter(x => x.id !== s.id));
+      setCleanupMsg(`${c.deleted}: ${s.name}`);
+    } catch (e) {
+      setCleanupMsg(errMsg(e));
+    } finally { setDeletingId(null); }
+  };
 
   const inputStyle: React.CSSProperties = {
     padding: '0.5rem 0.75rem', borderRadius: '0.5rem',
@@ -160,6 +262,8 @@ function AdminContentHubPage() {
         {tabBtn('pipeline', c.tabPipeline)}
         {tabBtn('file', c.tabFile)}
         {tabBtn('json', c.tabJson)}
+        {tabBtn('mappings', c.tabMappings)}
+        {tabBtn('cleanup', c.tabCleanup)}
       </div>
 
       {tab === 'pipeline' && (
@@ -282,9 +386,61 @@ function AdminContentHubPage() {
               <button className="btn btn-primary" disabled={driveBusy} onClick={startSync}>
                 {driveBusy ? c.syncing : c.syncBtn}
               </button>
+              <button className="btn btn-secondary" disabled={planBusy} onClick={doDrivePreview}>
+                {planBusy ? c.previewing : c.previewPlanBtn}
+              </button>
               <button className="btn btn-secondary" disabled={itemsBusy} onClick={loadItems}>{itemsBusy ? c.refreshing : c.refreshItems}</button>
             </div>
             {driveMsg && <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>{driveMsg}</div>}
+
+            {/* Dry-run plan (no LLM, no DB writes) */}
+            {plan && (
+              <div className="card" style={{ padding: '1rem', marginBottom: '1rem', background: 'var(--background-secondary, transparent)' }}>
+                <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', marginBottom: '0.75rem', fontSize: '0.85rem' }}>
+                  <div><strong>{c.planFiles}:</strong> {plan.totalFiles}</div>
+                  <div><strong>{c.planIngestible}:</strong> {plan.ingestibleCount}</div>
+                  <div><strong>{c.planChanged}:</strong> {plan.changedCount}</div>
+                  <div><strong>{c.planUnits}:</strong> {plan.unitNames.join(', ') || '—'}</div>
+                </div>
+                {plan.warnings.length > 0 && (
+                  <div style={{ marginBottom: '0.75rem', fontSize: '0.82rem', color: 'var(--warning-color)' }}>
+                    {plan.warnings.map((w, i) => <div key={i}>⚠ {w}</div>)}
+                  </div>
+                )}
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
+                    <thead>
+                      <tr style={{ textAlign: 'left', color: 'var(--text-secondary)' }}>
+                        <th style={{ padding: '0.35rem' }}>{c.colName}</th>
+                        <th style={{ padding: '0.35rem' }}>{c.colFolder}</th>
+                        <th style={{ padding: '0.35rem' }}>{c.colSkill}</th>
+                        <th style={{ padding: '0.35rem' }}>{c.colChanged}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {plan.normal.map(p => (
+                        <tr key={p.driveFileId} style={{ borderTop: '1px solid var(--border-color)' }}>
+                          <td style={{ padding: '0.35rem' }}>{p.name}</td>
+                          <td style={{ padding: '0.35rem', color: 'var(--text-secondary)' }}>{p.folderPath || '—'}</td>
+                          <td style={{ padding: '0.35rem', color: p.mappedSkillName ? 'var(--text-primary)' : 'var(--warning-color)' }}>
+                            {p.mappedSkillName ?? c.planSkipped}{p.matchedRule ? ` (⚙ ${p.matchedRule})` : ''}
+                          </td>
+                          <td style={{ padding: '0.35rem' }}>{p.changed ? c.planYes : c.planNo}</td>
+                        </tr>
+                      ))}
+                      {plan.tsaPairs.map((tp, i) => (
+                        <tr key={`tsa-${i}`} style={{ borderTop: '1px solid var(--border-color)' }}>
+                          <td style={{ padding: '0.35rem' }}>TSA: {tp.questionsName}</td>
+                          <td style={{ padding: '0.35rem', color: 'var(--text-secondary)' }}>{tp.answersName ?? c.planNoAnswer}</td>
+                          <td style={{ padding: '0.35rem', color: 'var(--text-secondary)' }}>{c.planTsaDistribute}</td>
+                          <td style={{ padding: '0.35rem' }}>{tp.changed ? c.planYes : c.planNo}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
             {itemsLoaded && items.length === 0 && (
               <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>{c.noItems}</div>
             )}
@@ -319,6 +475,153 @@ function AdminContentHubPage() {
 
       {tab === 'file' && <AdminQuestionImportPage embedded />}
       {tab === 'json' && <AdminImportPage embedded />}
+
+      {tab === 'mappings' && (
+        <div className="card" style={{ padding: '1.5rem' }}>
+          <h3 style={{ marginBottom: '0.5rem' }}>{c.mapTitle}</h3>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1rem' }}>{c.mapHint}</p>
+
+          {/* Editor form */}
+          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: '1rem' }}>
+            <div>
+              <label style={labelStyle}>{c.mapSection}</label>
+              <input value={ruleForm.examSectionName ?? ''} onChange={e => setRuleForm({ ...ruleForm, examSectionName: e.target.value })}
+                placeholder={c.mapSectionPlaceholder} style={{ ...inputStyle, width: '160px' }} />
+            </div>
+            <div>
+              <label style={labelStyle}>{c.mapMatchType}</label>
+              <select value={ruleForm.matchType} onChange={e => setRuleForm({ ...ruleForm, matchType: e.target.value })} style={inputStyle}>
+                <option value="FolderSegment">{c.mapFolder}</option>
+                <option value="FileName">{c.mapFileName}</option>
+              </select>
+            </div>
+            <div>
+              <label style={labelStyle}>{c.mapPattern}</label>
+              <input value={ruleForm.pattern} onChange={e => setRuleForm({ ...ruleForm, pattern: e.target.value })}
+                placeholder={c.mapPatternPlaceholder} style={{ ...inputStyle, width: '160px' }} />
+            </div>
+            <div>
+              <label style={labelStyle}>{c.mapSkill}</label>
+              <input value={ruleForm.skillName} onChange={e => setRuleForm({ ...ruleForm, skillName: e.target.value })}
+                placeholder={c.mapSkillPlaceholder} style={{ ...inputStyle, width: '160px' }} />
+            </div>
+            <div>
+              <label style={labelStyle}>{c.mapOrder}</label>
+              <input type="number" value={ruleForm.sortOrder} onChange={e => setRuleForm({ ...ruleForm, sortOrder: Number(e.target.value) })}
+                style={{ ...inputStyle, width: '80px' }} />
+            </div>
+            <label style={{ ...labelStyle, display: 'flex', alignItems: 'center', gap: '0.35rem', marginBottom: '0.6rem' }}>
+              <input type="checkbox" checked={ruleForm.isActive} onChange={e => setRuleForm({ ...ruleForm, isActive: e.target.checked })} />
+              {c.mapActive}
+            </label>
+          </div>
+          <div style={{ marginBottom: '1rem' }}>
+            <label style={labelStyle}>{c.mapGlossary}</label>
+            <textarea value={ruleForm.glossary ?? ''} onChange={e => setRuleForm({ ...ruleForm, glossary: e.target.value })}
+              rows={2} placeholder={c.mapGlossaryPlaceholder}
+              style={{ ...inputStyle, width: '100%', resize: 'vertical', fontSize: '0.85rem' }} />
+          </div>
+          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+            <button className="btn btn-primary" disabled={rulesBusy} onClick={submitRule}>
+              {editingRuleId !== null ? c.mapSave : c.mapAdd}
+            </button>
+            {editingRuleId !== null && (
+              <button className="btn btn-secondary" disabled={rulesBusy} onClick={cancelRuleEdit}>{c.mapCancel}</button>
+            )}
+            <button className="btn btn-secondary" disabled={rulesBusy} onClick={loadRules}>
+              {rulesBusy ? c.refreshing : c.mapLoad}
+            </button>
+          </div>
+          {rulesMsg && <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>{rulesMsg}</div>}
+          {rulesLoaded && rules.length === 0 && (
+            <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{c.mapEmpty}</div>
+          )}
+          {rules.length > 0 && (
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.83rem' }}>
+                <thead>
+                  <tr style={{ textAlign: 'left', color: 'var(--text-secondary)' }}>
+                    <th style={{ padding: '0.4rem' }}>{c.mapSection}</th>
+                    <th style={{ padding: '0.4rem' }}>{c.mapMatchType}</th>
+                    <th style={{ padding: '0.4rem' }}>{c.mapPattern}</th>
+                    <th style={{ padding: '0.4rem' }}>{c.mapSkill}</th>
+                    <th style={{ padding: '0.4rem' }}>{c.mapOrder}</th>
+                    <th style={{ padding: '0.4rem' }}>{c.mapActive}</th>
+                    <th style={{ padding: '0.4rem' }}>{c.colActions}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rules.map(r => (
+                    <tr key={r.id} style={{ borderTop: '1px solid var(--border-color)', opacity: r.isActive ? 1 : 0.5 }}>
+                      <td style={{ padding: '0.4rem' }}>{r.examSectionName || '*'}</td>
+                      <td style={{ padding: '0.4rem' }}>{r.matchType === 'FileName' ? c.mapFileName : c.mapFolder}</td>
+                      <td style={{ padding: '0.4rem' }}>{r.pattern}</td>
+                      <td style={{ padding: '0.4rem' }}>{r.skillName}</td>
+                      <td style={{ padding: '0.4rem' }}>{r.sortOrder}</td>
+                      <td style={{ padding: '0.4rem' }}>{r.isActive ? '✓' : '—'}</td>
+                      <td style={{ padding: '0.4rem', display: 'flex', gap: '0.3rem' }}>
+                        <button className="btn btn-secondary" style={{ fontSize: '0.78rem', padding: '0.3rem 0.6rem' }}
+                          disabled={rulesBusy} onClick={() => editRule(r)}>{c.mapEdit}</button>
+                        <button className="btn btn-secondary" style={{ fontSize: '0.78rem', padding: '0.3rem 0.6rem', color: 'var(--error-color)' }}
+                          disabled={rulesBusy} onClick={() => removeRule(r)}>{c.deleteBtn}</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {tab === 'cleanup' && (
+        <div className="card" style={{ padding: '1.5rem' }}>
+          <h3 style={{ marginBottom: '0.5rem' }}>{c.cleanupTitle}</h3>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1rem' }}>{c.cleanupHint}</p>
+          <button className="btn btn-secondary" disabled={skillsBusy} onClick={loadSkills} style={{ marginBottom: '1rem' }}>
+            {skillsBusy ? c.loadingSkills : c.loadSkills}
+          </button>
+          {cleanupMsg && <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>{cleanupMsg}</div>}
+          {skillsLoaded && skills.length === 0 && (
+            <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{c.noSkills}</div>
+          )}
+          {skills.length > 0 && (
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                <thead>
+                  <tr style={{ textAlign: 'left', color: 'var(--text-secondary)' }}>
+                    <th style={{ padding: '0.4rem' }}>{c.skillLabel}</th>
+                    <th style={{ padding: '0.4rem' }}>{c.colTopics}</th>
+                    <th style={{ padding: '0.4rem' }}>{c.questionsLabel}</th>
+                    <th style={{ padding: '0.4rem' }}>{c.colActivity}</th>
+                    <th style={{ padding: '0.4rem' }}>{c.colActions}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {skills.map(s => (
+                    <tr key={s.id} style={{ borderTop: '1px solid var(--border-color)' }}>
+                      <td style={{ padding: '0.4rem' }}>{s.name}</td>
+                      <td style={{ padding: '0.4rem' }}>{s.topicCount}</td>
+                      <td style={{ padding: '0.4rem' }}>{s.questionCount}</td>
+                      <td style={{ padding: '0.4rem', color: s.hasStudentActivity ? 'var(--warning-color)' : 'var(--text-secondary)' }}>
+                        {s.hasStudentActivity ? c.hasActivity : c.noActivity}
+                      </td>
+                      <td style={{ padding: '0.4rem' }}>
+                        <button
+                          className="btn btn-secondary"
+                          style={{ fontSize: '0.78rem', padding: '0.3rem 0.6rem', color: 'var(--error-color)' }}
+                          disabled={deletingId !== null}
+                          onClick={() => deleteSkill(s)}
+                        >{deletingId === s.id ? c.deleting : c.deleteBtn}</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

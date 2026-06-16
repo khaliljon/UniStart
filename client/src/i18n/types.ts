@@ -793,7 +793,7 @@ export interface Translations {
     };
     contentHub: {
       title: string; subtitle: string;
-      tabPipeline: string; tabFile: string; tabJson: string;
+      tabPipeline: string; tabFile: string; tabJson: string; tabCleanup: string; tabMappings: string;
       examLabel: string; sectionLabel: string; sectionPlaceholder: string;
       inputFile: string; inputText: string; textPlaceholder: string;
       previewBtn: string; ingestBtn: string; oneShotBtn: string; parsing: string; ingesting: string;
@@ -805,6 +805,20 @@ export interface Translations {
       refreshing: string; noItems: string;
       colName: string; colStatus: string; colSkill: string; colError: string;
       sectionRequired: string; fileRequired: string; textRequired: string; folderRequired: string;
+      cleanupTitle: string; cleanupHint: string; loadSkills: string; loadingSkills: string;
+      noSkills: string; colTopics: string; colActivity: string; colActions: string;
+      hasActivity: string; noActivity: string; deleteBtn: string; deleting: string;
+      deleteConfirm: string; deleteForceConfirm: string; deleted: string;
+      previewPlanBtn: string; previewing: string;
+      planFiles: string; planIngestible: string; planChanged: string; planUnits: string;
+      planSkipped: string; planYes: string; planNo: string; planNoAnswer: string; planTsaDistribute: string;
+      colFolder: string; colChanged: string;
+      mapTitle: string; mapHint: string; mapSection: string; mapSectionPlaceholder: string;
+      mapMatchType: string; mapFolder: string; mapFileName: string;
+      mapPattern: string; mapPatternPlaceholder: string; mapSkill: string; mapSkillPlaceholder: string;
+      mapOrder: string; mapActive: string; mapGlossary: string; mapGlossaryPlaceholder: string;
+      mapSave: string; mapAdd: string; mapCancel: string; mapLoad: string; mapEmpty: string;
+      mapEdit: string; mapRequired: string; mapDeleteConfirm: string;
     };
     trash: {
       title: string; subtitle: string;
