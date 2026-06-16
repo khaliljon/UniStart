@@ -307,8 +307,8 @@ public class AdminContentController : ControllerBase
                 s.Code,
                 s.Name,
                 s.Topics.Count,
-                s.Topics.SelectMany(t => t.Questions).Count(),
-                s.Topics.SelectMany(t => t.Questions).SelectMany(q => q.UserAnswers).Any()))
+                s.Topics.Sum(t => t.Questions.Count),
+                s.Topics.Any(t => t.Questions.Any(q => q.UserAnswers.Any()))))
             .OrderBy(s => s.Name)
             .ToListAsync();
 
