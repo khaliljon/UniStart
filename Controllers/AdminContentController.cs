@@ -357,32 +357,98 @@ public class AdminContentController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> DeleteSkill(int id, [FromQuery] bool force = false)
     {
-        var skill = await _db.Skills
-            .Include(s => s.Topics)
-                .ThenInclude(t => t.Questions)
-            .FirstOrDefaultAsync(s => s.Id == id);
+        var skill = await _db.Skills.FirstOrDefaultAsync(s => s.Id == id);
         if (skill == null)
             return NotFound(new { error = "Skill not found." });
 
-        var hasActivity = await _db.Skills
-            .Where(s => s.Id == id)
-            .SelectMany(s => s.Topics)
-            .SelectMany(t => t.Questions)
-            .SelectMany(q => q.UserAnswers)
-            .AnyAsync();
+        var topicIds = await _db.Topics.Where(t => t.SkillId == id).Select(t => t.Id).ToListAsync();
+        var questionIds = await _db.Questions.IgnoreQueryFilters()
+            .Where(q => topicIds.Contains(q.TopicId)).Select(q => q.Id).ToListAsync();
+
+        var hasActivity = questionIds.Count > 0
+            && await _db.UserAnswers.AnyAsync(ua => questionIds.Contains(ua.QuestionId));
         if (hasActivity && !force)
             return Conflict(new { error = "Skill has student activity. Pass force=true to delete anyway." });
 
+        // Delete the whole subtree explicitly and in FK order. We do NOT rely on cascade
+        // because some FKs (e.g. UserAnswer→AnswerOption) are Restrict and would otherwise
+        // surface as a DbUpdateException (→ 409) even with force=true.
         try
         {
-            _db.Skills.Remove(skill);
-            await _db.SaveChangesAsync();
+            await using var tx = await _db.Database.BeginTransactionAsync();
+
+            if (questionIds.Count > 0)
+            {
+                // Rows that reference Questions / AnswerOptions.
+                await _db.Set<UserAnswer>().Where(x => questionIds.Contains(x.QuestionId)).ExecuteDeleteAsync();
+                await _db.Set<MockExamAnswer>().Where(x => questionIds.Contains(x.QuestionId)).ExecuteDeleteAsync();
+                await _db.Set<AssignmentAnswer>().Where(x => questionIds.Contains(x.QuestionId)).ExecuteDeleteAsync();
+                await _db.Set<AssignmentQuestion>().Where(x => questionIds.Contains(x.QuestionId)).ExecuteDeleteAsync();
+                await _db.Set<LessonStep>()
+                    .Where(x => x.QuizQuestionId != null && questionIds.Contains(x.QuizQuestionId.Value))
+                    .ExecuteUpdateAsync(s => s.SetProperty(x => x.QuizQuestionId, (int?)null));
+                await _db.Set<AnswerOption>().Where(x => questionIds.Contains(x.QuestionId)).ExecuteDeleteAsync();
+            }
+
+            if (topicIds.Count > 0)
+            {
+                // Rows that reference Topics.
+                await _db.Set<ReadingPassage>().Where(x => topicIds.Contains(x.TopicId)).ExecuteDeleteAsync();
+                await _db.Set<StudyPlanEntry>().Where(x => topicIds.Contains(x.TopicId)).ExecuteDeleteAsync();
+                await _db.Set<TopicDependency>()
+                    .Where(x => topicIds.Contains(x.TopicId) || topicIds.Contains(x.PrerequisiteTopicId))
+                    .ExecuteDeleteAsync();
+
+                var lessonIds = await _db.Set<TopicLesson>()
+                    .Where(l => topicIds.Contains(l.TopicId)).Select(l => l.Id).ToListAsync();
+                if (lessonIds.Count > 0)
+                {
+                    await _db.Set<UserLessonProgress>()
+                        .Where(p => _db.Set<LessonStep>()
+                            .Where(ls => lessonIds.Contains(ls.LessonId))
+                            .Select(ls => ls.Id).Contains(p.LessonStepId))
+                        .ExecuteDeleteAsync();
+                    await _db.Set<LessonStep>().Where(x => lessonIds.Contains(x.LessonId)).ExecuteDeleteAsync();
+                    await _db.Set<TopicLesson>().Where(x => topicIds.Contains(x.TopicId)).ExecuteDeleteAsync();
+                }
+
+                // Optional topic references → null (keep the user/admin rows, drop the link).
+                await _db.Set<FlashcardDeck>()
+                    .Where(x => x.TopicId != null && topicIds.Contains(x.TopicId.Value))
+                    .ExecuteUpdateAsync(s => s.SetProperty(x => x.TopicId, (int?)null));
+                await _db.Set<DrillTemplate>()
+                    .Where(x => x.TopicId != null && topicIds.Contains(x.TopicId.Value))
+                    .ExecuteUpdateAsync(s => s.SetProperty(x => x.TopicId, (int?)null));
+                await _db.Set<TimedDrillResult>()
+                    .Where(x => x.TopicId != null && topicIds.Contains(x.TopicId.Value))
+                    .ExecuteUpdateAsync(s => s.SetProperty(x => x.TopicId, (int?)null));
+                await _db.Set<ImportedQuestionDraft>()
+                    .Where(x => x.TopicId != null && topicIds.Contains(x.TopicId.Value))
+                    .ExecuteUpdateAsync(s => s.SetProperty(x => x.TopicId, (int?)null));
+            }
+
+            if (questionIds.Count > 0)
+                await _db.Questions.IgnoreQueryFilters()
+                    .Where(x => topicIds.Contains(x.TopicId)).ExecuteDeleteAsync();
+
+            // Skill-level references.
+            await _db.Set<UserSkillProfile>().Where(x => x.SkillId == id).ExecuteDeleteAsync();
+            await _db.Set<DriveSyncItem>()
+                .Where(x => x.MappedSkillId == id)
+                .ExecuteUpdateAsync(s => s.SetProperty(x => x.MappedSkillId, (int?)null));
+
+            if (topicIds.Count > 0)
+                await _db.Topics.Where(x => x.SkillId == id).ExecuteDeleteAsync();
+
+            await _db.Skills.Where(x => x.Id == id).ExecuteDeleteAsync();
+
+            await tx.CommitAsync();
         }
         catch (DbUpdateException ex)
         {
             return Conflict(new
             {
-                error = "Skill is referenced by exam/assignment/study-plan content and cannot be deleted.",
+                error = "Skill is referenced by content that cannot be deleted.",
                 detail = ex.InnerException?.Message ?? ex.Message
             });
         }
