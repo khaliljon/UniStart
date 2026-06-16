@@ -25,7 +25,6 @@ namespace UniStart.Migrations
                     Glossary = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
                     SortOrder = table.Column<int>(type: "integer", nullable: false),
                     IsActive = table.Column<bool>(type: "boolean", nullable: false),
-                    IsIgnore = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
