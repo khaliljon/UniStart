@@ -29,6 +29,7 @@ public class StudyPackParserService : IStudyPackParserService
     private readonly string? _apiKey;
     private readonly string _model;
     private readonly string _baseUrl;
+    private readonly int _maxTokens;
 
     public bool IsConfigured => !string.IsNullOrWhiteSpace(_apiKey);
 
@@ -41,6 +42,7 @@ public class StudyPackParserService : IStudyPackParserService
         _apiKey = section["ApiKey"];
         _model = section["Model"] ?? "deepseek-chat";
         _baseUrl = (section["BaseUrl"] ?? "https://api.deepseek.com").TrimEnd('/');
+        _maxTokens = int.TryParse(section["MaxTokens"], out var mt) && mt > 0 ? mt : 8192;
     }
 
     public async Task<IngestContentDto> ParseAsync(
@@ -127,7 +129,7 @@ public class StudyPackParserService : IStudyPackParserService
                 new { role = "user", content = userContent }
             },
             temperature = 0.0,
-            max_tokens = 8192,
+            max_tokens = _maxTokens,
             response_format = new { type = "json_object" }
         };
 
@@ -156,9 +158,18 @@ public class StudyPackParserService : IStudyPackParserService
         }
 
         var completion = JsonSerializer.Deserialize<ChatCompletionResponse>(responseBody);
-        var messageContent = completion?.Choices?.FirstOrDefault()?.Message?.Content;
+        var choice = completion?.Choices?.FirstOrDefault();
+        var messageContent = choice?.Message?.Content;
         if (string.IsNullOrWhiteSpace(messageContent))
             throw new InvalidOperationException("LLM returned empty content.");
+
+        // finish_reason == "length" means the model hit max_tokens and the JSON is
+        // almost certainly truncated (→ malformed). Surface a clear, actionable error
+        // instead of a generic "malformed JSON".
+        if (string.Equals(choice?.FinishReason, "length", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException(
+                $"LLM output was truncated at max_tokens ({_maxTokens}); the file is too large to parse in one pass. " +
+                "Split the source file into smaller parts.");
 
         return messageContent;
     }
@@ -238,9 +249,8 @@ Return ONLY valid JSON.";
         }
         catch (JsonException ex)
         {
-            _logger.LogError(ex, "Failed to parse study-pack LLM JSON. Raw: {Raw}",
-                trimmed[..Math.Min(400, trimmed.Length)]);
-            throw new InvalidOperationException("LLM returned malformed JSON.", ex);
+            _logger.LogError(ex, "Failed to parse study-pack LLM JSON. Raw: {Raw}", trimmed);
+            throw new InvalidOperationException($"LLM returned malformed JSON: {ex.Message}", ex);
         }
 
         if (dto == null)
@@ -344,8 +354,8 @@ Return ONLY valid JSON.";
         }
         catch (JsonException ex)
         {
-            _logger.LogError(ex, "Failed to parse TSA LLM JSON. Raw: {Raw}", trimmed[..Math.Min(400, trimmed.Length)]);
-            throw new InvalidOperationException("LLM returned malformed JSON for TSA pair.", ex);
+            _logger.LogError(ex, "Failed to parse TSA LLM JSON. Raw: {Raw}", trimmed);
+            throw new InvalidOperationException($"LLM returned malformed JSON for TSA pair: {ex.Message}", ex);
         }
 
         if (env?.Units == null || env.Units.Count == 0)
@@ -446,6 +456,9 @@ Return ONLY valid JSON.";
     {
         [JsonPropertyName("message")]
         public MessageContent? Message { get; set; }
+
+        [JsonPropertyName("finish_reason")]
+        public string? FinishReason { get; set; }
     }
 
     private sealed class MessageContent
