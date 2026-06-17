@@ -275,6 +275,8 @@ export interface Translations {
     noQuestions: string;
     noQuestionsDesc: string;
     chooseDifferent: string;
+    noQuestionsYet: string;
+    noQuestionsYetDesc: string;
     backToExams: string;
     solved: string;
     inTopic: string;

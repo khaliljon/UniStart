@@ -282,6 +282,35 @@ function TestPage() {
     );
   }
 
+  // Topic / selection has no questions at all yet — the server reports the
+  // session "completed" with zero total and zero answered. Show a friendly
+  // empty state instead of a misleading "Practice complete!" screen.
+  if (testCompleted && totalQuestions === 0 && sessionAnswered === 0) {
+    return (
+      <div className="test-container">
+        <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
+          <div style={{
+            width: '64px', height: '64px', borderRadius: '50%',
+            backgroundColor: 'rgba(99, 102, 241, 0.1)', display: 'flex',
+            alignItems: 'center', justifyContent: 'center',
+            margin: '0 auto 1rem', fontSize: '2rem'
+          }}>
+            📝
+          </div>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '1rem' }}>
+            {t.practice.noQuestionsYet}
+          </h2>
+          <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem', maxWidth: '420px', margin: '0 auto 2rem', lineHeight: 1.5 }}>
+            {t.practice.noQuestionsYetDesc}
+          </p>
+          <button onClick={() => { dispatch(resetTest()); navigate('/learn?tab=topics'); }} className="btn btn-primary">
+            {t.practice.chooseDifferent}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (testCompleted) {
     const isMastered = masteryReached || topicMastery >= 80;
     return (
@@ -425,7 +454,7 @@ function TestPage() {
   }
 
   const getDifficultyClass = (difficulty: string) => {
-    switch (difficulty.toLowerCase()) {
+    switch ((difficulty ?? '').toLowerCase()) {
       case 'easy':
         return 'difficulty-easy';
       case 'medium':

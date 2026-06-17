@@ -256,6 +256,8 @@ export const kz: Translations = {
     noQuestions: 'Сұрақтар жоқ',
     noQuestionsDesc: 'Бұл тақырып бойынша сұрақтар табылмады',
     chooseDifferent: 'Басқасын таңдау',
+    noQuestionsYet: 'Сұрақтар жақында қосылады',
+    noQuestionsYetDesc: 'Бұл тақырып бойынша сұрақтар әзірге қосылмаған. Біз жұмыс істеп жатырмыз — кейінірек кіріңіз немесе басқа тақырып таңдаңыз.',
     backToExams: 'Емтихандарға оралу',
     solved: 'Шешілген',
     inTopic: 'тақырыпта',

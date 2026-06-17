@@ -256,6 +256,8 @@ export const ru: Translations = {
     noQuestions: 'Нет доступных вопросов',
     noQuestionsDesc: 'Для выбранных экзаменов нет новых вопросов.',
     chooseDifferent: 'Выбрать другие экзамены',
+    noQuestionsYet: 'Вопросы скоро появятся',
+    noQuestionsYetDesc: 'По этой теме пока не добавлены вопросы. Мы работаем над этим — загляните позже или выберите другую тему.',
     backToExams: 'Вернуться к выбору экзамена',
     solved: 'Решено',
     inTopic: 'в теме',

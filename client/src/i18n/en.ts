@@ -256,6 +256,8 @@ export const en: Translations = {
     noQuestions: 'No Questions Available',
     noQuestionsDesc: 'There are no more questions available for the selected exams.',
     chooseDifferent: 'Choose Different Exams',
+    noQuestionsYet: 'Questions coming soon',
+    noQuestionsYetDesc: 'No questions have been added to this topic yet. We are working on it — check back later or pick another topic.',
     backToExams: 'Back to Exam Selection',
     solved: 'Solved',
     inTopic: 'in topic',

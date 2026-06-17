@@ -817,6 +817,7 @@ function AdminQuestionsPage() {
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                           <Badge bg={EXAM_COLORS[tp.examTypeCode]}>{tp.examTypeCode}</Badge>
                           <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{tp.sectionName} →</span>
+                          <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', fontFamily: 'monospace' }}>#{tp.id}</span>
                           <span
                             style={{ fontWeight: 600, fontSize: '1rem', cursor: 'pointer', borderBottom: '1px dashed var(--text-secondary)' }}
                             onClick={() => { startTopicRename(tp.id, tp.name); setShowTopicRenameModal(true); }}
