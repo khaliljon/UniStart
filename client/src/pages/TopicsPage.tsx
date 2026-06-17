@@ -554,6 +554,37 @@ export default function TopicsPage() {
   // ───────────── PRACTICE VIEW ─────────────
   const currentQuestion = questions[currentIndex];
 
+  if (!currentQuestion) {
+    return (
+      <div className="animate-fade-in" style={{ maxWidth: '700px', margin: '0 auto' }}>
+        <div className="card" style={{ textAlign: 'center', padding: '3rem 2rem' }}>
+          <div style={{
+            width: '64px',
+            height: '64px',
+            borderRadius: '50%',
+            backgroundColor: 'rgba(79, 70, 229, 0.1)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '2rem',
+            margin: '0 auto 1.25rem'
+          }}>
+            📝
+          </div>
+          <h2 style={{ fontSize: '1.35rem', fontWeight: '700', marginBottom: '0.75rem' }}>
+            {t.practice.noQuestionsYet}
+          </h2>
+          <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', lineHeight: 1.5 }}>
+            {t.practice.noQuestionsYetDesc}
+          </p>
+          <button onClick={() => setViewMode('topics')} className="btn btn-primary">
+            {t.topics.backToTopics}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="animate-fade-in" style={{ maxWidth: '700px', margin: '0 auto' }}>
       {/* Header */}
