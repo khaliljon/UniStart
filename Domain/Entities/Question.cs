@@ -23,6 +23,11 @@ public class Question : ISoftDeletable, IAuditable
     public double DiscriminationParam { get; set; } = 1.0;
     /// <summary>Guessing parameter (c) for 3PL model, typically 0.0 to 0.35</summary>
     public double GuessParam { get; set; } = 0.25;
+    /// <summary>Number of real student responses folded into the IRT parameters so far.</summary>
+    public int ResponseCount { get; set; }
+    /// <summary>True once enough real responses have accumulated that DifficultyParam is
+    /// data-driven rather than just a difficulty-derived prior.</summary>
+    public bool IsCalibrated { get; set; }
 
     // Soft Delete (OP-9)
     public bool IsDeleted { get; set; }

@@ -45,6 +45,13 @@ public class StudyPackParserService : IStudyPackParserService
         _maxTokens = int.TryParse(section["MaxTokens"], out var mt) && mt > 0 ? mt : 8192;
     }
 
+    // A study-pack chunk above this size risks the model's JSON output being truncated at
+    // max_tokens (the JSON is usually larger than the source). We split the file on markdown
+    // headers and parse each chunk separately, then merge — this makes ingestion robust to
+    // arbitrarily large files instead of failing on a single truncated response.
+    private const int MaxChunkChars = 14_000;
+    private const int MaxTotalChars = 300_000;
+
     public async Task<IngestContentDto> ParseAsync(
         string text, string examTypeCode, string examSectionName, CancellationToken ct = default)
     {
@@ -53,26 +60,86 @@ public class StudyPackParserService : IStudyPackParserService
         if (string.IsNullOrWhiteSpace(text))
             throw new ArgumentException("Empty study-pack text.", nameof(text));
 
-        const int maxChars = 300_000;
-        if (text.Length > maxChars)
+        if (text.Length > MaxTotalChars)
         {
-            _logger.LogWarning("Study-pack too long ({Length} chars), truncating to {Max}", text.Length, maxChars);
-            text = text[..maxChars];
+            _logger.LogWarning("Study-pack too long ({Length} chars), truncating to {Max}", text.Length, MaxTotalChars);
+            text = text[..MaxTotalChars];
         }
 
         var systemPrompt = BuildSystemPrompt(examTypeCode, examSectionName);
+        var chunks = ChunkByHeaders(text, MaxChunkChars);
 
-        var userSb = new StringBuilder();
-        userSb.AppendLine($"ExamType = \"{examTypeCode}\"");
-        userSb.AppendLine($"ExamSection = \"{examSectionName}\"");
-        userSb.AppendLine("Parse the following study-pack file into the JSON schema described in the system prompt.");
-        userSb.AppendLine();
-        userSb.AppendLine("STUDY-PACK TEXT:");
-        userSb.AppendLine(text);
+        if (chunks.Count == 1)
+        {
+            _logger.LogInformation("Parsing study-pack ({Length} chars, single pass) with {Model}", text.Length, _model);
+            return await ParseChunkAsync(systemPrompt, chunks[0], examTypeCode, examSectionName, ct);
+        }
 
-        _logger.LogInformation("Parsing study-pack ({Length} chars) with {Model}", text.Length, _model);
-        var messageContent = await CallLlmAsync(systemPrompt, userSb.ToString(), ct);
-        return ParseResponse(messageContent, examTypeCode, examSectionName);
+        // Large file: parse each chunk independently and merge the topics. A single chunk
+        // failing is logged and skipped rather than aborting the whole file.
+        _logger.LogInformation("Parsing study-pack ({Length} chars) in {N} chunks with {Model}",
+            text.Length, chunks.Count, _model);
+
+        var mergedTopics = new List<IngestTopicDto>();
+        string? skillName = null;
+        for (var i = 0; i < chunks.Count; i++)
+        {
+            try
+            {
+                var partial = await ParseChunkAsync(systemPrompt, chunks[i], examTypeCode, examSectionName, ct);
+                skillName ??= string.IsNullOrWhiteSpace(partial.SkillName) ? null : partial.SkillName;
+                if (partial.Topics is { Count: > 0 }) mergedTopics.AddRange(partial.Topics);
+            }
+            catch (LlmPaymentRequiredException) { throw; }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Chunk {Index}/{Total} failed to parse; skipping it.", i + 1, chunks.Count);
+            }
+        }
+
+        if (mergedTopics.Count == 0)
+            throw new InvalidOperationException(
+                $"All {chunks.Count} chunks failed to parse (file too noisy or repeated LLM errors).");
+
+        return new IngestContentDto(examTypeCode, examSectionName, skillName ?? examSectionName, MergeTopics(mergedTopics));
+    }
+
+    /// <summary>
+    /// Parse a single chunk: one LLM call + JSON parse, with ONE automatic repair retry if
+    /// the model returns malformed/truncated JSON.
+    /// </summary>
+    private async Task<IngestContentDto> ParseChunkAsync(
+        string systemPrompt, string chunkText, string examTypeCode, string examSectionName, CancellationToken ct)
+    {
+        var userMessage = BuildUserMessage(examTypeCode, examSectionName, chunkText);
+        var content = await CallLlmAsync(systemPrompt, userMessage, ct);
+        try
+        {
+            return ParseResponse(content, examTypeCode, examSectionName);
+        }
+        catch (InvalidOperationException)
+        {
+            // Malformed JSON — ask the model to repair it once before giving up.
+            _logger.LogWarning("Chunk JSON invalid; attempting a single repair pass.");
+            var repaired = await CallLlmAsync(
+                "You fix malformed JSON. Return ONLY one valid JSON object matching the requested schema — no prose, no markdown fences.",
+                "The text below should be a single JSON object but is invalid or truncated. Repair it into ONE complete, " +
+                "valid JSON object: close all open brackets and drop any incomplete trailing item.\n\n" + content,
+                ct);
+            return ParseResponse(repaired, examTypeCode, examSectionName);
+        }
+    }
+
+    private static string BuildUserMessage(string examTypeCode, string examSectionName, string text)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine($"ExamType = \"{examTypeCode}\"");
+        sb.AppendLine($"ExamSection = \"{examSectionName}\"");
+        sb.AppendLine("Parse the following study-pack file into the JSON schema described in the system prompt.");
+        sb.AppendLine();
+        sb.AppendLine("STUDY-PACK TEXT:");
+        sb.AppendLine(text);
+        return sb.ToString();
     }
 
     public async Task<IReadOnlyList<IngestContentDto>> ParseTsaPairAsync(
@@ -264,6 +331,111 @@ Return ONLY valid JSON.";
             ExamSectionName = examSectionName,
             Topics = topics
         };
+    }
+
+    /// <summary>
+    /// Split markdown into chunks no larger than maxChars, breaking only on header lines
+    /// (starting with '#') so concepts/questions stay intact. A single section larger than the
+    /// limit is hard-split on paragraph boundaries as a fallback.
+    /// </summary>
+    internal static List<string> ChunkByHeaders(string text, int maxChars)
+    {
+        if (text.Length <= maxChars) return new List<string> { text };
+
+        var lines = text.Replace("\r\n", "\n").Split('\n');
+        var sections = new List<string>();
+        var current = new StringBuilder();
+        foreach (var line in lines)
+        {
+            if (line.StartsWith("#") && current.Length > 0)
+            {
+                sections.Add(current.ToString());
+                current.Clear();
+            }
+            current.Append(line).Append('\n');
+        }
+        if (current.Length > 0) sections.Add(current.ToString());
+
+        var chunks = new List<string>();
+        var buf = new StringBuilder();
+        foreach (var section in sections)
+        {
+            if (section.Length > maxChars)
+            {
+                if (buf.Length > 0) { chunks.Add(buf.ToString()); buf.Clear(); }
+                chunks.AddRange(HardSplit(section, maxChars));
+                continue;
+            }
+            if (buf.Length + section.Length > maxChars && buf.Length > 0)
+            {
+                chunks.Add(buf.ToString());
+                buf.Clear();
+            }
+            buf.Append(section);
+        }
+        if (buf.Length > 0) chunks.Add(buf.ToString());
+        return chunks;
+    }
+
+    private static IEnumerable<string> HardSplit(string section, int maxChars)
+    {
+        var paragraphs = section.Split("\n\n");
+        var buf = new StringBuilder();
+        foreach (var p in paragraphs)
+        {
+            var para = p + "\n\n";
+            if (para.Length > maxChars)
+            {
+                if (buf.Length > 0) { yield return buf.ToString(); buf.Clear(); }
+                for (var i = 0; i < para.Length; i += maxChars)
+                    yield return para.Substring(i, Math.Min(maxChars, para.Length - i));
+                continue;
+            }
+            if (buf.Length + para.Length > maxChars && buf.Length > 0)
+            {
+                yield return buf.ToString();
+                buf.Clear();
+            }
+            buf.Append(para);
+        }
+        if (buf.Length > 0) yield return buf.ToString();
+    }
+
+    /// <summary>
+    /// Merge topics that share a name (case-insensitive) across chunks: keep the first
+    /// lesson/formulas, concatenate questions, and renumber sortOrder sequentially.
+    /// </summary>
+    private static List<IngestTopicDto> MergeTopics(List<IngestTopicDto> topics)
+    {
+        var byName = new Dictionary<string, IngestTopicDto>(StringComparer.OrdinalIgnoreCase);
+        var order = new List<string>();
+        foreach (var t in topics)
+        {
+            var key = (t.Name ?? string.Empty).Trim();
+            if (key.Length == 0) key = $"__unnamed_{order.Count}";
+            if (!byName.TryGetValue(key, out var existing))
+            {
+                byName[key] = t;
+                order.Add(key);
+            }
+            else
+            {
+                var mergedQuestions = (existing.Questions ?? new List<IngestQuestionDto>())
+                    .Concat(t.Questions ?? new List<IngestQuestionDto>())
+                    .ToList();
+                byName[key] = existing with
+                {
+                    LessonContent = existing.LessonContent ?? t.LessonContent,
+                    Formulas = existing.Formulas is { Count: > 0 } ? existing.Formulas : t.Formulas,
+                    Questions = mergedQuestions,
+                };
+            }
+        }
+
+        var result = new List<IngestTopicDto>();
+        for (var i = 0; i < order.Count; i++)
+            result.Add(byName[order[i]] with { SortOrder = i + 1 });
+        return result;
     }
 
     private static string BuildTsaSystemPrompt(

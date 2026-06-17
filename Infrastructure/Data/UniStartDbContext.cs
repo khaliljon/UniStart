@@ -165,6 +165,8 @@ public class UniStartDbContext : DbContext
             entity.Property(e => e.DifficultyParam).HasDefaultValue(0.0);
             entity.Property(e => e.DiscriminationParam).HasDefaultValue(1.0);
             entity.Property(e => e.GuessParam).HasDefaultValue(0.25);
+            entity.Property(e => e.ResponseCount).HasDefaultValue(0);
+            entity.Property(e => e.IsCalibrated).HasDefaultValue(false);
             entity.HasOne(e => e.Topic)
                   .WithMany(t => t.Questions)
                   .HasForeignKey(e => e.TopicId)

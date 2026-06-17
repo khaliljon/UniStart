@@ -28,21 +28,23 @@ import type {
   TopicProgress,
 } from '../types';
 
-const STRENGTH_COLORS: Record<string, { color: string; emoji: string }> = {
-  strong: { color: '#10b981', emoji: '' },
-  average: { color: '#f59e0b', emoji: '' },
-  weak: { color: '#ef4444', emoji: '' },
-  critical: { color: '#dc2626', emoji: '' },
+const STRENGTH_COLORS: Record<string, { color: string }> = {
+  strong: { color: '#10b981' },
+  average: { color: '#f59e0b' },
+  weak: { color: '#ef4444' },
+  critical: { color: '#dc2626' },
+  insufficient: { color: '#6b7280' },
 };
 
 function PredictionPage() {
   const { t } = useTranslation();
 
-  const STRENGTH_CONFIG: Record<string, { label: string; color: string; emoji: string }> = {
+  const STRENGTH_CONFIG: Record<string, { label: string; color: string }> = {
     strong: { label: t.prediction.strong, ...STRENGTH_COLORS.strong },
     average: { label: t.prediction.average, ...STRENGTH_COLORS.average },
     weak: { label: t.prediction.weak, ...STRENGTH_COLORS.weak },
     critical: { label: t.prediction.critical, ...STRENGTH_COLORS.critical },
+    insufficient: { label: t.prediction.insufficient, ...STRENGTH_COLORS.insufficient },
   };
   const { selectedExams: userExams } = useAppSelector((state) => state.exam);
   const [exams, setExams] = useState<ExamType[]>([]);
@@ -59,6 +61,7 @@ function PredictionPage() {
   const [whatIfLevel, setWhatIfLevel] = useState(80);
   const [whatIfResult, setWhatIfResult] = useState<WhatIfResult | null>(null);
   const [whatIfLoading, setWhatIfLoading] = useState(false);
+  const [whatIfError, setWhatIfError] = useState<string | null>(null);
   const [hasPredictionAccess, setHasPredictionAccess] = useState(true);
 
   // Load exams on mount
@@ -80,6 +83,8 @@ function PredictionPage() {
     subscriptionService.getStatus().then((s) => {
       setHasPredictionAccess(s.isPro || s.limits.realtimePrediction);
     }).catch(() => {});
+    // Mount-only: initial exam selection. userExams/t intentionally excluded.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Load prediction when exam changes
@@ -98,6 +103,7 @@ function PredictionPage() {
       setTopics(topicsData);
       setSelectedSectionIds([]);
       setWhatIfResult(null);
+      setWhatIfError(null);
       setWhatIfTopic(topicsData.length > 0 ? topicsData[0].topicId : null);
     } catch (err) {
       console.error(err);
@@ -105,7 +111,7 @@ function PredictionPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedExam]);
+  }, [selectedExam, t]);
 
   useEffect(() => {
     loadPrediction();
@@ -116,6 +122,7 @@ function PredictionPage() {
     if (!whatIfTopic || !selectedExam) return;
     try {
       setWhatIfLoading(true);
+      setWhatIfError(null);
       const result = await predictionService.whatIf({
         examTypeCode: selectedExam,
         topicId: whatIfTopic,
@@ -124,6 +131,7 @@ function PredictionPage() {
       setWhatIfResult(result);
     } catch (err) {
       console.error(err);
+      setWhatIfError(t.prediction.whatIfError);
     } finally {
       setWhatIfLoading(false);
     }
@@ -258,6 +266,7 @@ function PredictionPage() {
             whatIfLevel={whatIfLevel}
             whatIfResult={whatIfResult}
             whatIfLoading={whatIfLoading}
+            whatIfError={whatIfError}
             onChangeTopic={setWhatIfTopic}
             onChangeLevel={setWhatIfLevel}
             onCalculate={handleWhatIf}
@@ -281,13 +290,32 @@ function ScoreCard({ prediction }: { prediction: ScorePrediction }) {
   const { t } = useTranslation();
   const scorePercent = ((prediction.predictedScore - prediction.minPossibleScore) /
     (prediction.maxPossibleScore - prediction.minPossibleScore)) * 100;
+  const answersNeeded = Math.max(0, 10 - prediction.answersCount);
 
   return (
     <div className="card card-static animate-fade-in-up" style={{ padding: '1.5rem' }}>
+      {!prediction.isReliable && (
+        <div style={{
+          marginBottom: '1rem', padding: '0.6rem 0.9rem', borderRadius: '10px',
+          background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.35)',
+          fontSize: '0.82rem', color: 'var(--text-secondary)',
+        }}>
+          <span style={{ fontWeight: 700, color: 'var(--warning-color)' }}>
+            {t.prediction.preliminary}
+          </span>
+          {answersNeeded > 0 && (
+            <span> — {t.prediction.preliminaryHint.replace('{n}', String(answersNeeded))}</span>
+          )}
+        </div>
+      )}
       <div style={{ display: 'flex', alignItems: 'center', gap: '2rem', flexWrap: 'wrap' }}>
         {/* Big Score */}
         <div style={{ textAlign: 'center', minWidth: '160px' }}>
-          <div style={{ fontSize: '3.5rem', fontWeight: 800, color: 'var(--primary-color)', lineHeight: 1 }}>
+          <div style={{
+            fontSize: '3.5rem', fontWeight: 800, lineHeight: 1,
+            color: prediction.isReliable ? 'var(--primary-color)' : 'var(--text-secondary)',
+            opacity: prediction.isReliable ? 1 : 0.65,
+          }}>
             {prediction.predictedScore}
           </div>
           <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
@@ -423,7 +451,7 @@ function SectionsBarChart({ sections }: { sections: SectionPrediction[] }) {
 //  SECTION DETAIL CARDS
 // ═══════════════════════════════════════════════════════════
 
-function SectionDetails({ sections, strengthConfig }: { sections: SectionPrediction[]; strengthConfig: Record<string, { label: string; color: string; emoji: string }> }) {
+function SectionDetails({ sections, strengthConfig }: { sections: SectionPrediction[]; strengthConfig: Record<string, { label: string; color: string }> }) {
   const { t } = useTranslation();
   return (
     <div style={{ marginTop: '1rem' }}>
@@ -443,7 +471,7 @@ function SectionDetails({ sections, strengthConfig }: { sections: SectionPredict
                   fontSize: '0.72rem', fontWeight: 600, padding: '0.15rem 0.5rem',
                   borderRadius: '8px', background: cfg.color + '20', color: cfg.color,
                 }}>
-                  {cfg.emoji} {cfg.label}
+                  {cfg.label}
                 </span>
               </div>
 
@@ -457,6 +485,12 @@ function SectionDetails({ sections, strengthConfig }: { sections: SectionPredict
               <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '0.3rem' }}>
                 CI: {s.confidenceLow} – {s.confidenceHigh} • θ = {s.theta} (SE {s.thetaSE})
               </div>
+
+              {!s.isReliable && (
+                <div style={{ fontSize: '0.72rem', color: 'var(--warning-color)', marginTop: '0.3rem' }}>
+                  {t.prediction.preliminary} ({s.answersCount})
+                </div>
+              )}
 
               {/* Mini progress bar */}
               <div style={{
@@ -542,7 +576,7 @@ function ImprovementTips({ tips }: { tips: ScorePrediction['improvementTips'] })
 // ═══════════════════════════════════════════════════════════
 
 function WhatIfSection({
-  topics, whatIfTopic, whatIfLevel, whatIfResult, whatIfLoading,
+  topics, whatIfTopic, whatIfLevel, whatIfResult, whatIfLoading, whatIfError,
   onChangeTopic, onChangeLevel, onCalculate,
 }: {
   topics: TopicProgress[];
@@ -550,11 +584,14 @@ function WhatIfSection({
   whatIfLevel: number;
   whatIfResult: WhatIfResult | null;
   whatIfLoading: boolean;
+  whatIfError: string | null;
   onChangeTopic: (id: number | null) => void;
   onChangeLevel: (level: number) => void;
   onCalculate: () => void;
 }) {
   const { t } = useTranslation();
+  const selectedTopic = topics.find((tp) => tp.topicId === whatIfTopic);
+  const currentLevel = selectedTopic?.irtLevel ?? selectedTopic?.masteryPercentage;
   return (
     <div className="card card-static animate-fade-in-up" style={{ padding: '1.25rem', marginTop: '1rem' }}>
       <h3 style={{ margin: '0 0 1rem' }}>{t.prediction.whatIf}</h3>
@@ -576,9 +613,9 @@ function WhatIfSection({
               color: 'var(--text-primary)', fontSize: '0.9rem',
             }}
           >
-            {topics.map((t) => (
-              <option key={t.topicId} value={t.topicId}>
-                {t.topicName} ({t.irtLevel ?? t.masteryPercentage}%)
+            {topics.map((tp) => (
+              <option key={tp.topicId} value={tp.topicId}>
+                {tp.topicName} ({tp.irtLevel ?? tp.masteryPercentage}%)
               </option>
             ))}
           </select>
@@ -593,6 +630,11 @@ function WhatIfSection({
             onChange={(e) => onChangeLevel(Number(e.target.value))}
             style={{ width: '100%' }}
           />
+          {currentLevel != null && (
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
+              {t.prediction.whatIfNow}: {currentLevel}%
+            </div>
+          )}
         </div>
 
         <button
@@ -604,6 +646,12 @@ function WhatIfSection({
           {whatIfLoading ? '...' : t.prediction.calculate}
         </button>
       </div>
+
+      {whatIfError && (
+        <div style={{ marginTop: '0.75rem', color: 'var(--error-color)', fontSize: '0.85rem' }}>
+          {whatIfError}
+        </div>
+      )}
 
       {/* Result */}
       {whatIfResult && (
@@ -656,7 +704,10 @@ function HistoryChart({ history, prediction }: { history: PredictionHistory[]; p
 
   return (
     <div className="card card-static animate-fade-in-up" style={{ padding: '1.25rem', marginTop: '1rem' }}>
-      <h3 style={{ margin: '0 0 1rem' }}>{t.prediction.forecastHistory}</h3>
+      <h3 style={{ margin: '0 0 0.25rem' }}>{t.prediction.forecastHistory}</h3>
+      <p style={{ margin: '0 0 1rem', fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+        {t.prediction.forecastHistoryNote}
+      </p>
       <ResponsiveContainer width="100%" height={280}>
         <AreaChart data={data}>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />

@@ -96,6 +96,7 @@ public static class UniStartStartupExtensions
         services.AddScoped<IContentIngestionService, ContentIngestionService>();
         services.AddSingleton<ILlmExtractionService, LlmExtractionService>();
         services.AddSingleton<IStudyPackParserService, StudyPackParserService>();
+        services.AddSingleton<ICanonicalContentParser, CanonicalContentParser>();
         services.AddSingleton<IGoogleDriveService, GoogleDriveService>();
         services.AddScoped<IDriveSyncService, DriveSyncService>();
         services.AddSingleton<IImageUploadService, ImageUploadService>();

@@ -172,6 +172,37 @@ public static class IrtMath
     /// </summary>
     public static double DefaultGuessParam(int optionCount = 4) => 1.0 / optionCount;
 
+    /// <summary>
+    /// Number of real responses after which an item's difficulty is considered calibrated
+    /// (data-driven) rather than just a difficulty-derived prior.
+    /// </summary>
+    public const int CalibrationThreshold = 30;
+
+    /// <summary>
+    /// Online (Elo-style) update of an item's difficulty parameter (b) from a single response.
+    /// The item moves opposite to the surprise: a student answering correctly when the model
+    /// expected a wrong answer makes the item easier (b decreases), and vice versa.
+    ///
+    /// The learning rate decays with the number of responses already folded in, so early
+    /// responses move b quickly and it stabilises as evidence accumulates.
+    /// </summary>
+    /// <param name="currentB">Current difficulty parameter (b).</param>
+    /// <param name="a">Discrimination parameter (a).</param>
+    /// <param name="c">Guessing parameter (c).</param>
+    /// <param name="theta">The responding student's current ability estimate.</param>
+    /// <param name="correct">Whether the student answered correctly.</param>
+    /// <param name="priorResponseCount">Responses already folded into b before this one.</param>
+    public static double UpdateDifficultyOnline(
+        double currentB, double a, double c, double theta, bool correct, int priorResponseCount)
+    {
+        var expected = Probability(theta, a, currentB, c);
+        var actual = correct ? 1.0 : 0.0;
+        // Adaptive learning rate: ~0.5 for a brand-new item, decaying toward 0 as it calibrates.
+        var k = 0.5 / (1.0 + priorResponseCount / 20.0);
+        var newB = currentB + k * (expected - actual);
+        return Math.Clamp(newB, -4.0, 4.0);
+    }
+
     // ─── Ebbinghaus Forgetting Curve ────────────────────────────
 
     /// <summary>

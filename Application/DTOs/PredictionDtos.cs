@@ -24,7 +24,11 @@ public record ScorePredictionDto(
     int? GapToTarget,
     IEnumerable<SectionPredictionDto> Sections,
     IEnumerable<ImprovementTipDto> ImprovementTips,
-    DateTime CalculatedAt
+    DateTime CalculatedAt,
+    // How many of the user's answers (across all sections) this prediction is based on,
+    // and whether that is enough for the estimate to be trustworthy rather than a cold-start guess.
+    int AnswersCount = 0,
+    bool IsReliable = false
 );
 
 /// <summary>
@@ -41,7 +45,10 @@ public record SectionPredictionDto(
     int ConfidenceLow,
     int ConfidenceHigh,
     double Accuracy,
-    string Strength
+    string Strength,
+    // Number of answers in this section and whether that is enough to trust the section estimate.
+    int AnswersCount = 0,
+    bool IsReliable = false
 );
 
 /// <summary>

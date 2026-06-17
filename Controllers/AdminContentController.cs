@@ -15,6 +15,7 @@ public class AdminContentController : ControllerBase
     private readonly UniStartDbContext _db;
     private readonly UniStart.Application.Interfaces.IContentIngestionService _ingestion;
     private readonly UniStart.Application.Interfaces.IStudyPackParserService _parser;
+    private readonly UniStart.Application.Interfaces.ICanonicalContentParser _canonical;
     private readonly UniStart.Application.Interfaces.IFileParserService _fileParser;
     private readonly UniStart.Application.Interfaces.IDriveSyncService _driveSync;
 
@@ -22,12 +23,14 @@ public class AdminContentController : ControllerBase
         UniStartDbContext db,
         UniStart.Application.Interfaces.IContentIngestionService ingestion,
         UniStart.Application.Interfaces.IStudyPackParserService parser,
+        UniStart.Application.Interfaces.ICanonicalContentParser canonical,
         UniStart.Application.Interfaces.IFileParserService fileParser,
         UniStart.Application.Interfaces.IDriveSyncService driveSync)
     {
         _db = db;
         _ingestion = ingestion;
         _parser = parser;
+        _canonical = canonical;
         _fileParser = fileParser;
         _driveSync = driveSync;
     }
@@ -129,6 +132,66 @@ public class AdminContentController : ControllerBase
         catch (InvalidOperationException ex)
         {
             return StatusCode(502, new { error = "LLM parsing failed.", detail = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Parse content authored in the canonical Markdown format (deterministic, no LLM, free).
+    /// Returns the normalized preview WITHOUT writing to the database. Use this for the
+    /// already-structured question bank instead of the LLM parser.
+    /// </summary>
+    [HttpPost("parse-canonical")]
+    [Authorize(Roles = "Admin")]
+    [RequestSizeLimit(50 * 1024 * 1024)]
+    public async Task<IActionResult> ParseCanonical([FromForm] ParseStudyPackForm form, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(form.ExamTypeCode) || string.IsNullOrWhiteSpace(form.ExamSectionName))
+            return BadRequest(new { error = "ExamTypeCode and ExamSectionName are required." });
+
+        string text = form.Text ?? string.Empty;
+        if (form.File != null && form.File.Length > 0)
+            text = await ExtractTextFromFileAsync(form.File, ct);
+        if (string.IsNullOrWhiteSpace(text))
+            return BadRequest(new { error = "Provide either 'text' or a non-empty 'file'." });
+
+        try
+        {
+            var payload = _canonical.Parse(text, form.ExamTypeCode, form.ExamSectionName);
+            return Ok(payload);
+        }
+        catch (FormatException ex)
+        {
+            return BadRequest(new { error = "Canonical format error.", detail = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// One-shot: deterministically parse canonical Markdown and immediately ingest it.
+    /// No LLM, idempotent (re-runs deduplicate by content hash).
+    /// </summary>
+    [HttpPost("parse-and-ingest-canonical")]
+    [Authorize(Roles = "Admin")]
+    [RequestSizeLimit(50 * 1024 * 1024)]
+    public async Task<IActionResult> ParseAndIngestCanonical([FromForm] ParseStudyPackForm form, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(form.ExamTypeCode) || string.IsNullOrWhiteSpace(form.ExamSectionName))
+            return BadRequest(new { error = "ExamTypeCode and ExamSectionName are required." });
+
+        string text = form.Text ?? string.Empty;
+        if (form.File != null && form.File.Length > 0)
+            text = await ExtractTextFromFileAsync(form.File, ct);
+        if (string.IsNullOrWhiteSpace(text))
+            return BadRequest(new { error = "Provide either 'text' or a non-empty 'file'." });
+
+        try
+        {
+            var payload = _canonical.Parse(text, form.ExamTypeCode, form.ExamSectionName);
+            var result = await _ingestion.IngestAsync(payload);
+            return Ok(result);
+        }
+        catch (FormatException ex)
+        {
+            return BadRequest(new { error = "Canonical format error.", detail = ex.Message });
         }
     }
 

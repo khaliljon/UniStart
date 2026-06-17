@@ -345,6 +345,8 @@ export interface ScorePrediction {
   sections: SectionPrediction[];
   improvementTips: ImprovementTip[];
   calculatedAt: string;
+  answersCount: number;
+  isReliable: boolean;
 }
 
 export interface SectionPrediction {
@@ -358,7 +360,9 @@ export interface SectionPrediction {
   confidenceLow: number;
   confidenceHigh: number;
   accuracy: number;
-  strength: 'strong' | 'average' | 'weak' | 'critical';
+  strength: 'strong' | 'average' | 'weak' | 'critical' | 'insufficient';
+  answersCount: number;
+  isReliable: boolean;
 }
 
 export interface ImprovementTip {

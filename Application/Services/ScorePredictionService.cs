@@ -16,6 +16,11 @@ public class ScorePredictionService : IScorePredictionService
     private const double ThetaMin = -3.0;
     private const double ThetaMax = 3.0;
 
+    // Minimum answers before a section's estimate is considered trustworthy rather than a
+    // cold-start guess. Below this we avoid alarming "critical/strong" labels and flag the
+    // prediction as preliminary in the UI.
+    private const int SectionReliableThreshold = 10;
+
     public ScorePredictionService(UniStartDbContext db, ILogger<ScorePredictionService> logger)
     {
         _db = db;
@@ -83,13 +88,20 @@ public class ScorePredictionService : IScorePredictionService
                 ? Math.Round((double)stats.Correct / stats.Total * 100, 1)
                 : 0;
 
-            var strength = theta switch
-            {
-                >= 1.0 => "strong",
-                >= 0.0 => "average",
-                >= -1.0 => "weak",
-                _ => "critical"
-            };
+            var sectionAnswers = stats?.Total ?? 0;
+            var sectionReliable = sectionAnswers >= SectionReliableThreshold;
+
+            // With too few answers, θ is dominated by the cold-start prior, so an alarming
+            // "critical"/confident "strong" label would be misleading. Show a neutral status.
+            var strength = !sectionReliable
+                ? "insufficient"
+                : theta switch
+                {
+                    >= 1.0 => "strong",
+                    >= 0.0 => "average",
+                    >= -1.0 => "weak",
+                    _ => "critical"
+                };
 
             sectionPredictions.Add(new SectionPredictionDto(
                 SectionId: section.Id,
@@ -102,7 +114,9 @@ public class ScorePredictionService : IScorePredictionService
                 ConfidenceLow: confLow,
                 ConfidenceHigh: confHigh,
                 Accuracy: accuracy,
-                Strength: strength
+                Strength: strength,
+                AnswersCount: sectionAnswers,
+                IsReliable: sectionReliable
             ));
 
             totalPredicted += predicted;
@@ -119,6 +133,12 @@ public class ScorePredictionService : IScorePredictionService
         // Generate improvement tips (top weaknesses sorted by ROI)
         var tips = await GenerateImprovementTips(userId, examTypeCode, sections, profiles, topicsPerSection);
 
+        // Overall reliability: enough total evidence AND at least half the sections individually reliable.
+        var totalAnswers = sectionPredictions.Sum(s => s.AnswersCount);
+        var reliableSections = sectionPredictions.Count(s => s.IsReliable);
+        var overallReliable = totalAnswers >= SectionReliableThreshold
+            && (sectionPredictions.Count == 0 || reliableSections * 2 >= sectionPredictions.Count);
+
         return new ScorePredictionDto(
             ExamTypeCode: examTypeCode,
             ExamName: exam.Name,
@@ -132,7 +152,9 @@ public class ScorePredictionService : IScorePredictionService
             GapToTarget: goal != null ? Math.Max(0, goal.TargetScore - totalPredicted) : null,
             Sections: sectionPredictions,
             ImprovementTips: tips,
-            CalculatedAt: DateTime.UtcNow
+            CalculatedAt: DateTime.UtcNow,
+            AnswersCount: totalAnswers,
+            IsReliable: overallReliable
         );
     }
 

@@ -381,6 +381,7 @@ export interface Translations {
     calculate: string;
     forecast: string;
     forecastHistory: string;
+    forecastHistoryNote: string;
     toTarget: string;
     targetReached: string;
     accuracyLabel: string;
@@ -391,6 +392,11 @@ export interface Translations {
     average: string;
     weak: string;
     critical: string;
+    insufficient: string;
+    preliminary: string;
+    preliminaryHint: string;
+    whatIfNow: string;
+    whatIfError: string;
     predicted: string;
     toMax: string;
     upperBound: string;

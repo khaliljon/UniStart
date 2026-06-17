@@ -226,6 +226,15 @@ public class AdaptiveEngineService : IAdaptiveEngineService
         // Update skill using IRT EAP estimation
         var (newLevel, change, theta, thetaSE) = await UpdateSkillLevelAsync(userId, question.Topic.SkillId, isCorrect);
 
+        // Online IRT cold-start: fold this real response into the item's difficulty so it
+        // drifts away from its difficulty-derived prior toward a data-driven value.
+        question.DifficultyParam = IrtMath.UpdateDifficultyOnline(
+            question.DifficultyParam, question.DiscriminationParam, question.GuessParam,
+            theta, isCorrect, question.ResponseCount);
+        question.ResponseCount++;
+        if (question.ResponseCount >= IrtMath.CalibrationThreshold)
+            question.IsCalibrated = true;
+
         var confLow = IrtMath.ThetaToLevel(theta - 1.96 * thetaSE);
         var confHigh = IrtMath.ThetaToLevel(theta + 1.96 * thetaSE);
 
