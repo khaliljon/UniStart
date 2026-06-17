@@ -14,6 +14,105 @@ public class DatabaseSeeder
         _context = context;
     }
 
+    // ─── NUET Mathematics backbone taxonomy ─────────────────────────────────
+    // Canonical Unit → Topic tree for the NUET "Math" section. Each Unit becomes a
+    // Skill (the grouping the IRT/prediction engine aggregates on, and the unit-level
+    // bucket the content-ingestion pipeline maps files onto); each item becomes a
+    // Topic with a 1-based SortOrder. Seeded on fresh databases and reconciled on
+    // existing ones via EnsureNuetMathSkillsAsync / EnsureNuetMathTopicsAsync.
+    private static readonly (string Code, string Name, string Description, string[] Topics)[] NuetMathTaxonomy =
+    {
+        ("SK_NUET_UNITS", "Units & Measures",
+            "NUET Mathematics — standard and compound units, approximation and estimation.",
+            new[]
+            {
+                "Standard and compound units",
+                "Approximation and estimates (π, surds)",
+            }),
+        ("SK_NUET_NUMBER", "Number",
+            "NUET Mathematics — number, operations, indices, standard form and bounds.",
+            new[]
+            {
+                "Ordering integers, decimals, fractions; symbols =, ≠, <, >, ≤, ≥",
+                "Four operations with integers, decimals, fractions, mixed numbers; place value",
+                "Prime numbers, factors, multiples, HCF, LCM, prime factorisation",
+                "Inverse operations, cancellation, priority of operations (BODMAS)",
+                "Systematic listing strategies",
+                "Squares, square roots, cubes, cube roots",
+                "Index laws (numerical)",
+                "Standard index form (standard form)",
+                "Converting between decimals, percentages and fractions (including recurring)",
+                "Fractions, decimals and percentages interchangeably",
+                "Exact calculations with fractions, surds and multiples of π",
+                "Upper and lower bounds",
+                "Rounding and error intervals",
+                "Approximation and estimates",
+            }),
+        ("SK_NUET_RATIO", "Ratio & Proportion",
+            "NUET Mathematics — ratio, proportion, percentages, growth and decay.",
+            new[]
+            {
+                "Quantity as a fraction of another",
+                "Ratio notation",
+                "Dividing a quantity in a given ratio",
+                "Applying ratio to real contexts; multiplicative relationships",
+                "Proportion; ratios, fractions and linear functions",
+                "Fractions in ratio problems",
+                "Percentages and percentage change",
+                "Direct and inverse proportion",
+                "Lengths, areas and volumes in ratio; similarity and scale factors",
+                "Growth and decay; compound interest; iterative processes",
+            }),
+        ("SK_NUET_ALGEBRA", "Algebra",
+            "NUET Mathematics — algebraic manipulation, functions, graphs and sequences.",
+            new[]
+            {
+                "Algebraic notation",
+                "Index laws in algebra",
+                "Substitution into formulae and expressions; algebraic vocabulary",
+                "Expanding and factorising (single bracket, binomials, common factors)",
+                "Factorising quadratic expressions",
+                "Simplifying expressions; rational algebraic expressions",
+                "Rearranging formulae",
+                "Equations vs identities; algebraic equivalence",
+                "Coordinates in all four quadrants",
+                "Linear functions (y = mx + c); parallel and perpendicular lines",
+                "Quadratic functions: roots, intercepts, turning points; completing the square",
+                "Recognising and sketching graphs",
+                "Interpreting graphs (reciprocal, exponential, kinematic)",
+                "Gradients and areas under graphs",
+                "Solving equations and simultaneous equations (linear/linear, linear/quadratic)",
+                "Simultaneous equations and algebraic modelling",
+                "Linear inequalities in one or two variables",
+                "Sequences: term-to-term and position-to-term rules",
+                "nth term of linear and quadratic sequences",
+            }),
+        ("SK_NUET_GEOMETRY", "Geometry",
+            "NUET Mathematics — geometry, mensuration, trigonometry and vectors.",
+            new[]
+            {
+                "Conventional terms and notation (points, lines, polygons, symmetry)",
+                "Angle properties (straight lines, parallel lines, triangles, quadrilaterals, polygons)",
+                "Properties of quadrilaterals and triangles",
+                "Congruence criteria (SSS, SAS, ASA, RHS)",
+                "Angle facts, congruence, similarity and quadrilateral properties",
+                "Congruent and similar shapes; transformations (rotation, reflection, translation, enlargement); vectors as translations",
+                "Pythagoras' theorem (2D and 3D)",
+                "Circle terminology",
+                "Circle theorems",
+                "Coordinate geometry (2D)",
+                "3D shape terminology (faces, edges, vertices)",
+                "Plans and elevations",
+                "Maps, scale drawings and bearings",
+                "Areas of triangles, parallelograms, trapezia; volumes of prisms",
+                "Circles, cylinders, spheres, pyramids, cones and composite solids",
+                "Arc lengths, angles and areas of sectors",
+                "Congruence and similarity: lengths, areas and volumes",
+                "Trigonometric ratios",
+                "Vectors: addition, subtraction, scalar multiplication, geometric proofs",
+            }),
+    };
+
     public async Task SeedAsync()
     {
         var hasCorrectData = await _context.Topics
@@ -90,6 +189,11 @@ public class DatabaseSeeder
         {
             await SeedTopicsAsync();
         }
+
+        // Reconcile the NUET Math backbone taxonomy. Idempotent and unconditional so the
+        // canonical unit/topic tree is present even on databases seeded before it existed.
+        await EnsureNuetMathSkillsAsync();
+        await EnsureNuetMathTopicsAsync();
 
         // NOTE: Question seeding has been intentionally removed. The question base is
         // now built via the content-ingestion pipeline (admin upload / Google Drive sync),
@@ -285,7 +389,6 @@ public class DatabaseSeeder
         var satReadWrite = await _context.ExamSections.FirstAsync(s => s.ExamTypeCode == "SAT" && s.Name == "Reading & Writing");
         var satMathNoCalc = await _context.ExamSections.FirstAsync(s => s.ExamTypeCode == "SAT" && s.Name == "Math (No Calculator)");
         var satMathCalc = await _context.ExamSections.FirstAsync(s => s.ExamTypeCode == "SAT" && s.Name == "Math (Calculator)");
-        var nuetMath = await _context.ExamSections.FirstAsync(s => s.ExamTypeCode == "NUET" && s.Name == "Math");
         var nuetCritical = await _context.ExamSections.FirstAsync(s => s.ExamTypeCode == "NUET" && s.Name == "Critical Thinking");
 
         var skillRead = await _context.Skills.FirstAsync(s => s.Code == "SK_READ");
@@ -299,12 +402,79 @@ public class DatabaseSeeder
             new Topic { Name = "Grammar & Sentence Structure", SkillId = skillWrite.Id, SectionId = satReadWrite.Id },
             new Topic { Name = "Linear Equations", SkillId = skillMath.Id, SectionId = satMathNoCalc.Id },
             new Topic { Name = "Quadratic Equations", SkillId = skillMath.Id, SectionId = satMathCalc.Id },
-            new Topic { Name = "Algebra & Functions", SkillId = skillMath.Id, SectionId = nuetMath.Id },
             new Topic { Name = "Logical Reasoning", SkillId = skillCrit.Id, SectionId = nuetCritical.Id }
         };
 
         await _context.Topics.AddRangeAsync(topics);
         await _context.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Get-or-create the per-Unit Skills of the NUET Math backbone (keyed by Code).
+    /// Safe to run on every startup — only missing Skills are inserted.
+    /// </summary>
+    private async Task EnsureNuetMathSkillsAsync()
+    {
+        var existing = new HashSet<string>(
+            await _context.Skills.Select(s => s.Code).ToListAsync());
+
+        var toAdd = NuetMathTaxonomy
+            .Where(u => !existing.Contains(u.Code))
+            .Select(u => new Skill { Code = u.Code, Name = u.Name, Description = u.Description })
+            .ToList();
+
+        if (toAdd.Count > 0)
+        {
+            await _context.Skills.AddRangeAsync(toAdd);
+            await _context.SaveChangesAsync();
+        }
+    }
+
+    /// <summary>
+    /// Get-or-create the NUET Math Topics under the "Math" section, one per taxonomy
+    /// item, with a 1-based SortOrder inside each Unit/Skill. Deduplicated by Topic
+    /// name within the section so re-running never creates duplicates.
+    /// </summary>
+    private async Task EnsureNuetMathTopicsAsync()
+    {
+        var nuetMath = await _context.ExamSections
+            .FirstOrDefaultAsync(s => s.ExamTypeCode == "NUET" && s.Name == "Math");
+        if (nuetMath == null) return;
+
+        var codes = NuetMathTaxonomy.Select(u => u.Code).ToList();
+        var skillIdByCode = await _context.Skills
+            .Where(s => codes.Contains(s.Code))
+            .ToDictionaryAsync(s => s.Code, s => s.Id);
+
+        var existingNames = new HashSet<string>(
+            await _context.Topics
+                .Where(t => t.SectionId == nuetMath.Id)
+                .Select(t => t.Name)
+                .ToListAsync());
+
+        var toAdd = new List<Topic>();
+        foreach (var unit in NuetMathTaxonomy)
+        {
+            if (!skillIdByCode.TryGetValue(unit.Code, out var skillId)) continue;
+            for (var i = 0; i < unit.Topics.Length; i++)
+            {
+                var name = unit.Topics[i];
+                if (existingNames.Contains(name)) continue;
+                toAdd.Add(new Topic
+                {
+                    Name = name,
+                    SkillId = skillId,
+                    SectionId = nuetMath.Id,
+                    SortOrder = i + 1,
+                });
+            }
+        }
+
+        if (toAdd.Count > 0)
+        {
+            await _context.Topics.AddRangeAsync(toAdd);
+            await _context.SaveChangesAsync();
+        }
     }
 
     private async Task UpdateIrtParametersAsync()
