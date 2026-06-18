@@ -20,6 +20,7 @@ function RegisterPage() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('+7');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [role, setRole] = useState<'Student' | 'Tutor' | 'SchoolAdmin'>(() =>
@@ -91,6 +92,11 @@ function RegisterPage() {
       return;
     }
 
+    if (!/^\+77\d{9}$/.test(phoneNumber)) {
+      setValidationError(t.auth.phoneInvalid);
+      return;
+    }
+
     if (password.length < 10) {
       setValidationError('Password must be at least 10 characters');
       return;
@@ -112,7 +118,7 @@ function RegisterPage() {
       return;
     }
 
-    dispatch(register({ firstName: firstName.trim(), lastName: lastName.trim(), email, password, role, schoolSlug: branding?.slug, applyToSchoolId: selectedSchoolId ?? undefined, schoolName: schoolName.trim() || undefined, referralCode: searchParams.get('ref') || undefined }));
+    dispatch(register({ firstName: firstName.trim(), lastName: lastName.trim(), email, password, phoneNumber, role, schoolSlug: branding?.slug, applyToSchoolId: selectedSchoolId ?? undefined, schoolName: schoolName.trim() || undefined, referralCode: searchParams.get('ref') || undefined }));
   };
 
   const handleVerify = async (e: FormEvent) => {
@@ -390,6 +396,28 @@ function RegisterPage() {
                 handleInputChange();
               }}
               placeholder="Enter your email"
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="phoneNumber" className="form-label">
+              {t.auth.phone}
+            </label>
+            <input
+              type="tel"
+              id="phoneNumber"
+              className="form-input"
+              value={phoneNumber}
+              onChange={(e) => {
+                let digits = e.target.value.replace(/\D/g, '');
+                if (digits.startsWith('8')) digits = '7' + digits.slice(1);
+                if (!digits.startsWith('7')) digits = '7' + digits;
+                setPhoneNumber('+' + digits.slice(0, 11));
+                handleInputChange();
+              }}
+              placeholder="+7 700 123 45 67"
+              maxLength={12}
               required
             />
           </div>

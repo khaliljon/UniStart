@@ -51,6 +51,8 @@ export const ru: Translations = {
     confirmPassword: 'Подтвердите пароль',
     firstName: 'Имя',
     lastName: 'Фамилия',
+    phone: 'Номер телефона',
+    phoneInvalid: 'Введите номер Казахстана в формате +77XXXXXXXXX.',
     forgotPassword: 'Забыли пароль?',
     noAccount: 'Нет аккаунта?',
     hasAccount: 'Уже есть аккаунт?',
@@ -83,6 +85,13 @@ export const ru: Translations = {
     tutorIndependent: 'Независимый тьютор',
     schoolInviteCode: 'Инвайт-код школы',
     schoolInviteCodePlaceholder: 'Код из 8 символов',
+    completeProfile: {
+      title: 'Дополните профиль',
+      subtitle: 'Чтобы продолжить, укажите номер телефона. Это обязательное поле для всех пользователей.',
+      hint: 'Казахстанский номер в формате +77XXXXXXXXX.',
+      submit: 'Сохранить и продолжить',
+      logout: 'Выйти из аккаунта',
+    },
     fp: {
       title: 'Восстановление пароля',
       enterEmail: 'Введите email, указанный при регистрации',

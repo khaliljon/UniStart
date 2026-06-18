@@ -26,6 +26,11 @@ export const authService = {
     return response.data;
   },
 
+  async completeProfile(phoneNumber: string): Promise<AuthResponse> {
+    const response = await api.post<AuthResponse>('/auth/complete-profile', { phoneNumber });
+    return response.data;
+  },
+
   saveToken(token: string): void {
     localStorage.setItem('token', token);
   },

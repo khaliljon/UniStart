@@ -10,6 +10,7 @@ export interface User {
   subscriptionTier: string;
   subscriptionExpiresAt: string | null;
   emailVerified: boolean;
+  phoneNumber?: string | null;
   createdAt: string;
 }
 
@@ -27,6 +28,7 @@ export interface AuthResponse {
   token: string;
   expiresAt: string;
   schoolSubdomain: string | null;
+  phoneNumber?: string | null;
 }
 
 export interface LoginRequest {
@@ -39,6 +41,7 @@ export interface RegisterRequest {
   firstName: string;
   lastName: string;
   password: string;
+  phoneNumber: string;
   role?: 'Student' | 'Tutor' | 'SchoolAdmin';
   schoolSlug?: string;
   applyToSchoolId?: number;

@@ -56,6 +56,8 @@ export interface Translations {
     confirmPassword: string;
     firstName: string;
     lastName: string;
+    phone: string;
+    phoneInvalid: string;
     forgotPassword: string;
     noAccount: string;
     hasAccount: string;
@@ -88,6 +90,13 @@ export interface Translations {
     tutorIndependent: string;
     schoolInviteCode: string;
     schoolInviteCodePlaceholder: string;
+    completeProfile: {
+      title: string;
+      subtitle: string;
+      hint: string;
+      submit: string;
+      logout: string;
+    };
     fp: {
       title: string;
       enterEmail: string;

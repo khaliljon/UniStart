@@ -19,7 +19,8 @@ function redirectAfterAuth(response: AuthResponse): boolean {
       role: response.role, hasCompletedOnboarding: response.hasCompletedOnboarding,
       subscriptionTier: response.subscriptionTier || 'Free',
       subscriptionExpiresAt: response.subscriptionExpiresAt || null,
-      emailVerified: response.emailVerified, createdAt: new Date().toISOString(),
+      emailVerified: response.emailVerified, phoneNumber: response.phoneNumber ?? null,
+      createdAt: new Date().toISOString(),
     };
     return encodeURIComponent(JSON.stringify({ token: response.token, expiresAt: response.expiresAt, user }));
   };
@@ -153,6 +154,19 @@ export const googleLogin = createAsyncThunk(
   }
 );
 
+export const completeProfile = createAsyncThunk(
+  'auth/completeProfile',
+  async (phoneNumber: string, { rejectWithValue }) => {
+    try {
+      const response = await authService.completeProfile(phoneNumber);
+      return response;
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { error?: string } } };
+      return rejectWithValue(err.response?.data?.error || 'Failed to save phone number');
+    }
+  }
+);
+
 const authSlice = createSlice({
   name: 'auth',
   initialState,
@@ -204,6 +218,7 @@ const authSlice = createSlice({
         subscriptionTier: action.payload.subscriptionTier || 'Free',
         subscriptionExpiresAt: action.payload.subscriptionExpiresAt || null,
         emailVerified: action.payload.emailVerified,
+        phoneNumber: action.payload.phoneNumber ?? null,
         createdAt: new Date().toISOString(),
       };
       state.token = action.payload.token;
@@ -267,6 +282,18 @@ const authSlice = createSlice({
         handleAuthFulfilled(state, action);
       })
       .addCase(googleLogin.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      })
+      // Complete Profile (phone number) — refreshes token & user
+      .addCase(completeProfile.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(completeProfile.fulfilled, (state, action) => {
+        handleAuthFulfilled(state, action);
+      })
+      .addCase(completeProfile.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
       });

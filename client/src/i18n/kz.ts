@@ -51,6 +51,8 @@ export const kz: Translations = {
     confirmPassword: 'Құпиясөзді растаңыз',
     firstName: 'Аты',
     lastName: 'Тегі',
+    phone: 'Телефон нөмірі',
+    phoneInvalid: 'Қазақстан нөмірін +77XXXXXXXXX форматында енгізіңіз.',
     forgotPassword: 'Құпиясөзді ұмыттыңыз ба?',
     noAccount: 'Аккаунтыңыз жоқ па?',
     hasAccount: 'Аккаунтыңыз бар ма?',
@@ -83,6 +85,13 @@ export const kz: Translations = {
     tutorIndependent: 'Тәуелсіз тьютор',
     schoolInviteCode: 'Мектептің шақыру коды',
     schoolInviteCodePlaceholder: '8 таңбалы код',
+    completeProfile: {
+      title: 'Профильді толықтырыңыз',
+      subtitle: 'Жалғастыру үшін телефон нөміріңізді енгізіңіз. Бұл барлық пайдаланушылар үшін міндетті өріс.',
+      hint: 'Қазақстан нөмірі +77XXXXXXXXX форматында.',
+      submit: 'Сақтау және жалғастыру',
+      logout: 'Шығу',
+    },
     fp: {
       title: 'Құпия сөзді қалпына келтіру',
       enterEmail: 'Тіркелу кезінде көрсеткен email-ді енгізіңіз',

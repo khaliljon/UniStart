@@ -11,6 +11,7 @@ import { ToastProvider } from './components/Toast'
 // ── Lazy-loaded pages (code splitting) ──────────────────
 const LoginPage = lazy(() => import('./pages/LoginPage'))
 const RegisterPage = lazy(() => import('./pages/RegisterPage'))
+const CompleteProfilePage = lazy(() => import('./pages/CompleteProfilePage'))
 const OnboardingPage = lazy(() => import('./pages/OnboardingPage'))
 const DashboardPage = lazy(() => import('./pages/DashboardPage'))
 const LearnPage = lazy(() => import('./pages/LearnPage'))
@@ -166,6 +167,7 @@ function App() {
   const isAdmin = user?.role === 'Admin'
   const isTutor = user?.role === 'Tutor' || user?.role === 'SchoolTutor'
   const isSchoolAdmin = user?.role === 'SchoolAdmin'
+  const needsPhone = isAuthenticated && !user?.phoneNumber
   const needsOnboarding = isAuthenticated && !isAdmin && !isTutor && !isSchoolAdmin && !user?.hasCompletedOnboarding
 
   return (
@@ -173,16 +175,19 @@ function App() {
     <Suspense fallback={<PageLoader />}>
     <Routes>
       <Route path="/landing" element={!isAuthenticated ? <LandingPage /> : <Navigate to="/" replace />} />
-      <Route path="/login" element={!isAuthenticated ? <LoginPage /> : <Navigate to={needsOnboarding ? '/onboarding' : '/'} />} />
-      <Route path="/register" element={!isAuthenticated ? <RegisterPage /> : <Navigate to={needsOnboarding ? '/onboarding' : '/'} />} />
+      <Route path="/login" element={!isAuthenticated ? <LoginPage /> : <Navigate to={needsPhone ? '/complete-profile' : needsOnboarding ? '/onboarding' : '/'} />} />
+      <Route path="/register" element={!isAuthenticated ? <RegisterPage /> : <Navigate to={needsPhone ? '/complete-profile' : needsOnboarding ? '/onboarding' : '/'} />} />
       <Route path="/forgot-password" element={!isAuthenticated ? <ForgotPasswordPage /> : <Navigate to="/" replace />} />
       <Route path="/privacy" element={<PrivacyPage />} />
       <Route path="/terms" element={<TermsPage />} />
       <Route path="/referral-terms" element={<ReferralTermsPage />} />
-      <Route path="/onboarding" element={needsOnboarding ? <OnboardingPage /> : <Navigate to="/" replace />} />
+      <Route path="/complete-profile" element={needsPhone ? <CompleteProfilePage /> : <Navigate to="/" replace />} />
+      <Route path="/onboarding" element={!needsPhone && needsOnboarding ? <OnboardingPage /> : <Navigate to="/" replace />} />
 
       {isAuthenticated ? (
-        needsOnboarding ? (
+        needsPhone ? (
+          <Route path="*" element={<Navigate to="/complete-profile" />} />
+        ) : needsOnboarding ? (
           <Route path="*" element={<Navigate to="/onboarding" />} />
         ) : (
           isAdmin ? AdminRoutes() : isSchoolAdmin ? SchoolAdminRoutes() : isTutor ? TutorRoutes() : StudentRoutes()

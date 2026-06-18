@@ -51,6 +51,8 @@ export const en: Translations = {
     confirmPassword: 'Confirm password',
     firstName: 'First name',
     lastName: 'Last name',
+    phone: 'Phone number',
+    phoneInvalid: 'Enter a Kazakhstan number in the format +77XXXXXXXXX.',
     forgotPassword: 'Forgot password?',
     noAccount: "Don't have an account?",
     hasAccount: 'Already have an account?',
@@ -83,6 +85,13 @@ export const en: Translations = {
     tutorIndependent: 'Independent tutor',
     schoolInviteCode: 'School invite code',
     schoolInviteCodePlaceholder: '8-character code',
+    completeProfile: {
+      title: 'Complete your profile',
+      subtitle: 'To continue, please add your phone number. This field is required for all users.',
+      hint: 'Kazakhstan number in the format +77XXXXXXXXX.',
+      submit: 'Save and continue',
+      logout: 'Sign out',
+    },
     fp: {
       title: 'Reset Password',
       enterEmail: 'Enter the email you used to register',

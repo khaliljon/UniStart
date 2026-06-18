@@ -62,20 +62,40 @@ public class LlmExtractionService : ILlmExtractionService
 
             _logger.LogInformation("Starting LLM extraction with {Model}, text length: {Length} chars", _model, text.Length);
 
+            // Parse hard hints from the admin instructions (e.g. "50 вопросов", "5 вариантов").
+            // These become real limits enforced in code — not just suggestions to the model —
+            // which is what stops the batch loop from hallucinating extra questions.
+            var (expectedCount, expectedOptions) = ParseExtractionHints(instructions);
+            if (expectedCount.HasValue)
+                _logger.LogInformation("Admin context: expecting {Count} questions", expectedCount.Value);
+            if (expectedOptions.HasValue)
+                _logger.LogInformation("Admin context: expecting {Options} answer options per question", expectedOptions.Value);
+
             // Strategy: send the FULL text in each request and pull questions in batches.
             // DeepSeek input is 128K tokens (plenty), output limit is 8192 tokens, so we
             // cannot return 50+ questions in one response. We loop, passing a summary of
             // already-extracted questions each round so the model only returns NEW ones,
-            // and stop when a round returns nothing new (or a short final batch). The number
-            // of questions is driven by the actual document, not a hardcoded count.
+            // and stop when a round returns nothing new (or a short final batch). When the
+            // admin states an exact question count, that count caps the loop and the result.
             const int batchSize = 15;
             const int maxBatches = 12; // safety cap (~180 questions)
             var allQuestions = new List<ExtractedQuestion>();
 
             for (int batch = 1; batch <= maxBatches; batch++)
             {
+                // How many questions to ask for this round (respect the admin's stated total).
+                int remaining = expectedCount.HasValue
+                    ? Math.Max(0, expectedCount.Value - allQuestions.Count)
+                    : batchSize;
+                if (remaining == 0)
+                {
+                    _logger.LogInformation("Reached expected question count ({Count}) — stopping", expectedCount!.Value);
+                    break;
+                }
+                int thisBatch = Math.Min(batchSize, remaining);
+
                 var alreadyExtracted = allQuestions.Count > 0 ? BuildAlreadyExtractedSummary(allQuestions) : null;
-                var result = await CallLlmApiAsync(text, batchSize, alreadyExtracted, instructions, ct);
+                var result = await CallLlmApiAsync(text, thisBatch, allQuestions.Count, expectedCount, expectedOptions, alreadyExtracted, instructions, ct);
                 if (result.Count == 0)
                 {
                     _logger.LogInformation("LLM batch {Batch} returned no questions — stopping", batch);
@@ -90,7 +110,15 @@ public class LlmExtractionService : ILlmExtractionService
                     batch, result.Count, newlyAdded, allQuestions.Count);
 
                 if (newlyAdded == 0) break;          // model is repeating itself → done
-                if (result.Count < batchSize) break;  // short batch → end of document
+                if (result.Count < thisBatch) break;  // short batch → end of document
+            }
+
+            // Enforce the admin's stated count as a hard cap (never return more than promised).
+            if (expectedCount.HasValue && allQuestions.Count > expectedCount.Value)
+            {
+                _logger.LogInformation("Trimming {From} → {To} questions to match admin-stated count",
+                    allQuestions.Count, expectedCount.Value);
+                allQuestions = allQuestions.Take(expectedCount.Value).ToList();
             }
 
             _logger.LogInformation("LLM extracted {Count} questions total (after dedup)", allQuestions.Count);
@@ -117,6 +145,39 @@ public class LlmExtractionService : ILlmExtractionService
             sb.AppendLine($"  #{i + 1}: {summary}");
         }
         return sb.ToString();
+    }
+
+    /// <summary>
+    /// Parse hard numeric hints from the admin's free-text instructions, in RU/KZ/EN:
+    ///   • expected number of questions  (e.g. "50 вопросов", "50 сұрақ", "50 questions")
+    ///   • expected options per question (e.g. "5 вариантов", "5 жауап", "5 options")
+    /// These are applied as real limits in code, not just passed to the model.
+    /// </summary>
+    private static (int? expectedCount, int? expectedOptions) ParseExtractionHints(string? instructions)
+    {
+        if (string.IsNullOrWhiteSpace(instructions))
+            return (null, null);
+
+        int? count = null;
+        int? options = null;
+
+        // Questions: a number directly followed by a "question" word in RU / KZ / EN.
+        var qMatch = Regex.Match(
+            instructions,
+            @"(\d{1,3})\s*(?:вопрос\w*|сұрақ\w*|задани\w*|задач\w*|question[s]?|item[s]?)",
+            RegexOptions.IgnoreCase);
+        if (qMatch.Success && int.TryParse(qMatch.Groups[1].Value, out var qn) && qn is > 0 and <= 500)
+            count = qn;
+
+        // Options: a number directly followed by an "option/answer" word in RU / KZ / EN.
+        var oMatch = Regex.Match(
+            instructions,
+            @"(\d{1,2})\s*(?:вариант\w*|ответ\w*|жауап\w*|option[s]?|answer[s]?|choice[s]?)",
+            RegexOptions.IgnoreCase);
+        if (oMatch.Success && int.TryParse(oMatch.Groups[1].Value, out var on) && on is >= 2 and <= 10)
+            options = on;
+
+        return (count, options);
     }
 
     /// <summary>
@@ -204,7 +265,7 @@ public class LlmExtractionService : ILlmExtractionService
         return set;
     }
 
-    private async Task<List<ExtractedQuestion>> CallLlmApiAsync(string text, int batchSize, string? alreadyExtracted, string? instructions, CancellationToken ct)
+    private async Task<List<ExtractedQuestion>> CallLlmApiAsync(string text, int batchSize, int alreadyCount, int? expectedCount, int? expectedOptions, string? alreadyExtracted, string? instructions, CancellationToken ct)
     {
         var systemPrompt = @"You are an exam-question extraction engine for an educational platform.
 
@@ -233,6 +294,23 @@ Return ONLY valid JSON.";
         userPromptSb.AppendLine($"Extract exam questions from the document text below. Return up to {batchSize} questions in this response.");
         userPromptSb.AppendLine("Preserve each question exactly as written, including its original number of answer options. Do NOT split, merge, or invent questions.");
         userPromptSb.AppendLine("Skip theory, definitions, examples and headers.");
+
+        // Hard, code-enforced expectations parsed from the admin context.
+        if (expectedCount.HasValue)
+        {
+            int remaining = Math.Max(0, expectedCount.Value - alreadyCount);
+            userPromptSb.AppendLine();
+            userPromptSb.AppendLine($"📌 The document is stated to contain EXACTLY {expectedCount.Value} questions. " +
+                $"You have already extracted {alreadyCount}. Extract only the next {remaining} (at most {batchSize} now). " +
+                "If you cannot find that many GENUINE questions in the source, return fewer — NEVER invent, reword, or duplicate questions to reach a number.");
+        }
+        if (expectedOptions.HasValue)
+        {
+            userPromptSb.AppendLine();
+            userPromptSb.AppendLine($"📌 Each question is stated to have EXACTLY {expectedOptions.Value} answer options. " +
+                $"Output exactly {expectedOptions.Value} options per question, with exactly one marked correct. " +
+                "If the source text for a question shows a different number, re-read it carefully — the source almost certainly has the stated count.");
+        }
 
         if (!string.IsNullOrWhiteSpace(instructions))
         {
