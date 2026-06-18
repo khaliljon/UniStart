@@ -709,6 +709,7 @@ export const en: Translations = {
       searchPlaceholder: 'Search by name or email...', searchBtn: 'Search',
       showDeleted: 'Show deleted', notFound: 'No users found',
       nameCol: 'Name', roleCol: 'Role', planCol: 'Plan', answersCol: 'Answers',
+      phoneCol: 'Phone',
       blocked: 'Blocked', deleted: 'Deleted', found: 'Found:',
       editTitle: 'Edit', profileTitle: 'User profile',
       nameLabel: 'Name', emailLabel: 'Email', roleLabel: 'Role',

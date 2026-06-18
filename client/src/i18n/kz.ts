@@ -709,6 +709,7 @@ export const kz: Translations = {
       searchPlaceholder: 'Аты немесе email бойынша іздеу...', searchBtn: 'Іздеу',
       showDeleted: 'Жойылғандарды көрсету', notFound: 'Пайдаланушылар табылмады',
       nameCol: 'Аты', roleCol: 'Рөлі', planCol: 'Тариф', answersCol: 'Жауаптар',
+      phoneCol: 'Телефон',
       blocked: 'Бұғатталған', deleted: 'Жойылған', found: 'Табылды:',
       editTitle: 'Өңдеу', profileTitle: 'Пайдаланушы профилі',
       nameLabel: 'Аты', emailLabel: 'Email', roleLabel: 'Рөлі',

@@ -1,10 +1,13 @@
 import { useState } from 'react';
 import { useAppSelector } from '../hooks/useAppSelector';
+import { useAppDispatch } from '../hooks/useAppDispatch';
 import { useTranslation } from '../hooks/useTranslation';
 import { authService } from '../services/authService';
+import { completeProfile } from '../store/slices/authSlice';
 
 function AdminProfilePage() {
   const { user } = useAppSelector((state) => state.auth);
+  const dispatch = useAppDispatch();
   const { t } = useTranslation();
 
   // Password change
@@ -14,6 +17,12 @@ function AdminProfilePage() {
   const [pwdError, setPwdError] = useState<string | null>(null);
   const [pwdSuccess, setPwdSuccess] = useState<string | null>(null);
   const [pwdLoading, setPwdLoading] = useState(false);
+
+  // Phone change
+  const [editPhone, setEditPhone] = useState(user?.phoneNumber || '+7');
+  const [phoneError, setPhoneError] = useState<string | null>(null);
+  const [phoneSuccess, setPhoneSuccess] = useState<string | null>(null);
+  const [phoneLoading, setPhoneLoading] = useState(false);
 
   // Email change
   const [newEmail, setNewEmail] = useState('');
@@ -47,6 +56,21 @@ function AdminProfilePage() {
       setPwdError(msg);
     } finally {
       setPwdLoading(false);
+    }
+  };
+
+  const handleChangePhone = async () => {
+    setPhoneError(null);
+    setPhoneSuccess(null);
+    if (!/^\+77\d{9}$/.test(editPhone)) { setPhoneError(t.auth.phoneInvalid); return; }
+    try {
+      setPhoneLoading(true);
+      await dispatch(completeProfile(editPhone)).unwrap();
+      setPhoneSuccess(t.common.save + ' ✓');
+    } catch (err: unknown) {
+      setPhoneError(typeof err === 'string' ? err : t.auth.phoneInvalid);
+    } finally {
+      setPhoneLoading(false);
     }
   };
 
@@ -175,10 +199,55 @@ function AdminProfilePage() {
         </div>
       </div>
 
+      {/* ─── Edit Phone ─── */}
+      <div className="card" style={{ padding: '1.5rem', marginBottom: '1.25rem' }}>
+        <h3 style={{ margin: '0 0 1rem', fontSize: '1rem' }}>{t.auth.phone}</h3>
+
+        {phoneError && (
+          <div style={{ color: 'var(--error-color)', marginBottom: '0.75rem', padding: '0.5rem 0.75rem', background: 'var(--error-bg)', borderRadius: '6px', fontSize: '0.85rem' }}>
+            {phoneError}
+          </div>
+        )}
+        {phoneSuccess && (
+          <div style={{ color: 'var(--success-color)', marginBottom: '0.75rem', padding: '0.5rem 0.75rem', background: 'rgba(16,185,129,0.08)', borderRadius: '6px', fontSize: '0.85rem' }}>
+            ✓ {phoneSuccess}
+          </div>
+        )}
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          <div>
+            <label style={{ display: 'block', marginBottom: '0.3rem', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+              {t.auth.phone}
+            </label>
+            <input
+              type="tel"
+              className="form-input"
+              value={editPhone}
+              onChange={e => {
+                let digits = e.target.value.replace(/\D/g, '');
+                if (digits.startsWith('8')) digits = '7' + digits.slice(1);
+                if (!digits.startsWith('7')) digits = '7' + digits;
+                setEditPhone('+' + digits.slice(0, 11));
+              }}
+              placeholder="+7 700 123 45 67"
+              maxLength={12}
+              style={{ width: '100%' }}
+            />
+          </div>
+          <button
+            className="btn btn-primary"
+            onClick={handleChangePhone}
+            disabled={phoneLoading || !editPhone}
+            style={{ alignSelf: 'flex-start', fontSize: '0.9rem' }}
+          >
+            {phoneLoading ? '...' : t.common.save}
+          </button>
+        </div>
+      </div>
+
       {/* ─── Change Email ─── */}
       <div className="card" style={{ padding: '1.5rem', marginBottom: '1.25rem' }}>
         <h3 style={{ margin: '0 0 1rem', fontSize: '1rem' }}>{t.profilePage.newEmail}</h3>
-
         {emailError && (
           <div style={{ color: 'var(--error-color)', marginBottom: '0.75rem', padding: '0.5rem 0.75rem', background: 'var(--error-bg)', borderRadius: '6px', fontSize: '0.85rem' }}>
             {emailError}

@@ -710,6 +710,7 @@ export const ru: Translations = {
       searchPlaceholder: 'Поиск по имени или email...', searchBtn: 'Поиск',
       showDeleted: 'Показать удалённых', notFound: 'Пользователи не найдены',
       nameCol: 'Имя', roleCol: 'Роль', planCol: 'Тариф', answersCol: 'Ответы',
+      phoneCol: 'Телефон',
       blocked: 'Заблокирован', deleted: 'Удалён', found: 'Найдено:',
       editTitle: 'Редактирование', profileTitle: 'Профиль пользователя',
       nameLabel: 'Имя', emailLabel: 'Email', roleLabel: 'Роль',

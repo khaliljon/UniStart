@@ -117,7 +117,8 @@ public record AdminUserDto(
     int CorrectAnswers,
     int TestSessions,
     int? SchoolId = null,
-    string? SchoolName = null
+    string? SchoolName = null,
+    string? PhoneNumber = null
 );
 
 public record AdminUpdateUserDto(

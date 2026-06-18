@@ -709,6 +709,7 @@ export interface Translations {
       allRoles: string; searchPlaceholder: string; searchBtn: string;
       showDeleted: string; notFound: string;
       nameCol: string; roleCol: string; planCol: string; answersCol: string;
+      phoneCol: string;
       blocked: string; deleted: string;
       found: string;
       editTitle: string; profileTitle: string;

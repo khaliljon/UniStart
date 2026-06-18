@@ -537,6 +537,7 @@ export interface AdminUser {
   testSessions: number;
   schoolId: number | null;
   schoolName: string | null;
+  phoneNumber: string | null;
 }
 
 export interface AdminUserStats {

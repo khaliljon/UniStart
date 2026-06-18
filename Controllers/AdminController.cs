@@ -585,6 +585,7 @@ public class AdminController : ControllerBase
             ("ID", (Func<AdminUserDto, string>)(u => u.Id.ToString())),
             ("Name", u => u.Name),
             ("Email", u => u.Email),
+            ("Phone", u => u.PhoneNumber ?? ""),
             ("Role", u => u.Role),
             ("Tier", u => u.SubscriptionTier),
             ("Blocked", u => u.IsBlocked ? "Yes" : "No"),

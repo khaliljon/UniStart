@@ -433,7 +433,8 @@ public class AdminService : IAdminService
                 CorrectAnswers: stats?.Correct ?? 0,
                 TestSessions: sessions,
                 SchoolId: u.SchoolId,
-                SchoolName: sName
+                SchoolName: sName,
+                PhoneNumber: u.PhoneNumber
             );
         }).ToList();
 
@@ -482,7 +483,8 @@ public class AdminService : IAdminService
             CorrectAnswers: correctAnswers,
             TestSessions: testSessions,
             SchoolId: user.SchoolId,
-            SchoolName: schoolName
+            SchoolName: schoolName,
+            PhoneNumber: user.PhoneNumber
         );
     }
 

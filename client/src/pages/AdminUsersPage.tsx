@@ -306,6 +306,7 @@ function AdminUsersPage() {
                   <th style={{ padding: '0.5rem' }}>ID</th>
                   <th style={{ padding: '0.5rem' }}>{t.admin.users.nameCol}</th>
                   <th style={{ padding: '0.5rem' }}>Email</th>
+                  <th style={{ padding: '0.5rem' }}>{t.admin.users.phoneCol}</th>
                   <th style={{ padding: '0.5rem' }}>{t.admin.users.roleCol}</th>
                   <th style={{ padding: '0.5rem' }}>{t.admin.users.planCol}</th>
                   <th style={{ padding: '0.5rem' }}>{t.admin.users.answersCol}</th>
@@ -332,6 +333,7 @@ function AdminUsersPage() {
                       {u.isDeleted && <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginLeft: '0.35rem' }} title={u.deletedAt ? `${t.admin.users.deleted} ${new Date(u.deletedAt).toLocaleDateString(getDateLocale())}` : t.admin.users.deleted}>[{t.admin.users.deleted}]</span>}
                     </td>
                     <td style={{ padding: '0.5rem', color: 'var(--text-secondary)' }}>{u.email}</td>
+                    <td style={{ padding: '0.5rem', color: 'var(--text-secondary)' }}>{u.phoneNumber || '—'}</td>
                     <td style={{ padding: '0.5rem' }}>
                       <span style={{
                         padding: '0.15rem 0.5rem',
