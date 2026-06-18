@@ -10,6 +10,10 @@ public class User : ISoftDeletable, IAuditable
     public string PasswordHash { get; set; } = string.Empty;
     public UserRole Role { get; set; } = UserRole.Student;
     public bool HasCompletedOnboarding { get; set; } = false;
+
+    // Contact phone (Kazakhstan format, e.g. +77001234567). Nullable for legacy users;
+    // they are forced to fill it in via the profile-completion gate on next login.
+    public string? PhoneNumber { get; set; }
     public SubscriptionTier SubscriptionTier { get; set; } = SubscriptionTier.Free;
     public DateTime? SubscriptionExpiresAt { get; set; }
     public bool FreeMockUsed { get; set; } = false;

@@ -287,4 +287,35 @@ public class AuthController : ControllerBase
             return NotFound(new { error = "User not found" });
         }
     }
+
+    /// <summary>
+    /// Set / update the phone number for the authenticated user.
+    /// Used both at registration and by the profile-completion gate for legacy users.
+    /// Returns a fresh auth payload so the client can clear the gate immediately.
+    /// </summary>
+    [HttpPost("complete-profile")]
+    [Authorize]
+    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> CompleteProfile([FromBody] UpdatePhoneDto dto)
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)
+                          ?? User.FindFirst("sub");
+        if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var userId))
+            return Unauthorized();
+
+        try
+        {
+            var result = await _authService.UpdatePhoneNumberAsync(userId, dto);
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound(new { error = "User not found" });
+        }
+    }
 }

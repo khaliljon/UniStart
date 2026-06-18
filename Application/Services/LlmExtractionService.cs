@@ -62,51 +62,36 @@ public class LlmExtractionService : ILlmExtractionService
 
             _logger.LogInformation("Starting LLM extraction with {Model}, text length: {Length} chars", _model, text.Length);
 
-            // Strategy: send the FULL text in each request but ask for different question ranges.
-            // DeepSeek input is 128K tokens (plenty for 10K chars), output limit is 8192 tokens.
-            // Each batch asks for ~15 questions. We always try at least 2 batches.
-            // After batch 2 we pass the already-extracted question summaries to avoid duplicates.
-
+            // Strategy: send the FULL text in each request and pull questions in batches.
+            // DeepSeek input is 128K tokens (plenty), output limit is 8192 tokens, so we
+            // cannot return 50+ questions in one response. We loop, passing a summary of
+            // already-extracted questions each round so the model only returns NEW ones,
+            // and stop when a round returns nothing new (or a short final batch). The number
+            // of questions is driven by the actual document, not a hardcoded count.
             const int batchSize = 15;
+            const int maxBatches = 12; // safety cap (~180 questions)
             var allQuestions = new List<ExtractedQuestion>();
 
-            // Batch 1: questions 1..15
-            _logger.LogInformation("LLM batch 1: extracting questions 1-{Max} from full text", batchSize);
-            var batch1 = await CallLlmApiAsync(text, 1, batchSize, null, instructions, ct);
-            _logger.LogInformation("LLM batch 1 yielded {Count} questions", batch1.Count);
-            allQuestions.AddRange(batch1);
-
-            // Always try batch 2 if batch 1 found anything
-            if (batch1.Count > 0)
+            for (int batch = 1; batch <= maxBatches; batch++)
             {
-                int nextStart = allQuestions.Count + 1;
-                int nextEnd = nextStart + batchSize - 1;
-                _logger.LogInformation("LLM batch 2: extracting questions {Start}-{End} from full text", nextStart, nextEnd);
-                // Pass summaries of already-extracted questions to avoid duplicates
-                var alreadyExtracted = BuildAlreadyExtractedSummary(allQuestions);
-                var batch2 = await CallLlmApiAsync(text, nextStart, nextEnd, alreadyExtracted, instructions, ct);
-                _logger.LogInformation("LLM batch 2 yielded {Count} questions", batch2.Count);
-                allQuestions.AddRange(batch2);
-
-                // Batch 3 only if batch 2 found >= batchSize results (i.e. there might be more)
-                if (batch2.Count >= batchSize)
+                var alreadyExtracted = allQuestions.Count > 0 ? BuildAlreadyExtractedSummary(allQuestions) : null;
+                var result = await CallLlmApiAsync(text, batchSize, alreadyExtracted, instructions, ct);
+                if (result.Count == 0)
                 {
-                    nextStart = allQuestions.Count + 1;
-                    nextEnd = nextStart + batchSize - 1;
-                    alreadyExtracted = BuildAlreadyExtractedSummary(allQuestions);
-                    _logger.LogInformation("LLM batch 3: extracting questions {Start}-{End} from full text", nextStart, nextEnd);
-                    var batch3 = await CallLlmApiAsync(text, nextStart, nextEnd, alreadyExtracted, instructions, ct);
-                    _logger.LogInformation("LLM batch 3 yielded {Count} questions", batch3.Count);
-                    allQuestions.AddRange(batch3);
+                    _logger.LogInformation("LLM batch {Batch} returned no questions — stopping", batch);
+                    break;
                 }
-            }
 
-            // Deduplicate questions by normalized text similarity
-            var beforeDedup = allQuestions.Count;
-            allQuestions = DeduplicateQuestions(allQuestions);
-            if (allQuestions.Count < beforeDedup)
-                _logger.LogInformation("Deduplication removed {Removed} duplicate(s): {Before} → {After}",
-                    beforeDedup - allQuestions.Count, beforeDedup, allQuestions.Count);
+                int before = allQuestions.Count;
+                allQuestions.AddRange(result);
+                allQuestions = DeduplicateQuestions(allQuestions);
+                int newlyAdded = allQuestions.Count - before;
+                _logger.LogInformation("LLM batch {Batch}: {Raw} returned, {New} new (total {Total})",
+                    batch, result.Count, newlyAdded, allQuestions.Count);
+
+                if (newlyAdded == 0) break;          // model is repeating itself → done
+                if (result.Count < batchSize) break;  // short batch → end of document
+            }
 
             _logger.LogInformation("LLM extracted {Count} questions total (after dedup)", allQuestions.Count);
             return allQuestions;
@@ -219,43 +204,35 @@ public class LlmExtractionService : ILlmExtractionService
         return set;
     }
 
-    private async Task<List<ExtractedQuestion>> CallLlmApiAsync(string text, int startNum, int endNum, string? alreadyExtracted, string? instructions, CancellationToken ct)
+    private async Task<List<ExtractedQuestion>> CallLlmApiAsync(string text, int batchSize, string? alreadyExtracted, string? instructions, CancellationToken ct)
     {
-        var systemPrompt = @"You are a math exam question extractor for a Chinese-to-Russian educational platform.
+        var systemPrompt = @"You are an exam-question extraction engine for an educational platform.
 
-INPUT: OCR text from a scanned Chinese math textbook (about 30 pages). It contains ~30 numbered exam questions mixed with textbook theory, definitions, and examples.
+INPUT: Raw text extracted from an exam file (PDF / DOCX / OCR). It may contain numbered exam or test questions, sometimes mixed with theory, examples, or instructions.
 
-YOUR TASK: Find ALL numbered exam/test questions in the text. This includes:
-- Multiple-choice questions (选择题) with A/B/C/D options
-- Fill-in-the-blank questions (填空题) 
-- Computation/proof questions (解答题/计算题)
+YOUR TASK: Extract the REAL exam questions exactly as they appear in the source, and output each as a multiple-choice question in JSON.
 
-For EVERY question you find, output it as multiple-choice with exactly 4 options (A, B, C, D):
-- If the original already has A/B/C/D options, keep them
-- If the original is fill-in-the-blank or computation, CREATE 4 plausible options (one correct, three wrong but mathematically plausible)
-- If a question has multiple sub-parts (e.g. (1) ... (2) ... (3) ...), extract EACH sub-part as a SEPARATE question with its own 4 options.
+CORE RULES (apply these UNLESS the ADMIN INSTRUCTIONS below override them):
+1. Faithfulness first. Do NOT invent, duplicate, split, or merge questions. One numbered question in the source = exactly one question in the output. If a question has labelled sub-parts (a)/(b) or (1)(2)(3) that belong to the same item, keep it as ONE question.
+2. Preserve the original number of answer options EXACTLY as written. If the source question has 5 options (A–E), output 5 options; if it has 4, output 4; if 2, output 2. Only create options when the source question genuinely has none.
+3. Mark exactly ONE option as correct. If the source marks the correct answer, use it; otherwise solve the problem to determine it.
+4. Keep the original wording and language of each question and its options. Translate ONLY if the ADMIN INSTRUCTIONS ask you to.
+5. Fix only obvious OCR/encoding artifacts. Use proper math Unicode where appropriate: ∈ ∉ ⊂ ⊆ ∪ ∩ ∁ ∅ ≤ ≥ ≠ √ π ℤ ℕ ℚ ℝ
+6. Skip non-questions: theory, definitions, examples, notes, properties, chapter headers, tables of contents.
+7. Keep explanations to one short sentence (or leave empty).
+8. Do NOT repeat any question listed as already extracted.
 
-SKIP: textbook definitions (定义), examples (例), notes (注), properties (性质), chapter headers, table of contents.
+The ADMIN INSTRUCTIONS (provided in the user message, if any) have ABSOLUTE priority over the core rules above. If they state the number of questions, the number of options per question, the language, difficulty, or formatting — follow them precisely.
 
-RULES:
-1. FIX OCR errors: 'e'/'€' → '∈', '¢' → '∉', 'ixeZ|' → '{x ∈ Z |', 'U' between sets → '∪', 'N' between sets → '∩', '[,'/(',' before U → '∁', 'ix|'/'1x|' → '{x|'
-2. Translate to clean Russian. Use math Unicode: ∈ ∉ ⊂ ⊆ ∪ ∩ ∁ ∅ ≤ ≥ ≠ √ π ℤ ℕ ℚ ℝ
-3. Exactly 4 options per question. Mark exactly ONE as correct.
-4. Solve each problem yourself carefully to determine the correct answer.
-5. Keep explanations to 1 short sentence.
-6. The text has approximately 30 questions total. Extract questions " + startNum + @" through " + endNum + @" (by order of appearance in the text).
-7. DO NOT repeat any question that was already extracted in a previous batch.
-
-JSON format:
-{""questions"":[{""q"":""Текст"",""options"":[{""text"":""вариант"",""correct"":false},{""text"":""вариант"",""correct"":true},{""text"":""вариант"",""correct"":false},{""text"":""вариант"",""correct"":false}],""explanation"":""Пояснение""}]}
+JSON format (the number of option objects must match the source):
+{""questions"":[{""q"":""..."",""options"":[{""text"":""..."",""correct"":false},{""text"":""..."",""correct"":true}],""explanation"":""...""}]}
 
 Return ONLY valid JSON.";
 
         var userPromptSb = new StringBuilder();
-        userPromptSb.AppendLine($"Extract exam questions #{startNum} through #{endNum} from this OCR text.");
-        userPromptSb.AppendLine("Include ALL question types (multiple-choice, fill-in-blank, computation) — convert non-MCQ to MCQ format with 4 options.");
-        userPromptSb.AppendLine("If a question has sub-parts like (1)(2)(3)..., split each sub-part into a separate question.");
-        userPromptSb.AppendLine("Skip textbook theory/definitions/examples.");
+        userPromptSb.AppendLine($"Extract exam questions from the document text below. Return up to {batchSize} questions in this response.");
+        userPromptSb.AppendLine("Preserve each question exactly as written, including its original number of answer options. Do NOT split, merge, or invent questions.");
+        userPromptSb.AppendLine("Skip theory, definitions, examples and headers.");
 
         if (!string.IsNullOrWhiteSpace(instructions))
         {
@@ -273,7 +250,7 @@ Return ONLY valid JSON.";
         }
 
         userPromptSb.AppendLine();
-        userPromptSb.AppendLine("OCR TEXT:");
+        userPromptSb.AppendLine("DOCUMENT TEXT:");
         userPromptSb.AppendLine(text);
 
         var requestBody = new

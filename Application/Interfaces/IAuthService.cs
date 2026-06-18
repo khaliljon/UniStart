@@ -10,6 +10,7 @@ public interface IAuthService
     Task<AuthResponseDto> VerifyEmailAsync(VerifyEmailDto dto);
     Task ResendVerificationCodeAsync(ResendCodeDto dto);
     Task<AuthResponseDto> GoogleLoginAsync(GoogleLoginDto dto);
+    Task<AuthResponseDto> UpdatePhoneNumberAsync(int userId, UpdatePhoneDto dto);
     Task<UserDto?> GetUserByIdAsync(int userId);
     Task<UserDto?> UpdateUserAsync(int userId, UpdateUserDto dto);
     Task ChangePasswordAsync(int userId, ChangePasswordDto dto);

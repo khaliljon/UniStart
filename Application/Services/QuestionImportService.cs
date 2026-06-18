@@ -65,23 +65,12 @@ public class QuestionImportService : IQuestionImportService
                 case "PDF":
                     var pdfText = _parser.ParsePdf(fileStream);
                     extracted = _extractor.ExtractFromText(pdfText);
-                    // LLM fallback: if regex extraction yields poor results on CJK/OCR text
-                    if (ShouldTryLlmExtraction(extracted, pdfText))
-                    {
-                        _logger.LogInformation("Regex extraction quality is low ({Count} questions, {WithOptions} with options). Trying LLM extraction...",
-                            extracted.Count, extracted.Count(q => q.Options.Count >= 2));
-                        var llmExtracted = await _llm.ExtractQuestionsAsync(pdfText, job.Instructions);
-                        if (llmExtracted.Count > 0 && QualityScore(llmExtracted) > QualityScore(extracted))
-                        {
-                            _logger.LogInformation("LLM extraction is better: {LlmCount} vs {RegexCount} questions. Using LLM results.",
-                                llmExtracted.Count, extracted.Count);
-                            extracted = llmExtracted;
-                        }
-                    }
+                    extracted = await MaybeUseLlmAsync(extracted, pdfText, job.Instructions);
                     break;
                 case "DOCX":
                     var docxText = _parser.ParseDocx(fileStream);
                     extracted = _extractor.ExtractFromText(docxText);
+                    extracted = await MaybeUseLlmAsync(extracted, docxText, job.Instructions);
                     break;
                 case "XLSX":
                 case "CSV":
@@ -493,22 +482,7 @@ public class QuestionImportService : IQuestionImportService
                         {
                             var regexQuestions = _extractor.ExtractFromText(text);
                             // LLM fallback for individual files with poor regex results
-                            if (ShouldTryLlmExtraction(regexQuestions, text))
-                            {
-                                _logger.LogInformation("Low quality regex extraction for '{FileName}' ({Count} questions, {WithOpts} with options). Trying LLM...",
-                                    entry.FileName, regexQuestions.Count, regexQuestions.Count(q => q.Options.Count >= 2));
-                                var llmResult = await _llm.ExtractQuestionsAsync(text, job.Instructions);
-                                if (llmResult.Count > 0 && QualityScore(llmResult) > QualityScore(regexQuestions))
-                                {
-                                    _logger.LogInformation("LLM result better for '{FileName}': {LlmCount} vs {RegexCount}. Using LLM.",
-                                        entry.FileName, llmResult.Count, regexQuestions.Count);
-                                    allQuestions.AddRange(llmResult);
-                                }
-                                else
-                                    allQuestions.AddRange(regexQuestions);
-                            }
-                            else
-                                allQuestions.AddRange(regexQuestions);
+                            allQuestions.AddRange(await MaybeUseLlmAsync(regexQuestions, text, job.Instructions));
                         }
                         // Also try topic detection from question files
                         if (!string.IsNullOrEmpty(text))
@@ -544,25 +518,7 @@ public class QuestionImportService : IQuestionImportService
                         else
                         {
                             var mixedRegex = _extractor.ExtractFromText(text);
-                            // LLM fallback for mixed files with poor regex
-                            if (ShouldTryLlmExtraction(mixedRegex, text))
-                            {
-                                var llmMixed = await _llm.ExtractQuestionsAsync(text, job.Instructions);
-                                if (llmMixed.Count > 0 && QualityScore(llmMixed) > QualityScore(mixedRegex))
-                                {
-                                    _logger.LogInformation("LLM result better for mixed '{FileName}': {LlmCount} vs {RegexCount}",
-                                        entry.FileName, llmMixed.Count, mixedRegex.Count);
-                                    allQuestions.AddRange(llmMixed);
-                                }
-                                else
-                                {
-                                    allQuestions.AddRange(mixedRegex);
-                                }
-                            }
-                            else
-                            {
-                                allQuestions.AddRange(mixedRegex);
-                            }
+                            allQuestions.AddRange(await MaybeUseLlmAsync(mixedRegex, text, job.Instructions));
                             var mixedKeys = _extractor.ExtractAnswerKeys(text);
                             foreach (var kv in mixedKeys)
                                 answerKeys.TryAdd(kv.Key, kv.Value);
@@ -738,6 +694,32 @@ public class QuestionImportService : IQuestionImportService
     // ═══════════════════════════════════════════════════════
     //  LLM QUALITY EVALUATION HELPERS
     // ═══════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Run the LLM extractor when it is likely to beat regex, or whenever the admin supplied
+    /// free-text instructions (an explicit signal they want AI-driven parsing). With instructions
+    /// present the LLM result is preferred outright; otherwise it only wins on quality score.
+    /// </summary>
+    private async Task<List<ExtractedQuestion>> MaybeUseLlmAsync(List<ExtractedQuestion> regexResults, string text, string? instructions)
+    {
+        bool hasInstructions = !string.IsNullOrWhiteSpace(instructions);
+        bool useLlm = _llm.IsConfigured && (hasInstructions || ShouldTryLlmExtraction(regexResults, text));
+        if (!useLlm) return regexResults;
+
+        _logger.LogInformation("Running LLM extraction (instructions={HasInstr}, regex={RegexCount} questions)...",
+            hasInstructions, regexResults.Count);
+        var llmExtracted = await _llm.ExtractQuestionsAsync(text, instructions);
+        if (llmExtracted.Count == 0) return regexResults;
+
+        // With admin instructions, trust the LLM; without, only switch if it's measurably better.
+        if (hasInstructions || QualityScore(llmExtracted) > QualityScore(regexResults))
+        {
+            _logger.LogInformation("Using LLM results: {LlmCount} questions (regex had {RegexCount})",
+                llmExtracted.Count, regexResults.Count);
+            return llmExtracted;
+        }
+        return regexResults;
+    }
 
     /// <summary>
     /// Decide whether to try LLM extraction as a fallback.

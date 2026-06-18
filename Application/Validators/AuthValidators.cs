@@ -36,6 +36,10 @@ public class RegisterDtoValidator : AbstractValidator<RegisterDto>
             .Matches("[a-z]").WithMessage("Password must contain at least one lowercase letter.")
             .Matches("[0-9]").WithMessage("Password must contain at least one digit.")
             .Matches("[^a-zA-Z0-9]").WithMessage("Password must contain at least one special character.");
+
+        RuleFor(x => x.PhoneNumber)
+            .NotEmpty().WithMessage("Phone number is required.")
+            .Matches(@"^\+77\d{9}$").WithMessage("Phone must be a Kazakhstan number in the format +77XXXXXXXXX.");
     }
 }
 
@@ -53,6 +57,20 @@ public class LoginDtoValidator : AbstractValidator<LoginDto>
 
         RuleFor(x => x.Password)
             .NotEmpty().WithMessage("Password is required.");
+    }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  UPDATE PHONE (profile completion)
+// ═══════════════════════════════════════════════════════════
+
+public class UpdatePhoneDtoValidator : AbstractValidator<UpdatePhoneDto>
+{
+    public UpdatePhoneDtoValidator()
+    {
+        RuleFor(x => x.PhoneNumber)
+            .NotEmpty().WithMessage("Phone number is required.")
+            .Matches(@"^\+77\d{9}$").WithMessage("Phone must be a Kazakhstan number in the format +77XXXXXXXXX.");
     }
 }
 

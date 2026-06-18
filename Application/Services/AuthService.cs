@@ -86,7 +86,8 @@ public class AuthService : IAuthService
                     existingUser.EmailVerified,
                     restoredToken,
                     restoredExpiresAt,
-                    restoredSub
+                    restoredSub,
+                    existingUser.PhoneNumber
                 );
             }
 
@@ -124,7 +125,8 @@ public class AuthService : IAuthService
                     existingUser.EmailVerified,
                     reToken,
                     reExpiresAt,
-                    reSub
+                    reSub,
+                    existingUser.PhoneNumber
                 );
             }
 
@@ -188,6 +190,7 @@ public class AuthService : IAuthService
             LastName = lastName,
             Name = $"{firstName} {lastName}".Trim(),
             PasswordHash = BC.HashPassword(dto.Password),
+            PhoneNumber = dto.PhoneNumber?.Trim(),
             Role = role,
             SchoolId = schoolId,
             CreatedAt = DateTime.UtcNow,
@@ -410,7 +413,8 @@ public class AuthService : IAuthService
             user.EmailVerified,
             token,
             expiresAt,
-            subdomain
+            subdomain,
+            user.PhoneNumber
         );
     }
 
@@ -467,7 +471,8 @@ public class AuthService : IAuthService
             user.EmailVerified,
             token,
             expiresAt,
-            loginSub
+            loginSub,
+            user.PhoneNumber
         );
     }
 
@@ -493,7 +498,8 @@ public class AuthService : IAuthService
             user.EmailVerified,
             token,
             expiresAt,
-            refreshSub
+            refreshSub,
+            user.PhoneNumber
         );
     }
 
@@ -529,7 +535,8 @@ public class AuthService : IAuthService
             user.Id, user.Email, user.FirstName, user.LastName, user.Name, user.Role.ToString(),
             user.HasCompletedOnboarding, user.SubscriptionTier.ToString(),
             user.SubscriptionExpiresAt, user.EmailVerified, token, expiresAt,
-            verifySub
+            verifySub,
+            user.PhoneNumber
         );
     }
 
@@ -619,7 +626,32 @@ public class AuthService : IAuthService
             user.Id, user.Email, user.FirstName, user.LastName, user.Name, user.Role.ToString(),
             user.HasCompletedOnboarding, user.SubscriptionTier.ToString(),
             user.SubscriptionExpiresAt, user.EmailVerified, token, expiresAt,
-            googleSub
+            googleSub,
+            user.PhoneNumber
+        );
+    }
+
+    public async Task<AuthResponseDto> UpdatePhoneNumberAsync(int userId, UpdatePhoneDto dto)
+    {
+        var user = await _context.Users.FindAsync(userId)
+            ?? throw new KeyNotFoundException("User not found");
+
+        var phone = dto.PhoneNumber.Trim();
+        if (!System.Text.RegularExpressions.Regex.IsMatch(phone, @"^\+77\d{9}$"))
+            throw new InvalidOperationException("Phone must be a Kazakhstan number in the format +77XXXXXXXXX.");
+
+        user.PhoneNumber = phone;
+        await _unitOfWork.SaveChangesAsync();
+
+        var token = _jwtService.GenerateToken(user);
+        var expiresAt = DateTime.UtcNow.AddHours(24);
+        var phoneSub = await GetSchoolSubdomainAsync(user);
+        return new AuthResponseDto(
+            user.Id, user.Email, user.FirstName, user.LastName, user.Name, user.Role.ToString(),
+            user.HasCompletedOnboarding, user.SubscriptionTier.ToString(),
+            user.SubscriptionExpiresAt, user.EmailVerified, token, expiresAt,
+            phoneSub,
+            user.PhoneNumber
         );
     }
 

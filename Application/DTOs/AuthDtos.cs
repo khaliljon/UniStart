@@ -8,6 +8,7 @@ public record RegisterDto(
     [Required][MinLength(2)] string FirstName,
     [Required][MinLength(2)] string LastName,
     [Required][MinLength(10)] string Password,
+    string? PhoneNumber = null,  // Kazakhstan format +77XXXXXXXXX (required; enforced by validator)
     string? Role = null,
     string? SchoolSlug = null,
     int? ApplyToSchoolId = null,  // Tutor: submit application to join this school on registration
@@ -34,7 +35,8 @@ public record AuthResponseDto(
     bool EmailVerified,
     string Token,
     DateTime ExpiresAt,
-    string? SchoolSubdomain = null
+    string? SchoolSubdomain = null,
+    string? PhoneNumber = null
 );
 
 public record VerifyEmailDto(
@@ -48,6 +50,10 @@ public record ResendCodeDto(
 
 public record GoogleLoginDto(
     [Required] string IdToken
+);
+
+public record UpdatePhoneDto(
+    [Required] string PhoneNumber
 );
 
 public record ChangePasswordDto(
