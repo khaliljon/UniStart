@@ -30,7 +30,7 @@ public class QuestionImportService : IQuestionImportService
     }
 
     public async Task<QuestionImportJobDto> CreateImportJobAsync(
-        int adminUserId, string fileName, string fileType, string examTypeCode, int? sectionId)
+        int adminUserId, string fileName, string fileType, string examTypeCode, int? sectionId, int? topicId, string? instructions)
     {
         var job = new QuestionImportJob
         {
@@ -39,6 +39,8 @@ public class QuestionImportService : IQuestionImportService
             FileType = fileType.ToUpper(),
             ExamTypeCode = examTypeCode,
             SectionId = sectionId,
+            TopicId = topicId,
+            Instructions = instructions,
             Status = ImportJobStatus.Pending
         };
         _db.QuestionImportJobs.Add(job);
@@ -68,7 +70,7 @@ public class QuestionImportService : IQuestionImportService
                     {
                         _logger.LogInformation("Regex extraction quality is low ({Count} questions, {WithOptions} with options). Trying LLM extraction...",
                             extracted.Count, extracted.Count(q => q.Options.Count >= 2));
-                        var llmExtracted = await _llm.ExtractQuestionsAsync(pdfText);
+                        var llmExtracted = await _llm.ExtractQuestionsAsync(pdfText, job.Instructions);
                         if (llmExtracted.Count > 0 && QualityScore(llmExtracted) > QualityScore(extracted))
                         {
                             _logger.LogInformation("LLM extraction is better: {LlmCount} vs {RegexCount} questions. Using LLM results.",
@@ -90,12 +92,19 @@ public class QuestionImportService : IQuestionImportService
                     throw new ArgumentException($"Unsupported file type: {job.FileType}");
             }
 
-            // Auto-assign topic if section is provided
+            // Resolve the default topic for every extracted question.
+            // An explicitly chosen topic wins; otherwise fall back to the first topic of the section.
             int? defaultTopicId = null;
-            if (job.SectionId.HasValue)
+            if (job.TopicId.HasValue)
+            {
+                var topicExists = await _db.Topics.AnyAsync(t => t.Id == job.TopicId.Value);
+                if (topicExists) defaultTopicId = job.TopicId.Value;
+            }
+            if (defaultTopicId == null && job.SectionId.HasValue)
             {
                 var topic = await _db.Topics
                     .Where(t => t.SectionId == job.SectionId.Value)
+                    .OrderBy(t => t.SortOrder)
                     .FirstOrDefaultAsync();
                 defaultTopicId = topic?.Id;
             }
@@ -369,7 +378,7 @@ public class QuestionImportService : IQuestionImportService
     // ── Mapping helpers ──────────────────────────────────────
 
     private QuestionImportJobDto MapJob(QuestionImportJob j) => new(
-        j.Id, j.FileName, j.FileType, j.ExamTypeCode, j.SectionId,
+        j.Id, j.FileName, j.FileType, j.ExamTypeCode, j.SectionId, j.TopicId,
         j.Status.ToString(), j.CreatedAt, j.CompletedAt,
         j.TotalExtracted, j.TotalApproved, j.TotalRejected, j.ErrorMessage,
         j.Instructions,
@@ -393,7 +402,7 @@ public class QuestionImportService : IQuestionImportService
     // ══════════════════════════════════════════════════════════
 
     public async Task<QuestionImportJobDto> CreateMultiFileImportJobAsync(
-        int adminUserId, string examTypeCode, int? sectionId, string? instructions)
+        int adminUserId, string examTypeCode, int? sectionId, int? topicId, string? instructions)
     {
         var job = new QuestionImportJob
         {
@@ -402,6 +411,7 @@ public class QuestionImportService : IQuestionImportService
             FileType = "MULTI",
             ExamTypeCode = examTypeCode,
             SectionId = sectionId,
+            TopicId = topicId,
             Instructions = instructions,
             Status = ImportJobStatus.Pending
         };
@@ -487,7 +497,7 @@ public class QuestionImportService : IQuestionImportService
                             {
                                 _logger.LogInformation("Low quality regex extraction for '{FileName}' ({Count} questions, {WithOpts} with options). Trying LLM...",
                                     entry.FileName, regexQuestions.Count, regexQuestions.Count(q => q.Options.Count >= 2));
-                                var llmResult = await _llm.ExtractQuestionsAsync(text);
+                                var llmResult = await _llm.ExtractQuestionsAsync(text, job.Instructions);
                                 if (llmResult.Count > 0 && QualityScore(llmResult) > QualityScore(regexQuestions))
                                 {
                                     _logger.LogInformation("LLM result better for '{FileName}': {LlmCount} vs {RegexCount}. Using LLM.",
@@ -537,7 +547,7 @@ public class QuestionImportService : IQuestionImportService
                             // LLM fallback for mixed files with poor regex
                             if (ShouldTryLlmExtraction(mixedRegex, text))
                             {
-                                var llmMixed = await _llm.ExtractQuestionsAsync(text);
+                                var llmMixed = await _llm.ExtractQuestionsAsync(text, job.Instructions);
                                 if (llmMixed.Count > 0 && QualityScore(llmMixed) > QualityScore(mixedRegex))
                                 {
                                     _logger.LogInformation("LLM result better for mixed '{FileName}': {LlmCount} vs {RegexCount}",
@@ -642,12 +652,18 @@ public class QuestionImportService : IQuestionImportService
                 }
             }
 
-            // 4. Fallback topic: first topic in the section
+            // 4. Fallback topic: explicit chosen topic, else first topic in the section
             int? defaultTopicId = null;
-            if (job.SectionId.HasValue)
+            if (job.TopicId.HasValue)
+            {
+                var topicExists = await _db.Topics.AnyAsync(t => t.Id == job.TopicId.Value);
+                if (topicExists) defaultTopicId = job.TopicId.Value;
+            }
+            if (defaultTopicId == null && job.SectionId.HasValue)
             {
                 var topic = await _db.Topics
                     .Where(t => t.SectionId == job.SectionId.Value)
+                    .OrderBy(t => t.SortOrder)
                     .FirstOrDefaultAsync();
                 defaultTopicId = topic?.Id;
             }
@@ -672,8 +688,11 @@ public class QuestionImportService : IQuestionImportService
                     _ => 0.0
                 };
 
-                // Determine topic for this question
-                int? topicId = topicMap.GetValueOrDefault(questionNum) ?? defaultTopicId;
+                // Determine topic for this question.
+                // An explicitly chosen topic forces every question into it; otherwise use auto-detected mapping with section fallback.
+                int? topicId = job.TopicId.HasValue && defaultTopicId == job.TopicId.Value
+                    ? defaultTopicId
+                    : topicMap.GetValueOrDefault(questionNum) ?? defaultTopicId;
 
                 var draft = new ImportedQuestionDraft
                 {

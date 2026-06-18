@@ -16,5 +16,6 @@ public interface ILlmExtractionService
     /// Extract structured questions from raw text using LLM.
     /// Returns a list of cleanly parsed questions with options, answers, and explanations.
     /// </summary>
-    Task<List<ExtractedQuestion>> ExtractQuestionsAsync(string text, CancellationToken ct = default);
+    /// <param name="instructions">Optional admin-provided context/instructions (e.g. expected question count, "add explanations where missing").</param>
+    Task<List<ExtractedQuestion>> ExtractQuestionsAsync(string text, string? instructions = null, CancellationToken ct = default);
 }

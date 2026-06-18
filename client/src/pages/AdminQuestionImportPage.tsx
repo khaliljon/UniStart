@@ -1,6 +1,8 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { questionImportService } from '../services/questionImportService';
 import type { QuestionImportJob, ImportedQuestionDraft, UpdateDraftPayload, FileRole, BatchFileEntry } from '../services/questionImportService';
+import adminService from '../services/adminService';
+import type { AdminSection, AdminTopicSummary } from '../types';
 import { useTranslation } from '../hooks/useTranslation';
 
 const EXAM_TYPES = ['SAT', 'NUET'];
@@ -34,6 +36,12 @@ function AdminQuestionImportPage({ embedded = false }: { embedded?: boolean } = 
   const [editForm, setEditForm] = useState<UpdateDraftPayload>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Section / topic targeting
+  const [sections, setSections] = useState<AdminSection[]>([]);
+  const [topics, setTopics] = useState<AdminTopicSummary[]>([]);
+  const [sectionId, setSectionId] = useState<number | ''>('');
+  const [topicId, setTopicId] = useState<number | ''>('');
+
   // Multi-file state
   const [batchFiles, setBatchFiles] = useState<BatchFileEntry[]>([]);
   const [instructions, setInstructions] = useState('');
@@ -61,6 +69,24 @@ function AdminQuestionImportPage({ embedded = false }: { embedded?: boolean } = 
     loadJobs();
   }, [loadJobs]);
 
+  // Load sections + topics once for the targeting dropdowns.
+  useEffect(() => {
+    adminService.getSections().then(setSections).catch(() => { /* non-fatal */ });
+    adminService.getTopics().then(setTopics).catch(() => { /* non-fatal */ });
+  }, []);
+
+  // Reset section/topic when exam changes.
+  useEffect(() => {
+    setSectionId('');
+    setTopicId('');
+  }, [examTypeCode]);
+
+  const sectionsForExam = sections.filter(s => s.examTypeCode === examTypeCode);
+  const selectedSection = sections.find(s => s.id === sectionId);
+  const topicsForSection = selectedSection
+    ? topics.filter(tp => tp.examTypeCode === examTypeCode && tp.sectionName === selectedSection.name)
+    : [];
+
   useEffect(() => {
     if (selectedJob) loadDrafts(selectedJob.id);
   }, [selectedJob, loadDrafts]);
@@ -70,7 +96,13 @@ function AdminQuestionImportPage({ embedded = false }: { embedded?: boolean } = 
     setIsUploading(true);
     setError(null);
     try {
-      const job = await questionImportService.upload(file, examTypeCode);
+      const job = await questionImportService.upload(
+        file,
+        examTypeCode,
+        sectionId === '' ? undefined : sectionId,
+        topicId === '' ? undefined : topicId,
+        instructions || undefined,
+      );
       await loadJobs();
       setSelectedJob(job);
     } catch (err: unknown) {
@@ -108,7 +140,13 @@ function AdminQuestionImportPage({ embedded = false }: { embedded?: boolean } = 
     setIsUploading(true);
     setError(null);
     try {
-      const job = await questionImportService.uploadBatch(batchFiles, examTypeCode, undefined, instructions || undefined);
+      const job = await questionImportService.uploadBatch(
+        batchFiles,
+        examTypeCode,
+        sectionId === '' ? undefined : sectionId,
+        topicId === '' ? undefined : topicId,
+        instructions || undefined,
+      );
       await loadJobs();
       setSelectedJob(job);
       setBatchFiles([]);
@@ -252,6 +290,46 @@ function AdminQuestionImportPage({ embedded = false }: { embedded?: boolean } = 
           </div>
           <div>
             <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.25rem' }}>
+              {t.admin.questionImport.sectionLabel}
+            </label>
+            <select
+              value={sectionId}
+              onChange={e => { setSectionId(e.target.value === '' ? '' : Number(e.target.value)); setTopicId(''); }}
+              style={{
+                padding: '0.5rem 0.75rem', borderRadius: '0.5rem',
+                border: '1px solid var(--border-color)', background: 'var(--card-background)',
+                color: 'var(--text-primary)', fontSize: '0.9rem', minWidth: '160px',
+              }}
+            >
+              <option value="">{t.admin.questionImport.sectionAuto}</option>
+              {sectionsForExam.map(s => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.25rem' }}>
+              {t.admin.questionImport.topicLabel}
+            </label>
+            <select
+              value={topicId}
+              onChange={e => setTopicId(e.target.value === '' ? '' : Number(e.target.value))}
+              disabled={sectionId === ''}
+              style={{
+                padding: '0.5rem 0.75rem', borderRadius: '0.5rem',
+                border: '1px solid var(--border-color)', background: 'var(--card-background)',
+                color: 'var(--text-primary)', fontSize: '0.9rem', minWidth: '180px',
+                opacity: sectionId === '' ? 0.5 : 1,
+              }}
+            >
+              <option value="">{t.admin.questionImport.topicAuto}</option>
+              {topicsForSection.map(tp => (
+                <option key={tp.id} value={tp.id}>#{tp.id} · {tp.name}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.25rem' }}>
               {t.admin.questionImport.modeLabel}
             </label>
             <div style={{ display: 'flex', gap: '0.25rem' }}>
@@ -271,6 +349,28 @@ function AdminQuestionImportPage({ embedded = false }: { embedded?: boolean } = 
               </button>
             </div>
           </div>
+        </div>
+
+        {/* Shared context / prompt for the parser (applies to single and multi modes) */}
+        <div style={{ marginBottom: '1rem' }}>
+          <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.25rem' }}>
+            {t.admin.questionImport.contextLabel}
+          </label>
+          <textarea
+            value={instructions}
+            onChange={e => setInstructions(e.target.value)}
+            placeholder={t.admin.questionImport.contextPlaceholder}
+            rows={3}
+            style={{
+              width: '100%', padding: '0.5rem 0.75rem', fontSize: '0.9rem',
+              borderRadius: '0.5rem', border: '1px solid var(--border-color)',
+              background: 'var(--card-background)', color: 'var(--text-primary)',
+              fontFamily: 'inherit', resize: 'vertical',
+            }}
+          />
+          <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '0.35rem', lineHeight: 1.4 }}>
+            {t.admin.questionImport.contextHint}
+          </p>
         </div>
 
         {uploadMode === 'single' ? (
@@ -400,25 +500,6 @@ function AdminQuestionImportPage({ embedded = false }: { embedded?: boolean } = 
                 ))}
               </div>
             )}
-
-            {/* Instructions textarea */}
-            <div style={{ marginBottom: '1rem' }}>
-              <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.25rem' }}>
-                {t.admin.questionImport.contextLabel}
-              </label>
-              <textarea
-                value={instructions}
-                onChange={e => setInstructions(e.target.value)}
-                placeholder="Например: файл «Questions.pdf» содержит вопросы 1-30, файл «Answers.pdf» — ключи ответов. Разбить по темам: 1-10 алгебра, 11-20 геометрия, 21-30 статистика."
-                rows={3}
-                style={{
-                  width: '100%', padding: '0.5rem 0.75rem', fontSize: '0.9rem',
-                  borderRadius: '0.5rem', border: '1px solid var(--border-color)',
-                  background: 'var(--card-background)', color: 'var(--text-primary)',
-                  fontFamily: 'inherit', resize: 'vertical',
-                }}
-              />
-            </div>
 
             {/* Upload button */}
             <button

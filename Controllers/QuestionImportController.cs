@@ -28,7 +28,9 @@ public class QuestionImportController : ControllerBase
     public async Task<IActionResult> Upload(
         IFormFile file,
         [FromForm] string examTypeCode,
-        [FromForm] int? sectionId = null)
+        [FromForm] int? sectionId = null,
+        [FromForm] int? topicId = null,
+        [FromForm] string? instructions = null)
     {
         if (file == null || file.Length == 0)
             return BadRequest(new { error = "No file uploaded" });
@@ -47,7 +49,7 @@ public class QuestionImportController : ControllerBase
             return BadRequest(new { error = $"Unsupported file format: {ext}. Supported: PDF, DOCX, XLSX, CSV" });
 
         var adminId = GetAdminId();
-        var job = await _importService.CreateImportJobAsync(adminId, file.FileName, fileType, examTypeCode, sectionId);
+        var job = await _importService.CreateImportJobAsync(adminId, file.FileName, fileType, examTypeCode, sectionId, topicId, instructions);
 
         // Process synchronously for now (can be moved to Hangfire for large files)
         using var stream = file.OpenReadStream();
@@ -66,6 +68,7 @@ public class QuestionImportController : ControllerBase
         [FromForm] string examTypeCode,
         [FromForm] string fileRoles,  // comma-separated: "Questions,Answers,Mixed"
         [FromForm] int? sectionId = null,
+        [FromForm] int? topicId = null,
         [FromForm] string? instructions = null)
     {
         if (files == null || files.Count == 0)
@@ -84,7 +87,7 @@ public class QuestionImportController : ControllerBase
         }
 
         var adminId = GetAdminId();
-        var job = await _importService.CreateMultiFileImportJobAsync(adminId, examTypeCode, sectionId, instructions);
+        var job = await _importService.CreateMultiFileImportJobAsync(adminId, examTypeCode, sectionId, topicId, instructions);
 
         // Build file entries
         var entries = new List<ImportFileEntry>();

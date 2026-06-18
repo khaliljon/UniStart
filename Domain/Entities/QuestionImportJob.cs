@@ -8,6 +8,10 @@ public class QuestionImportJob
     public string FileType { get; set; } = string.Empty; // "PDF", "DOCX", "XLSX", "CSV", "MULTI"
     public string ExamTypeCode { get; set; } = string.Empty;
     public int? SectionId { get; set; }
+
+    /// <summary>Optional explicit target topic. When set, all extracted questions default to this topic.</summary>
+    public int? TopicId { get; set; }
+
     public ImportJobStatus Status { get; set; } = ImportJobStatus.Pending;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? CompletedAt { get; set; }

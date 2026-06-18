@@ -8,6 +8,7 @@ public record QuestionImportJobDto(
     string FileType,
     string ExamTypeCode,
     int? SectionId,
+    int? TopicId,
     string Status,
     DateTime CreatedAt,
     DateTime? CompletedAt,

@@ -42,7 +42,7 @@ public class LlmExtractionService : ILlmExtractionService
         _baseUrl = (section["BaseUrl"] ?? "https://api.deepseek.com").TrimEnd('/');
     }
 
-    public async Task<List<ExtractedQuestion>> ExtractQuestionsAsync(string text, CancellationToken ct = default)
+    public async Task<List<ExtractedQuestion>> ExtractQuestionsAsync(string text, string? instructions = null, CancellationToken ct = default)
     {
         if (!IsConfigured)
         {
@@ -72,7 +72,7 @@ public class LlmExtractionService : ILlmExtractionService
 
             // Batch 1: questions 1..15
             _logger.LogInformation("LLM batch 1: extracting questions 1-{Max} from full text", batchSize);
-            var batch1 = await CallLlmApiAsync(text, 1, batchSize, null, ct);
+            var batch1 = await CallLlmApiAsync(text, 1, batchSize, null, instructions, ct);
             _logger.LogInformation("LLM batch 1 yielded {Count} questions", batch1.Count);
             allQuestions.AddRange(batch1);
 
@@ -84,7 +84,7 @@ public class LlmExtractionService : ILlmExtractionService
                 _logger.LogInformation("LLM batch 2: extracting questions {Start}-{End} from full text", nextStart, nextEnd);
                 // Pass summaries of already-extracted questions to avoid duplicates
                 var alreadyExtracted = BuildAlreadyExtractedSummary(allQuestions);
-                var batch2 = await CallLlmApiAsync(text, nextStart, nextEnd, alreadyExtracted, ct);
+                var batch2 = await CallLlmApiAsync(text, nextStart, nextEnd, alreadyExtracted, instructions, ct);
                 _logger.LogInformation("LLM batch 2 yielded {Count} questions", batch2.Count);
                 allQuestions.AddRange(batch2);
 
@@ -95,7 +95,7 @@ public class LlmExtractionService : ILlmExtractionService
                     nextEnd = nextStart + batchSize - 1;
                     alreadyExtracted = BuildAlreadyExtractedSummary(allQuestions);
                     _logger.LogInformation("LLM batch 3: extracting questions {Start}-{End} from full text", nextStart, nextEnd);
-                    var batch3 = await CallLlmApiAsync(text, nextStart, nextEnd, alreadyExtracted, ct);
+                    var batch3 = await CallLlmApiAsync(text, nextStart, nextEnd, alreadyExtracted, instructions, ct);
                     _logger.LogInformation("LLM batch 3 yielded {Count} questions", batch3.Count);
                     allQuestions.AddRange(batch3);
                 }
@@ -219,7 +219,7 @@ public class LlmExtractionService : ILlmExtractionService
         return set;
     }
 
-    private async Task<List<ExtractedQuestion>> CallLlmApiAsync(string text, int startNum, int endNum, string? alreadyExtracted, CancellationToken ct)
+    private async Task<List<ExtractedQuestion>> CallLlmApiAsync(string text, int startNum, int endNum, string? alreadyExtracted, string? instructions, CancellationToken ct)
     {
         var systemPrompt = @"You are a math exam question extractor for a Chinese-to-Russian educational platform.
 
@@ -256,6 +256,13 @@ Return ONLY valid JSON.";
         userPromptSb.AppendLine("Include ALL question types (multiple-choice, fill-in-blank, computation) — convert non-MCQ to MCQ format with 4 options.");
         userPromptSb.AppendLine("If a question has sub-parts like (1)(2)(3)..., split each sub-part into a separate question.");
         userPromptSb.AppendLine("Skip textbook theory/definitions/examples.");
+
+        if (!string.IsNullOrWhiteSpace(instructions))
+        {
+            userPromptSb.AppendLine();
+            userPromptSb.AppendLine("⭐ ADMIN INSTRUCTIONS (highest priority — follow these closely):");
+            userPromptSb.AppendLine(instructions.Trim());
+        }
 
         if (!string.IsNullOrWhiteSpace(alreadyExtracted))
         {

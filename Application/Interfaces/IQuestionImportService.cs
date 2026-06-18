@@ -37,11 +37,11 @@ public record ImportFileEntry(Stream Stream, string FileName, string FileType, s
 /// <summary>Manages the question import workflow</summary>
 public interface IQuestionImportService
 {
-    Task<QuestionImportJobDto> CreateImportJobAsync(int adminUserId, string fileName, string fileType, string examTypeCode, int? sectionId);
+    Task<QuestionImportJobDto> CreateImportJobAsync(int adminUserId, string fileName, string fileType, string examTypeCode, int? sectionId, int? topicId, string? instructions);
     Task ProcessImportJobAsync(int jobId, Stream fileStream);
 
     /// <summary>Create a multi-file import job with context instructions</summary>
-    Task<QuestionImportJobDto> CreateMultiFileImportJobAsync(int adminUserId, string examTypeCode, int? sectionId, string? instructions);
+    Task<QuestionImportJobDto> CreateMultiFileImportJobAsync(int adminUserId, string examTypeCode, int? sectionId, int? topicId, string? instructions);
 
     /// <summary>Process all files in a multi-file import job, cross-matching answers with questions</summary>
     Task ProcessMultiFileImportAsync(int jobId, List<ImportFileEntry> files);

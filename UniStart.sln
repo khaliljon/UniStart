@@ -11,6 +11,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{7FDF7A4A-5
 		Confidential.md = Confidential.md
 		Diploma.md = Diploma.md
 		DiplomaEx.md = DiplomaEx.md
+		M1.1.md = M1.1.md
 		README.md = README.md
 		Referal.md = Referal.md
 	EndProjectSection

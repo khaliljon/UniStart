@@ -8,6 +8,7 @@ export interface QuestionImportJob {
   fileType: string;
   examTypeCode: string;
   sectionId: number | null;
+  topicId: number | null;
   status: string;
   createdAt: string;
   completedAt: string | null;
@@ -72,13 +73,16 @@ export interface UpdateDraftPayload {
 // ─── API Service ────────────────────────────────────────────
 
 export const questionImportService = {
-  async upload(file: File, examTypeCode: string, sectionId?: number): Promise<QuestionImportJob> {
+  async upload(file: File, examTypeCode: string, sectionId?: number, topicId?: number, instructions?: string): Promise<QuestionImportJob> {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('examTypeCode', examTypeCode);
     if (sectionId != null) formData.append('sectionId', String(sectionId));
+    if (topicId != null) formData.append('topicId', String(topicId));
+    if (instructions) formData.append('instructions', instructions);
     const resp = await api.post<QuestionImportJob>('/admin/question-import/upload', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 600000, // 10 minutes — OCR + LLM extraction can be slow
     });
     return resp.data;
   },
@@ -87,6 +91,7 @@ export const questionImportService = {
     entries: BatchFileEntry[],
     examTypeCode: string,
     sectionId?: number,
+    topicId?: number,
     instructions?: string,
   ): Promise<QuestionImportJob> {
     const formData = new FormData();
@@ -96,6 +101,7 @@ export const questionImportService = {
     formData.append('examTypeCode', examTypeCode);
     formData.append('fileRoles', entries.map(e => e.role).join(','));
     if (sectionId != null) formData.append('sectionId', String(sectionId));
+    if (topicId != null) formData.append('topicId', String(topicId));
     if (instructions) formData.append('instructions', instructions);
     const resp = await api.post<QuestionImportJob>('/admin/question-import/upload-batch', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },

@@ -785,12 +785,14 @@ export interface Translations {
     questionImport: {
       title: string; subtitle: string;
       examLabel: string; modeLabel: string;
+      sectionLabel: string; sectionAuto: string;
+      topicLabel: string; topicAuto: string;
       singleFile: string; multiFile: string;
       processing: string; dropzone: string; dropzoneHint: string;
       addFiles: string; addFilesHint: string;
       roleQuestions: string; roleAnswers: string; roleMixed: string;
       removeFile: string;
-      contextLabel: string;
+      contextLabel: string; contextPlaceholder: string; contextHint: string;
       processBtn: string; processFiles: string;
       historyTitle: string; clearAll: string;
       deleteImportConfirm: string; clearAllConfirm: string;
