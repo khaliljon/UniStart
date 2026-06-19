@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Asp.Versioning;
 using UniStart.Application.DTOs;
 using UniStart.Application.Interfaces;
+using UniStart.Domain.Entities;
 
 namespace UniStart.Controllers;
 
@@ -22,7 +23,7 @@ public class QuestionImportController : ControllerBase
         _logger = logger;
     }
 
-    /// <summary>Upload a file (PDF/DOCX/XLSX) and start question extraction</summary>
+    /// <summary>Upload a file (PDF/DOCX/XLSX/CSV/MD) and start question or theory extraction</summary>
     [HttpPost("upload")]
     [RequestSizeLimit(50_000_000)] // 50 MB
     public async Task<IActionResult> Upload(
@@ -30,7 +31,8 @@ public class QuestionImportController : ControllerBase
         [FromForm] string examTypeCode,
         [FromForm] int? sectionId = null,
         [FromForm] int? topicId = null,
-        [FromForm] string? instructions = null)
+        [FromForm] string? instructions = null,
+        [FromForm] string? contentType = null)
     {
         if (file == null || file.Length == 0)
             return BadRequest(new { error = "No file uploaded" });
@@ -42,14 +44,24 @@ public class QuestionImportController : ControllerBase
             ".docx" => "DOCX",
             ".xlsx" => "XLSX",
             ".csv" => "CSV",
+            ".md" => "MD",
+            ".markdown" => "MD",
+            ".txt" => "TXT",
             _ => (string?)null
         };
 
         if (fileType == null)
-            return BadRequest(new { error = $"Unsupported file format: {ext}. Supported: PDF, DOCX, XLSX, CSV" });
+            return BadRequest(new { error = $"Unsupported file format: {ext}. Supported: PDF, DOCX, XLSX, CSV, MD, TXT" });
+
+        var importContentType = string.Equals(contentType, "theory", StringComparison.OrdinalIgnoreCase)
+            ? ImportContentType.Theory
+            : ImportContentType.Questions;
+
+        if (importContentType == ImportContentType.Theory && fileType is "XLSX" or "CSV")
+            return BadRequest(new { error = "Theory import supports text files only: PDF, DOCX, MD, TXT." });
 
         var adminId = GetAdminId();
-        var job = await _importService.CreateImportJobAsync(adminId, file.FileName, fileType, examTypeCode, sectionId, topicId, instructions);
+        var job = await _importService.CreateImportJobAsync(adminId, file.FileName, fileType, examTypeCode, sectionId, topicId, instructions, importContentType);
 
         // Process synchronously for now (can be moved to Hangfire for large files)
         using var stream = file.OpenReadStream();

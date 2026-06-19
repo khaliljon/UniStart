@@ -18,4 +18,11 @@ public interface ILlmExtractionService
     /// </summary>
     /// <param name="instructions">Optional admin-provided context/instructions (e.g. expected question count, "add explanations where missing").</param>
     Task<List<ExtractedQuestion>> ExtractQuestionsAsync(string text, string? instructions = null, CancellationToken ct = default);
+
+    /// <summary>
+    /// Extract structured theory content (lessons, formulas, flashcards, strategies) from a
+    /// theory document using LLM. Formulas are returned as KaTeX-formatted expressions.
+    /// </summary>
+    /// <param name="instructions">Optional admin-provided context/instructions.</param>
+    Task<ExtractedTheory> ExtractTheoryAsync(string text, string? instructions = null, CancellationToken ct = default);
 }

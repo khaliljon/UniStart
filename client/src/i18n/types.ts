@@ -795,6 +795,8 @@ export interface Translations {
     questionImport: {
       title: string; subtitle: string;
       examLabel: string; modeLabel: string;
+      contentTypeLabel: string; contentTypeQuestions: string; contentTypeTheory: string;
+      theoryHint: string; theoryResultTitle: string; theoryResultHint: string;
       sectionLabel: string; sectionAuto: string;
       topicLabel: string; topicAuto: string;
       singleFile: string; multiFile: string;

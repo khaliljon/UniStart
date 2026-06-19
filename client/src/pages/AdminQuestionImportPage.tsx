@@ -31,6 +31,7 @@ function AdminQuestionImportPage({ embedded = false }: { embedded?: boolean } = 
   const [draftFilter, setDraftFilter] = useState<string>('');
   const [isUploading, setIsUploading] = useState(false);
   const [examTypeCode, setExamTypeCode] = useState('SAT');
+  const [contentType, setContentType] = useState<'questions' | 'theory'>('questions');
   const [error, setError] = useState<string | null>(null);
   const [editingDraft, setEditingDraft] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<UpdateDraftPayload>({});
@@ -102,6 +103,7 @@ function AdminQuestionImportPage({ embedded = false }: { embedded?: boolean } = 
         sectionId === '' ? undefined : sectionId,
         topicId === '' ? undefined : topicId,
         instructions || undefined,
+        contentType,
       );
       await loadJobs();
       setSelectedJob(job);
@@ -272,6 +274,27 @@ function AdminQuestionImportPage({ embedded = false }: { embedded?: boolean } = 
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', flexWrap: 'wrap', marginBottom: '1rem' }}>
           <div>
             <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.25rem' }}>
+              {t.admin.questionImport.contentTypeLabel}
+            </label>
+            <div style={{ display: 'flex', gap: '0.25rem' }}>
+              <button
+                className={`btn ${contentType === 'questions' ? 'btn-primary' : 'btn-secondary'}`}
+                style={{ fontSize: '0.8rem', padding: '0.45rem 0.75rem' }}
+                onClick={() => setContentType('questions')}
+              >
+                {t.admin.questionImport.contentTypeQuestions}
+              </button>
+              <button
+                className={`btn ${contentType === 'theory' ? 'btn-primary' : 'btn-secondary'}`}
+                style={{ fontSize: '0.8rem', padding: '0.45rem 0.75rem' }}
+                onClick={() => setContentType('theory')}
+              >
+                {t.admin.questionImport.contentTypeTheory}
+              </button>
+            </div>
+          </div>
+          <div>
+            <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.25rem' }}>
               {t.admin.questionImport.examLabel}
             </label>
             <select
@@ -332,7 +355,7 @@ function AdminQuestionImportPage({ embedded = false }: { embedded?: boolean } = 
             <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.25rem' }}>
               {t.admin.questionImport.modeLabel}
             </label>
-            <div style={{ display: 'flex', gap: '0.25rem' }}>
+            <div style={{ display: 'flex', gap: '0.25rem', opacity: contentType === 'theory' ? 0.4 : 1, pointerEvents: contentType === 'theory' ? 'none' : 'auto' }}>
               <button
                 className={`btn ${uploadMode === 'single' ? 'btn-primary' : 'btn-secondary'}`}
                 style={{ fontSize: '0.8rem', padding: '0.45rem 0.75rem' }}
@@ -373,7 +396,7 @@ function AdminQuestionImportPage({ embedded = false }: { embedded?: boolean } = 
           </p>
         </div>
 
-        {uploadMode === 'single' ? (
+        {uploadMode === 'single' || contentType === 'theory' ? (
           /* ── Single file drop zone ── */
           <div
             onDragOver={e => { e.preventDefault(); setIsDragOver(true); }}
@@ -393,7 +416,7 @@ function AdminQuestionImportPage({ embedded = false }: { embedded?: boolean } = 
             <input
               ref={fileInputRef}
               type="file"
-              accept=".pdf,.docx,.xlsx,.csv"
+              accept={contentType === 'theory' ? '.pdf,.docx,.md,.markdown,.txt' : '.pdf,.docx,.xlsx,.csv,.md,.markdown,.txt'}
               style={{ display: 'none' }}
               onChange={e => {
                 const file = e.target.files?.[0];
@@ -404,12 +427,12 @@ function AdminQuestionImportPage({ embedded = false }: { embedded?: boolean } = 
               <p style={{ color: 'var(--primary-color)', fontWeight: 600 }}>{t.admin.questionImport.processing}</p>
             ) : (
               <>
-                <p style={{ fontSize: '1.2rem', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>PDF / DOCX / XLSX</p>
+                <p style={{ fontSize: '1.2rem', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>{contentType === 'theory' ? 'MD / DOCX / PDF' : 'PDF / DOCX / XLSX / MD'}</p>
                 <p style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
                   {t.admin.questionImport.dropzone}
                 </p>
                 <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
-                  {t.admin.questionImport.dropzoneHint}
+                  {contentType === 'theory' ? t.admin.questionImport.theoryHint : t.admin.questionImport.dropzoneHint}
                 </p>
               </>
             )}
@@ -591,7 +614,23 @@ function AdminQuestionImportPage({ embedded = false }: { embedded?: boolean } = 
       )}
 
       {/* Drafts Review */}
-      {selectedJob && (
+      {selectedJob && selectedJob.contentType === 'Theory' && (
+        <div className="card" style={{ padding: '1.5rem', borderLeft: `3px solid var(--success-color)` }}>
+          <h2 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '0.5rem' }}>
+            {t.admin.questionImport.theoryResultTitle} «{selectedJob.fileName}»
+          </h2>
+          {selectedJob.status === 'Failed' ? (
+            <p style={{ color: 'var(--error-color)' }}>{selectedJob.errorMessage}</p>
+          ) : (
+            <>
+              <p style={{ color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>{t.admin.questionImport.theoryResultHint}</p>
+              <p style={{ fontWeight: 600 }}>{selectedJob.resultSummary || '—'}</p>
+            </>
+          )}
+        </div>
+      )}
+
+      {selectedJob && selectedJob.contentType !== 'Theory' && (
         <div className="card" style={{ padding: '1.5rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
             <h2 style={{ fontSize: '1.1rem', fontWeight: 600 }}>

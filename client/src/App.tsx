@@ -31,7 +31,7 @@ const AdminBackupsPage = lazy(() => import('./pages/AdminBackupsPage'))
 const AdminLegalPage = lazy(() => import('./pages/AdminLegalPage'))
 const AdminUserActivityPage = lazy(() => import('./pages/AdminUserActivityPage'))
 const AdminTutorsPage = lazy(() => import('./pages/AdminTutorsPage'))
-const AdminContentHubPage = lazy(() => import('./pages/AdminContentHubPage'))
+const AdminQuestionImportPage = lazy(() => import('./pages/AdminQuestionImportPage'))
 const AdminContentPage = lazy(() => import('./pages/AdminContentPage'))
 const AdminTrashPage = lazy(() => import('./pages/AdminTrashPage'))
 const AdminProfilePage = lazy(() => import('./pages/AdminProfilePage'))
@@ -114,7 +114,7 @@ function AdminRoutes() {
       <Route path="backups" element={<AdminBackupsPage />} />
       <Route path="legal" element={<AdminLegalPage />} />
       <Route path="activity" element={<AdminUserActivityPage />} />
-      <Route path="import" element={<AdminContentHubPage />} />
+      <Route path="import" element={<AdminQuestionImportPage />} />
       <Route path="question-import" element={<Navigate to="/admin/import" replace />} />
       <Route path="trash" element={<AdminTrashPage />} />
       <Route path="schools" element={<AdminSchoolsPage />} />

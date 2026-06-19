@@ -17,7 +17,9 @@ public record QuestionImportJobDto(
     int TotalRejected,
     string? ErrorMessage,
     string? Instructions = null,
-    List<ImportJobFileDto>? Files = null
+    List<ImportJobFileDto>? Files = null,
+    string ContentType = "Questions",
+    string? ResultSummary = null
 );
 
 public record ImportJobFileDto(
@@ -71,3 +73,23 @@ public record ExtractedQuestion(
     string? Hint,
     string? Difficulty
 );
+
+// ─── Theory Import DTOs ──────────────────────────────────────
+
+/// <summary>All theory content extracted from a single theory file.</summary>
+public record ExtractedTheory(
+    List<ExtractedLesson> Lessons,
+    List<ExtractedFormula> Formulas,
+    List<ExtractedFlashcard> Flashcards,
+    List<ExtractedStrategy> Strategies
+);
+
+public record ExtractedLesson(string Title, string Content);
+
+/// <summary>Formula with a KaTeX-formatted expression.</summary>
+public record ExtractedFormula(string Title, string Formula, string? Description);
+
+public record ExtractedFlashcard(string Front, string Back);
+
+/// <summary>Strategy guide. Category is one of: test-taking, time-management, section-specific, mental.</summary>
+public record ExtractedStrategy(string Title, string Summary, string Content, string Category);

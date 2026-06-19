@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using UniStart.Infrastructure.Data;
@@ -11,9 +12,11 @@ using UniStart.Infrastructure.Data;
 namespace UniStart.Migrations
 {
     [DbContext(typeof(UniStartDbContext))]
-    partial class UniStartDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260619115140_AddContentTypeToQuestionImportJob")]
+    partial class AddContentTypeToQuestionImportJob
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -245,6 +248,57 @@ namespace UniStart.Migrations
                     b.ToTable("AuditLogs", (string)null);
                 });
 
+            modelBuilder.Entity("UniStart.Domain.Entities.ContentMappingRule", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ExamSectionName")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Glossary")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsIgnore")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("MatchType")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Pattern")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<string>("SkillName")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExamSectionName", "IsActive", "SortOrder");
+
+                    b.ToTable("ContentMappingRules", (string)null);
+                });
+
             modelBuilder.Entity("UniStart.Domain.Entities.Conversation", b =>
                 {
                     b.Property<int>("Id")
@@ -356,6 +410,71 @@ namespace UniStart.Migrations
                     b.HasIndex("TopicId");
 
                     b.ToTable("DrillTemplates", (string)null);
+                });
+
+            modelBuilder.Entity("UniStart.Domain.Entities.DriveSyncItem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Checksum")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DriveFileId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<DateTime?>("DriveModifiedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasColumnType("text");
+
+                    b.Property<string>("FolderPath")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("LastResultJson")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("LastSyncedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("MappedSkillId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("MappedSkillName")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<string>("MimeType")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DriveFileId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_DriveSyncItems_DriveFileId");
+
+                    b.ToTable("DriveSyncItems", (string)null);
                 });
 
             modelBuilder.Entity("UniStart.Domain.Entities.ExamSection", b =>

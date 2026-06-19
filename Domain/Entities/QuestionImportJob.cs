@@ -12,6 +12,12 @@ public class QuestionImportJob
     /// <summary>Optional explicit target topic. When set, all extracted questions default to this topic.</summary>
     public int? TopicId { get; set; }
 
+    /// <summary>Whether this job imports practice/mock questions or theory content (lessons, formulas, flashcards, strategies).</summary>
+    public ImportContentType ContentType { get; set; } = ImportContentType.Questions;
+
+    /// <summary>Human-readable summary of what was created (used for theory imports that apply directly).</summary>
+    public string? ResultSummary { get; set; }
+
     public ImportJobStatus Status { get; set; } = ImportJobStatus.Pending;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? CompletedAt { get; set; }
@@ -57,4 +63,13 @@ public enum ImportJobStatus
     Completed = 2,
     Failed = 3,
     PartiallyCompleted = 4
+}
+
+/// <summary>What kind of content an import job ingests.</summary>
+public enum ImportContentType
+{
+    /// <summary>Practice / mock-exam questions (default flow with draft review).</summary>
+    Questions = 0,
+    /// <summary>Theory: lessons, formulas, flashcards, strategies (applied directly).</summary>
+    Theory = 1
 }

@@ -63,9 +63,6 @@ public class UniStartDbContext : DbContext
     public DbSet<ImportedQuestionDraft> ImportedQuestionDrafts => Set<ImportedQuestionDraft>();
     public DbSet<ImportJobFile> ImportJobFiles => Set<ImportJobFile>();
 
-    // Google Drive content sync
-    public DbSet<DriveSyncItem> DriveSyncItems => Set<DriveSyncItem>();
-    public DbSet<ContentMappingRule> ContentMappingRules => Set<ContentMappingRule>();
     public DbSet<TsaClassification> TsaClassifications => Set<TsaClassification>();
 
     // Assignment entities (Sprint 7 Этап 3)
@@ -200,32 +197,6 @@ public class UniStartDbContext : DbContext
                   .WithMany(q => q.AnswerOptions)
                   .HasForeignKey(e => e.QuestionId)
                   .OnDelete(DeleteBehavior.Cascade);
-        });
-
-        // DriveSyncItem configuration
-        modelBuilder.Entity<DriveSyncItem>(entity =>
-        {
-            entity.ToTable("DriveSyncItems");
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.DriveFileId).IsRequired().HasMaxLength(128);
-            entity.Property(e => e.Name).IsRequired().HasMaxLength(500);
-            entity.Property(e => e.MimeType).HasMaxLength(200);
-            entity.Property(e => e.FolderPath).HasMaxLength(2000);
-            entity.Property(e => e.Checksum).HasMaxLength(256);
-            entity.Property(e => e.MappedSkillName).HasMaxLength(300);
-            entity.HasIndex(e => e.DriveFileId).IsUnique().HasDatabaseName("IX_DriveSyncItems_DriveFileId");
-        });
-
-        // ContentMappingRule configuration (admin-editable folder→skill mapping)
-        modelBuilder.Entity<ContentMappingRule>(entity =>
-        {
-            entity.ToTable("ContentMappingRules");
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.ExamSectionName).HasMaxLength(200);
-            entity.Property(e => e.Pattern).IsRequired().HasMaxLength(300);
-            entity.Property(e => e.SkillName).IsRequired().HasMaxLength(300);
-            entity.Property(e => e.Glossary).HasMaxLength(1000);
-            entity.HasIndex(e => new { e.ExamSectionName, e.IsActive, e.SortOrder });
         });
 
         // TsaClassification configuration (per-question unit cache)

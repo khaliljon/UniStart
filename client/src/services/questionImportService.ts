@@ -18,6 +18,8 @@ export interface QuestionImportJob {
   errorMessage: string | null;
   instructions: string | null;
   files: ImportJobFile[] | null;
+  contentType: string;
+  resultSummary: string | null;
 }
 
 export interface ImportJobFile {
@@ -73,13 +75,14 @@ export interface UpdateDraftPayload {
 // ─── API Service ────────────────────────────────────────────
 
 export const questionImportService = {
-  async upload(file: File, examTypeCode: string, sectionId?: number, topicId?: number, instructions?: string): Promise<QuestionImportJob> {
+  async upload(file: File, examTypeCode: string, sectionId?: number, topicId?: number, instructions?: string, contentType?: 'questions' | 'theory'): Promise<QuestionImportJob> {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('examTypeCode', examTypeCode);
     if (sectionId != null) formData.append('sectionId', String(sectionId));
     if (topicId != null) formData.append('topicId', String(topicId));
     if (instructions) formData.append('instructions', instructions);
+    if (contentType) formData.append('contentType', contentType);
     const resp = await api.post<QuestionImportJob>('/admin/question-import/upload', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
       timeout: 600000, // 10 minutes — OCR + LLM extraction can be slow

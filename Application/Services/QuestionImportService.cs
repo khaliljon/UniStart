@@ -30,7 +30,7 @@ public class QuestionImportService : IQuestionImportService
     }
 
     public async Task<QuestionImportJobDto> CreateImportJobAsync(
-        int adminUserId, string fileName, string fileType, string examTypeCode, int? sectionId, int? topicId, string? instructions)
+        int adminUserId, string fileName, string fileType, string examTypeCode, int? sectionId, int? topicId, string? instructions, ImportContentType contentType = ImportContentType.Questions)
     {
         var job = new QuestionImportJob
         {
@@ -41,6 +41,7 @@ public class QuestionImportService : IQuestionImportService
             SectionId = sectionId,
             TopicId = topicId,
             Instructions = instructions,
+            ContentType = contentType,
             Status = ImportJobStatus.Pending
         };
         _db.QuestionImportJobs.Add(job);
@@ -58,6 +59,13 @@ public class QuestionImportService : IQuestionImportService
             job.Status = ImportJobStatus.Processing;
             await _db.SaveChangesAsync();
 
+            // Theory imports follow a different, direct-apply path.
+            if (job.ContentType == ImportContentType.Theory)
+            {
+                await ProcessTheoryAsync(job, fileStream);
+                return;
+            }
+
             List<ExtractedQuestion> extracted;
 
             switch (job.FileType.ToUpper())
@@ -71,6 +79,13 @@ public class QuestionImportService : IQuestionImportService
                     var docxText = _parser.ParseDocx(fileStream);
                     extracted = _extractor.ExtractFromText(docxText);
                     extracted = await MaybeUseLlmAsync(extracted, docxText, job.Instructions);
+                    break;
+                case "MD":
+                case "MARKDOWN":
+                case "TXT":
+                    var mdText = ReadAllText(fileStream);
+                    extracted = _extractor.ExtractFromText(mdText);
+                    extracted = await MaybeUseLlmAsync(extracted, mdText, job.Instructions);
                     break;
                 case "XLSX":
                 case "CSV":
@@ -364,14 +379,126 @@ public class QuestionImportService : IQuestionImportService
         return jobs.Count;
     }
 
+    // ══════════════════════════════════════════════════════════
+    //  THEORY IMPORT (direct-apply: lessons, formulas, flashcards, strategies)
+    // ══════════════════════════════════════════════════════════
+
+    private async Task ProcessTheoryAsync(QuestionImportJob job, Stream fileStream)
+    {
+        // 1. Read raw text from a text-based file.
+        var text = job.FileType.ToUpper() switch
+        {
+            "PDF" => _parser.ParsePdf(fileStream),
+            "DOCX" => _parser.ParseDocx(fileStream),
+            "MD" or "MARKDOWN" or "TXT" => ReadAllText(fileStream),
+            _ => throw new ArgumentException($"Theory import does not support file type: {job.FileType}. Use PDF, DOCX, MD or TXT.")
+        };
+
+        // 2. Resolve the target topic (required for lessons/formulas/flashcards).
+        int? topicId = null;
+        string? topicName = null;
+        if (job.TopicId.HasValue)
+        {
+            var t = await _db.Topics.FirstOrDefaultAsync(x => x.Id == job.TopicId.Value);
+            if (t != null) { topicId = t.Id; topicName = t.Name; }
+        }
+        if (topicId == null && job.SectionId.HasValue)
+        {
+            var t = await _db.Topics
+                .Where(x => x.SectionId == job.SectionId.Value)
+                .OrderBy(x => x.SortOrder)
+                .FirstOrDefaultAsync();
+            if (t != null) { topicId = t.Id; topicName = t.Name; }
+        }
+        if (topicId == null)
+        {
+            job.Status = ImportJobStatus.Failed;
+            job.ErrorMessage = "Theory import requires a topic. Choose a topic (or a section that has at least one topic).";
+            job.CompletedAt = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+            return;
+        }
+
+        // 3. Extract structured theory via LLM.
+        var theory = await _llm.ExtractTheoryAsync(text, job.Instructions);
+
+        // 4. Persist each content type under the resolved topic / exam.
+        var lessonSort = await _db.TopicLessons.CountAsync(l => l.TopicId == topicId.Value);
+        foreach (var l in theory.Lessons)
+            _db.TopicLessons.Add(new TopicLesson { TopicId = topicId.Value, Title = l.Title, Content = l.Content, SortOrder = lessonSort++ });
+
+        var formulaSort = await _db.FormulaCards.CountAsync(f => f.TopicId == topicId.Value);
+        foreach (var f in theory.Formulas)
+            _db.FormulaCards.Add(new FormulaCard { TopicId = topicId.Value, Title = f.Title, Formula = f.Formula, Description = f.Description, SortOrder = formulaSort++ });
+
+        var cardCount = 0;
+        if (theory.Flashcards.Count > 0)
+        {
+            // One system deck per topic — reuse if it already exists.
+            var deck = await _db.FlashcardDecks.FirstOrDefaultAsync(d => d.TopicId == topicId.Value && d.IsSystem);
+            if (deck == null)
+            {
+                deck = new FlashcardDeck
+                {
+                    Title = topicName ?? "Flashcards",
+                    TopicId = topicId.Value,
+                    ExamTypeCode = job.ExamTypeCode,
+                    IsSystem = true
+                };
+                _db.FlashcardDecks.Add(deck);
+                await _db.SaveChangesAsync(); // materialize deck.Id
+            }
+            var cardSort = await _db.Flashcards.CountAsync(c => c.DeckId == deck.Id);
+            foreach (var c in theory.Flashcards)
+            {
+                _db.Flashcards.Add(new Flashcard { DeckId = deck.Id, Front = c.Front, Back = c.Back, SortOrder = cardSort++ });
+                cardCount++;
+            }
+        }
+
+        // Strategies attach at exam level (StrategyGuide has no topic binding).
+        var strategySort = await _db.StrategyGuides.CountAsync(s => s.ExamTypeCode == job.ExamTypeCode);
+        foreach (var s in theory.Strategies)
+        {
+            var wordCount = string.IsNullOrWhiteSpace(s.Content) ? 0 : s.Content.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length;
+            _db.StrategyGuides.Add(new StrategyGuide
+            {
+                ExamTypeCode = job.ExamTypeCode,
+                Title = s.Title,
+                Summary = s.Summary,
+                Content = s.Content,
+                Category = s.Category,
+                EstimatedReadMinutes = Math.Max(1, wordCount / 200),
+                SortOrder = strategySort++
+            });
+        }
+
+        var total = theory.Lessons.Count + theory.Formulas.Count + cardCount + theory.Strategies.Count;
+        job.TotalExtracted = total;
+        job.TotalApproved = total;
+        job.ResultSummary = $"Уроки: {theory.Lessons.Count} · Формулы: {theory.Formulas.Count} · Карточки: {cardCount} · Стратегии: {theory.Strategies.Count}";
+        job.Status = total > 0 ? ImportJobStatus.Completed : ImportJobStatus.PartiallyCompleted;
+        job.CompletedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+
+        _logger.LogInformation("Theory import job {JobId} completed: {Summary}", job.Id, job.ResultSummary);
+    }
+
+    private static string ReadAllText(Stream stream)
+    {
+        using var reader = new StreamReader(stream, leaveOpen: true);
+        return reader.ReadToEnd();
+    }
+
     // ── Mapping helpers ──────────────────────────────────────
 
-    private QuestionImportJobDto MapJob(QuestionImportJob j) => new(
-        j.Id, j.FileName, j.FileType, j.ExamTypeCode, j.SectionId, j.TopicId,
+    private QuestionImportJobDto MapJob(QuestionImportJob j) => new(        j.Id, j.FileName, j.FileType, j.ExamTypeCode, j.SectionId, j.TopicId,
         j.Status.ToString(), j.CreatedAt, j.CompletedAt,
         j.TotalExtracted, j.TotalApproved, j.TotalRejected, j.ErrorMessage,
         j.Instructions,
-        j.Files?.Select(f => new ImportJobFileDto(f.Id, f.FileName, f.FileType, f.Role.ToString())).ToList()
+        j.Files?.Select(f => new ImportJobFileDto(f.Id, f.FileName, f.FileType, f.Role.ToString())).ToList(),
+        j.ContentType.ToString(),
+        j.ResultSummary
     );
 
     private static ImportedQuestionDraftDto MapDraft(ImportedQuestionDraft d)
@@ -389,7 +516,6 @@ public class QuestionImportService : IQuestionImportService
     // ══════════════════════════════════════════════════════════
     //  MULTI-FILE IMPORT
     // ══════════════════════════════════════════════════════════
-
     public async Task<QuestionImportJobDto> CreateMultiFileImportJobAsync(
         int adminUserId, string examTypeCode, int? sectionId, int? topicId, string? instructions)
     {

@@ -1,4 +1,5 @@
 using UniStart.Application.DTOs;
+using UniStart.Domain.Entities;
 
 namespace UniStart.Application.Interfaces;
 
@@ -37,7 +38,7 @@ public record ImportFileEntry(Stream Stream, string FileName, string FileType, s
 /// <summary>Manages the question import workflow</summary>
 public interface IQuestionImportService
 {
-    Task<QuestionImportJobDto> CreateImportJobAsync(int adminUserId, string fileName, string fileType, string examTypeCode, int? sectionId, int? topicId, string? instructions);
+    Task<QuestionImportJobDto> CreateImportJobAsync(int adminUserId, string fileName, string fileType, string examTypeCode, int? sectionId, int? topicId, string? instructions, ImportContentType contentType = ImportContentType.Questions);
     Task ProcessImportJobAsync(int jobId, Stream fileStream);
 
     /// <summary>Create a multi-file import job with context instructions</summary>

@@ -265,6 +265,213 @@ public class LlmExtractionService : ILlmExtractionService
         return set;
     }
 
+    // ═══════════════════════════════════════════════════════
+    //  THEORY EXTRACTION
+    // ═══════════════════════════════════════════════════════
+
+    public async Task<ExtractedTheory> ExtractTheoryAsync(string text, string? instructions = null, CancellationToken ct = default)
+    {
+        if (!IsConfigured)
+        {
+            _logger.LogWarning("LLM extraction not configured (no API key). Skipping theory extraction.");
+            return new ExtractedTheory(new(), new(), new(), new());
+        }
+
+        const int maxChars = 200_000;
+        if (text.Length > maxChars)
+        {
+            _logger.LogWarning("Theory text too long for LLM ({Length} chars), truncating to {Max}", text.Length, maxChars);
+            text = text[..maxChars];
+        }
+
+        _logger.LogInformation("Starting LLM theory extraction with {Model}, text length: {Length} chars", _model, text.Length);
+
+        // Run the four focused extractions. Each is a separate call so a single content type
+        // (e.g. a long lesson) never gets truncated by the output token limit.
+        var lessons = await ExtractLessonsAsync(text, instructions, ct);
+        var formulas = await ExtractFormulasAsync(text, instructions, ct);
+        var flashcards = await ExtractFlashcardsAsync(text, instructions, ct);
+        var strategies = await ExtractStrategiesAsync(text, instructions, ct);
+
+        _logger.LogInformation("Theory extraction done: {L} lessons, {F} formulas, {C} flashcards, {S} strategies",
+            lessons.Count, formulas.Count, flashcards.Count, strategies.Count);
+
+        return new ExtractedTheory(lessons, formulas, flashcards, strategies);
+    }
+
+    private static string AdminBlock(string? instructions) =>
+        string.IsNullOrWhiteSpace(instructions)
+            ? ""
+            : "\n\n⭐ ADMIN INSTRUCTIONS (highest priority — follow these closely):\n" + instructions.Trim();
+
+    private async Task<List<ExtractedLesson>> ExtractLessonsAsync(string text, string? instructions, CancellationToken ct)
+    {
+        const string system = @"You extract LESSON content from a theory document for an educational platform.
+Return the lesson(s) suitable for a ""Lessons"" section. Preserve the author's structure and ALL substantive content (definitions, explanations, tables, worked steps) as clean GitHub-flavored Markdown.
+Rules:
+- Usually there is ONE lesson per document — return a single lesson unless the document is clearly split into separate lessons.
+- Do NOT include the formulas reference list, flashcards, or exam strategies sections — those are extracted separately.
+- Keep math as readable Unicode/Markdown. Do not wrap the whole lesson in code fences.
+JSON format: {""lessons"":[{""title"":""..."",""content"":""markdown...""}]}
+Return ONLY valid JSON.";
+        var user = "Extract the lesson content from the document below." + AdminBlock(instructions) + "\n\nDOCUMENT TEXT:\n" + text;
+        var raw = await CallChatAsync(system, user, ct);
+        var items = ParseJsonArray<LlmLesson>(raw);
+        return items
+            .Where(l => !string.IsNullOrWhiteSpace(l.Content))
+            .Select(l => new ExtractedLesson(
+                string.IsNullOrWhiteSpace(l.Title) ? "Lesson" : l.Title!.Trim(),
+                l.Content!.Trim()))
+            .ToList();
+    }
+
+    private async Task<List<ExtractedFormula>> ExtractFormulasAsync(string text, string? instructions, CancellationToken ct)
+    {
+        const string system = @"You extract FORMULAS from a theory document for an educational platform's formula reference.
+For each formula output a title, the expression as **KaTeX** (no surrounding $ or $$ delimiters), and an optional description (units, variable meanings, common pitfalls).
+Rules:
+- Convert plain-text math to valid KaTeX. Examples: 'v = d / t' → 'v = \\frac{d}{t}';  'ρ = m / V' → '\\rho = \\frac{m}{V}';  'a^2' → 'a^2';  '×' → '\\times'.
+- One entry per distinct formula. Do NOT include lesson prose, flashcards, or strategies.
+JSON format: {""formulas"":[{""title"":""..."",""formula"":""KaTeX"",""description"":""...""}]}
+Return ONLY valid JSON.";
+        var user = "Extract every formula from the document below as KaTeX." + AdminBlock(instructions) + "\n\nDOCUMENT TEXT:\n" + text;
+        var raw = await CallChatAsync(system, user, ct);
+        var items = ParseJsonArray<LlmFormula>(raw);
+        return items
+            .Where(f => !string.IsNullOrWhiteSpace(f.Title) && !string.IsNullOrWhiteSpace(f.Formula))
+            .Select(f => new ExtractedFormula(
+                f.Title!.Trim(),
+                f.Formula!.Trim(),
+                string.IsNullOrWhiteSpace(f.Description) ? null : f.Description!.Trim()))
+            .ToList();
+    }
+
+    private async Task<List<ExtractedFlashcard>> ExtractFlashcardsAsync(string text, string? instructions, CancellationToken ct)
+    {
+        const string system = @"You extract FLASHCARDS from a theory document for an educational platform.
+Each flashcard has a FRONT (prompt/question) and BACK (answer). Use the author's existing front/back pairs where present; otherwise create concise recall cards from key facts.
+Rules:
+- Keep front and back short. Markdown allowed. Do NOT include lesson prose, formulas list, or strategies.
+JSON format: {""flashcards"":[{""front"":""..."",""back"":""...""}]}
+Return ONLY valid JSON.";
+        var user = "Extract the flashcards from the document below." + AdminBlock(instructions) + "\n\nDOCUMENT TEXT:\n" + text;
+        var raw = await CallChatAsync(system, user, ct);
+        var items = ParseJsonArray<LlmFlashcard>(raw);
+        return items
+            .Where(c => !string.IsNullOrWhiteSpace(c.Front) && !string.IsNullOrWhiteSpace(c.Back))
+            .Select(c => new ExtractedFlashcard(c.Front!.Trim(), c.Back!.Trim()))
+            .ToList();
+    }
+
+    private async Task<List<ExtractedStrategy>> ExtractStrategiesAsync(string text, string? instructions, CancellationToken ct)
+    {
+        const string system = @"You extract EXAM STRATEGIES from a theory document for an educational platform.
+Each strategy has a title, a one-sentence summary, the full content (markdown), and a category.
+Rules:
+- category MUST be exactly one of: test-taking, time-management, section-specific, mental.
+- Do NOT include lesson prose, formulas, or flashcards.
+JSON format: {""strategies"":[{""title"":""..."",""summary"":""one sentence"",""content"":""markdown"",""category"":""test-taking""}]}
+Return ONLY valid JSON.";
+        var user = "Extract the exam strategies from the document below." + AdminBlock(instructions) + "\n\nDOCUMENT TEXT:\n" + text;
+        var raw = await CallChatAsync(system, user, ct);
+        var items = ParseJsonArray<LlmStrategy>(raw);
+        var allowed = new HashSet<string> { "test-taking", "time-management", "section-specific", "mental" };
+        return items
+            .Where(s => !string.IsNullOrWhiteSpace(s.Title) && !string.IsNullOrWhiteSpace(s.Content))
+            .Select(s => new ExtractedStrategy(
+                s.Title!.Trim(),
+                string.IsNullOrWhiteSpace(s.Summary) ? s.Title!.Trim() : s.Summary!.Trim(),
+                s.Content!.Trim(),
+                allowed.Contains((s.Category ?? "").Trim().ToLowerInvariant()) ? s.Category!.Trim().ToLowerInvariant() : "test-taking"))
+            .ToList();
+    }
+
+    /// <summary>Generic single-shot chat call returning the raw assistant message content (forced JSON).</summary>
+    private async Task<string> CallChatAsync(string systemPrompt, string userPrompt, CancellationToken ct)
+    {
+        var requestBody = new
+        {
+            model = _model,
+            messages = new[]
+            {
+                new { role = "system", content = systemPrompt },
+                new { role = "user", content = userPrompt }
+            },
+            temperature = 0.1,
+            max_tokens = 8192,
+            response_format = new { type = "json_object" }
+        };
+
+        var json = JsonSerializer.Serialize(requestBody);
+        var content = new StringContent(json, Encoding.UTF8, "application/json");
+        var request = new HttpRequestMessage(HttpMethod.Post, $"{_baseUrl}/v1/chat/completions") { Content = content };
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _apiKey);
+
+        var response = await _httpClient.SendAsync(request, ct);
+        var responseBody = await response.Content.ReadAsStringAsync(ct);
+        if (!response.IsSuccessStatusCode)
+        {
+            _logger.LogError("LLM theory API returned {StatusCode}: {Body}", response.StatusCode, responseBody[..Math.Min(500, responseBody.Length)]);
+            return "";
+        }
+
+        var completion = JsonSerializer.Deserialize<ChatCompletionResponse>(responseBody);
+        return completion?.Choices?.FirstOrDefault()?.Message?.Content ?? "";
+    }
+
+    /// <summary>Parse a JSON object with a single array property (or a bare array) into a typed list.</summary>
+    private List<T> ParseJsonArray<T>(string content)
+    {
+        if (string.IsNullOrWhiteSpace(content)) return new();
+        var trimmed = content.Trim();
+        try
+        {
+            if (trimmed.StartsWith("{"))
+            {
+                var wrapper = JsonSerializer.Deserialize<JsonElement>(trimmed);
+                foreach (var prop in wrapper.EnumerateObject())
+                {
+                    if (prop.Value.ValueKind == JsonValueKind.Array)
+                        return JsonSerializer.Deserialize<List<T>>(prop.Value.GetRawText(), _jsonOptions) ?? new();
+                }
+            }
+            if (trimmed.StartsWith("["))
+                return JsonSerializer.Deserialize<List<T>>(trimmed, _jsonOptions) ?? new();
+        }
+        catch (JsonException ex)
+        {
+            _logger.LogError(ex, "Failed to parse theory JSON array. Raw: {Raw}", trimmed[..Math.Min(300, trimmed.Length)]);
+        }
+        return new();
+    }
+
+    private class LlmLesson
+    {
+        [JsonPropertyName("title")] public string? Title { get; set; }
+        [JsonPropertyName("content")] public string? Content { get; set; }
+    }
+
+    private class LlmFormula
+    {
+        [JsonPropertyName("title")] public string? Title { get; set; }
+        [JsonPropertyName("formula")] public string? Formula { get; set; }
+        [JsonPropertyName("description")] public string? Description { get; set; }
+    }
+
+    private class LlmFlashcard
+    {
+        [JsonPropertyName("front")] public string? Front { get; set; }
+        [JsonPropertyName("back")] public string? Back { get; set; }
+    }
+
+    private class LlmStrategy
+    {
+        [JsonPropertyName("title")] public string? Title { get; set; }
+        [JsonPropertyName("summary")] public string? Summary { get; set; }
+        [JsonPropertyName("content")] public string? Content { get; set; }
+        [JsonPropertyName("category")] public string? Category { get; set; }
+    }
+
     private async Task<List<ExtractedQuestion>> CallLlmApiAsync(string text, int batchSize, int alreadyCount, int? expectedCount, int? expectedOptions, string? alreadyExtracted, string? instructions, CancellationToken ct)
     {
         var systemPrompt = @"You are an exam-question extraction engine for an educational platform.
