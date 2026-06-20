@@ -293,11 +293,22 @@ public class QuestionExtractorService : IQuestionExtractorService
         bool inOptions = false;
         foreach (var line in lines)
         {
-            // Template meta header: "Q001  Difficulty: Easy  Source: Original" (or a bare "Difficulty: …" line).
-            // Skip it from the question text but capture the difficulty if present.
+            // Template meta header: "Q001  Difficulty: Easy  Source: Original" (or a bare
+            // "Difficulty: …" / "Source: …" line). Skip it from the question text but
+            // capture the difficulty if present.
             if (!inOptions && TryParseMetaHeader(line, out var headerDifficulty))
             {
                 if (headerDifficulty != null) metaDifficulty = headerDifficulty;
+                continue;
+            }
+
+            // Section headers ("Exercises 1.1") and difficulty banners
+            // ("🔴 HARD / NUET-STYLE QUESTIONS") are dividers between questions. Skip them
+            // here — before the explanation branch — so a banner sitting between two
+            // questions never leaks into the previous question's explanation.
+            if (IsSectionHeader(line) || IsDifficultyBanner(line))
+            {
+                inExplanation = false;
                 continue;
             }
 
@@ -322,11 +333,6 @@ public class QuestionExtractorService : IQuestionExtractorService
             {
                 // Lines after a standalone EXPLANATION keyword belong to the explanation.
                 explanationLine = explanationLine.Length == 0 ? line : explanationLine + " " + line;
-            }
-            else if (IsSectionHeader(line))
-            {
-                // Skip section headers like "Exercises 1.1", "Self-Test 1"
-                continue;
             }
             else if (!inOptions)
             {
@@ -687,11 +693,16 @@ public class QuestionExtractorService : IQuestionExtractorService
         difficulty = null;
 
         var isQId = Regex.IsMatch(line, @"^Q\s*\d{1,4}\b", RegexOptions.IgnoreCase);
+        // A standalone metadata line: "Difficulty: …", "Source: Original/Exact",
+        // "Источник: …". In DOCX tables these often arrive on their own lines, so a
+        // bare "Source: Original" (no Difficulty) must still be recognised and dropped.
+        var isMetaKeyword = Regex.IsMatch(line,
+            @"^(?:Difficulty|Source|Источник|Сложность)\s*[:：]", RegexOptions.IgnoreCase);
         var diffMatch = Regex.Match(line,
             @"\bDifficulty\s*[:：]\s*(Easy|Medium|Hard|Лёгк\w*|Легк\w*|Средн\w*|Сложн\w*)",
             RegexOptions.IgnoreCase);
 
-        if (!isQId && !diffMatch.Success) return false;
+        if (!isQId && !isMetaKeyword) return false;
 
         if (diffMatch.Success)
         {
@@ -701,11 +712,18 @@ public class QuestionExtractorService : IQuestionExtractorService
                        : "Medium";
         }
 
-        // A "Q123 …" id line is always a header. Otherwise only treat short
-        // "Difficulty:/Source:" style lines as metadata to avoid eating real questions.
-        if (isQId) return true;
-        return Regex.IsMatch(line, @"^(?:Difficulty|Source|Источник|Сложность)\s*[:：]", RegexOptions.IgnoreCase);
+        return true;
     }
+
+    /// <summary>
+    /// Detect difficulty banner lines that separate question groups, e.g.
+    /// "🟢 EASY QUESTIONS (Q001–Q021)", "🟠 MEDIUM QUESTIONS", "🔴 HARD / NUET-STYLE QUESTIONS".
+    /// These dividers must never become question text or explanations.
+    /// </summary>
+    private static bool IsDifficultyBanner(string line) =>
+        line.Length < 60 &&
+        Regex.IsMatch(line, @"^[\s\W]*(?:EASY|MEDIUM|HARD|NUET)[\sA-Za-z/\-–—]*QUESTIONS?\b",
+            RegexOptions.IgnoreCase);
 
     private static string StripLeadingNumber(string line)
     {
