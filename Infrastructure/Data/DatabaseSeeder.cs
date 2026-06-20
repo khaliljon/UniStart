@@ -27,7 +27,7 @@ public class DatabaseSeeder
             new[]
             {
                 "Standard and compound units",
-                "Approximation and estimates (π, surds)",
+                "Changing Between Standard and Compound Units",
             }),
         ("SK_NUET_NUMBER", "Number",
             "NUET Mathematics — number, operations, indices, standard form and bounds.",
@@ -445,6 +445,27 @@ public class DatabaseSeeder
         var skillIdByCode = await _context.Skills
             .Where(s => codes.Contains(s.Code))
             .ToDictionaryAsync(s => s.Code, s => s.Id);
+
+        // One-time reconciliation: rename the old Units topic in place so its linked
+        // questions and student progress are preserved (renaming keeps the same TopicId,
+        // unlike delete + re-create). Safe to run repeatedly — it only acts when the old
+        // name still exists and the new one does not.
+        if (skillIdByCode.TryGetValue("SK_NUET_UNITS", out var unitsSkillId))
+        {
+            const string oldUnitsTopicName = "Approximation and estimates (π, surds)";
+            const string newUnitsTopicName = "Changing Between Standard and Compound Units";
+
+            var oldUnitsTopic = await _context.Topics.FirstOrDefaultAsync(t =>
+                t.SectionId == nuetMath.Id && t.SkillId == unitsSkillId && t.Name == oldUnitsTopicName);
+            var newUnitsExists = await _context.Topics.AnyAsync(t =>
+                t.SectionId == nuetMath.Id && t.SkillId == unitsSkillId && t.Name == newUnitsTopicName);
+
+            if (oldUnitsTopic != null && !newUnitsExists)
+            {
+                oldUnitsTopic.Name = newUnitsTopicName;
+                await _context.SaveChangesAsync();
+            }
+        }
 
         var existingNames = new HashSet<string>(
             await _context.Topics
