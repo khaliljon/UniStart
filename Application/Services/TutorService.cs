@@ -1303,9 +1303,14 @@ public class TutorService : ITutorService
                 s.Assignment.Deadline, s.Assignment.TutorUser.Name,
                 s.Status.ToString(),
                 s.Assignment.Questions.Count,
-                s.Answers.Count,
-                s.Answers.Count(a => a.IsCorrect),
-                s.Score, s.Assignment.CreatedAt
+                // Count by distinct question id so duplicate answer rows (from a possible
+                // double-submit race) can't inflate progress beyond the question count.
+                s.Answers.Select(a => a.QuestionId).Distinct().Count(),
+                s.Answers.Where(a => a.IsCorrect).Select(a => a.QuestionId).Distinct().Count(),
+                // Clamp any previously stored out-of-range score (e.g. 200% from an old
+                // double-submit) so existing records also display correctly.
+                s.Score.HasValue && s.Score.Value > 100 ? 100 : s.Score,
+                s.Assignment.CreatedAt
             ))
             .ToListAsync();
     }
@@ -1321,7 +1326,11 @@ public class TutorService : ITutorService
         if (aStudent == null) return null;
 
         var assignment = aStudent.Assignment;
-        var answersMap = aStudent.Answers.ToDictionary(a => a.QuestionId);
+        // Tolerate duplicate answer rows: keep one answer per question instead of
+        // throwing from ToDictionary, and report progress by distinct question count.
+        var answersMap = aStudent.Answers
+            .GroupBy(a => a.QuestionId)
+            .ToDictionary(g => g.Key, g => g.First());
         var isCompleted = aStudent.Status == AssignmentStudentStatus.Completed;
 
         return new StudentAssignmentDetailDto(
@@ -1329,7 +1338,7 @@ public class TutorService : ITutorService
             assignment.Deadline, assignment.TutorUser.Name,
             aStudent.Status.ToString(),
             assignment.Questions.Count,
-            aStudent.Answers.Count,
+            answersMap.Count,
             assignment.Questions.OrderBy(aq => aq.OrderIndex).Select(aq =>
             {
                 var q = aq.Question;
@@ -1395,8 +1404,22 @@ public class TutorService : ITutorService
         _db.AssignmentAnswers.Add(answer);
 
         var totalQuestions = aStudent.Assignment.Questions.Count;
-        var answeredCount = aStudent.Answers.Count + 1;
-        var correctCount = aStudent.Answers.Count(a => a.IsCorrect) + (option.IsCorrect ? 1 : 0);
+
+        // Count progress by DISTINCT question id and cap at the total. This is defensive:
+        // if a duplicate answer row ever slips in (e.g. a double-submit race), progress and
+        // score still cannot exceed 100% / the question count.
+        var answeredQuestionIds = aStudent.Answers.Select(a => a.QuestionId)
+            .Append(dto.QuestionId)
+            .Distinct()
+            .ToList();
+        var answeredCount = Math.Min(answeredQuestionIds.Count, totalQuestions);
+
+        var correctQuestionIds = aStudent.Answers.Where(a => a.IsCorrect).Select(a => a.QuestionId)
+            .Concat(option.IsCorrect ? new[] { dto.QuestionId } : Array.Empty<int>())
+            .Distinct()
+            .ToList();
+        var correctCount = Math.Min(correctQuestionIds.Count, totalQuestions);
+
         var isCompleted = answeredCount >= totalQuestions;
         int? score = null;
 
@@ -1404,7 +1427,9 @@ public class TutorService : ITutorService
         {
             aStudent.Status = AssignmentStudentStatus.Completed;
             aStudent.CompletedAt = DateTime.UtcNow;
-            score = totalQuestions > 0 ? (int)Math.Round(100.0 * correctCount / totalQuestions) : 0;
+            score = totalQuestions > 0
+                ? Math.Min(100, (int)Math.Round(100.0 * correctCount / totalQuestions))
+                : 0;
             aStudent.Score = score;
         }
 
