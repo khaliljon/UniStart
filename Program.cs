@@ -13,6 +13,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Serilog;
 using Serilog.Events;
+using UniStart.Application.Interfaces;
 using UniStart.Infrastructure.Startup;
 
 // ═══════════════════════════════════════════════════
@@ -60,6 +61,13 @@ try
     builder.Services.AddUniStartServices(builder.Configuration, connectionString!);
 
     var app = builder.Build();
+
+    // Report LLM extraction status at startup so misconfigured API keys are obvious in the logs.
+    using (var startupScope = app.Services.CreateScope())
+    {
+        var llm = startupScope.ServiceProvider.GetRequiredService<ILlmExtractionService>();
+        Log.Information("LLM question extraction configured: {Configured}", llm.IsConfigured);
+    }
 
     app.UseExceptionHandler(errorApp =>
     {

@@ -138,6 +138,7 @@ public class QuestionExtractorService : IQuestionExtractorService
         var pattern = @"(?:^|\n)\s*(?:" +
             @"\d{1,4}\s*[\.\)\:\、](?:\s|(?=[\u4e00-\u9fff]))" +  // 1. / 1) / 1、(+CJK)
             @"|(?:Question|Q|Вопрос|Задание|Задача|Упражнение|题目|问题)\s*\d+[:\.\)：、]\s*" +
+            @"|Q\s*\d{1,4}(?=\s)" +                         // Q001<TAB> / Q12  (template id, no delimiter)
             @"|#\s*\d{1,4}[\.\:\s]" +                       // #1.
             @"|(?=[IVXLC]{1,6}[\.\)]\s)[IVXLC]+[\.\)]\s" +  // I. / II. (Roman)
             @"|第\s*\d{1,4}\s*题[\.\:\、：]?\s*" +         // 第1题 / 第2题：
@@ -286,13 +287,24 @@ public class QuestionExtractorService : IQuestionExtractorService
         var optionLines = new List<string>();
         var answerLine = "";
         var explanationLine = "";
+        string? metaDifficulty = null;
+        bool inExplanation = false;
 
         bool inOptions = false;
         foreach (var line in lines)
         {
+            // Template meta header: "Q001  Difficulty: Easy  Source: Original" (or a bare "Difficulty: …" line).
+            // Skip it from the question text but capture the difficulty if present.
+            if (!inOptions && TryParseMetaHeader(line, out var headerDifficulty))
+            {
+                if (headerDifficulty != null) metaDifficulty = headerDifficulty;
+                continue;
+            }
+
             if (IsOptionLine(line))
             {
                 inOptions = true;
+                inExplanation = false;
                 optionLines.Add(line);
             }
             else if (IsAnswerLine(line))
@@ -301,7 +313,15 @@ public class QuestionExtractorService : IQuestionExtractorService
             }
             else if (IsExplanationLine(line))
             {
-                explanationLine = line;
+                inExplanation = true;
+                var inlineExpl = CleanExplanationText(line);
+                if (!string.IsNullOrWhiteSpace(inlineExpl))
+                    explanationLine = explanationLine.Length == 0 ? inlineExpl : explanationLine + " " + inlineExpl;
+            }
+            else if (inExplanation)
+            {
+                // Lines after a standalone EXPLANATION keyword belong to the explanation.
+                explanationLine = explanationLine.Length == 0 ? line : explanationLine + " " + line;
             }
             else if (IsSectionHeader(line))
             {
@@ -340,7 +360,7 @@ public class QuestionExtractorService : IQuestionExtractorService
                     generatedOptions,
                     string.IsNullOrWhiteSpace(solExplanation) ? $"Solution: {solutionText}" : solExplanation,
                     null,
-                    null
+                    metaDifficulty
                 );
             }
             return null;
@@ -357,7 +377,7 @@ public class QuestionExtractorService : IQuestionExtractorService
             options,
             string.IsNullOrWhiteSpace(explanation) ? null : explanation,
             null,
-            null
+            metaDifficulty
         );
     }
 
@@ -391,7 +411,7 @@ public class QuestionExtractorService : IQuestionExtractorService
     private static bool IsExplanationLine(string line)
     {
         return Regex.IsMatch(line,
-            @"^(?:Explanation|Explain|Solution|Решение|Объяснение|Пояснение|Rationale|Hint|解析|解答|解题思路|详解|提示)[：:\s]",
+            @"^(?:Explanation|Explain|Solution|Working|Решение|Объяснение|Пояснение|Rationale|Hint|解析|解答|解题思路|详解|提示)(?:[：:\s]|$)",
             RegexOptions.IgnoreCase);
     }
 
@@ -631,15 +651,60 @@ public class QuestionExtractorService : IQuestionExtractorService
 
         for (int i = 0; i < optionLines.Count; i++)
         {
-            var optText = CleanOptionText(optionLines[i]);
-            var letter = GetOptionLetter(optionLines[i]);
-            var isCorrect = !string.IsNullOrEmpty(correctAnswer) &&
-                            letter.Equals(correctAnswer, StringComparison.OrdinalIgnoreCase);
+            var rawLine = optionLines[i];
+            var inlineCorrect = HasCorrectMarker(rawLine);
+            var optText = CleanOptionText(StripCorrectMarker(rawLine));
+            var letter = GetOptionLetter(rawLine);
+            var isCorrect = inlineCorrect ||
+                            (!string.IsNullOrEmpty(correctAnswer) &&
+                             letter.Equals(correctAnswer, StringComparison.OrdinalIgnoreCase));
             if (!string.IsNullOrWhiteSpace(optText))
                 options.Add(new DraftOptionDto(optText, isCorrect));
         }
 
         return options;
+    }
+
+    /// <summary>True if the option line carries an inline "correct answer" marker (✓ ✔ ☑ ✅ or "(correct)").</summary>
+    private static bool HasCorrectMarker(string line) =>
+        Regex.IsMatch(line, @"[✓✔☑✅]") ||
+        Regex.IsMatch(line, @"\(\s*(?:correct|right|правильн\w*|верн\w*)\s*\)\s*$", RegexOptions.IgnoreCase);
+
+    /// <summary>Remove inline correct-answer markers so they do not leak into the stored option text.</summary>
+    private static string StripCorrectMarker(string line) =>
+        Regex.Replace(
+            Regex.Replace(line, @"\s*[✓✔☑✅]\s*", " "),
+            @"\s*\(\s*(?:correct|right|правильн\w*|верн\w*)\s*\)\s*$", "", RegexOptions.IgnoreCase).Trim();
+
+    /// <summary>
+    /// Recognise a template meta/header line such as
+    /// "Q001  Difficulty: Easy  Source: Original" or a standalone "Difficulty: Medium".
+    /// Returns true when the line is metadata (and should not become question text);
+    /// <paramref name="difficulty"/> is set to Easy/Medium/Hard when present.
+    /// </summary>
+    private static bool TryParseMetaHeader(string line, out string? difficulty)
+    {
+        difficulty = null;
+
+        var isQId = Regex.IsMatch(line, @"^Q\s*\d{1,4}\b", RegexOptions.IgnoreCase);
+        var diffMatch = Regex.Match(line,
+            @"\bDifficulty\s*[:：]\s*(Easy|Medium|Hard|Лёгк\w*|Легк\w*|Средн\w*|Сложн\w*)",
+            RegexOptions.IgnoreCase);
+
+        if (!isQId && !diffMatch.Success) return false;
+
+        if (diffMatch.Success)
+        {
+            var d = diffMatch.Groups[1].Value.ToLowerInvariant();
+            difficulty = (d.StartsWith("eas") || d.StartsWith("лёг") || d.StartsWith("лег")) ? "Easy"
+                       : (d.StartsWith("har") || d.StartsWith("слож")) ? "Hard"
+                       : "Medium";
+        }
+
+        // A "Q123 …" id line is always a header. Otherwise only treat short
+        // "Difficulty:/Source:" style lines as metadata to avoid eating real questions.
+        if (isQId) return true;
+        return Regex.IsMatch(line, @"^(?:Difficulty|Source|Источник|Сложность)\s*[:：]", RegexOptions.IgnoreCase);
     }
 
     private static string StripLeadingNumber(string line)
