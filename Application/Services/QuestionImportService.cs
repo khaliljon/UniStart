@@ -837,13 +837,19 @@ public class QuestionImportService : IQuestionImportService
         var llmExtracted = await _llm.ExtractQuestionsAsync(text, instructions);
         if (llmExtracted.Count == 0) return regexResults;
 
-        // With admin instructions, trust the LLM; without, only switch if it's measurably better.
-        if (hasInstructions || QualityScore(llmExtracted) > QualityScore(regexResults))
+        // Use the LLM result only when it is genuinely better than what regex produced.
+        // Instructions decide whether to *run* the LLM, not to blindly trust it — otherwise a
+        // strong regex parse (which also carries per-question difficulty and the full question
+        // count) would be discarded in favour of an LLM pass that drops difficulty and may
+        // return fewer questions.
+        if (QualityScore(llmExtracted) > QualityScore(regexResults))
         {
             _logger.LogInformation("Using LLM results: {LlmCount} questions (regex had {RegexCount})",
                 llmExtracted.Count, regexResults.Count);
             return llmExtracted;
         }
+        _logger.LogInformation("Keeping regex results: {RegexCount} questions (LLM had {LlmCount})",
+            regexResults.Count, llmExtracted.Count);
         return regexResults;
     }
 

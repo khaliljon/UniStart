@@ -1145,6 +1145,22 @@ public class TutorService : ITutorService
     //  ASSIGNMENTS (Sprint 7 Этап 3)
     // ═══════════════════════════════════════════════════════
 
+    /// <summary>
+    /// Normalise a client-supplied date to UTC so Npgsql can persist it into a
+    /// 'timestamp with time zone' column. Dates arriving without an explicit
+    /// timezone (Kind=Unspecified) are treated as UTC.
+    /// </summary>
+    private static DateTime? ToUtcOrNull(DateTime? value)
+    {
+        if (!value.HasValue) return null;
+        return value.Value.Kind switch
+        {
+            DateTimeKind.Utc => value.Value,
+            DateTimeKind.Local => value.Value.ToUniversalTime(),
+            _ => DateTime.SpecifyKind(value.Value, DateTimeKind.Utc)
+        };
+    }
+
     public async Task<AssignmentDetailDto> CreateAssignmentAsync(int tutorUserId, CreateAssignmentDto dto)
     {
         if (string.IsNullOrWhiteSpace(dto.Title))
@@ -1183,7 +1199,7 @@ public class TutorService : ITutorService
             TutorUserId = tutorUserId,
             Title = InputSanitizer.Sanitize(dto.Title)!,
             Description = dto.Description != null ? InputSanitizer.Sanitize(dto.Description) : null,
-            Deadline = dto.Deadline,
+            Deadline = ToUtcOrNull(dto.Deadline),
             CreatedAt = DateTime.UtcNow,
             Questions = questionIds.Select((qid, idx) => new AssignmentQuestion
             {
@@ -1212,7 +1228,7 @@ public class TutorService : ITutorService
 
         if (dto.Title != null) assignment.Title = InputSanitizer.Sanitize(dto.Title)!;
         if (dto.Description != null) assignment.Description = InputSanitizer.Sanitize(dto.Description);
-        if (dto.Deadline.HasValue) assignment.Deadline = dto.Deadline.Value;
+        if (dto.Deadline.HasValue) assignment.Deadline = ToUtcOrNull(dto.Deadline);
         if (dto.IsActive.HasValue) assignment.IsActive = dto.IsActive.Value;
 
         await _db.SaveChangesAsync();

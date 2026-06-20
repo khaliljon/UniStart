@@ -140,7 +140,7 @@ public class QuestionExtractorService : IQuestionExtractorService
             @"|(?:Question|Q|Вопрос|Задание|Задача|Упражнение|题目|问题)\s*\d+[:\.\)：、]\s*" +
             @"|Q\s*\d{1,4}(?=\s)" +                         // Q001<TAB> / Q12  (template id, no delimiter)
             @"|#\s*\d{1,4}[\.\:\s]" +                       // #1.
-            @"|(?=[IVXLC]{1,6}[\.\)]\s)[IVXLC]+[\.\)]\s" +  // I. / II. (Roman)
+            @"|(?=[IVXLC]{2,6}[\.\)]\s)[IVXLC]{2,}[\.\)]\s" +  // II. / III. / IV. (Roman, 2+ chars — single letters clash with MCQ options like "C)")
             @"|第\s*\d{1,4}\s*题[\.\:\、：]?\s*" +         // 第1题 / 第2题：
             @"|（\d{1,4}）\s*" +                        // （1）(fullwidth parenthesized)
             @"|\d{1,4}\s*[\.\)\、]\s*(?=[\u4e00-\u9fff(\(（$])" + // CJK: 1.设 / 1、若
