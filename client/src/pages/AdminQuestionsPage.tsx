@@ -470,6 +470,16 @@ function AdminQuestionsPage() {
     } catch { setError(t.admin.common.deleteError); }
   };
 
+  const clearTopicQuestions = async (topicId: number) => {
+    if (!confirm('Удалить все вопросы этой темы? Сама тема останется. Это действие нельзя отменить.')) return;
+    try {
+      const { removed } = await adminService.clearTopicQuestions(topicId);
+      setSuccess(`Удалено вопросов: ${removed}`);
+      loadTopics();
+      if (viewMode === 'topics') loadTopicViewQuestions();
+    } catch { setError(t.admin.common.deleteError); }
+  };
+
   const deleteSectionWithCascade = async (sectionId: number) => {
     if (!confirm('Удалить эту секцию, все её темы и вопросы? Это действие нельзя отменить.')) return;
     try {
@@ -834,6 +844,16 @@ function AdminQuestionsPage() {
                         >
                           {t.admin.questions.newQuestion}
                         </button>
+                        {tp.questionCount > 0 && (
+                          <button
+                            className="btn btn-outline"
+                            style={{ fontSize: '0.8rem', padding: '0.3rem 0.7rem', color: 'var(--error-color)' }}
+                            onClick={() => clearTopicQuestions(tp.id)}
+                            title="Удалить все вопросы темы (тема останется)"
+                          >
+                            Очистить вопросы
+                          </button>
+                        )}
                         <button
                           className="btn btn-outline"
                           style={{ fontSize: '0.8rem', padding: '0.3rem 0.7rem', color: 'var(--error-color)' }}

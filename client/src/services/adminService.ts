@@ -148,6 +148,9 @@ const adminService = {
   deleteTopic: (id: number) =>
     api.delete(`/admin/topics/${id}`),
 
+  clearTopicQuestions: (id: number) =>
+    api.delete<{ removed: number }>(`/admin/topics/${id}/questions`).then(r => r.data),
+
   getSections: () =>
     api.get<AdminSection[]>('/admin/sections').then(r => r.data),
 

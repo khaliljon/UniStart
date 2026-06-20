@@ -298,6 +298,18 @@ public class AdminController : ControllerBase
         return NoContent();
     }
 
+    /// <summary>Delete all questions of a topic while keeping the topic itself</summary>
+    [HttpDelete("topics/{id:int}/questions")]
+    public async Task<IActionResult> ClearTopicQuestions(int id)
+    {
+        var removed = await _svc.ClearTopicQuestionsAsync(id);
+        if (removed == null) return NotFound();
+        var (adminId, email) = GetCurrentAdmin();
+        await _audit.LogAsync(adminId, email, "ClearQuestions", "Topic", id.ToString(),
+            ipAddress: GetClientIp());
+        return Ok(new { removed });
+    }
+
     /// <summary>List all exam sections (for dropdowns)</summary>
     [HttpGet("sections")]
     public async Task<IActionResult> GetSections()

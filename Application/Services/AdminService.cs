@@ -854,6 +854,58 @@ public class AdminService : IAdminService
         return true;
     }
 
+    /// <summary>
+    /// Hard-delete every question of a topic (and their FK dependents) while keeping
+    /// the topic itself. Returns the number of questions removed, or null if the topic
+    /// does not exist.
+    /// </summary>
+    public async Task<int?> ClearTopicQuestionsAsync(int id)
+    {
+        var topic = await _db.Topics.FindAsync(id);
+        if (topic == null) return null;
+
+        // Include soft-deleted questions: they still exist in the DB and their FK
+        // dependents must be cleared before the questions can be removed.
+        var questions = await _db.Questions
+            .IgnoreQueryFilters()
+            .Where(q => q.TopicId == id)
+            .ToListAsync();
+
+        if (questions.Count == 0) return 0;
+
+        var questionIds = questions.Select(q => q.Id).ToList();
+
+        // Clear Restrict-FK rows that block deleting the questions (same set as DeleteTopicAsync).
+        var mockAnswers = await _db.MockExamAnswers
+            .Where(a => questionIds.Contains(a.QuestionId))
+            .ToListAsync();
+        if (mockAnswers.Count > 0)
+            _db.MockExamAnswers.RemoveRange(mockAnswers);
+
+        var assignAnswers = await _db.AssignmentAnswers
+            .Where(a => questionIds.Contains(a.QuestionId))
+            .ToListAsync();
+        if (assignAnswers.Count > 0)
+            _db.AssignmentAnswers.RemoveRange(assignAnswers);
+
+        var userAnswers = await _db.UserAnswers
+            .Where(a => questionIds.Contains(a.QuestionId))
+            .ToListAsync();
+        if (userAnswers.Count > 0)
+            _db.UserAnswers.RemoveRange(userAnswers);
+
+        await _db.SaveChangesAsync(); // commit FK cleanup before removing questions
+
+        // Remove the questions (AnswerOptions cascade-delete from Question).
+        _db.Questions.RemoveRange(questions);
+        await _db.SaveChangesAsync();
+        _cache.Remove("admin:sections");
+
+        _logger.LogInformation("Cleared {Count} questions from topic {TopicId} (topic kept)",
+            questions.Count, id);
+        return questions.Count;
+    }
+
     // ═══════════════════════════════════════════════════════
     //  SECTIONS & SKILLS (for dropdowns)
     // ═══════════════════════════════════════════════════════

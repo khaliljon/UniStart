@@ -32,6 +32,7 @@ public interface IAdminService
     Task<AdminTopicSummaryDto> CreateTopicAsync(CreateTopicDto dto);
     Task<AdminTopicSummaryDto?> UpdateTopicAsync(int id, UpdateTopicDto dto);
     Task<bool> DeleteTopicAsync(int id);
+    Task<int?> ClearTopicQuestionsAsync(int id);
     Task<List<AdminSectionDto>> GetSectionsAsync();
     Task<List<AdminSkillDto>> GetSkillsAsync();
 
