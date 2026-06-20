@@ -398,7 +398,11 @@ public class FileParserService : IFileParserService
         var body = doc.MainDocumentPart?.Document?.Body;
         if (body != null)
         {
-            foreach (var paragraph in body.Elements<Paragraph>())
+            // Use Descendants (not direct Elements) so that paragraphs nested inside
+            // tables, text boxes and content controls are also captured. Many templates
+            // lay their questions out in a table — reading only top-level paragraphs
+            // would drop almost all of the content.
+            foreach (var paragraph in body.Descendants<Paragraph>())
             {
                 var text = paragraph.InnerText;
                 // Always append line (even empty) to preserve paragraph structure
