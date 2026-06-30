@@ -28,8 +28,8 @@ function ForgotPasswordPage() {
       await authService.forgotPassword(email);
       setStep('code');
       setSuccess(fp.codeSent);
-    } catch {
-      setError(fp.sendError);
+    } catch (err: any) {
+      setError(err?.response?.data?.error ?? fp.sendError);
     } finally {
       setIsLoading(false);
     }

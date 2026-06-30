@@ -2,6 +2,7 @@ using MailKit.Net.Smtp;
 using MailKit.Security;
 using MimeKit;
 using UniStart.Application.DTOs;
+using UniStart.Application.Exceptions;
 using UniStart.Application.Interfaces;
 
 namespace UniStart.Application.Services;
@@ -35,7 +36,11 @@ public class EmailService : IEmailService
     {
         var subject = "Восстановление пароля — UniStart";
         var body = GetPasswordResetTemplate(userName, code);
-        await SendEmailAsync(toEmail, subject, body);
+        // The user is actively waiting for this code, so surface delivery failures
+        // instead of swallowing them (otherwise the UI falsely says "code sent").
+        var sent = await SendEmailAsync(toEmail, subject, body);
+        if (!sent)
+            throw new EmailDeliveryException("Failed to send password reset code email");
     }
 
     public async Task SendStreakReminderAsync(string toEmail, string userName, int lastStreak, int inactiveDays)
@@ -97,7 +102,13 @@ public class EmailService : IEmailService
 
     // ─── Core Send Method ─────────────────────────────────
 
-    private async Task SendEmailAsync(string toEmail, string subject, string htmlBody)
+    /// <summary>
+    /// Sends an email. Returns <c>true</c> if the message was sent (or email is
+    /// intentionally disabled), <c>false</c> if delivery failed. Failures are logged
+    /// rather than thrown so fire-and-forget callers keep working; callers that need
+    /// to know about failures should inspect the return value.
+    /// </summary>
+    private async Task<bool> SendEmailAsync(string toEmail, string subject, string htmlBody)
     {
         var emailSettings = _config.GetSection("EmailSettings");
         var enabled = emailSettings.GetValue<bool>("Enabled");
@@ -105,7 +116,7 @@ public class EmailService : IEmailService
         if (!enabled)
         {
             _logger.LogInformation("Email disabled. Would send to {Email}: {Subject}", toEmail, subject);
-            return;
+            return true;
         }
 
         try
@@ -135,15 +146,26 @@ public class EmailService : IEmailService
             {
                 await client.AuthenticateAsync(username, password);
             }
+            else
+            {
+                // Enabled but no credentials configured — most public SMTP relays
+                // (e.g. Gmail) will reject the message. Warn loudly so the
+                // misconfiguration is visible in the logs.
+                _logger.LogWarning(
+                    "EmailSettings:Enabled is true but Username/Password are empty. " +
+                    "SMTP server {Host} will likely reject the message to {Email}.", host, toEmail);
+            }
 
             await client.SendAsync(message);
             await client.DisconnectAsync(true);
 
             _logger.LogInformation("Email sent to {Email}: {Subject}", toEmail, subject);
+            return true;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to send email to {Email}: {Subject}", toEmail, subject);
+            return false;
         }
     }
 

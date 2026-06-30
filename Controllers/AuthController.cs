@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using UniStart.Application.DTOs;
+using UniStart.Application.Exceptions;
 using UniStart.Application.Interfaces;
 using Asp.Versioning;
 
@@ -191,6 +192,14 @@ public class AuthController : ControllerBase
         {
             await _authService.ForgotPasswordAsync(dto);
             return Ok(new { message = "If the email exists, a reset code has been sent" });
+        }
+        catch (EmailDeliveryException ex)
+        {
+            // The code was saved but the email could not be delivered (SMTP/config
+            // issue). Tell the user so they can retry instead of waiting forever.
+            _logger.LogError(ex, "Failed to deliver password reset code to {Email}", dto.Email);
+            return StatusCode(StatusCodes.Status502BadGateway,
+                new { error = "Не удалось отправить код на почту. Попробуйте позже." });
         }
         catch (Exception ex)
         {

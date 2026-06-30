@@ -1277,14 +1277,26 @@ public class TutorService : ITutorService
                 aq.QuestionId, aq.Question.Text, aq.Question.Difficulty.ToString(),
                 aq.Question.Topic?.Name ?? "", aq.OrderIndex
             )).ToList(),
-            assignment.Students.Select(s => new AssignmentStudentProgressDto(
-                s.StudentUserId, s.StudentUser?.Name ?? "",
-                s.Status.ToString(),
-                s.Answers.Count,
-                s.Answers.Count(a => a.IsCorrect),
-                assignment.Questions.Count,
-                s.StartedAt, s.CompletedAt, s.Score
-            )).ToList()
+            assignment.Students.Select(s =>
+            {
+                var total = assignment.Questions.Count;
+                var answered = s.Answers.Select(a => a.QuestionId).Distinct().Count();
+                var correct = s.Answers.Where(a => a.IsCorrect).Select(a => a.QuestionId).Distinct().Count();
+                // Derive the score from the distinct correct count so the percentage always
+                // matches "(N верных)" and never depends on a stale/over-100 stored Score.
+                int? score = s.Status == AssignmentStudentStatus.Completed && total > 0
+                    ? Math.Min(100, (int)Math.Round(100.0 * correct / total))
+                    : (int?)null;
+                return new AssignmentStudentProgressDto(
+                    s.StudentUserId, s.StudentUser?.Name ?? "",
+                    s.Status.ToString(),
+                    Math.Min(answered, total),
+                    Math.Min(correct, total),
+                    total,
+                    s.StartedAt, s.CompletedAt,
+                    score
+                );
+            }).ToList()
         );
     }
 
