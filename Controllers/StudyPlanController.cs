@@ -47,7 +47,7 @@ public class StudyPlanController : ControllerBase
     {
         var userId = GetCurrentUserId();
         var goal = await _service.GetActiveGoalAsync(userId);
-        if (goal == null) return NotFound(new { message = "No active goal" });
+        // Return 200 with null when there is no active goal (avoids noisy 404s in the client console)
         return Ok(goal);
     }
 
@@ -107,7 +107,7 @@ public class StudyPlanController : ControllerBase
     {
         var userId = GetCurrentUserId();
         var plan = await _service.GetActivePlanAsync(userId);
-        if (plan == null) return NotFound(new { message = "No active plan" });
+        // Return 200 with null when there is no active plan (avoids noisy 404s in the client console)
         return Ok(plan);
     }
 

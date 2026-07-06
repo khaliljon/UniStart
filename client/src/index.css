@@ -1132,6 +1132,7 @@ select option,
   font-size: 0.9rem; font-weight: 500; color: var(--csca-ink-soft);
   text-decoration: none; padding: 0.45rem 0.75rem; border-radius: 0.5rem;
   transition: color 0.18s, background 0.18s; cursor: pointer; background: none; border: none;
+  white-space: nowrap;
 }
 .csca-nav-link:hover { color: var(--c-red); background: rgba(200, 16, 46, 0.06); }
 .csca-nav-actions { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
