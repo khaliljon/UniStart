@@ -103,6 +103,15 @@ function ProfileDropdown() {
           <div className="profile-dropdown-divider" />
 
           {/* Menu items */}
+          <button className="profile-dropdown-item" onClick={() => goTo('/profile')}>
+            {t.nav.myInfo}
+          </button>
+          <button className="profile-dropdown-item" onClick={() => goTo('/purchases')}>
+            {t.nav.myPurchases}
+          </button>
+          <button className="profile-dropdown-item" onClick={() => goTo('/progress')}>
+            {t.nav.myProgress}
+          </button>
           <button className="profile-dropdown-item" onClick={() => goTo('/messages')}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
               {t.nav.messages}
@@ -113,12 +122,6 @@ function ProfileDropdown() {
                 }}>{unreadCount > 99 ? '99+' : unreadCount}</span>
               )}
             </span>
-          </button>
-          <button className="profile-dropdown-item" onClick={() => goTo('/tutors')}>
-            {t.nav.tutors}
-          </button>
-          <button className="profile-dropdown-item" onClick={() => goTo('/profile')}>
-            {t.nav.profile}
           </button>
           <button className="profile-dropdown-item" onClick={() => goTo('/profile/notifications')}>
             {t.nav.notifications}

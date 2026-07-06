@@ -78,6 +78,12 @@ public class UniStartDbContext : DbContext
     // Editable legal documents (privacy / terms / referral)
     public DbSet<LegalDocument> LegalDocuments => Set<LegalDocument>();
 
+    // CSCA news / information articles
+    public DbSet<NewsArticle> NewsArticles => Set<NewsArticle>();
+
+    // User order history (mock packages / books / courses)
+    public DbSet<Purchase> Purchases => Set<Purchase>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -1117,6 +1123,35 @@ public class UniStartDbContext : DbContext
             entity.HasIndex(e => e.Slug)
                   .IsUnique()
                   .HasDatabaseName("IX_LegalDocuments_Slug");
+        });
+
+        modelBuilder.Entity<NewsArticle>(entity =>
+        {
+            entity.ToTable("NewsArticles");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Summary).HasMaxLength(500);
+            entity.Property(e => e.ImageUrl).HasMaxLength(500);
+            entity.HasIndex(e => new { e.IsPublished, e.PublishedAt })
+                  .HasDatabaseName("IX_NewsArticles_Published");
+        });
+
+        modelBuilder.Entity<Purchase>(entity =>
+        {
+            entity.ToTable("Purchases");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.ItemType).IsRequired().HasMaxLength(30);
+            entity.Property(e => e.ItemCode).IsRequired().HasMaxLength(60);
+            entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Subjects).HasMaxLength(200);
+            entity.Property(e => e.Amount).HasColumnType("numeric(12,2)");
+            entity.Property(e => e.Currency).HasMaxLength(8).HasDefaultValue("KZT");
+            entity.Property(e => e.Status).IsRequired().HasMaxLength(20).HasDefaultValue("Paid");
+            entity.HasOne(e => e.User)
+                  .WithMany()
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(e => e.UserId).HasDatabaseName("IX_Purchases_UserId");
         });
 
         // CSCA-only platform: exam types are managed at runtime (seeder / admin),

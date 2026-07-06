@@ -42,6 +42,9 @@ export const ru: Translations = {
     language: 'Язык',
     notifications: 'Уведомления',
     assignments: 'Задания',
+    myInfo: 'Моя инфа',
+    myPurchases: 'Мои покупки',
+    myProgress: 'Мой прогресс',
   },
   auth: {
     login: 'Войти',
@@ -579,7 +582,7 @@ export const ru: Translations = {
       health: 'Система', activity: 'Активность', import: 'Импорт',
       questionImport: 'Загрузка вопросов', trash: 'Корзина', more: 'Ещё', applications: 'Заявки',
       schools: 'Школы', advisorConfig: 'Советник', backups: 'Резервные копии',
-      legal: 'Юр. документы',
+      legal: 'Юр. документы', news: 'Новости',
     },
     legal: {
       title: 'Юридические документы', docTitle: 'Название документа', lastUpdated: 'Метка «Обновлено»',

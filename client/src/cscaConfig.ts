@@ -32,9 +32,9 @@ export function daysUntil(isoDate: string, now: Date = new Date()): number {
   return Math.max(0, Math.ceil(ms / 86_400_000));
 }
 
-/** The four CSCA subjects. `hanzi` shows the Chinese subject name. */
+/** The CSCA subjects. `hanzi` shows the Chinese subject name. */
 export interface CscaSubject {
-  key: 'chinese' | 'math' | 'physics' | 'chemistry';
+  key: 'chineseTech' | 'chineseHum' | 'math' | 'physics' | 'chemistry';
   hanzi: string;
   /** Tailwind-free gradient used for the book cover. */
   cover: string;
@@ -45,7 +45,8 @@ export const CSCA_SUBJECTS: CscaSubject[] = [
   { key: 'math', hanzi: '数学', cover: 'linear-gradient(160deg,#8A0B1F,#C8102E)', required: true },
   { key: 'physics', hanzi: '物理', cover: 'linear-gradient(160deg,#123a63,#1f5c9c)' },
   { key: 'chemistry', hanzi: '化学', cover: 'linear-gradient(160deg,#14532d,#1f7a44)' },
-  { key: 'chinese', hanzi: '汉语', cover: 'linear-gradient(160deg,#5b3a1a,#a9762f)' },
+  { key: 'chineseTech', hanzi: '理工汉语', cover: 'linear-gradient(160deg,#5b3a1a,#a9762f)' },
+  { key: 'chineseHum', hanzi: '人文汉语', cover: 'linear-gradient(160deg,#4a2a5b,#8a4fa3)' },
 ];
 
 /** Mock-test packages (prices in ₸, from the technical specification). */

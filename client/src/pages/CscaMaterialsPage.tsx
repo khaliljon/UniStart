@@ -10,7 +10,8 @@ function CscaMaterialsPage() {
   const s = cscaStrings[locale];
 
   const subjectName = {
-    chinese: s.subjChinese, math: s.subjMath, physics: s.subjPhysics, chemistry: s.subjChemistry,
+    chineseTech: s.subjChineseTech, chineseHum: s.subjChineseHum,
+    math: s.subjMath, physics: s.subjPhysics, chemistry: s.subjChemistry,
   } as const;
 
   return (
@@ -18,7 +19,7 @@ function CscaMaterialsPage() {
       <CscaPageHero eyebrow={s.navMaterials} title={s.materialsTitle} lead={s.materialsLead} />
 
       <section className="csca-wrap csca-section" style={{ paddingTop: '1.5rem' }}>
-        <div className="csca-grid csca-grid-4">
+        <div className="csca-grid csca-grid-5">
           {CSCA_SUBJECTS.map((subj) => (
             <div className="csca-card csca-book" key={subj.key}>
               <div className="csca-book-cover" style={{ background: subj.cover }}>

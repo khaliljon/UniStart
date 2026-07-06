@@ -1223,6 +1223,7 @@ select option,
 /* ── Cards / grids ── */
 .csca-grid { display: grid; gap: 1.25rem; }
 .csca-grid-4 { grid-template-columns: repeat(4, 1fr); }
+.csca-grid-5 { grid-template-columns: repeat(5, 1fr); }
 .csca-grid-3 { grid-template-columns: repeat(3, 1fr); }
 .csca-grid-2 { grid-template-columns: repeat(2, 1fr); }
 
@@ -1319,11 +1320,13 @@ select option,
   }
   .csca-stats { grid-template-columns: repeat(2, 1fr); }
   .csca-grid-4 { grid-template-columns: repeat(2, 1fr); }
+  .csca-grid-5 { grid-template-columns: repeat(3, 1fr); }
   .csca-grid-3 { grid-template-columns: 1fr; }
   .csca-footer-grid { grid-template-columns: 1fr 1fr; }
 }
 @media (max-width: 560px) {
   .csca-grid-4, .csca-grid-2 { grid-template-columns: 1fr; }
+  .csca-grid-5 { grid-template-columns: repeat(2, 1fr); }
   .csca-stats { grid-template-columns: repeat(2, 1fr); }
   .csca-footer-grid { grid-template-columns: 1fr; }
   .csca-countdown { flex-wrap: wrap; justify-content: center; gap: 0.4rem; padding: 0.85rem 0.75rem; }

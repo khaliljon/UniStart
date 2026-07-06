@@ -42,6 +42,9 @@ export const kz: Translations = {
     language: 'Тіл',
     notifications: 'Хабарландырулар',
     assignments: 'Тапсырмалар',
+    myInfo: 'Менің ақпаратым',
+    myPurchases: 'Сатып алуларым',
+    myProgress: 'Менің прогресім',
   },
   auth: {
     login: 'Кіру',
@@ -579,7 +582,7 @@ export const kz: Translations = {
       health: 'Жүйе', activity: 'Белсенділік', import: 'Импорт',
       questionImport: 'Сұрақтарды жүктеу', trash: 'Қоқыс жәшігі', more: 'Тағы', applications: 'Өтінімдер',
       schools: 'Мектептер', advisorConfig: 'Советник', backups: 'Сақтық көшірмелер',
-      legal: 'Заң құжаттары',
+      legal: 'Заң құжаттары', news: 'Жаңалықтар',
     },
     legal: {
       title: 'Заңдық құжаттар', docTitle: 'Құжат атауы', lastUpdated: '«Жаңартылды» белгісі',

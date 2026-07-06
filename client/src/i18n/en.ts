@@ -42,6 +42,9 @@ export const en: Translations = {
     language: 'Language',
     notifications: 'Notifications',
     assignments: 'Assignments',
+    myInfo: 'My info',
+    myPurchases: 'My purchases',
+    myProgress: 'My progress',
   },
   auth: {
     login: 'Sign in',
@@ -579,7 +582,7 @@ export const en: Translations = {
       health: 'System', activity: 'Activity', import: 'Import',
       questionImport: 'Question import', trash: 'Trash', more: 'More', applications: 'Applications',
       schools: 'Schools', advisorConfig: 'Advisor config', backups: 'Backups',
-      legal: 'Legal docs',
+      legal: 'Legal docs', news: 'News',
     },
     legal: {
       title: 'Legal documents', docTitle: 'Document title', lastUpdated: 'Last updated label',

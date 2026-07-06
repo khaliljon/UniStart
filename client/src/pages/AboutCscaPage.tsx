@@ -4,6 +4,7 @@ import { cscaStrings } from '../i18n/csca';
 import CscaPageShell, { CscaPageHero } from '../components/csca/CscaPageShell';
 import { BrushDivider } from '../components/csca/ChineseMotifs';
 import { CSCA_SUBJECTS, CSCA_EXAM_SITTINGS } from '../cscaConfig';
+import { downloadIcs } from '../utils/calendar';
 
 function AboutCscaPage() {
   const navigate = useNavigate();
@@ -12,7 +13,8 @@ function AboutCscaPage() {
   const now = new Date();
 
   const subjectMeta = {
-    chinese: { name: s.subjChinese, tag: s.subjChineseTag },
+    chineseTech: { name: s.subjChineseTech, tag: s.subjChineseTechTag },
+    chineseHum: { name: s.subjChineseHum, tag: s.subjChineseHumTag },
     math: { name: s.subjMath, tag: s.subjMathTag },
     physics: { name: s.subjPhysics, tag: s.subjPhysicsTag },
     chemistry: { name: s.subjChemistry, tag: s.subjChemistryTag },
@@ -40,7 +42,7 @@ function AboutCscaPage() {
             <h2 className="csca-h2">{s.subjectsTitle}</h2>
             <p className="csca-lead">{s.subjectsLead}</p>
           </div>
-          <div className="csca-grid csca-grid-4">
+          <div className="csca-grid csca-grid-5">
             {CSCA_SUBJECTS.map((subj) => (
               <div className="csca-card csca-subject" key={subj.key}>
                 {subj.required && <span className="csca-subject-badge">{s.required}</span>}
@@ -72,13 +74,28 @@ function AboutCscaPage() {
                       {d.toLocaleDateString(locale === 'en' ? 'en-US' : locale === 'kz' ? 'kk-KZ' : 'ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}
                     </div>
                   </div>
-                  <span style={{
-                    fontSize: '0.78rem', fontWeight: 700, padding: '0.28rem 0.8rem', borderRadius: 999,
-                    color: past ? 'var(--csca-ink-soft)' : '#fff',
-                    background: past ? 'var(--csca-cloud)' : 'var(--csca-red)',
-                  }}>
-                    {past ? s.statusCompleted : s.statusUpcoming}
-                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                    {!past && (
+                      <button
+                        type="button"
+                        className="csca-btn csca-btn-ghost csca-btn-sm"
+                        onClick={() => downloadIcs({
+                          title: `${s.aboutTitle.replace('?', '')} — ${monthLabel[sit.monthKey] ?? sit.monthKey}`,
+                          description: s.examDatesLead,
+                          date: sit.date,
+                        }, `csca-${sit.monthKey}-2026.ics`)}
+                      >
+                        {s.addToCalendar}
+                      </button>
+                    )}
+                    <span style={{
+                      fontSize: '0.78rem', fontWeight: 700, padding: '0.28rem 0.8rem', borderRadius: 999,
+                      color: past ? 'var(--csca-ink-soft)' : '#fff',
+                      background: past ? 'var(--csca-cloud)' : 'var(--csca-red)',
+                    }}>
+                      {past ? s.statusCompleted : s.statusUpcoming}
+                    </span>
+                  </div>
                 </div>
               );
             })}

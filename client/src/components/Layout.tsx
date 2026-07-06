@@ -44,26 +44,6 @@ function Layout() {
                   {t.nav.home}
                 </NavLink>
               </li>
-              <li>
-                <NavLink to="/learn" onClick={() => setMenuOpen(false)}>
-                  {t.nav.learn}
-                </NavLink>
-              </li>
-              <li>
-                <NavLink to="/progress" onClick={() => setMenuOpen(false)}>
-                  {t.nav.progress}
-                </NavLink>
-              </li>
-              <li>
-                <NavLink to="/plan" onClick={() => setMenuOpen(false)}>
-                  {t.nav.plan}
-                </NavLink>
-              </li>
-              <li>
-                <NavLink to="/assignments" onClick={() => setMenuOpen(false)}>
-                  {t.nav.assignments}
-                </NavLink>
-              </li>
             </ul>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>

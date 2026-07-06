@@ -152,8 +152,8 @@ public class SeoController : ControllerBase
             !host.Equals("unistart.kz", StringComparison.OrdinalIgnoreCase) &&
             !host.StartsWith("www.", StringComparison.OrdinalIgnoreCase);
 
-        string title = "UniStart — Адаптивная подготовка к экзаменам";
-        string description = "Персонализированные тесты, аналитика прогресса и умная система обучения. Готовьтесь к экзаменам эффективно с UniStart.";
+        string title = "UniStart — Подготовка к экзамену CSCA";
+        string description = "Платформа подготовки к экзамену CSCA (China Scholastic Competency Assessment): пробные тесты с ИИ-объяснениями, официальные материалы и новости для поступления в университеты Китая.";
         string image = $"{origin}/og-image.png";
         string siteName = "UniStart";
 

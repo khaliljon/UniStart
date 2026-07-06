@@ -12,7 +12,6 @@ import { ToastProvider } from './components/Toast'
 const LoginPage = lazy(() => import('./pages/LoginPage'))
 const RegisterPage = lazy(() => import('./pages/RegisterPage'))
 const CompleteProfilePage = lazy(() => import('./pages/CompleteProfilePage'))
-const OnboardingPage = lazy(() => import('./pages/OnboardingPage'))
 const DashboardPage = lazy(() => import('./pages/DashboardPage'))
 const LearnPage = lazy(() => import('./pages/LearnPage'))
 const ProgressPage = lazy(() => import('./pages/ProgressPage'))
@@ -65,6 +64,9 @@ const CscaMocksPage = lazy(() => import('./pages/CscaMocksPage'))
 const CscaCoursesPage = lazy(() => import('./pages/CscaCoursesPage'))
 const AboutUsPage = lazy(() => import('./pages/AboutUsPage'))
 const ContactsPage = lazy(() => import('./pages/ContactsPage'))
+const CheckoutPage = lazy(() => import('./pages/CheckoutPage'))
+const PurchasesPage = lazy(() => import('./pages/PurchasesPage'))
+const AdminNewsPage = lazy(() => import('./pages/AdminNewsPage'))
 
 // ── Suspense fallback ───────────────────────────────────
 const PageLoader = () => (
@@ -80,6 +82,8 @@ function StudentRoutes() {
       <Route path="plan" element={<StudyPlanPage />} />
       <Route path="profile" element={<ProfilePage />} />
       <Route path="profile/notifications" element={<NotificationSettingsPage />} />
+      <Route path="purchases" element={<PurchasesPage />} />
+      <Route path="checkout" element={<CheckoutPage />} />
       <Route path="diagnostic" element={<DiagnosticTestPage />} />
       <Route path="tutors" element={<TutorsPage />} />
       <Route path="tutors/schools/:slug" element={<SchoolDetailPage />} />
@@ -108,6 +112,7 @@ function AdminRoutes() {
       <Route index element={<AdminStatsPage />} />
       <Route path="questions" element={<AdminQuestionsPage />} />
       <Route path="content" element={<AdminContentPage />} />
+      <Route path="news" element={<AdminNewsPage />} />
       <Route path="users" element={<AdminUsersPage />} />
       <Route path="tutors" element={<AdminTutorsPage />} />
       <Route path="audit" element={<AdminAuditLogsPage />} />
@@ -168,15 +173,14 @@ function App() {
   const isTutor = user?.role === 'Tutor' || user?.role === 'SchoolTutor'
   const isSchoolAdmin = user?.role === 'SchoolAdmin'
   const needsPhone = isAuthenticated && !user?.phoneNumber
-  const needsOnboarding = isAuthenticated && !isAdmin && !isTutor && !isSchoolAdmin && !user?.hasCompletedOnboarding
 
   return (
     <ToastProvider>
     <Suspense fallback={<PageLoader />}>
     <Routes>
       <Route path="/landing" element={!isAuthenticated ? <LandingPage /> : <Navigate to="/" replace />} />
-      <Route path="/login" element={!isAuthenticated ? <LoginPage /> : <Navigate to={needsPhone ? '/complete-profile' : needsOnboarding ? '/onboarding' : '/'} />} />
-      <Route path="/register" element={!isAuthenticated ? <RegisterPage /> : <Navigate to={needsPhone ? '/complete-profile' : needsOnboarding ? '/onboarding' : '/'} />} />
+      <Route path="/login" element={!isAuthenticated ? <LoginPage /> : <Navigate to={needsPhone ? '/complete-profile' : '/'} />} />
+      <Route path="/register" element={!isAuthenticated ? <RegisterPage /> : <Navigate to={needsPhone ? '/complete-profile' : '/'} />} />
       <Route path="/forgot-password" element={!isAuthenticated ? <ForgotPasswordPage /> : <Navigate to="/" replace />} />
       <Route path="/privacy" element={<PrivacyPage />} />
       <Route path="/terms" element={<TermsPage />} />
@@ -188,13 +192,10 @@ function App() {
       <Route path="/csca/about-us" element={<AboutUsPage />} />
       <Route path="/csca/contacts" element={<ContactsPage />} />
       <Route path="/complete-profile" element={needsPhone ? <CompleteProfilePage /> : <Navigate to="/" replace />} />
-      <Route path="/onboarding" element={!needsPhone && needsOnboarding ? <OnboardingPage /> : <Navigate to="/" replace />} />
 
       {isAuthenticated ? (
         needsPhone ? (
           <Route path="*" element={<Navigate to="/complete-profile" />} />
-        ) : needsOnboarding ? (
-          <Route path="*" element={<Navigate to="/onboarding" />} />
         ) : (
           isAdmin ? AdminRoutes() : isSchoolAdmin ? SchoolAdminRoutes() : isTutor ? TutorRoutes() : StudentRoutes()
         )

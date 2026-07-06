@@ -1,7 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from '../../i18n';
 import { cscaStrings } from '../../i18n/csca';
-import { PagodaMark } from './ChineseMotifs';
 
 /** Public footer for the CSCA marketing pages. */
 export default function CscaFooter() {
@@ -14,8 +13,8 @@ export default function CscaFooter() {
       <div className="csca-wrap">
         <div className="csca-footer-grid">
           <div>
-            <div className="csca-brand" style={{ marginBottom: '0.9rem' }}>
-              <PagodaMark style={{ height: 36, width: 36, color: '#fff' }} />
+            <div className="csca-brand" style={{ marginBottom: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+              <img src="/unistart-logo.png" alt="UniStart" style={{ height: 40, width: 'auto' }} />
               <span className="csca-brand-text" style={{ color: '#fff' }}>UNISTART</span>
             </div>
             <p style={{ fontSize: '0.9rem', lineHeight: 1.6, maxWidth: 320 }}>{s.footerDesc}</p>
@@ -24,7 +23,7 @@ export default function CscaFooter() {
             <h4>{s.footerPlatform}</h4>
             <Link to="/csca/mocks">{s.navMocks}</Link>
             <Link to="/csca/materials">{s.navMaterials}</Link>
-            <Link to="/csca/courses">{s.navCourses}</Link>
+            <Link to="/landing#news">{s.navNews}</Link>
           </div>
           <div>
             <h4>{s.footerAbout}</h4>

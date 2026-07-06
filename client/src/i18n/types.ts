@@ -45,6 +45,9 @@ export interface Translations {
     language: string;
     notifications: string;
     assignments: string;
+    myInfo: string;
+    myPurchases: string;
+    myProgress: string;
   };
 
   // ─── Auth ───
@@ -615,7 +618,7 @@ export interface Translations {
       tutors: string; audit: string; health: string; activity: string;
       import: string; questionImport: string; trash: string; more: string; applications: string;
       schools: string; advisorConfig: string; backups: string;
-      legal: string;
+      legal: string; news: string;
     };
     legal: {
       title: string; docTitle: string; lastUpdated: string; content: string; saved: string;

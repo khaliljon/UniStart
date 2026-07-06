@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from '../i18n';
 import { cscaStrings } from '../i18n/csca';
 import { useBranding } from '../contexts/BrandingContext';
 import WhiteLabelLanding from './WhiteLabelLanding';
 import CscaNav from '../components/csca/CscaNav';
 import CscaFooter from '../components/csca/CscaFooter';
+import CscaNewsSection from '../components/csca/CscaNewsSection';
 import Reveal from '../components/csca/Reveal';
 import {
   BrushDivider, MistMountains, SealStamp,
@@ -37,12 +38,21 @@ function useCountdown(targetIso: string) {
 
 function CscaLandingPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { locale } = useTranslation();
   const { branding, isWhiteLabel } = useBranding();
 
   const s = cscaStrings[locale];
   const nextSitting = useMemo(() => getNextSitting(), []);
   const { days, hours, minutes } = useCountdown(nextSitting.date);
+
+  // Scroll to a hash target (e.g. #news) when navigating from another page.
+  useEffect(() => {
+    if (location.hash) {
+      const el = document.getElementById(location.hash.slice(1));
+      if (el) setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+    }
+  }, [location.hash]);
 
   if (isWhiteLabel && branding) {
     return <WhiteLabelLanding branding={branding} />;
@@ -51,7 +61,8 @@ function CscaLandingPage() {
   const goRegister = () => navigate('/register');
 
   const subjectMeta = {
-    chinese: { name: s.subjChinese, tag: s.subjChineseTag },
+    chineseTech: { name: s.subjChineseTech, tag: s.subjChineseTechTag },
+    chineseHum: { name: s.subjChineseHum, tag: s.subjChineseHumTag },
     math: { name: s.subjMath, tag: s.subjMathTag },
     physics: { name: s.subjPhysics, tag: s.subjPhysicsTag },
     chemistry: { name: s.subjChemistry, tag: s.subjChemistryTag },
@@ -127,6 +138,17 @@ function CscaLandingPage() {
         </Reveal>
       </section>
 
+      {/* ═══ News ═══ */}
+      <CscaNewsSection
+        id="news"
+        section
+        title={s.newsTitle}
+        lead={s.newsLead}
+        readMore={s.newsReadMore}
+        emptyText={s.newsEmpty}
+        limit={6}
+      />
+
       {/* ═══ About CSCA ═══ */}
       <section id="about" className="csca-section">
         <div className="csca-wrap">
@@ -144,7 +166,7 @@ function CscaLandingPage() {
             <h3 className="csca-h2" style={{ fontSize: '1.5rem' }}>{s.subjectsTitle}</h3>
             <p className="csca-lead">{s.subjectsLead}</p>
           </div>
-          <Reveal stagger className="csca-grid csca-grid-4">
+          <Reveal stagger className="csca-grid csca-grid-5">
             {CSCA_SUBJECTS.map((subj) => (
               <div className="csca-card csca-subject" key={subj.key}>
                 {subj.required && <span className="csca-subject-badge">{s.required}</span>}
@@ -231,7 +253,7 @@ function CscaLandingPage() {
             <h2 className="csca-h2">{s.materialsTitle}</h2>
             <p className="csca-lead">{s.materialsLead}</p>
           </div>
-          <Reveal stagger className="csca-grid csca-grid-4">
+          <Reveal stagger className="csca-grid csca-grid-5">
             {CSCA_SUBJECTS.map((subj) => (
               <div className="csca-card csca-book" key={subj.key}>
                 <div className="csca-book-cover" style={{ background: subj.cover }}>

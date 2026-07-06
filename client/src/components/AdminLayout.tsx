@@ -153,6 +153,7 @@ function AdminLayout() {
                     zIndex: 100, padding: '0.35rem 0', marginTop: '0.25rem',
                   }}>
                     {[
+                      { label: t.admin.nav.news, path: '/news' },
                       { label: t.admin.nav.import, path: '/import' },
                       { label: t.admin.nav.schools, path: '/schools' },
                       { label: t.admin.nav.audit, path: '/audit' },
