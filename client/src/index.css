@@ -69,6 +69,10 @@
 body {
   font-family: var(--font-body);
   background-color: var(--background-color);
+  background-image:
+    radial-gradient(1000px 420px at 92% -6%, rgba(200, 16, 46, 0.05), transparent 60%),
+    radial-gradient(820px 420px at -6% 8%, rgba(201, 162, 75, 0.06), transparent 55%);
+  background-attachment: fixed;
   color: var(--text-primary);
   line-height: 1.5;
   transition: background-color 0.3s ease, color 0.3s ease;
@@ -1453,3 +1457,37 @@ select option,
   }
   .csca-btn-primary::after { display: none; }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   Internal app — Chinese-style accents (student / tutor / admin)
+   ═══════════════════════════════════════════════════════════ */
+.navbar {
+  border-bottom: 1px solid rgba(200, 16, 46, 0.16);
+  backdrop-filter: saturate(140%) blur(6px);
+}
+.navbar-brand { font-family: var(--font-display); letter-spacing: 0.01em; }
+
+/* Cards get a warm hover with a subtle red glow */
+.card {
+  transition: box-shadow 0.25s ease, border-color 0.25s ease;
+}
+.card:hover {
+  border-color: rgba(200, 16, 46, 0.20);
+  box-shadow: 0 10px 26px rgba(26, 26, 26, 0.08);
+}
+[data-theme="dark"] .card:hover {
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45);
+}
+
+/* Dashboard greeting: a faint hanzi watermark for flair */
+.csca-app-hanzi {
+  font-family: var(--font-hanzi);
+  font-weight: 900;
+  color: rgba(200, 16, 46, 0.06);
+  pointer-events: none;
+  user-select: none;
+  line-height: 1;
+}
+
+/* Section titles in the app pick up the display serif for a Chinese feel */
+.main-content h1 { font-family: var(--font-display); }

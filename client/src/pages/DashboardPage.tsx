@@ -54,8 +54,9 @@ function DashboardPage() {
   return (
     <div className="animate-fade-in" style={{ padding: '1.5rem 0' }}>
       {/* ─── Header ─── */}
-      <div style={{ marginBottom: '1.5rem' }}>
-        <h1 style={{ margin: 0, fontSize: '1.5rem' }}>
+      <div style={{ marginBottom: '1.5rem', position: 'relative', overflow: 'hidden' }}>
+        <span className="csca-app-hanzi" style={{ position: 'absolute', right: 0, top: '-1.4rem', fontSize: '5.5rem', zIndex: 0 }} aria-hidden="true">学</span>
+        <h1 style={{ margin: 0, fontSize: '1.5rem', position: 'relative' }}>
           {greeting}, {user?.name?.split(' ')[0]}
         </h1>
         {selectedExams.length > 0 && (
@@ -63,7 +64,7 @@ function DashboardPage() {
             {selectedExams.map(code => (
               <span key={code} style={{
                 padding: '0.15rem 0.5rem', borderRadius: '999px', fontSize: '0.75rem',
-                fontWeight: 600, background: 'rgba(79,70,229,0.1)', color: 'var(--primary-color)',
+                fontWeight: 600, background: 'rgba(200,16,46,0.1)', color: 'var(--primary-color)',
               }}>{code}</span>
             ))}
           </div>

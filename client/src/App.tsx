@@ -17,8 +17,6 @@ const DashboardPage = lazy(() => import('./pages/DashboardPage'))
 const LearnPage = lazy(() => import('./pages/LearnPage'))
 const ProgressPage = lazy(() => import('./pages/ProgressPage'))
 const StudyPlanPage = lazy(() => import('./pages/StudyPlanPage'))
-const UniversityAdvisorPage = lazy(() => import('./pages/UniversityAdvisorPage'))
-const UniversityDetailPage = lazy(() => import('./pages/UniversityDetailPage'))
 const ProfilePage = lazy(() => import('./pages/ProfilePage'))
 const NotificationSettingsPage = lazy(() => import('./pages/NotificationSettingsPage'))
 const DiagnosticTestPage = lazy(() => import('./pages/DiagnosticTestPage'))
@@ -36,7 +34,6 @@ const AdminContentPage = lazy(() => import('./pages/AdminContentPage'))
 const AdminTrashPage = lazy(() => import('./pages/AdminTrashPage'))
 const AdminProfilePage = lazy(() => import('./pages/AdminProfilePage'))
 const AdminSchoolsPage = lazy(() => import('./pages/AdminSchoolsPage'))
-const AdminAdvisorConfigPage = lazy(() => import('./pages/AdminAdvisorConfigPage'))
 const LandingPage = lazy(() => import('./pages/CscaLandingPage'))
 const TutorsPage = lazy(() => import('./pages/TutorsPage'))
 const TutorProfilePage = lazy(() => import('./pages/TutorProfilePage'))
@@ -81,8 +78,6 @@ function StudentRoutes() {
       <Route path="learn" element={<LearnPage />} />
       <Route path="progress" element={<ProgressPage />} />
       <Route path="plan" element={<StudyPlanPage />} />
-      <Route path="advisor" element={<UniversityAdvisorPage />} />
-      <Route path="advisor/university/:id" element={<UniversityDetailPage />} />
       <Route path="profile" element={<ProfilePage />} />
       <Route path="profile/notifications" element={<NotificationSettingsPage />} />
       <Route path="diagnostic" element={<DiagnosticTestPage />} />
@@ -124,7 +119,6 @@ function AdminRoutes() {
       <Route path="question-import" element={<Navigate to="/admin/import" replace />} />
       <Route path="trash" element={<AdminTrashPage />} />
       <Route path="schools" element={<AdminSchoolsPage />} />
-      <Route path="advisor-config" element={<AdminAdvisorConfigPage />} />
       <Route path="profile" element={<AdminProfilePage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Route>

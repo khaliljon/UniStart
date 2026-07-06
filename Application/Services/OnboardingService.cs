@@ -90,10 +90,11 @@ public class OnboardingService : IOnboardingService
         if (user.HasCompletedOnboarding)
             throw new InvalidOperationException("Onboarding already completed");
 
-        // Validate exam type
+        // Validate exam type against the exams that actually exist in the DB
+        // (admin-managed), not a hardcoded list.
         var examType = await _context.ExamTypes
             .Include(e => e.Sections)
-            .FirstOrDefaultAsync(e => (e.Code == "SAT" || e.Code == "NUET") && e.Code == dto.ExamTypeCode);
+            .FirstOrDefaultAsync(e => e.Code == dto.ExamTypeCode);
         if (examType == null)
             throw new InvalidOperationException($"Invalid exam type: {dto.ExamTypeCode}");
 
@@ -104,7 +105,9 @@ public class OnboardingService : IOnboardingService
         // Validate target score is within range
         var maxScore = examType.Sections.Sum(s => s.MaxScore);
         var minScore = examType.Sections.Sum(s => s.MinScore);
-        if (dto.TargetScore < minScore || dto.TargetScore > maxScore)
+        // Only enforce a range when the exam has scored sections. Exams whose section /
+        // score structure isn't defined yet (e.g. CSCA) accept any positive target.
+        if (maxScore > 0 && (dto.TargetScore < minScore || dto.TargetScore > maxScore))
             throw new InvalidOperationException($"Target score must be between {minScore} and {maxScore} for {examType.Name}");
 
         // Deactivate any existing goals

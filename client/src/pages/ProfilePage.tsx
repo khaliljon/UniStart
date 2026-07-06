@@ -71,14 +71,17 @@ function ProfilePage() {
     referralService.getStats().then(setRefStats).catch(() => {});
   }, [dispatch]);
 
-  // Load sections for all selected exams
+  // Load sections for all selected exams that actually exist in the DB.
   useEffect(() => {
-    if (selectedExams.length === 0) {
+    // Only fetch for exams present in the loaded (admin-managed) list — avoids
+    // 404s for stale codes that were removed from the admin panel.
+    const active = selectedExams.filter(code => exams.some(e => e.code === code));
+    if (active.length === 0) {
       setAllSections([]);
       return;
     }
     Promise.all(
-      selectedExams.map(code =>
+      active.map(code =>
         dispatch(fetchExamSections(code)).unwrap().catch(() => [] as ExamSection[])
       )
     ).then(results => {
@@ -94,7 +97,7 @@ function ProfilePage() {
         dispatch(setSelectedSectionIds(cleaned));
       }
     });
-  }, [selectedExams, dispatch]);
+  }, [selectedExams, exams, dispatch]);
 
   const handleToggleSection = (sectionId: number) => {
     const next = selectedSectionIds.includes(sectionId)

@@ -155,7 +155,6 @@ function AdminLayout() {
                     {[
                       { label: t.admin.nav.import, path: '/import' },
                       { label: t.admin.nav.schools, path: '/schools' },
-                      { label: t.admin.nav.advisorConfig, path: '/advisor-config' },
                       { label: t.admin.nav.audit, path: '/audit' },
                       { label: t.admin.nav.health, path: '/health' },
                       { label: t.admin.nav.backups, path: '/backups' },

@@ -16,11 +16,13 @@ type Step = 'welcome' | 'exam' | 'target' | 'ready';
 const EXAM_ICONS: Record<string, string> = {
   SAT: '',
   NUET: '',
+  CSCA: '',
 };
 
 const EXAM_COLORS: Record<string, string> = {
   SAT: '#6366f1',
   NUET: '#f59e0b',
+  CSCA: '#C8102E',
 };
 
 function OnboardingPage() {
@@ -104,7 +106,7 @@ function OnboardingPage() {
     const defaultDate = new Date();
     defaultDate.setMonth(defaultDate.getMonth() + 3);
     setTargetDate(defaultDate.toISOString().split('T')[0]);
-    setTargetScore(Math.round((exam.minScore + exam.maxScore) / 2));
+    setTargetScore(exam.maxScore > exam.minScore ? Math.round((exam.minScore + exam.maxScore) / 2) : 100);
     setStep('target');
   };
 
@@ -331,16 +333,18 @@ function OnboardingPage() {
                       <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--text-primary)' }}>
                         {exam.name}
                       </h3>
-                      <span style={{
-                        fontSize: '0.75rem',
-                        padding: '0.15rem 0.5rem',
-                        borderRadius: '0.25rem',
-                        background: `${EXAM_COLORS[exam.code]}15`,
-                        color: EXAM_COLORS[exam.code],
-                        fontWeight: 600,
-                      }}>
-                        {exam.minScore}–{exam.maxScore}
-                      </span>
+                      {exam.maxScore > exam.minScore && (
+                        <span style={{
+                          fontSize: '0.75rem',
+                          padding: '0.15rem 0.5rem',
+                          borderRadius: '0.25rem',
+                          background: `${EXAM_COLORS[exam.code]}15`,
+                          color: EXAM_COLORS[exam.code],
+                          fontWeight: 600,
+                        }}>
+                          {exam.minScore}–{exam.maxScore}
+                        </span>
+                      )}
                     </div>
                     <p style={{ margin: '0 0 0.75rem', color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: 1.5 }}>
                       {exam.description}
@@ -534,7 +538,9 @@ function OnboardingPage() {
                   ? selectedExam.sections.filter(s => selectedSections.includes(s.name))
                   : selectedExam.sections;
                 const effectiveMin = activeSections.reduce((sum, s) => sum + s.minScore, 0);
-                const effectiveMax = activeSections.reduce((sum, s) => sum + s.maxScore, 0);
+                const effectiveMaxRaw = activeSections.reduce((sum, s) => sum + s.maxScore, 0);
+                // Exams without scored sections (e.g. CSCA) have no range yet — use a generic 0–1600 scale
+                const effectiveMax = effectiveMaxRaw > effectiveMin ? effectiveMaxRaw : 1600;
                 return (
               <div>
                 <label style={{

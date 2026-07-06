@@ -445,6 +445,8 @@ public class AuthService : IAuthService
             await _context.SaveChangesAsync();
         }
 
+        await ReconcileOnboardingStateAsync(user);
+
         var token = _jwtService.GenerateToken(user);
         var expiresAt = DateTime.UtcNow.AddHours(24);
         var loginSub = await GetSchoolSubdomainAsync(user);
@@ -472,6 +474,8 @@ public class AuthService : IAuthService
         var user = await _context.Users.FindAsync(userId)
             ?? throw new UnauthorizedAccessException("User not found");
 
+        await ReconcileOnboardingStateAsync(user);
+
         var token = _jwtService.GenerateToken(user);
         var expiresAt = DateTime.UtcNow.AddHours(24);
         var refreshSub = await GetSchoolSubdomainAsync(user);
@@ -492,6 +496,29 @@ public class AuthService : IAuthService
             refreshSub,
             user.PhoneNumber
         );
+    }
+
+    /// <summary>
+    /// If the user finished onboarding but their target exam type no longer exists
+    /// (e.g. it was removed from the admin panel, like a deleted NUET), reset the
+    /// onboarding flag so they are guided through onboarding again with a currently
+    /// available exam. Idempotent and cheap.
+    /// </summary>
+    private async Task ReconcileOnboardingStateAsync(User user)
+    {
+        if (!user.HasCompletedOnboarding) return;
+
+        var activeGoal = await _context.Set<StudyGoal>()
+            .FirstOrDefaultAsync(g => g.UserId == user.Id && g.IsActive);
+        var hasValidExam = activeGoal != null
+            && await _context.ExamTypes.AnyAsync(e => e.Code == activeGoal.ExamTypeCode);
+
+        if (!hasValidExam)
+        {
+            user.HasCompletedOnboarding = false;
+            user.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+        }
     }
 
     public async Task<AuthResponseDto> VerifyEmailAsync(VerifyEmailDto dto)
