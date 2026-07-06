@@ -11,6 +11,13 @@ namespace UniStart.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            // The per-user ability profiles were keyed to the old Skill taxonomy. After
+            // this migration they are re-keyed to ExamSection, so the old rows (holding
+            // skill ids) would violate the new FK to ExamSections. These profiles are
+            // just IRT ability estimates that are recomputed on the user's next answer,
+            // so it is safe to clear them before repointing the FK.
+            migrationBuilder.Sql("DELETE FROM \"UserSkillProfiles\";");
+
             migrationBuilder.DropForeignKey(
                 name: "FK_Topics_ExamSections_SectionId",
                 table: "Topics");
