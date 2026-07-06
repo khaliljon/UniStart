@@ -1326,7 +1326,9 @@ select option,
   .csca-grid-4, .csca-grid-2 { grid-template-columns: 1fr; }
   .csca-stats { grid-template-columns: repeat(2, 1fr); }
   .csca-footer-grid { grid-template-columns: 1fr; }
-  .csca-countdown { flex-wrap: wrap; justify-content: center; }
+  .csca-countdown { flex-wrap: wrap; justify-content: center; gap: 0.4rem; padding: 0.85rem 0.75rem; }
+  .csca-cd-label { flex-basis: 100%; text-align: center; padding-right: 0; margin-bottom: 0.35rem; }
+  .csca-cd-unit { flex: 1 1 0; min-width: 0; }
   .csca-section { padding: 3rem 0; }
 }
 
