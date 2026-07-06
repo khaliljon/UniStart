@@ -74,7 +74,7 @@ public class WeeklyDigestBackgroundService : BackgroundService
                 .Include(a => a.AnswerOption)
                 .Include(a => a.Question)
                     .ThenInclude(q => q.Topic)
-                        .ThenInclude(t => t.Skill)
+                        .ThenInclude(t => t.Section)
                 .Where(a => a.UserId == user.Id && a.AnsweredAt > oneWeekAgo && a.TimeSpentSeconds != -1)
                 .ToListAsync(ct);
 
@@ -107,7 +107,7 @@ public class WeeklyDigestBackgroundService : BackgroundService
                 .GroupBy(c => c)
                 .OrderByDescending(g => g.Count())
                 .Select(g => g.Key)
-                .FirstOrDefaultAsync(ct) ?? "SAT";
+                .FirstOrDefaultAsync(ct) ?? "CSCA";
 
             var examType = await context.ExamTypes.FindAsync(new object[] { examTypeCode }, ct);
 
@@ -138,16 +138,10 @@ public class WeeklyDigestBackgroundService : BackgroundService
                 maxScore = sections.Sum(s => s.MaxScore);
                 var minScore = sections.Sum(s => s.MinScore);
 
-                // Get user skill profiles for skills that have topics in this exam's sections
+                // Get user section ability profiles for this exam's sections
                 var sectionIds = sections.Select(s => s.Id).ToList();
-                var relevantSkillIds = await context.Topics
-                    .Where(t => t.SectionId != null && sectionIds.Contains(t.SectionId.Value))
-                    .Select(t => t.SkillId)
-                    .Distinct()
-                    .ToListAsync(ct);
-
                 var profiles = await context.UserSkillProfiles
-                    .Where(p => p.UserId == user.Id && relevantSkillIds.Contains(p.SkillId))
+                    .Where(p => p.UserId == user.Id && sectionIds.Contains(p.SectionId))
                     .ToListAsync(ct);
 
                 if (profiles.Any())

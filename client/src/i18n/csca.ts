@@ -1,0 +1,312 @@
+// Standalone i18n strings for the CSCA landing page.
+// Kept separate from the main Translations interface so all three locales
+// stay in parity in one file and the huge types.ts is untouched.
+
+import type { Locale } from './types';
+
+export interface CscaStrings {
+  // nav
+  navAbout: string;
+  navCourses: string;
+  navMaterials: string;
+  navMocks: string;
+  navAboutUs: string;
+  navContacts: string;
+  login: string;
+  cabinet: string;
+  // hero
+  heroBadge: string;
+  heroTitle: string;
+  heroTitleAccent: string;
+  heroSub: string;
+  ctaStart: string;
+  ctaLearnMore: string;
+  // countdown
+  cdNextExam: string;
+  cdRegOpens: string;
+  cdDays: string;
+  cdHours: string;
+  cdMinutes: string;
+  // stats
+  statStudents: string;
+  statQuestions: string;
+  statAnswered: string;
+  statSuccess: string;
+  // about exam
+  aboutTitle: string;
+  aboutLead: string;
+  aboutBody: string;
+  subjectsTitle: string;
+  subjectsLead: string;
+  subjChinese: string;
+  subjChineseTag: string;
+  subjMath: string;
+  subjMathTag: string;
+  subjPhysics: string;
+  subjPhysicsTag: string;
+  subjChemistry: string;
+  subjChemistryTag: string;
+  required: string;
+  viewTopics: string;
+  // features
+  featuresTitle: string;
+  featuresLead: string;
+  fAdaptiveT: string;
+  fAdaptiveD: string;
+  fAnalyticsT: string;
+  fAnalyticsD: string;
+  fMockT: string;
+  fMockD: string;
+  fMaterialsT: string;
+  fMaterialsD: string;
+  fAiT: string;
+  fAiD: string;
+  fPlanT: string;
+  fPlanD: string;
+  // mocks
+  mocksTitle: string;
+  mocksLead: string;
+  freeMockTitle: string;
+  freeMockDesc: string;
+  getFree: string;
+  pkgStart: string;
+  pkgStartFor: string;
+  pkgStandard: string;
+  pkgStandardFor: string;
+  pkgAdvanced: string;
+  pkgAdvancedFor: string;
+  pkgFull: string;
+  pkgFullFor: string;
+  popular: string;
+  oneSubject: string;
+  twoSubjects: string;
+  threeSubjects: string;
+  allSubjects: string;
+  buy: string;
+  pkgFeatAi: string;
+  pkgFeatAnalytics: string;
+  pkgFeatFull: string;
+  // materials
+  materialsTitle: string;
+  materialsLead: string;
+  bookLabel: string;
+  addToCart: string;
+  freePdfTitle: string;
+  freePdfDesc: string;
+  // cta
+  ctaBandTitle: string;
+  ctaBandDesc: string;
+  ctaBandBtn: string;
+  // footer
+  footerDesc: string;
+  footerPlatform: string;
+  footerAbout: string;
+  footerContacts: string;
+  footerRights: string;
+  // exam dates (About page)
+  examDatesTitle: string;
+  examDatesLead: string;
+  regOpensLabel: string;
+  nextExamLabel: string;
+  statusCompleted: string;
+  statusUpcoming: string;
+  monthJanuary: string;
+  monthMarch: string;
+  monthJune: string;
+  monthSeptember: string;
+  monthNovember: string;
+  // Courses page
+  coursesLead2: string;
+  coursesComingSoon: string;
+  coursesFree: string;
+  coursesPaid: string;
+  // About us page
+  aboutUsTitle: string;
+  aboutUsLead: string;
+  aboutUsMission: string;
+  aboutUsGoal: string;
+  // Contacts page
+  contactsTitle: string;
+  contactsLead: string;
+  contactsWriteUs: string;
+  currency: string;
+}
+
+const ru: CscaStrings = {
+  navAbout: 'О CSCA', navCourses: 'Курсы', navMaterials: 'Материалы', navMocks: 'Пробные экзамены', navAboutUs: 'О нас', navContacts: 'Контакты',
+  login: 'Войти', cabinet: 'Личный кабинет',
+  heroBadge: 'Подготовка к экзамену CSCA',
+  heroTitle: 'Твой путь в ведущие', heroTitleAccent: 'университеты Китая',
+  heroSub: 'Системная подготовка к CSCA: пробные тесты с ИИ-объяснениями, официальные материалы и экспертное сопровождение на трёх языках.',
+  ctaStart: 'Начать подготовку', ctaLearnMore: 'Узнать больше',
+  cdNextExam: 'Ближайший экзамен', cdRegOpens: 'Регистрация открывается в мае 2026',
+  cdDays: 'дней', cdHours: 'часов', cdMinutes: 'минут',
+  statStudents: 'Студентов', statQuestions: 'Тем в базе', statAnswered: 'Решённых заданий', statSuccess: 'Довольных учеников',
+  aboutTitle: 'Что такое CSCA', aboutLead: 'China Scholastic Competency Assessment',
+  aboutBody: 'CSCA — стандартизированный вступительный экзамен для иностранных абитуриентов, поступающих на бакалавриат в университеты Китая. С 2026 года он обязателен для большинства иностранных абитуриентов по государственным стипендиальным программам.',
+  subjectsTitle: 'Предметы экзамена', subjectsLead: 'Готовься к любому предмету CSCA на выбранном языке.',
+  subjChinese: 'Китайский язык', subjChineseTag: 'Professional Chinese',
+  subjMath: 'Математика', subjMathTag: 'Обязательно для всех',
+  subjPhysics: 'Физика', subjPhysicsTag: 'Технические направления',
+  subjChemistry: 'Химия', subjChemistryTag: 'По специальности',
+  required: 'Обязательно', viewTopics: 'Список тем',
+  featuresTitle: 'Что вы получите на платформе', featuresLead: 'Всё для эффективной подготовки в одном месте.',
+  fAdaptiveT: 'Адаптивное обучение', fAdaptiveD: 'Система подстраивается под ваш уровень и подтягивает слабые темы.',
+  fAnalyticsT: 'Аналитика и прогресс', fAnalyticsD: 'Процент готовности и список проблемных тем по каждому предмету.',
+  fMockT: 'Пробные тесты', fMockD: 'Реалистичные пробники в формате экзамена CSCA.',
+  fMaterialsT: 'Учебные материалы', fMaterialsD: 'Официальные учебники и PDF по всем предметам на RU / EN / KZ.',
+  fAiT: 'ИИ-объяснения', fAiD: 'Подробный разбор каждого задания с пошаговым решением.',
+  fPlanT: 'План подготовки', fPlanD: 'Индивидуальный план до даты вашего экзамена.',
+  mocksTitle: 'Пробные экзамены', mocksLead: 'Начни бесплатно, затем выбери нужный комплект.',
+  freeMockTitle: 'Получи пробный тест с объяснением бесплатно', freeMockDesc: 'Зарегистрируйся — и получи пробники с ИИ-объяснениями и дешбордом аналитики с процентами и проблемными темами.',
+  getFree: 'Получить бесплатно',
+  pkgStart: 'Start', pkgStartFor: 'Для знакомства с форматом',
+  pkgStandard: 'Standard', pkgStandardFor: 'Самый популярный вариант',
+  pkgAdvanced: 'Advanced', pkgAdvancedFor: 'Для большинства абитуриентов',
+  pkgFull: 'Full CSCA', pkgFullFor: 'Полная подготовка',
+  popular: 'Популярный',
+  oneSubject: 'Любой 1 предмет', twoSubjects: 'Любые 2 предмета', threeSubjects: 'Любые 3 предмета', allSubjects: 'Все 4 предмета',
+  buy: 'Купить',
+  pkgFeatAi: 'ИИ-объяснения к заданиям', pkgFeatAnalytics: 'Дешборд аналитики', pkgFeatFull: 'Доступ ко всем пробникам предмета',
+  materialsTitle: 'Официальные учебные материалы', materialsLead: 'Учебники разработаны с учётом актуального формата экзамена CSCA.',
+  bookLabel: 'Учебник для подготовки к CSCA', addToCart: 'В корзину',
+  freePdfTitle: 'Бесплатные PDF после регистрации', freePdfDesc: 'Зарегистрируйся и получи бесплатные материалы в PDF по всем предметам.',
+  ctaBandTitle: 'Готов начать подготовку к CSCA?', ctaBandDesc: 'Присоединяйся к тысячам абитуриентов, поступающих в университеты Китая.',
+  ctaBandBtn: 'Создать аккаунт бесплатно',
+  footerDesc: 'Платформа подготовки к экзамену CSCA. Источник достоверной информации и онлайн-обучения для абитуриентов всего СНГ.',
+  footerPlatform: 'Платформа', footerAbout: 'Об экзамене', footerContacts: 'Контакты',
+  footerRights: 'Все права защищены.',
+  examDatesTitle: 'Даты экзамена 2026',
+  examDatesLead: 'CSCA проводится 5 раз в 2026 году. Проверьте даты и расписание ниже.',
+  regOpensLabel: 'Регистрация открывается',
+  nextExamLabel: 'Ближайший экзамен',
+  statusCompleted: 'Завершён', statusUpcoming: 'Предстоит',
+  monthJanuary: 'Январь', monthMarch: 'Март', monthJune: 'Июнь', monthSeptember: 'Сентябрь', monthNovember: 'Ноябрь',
+  coursesLead2: 'Видеоуроки по всем предметам CSCA — бесплатные и платные.',
+  coursesComingSoon: 'Скоро', coursesFree: 'Бесплатные уроки', coursesPaid: 'Платные курсы',
+  aboutUsTitle: 'О нас', aboutUsLead: 'Платформа подготовки к CSCA для абитуриентов всего СНГ.',
+  aboutUsMission: 'Мы создаём достоверный источник информации и место для онлайн-подготовки к экзамену CSCA — с адаптивными тестами, аналитикой и экспертными материалами.',
+  aboutUsGoal: 'Наша цель — стать №1 в подготовке к экзамену CSCA.',
+  contactsTitle: 'Контакты', contactsLead: 'Свяжитесь с нами — мы всегда на связи.', contactsWriteUs: 'Напишите нам',
+  currency: '₸',
+};
+
+const en: CscaStrings = {
+  navAbout: 'About CSCA', navCourses: 'Courses', navMaterials: 'Materials', navMocks: 'Mock exams', navAboutUs: 'About us', navContacts: 'Contacts',
+  login: 'Sign in', cabinet: 'My account',
+  heroBadge: 'CSCA exam preparation',
+  heroTitle: 'Your path to top', heroTitleAccent: 'universities in China',
+  heroSub: 'Structured CSCA preparation: mock tests with AI explanations, official study materials and expert guidance in three languages.',
+  ctaStart: 'Start preparing', ctaLearnMore: 'Learn more',
+  cdNextExam: 'Next exam', cdRegOpens: 'Registration opens May 2026',
+  cdDays: 'days', cdHours: 'hours', cdMinutes: 'minutes',
+  statStudents: 'Students', statQuestions: 'Topics in base', statAnswered: 'Questions solved', statSuccess: 'Happy students',
+  aboutTitle: 'What is CSCA', aboutLead: 'China Scholastic Competency Assessment',
+  aboutBody: 'CSCA is a standardized entrance examination for international students applying to undergraduate programs at Chinese universities. Since 2026 it is mandatory for most international applicants under Chinese government scholarship schemes.',
+  subjectsTitle: 'Exam subjects', subjectsLead: 'Prepare for any CSCA subject in your chosen language.',
+  subjChinese: 'Chinese', subjChineseTag: 'Professional Chinese',
+  subjMath: 'Mathematics', subjMathTag: 'Required for everyone',
+  subjPhysics: 'Physics', subjPhysicsTag: 'STEM programs',
+  subjChemistry: 'Chemistry', subjChemistryTag: 'By specialty',
+  required: 'Required', viewTopics: 'Topic list',
+  featuresTitle: 'What you get on the platform', featuresLead: 'Everything for effective preparation in one place.',
+  fAdaptiveT: 'Adaptive learning', fAdaptiveD: 'The system adapts to your level and reinforces weak topics.',
+  fAnalyticsT: 'Analytics & progress', fAnalyticsD: 'Readiness percentage and problem-topic list for each subject.',
+  fMockT: 'Mock tests', fMockD: 'Realistic practice tests in the CSCA exam format.',
+  fMaterialsT: 'Study materials', fMaterialsD: 'Official textbooks and PDFs for all subjects in RU / EN / KZ.',
+  fAiT: 'AI explanations', fAiD: 'Detailed step-by-step breakdown of every question.',
+  fPlanT: 'Study plan', fPlanD: 'A personal plan up to your exam date.',
+  mocksTitle: 'Mock exams', mocksLead: 'Start free, then pick the package you need.',
+  freeMockTitle: 'Get a mock test with explanations for free', freeMockDesc: 'Sign up and get practice tests with AI explanations and an analytics dashboard with percentages and problem topics.',
+  getFree: 'Get for free',
+  pkgStart: 'Start', pkgStartFor: 'To get to know the format',
+  pkgStandard: 'Standard', pkgStandardFor: 'The most popular option',
+  pkgAdvanced: 'Advanced', pkgAdvancedFor: 'For most applicants',
+  pkgFull: 'Full CSCA', pkgFullFor: 'Complete preparation',
+  popular: 'Popular',
+  oneSubject: 'Any 1 subject', twoSubjects: 'Any 2 subjects', threeSubjects: 'Any 3 subjects', allSubjects: 'All 4 subjects',
+  buy: 'Buy',
+  pkgFeatAi: 'AI explanations for questions', pkgFeatAnalytics: 'Analytics dashboard', pkgFeatFull: 'Access to all subject mocks',
+  materialsTitle: 'Official study materials', materialsLead: 'Textbooks designed for the current CSCA exam format.',
+  bookLabel: 'CSCA preparation textbook', addToCart: 'Add to cart',
+  freePdfTitle: 'Free PDFs after registration', freePdfDesc: 'Sign up and get free PDF materials for all subjects.',
+  ctaBandTitle: 'Ready to start preparing for CSCA?', ctaBandDesc: 'Join thousands of applicants heading to universities in China.',
+  ctaBandBtn: 'Create a free account',
+  footerDesc: 'A CSCA exam preparation platform. A trusted source of information and online learning for applicants across the CIS.',
+  footerPlatform: 'Platform', footerAbout: 'About the exam', footerContacts: 'Contacts',
+  footerRights: 'All rights reserved.',
+  examDatesTitle: 'CSCA exam dates 2026',
+  examDatesLead: 'CSCA runs 5 times in 2026. Check the dates and schedule below.',
+  regOpensLabel: 'Registration opens',
+  nextExamLabel: 'Next exam',
+  statusCompleted: 'Completed', statusUpcoming: 'Upcoming',
+  monthJanuary: 'January', monthMarch: 'March', monthJune: 'June', monthSeptember: 'September', monthNovember: 'November',
+  coursesLead2: 'Video lessons for every CSCA subject — free and paid.',
+  coursesComingSoon: 'Coming soon', coursesFree: 'Free lessons', coursesPaid: 'Paid courses',
+  aboutUsTitle: 'About us', aboutUsLead: 'A CSCA preparation platform for applicants across the CIS.',
+  aboutUsMission: 'We build a trusted source of information and a place for online CSCA preparation — with adaptive tests, analytics and expert materials.',
+  aboutUsGoal: 'Our goal is to become #1 in CSCA exam preparation.',
+  contactsTitle: 'Contacts', contactsLead: 'Get in touch — we are always available.', contactsWriteUs: 'Write to us',
+  currency: '₸',
+};
+
+const kz: CscaStrings = {
+  navAbout: 'CSCA туралы', navCourses: 'Курстар', navMaterials: 'Материалдар', navMocks: 'Сынақ емтихандары', navAboutUs: 'Біз туралы', navContacts: 'Байланыс',
+  login: 'Кіру', cabinet: 'Жеке кабинет',
+  heroBadge: 'CSCA емтиханына дайындық',
+  heroTitle: 'Қытайдың жетекші', heroTitleAccent: 'университеттеріне жол',
+  heroSub: 'CSCA-ға жүйелі дайындық: ЖИ түсіндірмелері бар сынақ тесттері, ресми материалдар және үш тілде сарапшы қолдауы.',
+  ctaStart: 'Дайындықты бастау', ctaLearnMore: 'Толығырақ',
+  cdNextExam: 'Жақын емтихан', cdRegOpens: 'Тіркеу 2026 жылдың мамырында ашылады',
+  cdDays: 'күн', cdHours: 'сағат', cdMinutes: 'минут',
+  statStudents: 'Студент', statQuestions: 'Базадағы тақырып', statAnswered: 'Шешілген тапсырма', statSuccess: 'Риза оқушы',
+  aboutTitle: 'CSCA дегеніміз не', aboutLead: 'China Scholastic Competency Assessment',
+  aboutBody: 'CSCA — Қытай университеттерінің бакалавриатына түсетін шетелдік талапкерлерге арналған стандартталған қабылдау емтиханы. 2026 жылдан бастап ол мемлекеттік гранттық бағдарламалар бойынша талапкерлердің басым бөлігі үшін міндетті.',
+  subjectsTitle: 'Емтихан пәндері', subjectsLead: 'Кез келген CSCA пәніне таңдаған тіліңізде дайындалыңыз.',
+  subjChinese: 'Қытай тілі', subjChineseTag: 'Professional Chinese',
+  subjMath: 'Математика', subjMathTag: 'Барлығына міндетті',
+  subjPhysics: 'Физика', subjPhysicsTag: 'Техникалық бағыттар',
+  subjChemistry: 'Химия', subjChemistryTag: 'Мамандық бойынша',
+  required: 'Міндетті', viewTopics: 'Тақырыптар тізімі',
+  featuresTitle: 'Платформада не аласыз', featuresLead: 'Тиімді дайындыққа қажеттінің бәрі бір жерде.',
+  fAdaptiveT: 'Бейімделетін оқу', fAdaptiveD: 'Жүйе деңгейіңізге бейімделіп, әлсіз тақырыптарды нығайтады.',
+  fAnalyticsT: 'Аналитика және прогресс', fAnalyticsD: 'Әр пән бойынша дайындық пайызы мен проблемалық тақырыптар тізімі.',
+  fMockT: 'Сынақ тесттері', fMockD: 'CSCA емтихан форматындағы шынайы сынақтар.',
+  fMaterialsT: 'Оқу материалдары', fMaterialsD: 'Барлық пәндер бойынша ресми оқулықтар мен PDF: RU / EN / KZ.',
+  fAiT: 'ЖИ түсіндірмелері', fAiD: 'Әр тапсырманың қадамдық шешімімен толық талдауы.',
+  fPlanT: 'Дайындық жоспары', fPlanD: 'Емтихан күніне дейінгі жеке жоспар.',
+  mocksTitle: 'Сынақ емтихандары', mocksLead: 'Тегін бастаңыз, содан кейін қажет жинақты таңдаңыз.',
+  freeMockTitle: 'Түсіндірмесі бар сынақ тестін тегін алыңыз', freeMockDesc: 'Тіркеліңіз — ЖИ түсіндірмелері мен пайыздар және проблемалық тақырыптар көрсетілген аналитика тақтасы бар сынақтарды алыңыз.',
+  getFree: 'Тегін алу',
+  pkgStart: 'Start', pkgStartFor: 'Форматпен танысу үшін',
+  pkgStandard: 'Standard', pkgStandardFor: 'Ең танымал нұсқа',
+  pkgAdvanced: 'Advanced', pkgAdvancedFor: 'Талапкерлердің көбіне',
+  pkgFull: 'Full CSCA', pkgFullFor: 'Толық дайындық',
+  popular: 'Танымал',
+  oneSubject: 'Кез келген 1 пән', twoSubjects: 'Кез келген 2 пән', threeSubjects: 'Кез келген 3 пән', allSubjects: 'Барлық 4 пән',
+  buy: 'Сатып алу',
+  pkgFeatAi: 'Тапсырмаларға ЖИ түсіндірмелері', pkgFeatAnalytics: 'Аналитика тақтасы', pkgFeatFull: 'Пәннің барлық сынақтарына қолжетімділік',
+  materialsTitle: 'Ресми оқу материалдары', materialsLead: 'Оқулықтар CSCA емтиханының өзекті форматына сай әзірленген.',
+  bookLabel: 'CSCA-ға дайындық оқулығы', addToCart: 'Себетке',
+  freePdfTitle: 'Тіркеуден кейін тегін PDF', freePdfDesc: 'Тіркеліп, барлық пәндер бойынша тегін PDF материалдарын алыңыз.',
+  ctaBandTitle: 'CSCA-ға дайындықты бастауға дайынсыз ба?', ctaBandDesc: 'Қытай университеттеріне түсіп жатқан мыңдаған талапкерге қосылыңыз.',
+  ctaBandBtn: 'Тегін аккаунт ашу',
+  footerDesc: 'CSCA емтиханына дайындық платформасы. Бүкіл ТМД талапкерлеріне арналған сенімді ақпарат пен онлайн оқыту көзі.',
+  footerPlatform: 'Платформа', footerAbout: 'Емтихан туралы', footerContacts: 'Байланыс',
+  footerRights: 'Барлық құқықтар қорғалған.',
+  examDatesTitle: '2026 CSCA емтихан күндері',
+  examDatesLead: 'CSCA 2026 жылы 5 рет өтеді. Төмендегі күндер мен кестені қараңыз.',
+  regOpensLabel: 'Тіркеу ашылады',
+  nextExamLabel: 'Жақын емтихан',
+  statusCompleted: 'Аяқталды', statusUpcoming: 'Алдағы',
+  monthJanuary: 'Қаңтар', monthMarch: 'Наурыз', monthJune: 'Маусым', monthSeptember: 'Қыркүйек', monthNovember: 'Қараша',
+  coursesLead2: 'CSCA барлық пәндері бойынша бейнесабақтар — тегін және ақылы.',
+  coursesComingSoon: 'Жақында', coursesFree: 'Тегін сабақтар', coursesPaid: 'Ақылы курстар',
+  aboutUsTitle: 'Біз туралы', aboutUsLead: 'Бүкіл ТМД талапкерлеріне арналған CSCA дайындық платформасы.',
+  aboutUsMission: 'Біз CSCA емтиханына онлайн дайындыққа арналған сенімді ақпарат көзін құрамыз — бейімделетін тесттер, аналитика және сараптамалық материалдармен.',
+  aboutUsGoal: 'Біздің мақсатымыз — CSCA емтиханына дайындықта №1 болу.',
+  contactsTitle: 'Байланыс', contactsLead: 'Бізбен байланысыңыз — біз әрқашан байланыстамыз.', contactsWriteUs: 'Бізге жазыңыз',
+  currency: '₸',
+};
+
+export const cscaStrings: Record<Locale, CscaStrings> = { ru, en, kz };

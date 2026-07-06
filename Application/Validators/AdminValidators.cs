@@ -191,8 +191,5 @@ public class CreateTopicDtoValidator : AbstractValidator<CreateTopicDto>
 
         RuleFor(x => x.SectionId)
             .GreaterThan(0).WithMessage("SectionId must be a positive integer.");
-
-        RuleFor(x => x.SkillId)
-            .GreaterThan(0).WithMessage("SkillId must be a positive integer.");
     }
 }

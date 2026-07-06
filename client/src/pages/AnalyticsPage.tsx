@@ -35,15 +35,14 @@ const DIFFICULTY_COLORS: Record<string, string> = {
   Hard: '#ef4444',
 };
 
-// Maps each exam to the skill codes it uses
+// Maps each exam to the skill codes it uses.
+// CSCA subject/skill structure is not finalized yet — filled once it is defined.
 const EXAM_SKILL_MAP: Record<string, string[]> = {
-  SAT: ['SK_READ', 'SK_WRITE', 'SK_MATH'],
-  NUET: ['SK_MATH', 'SK_CRIT'],
+  CSCA: [],
 };
 
 const EXAM_LABELS: Record<string, string> = {
-  SAT: 'SAT',
-  NUET: 'NUET',
+  CSCA: 'CSCA',
 };
 
 function AnalyticsPage() {

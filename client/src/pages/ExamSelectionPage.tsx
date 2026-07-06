@@ -26,8 +26,7 @@ function ExamSelectionPage() {
   };
 
   const examDescriptions: Record<string, string> = {
-    SAT: 'Comprehensive test covering Reading, Writing, and Math sections for college admissions in the United States.',
-    NUET: 'Nazarbayev University Entrance Test - Critical thinking, quantitative reasoning, and English proficiency.',
+    CSCA: 'China Scholastic Competency Assessment — вступительный экзамен в университеты Китая: китайский язык, математика, физика и химия.',
   };
 
   if (isLoading) {

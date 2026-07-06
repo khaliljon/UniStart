@@ -1,9 +1,13 @@
 namespace UniStart.Domain.Entities;
 
+/// <summary>
+/// Per-user ability estimate for one exam Section (subject). Replaces the former
+/// per-Skill profile after the taxonomy was simplified to Exam → Section → Topic → Question.
+/// </summary>
 public class UserSkillProfile
 {
     public int UserId { get; set; }
-    public int SkillId { get; set; }
+    public int SectionId { get; set; }
     public int Level { get; set; } = 50; // Display level (0-100)
     
     // IRT-based ability estimation
@@ -16,5 +20,5 @@ public class UserSkillProfile
 
     // Navigation properties
     public virtual User User { get; set; } = null!;
-    public virtual Skill Skill { get; set; } = null!;
+    public virtual ExamSection Section { get; set; } = null!;
 }

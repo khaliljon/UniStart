@@ -37,7 +37,7 @@ const AdminTrashPage = lazy(() => import('./pages/AdminTrashPage'))
 const AdminProfilePage = lazy(() => import('./pages/AdminProfilePage'))
 const AdminSchoolsPage = lazy(() => import('./pages/AdminSchoolsPage'))
 const AdminAdvisorConfigPage = lazy(() => import('./pages/AdminAdvisorConfigPage'))
-const LandingPage = lazy(() => import('./pages/LandingPage'))
+const LandingPage = lazy(() => import('./pages/CscaLandingPage'))
 const TutorsPage = lazy(() => import('./pages/TutorsPage'))
 const TutorProfilePage = lazy(() => import('./pages/TutorProfilePage'))
 const SchoolDetailPage = lazy(() => import('./pages/SchoolDetailPage'))
@@ -62,6 +62,12 @@ const TutorContentPage = lazy(() => import('./pages/TutorContentPage'))
 const StudentAssignmentsPage = lazy(() => import('./pages/StudentAssignmentsPage'))
 const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'))
 const ReferralTermsPage = lazy(() => import('./pages/ReferralTermsPage'))
+const AboutCscaPage = lazy(() => import('./pages/AboutCscaPage'))
+const CscaMaterialsPage = lazy(() => import('./pages/CscaMaterialsPage'))
+const CscaMocksPage = lazy(() => import('./pages/CscaMocksPage'))
+const CscaCoursesPage = lazy(() => import('./pages/CscaCoursesPage'))
+const AboutUsPage = lazy(() => import('./pages/AboutUsPage'))
+const ContactsPage = lazy(() => import('./pages/ContactsPage'))
 
 // ── Suspense fallback ───────────────────────────────────
 const PageLoader = () => (
@@ -181,6 +187,12 @@ function App() {
       <Route path="/privacy" element={<PrivacyPage />} />
       <Route path="/terms" element={<TermsPage />} />
       <Route path="/referral-terms" element={<ReferralTermsPage />} />
+      <Route path="/csca/about" element={<AboutCscaPage />} />
+      <Route path="/csca/courses" element={<CscaCoursesPage />} />
+      <Route path="/csca/materials" element={<CscaMaterialsPage />} />
+      <Route path="/csca/mocks" element={<CscaMocksPage />} />
+      <Route path="/csca/about-us" element={<AboutUsPage />} />
+      <Route path="/csca/contacts" element={<ContactsPage />} />
       <Route path="/complete-profile" element={needsPhone ? <CompleteProfilePage /> : <Navigate to="/" replace />} />
       <Route path="/onboarding" element={!needsPhone && needsOnboarding ? <OnboardingPage /> : <Navigate to="/" replace />} />
 

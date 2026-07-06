@@ -416,14 +416,6 @@ public class AdminController : ControllerBase
         return NoContent();
     }
 
-    /// <summary>List all skills (for dropdowns)</summary>
-    [HttpGet("skills")]
-    public async Task<IActionResult> GetSkills()
-    {
-        var result = await _svc.GetSkillsAsync();
-        return Ok(result);
-    }
-
     // ═══════════════════════════════════════════════════════
     //  BLOCK / SUSPEND (OP-14)
     // ═══════════════════════════════════════════════════════
@@ -799,13 +791,13 @@ public class AdminController : ControllerBase
             .Select(a => (DateTime?)a.AnsweredAt)
             .FirstOrDefaultAsync();
 
-        // Skill profiles
+        // Section ability profiles
         var skills = await _db.UserSkillProfiles
             .Where(p => p.UserId == id)
-            .Include(p => p.Skill)
+            .Include(p => p.Section)
             .Select(p => new
             {
-                skillName = p.Skill.Name,
+                skillName = p.Section.Name,
                 p.Theta,
                 p.ThetaSE,
                 p.Level,

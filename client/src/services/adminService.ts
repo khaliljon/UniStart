@@ -1,5 +1,5 @@
 import api from './api';
-import type { QuestionListItem, QuestionDetail, QuestionStats, BulkImportResult, AdminUser, AdminUserStats, AdminTopicSummary, AdminDashboard, AdminSection, AdminSkill, PagedResult, TrashSummary } from '../types';
+import type { QuestionListItem, QuestionDetail, QuestionStats, BulkImportResult, AdminUser, AdminUserStats, AdminTopicSummary, AdminDashboard, AdminSection, PagedResult, TrashSummary } from '../types';
 
 export interface AdminSchoolBranding {
   id: number;
@@ -139,7 +139,7 @@ const adminService = {
   getTopics: () =>
     api.get<AdminTopicSummary[]>('/admin/topics').then(r => r.data),
 
-  createTopic: (data: { name: string; sectionId: number; skillId: number }) =>
+  createTopic: (data: { name: string; sectionId: number }) =>
     api.post<AdminTopicSummary>('/admin/topics', data).then(r => r.data),
 
   updateTopic: (id: number, data: { name?: string }) =>
@@ -175,9 +175,6 @@ const adminService = {
 
   deleteExamType: (code: string) =>
     api.delete(`/admin/exam-types/${code}`),
-
-  getSkills: () =>
-    api.get<AdminSkill[]>('/admin/skills').then(r => r.data),
 
   // ─── Block / Unblock (OP-14) ─────────────────────────────
   blockUser: (id: number, reason?: string) =>

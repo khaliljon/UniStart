@@ -3,16 +3,14 @@ namespace UniStart.Domain.Entities;
 public class Topic : IAuditable
 {
     public int Id { get; set; }
-    public int SkillId { get; set; }
     public int? SectionId { get; set; }
     public string Name { get; set; } = string.Empty;
-    /// <summary>Ordering within a Skill (concept sequence). Lower = earlier.</summary>
+    /// <summary>Ordering within a Section (concept sequence). Lower = earlier.</summary>
     public int SortOrder { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
 
     // Navigation properties
-    public virtual Skill Skill { get; set; } = null!;
     public virtual ExamSection? Section { get; set; }
     public virtual ICollection<Question> Questions { get; set; } = new List<Question>();
     public virtual ICollection<TopicLesson> Lessons { get; set; } = new List<TopicLesson>();

@@ -402,18 +402,6 @@ namespace UniStart.Migrations
                     b.HasKey("Code");
 
                     b.ToTable("ExamTypes", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            Code = "SAT",
-                            Name = "SAT (Scholastic Assessment Test)"
-                        },
-                        new
-                        {
-                            Code = "NUET",
-                            Name = "NUET (Nazarbayev University Entrance Test)"
-                        });
                 });
 
             modelBuilder.Entity("UniStart.Domain.Entities.Flashcard", b =>
@@ -1373,35 +1361,6 @@ namespace UniStart.Migrations
                     b.ToTable("SchoolApplications");
                 });
 
-            modelBuilder.Entity("UniStart.Domain.Entities.Skill", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Code")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Code")
-                        .IsUnique();
-
-                    b.ToTable("Skills", (string)null);
-                });
-
             modelBuilder.Entity("UniStart.Domain.Entities.StrategyGuide", b =>
                 {
                     b.Property<int>("Id")
@@ -1713,9 +1672,6 @@ namespace UniStart.Migrations
                     b.Property<int?>("SectionId")
                         .HasColumnType("integer");
 
-                    b.Property<int>("SkillId")
-                        .HasColumnType("integer");
-
                     b.Property<int>("SortOrder")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
@@ -1727,8 +1683,6 @@ namespace UniStart.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("SectionId");
-
-                    b.HasIndex("SkillId");
 
                     b.ToTable("Topics", (string)null);
                 });
@@ -2682,7 +2636,7 @@ namespace UniStart.Migrations
                     b.Property<int>("UserId")
                         .HasColumnType("integer");
 
-                    b.Property<int>("SkillId")
+                    b.Property<int>("SectionId")
                         .HasColumnType("integer");
 
                     b.Property<DateTime>("LastUpdated")
@@ -2701,9 +2655,9 @@ namespace UniStart.Migrations
                         .HasColumnType("double precision")
                         .HasDefaultValue(1.0);
 
-                    b.HasKey("UserId", "SkillId");
+                    b.HasKey("UserId", "SectionId");
 
-                    b.HasIndex("SkillId");
+                    b.HasIndex("SectionId");
 
                     b.ToTable("UserSkillProfiles", (string)null);
                 });
@@ -3263,17 +3217,9 @@ namespace UniStart.Migrations
                     b.HasOne("UniStart.Domain.Entities.ExamSection", "Section")
                         .WithMany("Topics")
                         .HasForeignKey("SectionId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.HasOne("UniStart.Domain.Entities.Skill", "Skill")
-                        .WithMany("Topics")
-                        .HasForeignKey("SkillId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.Navigation("Section");
-
-                    b.Navigation("Skill");
                 });
 
             modelBuilder.Entity("UniStart.Domain.Entities.TopicDependency", b =>
@@ -3591,9 +3537,9 @@ namespace UniStart.Migrations
 
             modelBuilder.Entity("UniStart.Domain.Entities.UserSkillProfile", b =>
                 {
-                    b.HasOne("UniStart.Domain.Entities.Skill", "Skill")
-                        .WithMany("UserProfiles")
-                        .HasForeignKey("SkillId")
+                    b.HasOne("UniStart.Domain.Entities.ExamSection", "Section")
+                        .WithMany()
+                        .HasForeignKey("SectionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -3603,7 +3549,7 @@ namespace UniStart.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Skill");
+                    b.Navigation("Section");
 
                     b.Navigation("User");
                 });
@@ -3689,13 +3635,6 @@ namespace UniStart.Migrations
             modelBuilder.Entity("UniStart.Domain.Entities.ReadingPassage", b =>
                 {
                     b.Navigation("Questions");
-                });
-
-            modelBuilder.Entity("UniStart.Domain.Entities.Skill", b =>
-                {
-                    b.Navigation("Topics");
-
-                    b.Navigation("UserProfiles");
                 });
 
             modelBuilder.Entity("UniStart.Domain.Entities.StrategyGuide", b =>

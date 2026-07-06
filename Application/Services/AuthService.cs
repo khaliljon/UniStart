@@ -374,17 +374,8 @@ public class AuthService : IAuthService
             });
         }
 
-        // Initialize default skill profiles for the user
-        var skills = await _context.Skills.ToListAsync();
-        foreach (var skill in skills)
-        {
-            _context.UserSkillProfiles.Add(new UserSkillProfile
-            {
-                UserId = user.Id,
-                SkillId = skill.Id,
-                Level = 50 // Default starting level
-            });
-        }
+        // Section ability profiles are created lazily on the user's first answer
+        // (see AdaptiveEngineService.UpdateSkillLevelAsync).
         await _unitOfWork.SaveChangesAsync();
 
         // Create default notification preferences and send verification code
@@ -587,15 +578,7 @@ public class AuthService : IAuthService
             _context.Users.Add(user);
             await _unitOfWork.SaveChangesAsync();
 
-            var skills = await _context.Skills.ToListAsync();
-            foreach (var skill in skills)
-            {
-                _context.UserSkillProfiles.Add(new UserSkillProfile
-                {
-                    UserId = user.Id, SkillId = skill.Id, Level = 50
-                });
-            }
-            await _unitOfWork.SaveChangesAsync();
+            // Section ability profiles are created lazily on first answer.
             await _notificationService.EnsurePreferencesExistAsync(user.Id);
 
             _ = Task.Run(async () =>

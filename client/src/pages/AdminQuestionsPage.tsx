@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import adminService from '../services/adminService';
-import type { QuestionListItem, QuestionDetail, AdminTopicSummary, AdminSection, AdminSkill } from '../types';
+import type { QuestionListItem, QuestionDetail, AdminTopicSummary, AdminSection } from '../types';
 import { useTranslation } from '../hooks/useTranslation';
 
 const EXAM_COLORS: Record<string, string> = {
@@ -81,8 +81,7 @@ function AdminQuestionsPage() {
   // Topic creation
   const [showTopicModal, setShowTopicModal] = useState(false);
   const [sections, setSections] = useState<AdminSection[]>([]);
-  const [skills, setSkills] = useState<AdminSkill[]>([]);
-  const [topicForm, setTopicForm] = useState({ name: '', sectionId: 0, skillId: 0 });
+  const [topicForm, setTopicForm] = useState({ name: '', sectionId: 0 });
 
   // Section management
   const [showSectionModal, setShowSectionModal] = useState(false);
@@ -146,9 +145,7 @@ function AdminQuestionsPage() {
 
   const loadSectionsAndSkills = async () => {
     try {
-      const [s, sk] = await Promise.all([adminService.getSections(), adminService.getSkills()]);
-      setSections(s);
-      setSkills(sk);
+      setSections(await adminService.getSections());
     } catch { /* ignore */ }
   };
 
@@ -231,7 +228,7 @@ function AdminQuestionsPage() {
   // ─── Topic Actions ───────────
 
   const openTopicModal = () => {
-    setTopicForm({ name: '', sectionId: 0, skillId: 0 });
+    setTopicForm({ name: '', sectionId: 0 });
     setError(null);
     if (sections.length === 0) loadSectionsAndSkills();
     setShowTopicModal(true);
@@ -240,7 +237,6 @@ function AdminQuestionsPage() {
   const saveTopic = async () => {
     if (!topicForm.name.trim()) { setError(t.admin.questions.enterTopicName); return; }
     if (!topicForm.sectionId) { setError(t.admin.questions.selectSection); return; }
-    if (!topicForm.skillId) { setError(t.admin.questions.selectSkill); return; }
     try {
       setError(null);
       await adminService.createTopic(topicForm);
@@ -1600,21 +1596,6 @@ function AdminQuestionsPage() {
                   {sections.map(s => (
                     <option key={s.id} value={s.id}>
                       [{s.examTypeCode}] {s.name}
-                    </option>
-                  ))}
-                </select>
-              </FormField>
-
-              <FormField label={t.admin.questions.skill}>
-                <select
-                  value={topicForm.skillId}
-                  onChange={e => setTopicForm({ ...topicForm, skillId: Number(e.target.value) })}
-                  style={{ width: '100%' }}
-                >
-                  <option value={0}>{t.admin.questions.selectSkill}...</option>
-                  {skills.map(s => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}
                     </option>
                   ))}
                 </select>

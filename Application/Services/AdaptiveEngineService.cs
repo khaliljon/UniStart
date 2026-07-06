@@ -223,8 +223,10 @@ public class AdaptiveEngineService : IAdaptiveEngineService
         };
         _context.UserAnswers.Add(userAnswer);
 
-        // Update skill using IRT EAP estimation
-        var (newLevel, change, theta, thetaSE) = await UpdateSkillLevelAsync(userId, question.Topic.SkillId, isCorrect);
+        // Update section-level ability using IRT EAP estimation
+        var sectionId = question.Topic.SectionId
+            ?? throw new InvalidOperationException("Question's topic has no section; cannot update ability.");
+        var (newLevel, change, theta, thetaSE) = await UpdateSkillLevelAsync(userId, sectionId, isCorrect);
 
         // Online IRT cold-start: fold this real response into the item's difficulty so it
         // drifts away from its difficulty-derived prior toward a data-driven value.
@@ -257,20 +259,20 @@ public class AdaptiveEngineService : IAdaptiveEngineService
     // ─── IRT Skill Update (EAP Estimation) ───────────────────────
 
     /// <summary>
-    /// Updates skill level using Bayesian EAP estimation of θ.
-    /// Replays all answers for this skill and recomputes θ from scratch.
+    /// Updates the user's ability for one exam Section using Bayesian EAP estimation of θ.
+    /// Replays all answers for this section and recomputes θ from scratch.
     /// </summary>
-    public async Task<(int newLevel, int change, double theta, double thetaSE)> UpdateSkillLevelAsync(int userId, int skillId, bool isCorrect)
+    public async Task<(int newLevel, int change, double theta, double thetaSE)> UpdateSkillLevelAsync(int userId, int sectionId, bool isCorrect)
     {
         var profile = await _context.UserSkillProfiles
-            .FirstOrDefaultAsync(p => p.UserId == userId && p.SkillId == skillId);
+            .FirstOrDefaultAsync(p => p.UserId == userId && p.SectionId == sectionId);
 
         if (profile == null)
         {
             profile = new UserSkillProfile
             {
                 UserId = userId,
-                SkillId = skillId,
+                SectionId = sectionId,
                 Level = 50,
                 Theta = 0.0,
                 ThetaSE = 1.0
@@ -280,12 +282,12 @@ public class AdaptiveEngineService : IAdaptiveEngineService
 
         var oldLevel = profile.Level;
 
-        // Get all answers for this skill to re-estimate θ
+        // Get all answers for this section to re-estimate θ
         var skillAnswers = await _context.UserAnswers
             .Include(ua => ua.Question)
                 .ThenInclude(q => q.Topic)
             .Include(ua => ua.AnswerOption)
-            .Where(ua => ua.UserId == userId && ua.Question.Topic.SkillId == skillId)
+            .Where(ua => ua.UserId == userId && ua.Question.Topic.SectionId == sectionId)
             .OrderBy(ua => ua.AnsweredAt)
             .ToListAsync();
 
@@ -314,11 +316,11 @@ public class AdaptiveEngineService : IAdaptiveEngineService
         return (profile.Level, profile.Level - oldLevel, profile.Theta, profile.ThetaSE);
     }
 
-    public async Task<UserSkillProfileDto?> GetUserSkillProfileAsync(int userId, int skillId)
+    public async Task<UserSkillProfileDto?> GetUserSkillProfileAsync(int userId, int sectionId)
     {
         var profile = await _context.UserSkillProfiles
-            .Include(p => p.Skill)
-            .FirstOrDefaultAsync(p => p.UserId == userId && p.SkillId == skillId);
+            .Include(p => p.Section)
+            .FirstOrDefaultAsync(p => p.UserId == userId && p.SectionId == sectionId);
 
         if (profile == null) return null;
 
@@ -328,7 +330,7 @@ public class AdaptiveEngineService : IAdaptiveEngineService
     public async Task<IEnumerable<UserSkillProfileDto>> GetUserSkillProfilesAsync(int userId)
     {
         var profiles = await _context.UserSkillProfiles
-            .Include(p => p.Skill)
+            .Include(p => p.Section)
             .Where(p => p.UserId == userId)
             .ToListAsync();
 
@@ -340,9 +342,9 @@ public class AdaptiveEngineService : IAdaptiveEngineService
         var confLow = IrtMath.ThetaToLevel(p.Theta - 1.96 * p.ThetaSE);
         var confHigh = IrtMath.ThetaToLevel(p.Theta + 1.96 * p.ThetaSE);
         return new UserSkillProfileDto(
-            p.SkillId,
-            p.Skill.Name,
-            p.Skill.Code,
+            p.SectionId,
+            p.Section.Name,
+            p.Section.Name,
             p.Level,
             p.LastUpdated,
             p.Theta,
@@ -540,10 +542,10 @@ public class AdaptiveEngineService : IAdaptiveEngineService
 
         var topics = await topicsQuery.ToListAsync();
 
-        // Fetch IRT skill profiles for the user
+        // Fetch IRT section ability profiles for the user
         var skillProfiles = await _context.UserSkillProfiles
             .Where(p => p.UserId == userId)
-            .ToDictionaryAsync(p => p.SkillId);
+            .ToDictionaryAsync(p => p.SectionId);
 
         var userAnswers = await _context.UserAnswers
             .Include(ua => ua.AnswerOption)
@@ -574,8 +576,8 @@ public class AdaptiveEngineService : IAdaptiveEngineService
                 ? Math.Min((double)uniqueCorrectQuestions / totalQuestions * 100, 100.0)
                 : 0;
 
-            // IRT level from skill profile (same formula as WhatIf)
-            var irtLevel = skillProfiles.TryGetValue(topic.SkillId, out var sp)
+            // IRT level from the topic's section profile (same formula as WhatIf)
+            var irtLevel = topic.SectionId is int tsecId && skillProfiles.TryGetValue(tsecId, out var sp)
                 ? IrtMath.ThetaToLevel(sp.Theta)
                 : 50;
 

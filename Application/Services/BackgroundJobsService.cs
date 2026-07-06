@@ -132,7 +132,7 @@ public class BackgroundJobsService : IBackgroundJobsService
                 .Include(a => a.AnswerOption)
                 .Include(a => a.Question)
                     .ThenInclude(q => q.Topic)
-                        .ThenInclude(t => t.Skill)
+                        .ThenInclude(t => t.Section)
                 .Where(a => a.UserId == user.Id && a.AnsweredAt > oneWeekAgo && a.TimeSpentSeconds != -1)
                 .ToListAsync();
 
@@ -165,7 +165,7 @@ public class BackgroundJobsService : IBackgroundJobsService
                 .GroupBy(c => c)
                 .OrderByDescending(g => g.Count())
                 .Select(g => g.Key)
-                .FirstOrDefaultAsync() ?? "SAT";
+                .FirstOrDefaultAsync() ?? "CSCA";
 
             var examType = await _context.ExamTypes.FindAsync(examTypeCode);
 
@@ -196,14 +196,8 @@ public class BackgroundJobsService : IBackgroundJobsService
                 var minScore = sections.Sum(s => s.MinScore);
 
                 var sectionIds = sections.Select(s => s.Id).ToList();
-                var relevantSkillIds = await _context.Topics
-                    .Where(t => t.SectionId != null && sectionIds.Contains(t.SectionId.Value))
-                    .Select(t => t.SkillId)
-                    .Distinct()
-                    .ToListAsync();
-
                 var profiles = await _context.UserSkillProfiles
-                    .Where(p => p.UserId == user.Id && relevantSkillIds.Contains(p.SkillId))
+                    .Where(p => p.UserId == user.Id && sectionIds.Contains(p.SectionId))
                     .ToListAsync();
 
                 if (profiles.Any())

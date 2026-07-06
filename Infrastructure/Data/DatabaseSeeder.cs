@@ -115,9 +115,9 @@ public class DatabaseSeeder
 
     public async Task SeedAsync()
     {
-        var hasCorrectData = await _context.Topics
-            .Include(t => t.Section)
-            .AnyAsync(t => t.Section != null && t.Section.ExamTypeCode == "SAT" && t.Name == "Main Idea & Summary");
+        // CSCA-only platform: the DB is considered correctly seeded once the CSCA
+        // exam type exists. (Historically this checked for a SAT sample topic.)
+        var hasCorrectData = await _context.ExamTypes.AnyAsync(e => e.Code == "CSCA");
 
         if (await _context.Topics.AnyAsync() && !hasCorrectData)
         {
@@ -175,11 +175,6 @@ public class DatabaseSeeder
             await SeedAdminUserAsync();
         }
 
-        if (!await _context.Skills.AnyAsync())
-        {
-            await SeedSkillsAsync();
-        }
-
         if (!await _context.ExamSections.AnyAsync())
         {
             await SeedExamSectionsAsync();
@@ -190,10 +185,7 @@ public class DatabaseSeeder
             await SeedTopicsAsync();
         }
 
-        // Reconcile the NUET Math backbone taxonomy. Idempotent and unconditional so the
-        // canonical unit/topic tree is present even on databases seeded before it existed.
-        await EnsureNuetMathSkillsAsync();
-        await EnsureNuetMathTopicsAsync();
+        // Reconcile taxonomy. CSCA-only platform: no NUET/SAT taxonomy is rebuilt.
 
         // NOTE: Question seeding has been intentionally removed. The question base is
         // now built via the content-ingestion pipeline (admin upload / Google Drive sync),
@@ -277,7 +269,6 @@ public class DatabaseSeeder
         _context.TopicDependencies.RemoveRange(_context.TopicDependencies);
         _context.Topics.RemoveRange(_context.Topics);
         _context.ExamSections.RemoveRange(_context.ExamSections);
-        _context.Skills.RemoveRange(_context.Skills);
         _context.ExamTypes.RemoveRange(_context.ExamTypes);
         await _context.SaveChangesAsync();
     }
@@ -317,11 +308,7 @@ public class DatabaseSeeder
     {
         var examTypes = new List<ExamType>
         {
-            new ExamType { Code = "SAT",  Name = "SAT (English + Mathematics)" },
-            new ExamType { Code = "NUET", Name = "NUET (Mathematics + Critical Thinking)" },
-            new ExamType { Code = "CSCA", Name = "CSCA (China Standardized College Admission)" },
-            new ExamType { Code = "IELTS", Name = "IELTS (International English Language Testing System)" },
-            new ExamType { Code = "TOEFL", Name = "TOEFL (Test of English as a Foreign Language)" },
+            new ExamType { Code = "CSCA", Name = "CSCA (China Scholastic Competency Assessment)" },
         };
 
         await _context.ExamTypes.AddRangeAsync(examTypes);
@@ -329,173 +316,42 @@ public class DatabaseSeeder
     }
 
     /// <summary>
-    /// Ensures CSCA / IELTS / TOEFL exist even if the table was already partially seeded.
-    /// Needed after the AddImageUrlToQuestion migration removed them from HasData.
+    /// Ensures the CSCA exam type exists even if the table was already partially seeded.
+    /// CSCA-only platform: no other exam types are (re)created.
     /// </summary>
     private async Task EnsureExamTypesAsync()
     {
         var existing = new HashSet<string>(
             await _context.ExamTypes.Select(e => e.Code).ToListAsync());
-        var missing = new List<ExamType>();
 
-        void Ensure(string code, string name)
+        if (!existing.Contains("CSCA"))
         {
-            if (!existing.Contains(code))
-                missing.Add(new ExamType { Code = code, Name = name });
-        }
-
-        Ensure("CSCA",  "CSCA (China Standardized College Admission)");
-        Ensure("IELTS", "IELTS (International English Language Testing System)");
-        Ensure("TOEFL", "TOEFL (Test of English as a Foreign Language)");
-
-        if (missing.Count > 0)
-        {
-            await _context.ExamTypes.AddRangeAsync(missing);
+            await _context.ExamTypes.AddAsync(
+                new ExamType { Code = "CSCA", Name = "CSCA (China Scholastic Competency Assessment)" });
             await _context.SaveChangesAsync();
         }
     }
 
-    private async Task SeedExamSectionsAsync()
+    private Task SeedExamSectionsAsync()
     {
-        var sections = new List<ExamSection>
-        {
-            new ExamSection { ExamTypeCode = "SAT", Name = "Reading & Writing", MinScore = 200, MaxScore = 800 },
-            new ExamSection { ExamTypeCode = "SAT", Name = "Math (No Calculator)", MinScore = 200, MaxScore = 400 },
-            new ExamSection { ExamTypeCode = "SAT", Name = "Math (Calculator)", MinScore = 200, MaxScore = 400 },
-            new ExamSection { ExamTypeCode = "NUET", Name = "Math", MinScore = 0, MaxScore = 140 },
-            new ExamSection { ExamTypeCode = "NUET", Name = "Critical Thinking", MinScore = 0, MaxScore = 140 }
-        };
-
-        await _context.ExamSections.AddRangeAsync(sections);
-        await _context.SaveChangesAsync();
+        // CSCA-only platform: the CSCA subject/section structure is not finalized yet,
+        // so nothing is hard-seeded. Sections are created later via the admin panel /
+        // content-ingestion pipeline once the material structure is known.
+        return Task.CompletedTask;
     }
 
-    private async Task SeedSkillsAsync()
+    private Task SeedSkillsAsync()
     {
-        var skills = new List<Skill>
-        {
-            new Skill { Code = "SK_READ", Name = "Reading", Description = "Reading comprehension and analysis." },
-            new Skill { Code = "SK_WRITE", Name = "Writing", Description = "Writing clarity and structure." },
-            new Skill { Code = "SK_MATH", Name = "Mathematics", Description = "Mathematical problem solving." },
-            new Skill { Code = "SK_CRIT", Name = "Critical Thinking", Description = "Logic, reasoning, and analysis." }
-        };
-
-        await _context.Skills.AddRangeAsync(skills);
-        await _context.SaveChangesAsync();
+        // CSCA-only platform: skills (subjects) are not hard-seeded yet — added later
+        // via the admin panel once the CSCA material structure is defined.
+        return Task.CompletedTask;
     }
 
-    private async Task SeedTopicsAsync()
+    private Task SeedTopicsAsync()
     {
-        var satReadWrite = await _context.ExamSections.FirstAsync(s => s.ExamTypeCode == "SAT" && s.Name == "Reading & Writing");
-        var satMathNoCalc = await _context.ExamSections.FirstAsync(s => s.ExamTypeCode == "SAT" && s.Name == "Math (No Calculator)");
-        var satMathCalc = await _context.ExamSections.FirstAsync(s => s.ExamTypeCode == "SAT" && s.Name == "Math (Calculator)");
-        var nuetCritical = await _context.ExamSections.FirstAsync(s => s.ExamTypeCode == "NUET" && s.Name == "Critical Thinking");
-
-        var skillRead = await _context.Skills.FirstAsync(s => s.Code == "SK_READ");
-        var skillWrite = await _context.Skills.FirstAsync(s => s.Code == "SK_WRITE");
-        var skillMath = await _context.Skills.FirstAsync(s => s.Code == "SK_MATH");
-        var skillCrit = await _context.Skills.FirstAsync(s => s.Code == "SK_CRIT");
-
-        var topics = new List<Topic>
-        {
-            new Topic { Name = "Main Idea & Summary", SkillId = skillRead.Id, SectionId = satReadWrite.Id },
-            new Topic { Name = "Grammar & Sentence Structure", SkillId = skillWrite.Id, SectionId = satReadWrite.Id },
-            new Topic { Name = "Linear Equations", SkillId = skillMath.Id, SectionId = satMathNoCalc.Id },
-            new Topic { Name = "Quadratic Equations", SkillId = skillMath.Id, SectionId = satMathCalc.Id },
-            new Topic { Name = "Logical Reasoning", SkillId = skillCrit.Id, SectionId = nuetCritical.Id }
-        };
-
-        await _context.Topics.AddRangeAsync(topics);
-        await _context.SaveChangesAsync();
-    }
-
-    /// <summary>
-    /// Get-or-create the per-Unit Skills of the NUET Math backbone (keyed by Code).
-    /// Safe to run on every startup — only missing Skills are inserted.
-    /// </summary>
-    private async Task EnsureNuetMathSkillsAsync()
-    {
-        var existing = new HashSet<string>(
-            await _context.Skills.Select(s => s.Code).ToListAsync());
-
-        var toAdd = NuetMathTaxonomy
-            .Where(u => !existing.Contains(u.Code))
-            .Select(u => new Skill { Code = u.Code, Name = u.Name, Description = u.Description })
-            .ToList();
-
-        if (toAdd.Count > 0)
-        {
-            await _context.Skills.AddRangeAsync(toAdd);
-            await _context.SaveChangesAsync();
-        }
-    }
-
-    /// <summary>
-    /// Get-or-create the NUET Math Topics under the "Math" section, one per taxonomy
-    /// item, with a 1-based SortOrder inside each Unit/Skill. Deduplicated by Topic
-    /// name within the section so re-running never creates duplicates.
-    /// </summary>
-    private async Task EnsureNuetMathTopicsAsync()
-    {
-        var nuetMath = await _context.ExamSections
-            .FirstOrDefaultAsync(s => s.ExamTypeCode == "NUET" && s.Name == "Math");
-        if (nuetMath == null) return;
-
-        var codes = NuetMathTaxonomy.Select(u => u.Code).ToList();
-        var skillIdByCode = await _context.Skills
-            .Where(s => codes.Contains(s.Code))
-            .ToDictionaryAsync(s => s.Code, s => s.Id);
-
-        // One-time reconciliation: rename the old Units topic in place so its linked
-        // questions and student progress are preserved (renaming keeps the same TopicId,
-        // unlike delete + re-create). Safe to run repeatedly — it only acts when the old
-        // name still exists and the new one does not.
-        if (skillIdByCode.TryGetValue("SK_NUET_UNITS", out var unitsSkillId))
-        {
-            const string oldUnitsTopicName = "Approximation and estimates (π, surds)";
-            const string newUnitsTopicName = "Changing Between Standard and Compound Units";
-
-            var oldUnitsTopic = await _context.Topics.FirstOrDefaultAsync(t =>
-                t.SectionId == nuetMath.Id && t.SkillId == unitsSkillId && t.Name == oldUnitsTopicName);
-            var newUnitsExists = await _context.Topics.AnyAsync(t =>
-                t.SectionId == nuetMath.Id && t.SkillId == unitsSkillId && t.Name == newUnitsTopicName);
-
-            if (oldUnitsTopic != null && !newUnitsExists)
-            {
-                oldUnitsTopic.Name = newUnitsTopicName;
-                await _context.SaveChangesAsync();
-            }
-        }
-
-        var existingNames = new HashSet<string>(
-            await _context.Topics
-                .Where(t => t.SectionId == nuetMath.Id)
-                .Select(t => t.Name)
-                .ToListAsync());
-
-        var toAdd = new List<Topic>();
-        foreach (var unit in NuetMathTaxonomy)
-        {
-            if (!skillIdByCode.TryGetValue(unit.Code, out var skillId)) continue;
-            for (var i = 0; i < unit.Topics.Length; i++)
-            {
-                var name = unit.Topics[i];
-                if (existingNames.Contains(name)) continue;
-                toAdd.Add(new Topic
-                {
-                    Name = name,
-                    SkillId = skillId,
-                    SectionId = nuetMath.Id,
-                    SortOrder = i + 1,
-                });
-            }
-        }
-
-        if (toAdd.Count > 0)
-        {
-            await _context.Topics.AddRangeAsync(toAdd);
-            await _context.SaveChangesAsync();
-        }
+        // CSCA-only platform: topics are built via the content-ingestion pipeline
+        // (admin upload / import), not hard-seeded here.
+        return Task.CompletedTask;
     }
 
     private async Task UpdateIrtParametersAsync()
@@ -517,46 +373,9 @@ public class DatabaseSeeder
         }
     }
 
-    private async Task SeedMockExamsAsync()
+    private Task SeedMockExamsAsync()
     {
-        var satRw = await _context.ExamSections.FirstAsync(s => s.ExamTypeCode == "SAT" && s.Name == "Reading & Writing");
-        var satMathNoCalc = await _context.ExamSections.FirstAsync(s => s.ExamTypeCode == "SAT" && s.Name == "Math (No Calculator)");
-        var satMathCalc = await _context.ExamSections.FirstAsync(s => s.ExamTypeCode == "SAT" && s.Name == "Math (Calculator)");
-        var nuetMath = await _context.ExamSections.FirstAsync(s => s.ExamTypeCode == "NUET" && s.Name == "Math");
-        var nuetCritical = await _context.ExamSections.FirstAsync(s => s.ExamTypeCode == "NUET" && s.Name == "Critical Thinking");
-
-        var mockExams = new List<MockExam>
-        {
-            new MockExam
-            {
-                ExamTypeCode = "SAT",
-                Title = "SAT Practice Test",
-                Description = "SAT practice test covering Reading & Writing and Math sections.",
-                TotalTimeMinutes = 50,
-                IsActive = true,
-                Sections = new List<MockExamSection>
-                {
-                    new MockExamSection { ExamSectionId = satRw.Id, Name = "Reading & Writing", TimeLimitMinutes = 15, QuestionCount = 12, SortOrder = 0 },
-                    new MockExamSection { ExamSectionId = satMathNoCalc.Id, Name = "Math (No Calculator)", TimeLimitMinutes = 15, QuestionCount = 8, SortOrder = 1 },
-                    new MockExamSection { ExamSectionId = satMathCalc.Id, Name = "Math (Calculator)", TimeLimitMinutes = 15, QuestionCount = 8, SortOrder = 2 }
-                }
-            },
-            new MockExam
-            {
-                ExamTypeCode = "NUET",
-                Title = "NUET Practice Test",
-                Description = "NUET practice test with Math and Critical Thinking sections.",
-                TotalTimeMinutes = 50,
-                IsActive = true,
-                Sections = new List<MockExamSection>
-                {
-                    new MockExamSection { ExamSectionId = nuetMath.Id, Name = "Math", TimeLimitMinutes = 25, QuestionCount = 20, SortOrder = 0 },
-                    new MockExamSection { ExamSectionId = nuetCritical.Id, Name = "Critical Thinking", TimeLimitMinutes = 25, QuestionCount = 20, SortOrder = 1 }
-                }
-            }
-        };
-
-        await _context.MockExams.AddRangeAsync(mockExams);
-        await _context.SaveChangesAsync();
+        // CSCA-only platform: mock exams are authored via the admin panel, not hard-seeded.
+        return Task.CompletedTask;
     }
 }

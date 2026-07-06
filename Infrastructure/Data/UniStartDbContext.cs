@@ -13,7 +13,6 @@ public class UniStartDbContext : DbContext
     public DbSet<SchoolApplication> SchoolApplications => Set<SchoolApplication>();
     public DbSet<ExamType> ExamTypes => Set<ExamType>();
     public DbSet<ExamSection> ExamSections => Set<ExamSection>();
-    public DbSet<Skill> Skills => Set<Skill>();
     public DbSet<Topic> Topics => Set<Topic>();
     public DbSet<Question> Questions => Set<Question>();
     public DbSet<AnswerOption> AnswerOptions => Set<AnswerOption>();
@@ -125,16 +124,6 @@ public class UniStartDbContext : DbContext
                   .OnDelete(DeleteBehavior.Cascade);
         });
 
-        // Skill configuration
-        modelBuilder.Entity<Skill>(entity =>
-        {
-            entity.ToTable("Skills");
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Code).IsRequired().HasMaxLength(50);
-            entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
-            entity.HasIndex(e => e.Code).IsUnique();
-        });
-
         // Topic configuration
         modelBuilder.Entity<Topic>(entity =>
         {
@@ -142,14 +131,10 @@ public class UniStartDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
             entity.Property(e => e.SortOrder).HasDefaultValue(0);
-            entity.HasOne(e => e.Skill)
-                  .WithMany(s => s.Topics)
-                  .HasForeignKey(e => e.SkillId)
-                  .OnDelete(DeleteBehavior.Cascade);
             entity.HasOne(e => e.Section)
                   .WithMany(s => s.Topics)
                   .HasForeignKey(e => e.SectionId)
-                  .OnDelete(DeleteBehavior.SetNull);
+                  .OnDelete(DeleteBehavior.Cascade);
         });
 
         // Question configuration
@@ -259,20 +244,20 @@ public class UniStartDbContext : DbContext
                   .OnDelete(DeleteBehavior.Restrict);
         });
 
-        // UserSkillProfile configuration (composite key)
+        // UserSkillProfile configuration (composite key: user + exam section)
         modelBuilder.Entity<UserSkillProfile>(entity =>
         {
             entity.ToTable("UserSkillProfiles");
-            entity.HasKey(e => new { e.UserId, e.SkillId });
+            entity.HasKey(e => new { e.UserId, e.SectionId });
             entity.Property(e => e.Theta).HasDefaultValue(0.0);
             entity.Property(e => e.ThetaSE).HasDefaultValue(1.0);
             entity.HasOne(e => e.User)
                   .WithMany(u => u.SkillProfiles)
                   .HasForeignKey(e => e.UserId)
                   .OnDelete(DeleteBehavior.Cascade);
-            entity.HasOne(e => e.Skill)
-                  .WithMany(s => s.UserProfiles)
-                  .HasForeignKey(e => e.SkillId)
+            entity.HasOne(e => e.Section)
+                  .WithMany()
+                  .HasForeignKey(e => e.SectionId)
                   .OnDelete(DeleteBehavior.Cascade);
         });
 
@@ -1134,11 +1119,9 @@ public class UniStartDbContext : DbContext
                   .HasDatabaseName("IX_LegalDocuments_Slug");
         });
 
-        // Seed exam types
-        modelBuilder.Entity<ExamType>().HasData(
-            new ExamType { Code = "SAT", Name = "SAT (Scholastic Assessment Test)" },
-            new ExamType { Code = "NUET", Name = "NUET (Nazarbayev University Entrance Test)" }
-        );
+        // CSCA-only platform: exam types are managed at runtime (seeder / admin),
+        // no longer seeded via HasData. Legacy SAT/NUET seed rows are removed by the
+        // RemoveNonCscaSeedExamTypes migration.
     }
 
     // ═══════════════════════════════════════════════════════

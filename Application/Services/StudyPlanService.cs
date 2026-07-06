@@ -139,7 +139,7 @@ public class StudyPlanService : IStudyPlanService
             .ToHashSet();
 
         var topicQuery = _db.Topics
-            .Include(t => t.Skill)
+            .Include(t => t.Section)
             .Where(t => t.Section != null && t.Section.ExamTypeCode == goal.ExamTypeCode);
 
         if (selectedSectionIds != null && selectedSectionIds.Count > 0)
@@ -150,13 +150,13 @@ public class StudyPlanService : IStudyPlanService
         if (!topics.Any())
         {
             // Fallback: load all topics if exam-specific filter returns nothing
-            topics = await _db.Topics.Include(t => t.Skill).ToListAsync();
+            topics = await _db.Topics.Include(t => t.Section).ToListAsync();
         }
 
         // ─── 2. Load user skill profiles ─────────────────────
         var profiles = await _db.UserSkillProfiles
             .Where(p => p.UserId == userId)
-            .ToDictionaryAsync(p => p.SkillId, p => p);
+            .ToDictionaryAsync(p => p.SectionId, p => p);
 
         // ─── 3. Load topic dependencies ──────────────────────
         var dependencies = await _db.TopicDependencies.ToListAsync();
@@ -690,7 +690,7 @@ public class StudyPlanService : IStudyPlanService
             var assignDay = FindAvailableDay(dailyLoad, dayIndex, totalDays, targetDailyMinutes);
             if (assignDay >= totalDays) break;
 
-            var skillProfile = profiles.GetValueOrDefault(topic.SkillId);
+            var skillProfile = profiles.GetValueOrDefault(topic.SectionId ?? 0);
             var theta = skillProfile?.Theta ?? 0.0;
             var isWeak = theta < -0.5;
             var isNew = !completedTopicIds.Contains(topic.Id);
@@ -765,7 +765,7 @@ public class StudyPlanService : IStudyPlanService
         var weakTopics = sortedTopics
             .Where(t =>
             {
-                var p = profiles.GetValueOrDefault(t.topic.SkillId);
+                var p = profiles.GetValueOrDefault(t.topic.SectionId ?? 0);
                 return p != null && p.Theta < -0.5;
             })
             .ToList();
@@ -838,7 +838,7 @@ public class StudyPlanService : IStudyPlanService
         // Priority: lower theta = higher priority (study weak topics first)
         double GetPriority(Topic t)
         {
-            var profile = profiles.GetValueOrDefault(t.SkillId);
+            var profile = profiles.GetValueOrDefault(t.SectionId ?? 0);
             var theta = profile?.Theta ?? 0.0;
             // Invert theta so weak topics (negative θ) get high priority
             // Also factor in: topics without profile data get medium-high priority

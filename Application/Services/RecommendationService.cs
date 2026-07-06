@@ -340,22 +340,22 @@ public class RecommendationService : IRecommendationService
             }
         }
 
-        // ─── Mastery milestones (per skill) ──────────────
+        // ─── Mastery milestones (per section) ──────────
         var profiles = await _db.UserSkillProfiles
             .Where(p => p.UserId == userId)
-            .Include(p => p.Skill)
+            .Include(p => p.Section)
             .ToListAsync();
 
         foreach (var profile in profiles)
         {
-            var masteryCode = $"MASTERY_{profile.Skill.Code}";
+            var masteryCode = $"MASTERY_SEC_{profile.SectionId}";
             if (profile.Level >= 80 && !existing.Contains(masteryCode))
             {
                 newMilestones.Add(new UserMilestone
                 {
                     UserId = userId, Code = masteryCode,
-                    Title = $"Мастер: {profile.Skill.Name}",
-                    Description = $"Уровень навыка «{profile.Skill.Name}» достиг 80%!",
+                    Title = $"Мастер: {profile.Section.Name}",
+                    Description = $"Уровень «{profile.Section.Name}» достиг 80%!",
                     Icon = "⭐", AchievedAt = DateTime.UtcNow
                 });
             }
@@ -470,7 +470,7 @@ public class RecommendationService : IRecommendationService
         // ─── Weak topics needing practice ────────────────
         var weakProfiles = await _db.UserSkillProfiles
             .Where(p => p.UserId == userId && p.Level < 40)
-            .Include(p => p.Skill)
+            .Include(p => p.Section)
             .OrderBy(p => p.Level)
             .Take(3)
             .ToListAsync();
@@ -505,8 +505,8 @@ public class RecommendationService : IRecommendationService
 
         foreach (var wp in weakProfiles)
         {
-            // Find a topic for this skill (filtered by selected sections if provided)
-            var weakTopicQuery = _db.Topics.Where(t => t.SkillId == wp.SkillId);
+            // Find a topic for this section (filtered by selected sections if provided)
+            var weakTopicQuery = _db.Topics.Where(t => t.SectionId == wp.SectionId);
             if (filterBySections)
                 weakTopicQuery = weakTopicQuery.Where(t => t.SectionId != null && sectionIdSet!.Contains(t.SectionId!.Value));
             var topic = await weakTopicQuery.FirstOrDefaultAsync();
@@ -520,7 +520,7 @@ public class RecommendationService : IRecommendationService
                 recs.Add(new RecommendationDto(
                     Type: "daily",
                     Priority: "high",
-                    Title: L(lang, $"Подтяните {wp.Skill.Name}", $"{wp.Skill.Name} жақсартыңыз", $"Improve {wp.Skill.Name}"),
+                    Title: L(lang, $"Подтяните {wp.Section.Name}", $"{wp.Section.Name} жақсартыңыз", $"Improve {wp.Section.Name}"),
                     Description: L(lang,
                         $"Уровень {wp.Level}% — рекомендуем практику по «{topic.Name}»",
                         $"Деңгей {wp.Level}% — «{topic.Name}» бойынша жаттығу ұсынамыз",
@@ -530,7 +530,7 @@ public class RecommendationService : IRecommendationService
                     ActionUrl: $"/learn?tab=practice&topicId={topic.Id}",
                     Metadata: new Dictionary<string, object>
                     {
-                        ["skillId"] = wp.SkillId,
+                        ["sectionId"] = wp.SectionId,
                         ["level"] = wp.Level
                     }
                 ));

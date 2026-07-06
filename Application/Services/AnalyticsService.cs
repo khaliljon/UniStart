@@ -43,19 +43,19 @@ public class AnalyticsService : IAnalyticsService
     public async Task<IEnumerable<UserSkillProfileDto>> GetUserSkillsAsync(int userId)
     {
         var profiles = await _context.UserSkillProfiles
-            .Include(p => p.Skill)
+            .Include(p => p.Section)
             .Where(p => p.UserId == userId)
             .OrderByDescending(p => p.Level)
             .ToListAsync();
 
-        var existingSkillIds = profiles.Select(p => p.SkillId).ToHashSet();
+        var existingSectionIds = profiles.Select(p => p.SectionId).ToHashSet();
 
-        // Include all skills (even unpracticed) so the dashboard shows the full picture
-        var allSkills = await _context.Skills.ToListAsync();
-        var placeholders = allSkills
-            .Where(s => !existingSkillIds.Contains(s.Id))
+        // Include all sections (even unpracticed) so the dashboard shows the full picture
+        var allSections = await _context.ExamSections.ToListAsync();
+        var placeholders = allSections
+            .Where(s => !existingSectionIds.Contains(s.Id))
             .Select(s => new UserSkillProfileDto(
-                s.Id, s.Name, s.Code,
+                s.Id, s.Name, s.Name,
                 Level: 0, LastUpdated: DateTime.UtcNow,
                 Theta: 0, ThetaSE: 1,
                 ConfidenceLow: 0, ConfidenceHigh: 0
@@ -66,9 +66,9 @@ public class AnalyticsService : IAnalyticsService
             var confLow = IrtMath.ThetaToLevel(p.Theta - 1.96 * p.ThetaSE);
             var confHigh = IrtMath.ThetaToLevel(p.Theta + 1.96 * p.ThetaSE);
             return new UserSkillProfileDto(
-                p.SkillId,
-                p.Skill.Name,
-                p.Skill.Code,
+                p.SectionId,
+                p.Section.Name,
+                p.Section.Name,
                 p.Level,
                 p.LastUpdated,
                 p.Theta,
@@ -125,7 +125,7 @@ public class AnalyticsService : IAnalyticsService
             .Include(ua => ua.AnswerOption)
             .Include(ua => ua.Question)
                 .ThenInclude(q => q.Topic)
-                    .ThenInclude(t => t.Skill)
+                    .ThenInclude(t => t.Section)
             .Where(ua => ua.UserId == userId && ua.AnsweredAt >= cutoff)
             .OrderBy(ua => ua.AnsweredAt)
             .ToListAsync();
@@ -133,8 +133,8 @@ public class AnalyticsService : IAnalyticsService
         if (!answers.Any())
             return Enumerable.Empty<SkillHistoryPointDto>();
 
-        // Reconstruct skill levels over time by grouping per day per skill
-        var skillLevels = new Dictionary<int, int>(); // skillId → current level
+        // Reconstruct section levels over time by grouping per day per section
+        var skillLevels = new Dictionary<int, int>(); // sectionId → current level
         var currentProfiles = await _context.UserSkillProfiles
             .Where(p => p.UserId == userId)
             .ToListAsync();
@@ -142,7 +142,7 @@ public class AnalyticsService : IAnalyticsService
         // Start from current levels and work backwards isn't practical,
         // so we approximate from the initial level (50) and replay
         foreach (var p in currentProfiles)
-            skillLevels[p.SkillId] = 50; // Start at default
+            skillLevels[p.SectionId] = 50; // Start at default
 
         var history = new List<SkillHistoryPointDto>();
         
@@ -153,7 +153,7 @@ public class AnalyticsService : IAnalyticsService
         {
             foreach (var answer in dayGroup.OrderBy(a => a.AnsweredAt))
             {
-                var skillId = answer.Question.Topic.SkillId;
+                if (answer.Question.Topic.SectionId is not int skillId) continue;
                 if (!skillLevels.ContainsKey(skillId))
                     skillLevels[skillId] = 50;
 
@@ -161,15 +161,15 @@ public class AnalyticsService : IAnalyticsService
                 skillLevels[skillId] = Math.Clamp(skillLevels[skillId] + change, 0, 100);
             }
 
-            // Emit one point per skill per day
+            // Emit one point per section per day
             foreach (var (skillId, level) in skillLevels)
             {
-                var skill = answers.FirstOrDefault(a => a.Question.Topic.SkillId == skillId)?.Question.Topic.Skill;
-                if (skill != null)
+                var section = answers.FirstOrDefault(a => a.Question.Topic.SectionId == skillId)?.Question.Topic.Section;
+                if (section != null)
                 {
                     history.Add(new SkillHistoryPointDto(
-                        skill.Name,
-                        skill.Code,
+                        section.Name,
+                        section.Name,
                         level,
                         dayGroup.Key
                     ));
@@ -342,12 +342,12 @@ public class AnalyticsService : IAnalyticsService
     private async Task<IEnumerable<SkillProgressDto>> GetRecentProgressAsync(int userId)
     {
         var recentUpdates = await _context.UserSkillProfiles
-            .Include(p => p.Skill)
+            .Include(p => p.Section)
             .Where(p => p.UserId == userId)
             .OrderByDescending(p => p.LastUpdated)
             .Take(10)
             .Select(p => new SkillProgressDto(
-                p.Skill.Name,
+                p.Section.Name,
                 p.Level - 5,
                 p.Level,
                 p.LastUpdated

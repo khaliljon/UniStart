@@ -19,10 +19,14 @@ function Layout() {
       <nav className="navbar">
         <div className="container navbar-content">
           <NavLink to="/" className="navbar-brand" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            {isWhiteLabel && branding?.logoUrl && (
-              <img src={branding.logoUrl} alt={brandName} style={{ height: 28, borderRadius: '50%' }} />
+            {isWhiteLabel && branding?.logoUrl ? (
+              <>
+                <img src={branding.logoUrl} alt={brandName} style={{ height: 28, borderRadius: '50%' }} />
+                {brandName}
+              </>
+            ) : (
+              <img src="/unistart-logo.png" alt="UniStart" style={{ height: 38, width: 'auto' }} />
             )}
-            {brandName}
           </NavLink>
 
           <button

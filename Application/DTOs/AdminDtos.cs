@@ -180,8 +180,7 @@ public record AdminTopicSummaryDto(
 
 public record CreateTopicDto(
     string Name,
-    int SectionId,
-    int SkillId
+    int SectionId
 );
 
 public record AdminSectionDto(

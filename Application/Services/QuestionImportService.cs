@@ -691,15 +691,6 @@ public class QuestionImportService : IQuestionImportService
                     .Where(t => t.SectionId == job.SectionId.Value)
                     .ToListAsync();
 
-                // Find SkillId from existing topics in this section (needed for auto-creation)
-                var defaultSkillId = existingTopics.FirstOrDefault()?.SkillId ?? 0;
-                if (defaultSkillId == 0)
-                {
-                    // Fallback: find any skill
-                    var skill = await _db.Skills.FirstOrDefaultAsync();
-                    defaultSkillId = skill?.Id ?? 0;
-                }
-
                 foreach (var section in topicSections)
                 {
                     // Try to find existing topic by name similarity
@@ -709,13 +700,12 @@ public class QuestionImportService : IQuestionImportService
 
                     int? topicId = existingTopic?.Id;
 
-                    if (topicId == null && section.StartQ > 0 && defaultSkillId > 0)
+                    if (topicId == null && section.StartQ > 0)
                     {
                         // Auto-create a new topic
                         var newTopic = new Topic
                         {
                             SectionId = job.SectionId.Value,
-                            SkillId = defaultSkillId,
                             Name = section.Title,
                         };
                         _db.Topics.Add(newTopic);

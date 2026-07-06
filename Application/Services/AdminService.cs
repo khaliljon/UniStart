@@ -732,9 +732,6 @@ public class AdminService : IAdminService
         var section = await _db.ExamSections.FindAsync(dto.SectionId)
             ?? throw new ArgumentException($"Секция с ID {dto.SectionId} не найдена");
 
-        var skill = await _db.Skills.FindAsync(dto.SkillId)
-            ?? throw new ArgumentException($"Навык с ID {dto.SkillId} не найден");
-
         var exists = await _db.Topics.AnyAsync(t => t.Name == dto.Name && t.SectionId == dto.SectionId);
         if (exists)
             throw new ArgumentException($"Тема '{dto.Name}' уже существует в секции '{section.Name}'");
@@ -742,8 +739,7 @@ public class AdminService : IAdminService
         var topic = new Topic
         {
             Name = InputSanitizer.Sanitize(dto.Name)!,
-            SectionId = dto.SectionId,
-            SkillId = dto.SkillId
+            SectionId = dto.SectionId
         };
 
         _db.Topics.Add(topic);
@@ -919,18 +915,6 @@ public class AdminService : IAdminService
                 .OrderBy(s => s.ExamTypeCode)
                 .ThenBy(s => s.Name)
                 .Select(s => new AdminSectionDto(s.Id, s.Name, s.ExamTypeCode))
-                .ToListAsync();
-        }) ?? [];
-    }
-
-    public async Task<List<AdminSkillDto>> GetSkillsAsync()
-    {
-        return await _cache.GetOrCreateAsync("admin:skills", async entry =>
-        {
-            entry.AbsoluteExpirationRelativeToNow = CacheTtl;
-            return await _db.Skills
-                .OrderBy(s => s.Name)
-                .Select(s => new AdminSkillDto(s.Id, s.Code, s.Name))
                 .ToListAsync();
         }) ?? [];
     }

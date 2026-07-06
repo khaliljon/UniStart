@@ -153,8 +153,9 @@ public class DiagnosticService : IDiagnosticService
         answer.AnsweredAt = DateTime.UtcNow;
         answer.TimeSpentSeconds = dto.TimeSpentSeconds;
 
-        // Update skill profiles via adaptive engine
-        await _adaptiveEngine.UpdateSkillLevelAsync(userId, question.Topic.SkillId, isCorrect);
+        // Update section ability via adaptive engine
+        if (question.Topic?.SectionId is int diagSectionId)
+            await _adaptiveEngine.UpdateSkillLevelAsync(userId, diagSectionId, isCorrect);
         await _unitOfWork.SaveChangesAsync();
 
         // Check if diagnostic is complete

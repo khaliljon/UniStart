@@ -235,8 +235,8 @@ public class SchoolAdminController : ControllerBase
 
         var skills = await _db.UserSkillProfiles
             .Where(sp => sp.UserId == userId)
-            .Include(sp => sp.Skill)
-            .Select(sp => new { sp.Skill.Name, sp.Level, sp.Theta, sp.ThetaSE })
+            .Include(sp => sp.Section)
+            .Select(sp => new { sp.Section.Name, sp.Level, sp.Theta, sp.ThetaSE })
             .ToListAsync();
 
         return Ok(new

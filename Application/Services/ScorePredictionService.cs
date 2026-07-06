@@ -41,15 +41,14 @@ public class ScorePredictionService : IScorePredictionService
             .Where(s => s.ExamTypeCode == examTypeCode)
             .ToListAsync();
 
-        // Load user skill profiles
+        // Load user section ability profiles (keyed by section id)
         var profiles = await _db.UserSkillProfiles
             .Where(p => p.UserId == userId)
-            .ToDictionaryAsync(p => p.SkillId);
+            .ToDictionaryAsync(p => p.SectionId);
 
-        // Load topics per section to map skills → sections
+        // Load topics per section (used for improvement tips)
         var topicsPerSection = await _db.Topics
             .Where(t => t.SectionId != null && t.Section!.ExamTypeCode == examTypeCode)
-            .Include(t => t.Skill)
             .GroupBy(t => t.SectionId!.Value)
             .ToDictionaryAsync(g => g.Key, g => g.ToList());
 
@@ -76,8 +75,7 @@ public class ScorePredictionService : IScorePredictionService
 
         foreach (var section in sections)
         {
-            var topics = topicsPerSection.GetValueOrDefault(section.Id, new List<Topic>());
-            var (theta, thetaSE) = GetSectionTheta(topics, profiles);
+            var (theta, thetaSE) = GetSectionTheta(section.Id, profiles);
             
             var predicted = ThetaToScore(theta, section.MinScore, section.MaxScore);
             var confLow = ThetaToScore(theta - 1.645 * thetaSE, section.MinScore, section.MaxScore);
@@ -165,22 +163,23 @@ public class ScorePredictionService : IScorePredictionService
     public async Task<WhatIfResultDto> WhatIfAsync(int userId, string examTypeCode, int topicId, int improvedLevel)
     {
         var topic = await _db.Topics
-            .Include(t => t.Skill)
             .Include(t => t.Section)
             .FirstOrDefaultAsync(t => t.Id == topicId)
             ?? throw new InvalidOperationException("Topic not found");
 
+        var sectionId = topic.SectionId
+            ?? throw new InvalidOperationException("Topic has no section");
+
         // Current prediction
         var current = await PredictScoreAsync(userId, examTypeCode);
 
-        // Calculate what would happen with improved theta for this topic's skill
+        // Calculate what would happen with improved theta for this topic's section
         var profiles = await _db.UserSkillProfiles
             .Where(p => p.UserId == userId)
-            .ToDictionaryAsync(p => p.SkillId);
+            .ToDictionaryAsync(p => p.SectionId);
 
-        var currentProfile = profiles.GetValueOrDefault(topic.SkillId);
+        var currentProfile = profiles.GetValueOrDefault(sectionId);
         var currentLevel = currentProfile != null ? IrtMath.ThetaToLevel(currentProfile.Theta) : 50;
-        var currentTheta = currentProfile?.Theta ?? 0.0;
         var improvedTheta = IrtMath.LevelToTheta(Math.Clamp(improvedLevel, 1, 99));
 
         // Temporarily compute improved score
@@ -188,46 +187,22 @@ public class ScorePredictionService : IScorePredictionService
             .Where(s => s.ExamTypeCode == examTypeCode)
             .ToListAsync();
 
-        var topicsPerSection = await _db.Topics
-            .Where(t => t.SectionId != null && t.Section!.ExamTypeCode == examTypeCode)
-            .Include(t => t.Skill)
-            .GroupBy(t => t.SectionId!.Value)
-            .ToDictionaryAsync(g => g.Key, g => g.ToList());
-
-        // Clone profiles and override the target skill
+        // Clone profiles and override the target section
         var modifiedProfiles = new Dictionary<int, UserSkillProfile>(profiles);
-        if (modifiedProfiles.ContainsKey(topic.SkillId))
+        modifiedProfiles[sectionId] = new UserSkillProfile
         {
-            // Create a modified copy
-            var orig = modifiedProfiles[topic.SkillId];
-            modifiedProfiles[topic.SkillId] = new UserSkillProfile
-            {
-                UserId = orig.UserId,
-                SkillId = orig.SkillId,
-                Level = improvedLevel,
-                Theta = improvedTheta,
-                ThetaSE = orig.ThetaSE * 0.8, // Assume SE decreases with practice
-                LastUpdated = orig.LastUpdated
-            };
-        }
-        else
-        {
-            modifiedProfiles[topic.SkillId] = new UserSkillProfile
-            {
-                UserId = userId,
-                SkillId = topic.SkillId,
-                Level = improvedLevel,
-                Theta = improvedTheta,
-                ThetaSE = 0.5,
-                LastUpdated = DateTime.UtcNow
-            };
-        }
+            UserId = userId,
+            SectionId = sectionId,
+            Level = improvedLevel,
+            Theta = improvedTheta,
+            ThetaSE = currentProfile != null ? currentProfile.ThetaSE * 0.8 : 0.5,
+            LastUpdated = DateTime.UtcNow
+        };
 
         int improvedTotal = 0;
         foreach (var section in sections)
         {
-            var topics = topicsPerSection.GetValueOrDefault(section.Id, new List<Topic>());
-            var (theta, _) = GetSectionTheta(topics, modifiedProfiles);
+            var (theta, _) = GetSectionTheta(section.Id, modifiedProfiles);
             improvedTotal += ThetaToScore(theta, section.MinScore, section.MaxScore);
         }
 
@@ -252,12 +227,6 @@ public class ScorePredictionService : IScorePredictionService
             .Where(s => s.ExamTypeCode == examTypeCode)
             .ToListAsync();
 
-        var topicsPerSection = await _db.Topics
-            .Where(t => t.SectionId != null && t.Section!.ExamTypeCode == examTypeCode)
-            .Include(t => t.Skill)
-            .GroupBy(t => t.SectionId!.Value)
-            .ToDictionaryAsync(g => g.Key, g => g.ToList());
-
         // Get the user's answer history dates
         var startDate = DateTime.SpecifyKind(DateTime.UtcNow.Date.AddDays(-days), DateTimeKind.Utc);
         var answers = await _db.UserAnswers
@@ -266,7 +235,7 @@ public class ScorePredictionService : IScorePredictionService
                 && a.Question.Topic.Section.ExamTypeCode == examTypeCode
                 && a.AnsweredAt >= startDate)
             .OrderBy(a => a.AnsweredAt)
-            .Select(a => new { a.AnsweredAt, IsCorrect = a.AnswerOption!.IsCorrect, SkillId = a.Question!.Topic!.SkillId })
+            .Select(a => new { a.AnsweredAt, IsCorrect = a.AnswerOption!.IsCorrect, SectionId = a.Question!.Topic!.SectionId!.Value })
             .ToListAsync();
 
         if (!answers.Any())
@@ -281,7 +250,7 @@ public class ScorePredictionService : IScorePredictionService
         // Load current profiles as baseline
         var profiles = await _db.UserSkillProfiles
             .Where(p => p.UserId == userId)
-            .ToDictionaryAsync(p => p.SkillId);
+            .ToDictionaryAsync(p => p.SectionId);
 
         var history = new List<PredictionHistoryDto>();
 
@@ -292,16 +261,16 @@ public class ScorePredictionService : IScorePredictionService
         {
             foreach (var a in dayGroup)
             {
-                if (!cumulativeCorrect.ContainsKey(a.SkillId))
-                    cumulativeCorrect[a.SkillId] = (0, 0);
+                if (!cumulativeCorrect.ContainsKey(a.SectionId))
+                    cumulativeCorrect[a.SectionId] = (0, 0);
 
-                var (c, t) = cumulativeCorrect[a.SkillId];
-                cumulativeCorrect[a.SkillId] = (c + (a.IsCorrect ? 1 : 0), t + 1);
+                var (c, t) = cumulativeCorrect[a.SectionId];
+                cumulativeCorrect[a.SectionId] = (c + (a.IsCorrect ? 1 : 0), t + 1);
             }
 
             // Build temporary profiles based on cumulative accuracy
             var tempProfiles = new Dictionary<int, UserSkillProfile>(profiles);
-            foreach (var (skillId, (correct, total)) in cumulativeCorrect)
+            foreach (var (sectionId, (correct, total)) in cumulativeCorrect)
             {
                 if (total >= 2) // Need at least 2 answers for meaningful estimate
                 {
@@ -309,28 +278,13 @@ public class ScorePredictionService : IScorePredictionService
                     // Map accuracy (0-1) to approximate theta (-3 to +3)
                     var approxTheta = AccuracyToTheta(accuracy);
                     var approxSE = 1.0 / Math.Sqrt(total); // SE decreases with more data
-
-                    if (tempProfiles.ContainsKey(skillId))
+                    tempProfiles[sectionId] = new UserSkillProfile
                     {
-                        var orig = tempProfiles[skillId];
-                        tempProfiles[skillId] = new UserSkillProfile
-                        {
-                            UserId = userId, SkillId = skillId,
-                            Theta = approxTheta, ThetaSE = approxSE,
-                            Level = IrtMath.ThetaToLevel(approxTheta),
-                            LastUpdated = dayGroup.Key
-                        };
-                    }
-                    else
-                    {
-                        tempProfiles[skillId] = new UserSkillProfile
-                        {
-                            UserId = userId, SkillId = skillId,
-                            Theta = approxTheta, ThetaSE = approxSE,
-                            Level = IrtMath.ThetaToLevel(approxTheta),
-                            LastUpdated = dayGroup.Key
-                        };
-                    }
+                        UserId = userId, SectionId = sectionId,
+                        Theta = approxTheta, ThetaSE = approxSE,
+                        Level = IrtMath.ThetaToLevel(approxTheta),
+                        LastUpdated = dayGroup.Key
+                    };
                 }
             }
 
@@ -338,8 +292,7 @@ public class ScorePredictionService : IScorePredictionService
             int predicted = 0, confLow = 0, confHigh = 0;
             foreach (var section in sections)
             {
-                var topics = topicsPerSection.GetValueOrDefault(section.Id, new List<Topic>());
-                var (theta, se) = GetSectionTheta(topics, tempProfiles);
+                var (theta, se) = GetSectionTheta(section.Id, tempProfiles);
                 predicted += ThetaToScore(theta, section.MinScore, section.MaxScore);
                 confLow += ThetaToScore(theta - 1.645 * se, section.MinScore, section.MaxScore);
                 confHigh += ThetaToScore(theta + 1.645 * se, section.MinScore, section.MaxScore);
@@ -372,34 +325,35 @@ public class ScorePredictionService : IScorePredictionService
 
         foreach (var topic in allTopics)
         {
-            var profile = profiles.GetValueOrDefault(topic.SkillId);
+            if (topic.SectionId is not int tSecId) continue;
+
+            var profile = profiles.GetValueOrDefault(tSecId);
             var theta = profile?.Theta ?? 0.0;
             var currentLevel = profile != null ? IrtMath.ThetaToLevel(theta) : 50;
 
             // Only suggest improvement for topics below mastery
             if (currentLevel >= 80) continue;
 
-            // Calculate potential score gain if this skill improves by 20 level points
+            // Calculate potential score gain if this section improves by 20 level points
             var improvedTheta = IrtMath.LevelToTheta(Math.Min(currentLevel + 20, 95));
             int currentTotal = 0, improvedTotal = 0;
 
             foreach (var section in sections)
             {
-                var sectionTopics = topicsPerSection.GetValueOrDefault(section.Id, new List<Topic>());
-                var (sTheta, _) = GetSectionTheta(sectionTopics, profiles);
+                var (sTheta, _) = GetSectionTheta(section.Id, profiles);
                 currentTotal += ThetaToScore(sTheta, section.MinScore, section.MaxScore);
 
                 // If this topic belongs to this section, use improved theta
-                if (sectionTopics.Any(t => t.SkillId == topic.SkillId))
+                if (section.Id == tSecId)
                 {
                     var tempProfiles = new Dictionary<int, UserSkillProfile>(profiles);
-                    tempProfiles[topic.SkillId] = new UserSkillProfile
+                    tempProfiles[tSecId] = new UserSkillProfile
                     {
-                        UserId = userId, SkillId = topic.SkillId,
+                        UserId = userId, SectionId = tSecId,
                         Theta = improvedTheta, ThetaSE = 0.5,
                         Level = currentLevel + 20, LastUpdated = DateTime.UtcNow
                     };
-                    var (iTheta, _) = GetSectionTheta(sectionTopics, tempProfiles);
+                    var (iTheta, _) = GetSectionTheta(section.Id, tempProfiles);
                     improvedTotal += ThetaToScore(iTheta, section.MinScore, section.MaxScore);
                 }
                 else
@@ -443,41 +397,16 @@ public class ScorePredictionService : IScorePredictionService
     // ═══════════════════════════════════════════════════════
 
     /// <summary>
-    /// Get the aggregate θ for a section by averaging thetas of related skills.
-    /// Returns (theta, se).
+    /// Get the θ for a section directly from the user's per-section ability profile.
+    /// Returns (theta, se); a cold-start default when the section has no profile yet.
     /// </summary>
     private static (double theta, double se) GetSectionTheta(
-        List<Topic> sectionTopics,
+        int sectionId,
         Dictionary<int, UserSkillProfile> profiles)
     {
-        if (!sectionTopics.Any())
-            return (0.0, 1.5);
-
-        var skillIds = sectionTopics.Select(t => t.SkillId).Distinct().ToList();
-        var thetas = new List<double>();
-        var ses = new List<double>();
-
-        foreach (var skillId in skillIds)
-        {
-            if (profiles.TryGetValue(skillId, out var p))
-            {
-                thetas.Add(p.Theta);
-                ses.Add(p.ThetaSE > 0 ? p.ThetaSE : 1.0);
-            }
-            else
-            {
-                thetas.Add(0.0); // Default: average ability
-                ses.Add(1.5);    // High uncertainty
-            }
-        }
-
-        // Weighted average: weight by inverse SE (more certain = more weight)
-        var weights = ses.Select(se => 1.0 / (se * se)).ToList();
-        var totalWeight = weights.Sum();
-        var avgTheta = thetas.Zip(weights, (t, w) => t * w).Sum() / totalWeight;
-        var avgSE = Math.Sqrt(1.0 / totalWeight); // Combined SE
-
-        return (avgTheta, avgSE);
+        if (profiles.TryGetValue(sectionId, out var p))
+            return (p.Theta, p.ThetaSE > 0 ? p.ThetaSE : 1.0);
+        return (0.0, 1.5);
     }
 
     /// <summary>

@@ -46,23 +46,17 @@ public class OnboardingService : IOnboardingService
     public async Task<IEnumerable<ExamTypeInfoDto>> GetExamTypesInfoAsync(string lang = "ru")
     {
         var examTypes = await _context.ExamTypes
-            .Where(e => e.Code == "SAT" || e.Code == "NUET")
+            .Where(e => e.Code == "CSCA")
             .Include(e => e.Sections)
             .ToListAsync();
 
         var descriptions = new Dictionary<string, Dictionary<string, string>>
         {
-            ["SAT"] = new()
+            ["CSCA"] = new()
             {
-                ["ru"] = "Стандартный тест для поступления в университеты США. Оценивает навыки чтения, письма и математики.",
-                ["kz"] = "АҚШ университеттеріне түсу үшін стандартты тест. Оқу, жазу және математика дағдыларын бағалайды.",
-                ["en"] = "Standardized test for admission to US universities. Assesses reading, writing, and math skills.",
-            },
-            ["NUET"] = new()
-            {
-                ["ru"] = "Национальный единый тест Казахстана. Оценивает математику и критическое мышление.",
-                ["kz"] = "Қазақстанның Ұлттық бірыңғай тесті. Математика мен сыни ойлауды бағалайды.",
-                ["en"] = "National Unified Educational Test of Kazakhstan. Assesses mathematics and critical thinking.",
+                ["ru"] = "China Scholastic Competency Assessment — вступительный экзамен в университеты Китая. Оценивает академическую подготовку и уровень китайского языка.",
+                ["kz"] = "China Scholastic Competency Assessment — Қытай университеттеріне қабылдау емтиханы. Академиялық дайындық пен қытай тілін бағалайды.",
+                ["en"] = "China Scholastic Competency Assessment — an entrance exam for Chinese universities. Assesses academic knowledge and Chinese language proficiency.",
             }
         };
 
