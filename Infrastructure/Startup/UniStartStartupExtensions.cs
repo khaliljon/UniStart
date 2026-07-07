@@ -247,7 +247,7 @@ public static class UniStartStartupExtensions
             {
                 Title = "UniStart API",
                 Version = "v1",
-                Description = "Adaptive SAT and NUET Preparation Platform API"
+                Description = "CSCA Preparation Platform API"
             });
 
             c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
