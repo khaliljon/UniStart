@@ -250,7 +250,6 @@ public class DatabaseSeeder
         if (await _context.MockExamAnswers.AnyAsync()) return true;
         if (await _context.MockExamAttempts.AnyAsync()) return true;
         if (await _context.TimedDrillResults.AnyAsync()) return true;
-        if (await _context.TutorSchools.AnyAsync()) return true;
 
         var realUsers = await _context.Users
             .CountAsync(u => u.Email != "test@unistart.kz" && u.Email != "admin@unistart.kz");

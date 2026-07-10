@@ -400,13 +400,7 @@ public class AdminService : IAdminService
             .Select(g => new { UserId = g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.UserId, x => x.Count);
 
-        // Resolve school names for users bound to a school
-        var schoolIds = users.Where(u => u.SchoolId.HasValue).Select(u => u.SchoolId!.Value).Distinct().ToList();
-        var schoolNames = schoolIds.Count > 0
-            ? await _db.TutorSchools
-                .Where(s => schoolIds.Contains(s.Id))
-                .ToDictionaryAsync(s => s.Id, s => s.Name)
-            : new Dictionary<int, string>();
+        var schoolNames = new Dictionary<int, string>();
 
         var items = users.Select(u =>
         {
@@ -458,11 +452,6 @@ public class AdminService : IAdminService
 
         // Resolve school name for display
         string? schoolName = null;
-        if (user.SchoolId.HasValue)
-            schoolName = await _db.TutorSchools
-                .Where(s => s.Id == user.SchoolId.Value)
-                .Select(s => s.Name)
-                .FirstOrDefaultAsync();
 
         return new AdminUserDto(
             Id: user.Id,
@@ -511,100 +500,8 @@ public class AdminService : IAdminService
         if (!string.IsNullOrWhiteSpace(dto.Role) && Enum.TryParse<UserRole>(dto.Role, true, out var role))
         {
             user.Role = role;
-
-            // Auto-create TutorProfile when role changed to Tutor, SchoolTutor or SchoolAdmin
-            if (role == UserRole.Tutor || role == UserRole.SchoolTutor || role == UserRole.SchoolAdmin)
-            {
-                var hasProfile = await _db.TutorProfiles.AnyAsync(tp => tp.UserId == id);
-                if (!hasProfile)
-                {
-                    _db.TutorProfiles.Add(new TutorProfile
-                    {
-                        UserId = id,
-                        Headline = $"Тьютор {user.Name}",
-                        Bio = "",
-                        Experience = "",
-                        Specializations = "",
-                        IsAvailable = true,
-                        SchoolId = dto.SchoolId
-                    });
-                }
-            }
-
-            // Auto-clear school binding when demoting to Student
             if (role == UserRole.Student)
-            {
                 user.SchoolId = null;
-                var profile = await _db.TutorProfiles.FirstOrDefaultAsync(tp => tp.UserId == id);
-                if (profile != null)
-                    profile.SchoolId = null;
-            }
-        }
-
-        // Update SchoolId binding (for SchoolAdmin / Tutor → school assignment)
-        if (dto.ClearSchool)
-        {
-            user.SchoolId = null;
-            var profile = await _db.TutorProfiles.FirstOrDefaultAsync(tp => tp.UserId == id);
-            if (profile != null)
-                profile.SchoolId = null;
-        }
-        else if (dto.SchoolId.HasValue)
-        {
-            var schoolExists = await _db.TutorSchools.AnyAsync(s => s.Id == dto.SchoolId.Value && s.IsActive);
-            if (schoolExists)
-            {
-                user.SchoolId = dto.SchoolId.Value;
-
-                // Also update TutorProfile.SchoolId if exists
-                var profile = await _db.TutorProfiles.FirstOrDefaultAsync(tp => tp.UserId == id);
-                if (profile != null)
-                    profile.SchoolId = dto.SchoolId.Value;
-
-                // If promoting to SchoolAdmin, set as school owner if no owner exists
-                if (user.Role == UserRole.SchoolAdmin)
-                {
-                    var school = await _db.TutorSchools.FindAsync(dto.SchoolId.Value);
-                    if (school != null && school.OwnerUserId == null)
-                        school.OwnerUserId = id;
-                }
-
-                // Auto-create approved application so tutor shows up correctly in school admin panel
-                // (no Pending notification — admin assignment bypasses the application flow)
-                if (user.Role == UserRole.Tutor || user.Role == UserRole.SchoolTutor)
-                {
-                    var hasPending = await _db.TutorSchoolApplications
-                        .AnyAsync(a => a.UserId == id && a.SchoolId == dto.SchoolId.Value
-                            && a.Status == TutorSchoolApplicationStatus.Pending);
-                    if (hasPending)
-                    {
-                        // Auto-approve existing pending application
-                        var pending = await _db.TutorSchoolApplications
-                            .FirstAsync(a => a.UserId == id && a.SchoolId == dto.SchoolId.Value
-                                && a.Status == TutorSchoolApplicationStatus.Pending);
-                        pending.Status = TutorSchoolApplicationStatus.Approved;
-                        pending.ReviewedAt = DateTime.UtcNow;
-                    }
-                    else
-                    {
-                        // Create pre-approved application record
-                        var hasAny = await _db.TutorSchoolApplications
-                            .AnyAsync(a => a.UserId == id && a.SchoolId == dto.SchoolId.Value
-                                && a.Status == TutorSchoolApplicationStatus.Approved);
-                        if (!hasAny)
-                        {
-                            _db.TutorSchoolApplications.Add(new TutorSchoolApplication
-                            {
-                                UserId = id,
-                                SchoolId = dto.SchoolId.Value,
-                                Message = "Назначен администратором UniStart",
-                                Status = TutorSchoolApplicationStatus.Approved,
-                                ReviewedAt = DateTime.UtcNow,
-                            });
-                        }
-                    }
-                }
-            }
         }
 
         if (!string.IsNullOrWhiteSpace(dto.SubscriptionTier) && Enum.TryParse<SubscriptionTier>(dto.SubscriptionTier, true, out var tier))
@@ -671,8 +568,8 @@ public class AdminService : IAdminService
         return new AdminUserStatsDto(
             TotalUsers: total,
             Students: roleCounts.GetValueOrDefault(UserRole.Student),
-            Tutors: roleCounts.GetValueOrDefault(UserRole.Tutor) + roleCounts.GetValueOrDefault(UserRole.SchoolTutor),
-            Admins: roleCounts.GetValueOrDefault(UserRole.Admin) + roleCounts.GetValueOrDefault(UserRole.SchoolAdmin),
+            Tutors: 0,
+            Admins: roleCounts.GetValueOrDefault(UserRole.Admin),
             ProUsers: proCount,
             ActiveLast7Days: activeUserIds
         );
@@ -810,13 +707,6 @@ public class AdminService : IAdminService
             if (mockAnswers.Count > 0)
                 _db.MockExamAnswers.RemoveRange(mockAnswers);
 
-            // AssignmentAnswer.QuestionId is Restrict (also SelectedOptionId Restrict on AnswerOption)
-            var assignAnswers = await _db.AssignmentAnswers
-                .Where(a => questionIds.Contains(a.QuestionId))
-                .ToListAsync();
-            if (assignAnswers.Count > 0)
-                _db.AssignmentAnswers.RemoveRange(assignAnswers);
-
             // UserAnswer.AnswerOptionId is Restrict on AnswerOption (AnswerOption cascades from Question)
             var userAnswers = await _db.UserAnswers
                 .Where(a => questionIds.Contains(a.QuestionId))
@@ -877,12 +767,6 @@ public class AdminService : IAdminService
             .ToListAsync();
         if (mockAnswers.Count > 0)
             _db.MockExamAnswers.RemoveRange(mockAnswers);
-
-        var assignAnswers = await _db.AssignmentAnswers
-            .Where(a => questionIds.Contains(a.QuestionId))
-            .ToListAsync();
-        if (assignAnswers.Count > 0)
-            _db.AssignmentAnswers.RemoveRange(assignAnswers);
 
         var userAnswers = await _db.UserAnswers
             .Where(a => questionIds.Contains(a.QuestionId))
@@ -992,13 +876,6 @@ public class AdminService : IAdminService
                 if (mockAnswers.Count > 0)
                     _db.MockExamAnswers.RemoveRange(mockAnswers);
 
-                // AssignmentAnswer.QuestionId is Restrict (also SelectedOptionId Restrict on AnswerOption)
-                var assignAnswers = await _db.AssignmentAnswers
-                    .Where(a => questionIds.Contains(a.QuestionId))
-                    .ToListAsync();
-                if (assignAnswers.Count > 0)
-                    _db.AssignmentAnswers.RemoveRange(assignAnswers);
-
                 // UserAnswer.AnswerOptionId is Restrict on AnswerOption (AnswerOption cascades from Question)
                 var userAnswers = await _db.UserAnswers
                     .Where(a => questionIds.Contains(a.QuestionId))
@@ -1100,13 +977,6 @@ public class AdminService : IAdminService
                     .ToListAsync();
                 if (mockAnswers.Count > 0)
                     _db.MockExamAnswers.RemoveRange(mockAnswers);
-
-                // AssignmentAnswer.QuestionId is Restrict (also SelectedOptionId Restrict on AnswerOption)
-                var assignAnswers = await _db.AssignmentAnswers
-                    .Where(a => questionIds.Contains(a.QuestionId))
-                    .ToListAsync();
-                if (assignAnswers.Count > 0)
-                    _db.AssignmentAnswers.RemoveRange(assignAnswers);
 
                 // UserAnswer.AnswerOptionId is Restrict on AnswerOption (AnswerOption cascades from Question)
                 var userAnswers = await _db.UserAnswers
@@ -1359,13 +1229,6 @@ public class AdminService : IAdminService
                 throw new InvalidOperationException("Cannot delete the last admin user");
         }
 
-        // Remove records with Restrict FK behavior that would block cascade
-        var messages = await _db.Messages.Where(m => m.SenderId == id).ToListAsync();
-        if (messages.Count > 0) _db.Messages.RemoveRange(messages);
-
-        var conversations = await _db.Conversations.Where(c => c.TutorId == id).ToListAsync();
-        if (conversations.Count > 0) _db.Conversations.RemoveRange(conversations);
-
         var importJobs = await _db.QuestionImportJobs.Where(j => j.AdminUserId == id).ToListAsync();
         if (importJobs.Count > 0) _db.QuestionImportJobs.RemoveRange(importJobs);
 
@@ -1406,12 +1269,6 @@ public class AdminService : IAdminService
                 .ToListAsync();
             if (mockAnswers.Count > 0) _db.MockExamAnswers.RemoveRange(mockAnswers);
 
-            // AssignmentAnswer.QuestionId is Restrict
-            var assignAnswers = await _db.AssignmentAnswers
-                .Where(a => questionIds.Contains(a.QuestionId))
-                .ToListAsync();
-            if (assignAnswers.Count > 0) _db.AssignmentAnswers.RemoveRange(assignAnswers);
-
             _db.Questions.RemoveRange(deletedQuestions);
         }
 
@@ -1419,25 +1276,9 @@ public class AdminService : IAdminService
         {
             var userIds = deletedUsers.Select(u => u.Id).ToList();
 
-            // Message.SenderId is Restrict
-            var messages = await _db.Messages.Where(m => userIds.Contains(m.SenderId)).ToListAsync();
-            if (messages.Count > 0) _db.Messages.RemoveRange(messages);
-
-            // Conversation.TutorId is Restrict
-            var conversations = await _db.Conversations.Where(c => userIds.Contains(c.TutorId)).ToListAsync();
-            if (conversations.Count > 0) _db.Conversations.RemoveRange(conversations);
-
             // QuestionImportJob.AdminUserId is Restrict
             var importJobs = await _db.QuestionImportJobs.Where(j => userIds.Contains(j.AdminUserId)).ToListAsync();
             if (importJobs.Count > 0) _db.QuestionImportJobs.RemoveRange(importJobs);
-
-            // TutorStudent.StudentUserId is Restrict
-            var tutorStudents = await _db.TutorStudents.Where(ts => userIds.Contains(ts.StudentUserId)).ToListAsync();
-            if (tutorStudents.Count > 0) _db.TutorStudents.RemoveRange(tutorStudents);
-
-            // TutorInviteCodeUsage.StudentUserId is Restrict
-            var inviteUsages = await _db.TutorInviteCodeUsages.Where(u => userIds.Contains(u.StudentUserId)).ToListAsync();
-            if (inviteUsages.Count > 0) _db.TutorInviteCodeUsages.RemoveRange(inviteUsages);
 
             // ReferralUsage.ReferredUserId is Restrict
             var referralUsages = await _db.ReferralUsages.Where(r => userIds.Contains(r.ReferredUserId)).ToListAsync();

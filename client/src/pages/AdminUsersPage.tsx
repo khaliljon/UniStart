@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import adminService from '../services/adminService';
-import type { AdminUser, AdminUserStats, TutorSchoolCard } from '../types';
+import type { AdminUser, AdminUserStats } from '../types';
 import { useTranslation } from '../hooks/useTranslation';
 import { getDateLocale } from '../i18n';
 
@@ -49,8 +49,7 @@ function AdminUsersPage() {
     schoolId: null as number | null,
   });
 
-  // Schools list for role assignment
-  const [schools, setSchools] = useState<TutorSchoolCard[]>([]);
+  // Schools list removed with tutor/school feature
 
   // Pagination (OP-13)
   const [page, setPage] = useState(1);
@@ -89,9 +88,6 @@ function AdminUsersPage() {
 
   useEffect(() => { loadUsers(); }, [loadUsers]);
   useEffect(() => { loadStats(); }, []);
-  useEffect(() => {
-    adminService.getAllSchools().then(list => setSchools(list.map(s => ({ id: s.id, name: s.name, slug: s.slug, logoUrl: s.logoUrl, description: '', tutorCount: s.tutorCount, specializations: s.specializations ? s.specializations.split(',').filter(Boolean) : [], isPartner: s.isPartner, websiteUrl: s.websiteUrl, instagramUrl: null, telegramUrl: null })))).catch(() => {});
-  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -142,11 +138,6 @@ function AdminUsersPage() {
 
   const saveUser = async () => {
     if (!selected) return;
-    // Require school for SchoolAdmin/SchoolTutor
-    if ((editData.role === 'SchoolAdmin' || editData.role === 'SchoolTutor') && !editData.schoolId) {
-      setError('Для роли SchoolAdmin / SchoolTutor необходимо выбрать школу');
-      return;
-    }
     try {
       setError(null);
       const payload: Parameters<typeof adminService.updateUser>[1] = {};
@@ -154,14 +145,6 @@ function AdminUsersPage() {
       if (editData.email !== selected.email) payload.email = editData.email;
       if (editData.role !== selected.role) payload.role = editData.role;
       if (editData.subscriptionTier !== selected.subscriptionTier) payload.subscriptionTier = editData.subscriptionTier;
-      // School assignment: always send when role is Tutor/SchoolAdmin/Student
-      if (editData.role === 'SchoolTutor' || editData.role === 'SchoolAdmin' || editData.role === 'Student') {
-        if (editData.schoolId) {
-          payload.schoolId = editData.schoolId;
-        } else if (selected.schoolId) {
-          payload.clearSchool = true;
-        }
-      }
       const updated = await adminService.updateUser(selected.id, payload);
       setSelected(updated);
       setEditMode(false);
@@ -264,8 +247,6 @@ function AdminUsersPage() {
         >
           <option value="">{t.admin.users.allRoles}</option>
           <option value="Student">Student</option>
-          <option value="Tutor">Tutor</option>
-          <option value="SchoolAdmin">SchoolAdmin</option>
           <option value="Admin">Admin</option>
         </select>
 
@@ -427,27 +408,9 @@ function AdminUsersPage() {
                     style={{ width: '100%', marginTop: '0.25rem' }}
                   >
                     <option value="Student">Student</option>
-                    <option value="Tutor">Tutor</option>
-                    <option value="SchoolTutor">SchoolTutor</option>
-                    <option value="SchoolAdmin">SchoolAdmin</option>
                     <option value="Admin">Admin</option>
                   </select>
                 </label>
-                {(editData.role === 'SchoolTutor' || editData.role === 'SchoolAdmin' || editData.role === 'Student') && schools.length > 0 && (
-                  <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                    {t.admin.users.schoolLabel}{(editData.role === 'SchoolTutor' || editData.role === 'SchoolAdmin') ? ' *' : ''}
-                    <select
-                      value={editData.schoolId ?? ''}
-                      onChange={(e) => setEditData({ ...editData, schoolId: e.target.value ? Number(e.target.value) : null })}
-                      style={{ width: '100%', marginTop: '0.25rem' }}
-                    >
-                      <option value="">{editData.role === 'Student' ? '— Без школы —' : '— Выберите школу —'}</option>
-                      {schools.map(s => (
-                        <option key={s.id} value={s.id}>{s.name} ({s.slug})</option>
-                      ))}
-                    </select>
-                  </label>
-                )}
                 <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
                   {t.admin.users.subscriptionLabel}
                   <select

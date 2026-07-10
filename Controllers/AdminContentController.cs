@@ -9,7 +9,7 @@ namespace UniStart.Controllers;
 
 [ApiController]
 [Route("api/admin/content")]
-[Authorize(Roles = "Admin,Tutor,SchoolTutor")]
+[Authorize(Roles = "Admin")]
 public class AdminContentController : ControllerBase
 {
     private readonly UniStartDbContext _db;
@@ -438,66 +438,5 @@ public class AdminContentController : ControllerBase
         _db.DrillTemplates.Remove(drill);
         await _db.SaveChangesAsync();
         return Ok(new { deleted = true });
-    }
-
-    /// <summary>All tutor-created assignments and questions (Admin only)</summary>
-    [HttpGet("tutor-content")]
-    [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> GetTutorContent(
-        [FromQuery] int? tutorId,
-        [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
-    {
-        var assignmentsQuery = _db.Set<Assignment>()
-            .Include(a => a.TutorUser)
-            .Include(a => a.Questions)
-            .Include(a => a.Students)
-            .AsQueryable();
-
-        if (tutorId.HasValue)
-            assignmentsQuery = assignmentsQuery.Where(a => a.TutorUserId == tutorId.Value);
-
-        var totalAssignments = await assignmentsQuery.CountAsync();
-        var assignments = await assignmentsQuery
-            .OrderByDescending(a => a.CreatedAt)
-            .Skip((page - 1) * pageSize).Take(pageSize)
-            .Select(a => new
-            {
-                a.Id, a.Title, a.Description, a.Deadline, a.IsActive, a.CreatedAt,
-                tutorName = a.TutorUser.Name,
-                tutorUserId = a.TutorUserId,
-                questionCount = a.Questions.Count,
-                studentCount = a.Students.Count,
-                completedCount = a.Students.Count(s => s.Status == AssignmentStudentStatus.Completed),
-            })
-            .ToListAsync();
-
-        var questionsQuery = _db.Questions
-            .Include(q => q.CreatedByTutor)
-            .Include(q => q.Topic).ThenInclude(t => t.Section)
-            .Where(q => q.CreatedByTutorId != null && !q.IsDeleted);
-
-        if (tutorId.HasValue)
-            questionsQuery = questionsQuery.Where(q => q.CreatedByTutorId == tutorId.Value);
-
-        var totalQuestions = await questionsQuery.CountAsync();
-        var questions = await questionsQuery
-            .OrderByDescending(q => q.CreatedAt)
-            .Skip((page - 1) * pageSize).Take(pageSize)
-            .Select(q => new
-            {
-                q.Id, q.Text, difficulty = q.Difficulty.ToString(), q.IsPrivate, q.CreatedAt,
-                tutorName = q.CreatedByTutor!.Name,
-                tutorUserId = q.CreatedByTutorId,
-                topicName = q.Topic.Name,
-                examTypeCode = q.Topic.Section != null ? q.Topic.Section.ExamTypeCode : "",
-            })
-            .ToListAsync();
-
-        return Ok(new
-        {
-            assignments = new { items = assignments, total = totalAssignments },
-            questions = new { items = questions, total = totalQuestions },
-            page, pageSize
-        });
     }
 }

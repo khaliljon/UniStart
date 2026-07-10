@@ -30,7 +30,6 @@ using UniStart.Application.Interfaces;
 using UniStart.Application.Services;
 using UniStart.Application.Validators;
 using UniStart.Domain.Interfaces;
-using UniStart.Hubs;
 using UniStart.Infrastructure.Data;
 using UniStart.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Mvc;
@@ -83,8 +82,6 @@ public static class UniStartStartupExtensions
         services.AddScoped<IAuditService, AuditService>();
         services.AddScoped<IBackgroundJobsService, BackgroundJobsService>();
         services.AddScoped<IBackupService, BackupService>();
-        services.AddScoped<ITutorService, TutorService>();
-        services.AddScoped<IMessageService, MessageService>();
         services.AddScoped<IReferralService, ReferralService>();
         services.AddScoped<IFormulaService, FormulaService>();
         services.AddScoped<IFlashcardService, FlashcardService>();
@@ -407,7 +404,6 @@ public static class UniStartStartupExtensions
         });
 
         app.MapControllers();
-        app.MapHub<ChatHub>("/hubs/chat");
 
         app.MapHealthChecks("/health/live", new HealthCheckOptions
         {

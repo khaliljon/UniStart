@@ -103,20 +103,8 @@ public class SeoController : ControllerBase
             // Main domain pages
             urls.Add(($"{origin}/", "weekly", "1.0"));
             urls.Add(($"{origin}/landing", "weekly", "0.9"));
-            urls.Add(($"{origin}/tutors", "weekly", "0.8"));
             urls.Add(($"{origin}/privacy", "monthly", "0.3"));
             urls.Add(($"{origin}/terms", "monthly", "0.3"));
-
-            // All active schools with subscription as subdomain entries
-            var schools = await _db.TutorSchools
-                .Where(s => s.IsActive && s.SubscriptionExpiresAt != null && s.SubscriptionExpiresAt > DateTime.UtcNow)
-                .Select(s => s.Slug)
-                .ToListAsync();
-
-            foreach (var slug in schools)
-            {
-                urls.Add(($"https://{slug}.unistart.kz/", "weekly", "0.8"));
-            }
         }
 
         var urlEntries = string.Join("\n", urls.Select(u => $"""
@@ -156,25 +144,6 @@ public class SeoController : ControllerBase
         string description = "Платформа подготовки к экзамену CSCA (China Scholastic Competency Assessment): пробные тесты с ИИ-объяснениями, официальные материалы и новости для поступления в университеты Китая.";
         string image = $"{origin}/og-image.png";
         string siteName = "UniStart";
-
-        if (isSubdomain)
-        {
-            var slug = host.Split('.')[0];
-            var school = await _db.TutorSchools
-                .Where(s => s.Slug == slug && s.IsActive)
-                .Select(s => new { s.Name, s.Description, s.LogoUrl, s.NavbarTitle })
-                .FirstOrDefaultAsync();
-
-            if (school != null)
-            {
-                siteName = school.NavbarTitle ?? school.Name;
-                title = $"{school.Name} — Подготовка к экзаменам на UniStart";
-                if (!string.IsNullOrWhiteSpace(school.Description))
-                    description = school.Description;
-                if (!string.IsNullOrWhiteSpace(school.LogoUrl))
-                    image = school.LogoUrl.StartsWith("http") ? school.LogoUrl : $"{origin}{school.LogoUrl}";
-            }
-        }
 
         var safeTitle = System.Net.WebUtility.HtmlEncode(title);
         var safeDesc = System.Net.WebUtility.HtmlEncode(description);

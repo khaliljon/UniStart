@@ -10,7 +10,6 @@ public class UniStartDbContext : DbContext
     }
 
     public DbSet<User> Users => Set<User>();
-    public DbSet<SchoolApplication> SchoolApplications => Set<SchoolApplication>();
     public DbSet<ExamType> ExamTypes => Set<ExamType>();
     public DbSet<ExamSection> ExamSections => Set<ExamSection>();
     public DbSet<Topic> Topics => Set<Topic>();
@@ -32,16 +31,6 @@ public class UniStartDbContext : DbContext
     public DbSet<MockExamAnswer> MockExamAnswers => Set<MockExamAnswer>();
     public DbSet<NotificationPreferences> NotificationPreferences => Set<NotificationPreferences>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
-    public DbSet<TutorProfile> TutorProfiles => Set<TutorProfile>();
-    public DbSet<TutorSchool> TutorSchools => Set<TutorSchool>();
-    public DbSet<TutorScheduleSlot> TutorScheduleSlots => Set<TutorScheduleSlot>();
-    public DbSet<TutorReview> TutorReviews => Set<TutorReview>();
-    public DbSet<Conversation> Conversations => Set<Conversation>();
-    public DbSet<Message> Messages => Set<Message>();
-    public DbSet<TutorStudent> TutorStudents => Set<TutorStudent>();
-    public DbSet<TutorInviteCode> TutorInviteCodes => Set<TutorInviteCode>();
-    public DbSet<TutorInviteCodeUsage> TutorInviteCodeUsages => Set<TutorInviteCodeUsage>();
-    public DbSet<TutorSchoolApplication> TutorSchoolApplications => Set<TutorSchoolApplication>();
 
     // Learning v2 entities
     public DbSet<LessonStep> LessonSteps => Set<LessonStep>();
@@ -63,12 +52,6 @@ public class UniStartDbContext : DbContext
     public DbSet<ImportJobFile> ImportJobFiles => Set<ImportJobFile>();
 
     public DbSet<TsaClassification> TsaClassifications => Set<TsaClassification>();
-
-    // Assignment entities (Sprint 7 Этап 3)
-    public DbSet<Assignment> Assignments => Set<Assignment>();
-    public DbSet<AssignmentQuestion> AssignmentQuestions => Set<AssignmentQuestion>();
-    public DbSet<AssignmentStudent> AssignmentStudents => Set<AssignmentStudent>();
-    public DbSet<AssignmentAnswer> AssignmentAnswers => Set<AssignmentAnswer>();
 
     // Referral program (Sprint 8)
     public DbSet<ReferralCode> ReferralCodes => Set<ReferralCode>();
@@ -496,174 +479,6 @@ public class UniStartDbContext : DbContext
             entity.HasIndex(e => e.UserId).HasDatabaseName("IX_AuditLogs_UserId");
         });
 
-        // ─── Tutor Profile ─────────────────────────────────
-        modelBuilder.Entity<TutorProfile>(entity =>
-        {
-            entity.ToTable("TutorProfiles");
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Headline).HasMaxLength(200);
-            entity.Property(e => e.Bio).HasMaxLength(2000);
-            entity.Property(e => e.Experience).HasMaxLength(1000);
-            entity.Property(e => e.AvatarUrl).HasMaxLength(500);
-            entity.Property(e => e.Specializations).HasMaxLength(100);
-            entity.Property(e => e.HourlyRate).HasPrecision(10, 2);
-            entity.Property(e => e.AverageRating).HasPrecision(3, 2);
-            entity.Property(e => e.IsAvailable).HasDefaultValue(true);
-            entity.Property(e => e.IsVerified).HasDefaultValue(false);
-            entity.Property(e => e.InviteCode).HasMaxLength(20);
-            entity.Property(e => e.ContactPreference)
-                  .HasConversion<string>()
-                  .HasMaxLength(10);
-            entity.HasOne(e => e.User)
-                  .WithOne(u => u.TutorProfile)
-                  .HasForeignKey<TutorProfile>(e => e.UserId)
-                  .OnDelete(DeleteBehavior.Cascade);
-            entity.HasIndex(e => e.UserId).IsUnique();
-            entity.HasIndex(e => e.IsAvailable).HasDatabaseName("IX_TutorProfiles_IsAvailable");
-            entity.HasOne(e => e.School)
-                  .WithMany(s => s.Tutors)
-                  .HasForeignKey(e => e.SchoolId)
-                  .OnDelete(DeleteBehavior.SetNull);
-        });
-
-        // ─── Tutor School ──────────────────────────────────
-        modelBuilder.Entity<TutorSchool>(entity =>
-        {
-            entity.ToTable("TutorSchools");
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
-            entity.Property(e => e.Slug).IsRequired().HasMaxLength(100);
-            entity.Property(e => e.Description).HasMaxLength(2000);
-            entity.Property(e => e.LogoUrl).HasMaxLength(500);
-            entity.Property(e => e.WebsiteUrl).HasMaxLength(500);
-            entity.Property(e => e.InstagramUrl).HasMaxLength(500);
-            entity.Property(e => e.TelegramUrl).HasMaxLength(500);
-            entity.Property(e => e.Specializations).HasMaxLength(100);
-            entity.Property(e => e.IsActive).HasDefaultValue(true);
-            entity.Property(e => e.IsPartner).HasDefaultValue(true);
-            entity.Property(e => e.RequireApproval).HasDefaultValue(true);
-            entity.Property(e => e.IsApproved).HasDefaultValue(false);
-            entity.Property(e => e.SchoolInviteCode).HasMaxLength(20);
-            entity.HasIndex(e => e.Slug).IsUnique();
-            entity.HasIndex(e => e.SchoolInviteCode).IsUnique()
-                  .HasFilter("\"SchoolInviteCode\" IS NOT NULL")
-                  .HasDatabaseName("IX_TutorSchools_InviteCode");
-            entity.HasOne(e => e.Owner)
-                  .WithMany()
-                  .HasForeignKey(e => e.OwnerUserId)
-                  .OnDelete(DeleteBehavior.SetNull);
-        });
-
-        // ─── User → School (White Label) ─────────────────────
-        modelBuilder.Entity<User>()
-            .HasOne(u => u.School)
-            .WithMany()
-            .HasForeignKey(u => u.SchoolId)
-            .OnDelete(DeleteBehavior.SetNull);
-
-        // ─── Tutor Schedule Slot ────────────────────────────
-        modelBuilder.Entity<TutorScheduleSlot>(entity =>
-        {
-            entity.ToTable("TutorScheduleSlots");
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.DayOfWeek).HasConversion<int>();
-            entity.HasOne(e => e.TutorProfile)
-                  .WithMany(tp => tp.Schedule)
-                  .HasForeignKey(e => e.TutorProfileId)
-                  .OnDelete(DeleteBehavior.Cascade);
-        });
-
-        // ─── Tutor Review ──────────────────────────────────
-        modelBuilder.Entity<TutorReview>(entity =>
-        {
-            entity.ToTable("TutorReviews");
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Comment).HasMaxLength(1000);
-            entity.HasOne(e => e.TutorProfile)
-                  .WithMany(tp => tp.Reviews)
-                  .HasForeignKey(e => e.TutorProfileId)
-                  .OnDelete(DeleteBehavior.Cascade);
-            entity.HasOne(e => e.Student)
-                  .WithMany()
-                  .HasForeignKey(e => e.StudentId)
-                  .OnDelete(DeleteBehavior.Cascade);
-            // One review per student per tutor
-            entity.HasIndex(e => new { e.TutorProfileId, e.StudentId })
-                  .IsUnique()
-                  .HasDatabaseName("IX_TutorReviews_Tutor_Student");
-        });
-
-        // ─── Conversation ──────────────────────────────────
-        modelBuilder.Entity<Conversation>(entity =>
-        {
-            entity.ToTable("Conversations");
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.LastMessagePreview).HasMaxLength(100);
-            entity.Property(e => e.Status)
-                  .HasConversion<string>()
-                  .HasMaxLength(20);
-            entity.HasOne(e => e.Student)
-                  .WithMany()
-                  .HasForeignKey(e => e.StudentId)
-                  .OnDelete(DeleteBehavior.Cascade);
-            entity.HasOne(e => e.Tutor)
-                  .WithMany()
-                  .HasForeignKey(e => e.TutorId)
-                  .OnDelete(DeleteBehavior.Restrict);
-            // One conversation per student-tutor pair
-            entity.HasIndex(e => new { e.StudentId, e.TutorId })
-                  .IsUnique()
-                  .HasDatabaseName("IX_Conversations_Student_Tutor");
-            entity.HasIndex(e => e.LastMessageAt).HasDatabaseName("IX_Conversations_LastMessageAt");
-        });
-
-        // ─── Message ───────────────────────────────────────
-        modelBuilder.Entity<Message>(entity =>
-        {
-            entity.ToTable("Messages");
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Text).HasMaxLength(4000).IsRequired();
-            entity.Property(e => e.Type)
-                  .HasConversion<string>()
-                  .HasMaxLength(10);
-            entity.HasOne(e => e.Conversation)
-                  .WithMany(c => c.Messages)
-                  .HasForeignKey(e => e.ConversationId)
-                  .OnDelete(DeleteBehavior.Cascade);
-            entity.HasOne(e => e.Sender)
-                  .WithMany()
-                  .HasForeignKey(e => e.SenderId)
-                  .OnDelete(DeleteBehavior.Restrict);
-            entity.HasIndex(e => new { e.ConversationId, e.SentAt })
-                  .HasDatabaseName("IX_Messages_Conversation_SentAt");
-        });
-
-        // ─── Tutor-Student Binding ─────────────────────────
-        modelBuilder.Entity<TutorStudent>(entity =>
-        {
-            entity.ToTable("TutorStudents");
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.InviteCode).IsRequired().HasMaxLength(20);
-            entity.Property(e => e.Status)
-                  .HasConversion<string>()
-                  .HasMaxLength(20);
-            entity.HasOne(e => e.TutorUser)
-                  .WithMany()
-                  .HasForeignKey(e => e.TutorUserId)
-                  .OnDelete(DeleteBehavior.Cascade);
-            entity.HasOne(e => e.StudentUser)
-                  .WithMany()
-                  .HasForeignKey(e => e.StudentUserId)
-                  .OnDelete(DeleteBehavior.Restrict);
-            // One active binding per student
-            entity.HasIndex(e => e.StudentUserId)
-                  .HasFilter("\"Status\" = 'Active'")
-                  .IsUnique()
-                  .HasDatabaseName("IX_TutorStudents_Student_Active");
-            entity.HasIndex(e => e.TutorUserId)
-                  .HasDatabaseName("IX_TutorStudents_TutorUserId");
-        });
-
         // ─── Lesson Step (TH-1) ────────────────────────────
         modelBuilder.Entity<LessonStep>(entity =>
         {
@@ -938,115 +753,15 @@ public class UniStartDbContext : DbContext
         //  ASSIGNMENT (Sprint 7 Этап 3)
         // ═══════════════════════════════════════════════════════
 
-        modelBuilder.Entity<Assignment>(entity =>
-        {
-            entity.ToTable("Assignments");
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
-            entity.Property(e => e.Description).HasMaxLength(2000);
-            entity.Property(e => e.IsActive).HasDefaultValue(true);
-            entity.HasOne(e => e.TutorUser)
-                  .WithMany()
-                  .HasForeignKey(e => e.TutorUserId)
-                  .OnDelete(DeleteBehavior.Cascade);
-            entity.HasIndex(e => e.TutorUserId).HasDatabaseName("IX_Assignments_TutorUserId");
-        });
 
-        modelBuilder.Entity<AssignmentQuestion>(entity =>
-        {
-            entity.ToTable("AssignmentQuestions");
-            entity.HasKey(e => e.Id);
-            entity.HasOne(e => e.Assignment)
-                  .WithMany(a => a.Questions)
-                  .HasForeignKey(e => e.AssignmentId)
-                  .OnDelete(DeleteBehavior.Cascade);
-            entity.HasOne(e => e.Question)
-                  .WithMany()
-                  .HasForeignKey(e => e.QuestionId)
-                  .OnDelete(DeleteBehavior.Cascade);
-            entity.HasIndex(e => new { e.AssignmentId, e.QuestionId })
-                  .IsUnique()
-                  .HasDatabaseName("IX_AssignmentQuestions_Assignment_Question");
-        });
 
-        modelBuilder.Entity<AssignmentStudent>(entity =>
-        {
-            entity.ToTable("AssignmentStudents");
-            entity.HasKey(e => e.Id);
-            entity.HasOne(e => e.Assignment)
-                  .WithMany(a => a.Students)
-                  .HasForeignKey(e => e.AssignmentId)
-                  .OnDelete(DeleteBehavior.Cascade);
-            entity.HasOne(e => e.StudentUser)
-                  .WithMany()
-                  .HasForeignKey(e => e.StudentUserId)
-                  .OnDelete(DeleteBehavior.Cascade);
-            entity.HasIndex(e => new { e.AssignmentId, e.StudentUserId })
-                  .IsUnique()
-                  .HasDatabaseName("IX_AssignmentStudents_Assignment_Student");
-            entity.HasIndex(e => e.StudentUserId).HasDatabaseName("IX_AssignmentStudents_StudentUserId");
-        });
 
-        modelBuilder.Entity<AssignmentAnswer>(entity =>
-        {
-            entity.ToTable("AssignmentAnswers");
-            entity.HasKey(e => e.Id);
-            entity.HasOne(e => e.AssignmentStudent)
-                  .WithMany(s => s.Answers)
-                  .HasForeignKey(e => e.AssignmentStudentId)
-                  .OnDelete(DeleteBehavior.Cascade);
-            entity.HasOne(e => e.Question)
-                  .WithMany()
-                  .HasForeignKey(e => e.QuestionId)
-                  .OnDelete(DeleteBehavior.Restrict);
-            entity.HasOne(e => e.SelectedOption)
-                  .WithMany()
-                  .HasForeignKey(e => e.SelectedOptionId)
-                  .OnDelete(DeleteBehavior.Restrict);
-            entity.HasIndex(e => new { e.AssignmentStudentId, e.QuestionId })
-                  .IsUnique()
-                  .HasDatabaseName("IX_AssignmentAnswers_Student_Question");
-        });
 
         // ═══════════════════════════════════════════════════════
         //  TUTOR INVITE CODES (S-6)
         // ═══════════════════════════════════════════════════════
 
-        modelBuilder.Entity<TutorInviteCode>(entity =>
-        {
-            entity.ToTable("TutorInviteCodes");
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Code).IsRequired().HasMaxLength(8);
-            entity.Property(e => e.Note).HasMaxLength(200);
-            entity.Property(e => e.IsActive).HasDefaultValue(true);
-            entity.Property(e => e.UsedCount).HasDefaultValue(0);
-            entity.HasOne(e => e.TutorUser)
-                  .WithMany()
-                  .HasForeignKey(e => e.TutorUserId)
-                  .OnDelete(DeleteBehavior.Cascade);
-            entity.HasIndex(e => e.Code)
-                  .IsUnique()
-                  .HasDatabaseName("IX_TutorInviteCodes_Code");
-            entity.HasIndex(e => e.TutorUserId)
-                  .HasDatabaseName("IX_TutorInviteCodes_TutorUserId");
-        });
 
-        modelBuilder.Entity<TutorInviteCodeUsage>(entity =>
-        {
-            entity.ToTable("TutorInviteCodeUsages");
-            entity.HasKey(e => e.Id);
-            entity.HasOne(e => e.InviteCode)
-                  .WithMany(c => c.Usages)
-                  .HasForeignKey(e => e.InviteCodeId)
-                  .OnDelete(DeleteBehavior.Cascade);
-            entity.HasOne(e => e.StudentUser)
-                  .WithMany()
-                  .HasForeignKey(e => e.StudentUserId)
-                  .OnDelete(DeleteBehavior.Restrict);
-            entity.HasIndex(e => new { e.InviteCodeId, e.StudentUserId })
-                  .IsUnique()
-                  .HasDatabaseName("IX_TutorInviteCodeUsages_Code_Student");
-        });
 
         // ═══════════════════════════════════════════════════════
         //  REFERRAL PROGRAM (Sprint 8)

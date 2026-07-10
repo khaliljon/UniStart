@@ -65,8 +65,6 @@ public class User : ISoftDeletable, IAuditable
     public virtual ICollection<UserSkillProfile> SkillProfiles { get; set; } = new List<UserSkillProfile>();
     public virtual ICollection<TestSession> TestSessions { get; set; } = new List<TestSession>();
     public virtual NotificationPreferences? NotificationPreferences { get; set; }
-    public virtual TutorProfile? TutorProfile { get; set; }
-    public virtual TutorSchool? School { get; set; }
 
     public bool IsPro => SubscriptionTier == SubscriptionTier.Pro
                          && (SubscriptionExpiresAt == null || SubscriptionExpiresAt > DateTime.UtcNow);
@@ -75,10 +73,7 @@ public class User : ISoftDeletable, IAuditable
 public enum UserRole
 {
     Student,
-    Tutor,
-    Admin,
-    SchoolAdmin,
-    SchoolTutor
+    Admin
 }
 
 public enum SubscriptionTier
