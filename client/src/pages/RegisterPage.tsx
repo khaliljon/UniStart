@@ -1,19 +1,15 @@
-import { useState, useEffect, FormEvent } from 'react';
+import { useState, FormEvent } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAppDispatch } from '../hooks/useAppDispatch';
 import { useAppSelector } from '../hooks/useAppSelector';
 import { useTranslation } from '../hooks/useTranslation';
 import { useGoogleSignIn } from '../hooks/useGoogleSignIn';
-import { useBranding } from '../contexts/BrandingContext';
 import { register, verifyEmail, clearError } from '../store/slices/authSlice';
 import { authService } from '../services/authService';
-import { tutorService } from '../services/tutorService';
-import type { TutorSchoolCard, ClaimableSchool } from '../types';
 
 function RegisterPage() {
   const dispatch = useAppDispatch();
   const { isLoading, error, pendingVerificationEmail } = useAppSelector((state) => state.auth);
-  const { branding } = useBranding();
   const { t } = useTranslation();
   const [searchParams] = useSearchParams();
 
@@ -23,9 +19,7 @@ function RegisterPage() {
   const [phoneNumber, setPhoneNumber] = useState('+7');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [role, setRole] = useState<'Student' | 'Tutor' | 'SchoolAdmin'>(() =>
-    searchParams.get('role') === 'Tutor' ? 'Tutor' : searchParams.get('role') === 'SchoolAdmin' ? 'SchoolAdmin' : 'Student'
-  );
+  const role = 'Student' as const;
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [validationError, setValidationError] = useState('');
   const [code, setCode] = useState('');
@@ -33,26 +27,8 @@ function RegisterPage() {
   const [resendMsg, setResendMsg] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [selectedSchoolId, setSelectedSchoolId] = useState<number | null>(null);
-  const [schools, setSchools] = useState<TutorSchoolCard[]>([]);
-  const [claimableSchools, setClaimableSchools] = useState<ClaimableSchool[]>([]);
-  const [schoolName, setSchoolName] = useState('');
 
   useGoogleSignIn('google-register-btn', 'signup_with');
-
-  // Load schools list for tutor registration (main site only)
-  useEffect(() => {
-    if (role === 'Tutor' && !branding) {
-      tutorService.getSchools().then(setSchools).catch(() => {});
-    }
-  }, [role, branding]);
-
-  // Load claimable (ownerless) schools for school-admin registration (main site only)
-  useEffect(() => {
-    if (role === 'SchoolAdmin' && !branding) {
-      tutorService.getClaimableSchools().then(setClaimableSchools).catch(() => {});
-    }
-  }, [role, branding]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -118,7 +94,7 @@ function RegisterPage() {
       return;
     }
 
-    dispatch(register({ firstName: firstName.trim(), lastName: lastName.trim(), email, password, phoneNumber, role, schoolSlug: branding?.slug, applyToSchoolId: selectedSchoolId ?? undefined, schoolName: schoolName.trim() || undefined, referralCode: searchParams.get('ref') || undefined }));
+    dispatch(register({ firstName: firstName.trim(), lastName: lastName.trim(), email, password, phoneNumber, role, referralCode: searchParams.get('ref') || undefined }));
   };
 
   const handleVerify = async (e: FormEvent) => {
@@ -223,129 +199,6 @@ function RegisterPage() {
         <p className="auth-subtitle">{t.auth.registerSubtitle}</p>
 
         <form onSubmit={handleSubmit}>
-          {/* Role selector */}
-          <div style={{
-            display: 'flex', gap: '0.5rem', marginBottom: '1.25rem',
-            background: 'var(--bg-secondary)', borderRadius: '10px', padding: '4px',
-          }}>
-            {(['Student', 'Tutor', 'SchoolAdmin'] as const).map((r) => (
-              <button
-                key={r}
-                type="button"
-                onClick={() => setRole(r)}
-                style={{
-                  flex: 1, padding: '0.55rem', borderRadius: '8px', border: 'none',
-                  cursor: 'pointer', fontWeight: 600, fontSize: '0.9rem', transition: 'all 0.2s',
-                  background: role === r ? 'var(--primary-color)' : 'transparent',
-                  color: role === r ? '#fff' : 'var(--text-secondary)',
-                }}
-              >
-                {r === 'Student' ? t.auth.iAmStudent : r === 'Tutor' ? t.auth.iAmTutor : t.auth.iAmSchoolAdmin}
-              </button>
-            ))}
-          </div>
-
-          {/* Role-specific onboarding note */}
-          {role === 'Student' && (
-            <p style={{
-              fontSize: '0.8rem', color: 'var(--text-secondary)', margin: '-0.5rem 0 1rem',
-              padding: '0.5rem 0.75rem', borderRadius: '8px',
-              background: 'var(--bg-secondary)', lineHeight: 1.4,
-            }}>
-              {t.auth.studentRegNote}
-            </p>
-          )}
-          {role === 'Tutor' && (
-            <p style={{
-              fontSize: '0.8rem', color: 'var(--text-secondary)', margin: '-0.5rem 0 1rem',
-              padding: '0.5rem 0.75rem', borderRadius: '8px',
-              background: 'var(--bg-secondary)', lineHeight: 1.4,
-            }}>
-              {t.auth.tutorRegNote}
-              <br />
-              <strong style={{ color: 'var(--text-primary)' }}>{t.auth.tutorPricing}</strong>
-            </p>
-          )}
-          {role === 'SchoolAdmin' && (
-            <p style={{
-              fontSize: '0.8rem', color: 'var(--text-secondary)', margin: '-0.5rem 0 1rem',
-              padding: '0.5rem 0.75rem', borderRadius: '8px',
-              background: 'var(--bg-secondary)', lineHeight: 1.4,
-            }}>
-              {t.auth.schoolAdminRegNote}
-              <br />
-              <strong style={{ color: 'var(--text-primary)' }}>{t.auth.schoolAdminPricing}</strong>
-            </p>
-          )}
-          {role === 'Tutor' && !branding && schools.length > 0 && (
-            <div className="form-group" style={{ marginBottom: '1rem' }}>
-              <label htmlFor="schoolSelect" className="form-label">
-                {t.auth.tutorSchoolSelect}
-              </label>
-              <select
-                id="schoolSelect"
-                value={selectedSchoolId ?? ''}
-                onChange={(e) => setSelectedSchoolId(e.target.value ? Number(e.target.value) : null)}
-                className="form-input"
-                style={{ width: '100%' }}
-              >
-                <option value="">{t.auth.tutorIndependent}</option>
-                {schools.map(s => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {role === 'SchoolAdmin' && (
-            <div className="form-group" style={{ marginBottom: '1rem' }}>
-              {claimableSchools.length > 0 && (
-                <>
-                  <label htmlFor="claimSchoolSelect" className="form-label">
-                    {t.auth.claimSchoolSelect}
-                  </label>
-                  <select
-                    id="claimSchoolSelect"
-                    value={selectedSchoolId ?? ''}
-                    onChange={(e) => {
-                      setSelectedSchoolId(e.target.value ? Number(e.target.value) : null);
-                      if (e.target.value) setSchoolName('');
-                      handleInputChange();
-                    }}
-                    className="form-input"
-                    style={{ width: '100%', marginBottom: '0.75rem' }}
-                  >
-                    <option value="">{t.auth.claimSchoolCreateNew}</option>
-                    {claimableSchools.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name}{s.subdomain ? ` (${s.subdomain}.unistart.kz)` : ''}
-                      </option>
-                    ))}
-                  </select>
-                </>
-              )}
-              {selectedSchoolId === null && (
-                <>
-                  <label htmlFor="schoolName" className="form-label">
-                    {t.auth.schoolNameLabel}
-                  </label>
-                  <input
-                    type="text"
-                    id="schoolName"
-                    className="form-input"
-                    value={schoolName}
-                    onChange={(e) => {
-                      setSchoolName(e.target.value);
-                      handleInputChange();
-                    }}
-                    placeholder={t.auth.schoolNamePlaceholder}
-                    required
-                  />
-                </>
-              )}
-            </div>
-          )}
-
           <div className="form-group">
             <label htmlFor="firstName" className="form-label">
               {t.auth.firstName}

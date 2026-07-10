@@ -195,6 +195,7 @@ function NewsBlock() {
       readMore={s.newsReadMore}
       emptyText={s.newsEmpty}
       limit={6}
+      appTheme
     />
   );
 }

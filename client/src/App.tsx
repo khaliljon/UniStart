@@ -3,8 +3,6 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAppSelector } from './hooks/useAppSelector'
 import Layout from './components/Layout'
 import AdminLayout from './components/AdminLayout'
-import TutorLayout from './components/TutorLayout'
-import SchoolAdminLayout from './components/SchoolAdminLayout'
 import CookieBanner from './components/CookieBanner'
 import { ToastProvider } from './components/Toast'
 
@@ -27,35 +25,13 @@ const AdminSystemHealthPage = lazy(() => import('./pages/AdminSystemHealthPage')
 const AdminBackupsPage = lazy(() => import('./pages/AdminBackupsPage'))
 const AdminLegalPage = lazy(() => import('./pages/AdminLegalPage'))
 const AdminUserActivityPage = lazy(() => import('./pages/AdminUserActivityPage'))
-const AdminTutorsPage = lazy(() => import('./pages/AdminTutorsPage'))
 const AdminQuestionImportPage = lazy(() => import('./pages/AdminQuestionImportPage'))
 const AdminContentPage = lazy(() => import('./pages/AdminContentPage'))
 const AdminTrashPage = lazy(() => import('./pages/AdminTrashPage'))
 const AdminProfilePage = lazy(() => import('./pages/AdminProfilePage'))
-const AdminSchoolsPage = lazy(() => import('./pages/AdminSchoolsPage'))
 const LandingPage = lazy(() => import('./pages/CscaLandingPage'))
-const TutorsPage = lazy(() => import('./pages/TutorsPage'))
-const TutorProfilePage = lazy(() => import('./pages/TutorProfilePage'))
-const SchoolDetailPage = lazy(() => import('./pages/SchoolDetailPage'))
 const PrivacyPage = lazy(() => import('./pages/PrivacyPage'))
 const TermsPage = lazy(() => import('./pages/TermsPage'))
-const MessagesPage = lazy(() => import('./pages/MessagesPage'))
-const TutorHomePage = lazy(() => import('./pages/TutorHomePage'))
-const TutorStudentsPage = lazy(() => import('./pages/TutorStudentsPage'))
-const TutorSchedulePage = lazy(() => import('./pages/TutorSchedulePage'))
-const TutorProfileEditPage = lazy(() => import('./pages/TutorProfileEditPage'))
-const TutorReviewsPage = lazy(() => import('./pages/TutorReviewsPage'))
-const TutorQuestionsPage = lazy(() => import('./pages/TutorQuestionsPage'))
-const TutorAssignmentsPage = lazy(() => import('./pages/TutorAssignmentsPage'))
-const TutorSchoolManagePage = lazy(() => import('./pages/TutorSchoolManagePage'))
-const SchoolAdminDashboardPage = lazy(() => import('./pages/SchoolAdminDashboardPage'))
-const SchoolAdminStudentsPage = lazy(() => import('./pages/SchoolAdminStudentsPage'))
-const SchoolAdminTutorsPage = lazy(() => import('./pages/SchoolAdminTutorsPage'))
-const SchoolAdminApplicationsPage = lazy(() => import('./pages/SchoolAdminApplicationsPage'))
-const SchoolAdminMocksPage = lazy(() => import('./pages/SchoolAdminMocksPage'))
-const SchoolAdminBrandingPage = lazy(() => import('./pages/SchoolAdminBrandingPage'))
-const TutorContentPage = lazy(() => import('./pages/TutorContentPage'))
-const StudentAssignmentsPage = lazy(() => import('./pages/StudentAssignmentsPage'))
 const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'))
 const ReferralTermsPage = lazy(() => import('./pages/ReferralTermsPage'))
 const AboutCscaPage = lazy(() => import('./pages/AboutCscaPage'))
@@ -87,12 +63,11 @@ function StudentRoutes() {
       <Route path="purchases" element={<PurchasesPage />} />
       <Route path="checkout" element={<CheckoutPage />} />
       <Route path="diagnostic" element={<DiagnosticTestPage />} />
-      <Route path="tutors" element={<TutorsPage />} />
-      <Route path="tutors/schools/:slug" element={<SchoolDetailPage />} />
-      <Route path="tutors/:userId" element={<TutorProfilePage />} />
-      <Route path="assignments" element={<StudentAssignmentsPage />} />
-      <Route path="messages" element={<MessagesPage />} />
       {/* Legacy redirects */}
+      <Route path="tutors" element={<Navigate to="/" replace />} />
+      <Route path="tutors/*" element={<Navigate to="/" replace />} />
+      <Route path="messages" element={<Navigate to="/" replace />} />
+      <Route path="assignments" element={<Navigate to="/" replace />} />
       <Route path="test" element={<Navigate to="/learn" replace />} />
       <Route path="mock-exam" element={<Navigate to="/learn?tab=mock" replace />} />
       <Route path="topics" element={<Navigate to="/learn?tab=topics" replace />} />
@@ -117,7 +92,6 @@ function AdminRoutes() {
       <Route path="news" element={<AdminNewsPage />} />
       <Route path="support" element={<AdminSupportPage />} />
       <Route path="users" element={<AdminUsersPage />} />
-      <Route path="tutors" element={<AdminTutorsPage />} />
       <Route path="audit" element={<AdminAuditLogsPage />} />
       <Route path="health" element={<AdminSystemHealthPage />} />
       <Route path="backups" element={<AdminBackupsPage />} />
@@ -126,45 +100,7 @@ function AdminRoutes() {
       <Route path="import" element={<AdminQuestionImportPage />} />
       <Route path="question-import" element={<Navigate to="/admin/import" replace />} />
       <Route path="trash" element={<AdminTrashPage />} />
-      <Route path="schools" element={<AdminSchoolsPage />} />
       <Route path="profile" element={<AdminProfilePage />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Route>
-  )
-}
-
-function TutorRoutes() {
-  return (
-    <Route path="/" element={<TutorLayout />}>
-      <Route index element={<TutorHomePage />} />
-      <Route path="students" element={<TutorStudentsPage />} />
-      <Route path="questions" element={<TutorQuestionsPage />} />
-      <Route path="assignments" element={<TutorAssignmentsPage />} />
-      <Route path="messages" element={<MessagesPage />} />
-      <Route path="schedule" element={<TutorSchedulePage />} />
-      <Route path="school" element={<TutorSchoolManagePage />} />
-      <Route path="content" element={<TutorContentPage />} />
-      <Route path="reviews" element={<TutorReviewsPage />} />
-      <Route path="my-profile" element={<TutorProfileEditPage />} />
-      <Route path="profile" element={<ProfilePage />} />
-      <Route path="tutors/:userId" element={<TutorProfilePage />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Route>
-  )
-}
-
-function SchoolAdminRoutes() {
-  return (
-    <Route path="/" element={<SchoolAdminLayout />}>
-      <Route index element={<SchoolAdminDashboardPage />} />
-      <Route path="mocks" element={<SchoolAdminMocksPage />} />
-      <Route path="students" element={<SchoolAdminStudentsPage />} />
-      <Route path="tutors" element={<SchoolAdminTutorsPage />} />
-      <Route path="applications" element={<SchoolAdminApplicationsPage />} />
-      <Route path="school" element={<TutorSchoolManagePage />} />
-      <Route path="branding" element={<SchoolAdminBrandingPage />} />
-      <Route path="messages" element={<MessagesPage />} />
-      <Route path="profile" element={<ProfilePage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Route>
   )
@@ -173,8 +109,6 @@ function SchoolAdminRoutes() {
 function App() {
   const { isAuthenticated, user } = useAppSelector((state) => state.auth)
   const isAdmin = user?.role === 'Admin'
-  const isTutor = user?.role === 'Tutor' || user?.role === 'SchoolTutor'
-  const isSchoolAdmin = user?.role === 'SchoolAdmin'
   const needsPhone = isAuthenticated && !user?.phoneNumber
 
   return (
@@ -201,7 +135,7 @@ function App() {
         needsPhone ? (
           <Route path="*" element={<Navigate to="/complete-profile" />} />
         ) : (
-          isAdmin ? AdminRoutes() : isSchoolAdmin ? SchoolAdminRoutes() : isTutor ? TutorRoutes() : StudentRoutes()
+          isAdmin ? AdminRoutes() : StudentRoutes()
         )
       ) : (
         <Route path="*" element={<Navigate to="/landing" />} />

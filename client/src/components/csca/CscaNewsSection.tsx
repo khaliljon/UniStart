@@ -9,11 +9,13 @@ interface Props {
   limit?: number;
   /** Wrap in the marketing section chrome (used on the landing). */
   section?: boolean;
+  /** Use theme-aware colors (for the in-app dashboard, which supports dark mode). */
+  appTheme?: boolean;
   id?: string;
 }
 
 /** Renders published CSCA news. Used on the landing and the student dashboard. */
-export default function CscaNewsSection({ title, lead, readMore, emptyText, limit = 6, section = false, id }: Props) {
+export default function CscaNewsSection({ title, lead, readMore, emptyText, limit = 6, section = false, appTheme = false, id }: Props) {
   const [items, setItems] = useState<NewsItem[] | null>(null);
   const [openId, setOpenId] = useState<number | null>(null);
 
@@ -28,24 +30,27 @@ export default function CscaNewsSection({ title, lead, readMore, emptyText, limi
   const fmtDate = (iso: string | null) =>
     iso ? new Date(iso).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
 
+  const cardClass = appTheme ? 'card' : 'csca-card';
+  const subColor = appTheme ? 'var(--text-secondary)' : 'var(--csca-ink-soft, var(--text-secondary))';
+
   const grid = (
     <div className="csca-grid csca-grid-3">
       {(items ?? []).map((n) => {
         const expanded = openId === n.id;
         return (
-          <article className="csca-card" key={n.id} style={{ display: 'flex', flexDirection: 'column' }}>
+          <article className={cardClass} key={n.id} style={{ display: 'flex', flexDirection: 'column' }}>
             {n.imageUrl && (
               <img src={n.imageUrl} alt="" style={{ width: '100%', height: 160, objectFit: 'cover', borderRadius: '0.75rem', marginBottom: '0.9rem' }} />
             )}
-            <div style={{ fontSize: '0.78rem', color: 'var(--csca-ink-soft, var(--text-secondary))', marginBottom: '0.35rem' }}>{fmtDate(n.publishedAt)}</div>
-            <div className="csca-feature-title" style={{ fontSize: '1.1rem' }}>{n.title}</div>
-            <div className="csca-feature-desc" style={{ marginTop: '0.35rem', whiteSpace: 'pre-wrap' }}>
+            <div style={{ fontSize: '0.78rem', color: subColor, marginBottom: '0.35rem' }}>{fmtDate(n.publishedAt)}</div>
+            <div className={appTheme ? undefined : 'csca-feature-title'} style={appTheme ? { fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' } : { fontSize: '1.1rem' }}>{n.title}</div>
+            <div className={appTheme ? undefined : 'csca-feature-desc'} style={{ marginTop: '0.35rem', whiteSpace: 'pre-wrap', color: appTheme ? 'var(--text-secondary)' : undefined }}>
               {expanded ? n.body : n.summary}
             </div>
             {n.body && n.body !== n.summary && (
               <button
                 type="button"
-                className="csca-btn csca-btn-ghost csca-btn-sm"
+                className={appTheme ? 'btn btn-outline' : 'csca-btn csca-btn-ghost csca-btn-sm'}
                 style={{ marginTop: '0.9rem', alignSelf: 'flex-start' }}
                 onClick={() => setOpenId(expanded ? null : n.id)}
               >
@@ -59,14 +64,14 @@ export default function CscaNewsSection({ title, lead, readMore, emptyText, limi
   );
 
   const body = items && items.length === 0
-    ? <p className="csca-lead" style={{ textAlign: 'center' }}>{emptyText}</p>
+    ? <p className={appTheme ? undefined : 'csca-lead'} style={{ textAlign: 'center', color: appTheme ? 'var(--text-secondary)' : undefined }}>{emptyText}</p>
     : grid;
 
   if (!section) {
     return (
       <div id={id}>
-        {title && <h2 className="csca-h2" style={{ marginBottom: lead ? '0.4rem' : '1.2rem' }}>{title}</h2>}
-        {lead && <p className="csca-lead" style={{ marginBottom: '1.4rem' }}>{lead}</p>}
+        {title && <h2 className={appTheme ? undefined : 'csca-h2'} style={{ marginBottom: lead ? '0.4rem' : '1.2rem', ...(appTheme ? { color: 'var(--text-primary)', fontSize: '1.3rem' } : {}) }}>{title}</h2>}
+        {lead && <p className={appTheme ? undefined : 'csca-lead'} style={{ marginBottom: '1.4rem', ...(appTheme ? { color: 'var(--text-secondary)' } : {}) }}>{lead}</p>}
         {body}
       </div>
     );

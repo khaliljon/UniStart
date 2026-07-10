@@ -2,8 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from '../i18n';
 import { cscaStrings } from '../i18n/csca';
-import { useBranding } from '../contexts/BrandingContext';
-import WhiteLabelLanding from './WhiteLabelLanding';
 import CscaNav from '../components/csca/CscaNav';
 import CscaFooter from '../components/csca/CscaFooter';
 import Reveal from '../components/csca/Reveal';
@@ -39,7 +37,6 @@ function CscaLandingPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { locale } = useTranslation();
-  const { branding, isWhiteLabel } = useBranding();
 
   const s = cscaStrings[locale];
   const nextSitting = useMemo(() => getNextSitting(), []);
@@ -52,10 +49,6 @@ function CscaLandingPage() {
       if (el) setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
     }
   }, [location.hash]);
-
-  if (isWhiteLabel && branding) {
-    return <WhiteLabelLanding branding={branding} />;
-  }
 
   const goRegister = () => navigate('/register');
 

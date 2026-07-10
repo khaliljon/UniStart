@@ -1475,6 +1475,18 @@ select option,
 }
 .navbar-brand { font-family: var(--font-display); letter-spacing: 0.01em; }
 
+/* CSCA marketing components (csca-*) reused inside the themed app must be
+   theme-aware, otherwise their fixed dark ink is invisible in dark mode. */
+.main-content .csca-h2 { color: var(--text-primary); }
+.main-content .csca-lead { color: var(--text-secondary); }
+.main-content .csca-card {
+  background: var(--card-background);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+.main-content .csca-feature-title { color: var(--text-primary); }
+.main-content .csca-feature-desc { color: var(--text-secondary); }
+
 /* Cards get a warm hover with a subtle red glow */
 .card {
   transition: box-shadow 0.25s ease, border-color 0.25s ease;

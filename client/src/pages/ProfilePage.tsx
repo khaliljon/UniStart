@@ -5,28 +5,21 @@ import { useTranslation } from '../hooks/useTranslation';
 import { fetchExams, fetchExamSections, toggleExamSelection, setSelectedSectionIds } from '../store/slices/examSlice';
 import { completeProfile } from '../store/slices/authSlice';
 import { subscriptionService } from '../services/subscriptionService';
-import { tutorService } from '../services/tutorService';
 import { referralService, type ReferralStats } from '../services/referralService';
 import { authService } from '../services/authService';
+import { SOCIAL_LINKS } from '../socialLinks';
 import api from '../services/api';
-import { useToast } from '../components/Toast';
 import { PricingModal } from '../components/PricingModal';
-import type { SubscriptionStatus, ExamSection, LinkedTutorInfo } from '../types';
+import type { SubscriptionStatus, ExamSection } from '../types';
 
 function ProfilePage() {
   const { user } = useAppSelector((state) => state.auth);
   const { exams, selectedExams, selectedSectionIds } = useAppSelector((state) => state.exam);
   const dispatch = useAppDispatch();
   const { t } = useTranslation();
-  const { showToast } = useToast();
   const [sub, setSub] = useState<SubscriptionStatus | null>(null);
   const [showPricing, setShowPricing] = useState(false);
   const [allSections, setAllSections] = useState<ExamSection[]>([]);
-  const [linkedTutor, setLinkedTutor] = useState<LinkedTutorInfo | null>(null);
-  const [inviteCode, setInviteCode] = useState('');
-  const [linkLoading, setLinkLoading] = useState(false);
-  const [linkError, setLinkError] = useState<string | null>(null);
-  const [unlinkLoading, setUnlinkLoading] = useState(false);
   const isStudent = user?.role === 'Student';
 
   // Referral program
@@ -65,9 +58,6 @@ function ProfilePage() {
   useEffect(() => {
     dispatch(fetchExams());
     subscriptionService.getStatus().then(setSub).catch(() => {});
-    if (user?.role === 'Student') {
-      tutorService.getMyTutor().then(setLinkedTutor).catch(() => {});
-    }
     referralService.getStats().then(setRefStats).catch(() => {});
   }, [dispatch]);
 
@@ -109,44 +99,6 @@ function ProfilePage() {
   };
 
   const isPro = user?.subscriptionTier === 'Pro';
-
-  const handleLinkTutor = async () => {
-    if (!inviteCode.trim()) return;
-    setLinkLoading(true);
-    setLinkError(null);
-    try {
-      const result = await tutorService.linkByInviteCode(inviteCode.trim());
-      if (result.success) {
-        const tutor = await tutorService.getMyTutor();
-        setLinkedTutor(tutor);
-        setInviteCode('');
-        showToast(t.profilePage.tutorLinked);
-        subscriptionService.getStatus().then(setSub).catch(() => {});
-      } else {
-        setLinkError(result.message);
-        showToast(result.message, 'error');
-      }
-    } catch {
-      setLinkError('Ошибка привязки');
-      showToast('Ошибка привязки', 'error');
-    } finally {
-      setLinkLoading(false);
-    }
-  };
-
-  const handleUnlinkTutor = async () => {
-    if (!confirm(t.profilePage.confirmUnlink)) return;
-    setUnlinkLoading(true);
-    try {
-      await tutorService.unlinkFromTutor();
-      setLinkedTutor(null);
-      subscriptionService.getStatus().then(setSub).catch(() => {});
-    } catch {
-      alert('Ошибка отвязки');
-    } finally {
-      setUnlinkLoading(false);
-    }
-  };
 
   const handleActivateReferral = async () => {
     setRefActivating(true);
@@ -236,6 +188,21 @@ function ProfilePage() {
     <>
     <div className="animate-fade-in" style={{ maxWidth: '640px', margin: '0 auto', padding: '2rem 0' }}>
       <h1 style={{ marginBottom: '1.5rem' }}>{t.profilePage.title}</h1>
+
+      {/* ─── Support & socials ─── */}
+      <div className="card" style={{ padding: '1.5rem', marginBottom: '1.25rem' }}>
+        <h2 style={{ fontSize: '1.05rem', margin: '0 0 0.35rem' }}>Поддержка и соцсети</h2>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', margin: '0 0 1rem' }}>
+          Есть вопрос? Напишите в бот поддержки — оператор ответит вам в Telegram.
+        </p>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem' }}>
+          <a className="btn btn-primary" href={SOCIAL_LINKS.supportBot} target="_blank" rel="noopener noreferrer">💬 Бот поддержки</a>
+          <a className="btn btn-outline" href={SOCIAL_LINKS.telegramChannel} target="_blank" rel="noopener noreferrer">Telegram-канал</a>
+          <a className="btn btn-outline" href={SOCIAL_LINKS.instagram} target="_blank" rel="noopener noreferrer">Instagram</a>
+          <a className="btn btn-outline" href={SOCIAL_LINKS.tiktok} target="_blank" rel="noopener noreferrer">TikTok</a>
+          <a className="btn btn-outline" href={`mailto:${SOCIAL_LINKS.email}`}>Email</a>
+        </div>
+      </div>
 
       {/* ─── User Info Card ─── */}
       <div className="card" style={{ padding: '1.5rem', marginBottom: '1.25rem' }}>
@@ -345,93 +312,6 @@ function ProfilePage() {
       </div>
       )}
 
-      {/* ─── My Tutor (student only) ─── */}
-      {isStudent && (
-        <div className="card" style={{ padding: '1.5rem', marginBottom: '1.25rem' }}>
-          <h3 style={{ margin: '0 0 0.75rem', fontSize: '1rem' }}>{t.profilePage.myTutor}</h3>
-
-          {linkedTutor ? (
-            <div>
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem',
-                padding: '0.75rem', borderRadius: '10px', background: 'var(--bg-secondary)',
-              }}>
-                <div style={{
-                  width: '48px', height: '48px', borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #10b981, #059669)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: '#fff', fontWeight: 700, fontSize: '1rem', flexShrink: 0,
-                }}>
-                  {(linkedTutor.tutorName || '').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)}
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 600 }}>{linkedTutor.tutorName}</div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                    {linkedTutor.headline}
-                    {linkedTutor.averageRating > 0 && ` · ★ ${linkedTutor.averageRating.toFixed(1)}`}
-                  </div>
-                  {linkedTutor.specializations.length > 0 && (
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
-                      {linkedTutor.specializations.join(', ')}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {sub?.hasTutorDiscount && (
-                <div style={{
-                  padding: '0.5rem 0.75rem', borderRadius: '8px', marginBottom: '0.75rem',
-                  background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)',
-                  fontSize: '0.85rem', color: '#10b981', fontWeight: 600,
-                }}>
-                  ✓ {t.profilePage.tutorDiscount}
-                </div>
-              )}
-
-              <button
-                className="btn btn-outline"
-                onClick={handleUnlinkTutor}
-                disabled={unlinkLoading}
-                style={{ fontSize: '0.85rem', color: '#ef4444', borderColor: '#ef4444' }}
-              >
-                {unlinkLoading ? t.profilePage.unlinking : t.profilePage.unlinkFromTutor}
-              </button>
-            </div>
-          ) : (
-            <div>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: '0 0 0.75rem' }}>
-                {t.profilePage.noTutorLinkedDesc}
-              </p>
-              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                <input
-                  type="text"
-                  value={inviteCode}
-                  onChange={e => { setInviteCode(e.target.value.toUpperCase()); setLinkError(null); }}
-                  placeholder={t.profilePage.inviteCodePlaceholder}
-                  maxLength={10}
-                  style={{
-                    padding: '0.5rem 0.75rem', borderRadius: '8px',
-                    border: '2px solid var(--border-color)', background: 'var(--bg-secondary)',
-                    color: 'var(--text-primary)', fontSize: '1rem', fontFamily: 'monospace',
-                    letterSpacing: '0.1em', width: '160px', textTransform: 'uppercase',
-                  }}
-                />
-                <button
-                  className="btn btn-primary"
-                  onClick={handleLinkTutor}
-                  disabled={linkLoading || !inviteCode.trim()}
-                  style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}
-                >
-                  {linkLoading ? t.profilePage.linking : t.profilePage.linkToTutor}
-                </button>
-              </div>
-              {linkError && (
-                <p style={{ color: '#ef4444', fontSize: '0.82rem', marginTop: '0.5rem' }}>{linkError}</p>
-              )}
-            </div>
-          )}
-        </div>
-      )}
 
       {/* ─── Referral Program ─── */}
       <div className="card" style={{ padding: '1.5rem', marginBottom: '1.25rem' }}>
