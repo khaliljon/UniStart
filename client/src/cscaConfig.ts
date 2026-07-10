@@ -45,8 +45,8 @@ export const CSCA_SUBJECTS: CscaSubject[] = [
   { key: 'math', hanzi: '数学', cover: 'linear-gradient(160deg,#8A0B1F,#C8102E)', required: true },
   { key: 'physics', hanzi: '物理', cover: 'linear-gradient(160deg,#123a63,#1f5c9c)' },
   { key: 'chemistry', hanzi: '化学', cover: 'linear-gradient(160deg,#14532d,#1f7a44)' },
-  { key: 'chineseTech', hanzi: '理工汉语', cover: 'linear-gradient(160deg,#5b3a1a,#a9762f)' },
-  { key: 'chineseHum', hanzi: '人文汉语', cover: 'linear-gradient(160deg,#4a2a5b,#8a4fa3)' },
+  { key: 'chineseTech', hanzi: '科技汉语', cover: 'linear-gradient(160deg,#5b3a1a,#a9762f)' },
+  { key: 'chineseHum', hanzi: '文科汉语', cover: 'linear-gradient(160deg,#4a2a5b,#8a4fa3)' },
 ];
 
 /** Mock-test packages (prices in ₸, from the technical specification). */

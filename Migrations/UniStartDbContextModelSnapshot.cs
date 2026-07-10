@@ -1656,6 +1656,93 @@ namespace UniStart.Migrations
                     b.ToTable("StudyPlanEntries");
                 });
 
+            modelBuilder.Entity("UniStart.Domain.Entities.SupportMessage", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Direction")
+                        .IsRequired()
+                        .HasMaxLength(4)
+                        .HasColumnType("character varying(4)");
+
+                    b.Property<long?>("GroupMessageId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasMaxLength(4096)
+                        .HasColumnType("character varying(4096)");
+
+                    b.Property<int>("TicketId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GroupMessageId")
+                        .HasDatabaseName("IX_SupportMessages_GroupMessageId");
+
+                    b.HasIndex("TicketId");
+
+                    b.ToTable("SupportMessages", (string)null);
+                });
+
+            modelBuilder.Entity("UniStart.Domain.Entities.SupportTicket", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("FirstName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("LastMessageAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasDefaultValue("Open");
+
+                    b.Property<long>("TelegramChatId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("TelegramUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Username")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TelegramUserId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_SupportTickets_TelegramUserId");
+
+                    b.ToTable("SupportTickets", (string)null);
+                });
+
             modelBuilder.Entity("UniStart.Domain.Entities.TestSession", b =>
                 {
                     b.Property<int>("Id")
@@ -3289,6 +3376,17 @@ namespace UniStart.Migrations
                     b.Navigation("Topic");
                 });
 
+            modelBuilder.Entity("UniStart.Domain.Entities.SupportMessage", b =>
+                {
+                    b.HasOne("UniStart.Domain.Entities.SupportTicket", "Ticket")
+                        .WithMany("Messages")
+                        .HasForeignKey("TicketId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Ticket");
+                });
+
             modelBuilder.Entity("UniStart.Domain.Entities.TestSession", b =>
                 {
                     b.HasOne("UniStart.Domain.Entities.ExamType", "ExamType")
@@ -3771,6 +3869,11 @@ namespace UniStart.Migrations
             modelBuilder.Entity("UniStart.Domain.Entities.StudyPlan", b =>
                 {
                     b.Navigation("Entries");
+                });
+
+            modelBuilder.Entity("UniStart.Domain.Entities.SupportTicket", b =>
+                {
+                    b.Navigation("Messages");
                 });
 
             modelBuilder.Entity("UniStart.Domain.Entities.TestSession", b =>

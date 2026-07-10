@@ -54,6 +54,8 @@ export interface CscaStrings {
   required: string;
   viewTopics: string;
   addToCalendar: string;
+  calGoogle: string;
+  calApple: string;
   // news
   newsTitle: string;
   newsLead: string;
@@ -176,6 +178,7 @@ const ru: CscaStrings = {
   subjChemistry: 'Химия', subjChemistryTag: 'По специальности',
   required: 'Обязательно', viewTopics: 'Список тем',
   addToCalendar: 'Добавить в календарь',
+  calGoogle: 'Google Календарь', calApple: 'Apple / Outlook (.ics)',
   newsTitle: 'Новости CSCA', newsLead: 'Актуальная и достоверная информация об экзамене, датах и поступлении.',
   newsReadMore: 'Читать', newsEmpty: 'Пока новостей нет — скоро здесь появятся свежие материалы.',
   featuresTitle: 'Что Вы получите на платформе?', featuresLead: 'Всё для эффективной подготовки в одном месте.',
@@ -198,7 +201,7 @@ const ru: CscaStrings = {
   pkgFeatAi: 'ИИ-объяснения к заданиям', pkgFeatAnalytics: 'Дешборд аналитики', pkgFeatFull: 'Доступ ко всем пробникам предмета',
   materialsTitle: 'Официальные учебные материалы', materialsLead: 'Учебники разработаны с учётом актуального формата экзамена CSCA.',
   bookLabel: 'Учебник для подготовки к CSCA', addToCart: 'В корзину',
-  freePdfTitle: 'Бесплатные PDF после регистрации', freePdfDesc: 'Зарегистрируйся и получи бесплатные материалы в PDF по всем предметам.',
+  freePdfTitle: 'Забери наши полезные материалы по подготовке к CSCA абсолютно бесплатно!', freePdfDesc: 'PDF по всем предметам — доступны сразу после регистрации.',
   ctaBandTitle: 'Готов начать подготовку к CSCA?', ctaBandDesc: 'Создай аккаунт и получай больше бесплатных материалов.',
   ctaBandBtn: 'Создать аккаунт бесплатно',
   footerDesc: 'Платформа подготовки к экзамену CSCA. Источник достоверной информации и онлайн-обучения для абитуриентов всего СНГ.',
@@ -251,6 +254,7 @@ const en: CscaStrings = {
   subjChemistry: 'Chemistry', subjChemistryTag: 'By specialty',
   required: 'Required', viewTopics: 'Topic list',
   addToCalendar: 'Add to calendar',
+  calGoogle: 'Google Calendar', calApple: 'Apple / Outlook (.ics)',
   newsTitle: 'CSCA news', newsLead: 'Up-to-date, reliable information about the exam, dates and admissions.',
   newsReadMore: 'Read', newsEmpty: 'No news yet — fresh materials will appear here soon.',
   featuresTitle: 'What You get on the platform?', featuresLead: 'Everything for effective preparation in one place.',
@@ -273,7 +277,7 @@ const en: CscaStrings = {
   pkgFeatAi: 'AI explanations for questions', pkgFeatAnalytics: 'Analytics dashboard', pkgFeatFull: 'Access to all subject mocks',
   materialsTitle: 'Official study materials', materialsLead: 'Textbooks designed for the current CSCA exam format.',
   bookLabel: 'CSCA preparation textbook', addToCart: 'Add to cart',
-  freePdfTitle: 'Free PDFs after registration', freePdfDesc: 'Sign up and get free PDF materials for all subjects.',
+  freePdfTitle: 'Grab our helpful CSCA prep materials — absolutely free!', freePdfDesc: 'PDFs for all subjects — available right after registration.',
   ctaBandTitle: 'Ready to start preparing for CSCA?', ctaBandDesc: 'Create an account and get more free materials.',
   ctaBandBtn: 'Create a free account',
   footerDesc: 'A CSCA exam preparation platform. A trusted source of information and online learning for applicants across the CIS.',
@@ -326,6 +330,7 @@ const kz: CscaStrings = {
   subjChemistry: 'Химия', subjChemistryTag: 'Мамандық бойынша',
   required: 'Міндетті', viewTopics: 'Тақырыптар тізімі',
   addToCalendar: 'Күнтізбеге қосу',
+  calGoogle: 'Google Күнтізбе', calApple: 'Apple / Outlook (.ics)',
   newsTitle: 'CSCA жаңалықтары', newsLead: 'Емтихан, күндер және қабылдау туралы өзекті ақпарат.',
   newsReadMore: 'Оқу', newsEmpty: 'Әзірше жаңалық жоқ — жақында жаңа материалдар пайда болады.',
   featuresTitle: 'Платформада не аласыз?', featuresLead: 'Тиімді дайындыққа қажеттінің бәрі бір жерде.',
@@ -348,7 +353,7 @@ const kz: CscaStrings = {
   pkgFeatAi: 'Тапсырмаларға ЖИ түсіндірмелері', pkgFeatAnalytics: 'Аналитика тақтасы', pkgFeatFull: 'Пәннің барлық сынақтарына қолжетімділік',
   materialsTitle: 'Ресми оқу материалдары', materialsLead: 'Оқулықтар CSCA емтиханының өзекті форматына сай әзірленген.',
   bookLabel: 'CSCA-ға дайындық оқулығы', addToCart: 'Себетке',
-  freePdfTitle: 'Тіркеуден кейін тегін PDF', freePdfDesc: 'Тіркеліп, барлық пәндер бойынша тегін PDF материалдарын алыңыз.',
+  freePdfTitle: 'CSCA-ға дайындық материалдарымызды тап-такыр тегін алыңыз!', freePdfDesc: 'Барлық пәндер бойынша PDF — тіркелгеннен кейін бірден қолжетімді.',
   ctaBandTitle: 'CSCA-ға дайындықты бастауға дайынсыз ба?', ctaBandDesc: 'Аккаунт ашып, көбірек тегін материалдар алыңыз.',
   ctaBandBtn: 'Тегін аккаунт ашу',
   footerDesc: 'CSCA емтиханына дайындық платформасы. Бүкіл ТМД талапкерлеріне арналған сенімді ақпарат пен онлайн оқыту көзі.',

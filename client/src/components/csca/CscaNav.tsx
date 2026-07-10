@@ -13,7 +13,7 @@ export default function CscaNav() {
 
   const links: { to: string; label: string }[] = [
     { to: '/csca/about', label: s.navAbout },
-    { to: '/landing#news', label: s.navNews },
+    { to: '/csca/news', label: s.navNews },
     { to: '/csca/mocks', label: s.navMocks },
     { to: '/csca/materials', label: s.navMaterials },
     { to: '/csca/about-us', label: s.navAboutUs },

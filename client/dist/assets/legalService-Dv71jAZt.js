@@ -1,1 +1,0 @@
-import{h as a}from"./index-BcfsvaAB.js";const p={getAll:()=>a.get("/legal").then(e=>e.data),getBySlug:e=>a.get(`/legal/${e}`).then(t=>t.data),update:(e,t)=>a.put(`/legal/${e}`,t).then(l=>l.data)};export{p as l};

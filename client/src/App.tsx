@@ -64,9 +64,11 @@ const CscaMocksPage = lazy(() => import('./pages/CscaMocksPage'))
 const CscaCoursesPage = lazy(() => import('./pages/CscaCoursesPage'))
 const AboutUsPage = lazy(() => import('./pages/AboutUsPage'))
 const ContactsPage = lazy(() => import('./pages/ContactsPage'))
+const CscaNewsPage = lazy(() => import('./pages/CscaNewsPage'))
 const CheckoutPage = lazy(() => import('./pages/CheckoutPage'))
 const PurchasesPage = lazy(() => import('./pages/PurchasesPage'))
 const AdminNewsPage = lazy(() => import('./pages/AdminNewsPage'))
+const AdminSupportPage = lazy(() => import('./pages/AdminSupportPage'))
 
 // ── Suspense fallback ───────────────────────────────────
 const PageLoader = () => (
@@ -113,6 +115,7 @@ function AdminRoutes() {
       <Route path="questions" element={<AdminQuestionsPage />} />
       <Route path="content" element={<AdminContentPage />} />
       <Route path="news" element={<AdminNewsPage />} />
+      <Route path="support" element={<AdminSupportPage />} />
       <Route path="users" element={<AdminUsersPage />} />
       <Route path="tutors" element={<AdminTutorsPage />} />
       <Route path="audit" element={<AdminAuditLogsPage />} />
@@ -186,6 +189,7 @@ function App() {
       <Route path="/terms" element={<TermsPage />} />
       <Route path="/referral-terms" element={<ReferralTermsPage />} />
       <Route path="/csca/about" element={<AboutCscaPage />} />
+      <Route path="/csca/news" element={<CscaNewsPage />} />
       <Route path="/csca/courses" element={<CscaCoursesPage />} />
       <Route path="/csca/materials" element={<CscaMaterialsPage />} />
       <Route path="/csca/mocks" element={<CscaMocksPage />} />

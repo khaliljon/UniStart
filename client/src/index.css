@@ -1182,13 +1182,15 @@ select option,
 .csca-lead { color: var(--csca-ink-soft); font-size: 1.05rem; line-height: 1.65; }
 
 /* ── Hero ── */
-.csca-hero { position: relative; padding: 3.5rem 0 4rem; text-align: center; }
+.csca-hero { position: relative; padding: 3.5rem 0 4rem; text-align: center; overflow: hidden; }
 .csca-hero-hanzi {
   position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
   font-family: var(--font-hanzi); font-weight: 900; font-size: clamp(9rem, 32vw, 26rem);
   color: rgba(200, 16, 46, 0.05); pointer-events: none; user-select: none; z-index: 0; line-height: 1;
 }
 .csca-hero > * { position: relative; z-index: 1; }
+.csca-hero-emblem { display: block; }
+@media (max-width: 768px) { .csca-hero-emblem { display: none; } }
 .csca-hero-title {
   font-family: var(--font-display); font-weight: 900; letter-spacing: -0.01em;
   font-size: clamp(2.3rem, 6vw, 4.2rem); line-height: 1.08; margin: 1.2rem auto 1.1rem; max-width: 12ch;

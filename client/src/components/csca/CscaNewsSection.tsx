@@ -65,7 +65,7 @@ export default function CscaNewsSection({ title, lead, readMore, emptyText, limi
   if (!section) {
     return (
       <div id={id}>
-        <h2 className="csca-h2" style={{ marginBottom: lead ? '0.4rem' : '1.2rem' }}>{title}</h2>
+        {title && <h2 className="csca-h2" style={{ marginBottom: lead ? '0.4rem' : '1.2rem' }}>{title}</h2>}
         {lead && <p className="csca-lead" style={{ marginBottom: '1.4rem' }}>{lead}</p>}
         {body}
       </div>

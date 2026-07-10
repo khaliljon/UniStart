@@ -23,7 +23,7 @@ export default function CscaFooter() {
             <h4>{s.footerPlatform}</h4>
             <Link to="/csca/mocks">{s.navMocks}</Link>
             <Link to="/csca/materials">{s.navMaterials}</Link>
-            <Link to="/landing#news">{s.navNews}</Link>
+            <Link to="/csca/news">{s.navNews}</Link>
           </div>
           <div>
             <h4>{s.footerAbout}</h4>

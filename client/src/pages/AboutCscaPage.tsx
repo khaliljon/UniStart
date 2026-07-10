@@ -4,7 +4,7 @@ import { cscaStrings } from '../i18n/csca';
 import CscaPageShell, { CscaPageHero } from '../components/csca/CscaPageShell';
 import { BrushDivider } from '../components/csca/ChineseMotifs';
 import { CSCA_SUBJECTS, CSCA_EXAM_SITTINGS } from '../cscaConfig';
-import { downloadIcs } from '../utils/calendar';
+import AddToCalendarButton from '../components/csca/AddToCalendarButton';
 
 function AboutCscaPage() {
   const navigate = useNavigate();
@@ -76,17 +76,17 @@ function AboutCscaPage() {
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                     {!past && (
-                      <button
-                        type="button"
-                        className="csca-btn csca-btn-ghost csca-btn-sm"
-                        onClick={() => downloadIcs({
-                          title: `${s.aboutTitle.replace('?', '')} — ${monthLabel[sit.monthKey] ?? sit.monthKey}`,
+                      <AddToCalendarButton
+                        label={s.addToCalendar}
+                        googleLabel={s.calGoogle}
+                        appleLabel={s.calApple}
+                        fileName={`csca-${sit.monthKey}-2026.ics`}
+                        event={{
+                          title: `CSCA — ${monthLabel[sit.monthKey] ?? sit.monthKey}`,
                           description: s.examDatesLead,
                           date: sit.date,
-                        }, `csca-${sit.monthKey}-2026.ics`)}
-                      >
-                        {s.addToCalendar}
-                      </button>
+                        }}
+                      />
                     )}
                     <span style={{
                       fontSize: '0.78rem', fontWeight: 700, padding: '0.28rem 0.8rem', borderRadius: 999,

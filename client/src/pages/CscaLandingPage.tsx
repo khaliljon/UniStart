@@ -6,7 +6,6 @@ import { useBranding } from '../contexts/BrandingContext';
 import WhiteLabelLanding from './WhiteLabelLanding';
 import CscaNav from '../components/csca/CscaNav';
 import CscaFooter from '../components/csca/CscaFooter';
-import CscaNewsSection from '../components/csca/CscaNewsSection';
 import Reveal from '../components/csca/Reveal';
 import {
   BrushDivider, MistMountains, SealStamp,
@@ -100,6 +99,18 @@ function CscaLandingPage() {
       {/* ═══ Hero ═══ */}
       <header className="csca-hero csca-wrap">
         <div className="csca-hero-hanzi csca-hanzi">学</div>
+        <img
+          src="/emblem-lg.png"
+          alt=""
+          aria-hidden="true"
+          className="csca-hero-emblem"
+          style={{
+            position: 'absolute', right: 'clamp(-220px, -14vw, -120px)', top: '50%',
+            transform: 'translateY(-50%)', width: 'min(560px, 48vw)', height: 'auto',
+            opacity: 0.16, zIndex: 0, mixBlendMode: 'multiply',
+            pointerEvents: 'none', userSelect: 'none',
+          }}
+        />
         <div className="csca-reveal">
           <span className="csca-eyebrow">{s.heroBadge}</span>
           <h1 className="csca-hero-title">
@@ -137,17 +148,6 @@ function CscaLandingPage() {
           ))}
         </Reveal>
       </section>
-
-      {/* ═══ News ═══ */}
-      <CscaNewsSection
-        id="news"
-        section
-        title={s.newsTitle}
-        lead={s.newsLead}
-        readMore={s.newsReadMore}
-        emptyText={s.newsEmpty}
-        limit={6}
-      />
 
       {/* ═══ About CSCA ═══ */}
       <section id="about" className="csca-section">
@@ -253,6 +253,12 @@ function CscaLandingPage() {
             <h2 className="csca-h2">{s.materialsTitle}</h2>
             <p className="csca-lead">{s.materialsLead}</p>
           </div>
+          <Reveal>
+            <div className="csca-card" style={{ marginBottom: '1.75rem', textAlign: 'center', background: 'linear-gradient(135deg, rgba(200,16,46,0.05), rgba(201,162,75,0.08))' }}>
+              <div className="csca-feature-title" style={{ fontSize: '1.15rem' }}>{s.freePdfTitle}</div>
+              <div className="csca-feature-desc" style={{ maxWidth: 560, margin: '0.4rem auto 0' }}>{s.freePdfDesc}</div>
+            </div>
+          </Reveal>
           <Reveal stagger className="csca-grid csca-grid-5">
             {CSCA_SUBJECTS.map((subj) => (
               <div className="csca-card csca-book" key={subj.key}>
@@ -269,10 +275,6 @@ function CscaLandingPage() {
               </div>
             ))}
           </Reveal>
-          <div className="csca-card" style={{ marginTop: '1.75rem', textAlign: 'center', background: 'linear-gradient(135deg, rgba(200,16,46,0.05), rgba(201,162,75,0.08))' }}>
-            <div className="csca-feature-title" style={{ fontSize: '1.15rem' }}>{s.freePdfTitle}</div>
-            <div className="csca-feature-desc" style={{ maxWidth: 560, margin: '0.4rem auto 0' }}>{s.freePdfDesc}</div>
-          </div>
         </div>
       </section>
 

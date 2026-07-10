@@ -65,6 +65,7 @@ public static class UniStartStartupExtensions
 
         services.AddScoped<IJwtService, JwtService>();
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<ITelegramBotService, TelegramBotService>();
         services.AddScoped<IExamService, ExamService>();
         services.AddScoped<IAdaptiveEngineService, AdaptiveEngineService>();
         services.AddScoped<IAnalyticsService, AnalyticsService>();

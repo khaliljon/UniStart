@@ -19,6 +19,12 @@ function CscaMaterialsPage() {
       <CscaPageHero eyebrow={s.navMaterials} title={s.materialsTitle} lead={s.materialsLead} />
 
       <section className="csca-wrap csca-section" style={{ paddingTop: '1.5rem' }}>
+        <div className="csca-card" style={{ marginBottom: '1.75rem', textAlign: 'center', background: 'linear-gradient(135deg, rgba(200,16,46,0.05), rgba(201,162,75,0.08))' }}>
+          <div className="csca-feature-title" style={{ fontSize: '1.15rem' }}>{s.freePdfTitle}</div>
+          <div className="csca-feature-desc" style={{ maxWidth: 560, margin: '0.4rem auto 1rem' }}>{s.freePdfDesc}</div>
+          <button className="csca-btn csca-btn-primary" onClick={() => navigate('/register')}>{s.getFree}</button>
+        </div>
+
         <div className="csca-grid csca-grid-5">
           {CSCA_SUBJECTS.map((subj) => (
             <div className="csca-card csca-book" key={subj.key}>
@@ -34,12 +40,6 @@ function CscaMaterialsPage() {
               <button className="csca-btn csca-btn-ghost csca-btn-sm" style={{ width: '100%' }} onClick={() => navigate('/register')}>{s.addToCart}</button>
             </div>
           ))}
-        </div>
-
-        <div className="csca-card" style={{ marginTop: '1.75rem', textAlign: 'center', background: 'linear-gradient(135deg, rgba(200,16,46,0.05), rgba(201,162,75,0.08))' }}>
-          <div className="csca-feature-title" style={{ fontSize: '1.15rem' }}>{s.freePdfTitle}</div>
-          <div className="csca-feature-desc" style={{ maxWidth: 560, margin: '0.4rem auto 1rem' }}>{s.freePdfDesc}</div>
-          <button className="csca-btn csca-btn-primary" onClick={() => navigate('/register')}>{s.getFree}</button>
         </div>
       </section>
     </CscaPageShell>

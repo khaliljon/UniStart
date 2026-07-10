@@ -154,6 +154,7 @@ function AdminLayout() {
                   }}>
                     {[
                       { label: t.admin.nav.news, path: '/news' },
+                      { label: t.admin.nav.support, path: '/support' },
                       { label: t.admin.nav.import, path: '/import' },
                       { label: t.admin.nav.schools, path: '/schools' },
                       { label: t.admin.nav.audit, path: '/audit' },

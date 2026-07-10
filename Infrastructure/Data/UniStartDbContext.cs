@@ -84,6 +84,10 @@ public class UniStartDbContext : DbContext
     // User order history (mock packages / books / courses)
     public DbSet<Purchase> Purchases => Set<Purchase>();
 
+    // Telegram support bot tickets
+    public DbSet<SupportTicket> SupportTickets => Set<SupportTicket>();
+    public DbSet<SupportMessage> SupportMessages => Set<SupportMessage>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -1152,6 +1156,29 @@ public class UniStartDbContext : DbContext
                   .HasForeignKey(e => e.UserId)
                   .OnDelete(DeleteBehavior.Cascade);
             entity.HasIndex(e => e.UserId).HasDatabaseName("IX_Purchases_UserId");
+        });
+
+        modelBuilder.Entity<SupportTicket>(entity =>
+        {
+            entity.ToTable("SupportTickets");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Username).HasMaxLength(100);
+            entity.Property(e => e.FirstName).HasMaxLength(100);
+            entity.Property(e => e.Status).IsRequired().HasMaxLength(20).HasDefaultValue("Open");
+            entity.HasIndex(e => e.TelegramUserId).IsUnique().HasDatabaseName("IX_SupportTickets_TelegramUserId");
+        });
+
+        modelBuilder.Entity<SupportMessage>(entity =>
+        {
+            entity.ToTable("SupportMessages");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Direction).IsRequired().HasMaxLength(4);
+            entity.Property(e => e.Text).HasMaxLength(4096);
+            entity.HasOne(e => e.Ticket)
+                  .WithMany(t => t.Messages)
+                  .HasForeignKey(e => e.TicketId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(e => e.GroupMessageId).HasDatabaseName("IX_SupportMessages_GroupMessageId");
         });
 
         // CSCA-only platform: exam types are managed at runtime (seeder / admin),
