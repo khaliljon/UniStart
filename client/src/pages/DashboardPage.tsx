@@ -193,6 +193,7 @@ function NewsBlock() {
       title={s.newsTitle}
       lead={s.newsLead}
       readMore={s.newsReadMore}
+      readLess={s.newsReadLess}
       emptyText={s.newsEmpty}
       limit={6}
       appTheme

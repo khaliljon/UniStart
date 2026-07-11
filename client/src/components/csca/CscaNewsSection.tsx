@@ -5,6 +5,7 @@ interface Props {
   title: string;
   lead?: string;
   readMore: string;
+  readLess?: string;
   emptyText: string;
   limit?: number;
   /** Wrap in the marketing section chrome (used on the landing). */
@@ -15,7 +16,7 @@ interface Props {
 }
 
 /** Renders published CSCA news. Used on the landing and the student dashboard. */
-export default function CscaNewsSection({ title, lead, readMore, emptyText, limit = 6, section = false, appTheme = false, id }: Props) {
+export default function CscaNewsSection({ title, lead, readMore, readLess, emptyText, limit = 6, section = false, appTheme = false, id }: Props) {
   const [items, setItems] = useState<NewsItem[] | null>(null);
   const [openId, setOpenId] = useState<number | null>(null);
 
@@ -40,7 +41,7 @@ export default function CscaNewsSection({ title, lead, readMore, emptyText, limi
         return (
           <article className={cardClass} key={n.id}>
             {n.imageUrl && (
-              <img src={n.imageUrl} alt="" style={{ width: '100%', maxHeight: 280, objectFit: 'cover', borderRadius: '0.75rem', marginBottom: '1rem', display: 'block' }} />
+              <img src={n.imageUrl} alt="" style={{ width: '100%', maxHeight: 320, objectFit: 'contain', background: 'transparent', borderRadius: '0.75rem', marginBottom: '1rem', display: 'block' }} />
             )}
             <div style={{ fontSize: '0.78rem', color: subColor, marginBottom: '0.35rem' }}>{fmtDate(n.publishedAt)}</div>
             <div className={appTheme ? undefined : 'csca-feature-title'} style={appTheme ? { fontSize: '1.15rem', fontWeight: 700, color: 'var(--text-primary)' } : { fontSize: '1.15rem' }}>{n.title}</div>
@@ -54,7 +55,7 @@ export default function CscaNewsSection({ title, lead, readMore, emptyText, limi
                 style={{ marginTop: '0.75rem' }}
                 onClick={() => setOpenId(expanded ? null : n.id)}
               >
-                {readMore}
+                {expanded ? (readLess ?? readMore) : readMore}
               </button>
             )}
           </article>

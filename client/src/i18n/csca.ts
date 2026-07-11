@@ -60,6 +60,7 @@ export interface CscaStrings {
   newsTitle: string;
   newsLead: string;
   newsReadMore: string;
+  newsReadLess: string;
   newsEmpty: string;
   // features
   featuresTitle: string;
@@ -180,7 +181,7 @@ const ru: CscaStrings = {
   addToCalendar: 'Добавить в календарь',
   calGoogle: 'Google Календарь', calApple: 'Apple / Outlook (.ics)',
   newsTitle: 'Новости CSCA', newsLead: 'Актуальная и достоверная информация об экзамене, датах и поступлении.',
-  newsReadMore: 'Читать', newsEmpty: 'Пока новостей нет — скоро здесь появятся свежие материалы.',
+  newsReadMore: 'Читать', newsReadLess: 'Скрыть', newsEmpty: 'Пока новостей нет — скоро здесь появятся свежие материалы.',
   featuresTitle: 'Что Вы получите на платформе?', featuresLead: 'Всё для эффективной подготовки в одном месте.',
   fAdaptiveT: 'Адаптивное обучение', fAdaptiveD: 'Система подстраивается под ваш уровень и подтягивает слабые темы.',
   fAnalyticsT: 'Аналитика и прогресс', fAnalyticsD: 'Процент готовности и список проблемных тем по каждому предмету.',
@@ -256,7 +257,7 @@ const en: CscaStrings = {
   addToCalendar: 'Add to calendar',
   calGoogle: 'Google Calendar', calApple: 'Apple / Outlook (.ics)',
   newsTitle: 'CSCA news', newsLead: 'Up-to-date, reliable information about the exam, dates and admissions.',
-  newsReadMore: 'Read', newsEmpty: 'No news yet — fresh materials will appear here soon.',
+  newsReadMore: 'Read', newsReadLess: 'Collapse', newsEmpty: 'No news yet — fresh materials will appear here soon.',
   featuresTitle: 'What You get on the platform?', featuresLead: 'Everything for effective preparation in one place.',
   fAdaptiveT: 'Adaptive learning', fAdaptiveD: 'The system adapts to your level and reinforces weak topics.',
   fAnalyticsT: 'Analytics & progress', fAnalyticsD: 'Readiness percentage and problem-topic list for each subject.',
@@ -332,7 +333,7 @@ const kz: CscaStrings = {
   addToCalendar: 'Күнтізбеге қосу',
   calGoogle: 'Google Күнтізбе', calApple: 'Apple / Outlook (.ics)',
   newsTitle: 'CSCA жаңалықтары', newsLead: 'Емтихан, күндер және қабылдау туралы өзекті ақпарат.',
-  newsReadMore: 'Оқу', newsEmpty: 'Әзірше жаңалық жоқ — жақында жаңа материалдар пайда болады.',
+  newsReadMore: 'Оқу', newsReadLess: 'Жабу', newsEmpty: 'Әзірше жаңалық жоқ — жақында жаңа материалдар пайда болады.',
   featuresTitle: 'Платформада не аласыз?', featuresLead: 'Тиімді дайындыққа қажеттінің бәрі бір жерде.',
   fAdaptiveT: 'Бейімделетін оқу', fAdaptiveD: 'Жүйе деңгейіңізге бейімделіп, әлсіз тақырыптарды нығайтады.',
   fAnalyticsT: 'Аналитика және прогресс', fAnalyticsD: 'Әр пән бойынша дайындық пайызы мен проблемалық тақырыптар тізімі.',

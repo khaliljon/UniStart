@@ -15,6 +15,7 @@ function CscaNewsPage() {
         <CscaNewsSection
           title=""
           readMore={s.newsReadMore}
+          readLess={s.newsReadLess}
           emptyText={s.newsEmpty}
           limit={24}
         />
