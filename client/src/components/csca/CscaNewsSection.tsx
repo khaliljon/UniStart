@@ -34,24 +34,24 @@ export default function CscaNewsSection({ title, lead, readMore, emptyText, limi
   const subColor = appTheme ? 'var(--text-secondary)' : 'var(--csca-ink-soft, var(--text-secondary))';
 
   const grid = (
-    <div className="csca-grid csca-grid-3">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
       {(items ?? []).map((n) => {
         const expanded = openId === n.id;
         return (
-          <article className={cardClass} key={n.id} style={{ display: 'flex', flexDirection: 'column' }}>
+          <article className={cardClass} key={n.id}>
             {n.imageUrl && (
-              <img src={n.imageUrl} alt="" style={{ width: '100%', height: 160, objectFit: 'cover', borderRadius: '0.75rem', marginBottom: '0.9rem' }} />
+              <img src={n.imageUrl} alt="" style={{ width: '100%', maxHeight: 280, objectFit: 'cover', borderRadius: '0.75rem', marginBottom: '1rem', display: 'block' }} />
             )}
             <div style={{ fontSize: '0.78rem', color: subColor, marginBottom: '0.35rem' }}>{fmtDate(n.publishedAt)}</div>
-            <div className={appTheme ? undefined : 'csca-feature-title'} style={appTheme ? { fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' } : { fontSize: '1.1rem' }}>{n.title}</div>
-            <div className={appTheme ? undefined : 'csca-feature-desc'} style={{ marginTop: '0.35rem', whiteSpace: 'pre-wrap', color: appTheme ? 'var(--text-secondary)' : undefined }}>
+            <div className={appTheme ? undefined : 'csca-feature-title'} style={appTheme ? { fontSize: '1.15rem', fontWeight: 700, color: 'var(--text-primary)' } : { fontSize: '1.15rem' }}>{n.title}</div>
+            <div className={appTheme ? undefined : 'csca-feature-desc'} style={{ marginTop: '0.45rem', whiteSpace: 'pre-wrap', color: appTheme ? 'var(--text-secondary)' : undefined }}>
               {expanded ? n.body : n.summary}
             </div>
             {n.body && n.body !== n.summary && (
               <button
                 type="button"
                 className={appTheme ? 'btn btn-outline' : 'csca-btn csca-btn-ghost csca-btn-sm'}
-                style={{ marginTop: '0.9rem', alignSelf: 'flex-start' }}
+                style={{ marginTop: '0.75rem' }}
                 onClick={() => setOpenId(expanded ? null : n.id)}
               >
                 {readMore}

@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { newsService, type NewsItem, type NewsUpsert } from '../services/newsService';
+import adminService from '../services/adminService';
 import { useToast } from '../components/Toast';
 
 const EMPTY: NewsUpsert = { title: '', summary: '', body: '', imageUrl: '', isPublished: false };
@@ -10,6 +11,21 @@ function AdminNewsPage() {
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState<NewsUpsert>(EMPTY);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const uploadFile = async (file: File) => {
+    setUploading(true);
+    try {
+      const url = await adminService.uploadImage(file);
+      setForm(prev => ({ ...prev, imageUrl: url }));
+      showToast('Изображение загружено', 'success');
+    } catch {
+      showToast('Ошибка загрузки изображения', 'error');
+    } finally {
+      setUploading(false);
+    }
+  };
   const [saving, setSaving] = useState(false);
 
   const load = () => {
@@ -87,8 +103,37 @@ function AdminNewsPage() {
           <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>Текст новости
             <textarea style={{ ...inputStyle, minHeight: 160 }} value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} />
           </label>
-          <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>URL изображения (необязательно)
-            <input style={inputStyle} value={form.imageUrl ?? ''} onChange={(e) => setForm({ ...form, imageUrl: e.target.value })} />
+          <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>Изображение (необязательно)
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: '0.4rem', flexWrap: 'wrap' }}>
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadFile(f); e.target.value = ''; }}
+              />
+              <button
+                type="button"
+                className="btn btn-outline"
+                style={{ flexShrink: 0 }}
+                disabled={uploading}
+                onClick={() => fileRef.current?.click()}
+              >
+                {uploading ? 'Загрузка…' : 'Выбрать файл'}
+              </button>
+              <input
+                style={{ ...inputStyle, flex: 1, minWidth: 0 }}
+                placeholder="или вставьте URL"
+                value={form.imageUrl ?? ''}
+                onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
+              />
+              {form.imageUrl && (
+                <button type="button" className="btn btn-outline" style={{ flexShrink: 0, color: '#ef4444', borderColor: '#ef4444' }} onClick={() => setForm({ ...form, imageUrl: '' })}>×</button>
+              )}
+            </div>
+            {form.imageUrl && (
+              <img src={form.imageUrl} alt="" style={{ marginTop: '0.5rem', maxHeight: 120, borderRadius: '0.5rem', objectFit: 'cover' }} />
+            )}
           </label>
           <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem' }}>
             <input type="checkbox" checked={form.isPublished} onChange={(e) => setForm({ ...form, isPublished: e.target.checked })} />
