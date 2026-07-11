@@ -82,7 +82,10 @@ function ProfileDropdown() {
 
           {/* Menu items */}
           <button className="profile-dropdown-item" onClick={() => goTo('/profile')}>
-            {t.nav.myInfo}
+            {t.nav.myProfile}
+          </button>
+          <button className="profile-dropdown-item" onClick={() => goTo('/purchases')}>
+            {t.nav.myCart}
           </button>
           <button className="profile-dropdown-item" onClick={() => goTo('/purchases')}>
             {t.nav.myPurchases}

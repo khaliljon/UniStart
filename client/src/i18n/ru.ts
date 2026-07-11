@@ -43,6 +43,8 @@ export const ru: Translations = {
     notifications: 'Уведомления',
     assignments: 'Задания',
     myInfo: 'Моя инфа',
+    myProfile: 'Мой профиль',
+    myCart: 'Моя корзина',
     myPurchases: 'Мои покупки',
     myProgress: 'Мой прогресс',
   },

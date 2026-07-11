@@ -46,6 +46,8 @@ export interface Translations {
     notifications: string;
     assignments: string;
     myInfo: string;
+    myProfile: string;
+    myCart: string;
     myPurchases: string;
     myProgress: string;
   };

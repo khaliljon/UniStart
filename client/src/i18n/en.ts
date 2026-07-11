@@ -43,6 +43,8 @@ export const en: Translations = {
     notifications: 'Notifications',
     assignments: 'Assignments',
     myInfo: 'My info',
+    myProfile: 'My profile',
+    myCart: 'My cart',
     myPurchases: 'My purchases',
     myProgress: 'My progress',
   },

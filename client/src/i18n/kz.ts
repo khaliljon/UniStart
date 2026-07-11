@@ -43,6 +43,8 @@ export const kz: Translations = {
     notifications: 'Хабарландырулар',
     assignments: 'Тапсырмалар',
     myInfo: 'Менің ақпаратым',
+    myProfile: 'Менің профайлым',
+    myCart: 'Менің себетім',
     myPurchases: 'Сатып алуларым',
     myProgress: 'Менің прогресім',
   },

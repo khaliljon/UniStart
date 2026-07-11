@@ -37,7 +37,7 @@ function CscaMaterialsPage() {
               <div className="csca-price-amount csca-hanzi" style={{ fontSize: '1.4rem', margin: '0 0 0.6rem' }}>
                 {CSCA_BOOK_PRICE.toLocaleString('ru-RU')} <span className="csca-price-cur">{s.currency}</span>
               </div>
-              <button className="csca-btn csca-btn-ghost csca-btn-sm" style={{ width: '100%' }} onClick={() => navigate('/register')}>{s.addToCart}</button>
+              <button className="csca-btn csca-btn-ghost csca-btn-sm" style={{ width: '100%' }} onClick={() => navigate('/register')}>{s.buy}</button>
             </div>
           ))}
         </div>

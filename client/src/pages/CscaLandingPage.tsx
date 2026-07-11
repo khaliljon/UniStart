@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from '../i18n';
 import { cscaStrings } from '../i18n/csca';
+import { useAppSelector } from '../hooks/useAppSelector';
+import { materialsService } from '../services/materialsService';
 import CscaNav from '../components/csca/CscaNav';
 import CscaFooter from '../components/csca/CscaFooter';
 import Reveal from '../components/csca/Reveal';
@@ -9,7 +11,7 @@ import {
   BrushDivider, MistMountains, SealStamp,
 } from '../components/csca/ChineseMotifs';
 import {
-  CSCA_SUBJECTS, CSCA_PACKAGES, CSCA_STATS, CSCA_BOOK_PRICE,
+  CSCA_SUBJECTS, CSCA_PACKAGES, CSCA_BOOK_PRICE,
   getNextSitting,
 } from '../cscaConfig';
 
@@ -37,10 +39,16 @@ function CscaLandingPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { locale } = useTranslation();
+  const { isAuthenticated } = useAppSelector((s) => s.auth);
+  const [dbMaterials, setDbMaterials] = useState<{ id: number; subjectKey: string; title: string; price: number }[]>([]);
 
   const s = cscaStrings[locale];
   const nextSitting = useMemo(() => getNextSitting(), []);
   const { days, hours, minutes } = useCountdown(nextSitting.date);
+
+  useEffect(() => {
+    materialsService.list().then(setDbMaterials).catch(() => {});
+  }, []);
 
   // Scroll to a hash target (e.g. #news) when navigating from another page.
   useEffect(() => {
@@ -78,19 +86,17 @@ function CscaLandingPage() {
 
   const buyPackage = (pkg: typeof CSCA_PACKAGES[number]) => {
     const title = packageMeta[pkg.key].name + ' · CSCA';
-    sessionStorage.setItem('checkout', JSON.stringify({
-      itemType: 'package', itemCode: pkg.key,
-      title, subjects: '', amount: pkg.price, currency: '₸',
-    }));
+    const state = { itemType: 'package', itemCode: pkg.key, title, subjects: '', amount: pkg.price, currency: '₸' };
+    if (isAuthenticated) { navigate('/checkout', { state }); return; }
+    sessionStorage.setItem('checkout', JSON.stringify(state));
     navigate('/register');
   };
 
-  const buyBook = (subj: typeof CSCA_SUBJECTS[number]) => {
-    sessionStorage.setItem('checkout', JSON.stringify({
-      itemType: 'book', itemCode: subj.key,
-      title: `${subjectMeta[subj.key].name} · ${s.bookLabel}`,
-      subjects: '', amount: CSCA_BOOK_PRICE, currency: '₸',
-    }));
+  const buyBook = (subj: typeof CSCA_SUBJECTS[number], price?: number) => {
+    const bookPrice = price ?? CSCA_BOOK_PRICE;
+    const state = { itemType: 'book', itemCode: subj.key, title: `${subjectMeta[subj.key].name} · ${s.bookLabel}`, subjects: '', amount: bookPrice, currency: '₸' };
+    if (isAuthenticated) { navigate('/checkout', { state }); return; }
+    sessionStorage.setItem('checkout', JSON.stringify(state));
     navigate('/register');
   };
 
@@ -100,6 +106,7 @@ function CscaLandingPage() {
     answered: s.statAnswered,
     success: s.statSuccess,
   } as const;
+  void statMeta; // kept for future use
 
   return (
     <div className="csca-landing">
@@ -147,18 +154,6 @@ function CscaLandingPage() {
 
         <MistMountains style={{ position: 'absolute', left: 0, right: 0, bottom: -1, width: '100%', height: 160, color: 'var(--csca-red)', zIndex: 0 }} />
       </header>
-
-      {/* ═══ Stats ═══ */}
-      <section className="csca-wrap" style={{ marginTop: '-1rem' }}>
-        <Reveal stagger className="csca-stats">
-          {CSCA_STATS.map((st) => (
-            <div className="csca-stat" key={st.key}>
-              <div className="csca-stat-num csca-hanzi">{st.value}</div>
-              <div className="csca-stat-cap">{statMeta[st.key]}</div>
-            </div>
-          ))}
-        </Reveal>
-      </section>
 
       {/* ═══ About CSCA ═══ */}
       <section id="about" className="csca-section">
@@ -271,20 +266,24 @@ function CscaLandingPage() {
             </div>
           </Reveal>
           <Reveal stagger className="csca-grid csca-grid-5">
-            {CSCA_SUBJECTS.map((subj) => (
-              <div className="csca-card csca-book" key={subj.key}>
-                <div className="csca-book-cover" style={{ background: subj.cover }}>
-                  <span className="csca-book-hanzi">{subj.hanzi}</span>
-                  <span className="csca-book-label csca-hanzi">CSCA · 备考教材</span>
+            {(dbMaterials.length > 0 ? dbMaterials : CSCA_SUBJECTS.map((subj, i) => ({ id: i, subjectKey: subj.key, title: subjectMeta[subj.key].name, price: CSCA_BOOK_PRICE }))).map((mat) => {
+              const subj = CSCA_SUBJECTS.find(cs => cs.key === mat.subjectKey) ?? CSCA_SUBJECTS[0];
+              const name = subjectMeta[subj.key as keyof typeof subjectMeta]?.name ?? mat.title;
+              return (
+                <div className="csca-card csca-book" key={mat.id}>
+                  <div className="csca-book-cover" style={{ background: subj.cover }}>
+                    <span className="csca-book-hanzi">{subj.hanzi}</span>
+                    <span className="csca-book-label csca-hanzi">CSCA \u00b7 \u5907\u8003\u6559\u6750</span>
+                  </div>
+                  <div className="csca-subject-name">{mat.title || name}</div>
+                  <div className="csca-subject-tag" style={{ marginBottom: '0.75rem' }}>{s.bookLabel}</div>
+                  <div className="csca-price-amount csca-hanzi" style={{ fontSize: '1.4rem', margin: '0 0 0.6rem' }}>
+                    {mat.price.toLocaleString('ru-RU')} <span className="csca-price-cur">{s.currency}</span>
+                  </div>
+                  <button className="csca-btn csca-btn-ghost csca-btn-sm" style={{ width: '100%' }} onClick={() => buyBook(subj, mat.price)}>{s.buy}</button>
                 </div>
-                <div className="csca-subject-name">{subjectMeta[subj.key].name}</div>
-                <div className="csca-subject-tag" style={{ marginBottom: '0.75rem' }}>{s.bookLabel}</div>
-                <div className="csca-price-amount csca-hanzi" style={{ fontSize: '1.4rem', margin: '0 0 0.6rem' }}>
-                  {CSCA_BOOK_PRICE.toLocaleString('ru-RU')} <span className="csca-price-cur">{s.currency}</span>
-                </div>
-                <button className="csca-btn csca-btn-ghost csca-btn-sm" style={{ width: '100%' }} onClick={() => buyBook(subj)}>{s.addToCart}</button>
-              </div>
-            ))}
+              );
+            })}
           </Reveal>
         </div>
       </section>

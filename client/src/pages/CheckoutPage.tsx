@@ -35,10 +35,10 @@ function CheckoutPage() {
 
   if (!order) {
     return (
-      <div className="csca-card" style={{ maxWidth: 560, margin: '2rem auto', textAlign: 'center' }}>
-        <h2 className="csca-h2" style={{ fontSize: '1.4rem' }}>{s.checkoutTitle}</h2>
-        <p className="csca-lead">{s.checkoutEmpty}</p>
-        <button className="csca-btn csca-btn-primary" onClick={() => navigate('/')}>{s.checkoutBackHome}</button>
+      <div className="card" style={{ maxWidth: 560, margin: '2rem auto', textAlign: 'center', padding: '2rem' }}>
+        <h2 style={{ fontSize: '1.4rem', marginBottom: '0.75rem' }}>{s.checkoutTitle}</h2>
+        <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>{s.checkoutEmpty}</p>
+        <button className="btn btn-primary" onClick={() => navigate('/')}>{s.checkoutBackHome}</button>
       </div>
     );
   }
@@ -99,10 +99,19 @@ function CheckoutPage() {
       </div>
 
       <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-        <button className="csca-btn csca-btn-primary" disabled={loading} onClick={confirm}>
+        <button
+          className="btn btn-primary"
+          disabled={loading}
+          onClick={confirm}
+        >
           {loading ? '…' : s.checkoutPay}
         </button>
-        <button className="csca-btn csca-btn-ghost" onClick={() => navigate('/')}>{s.checkoutBackHome}</button>
+        <button
+          className="btn btn-outline"
+          onClick={() => { sessionStorage.removeItem('checkout'); navigate('/'); }}
+        >
+          {s.checkoutBackHome}
+        </button>
       </div>
     </div>
   );

@@ -33,6 +33,15 @@ public class MockExamController : ControllerBase
         return Ok(exams);
     }
 
+    /// <summary>Public list of active mock exams for the landing page (no auth required).</summary>
+    [HttpGet("public")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetPublicMockExams()
+    {
+        var exams = await _mockExamService.GetAvailableMockExamsAsync(0);
+        return Ok(exams);
+    }
+
     /// <summary>Get mock exam details with sections</summary>
     [HttpGet("{id}")]
     public async Task<IActionResult> GetMockExamDetail(int id)

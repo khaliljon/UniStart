@@ -6,8 +6,6 @@ import { useTranslation } from '../hooks/useTranslation';
 import { fetchExams } from '../store/slices/examSlice';
 import recommendationService from '../services/recommendationService';
 import { subscriptionService } from '../services/subscriptionService';
-import { materialsService } from '../services/materialsService';
-import { purchaseService } from '../services/purchaseService';
 import { cscaStrings } from '../i18n/csca';
 import { CSCA_PACKAGES, CSCA_SUBJECTS, CSCA_BOOK_PRICE } from '../cscaConfig';
 import CscaNewsSection from '../components/csca/CscaNewsSection';
@@ -56,9 +54,13 @@ function DashboardPage() {
       try {
         const order = JSON.parse(pending);
         if (order?.itemCode) {
+          // Clear BEFORE navigating to avoid infinite loop if user clicks "Back"
+          sessionStorage.removeItem('checkout');
           navigate('/checkout', { state: order, replace: true });
         }
-      } catch { /* malformed – ignore */ }
+      } catch {
+        sessionStorage.removeItem('checkout');
+      }
     }
   // Only run once on mount
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -338,8 +340,6 @@ function MaterialsSection() {
   const navigate = useNavigate();
   const { locale } = useTranslation();
   const s = cscaStrings[locale];
-  const [purchasedBooks, setPurchasedBooks] = useState<string[]>([]);
-  const [downloading, setDownloading] = useState<string | null>(null);
 
   const subjectName: Record<string, string> = {
     chineseTech: s.subjChineseTech,
@@ -349,84 +349,39 @@ function MaterialsSection() {
     chemistry: s.subjChemistry,
   };
 
-  useEffect(() => {
-    purchaseService.list()
-      .then((items) => {
-        const books = items
-          .filter((p) => p.itemType === 'book' && p.status === 'Paid')
-          .map((p) => p.itemCode);
-        setPurchasedBooks(books);
-      })
-      .catch(() => {});
-  }, []);
-
   const buy = (subj: typeof CSCA_SUBJECTS[number]) => {
     navigate('/checkout', {
       state: {
         itemType: 'book',
         itemCode: subj.key,
-        title: `${subjectName[subj.key]} · ${s.bookLabel}`,
+        title: `${subjectName[subj.key]} \u00b7 ${s.bookLabel}`,
         amount: CSCA_BOOK_PRICE,
-        currency: '₸',
+        currency: '\u20b8',
       },
     });
   };
-
-  const download = async (subjectKey: string) => {
-    setDownloading(subjectKey);
-    try {
-      const res = await materialsService.download(subjectKey);
-      window.open(res.pdfUrl, '_blank');
-    } catch {
-      alert(locale === 'en'
-        ? 'Could not load PDF link. Please check your purchase.'
-        : locale === 'kz'
-        ? 'PDF сілтемесін жүктеу мүмкін болмады.'
-        : 'Не удалось получить ссылку на PDF. Проверьте покупку или обратитесь в поддержку.');
-    } finally {
-      setDownloading(null);
-    }
-  };
-
-  const isEn = locale === 'en';
-  const isKz = locale === 'kz';
-  const downloadText = isEn ? 'Download PDF' : isKz ? 'PDF жүктеу' : 'Скачать PDF';
 
   return (
     <div style={{ marginBottom: '1.75rem' }}>
       <h2 style={{ fontSize: '1.1rem', marginBottom: '0.75rem' }}>{s.materialsTitle}</h2>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem' }}>
         {CSCA_SUBJECTS.map((subj) => {
-          const isPurchased = purchasedBooks.includes(subj.key);
-          const isLd = downloading === subj.key;
           return (
             <div key={subj.key} className="card csca-book" style={{ padding: '1.1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', background: 'var(--card-background)' }}>
               <div className="csca-book-cover" style={{ background: subj.cover, width: '100%', margin: '0 auto 0.5rem', maxWidth: '140px' }}>
                 <span className="csca-book-hanzi" style={{ fontSize: '1.8rem' }}>{subj.hanzi}</span>
-                <span className="csca-book-label csca-hanzi" style={{ fontSize: '0.55rem' }}>CSCA · 备考教材</span>
+                <span className="csca-book-label csca-hanzi" style={{ fontSize: '0.55rem' }}>CSCA \u00b7 \u5907\u8003\u6559\u6750</span>
               </div>
               <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>{subjectName[subj.key]}</div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>{s.bookLabel}</div>
-
-              {isPurchased ? (
-                <button
-                  className="btn btn-primary"
-                  style={{ marginTop: 'auto', fontSize: '0.85rem' }}
-                  disabled={isLd}
-                  onClick={() => download(subj.key)}
-                >
-                  {isLd ? '…' : downloadText}
-                </button>
-              ) : (
-                <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                  <div style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--primary-color)', textAlign: 'center' }}>
-                    {CSCA_BOOK_PRICE.toLocaleString('ru-RU')} ₸
-                  </div>
-                  <button className="btn btn-outline" style={{ fontSize: '0.85rem' }} onClick={() => buy(subj)}>
-                    {s.buy}
-                  </button>
+              <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                <div style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--primary-color)', textAlign: 'center' }}>
+                  {CSCA_BOOK_PRICE.toLocaleString('ru-RU')} ₸
                 </div>
-              )}
+                <button className="btn btn-outline" style={{ fontSize: '0.85rem' }} onClick={() => buy(subj)}>
+                  {s.buy}
+                </button>
+              </div>
             </div>
           );
         })}
