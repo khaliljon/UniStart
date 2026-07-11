@@ -1,10 +1,11 @@
 import { useEffect, useState, useCallback } from 'react';
 import adminService from '../services/adminService';
 import { lessonService } from '../services/lessonService';
+import { materialsService, type StudyMaterialAdmin } from '../services/materialsService';
 import type { AdminTopicSummary } from '../types';
 import { useTranslation } from '../hooks/useTranslation';
 
-type ContentTab = 'lessons' | 'flashcards' | 'formulas' | 'strategies' | 'drills';
+type ContentTab = 'lessons' | 'flashcards' | 'formulas' | 'strategies' | 'drills' | 'materials';
 
 type Lesson = { id: number; topicId: number; topicName: string; title: string; videoUrl: string | null; sortOrder: number; stepCount: number };
 type Deck = { id: number; title: string; description: string | null; examTypeCode: string | null; topicId: number | null; topicName: string | null; isSystem: boolean; cardCount: number; createdAt: string };
@@ -13,16 +14,19 @@ type Formula = { id: number; topicId: number; topicName: string; title: string; 
 type Strategy = { id: number; examTypeCode: string; title: string; summary: string; category: string; estimatedReadMinutes: number; sortOrder: number };
 type DrillTemplate = { id: number; title: string; description: string | null; drillType: string; examTypeCode: string | null; topicId: number | null; topicName: string | null; questionCount: number; timeLimitMinutes: number | null; isActive: boolean; sortOrder: number };
 
-const TABS: ContentTab[] = ['lessons', 'flashcards', 'formulas', 'strategies', 'drills'];
+const TABS: ContentTab[] = ['lessons', 'flashcards', 'formulas', 'strategies', 'drills', 'materials'];
 
 export default function AdminContentPage() {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
+  const isEn = locale === 'en';
+  const isKz = locale === 'kz';
   const tabLabels: Record<ContentTab, string> = {
     lessons: t.admin.content.lessons,
     flashcards: t.admin.content.flashcards,
     formulas: t.admin.content.formulas,
     strategies: t.admin.content.strategies,
     drills: t.admin.content.drillsTab,
+    materials: isEn ? 'PDF Books' : isKz ? 'PDF кітаптар' : 'Учебники (PDF)',
   };
   const [tab, setTab] = useState<ContentTab>('lessons');
   const [topics, setTopics] = useState<AdminTopicSummary[]>([]);
@@ -70,12 +74,21 @@ export default function AdminContentPage() {
   const [drillForm, setDrillForm] = useState({ title: '', description: '', drillType: 'Speed', examTypeCode: '', topicId: 0, questionCount: 10, timeLimitMinutes: 0, isActive: true, sortOrder: 0 });
   const [editingDrillId, setEditingDrillId] = useState<number | null>(null);
 
+  // Materials
+  const [materials, setMaterials] = useState<StudyMaterialAdmin[]>([]);
+  const [materialsLoading, setMaterialsLoading] = useState(false);
+  const [showMaterialForm, setShowMaterialForm] = useState(false);
+  const [materialForm, setMaterialForm] = useState({ subjectKey: 'math', title: '', description: '', pdfUrl: '', price: 6990, isActive: true });
+  const [editingMaterialId, setEditingMaterialId] = useState<number | null>(null);
+  const [uploadingPdf, setUploadingPdf] = useState(false);
+
   // Bulk selection
   const [selectedLessons, setSelectedLessons] = useState<Set<number>>(new Set());
   const [selectedFormulas, setSelectedFormulas] = useState<Set<number>>(new Set());
   const [selectedStrategies, setSelectedStrategies] = useState<Set<number>>(new Set());
   const [selectedDrills, setSelectedDrills] = useState<Set<number>>(new Set());
   const [selectedDecks, setSelectedDecks] = useState<Set<number>>(new Set());
+  const [selectedMaterials, setSelectedMaterials] = useState<Set<number>>(new Set());
   const [selectionMode, setSelectionMode] = useState(false);
 
   // Exam types (for dropdowns)
@@ -118,6 +131,12 @@ export default function AdminContentPage() {
     finally { setDrillsLoading(false); }
   }, []);
 
+  const loadMaterials = useCallback(async () => {
+    setMaterialsLoading(true);
+    try { setMaterials(await materialsService.adminList()); } catch { setError(t.admin.common.loadError); }
+    finally { setMaterialsLoading(false); }
+  }, []);
+
   useEffect(() => {
     setError(null);
     setSuccess(null);
@@ -126,13 +145,15 @@ export default function AdminContentPage() {
     setSelectedStrategies(new Set());
     setSelectedDrills(new Set());
     setSelectedDecks(new Set());
+    setSelectedMaterials(new Set());
     setSelectionMode(false);
     if (tab === 'lessons') loadLessons();
     else if (tab === 'flashcards') loadDecks();
     else if (tab === 'formulas') loadFormulas();
     else if (tab === 'strategies') loadStrategies();
     else if (tab === 'drills') loadDrills();
-  }, [tab, loadLessons, loadDecks, loadFormulas, loadStrategies, loadDrills]);
+    else if (tab === 'materials') loadMaterials();
+  }, [tab, loadLessons, loadDecks, loadFormulas, loadStrategies, loadDrills, loadMaterials]);
 
   // ─── Lesson actions ──────────────────────
   const openLessonCreate = () => {
@@ -435,6 +456,94 @@ export default function AdminContentPage() {
     catch { setError(t.admin.common.deleteError); }
   };
 
+  // ─── StudyMaterial actions ────────────────
+  const openMaterialCreate = () => {
+    setEditingMaterialId(null);
+    setMaterialForm({ subjectKey: 'math', title: '', description: '', pdfUrl: '', price: 6990, isActive: true });
+    setShowMaterialForm(true);
+    setError(null);
+  };
+
+  const openMaterialEdit = (m: StudyMaterialAdmin) => {
+    setEditingMaterialId(m.id);
+    setMaterialForm({
+      subjectKey: m.subjectKey,
+      title: m.title,
+      description: m.description || '',
+      pdfUrl: m.pdfUrl || '',
+      price: Number(m.price),
+      isActive: m.isActive,
+    });
+    setShowMaterialForm(true);
+    setError(null);
+  };
+
+  const saveMaterial = async () => {
+    if (!materialForm.title.trim()) { setError('Введите название'); return; }
+    try {
+      const payload = {
+        subjectKey: materialForm.subjectKey,
+        title: materialForm.title,
+        description: materialForm.description || null,
+        pdfUrl: materialForm.pdfUrl || null,
+        price: materialForm.price,
+        isActive: materialForm.isActive,
+      };
+      if (editingMaterialId) {
+        await materialsService.update(editingMaterialId, payload);
+        setSuccess('Учебник обновлен');
+      } else {
+        await materialsService.create(payload);
+        setSuccess('Учебник добавлен');
+      }
+      setShowMaterialForm(false);
+      setEditingMaterialId(null);
+      loadMaterials();
+    } catch {
+      setError('Не удалось сохранить учебник');
+    }
+  };
+
+  const deleteMaterial = async (id: number) => {
+    if (!confirm('Вы уверены, что хотите удалить этот учебник?')) return;
+    try {
+      await materialsService.remove(id);
+      setSuccess('Учебник удален');
+      loadMaterials();
+    } catch {
+      setError(t.admin.common.deleteError);
+    }
+  };
+
+  const handleUploadPdf = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingPdf(true);
+    setError(null);
+    try {
+      const url = await materialsService.uploadPdf(file);
+      setMaterialForm(p => ({ ...p, pdfUrl: url }));
+      setSuccess('PDF файл успешно загружен');
+    } catch (err: any) {
+      setError(err?.response?.data?.error || 'Ошибка при загрузке PDF');
+    } finally {
+      setUploadingPdf(false);
+    }
+  };
+
+  const bulkDeleteMaterials = async () => {
+    const ids = [...selectedMaterials];
+    if (!ids.length || !confirm(`Удалить ${ids.length} учебников?`)) return;
+    try {
+      await Promise.all(ids.map(id => materialsService.remove(id)));
+      setSelectedMaterials(new Set());
+      setSelectionMode(false);
+      loadMaterials();
+    } catch {
+      setError(t.admin.common.deleteError);
+    }
+  };
+
   // ─── Exam filter logic ────────────────
   const examCodes = [...new Set(topics.map(tp => tp.examTypeCode))].sort();
   const topicExamMap = new Map(topics.map(tp => [tp.id, tp.examTypeCode]));
@@ -444,6 +553,7 @@ export default function AdminContentPage() {
   const filteredStrategies = filterExam === 'all' ? strategies : strategies.filter(s => s.examTypeCode === filterExam);
   const filteredDecks = filterExam === 'all' ? decks : decks.filter(d => d.examTypeCode === filterExam);
   const filteredDrills = filterExam === 'all' ? drills : drills.filter(d => d.examTypeCode === filterExam);
+  const filteredMaterials = materials; // study materials are not tied to legacy SAT/NUET codes directly
 
   // ─── Common styles ───────────────────────
   const formRow: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '0.75rem' };
@@ -1032,6 +1142,121 @@ export default function AdminContentPage() {
                         <div style={{ display: 'flex', gap: '0.25rem' }}>
                           <button className="btn btn-outline" style={editBtn} onClick={() => openDrillEdit(d)}>✎</button>
                           <button className="btn btn-outline" style={{ ...editBtn, color: 'var(--error-color)' }} onClick={() => deleteDrill(d.id)}>✕</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* ═══════ MATERIALS TAB ═══════ */}
+      {tab === 'materials' && (
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{filteredMaterials.length} учебников</span>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button className="btn btn-outline" style={{ fontSize: '0.85rem' }} onClick={() => { setSelectionMode(m => !m); setSelectedMaterials(new Set()); }}>
+                {selectionMode ? 'Отменить' : 'Выбрать несколько'}
+              </button>
+              <button className="btn btn-primary" onClick={openMaterialCreate}>Добавить учебник</button>
+            </div>
+          </div>
+
+          {showMaterialForm && (
+            <div className="card" style={{ marginBottom: '1rem', padding: '1.5rem' }}>
+              <h3 style={{ margin: '0 0 1rem' }}>{editingMaterialId ? 'Редактировать учебник' : 'Новый учебник'}</h3>
+              <div style={formRow}>
+                <span style={label}>Предмет *</span>
+                <select value={materialForm.subjectKey} onChange={e => setMaterialForm(p => ({ ...p, subjectKey: e.target.value }))} style={{ padding: '0.5rem', width: '100%', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--card-background)', color: 'var(--text-primary)' }}>
+                  <option value="math">Математика</option>
+                  <option value="physics">Физика</option>
+                  <option value="chemistry">Химия</option>
+                  <option value="chineseTech">Технический китайский</option>
+                  <option value="chineseHum">Гуманитарный китайский</option>
+                </select>
+              </div>
+              <div style={formRow}>
+                <span style={label}>Название учебника *</span>
+                <input className="form-input" value={materialForm.title} onChange={e => setMaterialForm(p => ({ ...p, title: e.target.value }))} />
+              </div>
+              <div style={formRow}>
+                <span style={label}>Описание</span>
+                <textarea className="form-input" rows={3} value={materialForm.description} onChange={e => setMaterialForm(p => ({ ...p, description: e.target.value }))} />
+              </div>
+              <div style={formRow}>
+                <span style={label}>Цена (₸) *</span>
+                <input type="number" className="form-input" value={materialForm.price} onChange={e => setMaterialForm(p => ({ ...p, price: Number(e.target.value) }))} />
+              </div>
+              <div style={formRow}>
+                <span style={label}>Загрузить PDF файл</span>
+                <input type="file" accept=".pdf" onChange={handleUploadPdf} disabled={uploadingPdf} style={{ marginBottom: '0.5rem' }} />
+                {uploadingPdf && <span style={{ fontSize: '0.8rem', color: 'var(--primary-color)' }}>Загрузка файла на Cloudflare R2...</span>}
+                <span style={label}>URL PDF файла</span>
+                <input className="form-input" value={materialForm.pdfUrl} onChange={e => setMaterialForm(p => ({ ...p, pdfUrl: e.target.value }))} placeholder="https://..." />
+              </div>
+              <div style={formRow}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem' }}>
+                  <input type="checkbox" checked={materialForm.isActive} onChange={e => setMaterialForm(p => ({ ...p, isActive: e.target.checked }))} />
+                  Активен (виден пользователям)
+                </label>
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
+                <button className="btn btn-primary" onClick={saveMaterial}>{editingMaterialId ? 'Сохранить' : 'Создать'}</button>
+                <button className="btn btn-outline" onClick={() => { setShowMaterialForm(false); setEditingMaterialId(null); }}>Отмена</button>
+              </div>
+            </div>
+          )}
+
+          {materialsLoading ? (
+            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>Загрузка...</div>
+          ) : (
+            <>
+              {selectionMode && selectedMaterials.size > 0 && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.5rem 0.75rem', marginBottom: '0.5rem', background: 'var(--primary-color)', borderRadius: '8px', color: '#fff', fontSize: '0.85rem' }}>
+                  <span>Выбрано: {selectedMaterials.size}</span>
+                  <button className="btn" style={{ fontSize: '0.8rem', padding: '0.2rem 0.6rem', background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.5)', color: '#fff', cursor: 'pointer' }} onClick={bulkDeleteMaterials}>Удалить выбранные</button>
+                  <button style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontSize: '1rem' }} onClick={() => { setSelectedMaterials(new Set()); setSelectionMode(false); }}>✕</button>
+                </div>
+              )}
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid var(--border-color)', textAlign: 'left' }}>
+                    {selectionMode && <th style={{ padding: '0.5rem', width: '2rem' }}>
+                      <input type="checkbox" checked={filteredMaterials.length > 0 && filteredMaterials.every(m => selectedMaterials.has(m.id))} onChange={e => setSelectedMaterials(e.target.checked ? new Set(filteredMaterials.map(m => m.id)) : new Set())} />
+                    </th>}
+                    <th style={{ padding: '0.5rem' }}>ID</th>
+                    <th style={{ padding: '0.5rem' }}>Предмет</th>
+                    <th style={{ padding: '0.5rem' }}>Название</th>
+                    <th style={{ padding: '0.5rem' }}>Цена</th>
+                    <th style={{ padding: '0.5rem' }}>PDF Файл</th>
+                    <th style={{ padding: '0.5rem' }}>Активен</th>
+                    <th style={{ padding: '0.5rem' }}></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredMaterials.map(m => (
+                    <tr key={m.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                      {selectionMode && <td style={{ padding: '0.5rem' }}>
+                        <input type="checkbox" checked={selectedMaterials.has(m.id)} onChange={e => setSelectedMaterials(prev => { const s = new Set(prev); e.target.checked ? s.add(m.id) : s.delete(m.id); return s; })} />
+                      </td>}
+                      <td style={{ padding: '0.5rem', color: 'var(--text-secondary)' }}>#{m.id}</td>
+                      <td style={{ padding: '0.5rem', fontWeight: 600 }}>{m.subjectKey}</td>
+                      <td style={{ padding: '0.5rem' }}>{m.title}</td>
+                      <td style={{ padding: '0.5rem' }}>{Number(m.price).toLocaleString('ru-RU')} ₸</td>
+                      <td style={{ padding: '0.5rem' }}>
+                        {m.pdfUrl ? (
+                          <a href={m.pdfUrl} target="_blank" rel="noreferrer" style={{ color: 'var(--primary-color)', textDecoration: 'underline' }}>PDF файл</a>
+                        ) : '—'}
+                      </td>
+                      <td style={{ padding: '0.5rem' }}>{m.isActive ? '✓' : '✕'}</td>
+                      <td style={{ padding: '0.5rem' }}>
+                        <div style={{ display: 'flex', gap: '0.25rem' }}>
+                          <button className="btn btn-outline" style={editBtn} onClick={() => openMaterialEdit(m)}>✎</button>
+                          <button className="btn btn-outline" style={{ ...editBtn, color: 'var(--error-color)' }} onClick={() => deleteMaterial(m.id)}>✕</button>
                         </div>
                       </td>
                     </tr>

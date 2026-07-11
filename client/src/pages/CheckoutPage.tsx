@@ -58,7 +58,12 @@ function CheckoutPage() {
       });
       sessionStorage.removeItem('checkout');
       showToast(s.checkoutSuccess, 'success');
-      navigate('/purchases');
+      // Smart redirect: mock-exam package → go straight to Mock Exam; book → purchases
+      if (order.itemType === 'package') {
+        navigate('/learn?tab=mock');
+      } else {
+        navigate('/purchases');
+      }
     } catch {
       showToast(s.checkoutError, 'error');
     } finally {

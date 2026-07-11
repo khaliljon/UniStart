@@ -76,6 +76,24 @@ function CscaLandingPage() {
     full: { name: s.pkgFull, for: s.pkgFullFor, subj: s.allSubjects },
   } as const;
 
+  const buyPackage = (pkg: typeof CSCA_PACKAGES[number]) => {
+    const title = packageMeta[pkg.key].name + ' · CSCA';
+    sessionStorage.setItem('checkout', JSON.stringify({
+      itemType: 'package', itemCode: pkg.key,
+      title, subjects: '', amount: pkg.price, currency: '₸',
+    }));
+    navigate('/register');
+  };
+
+  const buyBook = (subj: typeof CSCA_SUBJECTS[number]) => {
+    sessionStorage.setItem('checkout', JSON.stringify({
+      itemType: 'book', itemCode: subj.key,
+      title: `${subjectMeta[subj.key].name} · ${s.bookLabel}`,
+      subjects: '', amount: CSCA_BOOK_PRICE, currency: '₸',
+    }));
+    navigate('/register');
+  };
+
   const statMeta = {
     students: s.statStudents,
     questions: s.statQuestions,
@@ -231,7 +249,7 @@ function CscaLandingPage() {
                 <button
                   className={`csca-btn ${pkg.featured ? 'csca-btn-primary' : 'csca-btn-ghost'}`}
                   style={{ width: '100%', marginTop: 'auto' }}
-                  onClick={goRegister}
+                  onClick={() => buyPackage(pkg)}
                 >{s.buy}</button>
               </div>
             ))}
@@ -264,7 +282,7 @@ function CscaLandingPage() {
                 <div className="csca-price-amount csca-hanzi" style={{ fontSize: '1.4rem', margin: '0 0 0.6rem' }}>
                   {CSCA_BOOK_PRICE.toLocaleString('ru-RU')} <span className="csca-price-cur">{s.currency}</span>
                 </div>
-                <button className="csca-btn csca-btn-ghost csca-btn-sm" style={{ width: '100%' }} onClick={goRegister}>{s.addToCart}</button>
+                <button className="csca-btn csca-btn-ghost csca-btn-sm" style={{ width: '100%' }} onClick={() => buyBook(subj)}>{s.addToCart}</button>
               </div>
             ))}
           </Reveal>

@@ -29,6 +29,7 @@ const AdminQuestionImportPage = lazy(() => import('./pages/AdminQuestionImportPa
 const AdminContentPage = lazy(() => import('./pages/AdminContentPage'))
 const AdminTrashPage = lazy(() => import('./pages/AdminTrashPage'))
 const AdminProfilePage = lazy(() => import('./pages/AdminProfilePage'))
+const AdminMocksPage = lazy(() => import('./pages/AdminMocksPage'))
 const LandingPage = lazy(() => import('./pages/CscaLandingPage'))
 const PrivacyPage = lazy(() => import('./pages/PrivacyPage'))
 const TermsPage = lazy(() => import('./pages/TermsPage'))
@@ -88,6 +89,7 @@ function AdminRoutes() {
     <Route path="/" element={<AdminLayout />}>
       <Route index element={<AdminStatsPage />} />
       <Route path="questions" element={<AdminQuestionsPage />} />
+      <Route path="mocks" element={<AdminMocksPage />} />
       <Route path="content" element={<AdminContentPage />} />
       <Route path="news" element={<AdminNewsPage />} />
       <Route path="support" element={<AdminSupportPage />} />

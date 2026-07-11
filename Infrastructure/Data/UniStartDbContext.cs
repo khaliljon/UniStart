@@ -67,6 +67,9 @@ public class UniStartDbContext : DbContext
     // User order history (mock packages / books / courses)
     public DbSet<Purchase> Purchases => Set<Purchase>();
 
+    // PDF study materials (textbooks per subject)
+    public DbSet<StudyMaterial> StudyMaterials => Set<StudyMaterial>();
+
     // Telegram support bot tickets
     public DbSet<SupportTicket> SupportTickets => Set<SupportTicket>();
     public DbSet<SupportMessage> SupportMessages => Set<SupportMessage>();
@@ -894,6 +897,20 @@ public class UniStartDbContext : DbContext
                   .HasForeignKey(e => e.TicketId)
                   .OnDelete(DeleteBehavior.Cascade);
             entity.HasIndex(e => e.GroupMessageId).HasDatabaseName("IX_SupportMessages_GroupMessageId");
+        });
+
+        // StudyMaterial configuration
+        modelBuilder.Entity<StudyMaterial>(entity =>
+        {
+            entity.ToTable("StudyMaterials");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.SubjectKey).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Description).HasMaxLength(1000);
+            entity.Property(e => e.PdfUrl).HasMaxLength(2000);
+            entity.Property(e => e.Price).HasColumnType("decimal(10,2)");
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.HasIndex(e => e.SubjectKey);
         });
 
         // CSCA-only platform: exam types are managed at runtime (seeder / admin),

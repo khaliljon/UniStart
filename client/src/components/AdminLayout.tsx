@@ -12,7 +12,7 @@ function AdminLayout() {
   const navigate = useNavigate();
   const { user } = useAppSelector((state) => state.auth);
   const { theme, toggleTheme } = useTheme();
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const [moreOpen, setMoreOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const moreRef = useRef<HTMLLIElement>(null);
@@ -71,6 +71,11 @@ function AdminLayout() {
                 </NavLink>
               </li>
               <li>
+                <NavLink to="/mocks" onClick={() => setMenuOpen(false)}>
+                  {locale === 'en' ? 'Mock Exams' : locale === 'kz' ? 'Сынақтар' : 'Пробники'}
+                </NavLink>
+              </li>
+              <li>
                 <NavLink to="/content" onClick={() => setMenuOpen(false)}>
                   {t.admin.nav.content}
                 </NavLink>
@@ -102,6 +107,7 @@ function AdminLayout() {
                     {[
                       { label: t.admin.nav.news, path: '/news' },
                       { label: t.admin.nav.support, path: '/support' },
+                      { label: t.admin.nav.mocks, path: '/mocks' },
                       { label: t.admin.nav.import, path: '/import' },
                       { label: t.admin.nav.audit, path: '/audit' },
                       { label: t.admin.nav.health, path: '/health' },
