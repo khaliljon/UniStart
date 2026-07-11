@@ -72,8 +72,8 @@ public class User : ISoftDeletable, IAuditable
 
 public enum UserRole
 {
-    Student,
-    Admin
+    Student = 0,
+    Admin = 2
 }
 
 public enum SubscriptionTier
