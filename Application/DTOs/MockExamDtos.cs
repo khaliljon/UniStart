@@ -15,7 +15,9 @@ public record MockExamListDto(
     int SectionCount,
     int TotalQuestions,
     int? BestScore,      // User's best score (null if never attempted)
-    int AttemptCount      // How many times user attempted
+    int AttemptCount,     // How many times user attempted
+    bool Purchased,       // User bought this specific mock (piecewise model)
+    bool FreeAvailable    // User still has their one free mock (same for every row)
 );
 
 /// <summary>Full mock exam detail with sections</summary>

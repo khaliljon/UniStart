@@ -43,6 +43,17 @@ public class MockExamService : IMockExamService
             .Where(a => a.UserId == userId)
             .ToListAsync();
 
+        // Piecewise access: which mocks this user has bought, and whether the
+        // one-time free mock is still available.
+        var purchasedMockCodes = await _context.Purchases
+            .Where(p => p.UserId == userId && p.Status == "Paid" && p.ItemType == "mock")
+            .Select(p => p.ItemCode)
+            .ToListAsync();
+        var purchasedIds = purchasedMockCodes.ToHashSet();
+
+        var user = await _context.Users.FindAsync(userId);
+        var freeAvailable = user != null && !user.FreeMockUsed;
+
         var result = new List<MockExamListDto>();
         foreach (var exam in exams)
         {
@@ -55,6 +66,8 @@ public class MockExamService : IMockExamService
                 .OrderByDescending(s => s)
                 .FirstOrDefault();
 
+            var purchased = purchasedIds.Contains(exam.Id.ToString());
+
             result.Add(new MockExamListDto(
                 exam.Id,
                 exam.ExamTypeCode,
@@ -65,7 +78,9 @@ public class MockExamService : IMockExamService
                 exam.Sections.Count,
                 questionCount,
                 bestScore,
-                examAttempts.Count
+                examAttempts.Count,
+                purchased,
+                freeAvailable
             ));
         }
         return result;
@@ -107,6 +122,27 @@ public class MockExamService : IMockExamService
             .Include(m => m.Sections)
             .FirstOrDefaultAsync(m => m.Id == mockExamId && m.IsActive)
             ?? throw new ArgumentException("Mock exam not found or inactive");
+
+        // ── Piecewise access gate ──────────────────────────────
+        // A mock is startable if the user bought it, has already unlocked it
+        // (a prior attempt exists), or still has their one-time free mock.
+        var hasPurchased = await _context.Purchases.AnyAsync(p =>
+            p.UserId == userId && p.Status == "Paid" &&
+            p.ItemType == "mock" && p.ItemCode == mockExamId.ToString());
+        var hasPriorAttempt = await _context.MockExamAttempts
+            .AnyAsync(a => a.UserId == userId && a.MockExamId == mockExamId);
+        if (!hasPurchased && !hasPriorAttempt)
+        {
+            var accessUser = await _context.Users.FindAsync(userId);
+            if (accessUser != null && !accessUser.FreeMockUsed)
+            {
+                accessUser.FreeMockUsed = true; // consume the one free mock of the user's choice
+            }
+            else
+            {
+                throw new InvalidOperationException("MOCK_LOCKED");
+            }
+        }
 
         // Abandon any in-progress attempts for this mock exam
         var inProgress = await _context.MockExamAttempts
@@ -371,13 +407,7 @@ public class MockExamService : IMockExamService
         var sections = GetEffectiveSections(attempt);
         await CompleteExamInternalAsync(attempt);
 
-        // Mark free mock as used for non-Pro users (FIX-37)
-        var user = await _context.Users.FindAsync(userId);
-        if (user != null && !user.IsPro && !user.FreeMockUsed)
-        {
-            user.FreeMockUsed = true;
-        }
-
+        // Free-mock consumption is handled at start time (piecewise access gate).
         await _context.SaveChangesAsync();
 
         return new MockExamAttemptDto(

@@ -84,7 +84,7 @@ function ProfileDropdown() {
           <button className="profile-dropdown-item" onClick={() => goTo('/profile')}>
             {t.nav.myProfile}
           </button>
-          <button className="profile-dropdown-item" onClick={() => goTo('/purchases')}>
+          <button className="profile-dropdown-item" onClick={() => goTo('/cart')}>
             {t.nav.myCart}
           </button>
           <button className="profile-dropdown-item" onClick={() => goTo('/purchases')}>

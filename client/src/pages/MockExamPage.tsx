@@ -1,8 +1,10 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { mockExamService } from '../services/mockExamService';
 import { subscriptionService } from '../services/subscriptionService';
+import { pricingService } from '../services/pricingService';
+import { cartService } from '../services/cartService';
 import { useAppSelector } from '../hooks/useAppSelector';
-import { ProGate } from '../components/ProGate';
 import { MockResultUpsellModal } from '../components/MockResultUpsellModal';
 import type {
   SubscriptionStatus,
@@ -30,7 +32,9 @@ function MockExamPage() {
   const isPro = user?.subscriptionTier === 'Pro' || user?.role === 'Admin';
   const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus | null>(null);
   const [showUpsell, setShowUpsell] = useState(false);
-  const canAccessMock = isPro || subscriptionStatus?.freeMockAvailable;
+  const navigate = useNavigate();
+  const [mockPrice, setMockPrice] = useState<number>(0);
+  const [currency, setCurrency] = useState<string>('₸');
 
   // List phase
   const [mockExams, setMockExams] = useState<MockExamListItem[]>([]);
@@ -77,6 +81,13 @@ function MockExamPage() {
 
   useEffect(() => {
     subscriptionService.getStatus().then(setSubscriptionStatus).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    pricingService.get().then((p) => {
+      setMockPrice(p.mockPrice);
+      setCurrency(p.currency);
+    }).catch(() => {});
   }, []);
 
   // ── Timer logic ───────────────────────────────────────
@@ -157,8 +168,29 @@ function MockExamPage() {
       setCurrentQIndex(0);
       setTimeLeft(att.totalTimeMinutes * 60);
       setPhase('instructions');
-    } catch (e) { console.error(e); }
-    setLoading(false);
+    } catch (e) {
+      const status = (e as { response?: { status?: number } })?.response?.status;
+      if (status === 403) {
+        // Not purchased and free mock already used — send to cart to buy.
+        addMockToCart(examDetail.id, examDetail.title);
+        return;
+      }
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ── Add a mock to the cart (piecewise purchase) ───────
+  const addMockToCart = (mockId: number, title: string) => {
+    cartService.add({
+      itemType: 'mock',
+      itemCode: String(mockId),
+      title,
+      amount: mockPrice,
+      currency,
+    });
+    navigate('/cart');
   };
 
   // ── Begin section (after instructions) ────────────────
@@ -250,14 +282,23 @@ function MockExamPage() {
     if (loading) return <div className="loading"><div className="spinner" /></div>;
 
     return (
-      <ProGate hasAccess={canAccessMock ?? false} featureName="Mock Exams">
       <div style={{ maxWidth: 900, margin: '0 auto' }}>
         <h1 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.5rem' }}>
-          Mock Exams
+          Пробные экзамены
         </h1>
-        <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>
-          Take a full-length practice test under real exam conditions with timed sections
+        <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
+          Полноформатный пробник в реальных экзаменационных условиях с таймером по секциям
         </p>
+
+        {/* First mock free banner */}
+        {!isPro && subscriptionStatus?.freeMockAvailable && (
+          <div className="card" style={{ marginBottom: '1.5rem', border: '2px dashed var(--primary-color)', background: 'var(--bg-secondary)' }}>
+            <div style={{ fontWeight: 700, marginBottom: '0.2rem' }}>🎁 Первый пробник — бесплатно</div>
+            <div style={{ color: 'var(--text-secondary)', fontSize: '0.88rem' }}>
+              Выберите любой пробник ниже и пройдите его бесплатно. Остальные — {mockPrice.toLocaleString('ru-RU')} {currency} за штуку.
+            </div>
+          </div>
+        )}
 
         {/* Resume banner — active in-progress attempt */}
         {activeAttempt && (
@@ -287,31 +328,50 @@ function MockExamPage() {
 
         {/* Exam cards */}
         <div style={{ display: 'grid', gap: '1rem', marginBottom: '2rem' }}>
-          {mockExams.map(exam => (
-            <div key={exam.id} className="card" style={{ cursor: 'pointer', transition: 'transform 0.15s' }}
-                 onClick={() => handleSelectExam(exam.id)}
-                 onMouseEnter={e => (e.currentTarget.style.transform = 'translateY(-2px)')}
+          {mockExams.map(exam => {
+            const unlocked = isPro || exam.purchased || exam.freeAvailable || exam.attemptCount > 0;
+            const isFree = !isPro && !exam.purchased && exam.attemptCount === 0 && exam.freeAvailable;
+            return (
+            <div key={exam.id} className="card" style={{ cursor: unlocked ? 'pointer' : 'default', transition: 'transform 0.15s', opacity: unlocked ? 1 : 0.92 }}
+                 onClick={() => { if (unlocked) handleSelectExam(exam.id); }}
+                 onMouseEnter={e => { if (unlocked) e.currentTarget.style.transform = 'translateY(-2px)'; }}
                  onMouseLeave={e => (e.currentTarget.style.transform = 'none')}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', flexWrap: 'wrap' }}>
                 <div style={{ flex: 1, minWidth: 200 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
                     <span style={{ background: examBadgeColor(exam.examTypeCode), color: '#fff', padding: '2px 10px', borderRadius: 12, fontSize: '0.75rem', fontWeight: 600 }}>
                       {exam.examTypeCode}
                     </span>
                     <h3 style={{ margin: 0, fontSize: '1.1rem' }}>{exam.title}</h3>
+                    {exam.purchased && (
+                      <span style={{ background: 'rgba(16,185,129,0.12)', color: '#10b981', padding: '2px 8px', borderRadius: 10, fontSize: '0.7rem', fontWeight: 700 }}>Куплено</span>
+                    )}
+                    {isFree && (
+                      <span style={{ background: 'rgba(200,16,46,0.1)', color: 'var(--csca-red, #C8102E)', padding: '2px 8px', borderRadius: 10, fontSize: '0.7rem', fontWeight: 700 }}>Бесплатно</span>
+                    )}
+                    {!unlocked && (
+                      <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>🔒</span>
+                    )}
                   </div>
                   <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: '0.25rem 0' }}>{exam.description}</p>
                 </div>
                 <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                  <Stat label="Questions" value={exam.totalQuestions} />
-                  <Stat label="Duration" value={`${exam.totalTimeMinutes}m`} />
-                  <Stat label="Sections" value={exam.sectionCount} />
-                  {exam.bestScore !== null && <Stat label="Best" value={`${exam.bestScore}%`} />}
-                  {exam.attemptCount > 0 && <Stat label="Attempts" value={exam.attemptCount} />}
+                  <Stat label="Вопросов" value={exam.totalQuestions} />
+                  <Stat label="Время" value={`${exam.totalTimeMinutes}м`} />
+                  <Stat label="Секций" value={exam.sectionCount} />
+                  {exam.bestScore !== null && <Stat label="Лучший" value={`${exam.bestScore}%`} />}
+                  {exam.attemptCount > 0 && <Stat label="Попыток" value={exam.attemptCount} />}
+                  {!unlocked && (
+                    <button className="btn btn-primary" style={{ whiteSpace: 'nowrap' }}
+                            onClick={(e) => { e.stopPropagation(); addMockToCart(exam.id, exam.title); }}>
+                      Купить · {mockPrice.toLocaleString('ru-RU')} {currency}
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* History */}
@@ -371,7 +431,6 @@ function MockExamPage() {
           </>
         )}
       </div>
-      </ProGate>
     );
   }
 

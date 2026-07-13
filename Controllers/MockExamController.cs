@@ -60,6 +60,10 @@ public class MockExamController : ControllerBase
             var attempt = await _mockExamService.StartMockExamAsync(userId, id, request?.SelectedSectionIds);
             return Ok(attempt);
         }
+        catch (InvalidOperationException ex) when (ex.Message == "MOCK_LOCKED")
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { error = "MOCK_LOCKED" });
+        }
         catch (ArgumentException ex)
         {
             return BadRequest(new { error = ex.Message });

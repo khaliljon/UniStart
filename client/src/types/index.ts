@@ -632,6 +632,8 @@ export interface MockExamListItem {
   totalQuestions: number;
   bestScore: number | null;
   attemptCount: number;
+  purchased: boolean;
+  freeAvailable: boolean;
 }
 
 export interface MockExamDetail {

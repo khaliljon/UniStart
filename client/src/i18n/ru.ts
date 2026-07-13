@@ -584,7 +584,7 @@ export const ru: Translations = {
       health: 'Система', activity: 'Активность', import: 'Импорт',
       questionImport: 'Загрузка вопросов', trash: 'Корзина', more: 'Ещё', applications: 'Заявки',
       schools: 'Школы', advisorConfig: 'Советник', backups: 'Резервные копии',
-      legal: 'Юр. документы', news: 'Новости', support: 'Поддержка', mocks: 'Пробные экзамены',
+      legal: 'Юр. документы', news: 'Новости', support: 'Поддержка', mocks: 'Пробные экзамены', sales: 'Продажи',
     },
     legal: {
       title: 'Юридические документы', docTitle: 'Название документа', lastUpdated: 'Метка «Обновлено»',

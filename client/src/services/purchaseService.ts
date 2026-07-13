@@ -21,6 +21,19 @@ export interface CheckoutRequest {
   currency?: string;
 }
 
+export interface AdminPurchase extends Purchase {
+  userId: number;
+  userName: string;
+  userEmail: string;
+}
+
+export interface AdminSales {
+  count: number;
+  totalRevenue: number;
+  currency: string;
+  items: AdminPurchase[];
+}
+
 export const purchaseService = {
   async list(): Promise<Purchase[]> {
     const res = await api.get<Purchase[]>('/purchases');
@@ -29,6 +42,12 @@ export const purchaseService = {
 
   async checkout(dto: CheckoutRequest): Promise<Purchase> {
     const res = await api.post<Purchase>('/purchases/checkout', dto);
+    return res.data;
+  },
+
+  /** Admin: all purchases with buyer info and revenue totals. */
+  async adminList(params?: { status?: string; itemType?: string }): Promise<AdminSales> {
+    const res = await api.get<AdminSales>('/purchases/admin/all', { params });
     return res.data;
   },
 };

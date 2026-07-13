@@ -156,6 +156,14 @@ export interface CscaStrings {
   purchasesEmpty: string;
   purchasesBrowse: string;
   currency: string;
+  // cart (internal)
+  cartTitle: string;
+  cartEmpty: string;
+  cartRemove: string;
+  cartTotal: string;
+  cartCheckout: string;
+  cartBrowse: string;
+  addedToCart: string;
 }
 
 const ru: CscaStrings = {
@@ -232,6 +240,13 @@ const ru: CscaStrings = {
   purchasesEmpty: 'У вас пока нет покупок.',
   purchasesBrowse: 'Выбрать пакет',
   currency: '₸',
+  cartTitle: 'Моя корзина',
+  cartEmpty: 'Корзина пуста. Выберите пробник или учебник.',
+  cartRemove: 'Удалить',
+  cartTotal: 'Итого',
+  cartCheckout: 'Оформить заказ',
+  cartBrowse: 'В каталог',
+  addedToCart: 'Добавлено в корзину',
 };
 
 const en: CscaStrings = {
@@ -308,6 +323,13 @@ const en: CscaStrings = {
   purchasesEmpty: 'You have no purchases yet.',
   purchasesBrowse: 'Choose a package',
   currency: '₸',
+  cartTitle: 'My cart',
+  cartEmpty: 'Your cart is empty. Pick a mock or a textbook.',
+  cartRemove: 'Remove',
+  cartTotal: 'Total',
+  cartCheckout: 'Checkout',
+  cartBrowse: 'Browse catalog',
+  addedToCart: 'Added to cart',
 };
 
 const kz: CscaStrings = {
@@ -384,6 +406,13 @@ const kz: CscaStrings = {
   purchasesEmpty: 'Сізде әзірше сатып алулар жоқ.',
   purchasesBrowse: 'Пакет таңдау',
   currency: '₸',
+  cartTitle: 'Менің себетім',
+  cartEmpty: 'Себет бос. Сынақ немесе оқулық таңдаңыз.',
+  cartRemove: 'Жою',
+  cartTotal: 'Барлығы',
+  cartCheckout: 'Тапсырыс беру',
+  cartBrowse: 'Каталогқа',
+  addedToCart: 'Себетке қосылды',
 };
 
 export const cscaStrings: Record<Locale, CscaStrings> = { ru, en, kz };

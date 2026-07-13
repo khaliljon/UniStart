@@ -273,7 +273,7 @@ function CscaLandingPage() {
                 <div className="csca-card csca-book" key={mat.id}>
                   <div className="csca-book-cover" style={{ background: subj.cover }}>
                     <span className="csca-book-hanzi">{subj.hanzi}</span>
-                    <span className="csca-book-label csca-hanzi">CSCA \u00b7 \u5907\u8003\u6559\u6750</span>
+                    <span className="csca-book-label csca-hanzi">CSCA · 备考教材</span>
                   </div>
                   <div className="csca-subject-name">{mat.title || name}</div>
                   <div className="csca-subject-tag" style={{ marginBottom: '0.75rem' }}>{s.bookLabel}</div>

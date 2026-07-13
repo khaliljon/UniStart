@@ -30,6 +30,7 @@ const AdminContentPage = lazy(() => import('./pages/AdminContentPage'))
 const AdminTrashPage = lazy(() => import('./pages/AdminTrashPage'))
 const AdminProfilePage = lazy(() => import('./pages/AdminProfilePage'))
 const AdminMocksPage = lazy(() => import('./pages/AdminMocksPage'))
+const AdminSalesPage = lazy(() => import('./pages/AdminSalesPage'))
 const LandingPage = lazy(() => import('./pages/CscaLandingPage'))
 const PrivacyPage = lazy(() => import('./pages/PrivacyPage'))
 const TermsPage = lazy(() => import('./pages/TermsPage'))
@@ -44,6 +45,7 @@ const ContactsPage = lazy(() => import('./pages/ContactsPage'))
 const CscaNewsPage = lazy(() => import('./pages/CscaNewsPage'))
 const CheckoutPage = lazy(() => import('./pages/CheckoutPage'))
 const PurchasesPage = lazy(() => import('./pages/PurchasesPage'))
+const CartPage = lazy(() => import('./pages/CartPage'))
 const AdminNewsPage = lazy(() => import('./pages/AdminNewsPage'))
 const AdminSupportPage = lazy(() => import('./pages/AdminSupportPage'))
 
@@ -62,6 +64,7 @@ function StudentRoutes() {
       <Route path="profile" element={<ProfilePage />} />
       <Route path="profile/notifications" element={<NotificationSettingsPage />} />
       <Route path="purchases" element={<PurchasesPage />} />
+      <Route path="cart" element={<CartPage />} />
       <Route path="checkout" element={<CheckoutPage />} />
       <Route path="diagnostic" element={<DiagnosticTestPage />} />
       {/* Legacy redirects */}
@@ -90,6 +93,7 @@ function AdminRoutes() {
       <Route index element={<AdminStatsPage />} />
       <Route path="questions" element={<AdminQuestionsPage />} />
       <Route path="mocks" element={<AdminMocksPage />} />
+      <Route path="sales" element={<AdminSalesPage />} />
       <Route path="content" element={<AdminContentPage />} />
       <Route path="news" element={<AdminNewsPage />} />
       <Route path="support" element={<AdminSupportPage />} />

@@ -74,6 +74,9 @@ public class UniStartDbContext : DbContext
     public DbSet<SupportTicket> SupportTickets => Set<SupportTicket>();
     public DbSet<SupportMessage> SupportMessages => Set<SupportMessage>();
 
+    // Admin-editable key/value settings (pricing, etc.)
+    public DbSet<AppSetting> AppSettings => Set<AppSetting>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -911,6 +914,16 @@ public class UniStartDbContext : DbContext
             entity.Property(e => e.Price).HasColumnType("decimal(10,2)");
             entity.Property(e => e.IsActive).HasDefaultValue(true);
             entity.HasIndex(e => e.SubjectKey);
+        });
+
+        // AppSetting configuration (key/value)
+        modelBuilder.Entity<AppSetting>(entity =>
+        {
+            entity.ToTable("AppSettings");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Key).IsRequired().HasMaxLength(60);
+            entity.Property(e => e.Value).IsRequired().HasMaxLength(500);
+            entity.HasIndex(e => e.Key).IsUnique();
         });
 
         // CSCA-only platform: exam types are managed at runtime (seeder / admin),

@@ -59,4 +59,42 @@ public class PurchaseController : ApiControllerBase
         await _db.SaveChangesAsync();
         return Ok(ToDto(purchase));
     }
+
+    /// <summary>
+    /// Admin sales monitor: all purchases with buyer info and revenue totals.
+    /// Optional filters by status and item type.
+    /// </summary>
+    [HttpGet("admin/all")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> AdminList([FromQuery] string? status, [FromQuery] string? itemType)
+    {
+        var query = _db.Purchases.Include(p => p.User).AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(status))
+            query = query.Where(p => p.Status == status);
+        if (!string.IsNullOrWhiteSpace(itemType))
+            query = query.Where(p => p.ItemType == itemType);
+
+        var rows = await query
+            .OrderByDescending(p => p.PurchasedAt)
+            .Select(p => new AdminPurchaseDto(
+                p.Id,
+                p.UserId,
+                p.User.Name,
+                p.User.Email,
+                p.ItemType,
+                p.ItemCode,
+                p.Title,
+                p.Subjects,
+                p.Amount,
+                p.Currency,
+                p.Status,
+                p.PurchasedAt))
+            .ToListAsync();
+
+        var currency = rows.FirstOrDefault()?.Currency ?? "KZT";
+        var revenue = rows.Where(r => r.Status == "Paid").Sum(r => r.Amount);
+
+        return Ok(new AdminSalesDto(rows.Count, revenue, currency, rows));
+    }
 }
