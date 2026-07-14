@@ -176,6 +176,21 @@ public class EntitlementService : IEntitlementService
                     pkg.Price,
                     chosen.Select(id => (id, pkg.RunsEach)).ToList()));
             }
+            else if (line.Kind == "book")
+            {
+                var material = await _db.StudyMaterials
+                    .FirstOrDefaultAsync(m => m.IsActive && m.SubjectKey == line.BookSubjectKey)
+                    ?? throw new ArgumentException("Invalid book");
+
+                total += material.Price;
+                resolved.Add(new ResolvedLine(
+                    "book",
+                    material.SubjectKey,
+                    material.Title,
+                    material.SubjectKey,
+                    material.Price,
+                    new List<(int, int)>())); // no runs; grants access via the Purchase record
+            }
             else
             {
                 throw new ArgumentException("Unknown line kind");

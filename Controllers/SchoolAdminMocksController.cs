@@ -37,7 +37,14 @@ public class SchoolAdminMocksController : ControllerBase
         var sections = await _db.ExamSections
             .Where(s => s.ExamTypeCode == code)
             .AsNoTracking()
-            .Select(s => new { id = s.Id, name = s.Name })
+            .Select(s => new
+            {
+                id = s.Id,
+                name = s.Name,
+                // How many questions exist in the bank for this section (drives the
+                // admin "enough questions?" indicator).
+                availableQuestions = _db.Questions.Count(q => q.Topic.SectionId == s.Id),
+            })
             .ToListAsync();
         return Ok(sections);
     }

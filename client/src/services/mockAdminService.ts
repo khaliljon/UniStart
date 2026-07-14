@@ -57,6 +57,7 @@ export interface ExamTypeOption {
 export interface ExamSectionOption {
   id: number;
   name: string;
+  availableQuestions?: number;
 }
 
 const mockAdminService = {

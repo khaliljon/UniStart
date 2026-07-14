@@ -34,13 +34,14 @@ export interface MockCatalog {
   packages: MockPackage[];
 }
 
-/** A single checkout line (run purchase or package). */
+/** A single checkout line (run purchase, package, or book). */
 export interface CheckoutLine {
-  kind: 'mock' | 'package';
+  kind: 'mock' | 'package' | 'book';
   mockExamId?: number;
   runs?: number;
   packageKey?: string;
   selectedMockIds?: number[];
+  bookSubjectKey?: string;
 }
 
 export interface CheckoutQuote {

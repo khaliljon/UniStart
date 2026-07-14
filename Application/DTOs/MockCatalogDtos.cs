@@ -37,7 +37,7 @@ public record MockCatalogDto(
 /// <summary>One line in a checkout: either a run purchase or a package.</summary>
 public class CheckoutLineDto
 {
-    /// <summary>"mock" | "package".</summary>
+    /// <summary>"mock" | "package" | "book".</summary>
     public string Kind { get; set; } = string.Empty;
 
     // mock line
@@ -47,6 +47,9 @@ public class CheckoutLineDto
     // package line
     public string? PackageKey { get; set; }
     public List<int>? SelectedMockIds { get; set; }
+
+    // book line
+    public string? BookSubjectKey { get; set; }
 }
 
 /// <summary>A run-based checkout request (cart of lines).</summary>

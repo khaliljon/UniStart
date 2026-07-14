@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../i18n';
 import { cscaStrings } from '../i18n/csca';
 import { cartService, type CartItem } from '../services/cartService';
-import { purchaseService } from '../services/purchaseService';
 import { type CheckoutLine } from '../services/mockCatalogService';
 import { paymentsService } from '../services/paymentsService';
 
@@ -32,36 +31,15 @@ function CartPage() {
     setProcessing(true);
     setError(null);
     try {
-      // Run-based mocks & packages go through Polar (server prices them).
-      const lines: CheckoutLine[] = items
-        .filter((i) => i.itemType === 'mock' || i.itemType === 'package')
-        .map((i) =>
-          i.itemType === 'mock'
-            ? { kind: 'mock', mockExamId: Number(i.itemCode), runs: i.runs ?? 1 }
-            : { kind: 'package', packageKey: i.itemCode, selectedMockIds: i.selectedMockIds ?? [] },
-        );
+      // All paid items (mocks, packages, books) go through Polar. Server prices them.
+      const lines: CheckoutLine[] = items.map((i) => {
+        if (i.itemType === 'mock') return { kind: 'mock', mockExamId: Number(i.itemCode), runs: i.runs ?? 1 };
+        if (i.itemType === 'package') return { kind: 'package', packageKey: i.itemCode, selectedMockIds: i.selectedMockIds ?? [] };
+        return { kind: 'book', bookSubjectKey: i.itemCode };
+      });
 
-      if (lines.length > 0) {
-        // Redirect to Polar hosted checkout; runs are granted by the webhook after payment.
-        const { url } = await paymentsService.createCheckout(lines);
-        window.location.href = url;
-        return;
-      }
-
-      // Books-only cart still uses the legacy stub purchase endpoint.
-      for (const item of items.filter((i) => i.itemType === 'book')) {
-        await purchaseService.checkout({
-          itemType: item.itemType,
-          itemCode: item.itemCode,
-          title: item.title,
-          subjects: item.subjects ?? null,
-          amount: item.amount,
-          currency: item.currency,
-        });
-      }
-
-      cartService.clear();
-      navigate('/purchases');
+      const { url } = await paymentsService.createCheckout(lines);
+      window.location.href = url;
     } catch {
       setError(s.checkoutError);
     } finally {

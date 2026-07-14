@@ -220,6 +220,8 @@ public class PolarService : IPolarService
                 parts.Add($"m:{l.MockExamId}:{l.Runs}");
             else if (l.Kind == "package")
                 parts.Add($"p:{l.PackageKey}:{string.Join(",", l.SelectedMockIds ?? new List<int>())}");
+            else if (l.Kind == "book")
+                parts.Add($"b:{l.BookSubjectKey}");
         }
         return string.Join(";", parts);
     }
@@ -242,6 +244,10 @@ public class PolarService : IPolarService
                     ? seg[2].Split(',').Where(x => int.TryParse(x, out _)).Select(int.Parse).ToList()
                     : new List<int>();
                 result.Add(new CheckoutLineDto { Kind = "package", PackageKey = seg[1], SelectedMockIds = ids });
+            }
+            else if (seg[0] == "b" && seg.Length >= 2)
+            {
+                result.Add(new CheckoutLineDto { Kind = "book", BookSubjectKey = seg[1] });
             }
         }
         return result;
