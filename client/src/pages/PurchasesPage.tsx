@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../i18n';
 import { cscaStrings } from '../i18n/csca';
 import { purchaseService, type Purchase } from '../services/purchaseService';
+import { cartService } from '../services/cartService';
 
 function PurchasesPage() {
   const navigate = useNavigate();
@@ -11,6 +12,10 @@ function PurchasesPage() {
   const [items, setItems] = useState<Purchase[] | null>(null);
 
   useEffect(() => {
+    // Returning from a successful Polar payment — clear the cart.
+    if (new URLSearchParams(window.location.search).get('paid') === '1') {
+      cartService.clear();
+    }
     purchaseService.list().then(setItems).catch(() => setItems([]));
   }, []);
 

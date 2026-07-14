@@ -4,7 +4,8 @@ import { useTranslation } from '../i18n';
 import { cscaStrings } from '../i18n/csca';
 import { cartService, type CartItem } from '../services/cartService';
 import { purchaseService } from '../services/purchaseService';
-import { mockCatalogService, type CheckoutLine } from '../services/mockCatalogService';
+import { type CheckoutLine } from '../services/mockCatalogService';
+import { paymentsService } from '../services/paymentsService';
 
 function CartPage() {
   const navigate = useNavigate();
@@ -31,7 +32,7 @@ function CartPage() {
     setProcessing(true);
     setError(null);
     try {
-      // Run-based mocks & packages go through the catalog checkout (server prices them).
+      // Run-based mocks & packages go through Polar (server prices them).
       const lines: CheckoutLine[] = items
         .filter((i) => i.itemType === 'mock' || i.itemType === 'package')
         .map((i) =>
@@ -39,11 +40,15 @@ function CartPage() {
             ? { kind: 'mock', mockExamId: Number(i.itemCode), runs: i.runs ?? 1 }
             : { kind: 'package', packageKey: i.itemCode, selectedMockIds: i.selectedMockIds ?? [] },
         );
+
       if (lines.length > 0) {
-        await mockCatalogService.checkout(lines);
+        // Redirect to Polar hosted checkout; runs are granted by the webhook after payment.
+        const { url } = await paymentsService.createCheckout(lines);
+        window.location.href = url;
+        return;
       }
 
-      // Books still go through the legacy purchase endpoint.
+      // Books-only cart still uses the legacy stub purchase endpoint.
       for (const item of items.filter((i) => i.itemType === 'book')) {
         await purchaseService.checkout({
           itemType: item.itemType,

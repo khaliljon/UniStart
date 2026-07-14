@@ -43,13 +43,11 @@ public class MockExamService : IMockExamService
             .Where(a => a.UserId == userId)
             .ToListAsync();
 
-        // Piecewise access: which mocks this user has bought, and whether the
-        // one-time free mock is still available.
-        var purchasedMockCodes = await _context.Purchases
-            .Where(p => p.UserId == userId && p.Status == "Paid" && p.ItemType == "mock")
-            .Select(p => p.ItemCode)
-            .ToListAsync();
-        var purchasedIds = purchasedMockCodes.ToHashSet();
+        // Run-based access: paid runs left per template, and whether the
+        // one-time free run is still available.
+        var runsByMock = await _context.UserMockRuns
+            .Where(r => r.UserId == userId)
+            .ToDictionaryAsync(r => r.MockExamId, r => r.RunsRemaining);
 
         var user = await _context.Users.FindAsync(userId);
         var freeAvailable = user != null && !user.FreeMockUsed;
@@ -66,8 +64,6 @@ public class MockExamService : IMockExamService
                 .OrderByDescending(s => s)
                 .FirstOrDefault();
 
-            var purchased = purchasedIds.Contains(exam.Id.ToString());
-
             result.Add(new MockExamListDto(
                 exam.Id,
                 exam.ExamTypeCode,
@@ -79,7 +75,7 @@ public class MockExamService : IMockExamService
                 questionCount,
                 bestScore,
                 examAttempts.Count,
-                purchased,
+                runsByMock.TryGetValue(exam.Id, out var rr) ? rr : 0,
                 freeAvailable
             ));
         }
