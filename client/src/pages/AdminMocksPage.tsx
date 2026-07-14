@@ -255,21 +255,11 @@ function AdminMocksPage() {
       {!showForm && (
         <div className="card" style={{ padding: '1.25rem', marginBottom: '1.5rem', display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', gap: '1rem' }}>
           <div style={{ flex: '1 1 100%' }}>
-            <h2 style={{ fontSize: '1.1rem', margin: 0 }}>Цены (единые, задаются здесь)</h2>
+            <h2 style={{ fontSize: '1.1rem', margin: 0 }}>Цена учебника</h2>
             <p style={{ margin: '0.25rem 0 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-              Одна цена за пробник и за учебник. Меняется сразу на сайте и в кабинете.
+              Цены на запуски пробников и пакеты — во вкладке «Цены».
             </p>
           </div>
-          <label style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', fontSize: '0.85rem' }}>
-            Цена за 1 пробник
-            <input
-              type="number"
-              min={0}
-              value={mockPrice}
-              onChange={(e) => setMockPrice(Number(e.target.value))}
-              style={{ padding: '0.5rem', border: '1px solid var(--border-color)', borderRadius: '6px', width: '140px' }}
-            />
-          </label>
           <label style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', fontSize: '0.85rem' }}>
             Цена за учебник
             <input
@@ -291,7 +281,7 @@ function AdminMocksPage() {
             />
           </label>
           <button className="btn btn-primary" onClick={savePricing} disabled={savingPrice}>
-            {savingPrice ? 'Сохранение…' : 'Сохранить цены'}
+            {savingPrice ? 'Сохранение…' : 'Сохранить'}
           </button>
         </div>
       )}

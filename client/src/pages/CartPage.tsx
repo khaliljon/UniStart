@@ -4,6 +4,7 @@ import { useTranslation } from '../i18n';
 import { cscaStrings } from '../i18n/csca';
 import { cartService, type CartItem } from '../services/cartService';
 import { purchaseService } from '../services/purchaseService';
+import { mockCatalogService, type CheckoutLine } from '../services/mockCatalogService';
 
 function CartPage() {
   const navigate = useNavigate();
@@ -30,7 +31,20 @@ function CartPage() {
     setProcessing(true);
     setError(null);
     try {
-      for (const item of items) {
+      // Run-based mocks & packages go through the catalog checkout (server prices them).
+      const lines: CheckoutLine[] = items
+        .filter((i) => i.itemType === 'mock' || i.itemType === 'package')
+        .map((i) =>
+          i.itemType === 'mock'
+            ? { kind: 'mock', mockExamId: Number(i.itemCode), runs: i.runs ?? 1 }
+            : { kind: 'package', packageKey: i.itemCode, selectedMockIds: i.selectedMockIds ?? [] },
+        );
+      if (lines.length > 0) {
+        await mockCatalogService.checkout(lines);
+      }
+
+      // Books still go through the legacy purchase endpoint.
+      for (const item of items.filter((i) => i.itemType === 'book')) {
         await purchaseService.checkout({
           itemType: item.itemType,
           itemCode: item.itemCode,
@@ -40,6 +54,7 @@ function CartPage() {
           currency: item.currency,
         });
       }
+
       cartService.clear();
       navigate('/purchases');
     } catch {

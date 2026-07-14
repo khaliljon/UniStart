@@ -123,20 +123,21 @@ public class MockExamService : IMockExamService
             .FirstOrDefaultAsync(m => m.Id == mockExamId && m.IsActive)
             ?? throw new ArgumentException("Mock exam not found or inactive");
 
-        // ── Piecewise access gate ──────────────────────────────
-        // A mock is startable if the user bought it, has already unlocked it
-        // (a prior attempt exists), or still has their one-time free mock.
-        var hasPurchased = await _context.Purchases.AnyAsync(p =>
-            p.UserId == userId && p.Status == "Paid" &&
-            p.ItemType == "mock" && p.ItemCode == mockExamId.ToString());
-        var hasPriorAttempt = await _context.MockExamAttempts
-            .AnyAsync(a => a.UserId == userId && a.MockExamId == mockExamId);
-        if (!hasPurchased && !hasPriorAttempt)
+        // ── Run-based access gate ──────────────────────────────
+        // A start consumes one paid run for this template; if none, it consumes
+        // the user's one-time free run (any subject). Otherwise it's locked.
+        var runs = await _context.UserMockRuns
+            .FirstOrDefaultAsync(r => r.UserId == userId && r.MockExamId == mockExamId);
+        if (runs != null && runs.RunsRemaining > 0)
+        {
+            runs.RunsRemaining--;
+        }
+        else
         {
             var accessUser = await _context.Users.FindAsync(userId);
             if (accessUser != null && !accessUser.FreeMockUsed)
             {
-                accessUser.FreeMockUsed = true; // consume the one free mock of the user's choice
+                accessUser.FreeMockUsed = true; // consume the one free run
             }
             else
             {
@@ -177,6 +178,15 @@ public class MockExamService : IMockExamService
 
         _context.MockExamAttempts.Add(attempt);
 
+        // Anti-repeat: question ids this user already saw in prior sessions of this
+        // template. We prefer unseen questions and only fall back to seen ones if
+        // the pool is too small (per the agreed algorithm).
+        var seenSet = (await _context.MockExamAnswers
+            .Where(a => a.Attempt.UserId == userId && a.Attempt.MockExamId == mockExamId)
+            .Select(a => a.QuestionId)
+            .Distinct()
+            .ToListAsync()).ToHashSet();
+
         // Pre-populate answers for selected sections only
         var rng = Random.Shared;
         for (int si = 0; si < sections.Count; si++)
@@ -194,6 +204,12 @@ public class MockExamService : IMockExamService
                 int j = rng.Next(i + 1);
                 (questions[i], questions[j]) = (questions[j], questions[i]);
             }
+
+            // Anti-repeat: unseen questions first, then seen ones (both already
+            // shuffled), so a fresh session avoids repeats while the pool allows.
+            questions = questions.Where(q => !seenSet.Contains(q.Id))
+                .Concat(questions.Where(q => seenSet.Contains(q.Id)))
+                .ToList();
 
             // Limit to regulation question count if set
             var count = section.QuestionCount > 0 && section.QuestionCount < questions.Count

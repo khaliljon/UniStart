@@ -108,6 +108,7 @@ function AdminLayout() {
                       { label: t.admin.nav.news, path: '/news' },
                       { label: t.admin.nav.support, path: '/support' },
                       { label: t.admin.nav.mocks, path: '/mocks' },
+                      { label: t.admin.nav.pricing, path: '/pricing' },
                       { label: t.admin.nav.sales, path: '/sales' },
                       { label: t.admin.nav.import, path: '/import' },
                       { label: t.admin.nav.audit, path: '/audit' },

@@ -74,6 +74,7 @@ public static class UniStartStartupExtensions
         services.AddScoped<IAdminService, AdminService>();
         services.AddScoped<ILessonService, LessonService>();
         services.AddScoped<IMockExamService, MockExamService>();
+        services.AddScoped<IEntitlementService, EntitlementService>();
         services.AddScoped<IOnboardingService, OnboardingService>();
         services.AddScoped<IDiagnosticService, DiagnosticService>();
         services.AddScoped<ISubscriptionService, SubscriptionService>();

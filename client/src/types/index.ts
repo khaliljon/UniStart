@@ -632,7 +632,7 @@ export interface MockExamListItem {
   totalQuestions: number;
   bestScore: number | null;
   attemptCount: number;
-  purchased: boolean;
+  runsRemaining: number;
   freeAvailable: boolean;
 }
 

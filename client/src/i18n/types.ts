@@ -620,7 +620,7 @@ export interface Translations {
       tutors: string; audit: string; health: string; activity: string;
       import: string; questionImport: string; trash: string; more: string; applications: string;
       schools: string; advisorConfig: string; backups: string;
-      legal: string; news: string; support: string; mocks: string; sales: string;
+      legal: string; news: string; support: string; mocks: string; sales: string; pricing: string;
     };
     legal: {
       title: string; docTitle: string; lastUpdated: string; content: string; saved: string;

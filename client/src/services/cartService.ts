@@ -10,6 +10,9 @@ export interface CartItem {
   subjects?: string | null;
   amount: number;
   currency: string;
+  /** Run-based fields (mock/package purchases). */
+  runs?: number;
+  selectedMockIds?: number[];
 }
 
 const KEY = 'cart';
@@ -46,10 +49,9 @@ export const cartService = {
     return read().some((i) => i.itemType === itemType && i.itemCode === itemCode);
   },
 
-  /** Add an item; ignores duplicates (same type + code). */
+  /** Add or replace an item (same type + code is replaced, e.g. a different run tier). */
   add(item: CartItem): void {
-    const items = read();
-    if (items.some((i) => i.itemType === item.itemType && i.itemCode === item.itemCode)) return;
+    const items = read().filter((i) => !(i.itemType === item.itemType && i.itemCode === item.itemCode));
     items.push(item);
     write(items);
   },

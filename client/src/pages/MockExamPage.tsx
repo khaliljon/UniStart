@@ -1,13 +1,11 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { mockExamService } from '../services/mockExamService';
-import { subscriptionService } from '../services/subscriptionService';
-import { pricingService } from '../services/pricingService';
+import { mockCatalogService, type MockCatalog, type MockTemplate } from '../services/mockCatalogService';
 import { cartService } from '../services/cartService';
 import { useAppSelector } from '../hooks/useAppSelector';
 import { MockResultUpsellModal } from '../components/MockResultUpsellModal';
 import type {
-  SubscriptionStatus,
   MockExamListItem,
   MockExamDetail,
   MockExamAttempt,
@@ -30,11 +28,11 @@ function MockExamPage() {
   const [phase, setPhase] = useState<Phase>('list');
   const { user } = useAppSelector((state) => state.auth);
   const isPro = user?.subscriptionTier === 'Pro' || user?.role === 'Admin';
-  const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus | null>(null);
   const [showUpsell, setShowUpsell] = useState(false);
   const navigate = useNavigate();
-  const [mockPrice, setMockPrice] = useState<number>(0);
-  const [currency, setCurrency] = useState<string>('₸');
+  const [catalog, setCatalog] = useState<MockCatalog | null>(null);
+  const [pkgPicker, setPkgPicker] = useState<string | null>(null); // package key being configured
+  const [pkgChosen, setPkgChosen] = useState<number[]>([]);
 
   // List phase
   const [mockExams, setMockExams] = useState<MockExamListItem[]>([]);
@@ -80,14 +78,7 @@ function MockExamPage() {
   useEffect(() => { loadExams(); }, [loadExams]);
 
   useEffect(() => {
-    subscriptionService.getStatus().then(setSubscriptionStatus).catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    pricingService.get().then((p) => {
-      setMockPrice(p.mockPrice);
-      setCurrency(p.currency);
-    }).catch(() => {});
+    mockCatalogService.getCatalog().then(setCatalog).catch(() => {});
   }, []);
 
   // ── Timer logic ───────────────────────────────────────
@@ -171,8 +162,8 @@ function MockExamPage() {
     } catch (e) {
       const status = (e as { response?: { status?: number } })?.response?.status;
       if (status === 403) {
-        // Not purchased and free mock already used — send to cart to buy.
-        addMockToCart(examDetail.id, examDetail.title);
+        // No runs left and free run used — bounce to the storefront (list) to buy.
+        setPhase('list');
         return;
       }
       console.error(e);
@@ -181,15 +172,31 @@ function MockExamPage() {
     }
   };
 
-  // ── Add a mock to the cart (piecewise purchase) ───────
-  const addMockToCart = (mockId: number, title: string) => {
+  // ── Add a run tier / package to the cart ──────────────
+  const addTierToCart = (tpl: MockTemplate, runs: number, price: number, cur: string) => {
     cartService.add({
       itemType: 'mock',
-      itemCode: String(mockId),
-      title,
-      amount: mockPrice,
-      currency,
+      itemCode: String(tpl.mockExamId),
+      title: `${tpl.title} · ${runs} зап.`,
+      amount: price,
+      currency: cur,
+      runs,
     });
+    navigate('/cart');
+  };
+
+  const addPackageToCart = (key: string, name: string, price: number, cur: string, selectedMockIds: number[]) => {
+    cartService.add({
+      itemType: 'package',
+      itemCode: key,
+      title: name,
+      amount: price,
+      currency: cur,
+      selectedMockIds,
+      subjects: selectedMockIds.join(','),
+    });
+    setPkgPicker(null);
+    setPkgChosen([]);
     navigate('/cart');
   };
 
@@ -290,12 +297,12 @@ function MockExamPage() {
           Полноформатный пробник в реальных экзаменационных условиях с таймером по секциям
         </p>
 
-        {/* First mock free banner */}
-        {!isPro && subscriptionStatus?.freeMockAvailable && (
+        {/* First run free banner */}
+        {!isPro && catalog?.freeRunAvailable && (
           <div className="card" style={{ marginBottom: '1.5rem', border: '2px dashed var(--primary-color)', background: 'var(--bg-secondary)' }}>
-            <div style={{ fontWeight: 700, marginBottom: '0.2rem' }}>🎁 Первый пробник — бесплатно</div>
+            <div style={{ fontWeight: 700, marginBottom: '0.2rem' }}>🎁 Первый запуск — бесплатно</div>
             <div style={{ color: 'var(--text-secondary)', fontSize: '0.88rem' }}>
-              Выберите любой пробник ниже и пройдите его бесплатно. Остальные — {mockPrice.toLocaleString('ru-RU')} {currency} за штуку.
+              Выберите любой пробник ниже и пройдите один запуск бесплатно. Дальше — покупка запусков поштучно или пакетом.
             </div>
           </div>
         )}
@@ -306,36 +313,34 @@ function MockExamPage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
               <div>
                 <div style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '0.25rem' }}>
-                  Exam in progress
+                  Экзамен в процессе
                 </div>
                 <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-                  {activeAttempt.examTitle} — Section {activeAttempt.currentSectionIndex + 1}/{activeAttempt.totalSections} — started {new Date(activeAttempt.startedAt).toLocaleString()}
+                  {activeAttempt.examTitle} — секция {activeAttempt.currentSectionIndex + 1}/{activeAttempt.totalSections}
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '0.5rem' }}>
                 <button className="btn btn-outline" style={{ fontSize: '0.85rem' }}
                         onClick={async () => { await mockExamService.abandonAttempt(activeAttempt.attemptId); setActiveAttempt(null); await loadExams(); }}>
-                  Abandon
+                  Прервать
                 </button>
                 <button className="btn btn-primary" style={{ fontSize: '0.85rem' }}
                         onClick={() => handleResume(activeAttempt)}>
-                  ▶ Resume Exam
+                  ▶ Продолжить
                 </button>
               </div>
             </div>
           </div>
         )}
 
-        {/* Exam cards */}
+        {/* Exam cards — run-based */}
         <div style={{ display: 'grid', gap: '1rem', marginBottom: '2rem' }}>
           {mockExams.map(exam => {
-            const unlocked = isPro || exam.purchased || exam.freeAvailable || exam.attemptCount > 0;
-            const isFree = !isPro && !exam.purchased && exam.attemptCount === 0 && exam.freeAvailable;
+            const canStart = isPro || exam.runsRemaining > 0 || exam.freeAvailable;
+            const tpl = catalog?.templates.find(t => t.mockExamId === exam.id);
+            const isFreeStart = !isPro && exam.runsRemaining === 0 && exam.freeAvailable;
             return (
-            <div key={exam.id} className="card" style={{ cursor: unlocked ? 'pointer' : 'default', transition: 'transform 0.15s', opacity: unlocked ? 1 : 0.92 }}
-                 onClick={() => { if (unlocked) handleSelectExam(exam.id); }}
-                 onMouseEnter={e => { if (unlocked) e.currentTarget.style.transform = 'translateY(-2px)'; }}
-                 onMouseLeave={e => (e.currentTarget.style.transform = 'none')}>
+            <div key={exam.id} className="card">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', flexWrap: 'wrap' }}>
                 <div style={{ flex: 1, minWidth: 200 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
@@ -343,29 +348,38 @@ function MockExamPage() {
                       {exam.examTypeCode}
                     </span>
                     <h3 style={{ margin: 0, fontSize: '1.1rem' }}>{exam.title}</h3>
-                    {exam.purchased && (
-                      <span style={{ background: 'rgba(16,185,129,0.12)', color: '#10b981', padding: '2px 8px', borderRadius: 10, fontSize: '0.7rem', fontWeight: 700 }}>Куплено</span>
+                    {exam.runsRemaining > 0 && (
+                      <span style={{ background: 'rgba(16,185,129,0.12)', color: '#10b981', padding: '2px 8px', borderRadius: 10, fontSize: '0.7rem', fontWeight: 700 }}>
+                        Запусков: {exam.runsRemaining}
+                      </span>
                     )}
-                    {isFree && (
-                      <span style={{ background: 'rgba(200,16,46,0.1)', color: 'var(--csca-red, #C8102E)', padding: '2px 8px', borderRadius: 10, fontSize: '0.7rem', fontWeight: 700 }}>Бесплатно</span>
-                    )}
-                    {!unlocked && (
-                      <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>🔒</span>
+                    {isFreeStart && (
+                      <span style={{ background: 'rgba(200,16,46,0.1)', color: 'var(--csca-red, #C8102E)', padding: '2px 8px', borderRadius: 10, fontSize: '0.7rem', fontWeight: 700 }}>Бесплатный запуск</span>
                     )}
                   </div>
                   <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: '0.25rem 0' }}>{exam.description}</p>
+                  <div style={{ display: 'flex', gap: '1.25rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
+                    <Stat label="Вопросов" value={exam.totalQuestions} />
+                    <Stat label="Время" value={`${exam.totalTimeMinutes}м`} />
+                    {exam.bestScore !== null && <Stat label="Лучший" value={`${exam.bestScore}%`} />}
+                    {exam.attemptCount > 0 && <Stat label="Сессий" value={exam.attemptCount} />}
+                  </div>
                 </div>
-                <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                  <Stat label="Вопросов" value={exam.totalQuestions} />
-                  <Stat label="Время" value={`${exam.totalTimeMinutes}м`} />
-                  <Stat label="Секций" value={exam.sectionCount} />
-                  {exam.bestScore !== null && <Stat label="Лучший" value={`${exam.bestScore}%`} />}
-                  {exam.attemptCount > 0 && <Stat label="Попыток" value={exam.attemptCount} />}
-                  {!unlocked && (
-                    <button className="btn btn-primary" style={{ whiteSpace: 'nowrap' }}
-                            onClick={(e) => { e.stopPropagation(); addMockToCart(exam.id, exam.title); }}>
-                      Купить · {mockPrice.toLocaleString('ru-RU')} {currency}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'stretch', minWidth: 180 }}>
+                  {canStart && (
+                    <button className="btn btn-primary" onClick={() => handleSelectExam(exam.id)}>
+                      {exam.runsRemaining > 0 ? '▶ Начать (−1 запуск)' : '▶ Начать бесплатно'}
                     </button>
+                  )}
+                  {tpl && tpl.tiers.length > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                      {tpl.tiers.map(tier => (
+                        <button key={tier.id} className="btn btn-outline" style={{ fontSize: '0.8rem', flex: '1 1 auto', whiteSpace: 'nowrap' }}
+                                onClick={() => addTierToCart(tpl, tier.runs, tier.price, tier.currency)}>
+                          {tier.runs} зап. · {tier.price.toLocaleString('ru-RU')} {tier.currency}
+                        </button>
+                      ))}
+                    </div>
                   )}
                 </div>
               </div>
@@ -373,6 +387,64 @@ function MockExamPage() {
             );
           })}
         </div>
+
+        {/* Packages */}
+        {catalog && catalog.packages.length > 0 && (
+          <div style={{ marginBottom: '2rem' }}>
+            <h2 style={{ fontSize: '1.2rem', marginBottom: '0.75rem' }}>Пакеты со скидкой</h2>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+              {catalog.packages.map(pkg => {
+                const picking = pkgPicker === pkg.key;
+                const allSubjects = pkg.pickCount === 0;
+                return (
+                  <div key={pkg.key} className="card" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <div style={{ fontWeight: 800, fontSize: '1.05rem' }}>{pkg.name}</div>
+                    <div style={{ color: 'var(--text-secondary)', fontSize: '0.82rem' }}>
+                      {allSubjects ? 'Все предметы' : `Любые ${pkg.pickCount} предмета`} × {pkg.runsEach} запусков
+                    </div>
+                    <div style={{ fontWeight: 800, fontSize: '1.2rem', color: 'var(--csca-red, #C8102E)' }}>
+                      {pkg.price.toLocaleString('ru-RU')} {pkg.currency}
+                    </div>
+
+                    {picking && !allSubjects && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', margin: '0.4rem 0' }}>
+                        {(catalog.templates).map(t => {
+                          const checked = pkgChosen.includes(t.mockExamId);
+                          const disabled = !checked && pkgChosen.length >= pkg.pickCount;
+                          return (
+                            <label key={t.mockExamId} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem', opacity: disabled ? 0.5 : 1 }}>
+                              <input type="checkbox" checked={checked} disabled={disabled}
+                                     onChange={() => setPkgChosen(prev => checked ? prev.filter(x => x !== t.mockExamId) : [...prev, t.mockExamId])} />
+                              {t.title}
+                            </label>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {allSubjects ? (
+                      <button className="btn btn-primary" style={{ marginTop: 'auto' }}
+                              onClick={() => addPackageToCart(pkg.key, pkg.name, pkg.price, pkg.currency, [])}>
+                        В корзину
+                      </button>
+                    ) : picking ? (
+                      <button className="btn btn-primary" style={{ marginTop: 'auto' }}
+                              disabled={pkgChosen.length !== pkg.pickCount}
+                              onClick={() => addPackageToCart(pkg.key, pkg.name, pkg.price, pkg.currency, pkgChosen)}>
+                        В корзину ({pkgChosen.length}/{pkg.pickCount})
+                      </button>
+                    ) : (
+                      <button className="btn btn-outline" style={{ marginTop: 'auto' }}
+                              onClick={() => { setPkgPicker(pkg.key); setPkgChosen([]); }}>
+                        Выбрать предметы
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* History */}
         {history.length > 0 && (

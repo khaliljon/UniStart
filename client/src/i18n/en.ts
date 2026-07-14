@@ -584,7 +584,7 @@ export const en: Translations = {
       health: 'System', activity: 'Activity', import: 'Import',
       questionImport: 'Question import', trash: 'Trash', more: 'More', applications: 'Applications',
       schools: 'Schools', advisorConfig: 'Advisor config', backups: 'Backups',
-      legal: 'Legal docs', news: 'News', support: 'Support', mocks: 'Mock exams', sales: 'Sales',
+      legal: 'Legal docs', news: 'News', support: 'Support', mocks: 'Mock exams', sales: 'Sales', pricing: 'Pricing',
     },
     legal: {
       title: 'Legal documents', docTitle: 'Document title', lastUpdated: 'Last updated label',
