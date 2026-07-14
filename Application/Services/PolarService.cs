@@ -67,6 +67,7 @@ public class PolarService : IPolarService
                     new { amount_type = "fixed", price_amount = amountMinor, price_currency = currency }
                 }
             },
+            currency,
             success_url = _successUrl,
             external_customer_id = userId.ToString(),
             metadata = new Dictionary<string, string>
