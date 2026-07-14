@@ -9,8 +9,9 @@ import { subscriptionService } from '../services/subscriptionService';
 import { pricingService } from '../services/pricingService';
 import { cartService } from '../services/cartService';
 import { cscaStrings } from '../i18n/csca';
-import { CSCA_PACKAGES, CSCA_SUBJECTS, CSCA_BOOK_PRICE } from '../cscaConfig';
+import { CSCA_SUBJECTS, CSCA_BOOK_PRICE } from '../cscaConfig';
 import CscaNewsSection from '../components/csca/CscaNewsSection';
+import MockShop from '../components/MockShop';
 import type { Streak, Recommendation, DailySummary, DailyUsage } from '../types';
 
 function DashboardPage() {
@@ -96,8 +97,8 @@ function DashboardPage() {
         )}
       </div>
 
-      {/* ─── Order / products ─── */}
-      <OrderSection />
+      {/* ─── Shop: run-based mocks (tiers + packages) ─── */}
+      <MockShop />
 
       {/* ─── Materials (PDF textbooks) ─── */}
       <MaterialsSection />
@@ -223,117 +224,6 @@ function NewsBlock() {
       limit={6}
       appTheme
     />
-  );
-}
-
-/* ─── Order section (mock-exam packages) ─── */
-function OrderSection() {
-  const navigate = useNavigate();
-  const { locale } = useTranslation();
-  const s = cscaStrings[locale];
-  const [openKey, setOpenKey] = useState<string | null>(null);
-  const [subs, setSubs] = useState<string[]>([]);
-
-  const pkgName: Record<string, string> = {
-    start: s.pkgStart, standard: s.pkgStandard, advanced: s.pkgAdvanced, full: s.pkgFull,
-  };
-  const pkgFor: Record<string, string> = {
-    start: s.pkgStartFor, standard: s.pkgStandardFor, advanced: s.pkgAdvancedFor, full: s.pkgFullFor,
-  };
-  const subjName: Record<string, string> = {
-    chineseTech: s.subjChineseTech, chineseHum: s.subjChineseHum,
-    math: s.subjMath, physics: s.subjPhysics, chemistry: s.subjChemistry,
-  };
-  const allSubjectKeys = CSCA_SUBJECTS.map((x) => x.key);
-
-  const select = (key: string) => {
-    setOpenKey((prev) => (prev === key ? null : key));
-    setSubs([]);
-  };
-
-  const toggleSub = (key: string, allowance: number) => {
-    setSubs((prev) => {
-      if (prev.includes(key)) return prev.filter((x) => x !== key);
-      if (prev.length >= allowance) return [...prev.slice(1), key];
-      return [...prev, key];
-    });
-  };
-
-  const pay = (pkgKey: string) => {
-    const pkg = CSCA_PACKAGES.find((p) => p.key === pkgKey)!;
-    const chosen = pkg.subjects === 'all'
-      ? allSubjectKeys.map((k) => subjName[k])
-      : subs.map((k) => subjName[k]);
-    navigate('/checkout', {
-      state: {
-        itemType: 'package',
-        itemCode: pkg.key,
-        title: `${pkgName[pkg.key]} · CSCA`,
-        subjects: chosen.join(','),
-        amount: pkg.price,
-        currency: '₸',
-      },
-    });
-  };
-
-  return (
-    <div style={{ marginBottom: '1.75rem' }}>
-      <h2 style={{ fontSize: '1.1rem', marginBottom: '0.75rem' }}>{s.mocksTitle}</h2>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '0.75rem' }}>
-        {CSCA_PACKAGES.map((pkg) => {
-          const isOpen = openKey === pkg.key;
-          const allowance = pkg.subjects === 'all' ? allSubjectKeys.length : pkg.subjects;
-          const needsChoice = pkg.subjects !== 'all';
-          const canPay = !needsChoice || subs.length === allowance;
-          const subjCountLabel = pkg.subjects === 'all' ? s.allSubjects
-            : pkg.subjects === 1 ? s.oneSubject
-            : pkg.subjects === 2 ? s.twoSubjects
-            : s.threeSubjects;
-          return (
-            <div key={pkg.key} className="card" style={{ padding: '1.1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', border: pkg.featured ? '2px solid var(--primary-color)' : undefined }}>
-              <div style={{ fontWeight: 700, fontSize: '1.05rem' }}>{pkgName[pkg.key]}</div>
-              <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{pkgFor[pkg.key]}</div>
-              <div style={{ fontWeight: 800, fontSize: '1.3rem', color: 'var(--primary-color)' }}>
-                {pkg.price.toLocaleString('ru-RU')} ₸
-              </div>
-              <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                {subjCountLabel}
-              </div>
-
-              {!isOpen ? (
-                <button className={pkg.featured ? 'btn btn-primary' : 'btn btn-outline'} style={{ marginTop: 'auto' }} onClick={() => select(pkg.key)}>
-                  {s.buy}
-                </button>
-              ) : (
-                <div style={{ marginTop: '0.25rem' }}>
-                  {needsChoice && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', marginBottom: '0.6rem' }}>
-                      <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
-                        {subjCountLabel}:
-                      </div>
-                      {allSubjectKeys.map((k) => (
-                        <label key={k} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem' }}>
-                          <input
-                            type="checkbox"
-                            checked={subs.includes(k)}
-                            onChange={() => toggleSub(k, allowance)}
-                          />
-                          {subjName[k]}
-                        </label>
-                      ))}
-                    </div>
-                  )}
-                  <div style={{ display: 'flex', gap: '0.4rem' }}>
-                    <button className="btn btn-primary" disabled={!canPay} onClick={() => pay(pkg.key)}>{s.checkoutPay}</button>
-                    <button className="btn btn-outline" onClick={() => setOpenKey(null)}>×</button>
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </div>
   );
 }
 

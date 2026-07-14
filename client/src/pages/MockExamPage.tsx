@@ -1,8 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { mockExamService } from '../services/mockExamService';
-import { mockCatalogService, type MockCatalog, type MockTemplate } from '../services/mockCatalogService';
-import { cartService } from '../services/cartService';
 import { useAppSelector } from '../hooks/useAppSelector';
 import { MockResultUpsellModal } from '../components/MockResultUpsellModal';
 import type {
@@ -30,9 +28,6 @@ function MockExamPage() {
   const isPro = user?.subscriptionTier === 'Pro' || user?.role === 'Admin';
   const [showUpsell, setShowUpsell] = useState(false);
   const navigate = useNavigate();
-  const [catalog, setCatalog] = useState<MockCatalog | null>(null);
-  const [pkgPicker, setPkgPicker] = useState<string | null>(null); // package key being configured
-  const [pkgChosen, setPkgChosen] = useState<number[]>([]);
 
   // List phase
   const [mockExams, setMockExams] = useState<MockExamListItem[]>([]);
@@ -76,10 +71,6 @@ function MockExamPage() {
   }, []);
 
   useEffect(() => { loadExams(); }, [loadExams]);
-
-  useEffect(() => {
-    mockCatalogService.getCatalog().then(setCatalog).catch(() => {});
-  }, []);
 
   // ── Timer logic ───────────────────────────────────────
   useEffect(() => {
@@ -162,42 +153,14 @@ function MockExamPage() {
     } catch (e) {
       const status = (e as { response?: { status?: number } })?.response?.status;
       if (status === 403) {
-        // No runs left and free run used — bounce to the storefront (list) to buy.
-        setPhase('list');
+        // No runs left and free run used — send the user to the shop (Home) to buy.
+        navigate('/');
         return;
       }
       console.error(e);
     } finally {
       setLoading(false);
     }
-  };
-
-  // ── Add a run tier / package to the cart ──────────────
-  const addTierToCart = (tpl: MockTemplate, runs: number, price: number, cur: string) => {
-    cartService.add({
-      itemType: 'mock',
-      itemCode: String(tpl.mockExamId),
-      title: `${tpl.title} · ${runs} зап.`,
-      amount: price,
-      currency: cur,
-      runs,
-    });
-    navigate('/cart');
-  };
-
-  const addPackageToCart = (key: string, name: string, price: number, cur: string, selectedMockIds: number[]) => {
-    cartService.add({
-      itemType: 'package',
-      itemCode: key,
-      title: name,
-      amount: price,
-      currency: cur,
-      selectedMockIds,
-      subjects: selectedMockIds.join(','),
-    });
-    setPkgPicker(null);
-    setPkgChosen([]);
-    navigate('/cart');
   };
 
   // ── Begin section (after instructions) ────────────────
@@ -298,11 +261,11 @@ function MockExamPage() {
         </p>
 
         {/* First run free banner */}
-        {!isPro && catalog?.freeRunAvailable && (
+        {!isPro && mockExams.some(m => m.freeAvailable) && (
           <div className="card" style={{ marginBottom: '1.5rem', border: '2px dashed var(--primary-color)', background: 'var(--bg-secondary)' }}>
             <div style={{ fontWeight: 700, marginBottom: '0.2rem' }}>🎁 Первый запуск — бесплатно</div>
             <div style={{ color: 'var(--text-secondary)', fontSize: '0.88rem' }}>
-              Выберите любой пробник ниже и пройдите один запуск бесплатно. Дальше — покупка запусков поштучно или пакетом.
+              Выберите любой пробник ниже и пройдите один запуск бесплатно. Купить ещё запуски можно на Главной.
             </div>
           </div>
         )}
@@ -333,11 +296,10 @@ function MockExamPage() {
           </div>
         )}
 
-        {/* Exam cards — run-based */}
+        {/* Exam cards — solve-only (purchase happens on Home) */}
         <div style={{ display: 'grid', gap: '1rem', marginBottom: '2rem' }}>
           {mockExams.map(exam => {
             const canStart = isPro || exam.runsRemaining > 0 || exam.freeAvailable;
-            const tpl = catalog?.templates.find(t => t.mockExamId === exam.id);
             const isFreeStart = !isPro && exam.runsRemaining === 0 && exam.freeAvailable;
             return (
             <div key={exam.id} className="card">
@@ -366,20 +328,14 @@ function MockExamPage() {
                   </div>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'stretch', minWidth: 180 }}>
-                  {canStart && (
+                  {canStart ? (
                     <button className="btn btn-primary" onClick={() => handleSelectExam(exam.id)}>
                       {exam.runsRemaining > 0 ? '▶ Начать (−1 запуск)' : '▶ Начать бесплатно'}
                     </button>
-                  )}
-                  {tpl && tpl.tiers.length > 0 && (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
-                      {tpl.tiers.map(tier => (
-                        <button key={tier.id} className="btn btn-outline" style={{ fontSize: '0.8rem', flex: '1 1 auto', whiteSpace: 'nowrap' }}
-                                onClick={() => addTierToCart(tpl, tier.runs, tier.price, tier.currency)}>
-                          {tier.runs} зап. · {tier.price.toLocaleString('ru-RU')} {tier.currency}
-                        </button>
-                      ))}
-                    </div>
+                  ) : (
+                    <button className="btn btn-outline" onClick={() => navigate('/')}>
+                      Купить запуски
+                    </button>
                   )}
                 </div>
               </div>
@@ -387,64 +343,6 @@ function MockExamPage() {
             );
           })}
         </div>
-
-        {/* Packages */}
-        {catalog && catalog.packages.length > 0 && (
-          <div style={{ marginBottom: '2rem' }}>
-            <h2 style={{ fontSize: '1.2rem', marginBottom: '0.75rem' }}>Пакеты со скидкой</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
-              {catalog.packages.map(pkg => {
-                const picking = pkgPicker === pkg.key;
-                const allSubjects = pkg.pickCount === 0;
-                return (
-                  <div key={pkg.key} className="card" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    <div style={{ fontWeight: 800, fontSize: '1.05rem' }}>{pkg.name}</div>
-                    <div style={{ color: 'var(--text-secondary)', fontSize: '0.82rem' }}>
-                      {allSubjects ? 'Все предметы' : `Любые ${pkg.pickCount} предмета`} × {pkg.runsEach} запусков
-                    </div>
-                    <div style={{ fontWeight: 800, fontSize: '1.2rem', color: 'var(--csca-red, #C8102E)' }}>
-                      {pkg.price.toLocaleString('ru-RU')} {pkg.currency}
-                    </div>
-
-                    {picking && !allSubjects && (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', margin: '0.4rem 0' }}>
-                        {(catalog.templates).map(t => {
-                          const checked = pkgChosen.includes(t.mockExamId);
-                          const disabled = !checked && pkgChosen.length >= pkg.pickCount;
-                          return (
-                            <label key={t.mockExamId} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem', opacity: disabled ? 0.5 : 1 }}>
-                              <input type="checkbox" checked={checked} disabled={disabled}
-                                     onChange={() => setPkgChosen(prev => checked ? prev.filter(x => x !== t.mockExamId) : [...prev, t.mockExamId])} />
-                              {t.title}
-                            </label>
-                          );
-                        })}
-                      </div>
-                    )}
-
-                    {allSubjects ? (
-                      <button className="btn btn-primary" style={{ marginTop: 'auto' }}
-                              onClick={() => addPackageToCart(pkg.key, pkg.name, pkg.price, pkg.currency, [])}>
-                        В корзину
-                      </button>
-                    ) : picking ? (
-                      <button className="btn btn-primary" style={{ marginTop: 'auto' }}
-                              disabled={pkgChosen.length !== pkg.pickCount}
-                              onClick={() => addPackageToCart(pkg.key, pkg.name, pkg.price, pkg.currency, pkgChosen)}>
-                        В корзину ({pkgChosen.length}/{pkg.pickCount})
-                      </button>
-                    ) : (
-                      <button className="btn btn-outline" style={{ marginTop: 'auto' }}
-                              onClick={() => { setPkgPicker(pkg.key); setPkgChosen([]); }}>
-                        Выбрать предметы
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
 
         {/* History */}
         {history.length > 0 && (

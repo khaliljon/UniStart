@@ -5,6 +5,7 @@ import { useAppSelector } from '../hooks/useAppSelector';
 import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../i18n';
 import { logout } from '../store/slices/authSlice';
+import { cartService } from '../services/cartService';
 
 function ProfileDropdown() {
   const dispatch = useAppDispatch();
@@ -13,7 +14,16 @@ function ProfileDropdown() {
   const { theme, toggleTheme } = useTheme();
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
+  const [cartCount, setCartCount] = useState(0);
   const ref = useRef<HTMLDivElement>(null);
+
+  // Keep the cart badge in sync
+  useEffect(() => {
+    const refresh = () => setCartCount(cartService.count());
+    refresh();
+    window.addEventListener(cartService.eventName, refresh);
+    return () => window.removeEventListener(cartService.eventName, refresh);
+  }, []);
 
   // Close on outside click
   useEffect(() => {
@@ -81,17 +91,21 @@ function ProfileDropdown() {
           <div className="profile-dropdown-divider" />
 
           {/* Menu items */}
-          <button className="profile-dropdown-item" onClick={() => goTo('/profile')}>
-            {t.nav.myProfile}
-          </button>
-          <button className="profile-dropdown-item" onClick={() => goTo('/cart')}>
-            {t.nav.myCart}
-          </button>
           <button className="profile-dropdown-item" onClick={() => goTo('/purchases')}>
             {t.nav.myPurchases}
           </button>
-          <button className="profile-dropdown-item" onClick={() => goTo('/progress')}>
-            {t.nav.myProgress}
+          <button className="profile-dropdown-item" onClick={() => goTo('/cart')}>
+            {t.nav.myCart}
+            {cartCount > 0 && (
+              <span style={{
+                marginLeft: '0.4rem', fontSize: '0.7rem', fontWeight: 700, color: '#fff',
+                background: 'var(--csca-red, #C8102E)', borderRadius: '999px',
+                padding: '0.05rem 0.4rem', display: 'inline-block', minWidth: '1.1rem', textAlign: 'center',
+              }}>{cartCount}</span>
+            )}
+          </button>
+          <button className="profile-dropdown-item" onClick={() => goTo('/profile')}>
+            {t.nav.myProfile}
           </button>
           <button className="profile-dropdown-item" onClick={() => goTo('/profile/notifications')}>
             {t.nav.notifications}

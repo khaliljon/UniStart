@@ -50,6 +50,7 @@ export interface Translations {
     myCart: string;
     myPurchases: string;
     myProgress: string;
+    exams: string;
   };
 
   // ─── Auth ───

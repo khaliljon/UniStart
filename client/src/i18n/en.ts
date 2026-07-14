@@ -47,6 +47,7 @@ export const en: Translations = {
     myCart: 'My cart',
     myPurchases: 'My purchases',
     myProgress: 'My progress',
+    exams: 'Mock exams',
   },
   auth: {
     login: 'Sign in',
