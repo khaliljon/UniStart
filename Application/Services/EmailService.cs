@@ -1,4 +1,4 @@
-using MailKit.Net.Smtp;
+﻿using MailKit.Net.Smtp;
 using MailKit.Security;
 using MimeKit;
 using UniStart.Application.DTOs;
@@ -29,6 +29,21 @@ public class EmailService : IEmailService
     {
         var subject = "Добро пожаловать в UniStart!";
         var body = GetWelcomeTemplate(userName);
+        await SendEmailAsync(toEmail, subject, body);
+    }
+
+    public async Task SendPurchaseReceiptAsync(string toEmail, string userName, decimal total, string currency)
+    {
+        var name = System.Net.WebUtility.HtmlEncode(userName ?? "");
+        var cur = System.Net.WebUtility.HtmlEncode(currency ?? "");
+        var totalStr = total.ToString("N0", System.Globalization.CultureInfo.InvariantCulture);
+        var subject = "Спасибо за покупку — UniStart";
+        var body = "<div style=\"font-family:Arial,sans-serif;max-width:520px;margin:0 auto;color:#111\">"
+            + "<h2 style=\"color:#C8102E\">Спасибо за покупку, " + name + "!</h2>"
+            + "<p>Ваш заказ оплачен, доступ уже начислен.</p>"
+            + "<p style=\"font-size:1.15rem\"><b>Итого: " + totalStr + " " + cur + "</b></p>"
+            + "<p>Пробники — во вкладке «Пробные экзамены», учебники — в разделе «Материалы».</p>"
+            + "</div>";
         await SendEmailAsync(toEmail, subject, body);
     }
 

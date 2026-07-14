@@ -15,4 +15,5 @@ public interface IEmailService
     Task SendSchoolApplicationStatusAsync(string toEmail, string contactName, string schoolName, bool approved);
     Task SendVerificationRequestNotificationAsync(string adminEmail, string tutorName, string tutorEmail);
     Task SendContactFormAsync(string adminEmail, string senderName, string senderEmail, string message);
+    Task SendPurchaseReceiptAsync(string toEmail, string userName, decimal total, string currency);
 }

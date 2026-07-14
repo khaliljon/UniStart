@@ -19,6 +19,7 @@ namespace UniStart.Application.Services;
 public class PolarService : IPolarService
 {
     private readonly IEntitlementService _entitlements;
+    private readonly IEmailService _email;
     private readonly UniStartDbContext _db;
     private readonly ILogger<PolarService> _logger;
     private readonly HttpClient _http;
@@ -29,9 +30,10 @@ public class PolarService : IPolarService
     private readonly string _successUrl;
     private readonly string _baseUrl;
 
-    public PolarService(IConfiguration config, IEntitlementService entitlements, UniStartDbContext db, ILogger<PolarService> logger)
+    public PolarService(IConfiguration config, IEntitlementService entitlements, IEmailService email, UniStartDbContext db, ILogger<PolarService> logger)
     {
         _entitlements = entitlements;
+        _email = email;
         _db = db;
         _logger = logger;
 
@@ -141,6 +143,23 @@ public class PolarService : IPolarService
         await _db.SaveChangesAsync();
 
         _logger.LogInformation("Polar grant applied for user {UserId}, order {OrderId}", userId, orderId);
+
+        // Best-effort purchase receipt (never fail the webhook on email errors).
+        try
+        {
+            var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId);
+            if (user != null && !string.IsNullOrWhiteSpace(user.Email))
+            {
+                var quote = await _entitlements.QuoteAsync(lines);
+                var name = string.IsNullOrWhiteSpace(user.Name) ? user.FirstName : user.Name;
+                await _email.SendPurchaseReceiptAsync(user.Email, name, quote.Total, quote.Currency);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to send purchase receipt for user {UserId}", userId);
+        }
+
         return true;
     }
 
