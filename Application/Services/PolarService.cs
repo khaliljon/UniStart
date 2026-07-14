@@ -51,7 +51,11 @@ public class PolarService : IPolarService
 
         // Server-side price — never trust the client.
         var quote = await _entitlements.QuoteAsync(lines);
-        var amountMinor = (long)Math.Round(quote.Total * 100m); // Polar amounts are in cents
+        var currency = quote.Currency.ToLowerInvariant();
+        // Zero-decimal currencies (KZT, JPY, KRW, …) are sent as-is; others in cents.
+        var amountMinor = IsZeroDecimal(currency)
+            ? (long)Math.Round(quote.Total)
+            : (long)Math.Round(quote.Total * 100m);
 
         var payload = new
         {
@@ -60,7 +64,7 @@ public class PolarService : IPolarService
             {
                 [_productId] = new object[]
                 {
-                    new { amount_type = "fixed", price_amount = amountMinor, price_currency = quote.Currency.ToLowerInvariant() }
+                    new { amount_type = "fixed", price_amount = amountMinor, price_currency = currency }
                 }
             },
             success_url = _successUrl,
@@ -139,6 +143,16 @@ public class PolarService : IPolarService
         return true;
     }
 
+    // Zero-decimal currencies charged as whole units (Stripe's canonical list).
+    // NOTE: KZT is a 2-decimal currency in Stripe/Polar, so it is NOT here — it uses ×100.
+    private static readonly HashSet<string> ZeroDecimal = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "bif", "clp", "djf", "gnf", "jpy", "kmf", "krw", "mga",
+        "pyg", "rwf", "ugx", "vnd", "vuv", "xaf", "xof", "xpf",
+    };
+
+    private static bool IsZeroDecimal(string currency) => ZeroDecimal.Contains(currency);
+
     // ── Standard Webhooks signature ────────────────────────
 
     private bool VerifySignature(string body, string? id, string? timestamp, string? signatureHeader)
@@ -147,24 +161,38 @@ public class PolarService : IPolarService
             || string.IsNullOrEmpty(timestamp) || string.IsNullOrEmpty(signatureHeader))
             return false;
 
-        // Secret is "whsec_<base64>"; the key is the base64-decoded remainder.
+        // Standard Webhooks: secret is "whsec_<base64>"; the HMAC key is the
+        // base64-decoded remainder.
         var secretPart = _webhookSecret.StartsWith("whsec_") ? _webhookSecret["whsec_".Length..] : _webhookSecret;
-        byte[] key;
-        try { key = Convert.FromBase64String(secretPart); }
-        catch { key = Encoding.UTF8.GetBytes(secretPart); }
+        var key = DecodeBase64(secretPart) ?? Encoding.UTF8.GetBytes(secretPart);
 
         var signedContent = $"{id}.{timestamp}.{body}";
         using var hmac = new HMACSHA256(key);
-        var expected = Convert.ToBase64String(hmac.ComputeHash(Encoding.UTF8.GetBytes(signedContent)));
+        var expected = hmac.ComputeHash(Encoding.UTF8.GetBytes(signedContent));
 
-        // Header format: space-separated list of "v1,<sig>" entries.
+        // Header format: space-separated list of "v1,<base64sig>" entries.
         foreach (var part in signatureHeader.Split(' ', StringSplitOptions.RemoveEmptyEntries))
         {
-            var sig = part.Contains(',') ? part.Split(',', 2)[1] : part;
-            if (CryptographicOperations.FixedTimeEquals(Encoding.UTF8.GetBytes(sig), Encoding.UTF8.GetBytes(expected)))
+            var sigB64 = part.Contains(',') ? part.Split(',', 2)[1] : part;
+            var sigBytes = DecodeBase64(sigB64);
+            if (sigBytes != null && CryptographicOperations.FixedTimeEquals(sigBytes, expected))
                 return true;
         }
         return false;
+    }
+
+    /// <summary>Base64 decode tolerant of missing padding and url-safe alphabet.</summary>
+    private static byte[]? DecodeBase64(string s)
+    {
+        s = s.Trim().Replace('-', '+').Replace('_', '/');
+        switch (s.Length % 4)
+        {
+            case 2: s += "=="; break;
+            case 3: s += "="; break;
+            case 1: return null;
+        }
+        try { return Convert.FromBase64String(s); }
+        catch { return null; }
     }
 
     private static Dictionary<string, string>? ExtractMetadata(JsonElement data)
