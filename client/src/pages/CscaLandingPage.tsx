@@ -182,9 +182,6 @@ function CscaLandingPage() {
               </div>
             ))}
           </Reveal>
-          <div style={{ textAlign: 'center', marginTop: '1.6rem' }}>
-            <button className="csca-btn csca-btn-ghost" onClick={goRegister}>{s.viewTopics}</button>
-          </div>
         </div>
       </section>
 
@@ -265,8 +262,13 @@ function CscaLandingPage() {
               <div className="csca-feature-desc" style={{ maxWidth: 560, margin: '0.4rem auto 0' }}>{s.freePdfDesc}</div>
             </div>
           </Reveal>
+          {dbMaterials.length === 0 ? (
+            <div className="csca-card" style={{ textAlign: 'center' }}>
+              <p className="csca-lead" style={{ margin: 0 }}>Учебные материалы скоро появятся — мы работаем над этим.</p>
+            </div>
+          ) : (
           <Reveal stagger className="csca-grid csca-grid-5">
-            {(dbMaterials.length > 0 ? dbMaterials : CSCA_SUBJECTS.map((subj, i) => ({ id: i, subjectKey: subj.key, title: subjectMeta[subj.key].name, price: CSCA_BOOK_PRICE }))).map((mat) => {
+            {dbMaterials.map((mat) => {
               const subj = CSCA_SUBJECTS.find(cs => cs.key === mat.subjectKey) ?? CSCA_SUBJECTS[0];
               const name = subjectMeta[subj.key as keyof typeof subjectMeta]?.name ?? mat.title;
               return (
@@ -285,7 +287,7 @@ function CscaLandingPage() {
               );
             })}
           </Reveal>
-        </div>
+          )}        </div>
       </section>
 
       {/* ═══ CTA band ═══ */}

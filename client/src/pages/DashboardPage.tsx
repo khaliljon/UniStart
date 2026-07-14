@@ -6,10 +6,10 @@ import { useTranslation } from '../hooks/useTranslation';
 import { fetchExams } from '../store/slices/examSlice';
 import recommendationService from '../services/recommendationService';
 import { subscriptionService } from '../services/subscriptionService';
-import { pricingService } from '../services/pricingService';
 import { cartService } from '../services/cartService';
+import { materialsService, type StudyMaterial } from '../services/materialsService';
 import { cscaStrings } from '../i18n/csca';
-import { CSCA_SUBJECTS, CSCA_BOOK_PRICE } from '../cscaConfig';
+import { CSCA_SUBJECTS } from '../cscaConfig';
 import CscaNewsSection from '../components/csca/CscaNewsSection';
 import MockShop from '../components/MockShop';
 import type { Streak, Recommendation, DailySummary, DailyUsage } from '../types';
@@ -233,53 +233,61 @@ function MaterialsSection() {
   const { locale } = useTranslation();
   const s = cscaStrings[locale];
 
-  const [bookPrice, setBookPrice] = useState<number>(CSCA_BOOK_PRICE);
-  const [currency, setCurrency] = useState<string>('₸');
+  const [materials, setMaterials] = useState<StudyMaterial[] | null>(null);
   useEffect(() => {
-    pricingService.get().then((p) => {
-      setBookPrice(p.materialPrice);
-      setCurrency(p.currency);
-    }).catch(() => {});
+    materialsService.list().then(setMaterials).catch(() => setMaterials([]));
   }, []);
 
-  const subjectName: Record<string, string> = {
-    chineseTech: s.subjChineseTech,
-    chineseHum: s.subjChineseHum,
-    math: s.subjMath,
-    physics: s.subjPhysics,
-    chemistry: s.subjChemistry,
-  };
+  const coverFor = (key: string) => CSCA_SUBJECTS.find((x) => x.key === key);
 
-  const buy = (subj: typeof CSCA_SUBJECTS[number]) => {
+  const buy = (m: StudyMaterial) => {
     cartService.add({
       itemType: 'book',
-      itemCode: subj.key,
-      title: `${subjectName[subj.key]} · ${s.bookLabel}`,
-      subjects: subj.key,
-      amount: bookPrice,
-      currency,
+      itemCode: m.subjectKey,
+      title: m.title,
+      subjects: m.subjectKey,
+      amount: m.price,
+      currency: '₸',
     });
     navigate('/cart');
   };
+
+  if (materials === null) return null; // loading
+
+  if (materials.length === 0) {
+    return (
+      <div style={{ marginBottom: '1.75rem' }}>
+        <h2 style={{ fontSize: '1.1rem', marginBottom: '0.75rem' }}>{s.materialsTitle}</h2>
+        <div className="card" style={{ textAlign: 'center', padding: '1.5rem', color: 'var(--text-secondary)' }}>
+          Учебные материалы скоро появятся — мы работаем над этим.
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ marginBottom: '1.75rem' }}>
       <h2 style={{ fontSize: '1.1rem', marginBottom: '0.75rem' }}>{s.materialsTitle}</h2>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem' }}>
-        {CSCA_SUBJECTS.map((subj) => {
+        {materials.map((m) => {
+          const cover = coverFor(m.subjectKey);
           return (
-            <div key={subj.key} className="card csca-book" style={{ padding: '1.1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', background: 'var(--card-background)' }}>
-              <div className="csca-book-cover" style={{ background: subj.cover, width: '100%', margin: '0 auto 0.5rem', maxWidth: '140px' }}>
-                <span className="csca-book-hanzi" style={{ fontSize: '1.8rem' }}>{subj.hanzi}</span>
-                <span className="csca-book-label csca-hanzi" style={{ fontSize: '0.55rem' }}>CSCA · 备考教材</span>
-              </div>
-              <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>{subjectName[subj.key]}</div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>{s.bookLabel}</div>
+            <div key={m.id} className="card csca-book" style={{ padding: '1.1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', background: 'var(--card-background)' }}>
+              {cover && (
+                <div className="csca-book-cover" style={{ background: cover.cover, width: '100%', margin: '0 auto 0.5rem', maxWidth: '140px' }}>
+                  <span className="csca-book-hanzi" style={{ fontSize: '1.8rem' }}>{cover.hanzi}</span>
+                  <span className="csca-book-label csca-hanzi" style={{ fontSize: '0.55rem' }}>CSCA · 备考教材</span>
+                </div>
+              )}
+              <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>{m.title}</div>
+              {m.description && (
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>{m.description}</div>
+              )}
               <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                 <div style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--primary-color)', textAlign: 'center' }}>
-                  {bookPrice.toLocaleString('ru-RU')} {currency}
+                  {m.price.toLocaleString('ru-RU')} ₸
                 </div>
-                <button className="btn btn-outline" style={{ fontSize: '0.85rem' }} onClick={() => buy(subj)}>
+                <button className="btn btn-outline" style={{ fontSize: '0.85rem' }} onClick={() => buy(m)}>
                   {s.addToCart}
                 </button>
               </div>

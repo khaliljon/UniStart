@@ -1,9 +1,10 @@
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../i18n';
 import { cscaStrings } from '../i18n/csca';
 import CscaPageShell, { CscaPageHero } from '../components/csca/CscaPageShell';
 import { SealStamp } from '../components/csca/ChineseMotifs';
-import { CSCA_PACKAGES } from '../cscaConfig';
+import { mockCatalogService, type MockCatalog } from '../services/mockCatalogService';
 
 const CheckIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -16,12 +17,15 @@ function CscaMocksPage() {
   const { locale } = useTranslation();
   const s = cscaStrings[locale];
 
-  const packageMeta = {
-    start: { name: s.pkgStart, for: s.pkgStartFor, subj: s.oneSubject },
-    standard: { name: s.pkgStandard, for: s.pkgStandardFor, subj: s.twoSubjects },
-    advanced: { name: s.pkgAdvanced, for: s.pkgAdvancedFor, subj: s.threeSubjects },
-    full: { name: s.pkgFull, for: s.pkgFullFor, subj: s.allSubjects },
-  } as const;
+  const [catalog, setCatalog] = useState<MockCatalog | null>(null);
+  useEffect(() => {
+    mockCatalogService.getCatalog()
+      .then(setCatalog)
+      .catch(() => setCatalog({ freeRunAvailable: false, templates: [], packages: [] }));
+  }, []);
+
+  const subjectsLabel = (pickCount: number) =>
+    pickCount === 0 ? s.allSubjects : pickCount === 1 ? s.oneSubject : pickCount === 2 ? s.twoSubjects : s.threeSubjects;
 
   return (
     <CscaPageShell>
@@ -38,29 +42,36 @@ function CscaMocksPage() {
           <button className="csca-btn csca-btn-primary" onClick={() => navigate('/register')}>{s.getFree}</button>
         </div>
 
+        {catalog === null ? (
+          <div className="loading"><div className="spinner" /></div>
+        ) : catalog.packages.length === 0 ? (
+          <div className="csca-card" style={{ textAlign: 'center' }}>
+            <p className="csca-lead" style={{ margin: 0 }}>Пробники скоро появятся — мы работаем над этим.</p>
+          </div>
+        ) : (
         <div className="csca-grid csca-grid-4">
-          {CSCA_PACKAGES.map((pkg) => (
-            <div className={`csca-card csca-price-card ${pkg.featured ? 'featured' : ''}`} key={pkg.key}>
-              {pkg.featured && <span className="csca-price-flag">{s.popular}</span>}
-              <div className="csca-price-name">{packageMeta[pkg.key].name}</div>
-              <div className="csca-price-for">{packageMeta[pkg.key].for}</div>
+          {catalog.packages.map((pkg) => (
+            <div className="csca-card csca-price-card" key={pkg.key}>
+              <div className="csca-price-name">{pkg.name}</div>
+              <div className="csca-price-for">{subjectsLabel(pkg.pickCount)} × {pkg.runsEach} зап.</div>
               <div className="csca-price-amount csca-hanzi">
-                {pkg.price.toLocaleString('ru-RU')} <span className="csca-price-cur">{s.currency}</span>
+                {pkg.price.toLocaleString('ru-RU')} <span className="csca-price-cur">{pkg.currency}</span>
               </div>
               <ul className="csca-price-list">
-                <li><CheckIcon /> {packageMeta[pkg.key].subj}</li>
+                <li><CheckIcon /> {subjectsLabel(pkg.pickCount)}</li>
                 <li><CheckIcon /> {s.pkgFeatAi}</li>
                 <li><CheckIcon /> {s.pkgFeatAnalytics}</li>
                 <li><CheckIcon /> {s.pkgFeatFull}</li>
               </ul>
               <button
-                className={`csca-btn ${pkg.featured ? 'csca-btn-primary' : 'csca-btn-ghost'}`}
+                className="csca-btn csca-btn-primary"
                 style={{ width: '100%', marginTop: 'auto' }}
                 onClick={() => navigate('/register')}
               >{s.buy}</button>
             </div>
           ))}
         </div>
+        )}
       </section>
     </CscaPageShell>
   );

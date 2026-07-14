@@ -297,9 +297,23 @@ function MockExamPage() {
         )}
 
         {/* Exam cards — solve-only (purchase happens on Home) */}
+        {(() => {
+          // Show only mocks the user can actually solve: bought (runs left),
+          // already started, or their one-time free run. Otherwise, a buy hint.
+          const visible = mockExams.filter(m => isPro || m.runsRemaining > 0 || m.attemptCount > 0 || m.freeAvailable);
+          if (visible.length === 0) {
+            return (
+              <div className="card" style={{ textAlign: 'center', padding: '2rem', marginBottom: '2rem' }}>
+                <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+                  У вас пока нет доступных пробников. Приобретите запуски на Главной.
+                </p>
+                <button className="btn btn-primary" onClick={() => navigate('/')}>Приобрести на Главной</button>
+              </div>
+            );
+          }
+          return (
         <div style={{ display: 'grid', gap: '1rem', marginBottom: '2rem' }}>
-          {mockExams.map(exam => {
-            const canStart = isPro || exam.runsRemaining > 0 || exam.freeAvailable;
+          {visible.map(exam => {
             const isFreeStart = !isPro && exam.runsRemaining === 0 && exam.freeAvailable;
             return (
             <div key={exam.id} className="card">
@@ -328,21 +342,17 @@ function MockExamPage() {
                   </div>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'stretch', minWidth: 180 }}>
-                  {canStart ? (
-                    <button className="btn btn-primary" onClick={() => handleSelectExam(exam.id)}>
-                      {exam.runsRemaining > 0 ? '▶ Начать (−1 запуск)' : '▶ Начать бесплатно'}
-                    </button>
-                  ) : (
-                    <button className="btn btn-outline" onClick={() => navigate('/')}>
-                      Купить запуски
-                    </button>
-                  )}
+                  <button className="btn btn-primary" onClick={() => handleSelectExam(exam.id)}>
+                    {exam.runsRemaining > 0 ? '▶ Решить (−1 запуск)' : '▶ Решить бесплатно'}
+                  </button>
                 </div>
               </div>
             </div>
             );
           })}
         </div>
+          );
+        })()}
 
         {/* History */}
         {history.length > 0 && (

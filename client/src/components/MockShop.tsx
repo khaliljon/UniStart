@@ -46,6 +46,18 @@ function MockShop() {
 
   if (!catalog) return null;
 
+  const isEmpty = catalog.templates.length === 0 && catalog.packages.length === 0;
+  if (isEmpty) {
+    return (
+      <div style={{ marginBottom: '1.75rem' }}>
+        <h2 style={{ fontSize: '1.1rem', marginBottom: '0.75rem' }}>Пробные экзамены</h2>
+        <div className="card" style={{ textAlign: 'center', padding: '1.5rem', color: 'var(--text-secondary)' }}>
+          Пробники скоро появятся — мы работаем над этим.
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ marginBottom: '1.75rem' }}>
       <h2 style={{ fontSize: '1.1rem', marginBottom: '0.75rem' }}>Пробные экзамены</h2>

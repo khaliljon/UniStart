@@ -43,44 +43,36 @@ function MaterialsPage() {
 
       {materials === null ? (
         <div className="loading"><div className="spinner" /></div>
-      ) : materials.length === 0 ? (
-        <div className="card" style={{ textAlign: 'center', padding: '2rem' }}>
-          <p style={{ color: 'var(--text-secondary)' }}>Учебные материалы скоро появятся.</p>
-          <button className="btn btn-primary" onClick={() => navigate('/')}>На Главную</button>
-        </div>
-      ) : (
+      ) : (() => {
+        const owned = materials.filter((m) => ownedSubjects.has(m.subjectKey));
+        if (owned.length === 0) {
+          return (
+            <div className="card" style={{ textAlign: 'center', padding: '2rem' }}>
+              <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+                У вас пока нет материалов. Приобретите учебники на Главной.
+              </p>
+              <button className="btn btn-primary" onClick={() => navigate('/')}>Приобрести на Главной</button>
+            </div>
+          );
+        }
+        return (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '0.75rem' }}>
-          {materials.map((m) => {
-            const owned = ownedSubjects.has(m.subjectKey);
-            return (
-              <div key={m.id} className="card" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <div style={{ fontWeight: 700 }}>{m.title}</div>
-                {m.description && (
-                  <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>{m.description}</div>
-                )}
-                <div style={{ marginTop: 'auto' }}>
-                  {owned ? (
-                    <button className="btn btn-primary" style={{ width: '100%' }}
-                            disabled={downloading === m.subjectKey}
-                            onClick={() => download(m.subjectKey)}>
-                      {downloading === m.subjectKey ? 'Открываю…' : '⤓ Скачать PDF'}
-                    </button>
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                      <div style={{ fontWeight: 800, color: 'var(--primary-color)' }}>
-                        {m.price.toLocaleString('ru-RU')} ₸
-                      </div>
-                      <button className="btn btn-outline" style={{ width: '100%' }} onClick={() => navigate('/')}>
-                        Купить на Главной
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+          {owned.map((m) => (
+            <div key={m.id} className="card" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <div style={{ fontWeight: 700 }}>{m.title}</div>
+              {m.description && (
+                <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>{m.description}</div>
+              )}
+              <button className="btn btn-primary" style={{ width: '100%', marginTop: 'auto' }}
+                      disabled={downloading === m.subjectKey}
+                      onClick={() => download(m.subjectKey)}>
+                {downloading === m.subjectKey ? 'Открываю…' : '⤓ Скачать PDF'}
+              </button>
+            </div>
+          ))}
         </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

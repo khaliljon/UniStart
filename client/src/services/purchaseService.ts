@@ -46,8 +46,14 @@ export const purchaseService = {
   },
 
   /** Admin: all purchases with buyer info and revenue totals. */
-  async adminList(params?: { status?: string; itemType?: string }): Promise<AdminSales> {
+  async adminList(params?: { status?: string; itemType?: string; from?: string; to?: string }): Promise<AdminSales> {
     const res = await api.get<AdminSales>('/purchases/admin/all', { params });
     return res.data;
+  },
+
+  /** Admin: download the (filtered) sales list as a CSV blob (authenticated). */
+  async adminExportCsv(params?: { status?: string; itemType?: string; from?: string; to?: string }): Promise<Blob> {
+    const res = await api.get('/purchases/admin/export.csv', { params, responseType: 'blob' });
+    return res.data as Blob;
   },
 };

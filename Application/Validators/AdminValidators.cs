@@ -19,7 +19,7 @@ public class CreateQuestionDtoValidator : AbstractValidator<CreateQuestionDto>
 
         RuleFor(x => x.Text)
             .NotEmpty().WithMessage("Question text is required.")
-            .MinimumLength(10).WithMessage("Question text must be at least 10 characters.")
+            .MinimumLength(3).WithMessage("Question text must be at least 3 characters.")
             .MaximumLength(5000).WithMessage("Question text must not exceed 5000 characters.");
 
         RuleFor(x => x.Difficulty)
@@ -78,7 +78,7 @@ public class UpdateQuestionDtoValidator : AbstractValidator<UpdateQuestionDto>
     public UpdateQuestionDtoValidator()
     {
         RuleFor(x => x.Text)
-            .MinimumLength(10).WithMessage("Question text must be at least 10 characters.")
+            .MinimumLength(3).WithMessage("Question text must be at least 3 characters.")
             .MaximumLength(5000).WithMessage("Question text must not exceed 5000 characters.")
             .When(x => x.Text is not null);
 

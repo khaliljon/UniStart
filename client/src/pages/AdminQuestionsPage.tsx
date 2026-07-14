@@ -385,7 +385,11 @@ function AdminQuestionsPage() {
       loadQuestions();
       if (viewMode === 'topics') loadTopicViewQuestions();
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || t.admin.questions.questionSaveError;
+      const data = (err as { response?: { data?: { error?: string; errors?: Record<string, string[]>; title?: string } } })?.response?.data;
+      const msg = data?.error
+        || (data?.errors ? Object.values(data.errors).flat().join('; ') : undefined)
+        || data?.title
+        || t.admin.questions.questionSaveError;
       setError(msg);
     }
   };
@@ -417,7 +421,11 @@ function AdminQuestionsPage() {
       loadTopics();
       if (viewMode === 'topics') loadTopicViewQuestions();
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || t.admin.questions.questionCreateError;
+      const data = (err as { response?: { data?: { error?: string; errors?: Record<string, string[]>; title?: string } } })?.response?.data;
+      const msg = data?.error
+        || (data?.errors ? Object.values(data.errors).flat().join('; ') : undefined)
+        || data?.title
+        || t.admin.questions.questionCreateError;
       setError(msg);
     }
   };

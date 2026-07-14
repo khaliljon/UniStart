@@ -6,15 +6,37 @@ function AdminSalesPage() {
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<string>('');
   const [itemType, setItemType] = useState<string>('');
+  const [from, setFrom] = useState<string>('');
+  const [to, setTo] = useState<string>('');
+
+  const params = {
+    status: status || undefined,
+    itemType: itemType || undefined,
+    from: from || undefined,
+    to: to || undefined,
+  };
 
   useEffect(() => {
     setLoading(true);
     purchaseService
-      .adminList({ status: status || undefined, itemType: itemType || undefined })
+      .adminList(params)
       .then(setData)
       .catch(() => setData({ count: 0, totalRevenue: 0, currency: 'KZT', items: [] }))
       .finally(() => setLoading(false));
-  }, [status, itemType]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status, itemType, from, to]);
+
+  const exportCsv = async () => {
+    try {
+      const blob = await purchaseService.adminExportCsv(params);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `sales-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch { /* ignore */ }
+  };
 
   const fmt = (iso: string) =>
     new Date(iso).toLocaleString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
@@ -57,6 +79,19 @@ function AdminSalesPage() {
           <option value="Pending">Ожидает</option>
           <option value="Cancelled">Отменено</option>
         </select>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.85rem' }}>
+          с
+          <input type="date" value={from} onChange={(e) => setFrom(e.target.value)}
+                 style={{ padding: '0.35rem 0.5rem', border: '1px solid var(--border-color)', borderRadius: '6px' }} />
+        </label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.85rem' }}>
+          по
+          <input type="date" value={to} onChange={(e) => setTo(e.target.value)}
+                 style={{ padding: '0.35rem 0.5rem', border: '1px solid var(--border-color)', borderRadius: '6px' }} />
+        </label>
+        <button className="btn btn-outline" onClick={exportCsv} disabled={!data || data.items.length === 0}>
+          ↓ CSV
+        </button>
       </div>
 
       {loading ? (

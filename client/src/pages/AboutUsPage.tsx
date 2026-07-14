@@ -3,16 +3,11 @@ import { useTranslation } from '../i18n';
 import { cscaStrings } from '../i18n/csca';
 import CscaPageShell, { CscaPageHero } from '../components/csca/CscaPageShell';
 import { BrushDivider } from '../components/csca/ChineseMotifs';
-import { CSCA_STATS } from '../cscaConfig';
 
 function AboutUsPage() {
   const navigate = useNavigate();
   const { locale } = useTranslation();
   const s = cscaStrings[locale];
-
-  const statMeta = {
-    students: s.statStudents, questions: s.statQuestions, answered: s.statAnswered, success: s.statSuccess,
-  } as const;
 
   return (
     <CscaPageShell>
@@ -31,16 +26,8 @@ function AboutUsPage() {
         </div>
       </section>
 
-      {/* Stats */}
+      {/* Closing CTA */}
       <section className="csca-wrap csca-section" style={{ paddingTop: 0 }}>
-        <div className="csca-stats">
-          {CSCA_STATS.map((st) => (
-            <div className="csca-stat" key={st.key}>
-              <div className="csca-stat-num csca-hanzi">{st.value}</div>
-              <div className="csca-stat-cap">{statMeta[st.key]}</div>
-            </div>
-          ))}
-        </div>
         <div style={{ textAlign: 'center', marginTop: '2rem' }}>
           <button className="csca-btn csca-btn-primary" onClick={() => navigate('/register')}>{s.ctaStart}</button>
         </div>
