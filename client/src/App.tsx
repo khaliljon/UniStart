@@ -47,6 +47,7 @@ const CscaNewsPage = lazy(() => import('./pages/CscaNewsPage'))
 const CheckoutPage = lazy(() => import('./pages/CheckoutPage'))
 const PurchasesPage = lazy(() => import('./pages/PurchasesPage'))
 const CartPage = lazy(() => import('./pages/CartPage'))
+const MaterialsPage = lazy(() => import('./pages/MaterialsPage'))
 const AdminNewsPage = lazy(() => import('./pages/AdminNewsPage'))
 const AdminSupportPage = lazy(() => import('./pages/AdminSupportPage'))
 
@@ -66,6 +67,7 @@ function StudentRoutes() {
       <Route path="profile/notifications" element={<NotificationSettingsPage />} />
       <Route path="purchases" element={<PurchasesPage />} />
       <Route path="cart" element={<CartPage />} />
+      <Route path="materials" element={<MaterialsPage />} />
       <Route path="checkout" element={<CheckoutPage />} />
       <Route path="diagnostic" element={<DiagnosticTestPage />} />
       {/* Legacy redirects */}

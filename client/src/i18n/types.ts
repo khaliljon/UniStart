@@ -51,6 +51,7 @@ export interface Translations {
     myPurchases: string;
     myProgress: string;
     exams: string;
+    materials: string;
   };
 
   // ─── Auth ───

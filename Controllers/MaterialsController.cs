@@ -154,19 +154,20 @@ public class MaterialsController : ControllerBase
     [HttpPost("admin/upload-pdf")]
     [Authorize(Roles = "Admin")]
     [Consumes("multipart/form-data")]
+    [RequestSizeLimit(536_870_912)] // 512 MB
+    [RequestFormLimits(MultipartBodyLengthLimit = 536_870_912)]
     public async Task<IActionResult> UploadPdf(IFormFile file, CancellationToken ct)
     {
         if (file == null || file.Length == 0)
             return BadRequest(new { error = "Файл не выбран." });
 
-        // Allow PDF and also reuse the existing upload service (which accepts various file types)
         var allowedTypes = new[] { "application/pdf", "application/octet-stream" };
         if (!allowedTypes.Contains(file.ContentType) && !file.FileName.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
             return BadRequest(new { error = "Допускается только PDF-файл." });
 
         try
         {
-            var url = await _upload.UploadAsync(file, ct);
+            var url = await _upload.UploadPdfAsync(file, ct);
             return Ok(new { url });
         }
         catch (ArgumentException ex)

@@ -48,6 +48,7 @@ export const kz: Translations = {
     myPurchases: 'Сатып алуларым',
     myProgress: 'Менің прогресім',
     exams: 'Сынақ емтихандар',
+    materials: 'Материалдар',
   },
   auth: {
     login: 'Кіру',

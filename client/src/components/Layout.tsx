@@ -40,8 +40,8 @@ function Layout() {
                 </NavLink>
               </li>
               <li>
-                <NavLink to="/progress" onClick={() => setMenuOpen(false)}>
-                  {t.nav.progress}
+                <NavLink to="/materials" onClick={() => setMenuOpen(false)}>
+                  {t.nav.materials}
                 </NavLink>
               </li>
             </ul>

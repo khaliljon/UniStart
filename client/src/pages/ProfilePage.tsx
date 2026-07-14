@@ -20,7 +20,8 @@ function ProfilePage() {
   const [sub, setSub] = useState<SubscriptionStatus | null>(null);
   const [showPricing, setShowPricing] = useState(false);
   const [allSections, setAllSections] = useState<ExamSection[]>([]);
-  const isStudent = user?.role === 'Student';
+  // Legacy sections (subscription / referral / exam-selection) are hidden for now.
+  const SHOW_LEGACY: boolean = false;
 
   // Referral program
   const [refStats, setRefStats] = useState<ReferralStats | null>(null);
@@ -276,8 +277,8 @@ function ProfilePage() {
         </form>
       </div>
 
-      {/* ─── Subscription (student only) ─── */}
-      {isStudent && (
+      {/* ─── Subscription (hidden) ─── */}
+      {SHOW_LEGACY && (
       <div className="card" style={{ padding: '1.5rem', marginBottom: '1.25rem' }}>
         <h3 style={{ margin: '0 0 0.75rem', fontSize: '1rem' }}>{t.profilePage.subscription}</h3>
         <div style={{
@@ -313,7 +314,8 @@ function ProfilePage() {
       )}
 
 
-      {/* ─── Referral Program ─── */}
+      {/* ─── Referral Program (hidden) ─── */}
+      {SHOW_LEGACY && (
       <div className="card" style={{ padding: '1.5rem', marginBottom: '1.25rem' }}>
         <h3 style={{ margin: '0 0 0.75rem', fontSize: '1rem' }}>{t.profilePage.referralTitle}</h3>
         {refStats?.code ? (
@@ -367,9 +369,10 @@ function ProfilePage() {
           </div>
         )}
       </div>
+      )}
 
-      {/* ─── Selected Exams (student only) ─── */}
-      {isStudent && (<>
+      {/* ─── Selected Exams (hidden — CSCA is default) ─── */}
+      {SHOW_LEGACY && (<>
       <div className="card" style={{ padding: '1.5rem', marginBottom: '1.25rem' }}>
         <h3 style={{ margin: '0 0 0.75rem', fontSize: '1rem' }}>{t.profilePage.examPreferences}</h3>
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>

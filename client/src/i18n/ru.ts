@@ -48,6 +48,7 @@ export const ru: Translations = {
     myPurchases: 'Мои покупки',
     myProgress: 'Мой прогресс',
     exams: 'Пробные экзамены',
+    materials: 'Материалы',
   },
   auth: {
     login: 'Войти',
