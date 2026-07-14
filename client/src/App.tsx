@@ -12,6 +12,7 @@ const RegisterPage = lazy(() => import('./pages/RegisterPage'))
 const CompleteProfilePage = lazy(() => import('./pages/CompleteProfilePage'))
 const DashboardPage = lazy(() => import('./pages/DashboardPage'))
 const LearnPage = lazy(() => import('./pages/LearnPage'))
+const MockExamPage = lazy(() => import('./pages/MockExamPage'))
 const ProgressPage = lazy(() => import('./pages/ProgressPage'))
 const StudyPlanPage = lazy(() => import('./pages/StudyPlanPage'))
 const ProfilePage = lazy(() => import('./pages/ProfilePage'))
@@ -68,6 +69,7 @@ function StudentRoutes() {
       <Route path="purchases" element={<PurchasesPage />} />
       <Route path="cart" element={<CartPage />} />
       <Route path="materials" element={<MaterialsPage />} />
+      <Route path="exams/result/:attemptId" element={<MockExamPage />} />
       <Route path="checkout" element={<CheckoutPage />} />
       <Route path="diagnostic" element={<DiagnosticTestPage />} />
       {/* Legacy redirects */}

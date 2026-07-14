@@ -1,5 +1,7 @@
-// Client-side shopping cart (localStorage). Items live here BEFORE payment.
-// After checkout they become server-side Purchase records ("Мои покупки").
+// Cart with a localStorage cache for instant reads, synced to a server-side cart
+// so it follows the user across devices. Server calls are best-effort (a guest
+// gets a 401 we ignore and fall back to local only).
+import api from './api';
 
 export interface CartItem {
   /** "mock" | "book" | "package". */
@@ -54,13 +56,26 @@ export const cartService = {
     const items = read().filter((i) => !(i.itemType === item.itemType && i.itemCode === item.itemCode));
     items.push(item);
     write(items);
+    api.post('/cart', item).catch(() => {});
   },
 
   remove(itemType: string, itemCode: string): void {
     write(read().filter((i) => !(i.itemType === itemType && i.itemCode === itemCode)));
+    api.delete('/cart/item', { params: { itemType, itemCode } }).catch(() => {});
   },
 
   clear(): void {
     write([]);
+    api.delete('/cart').catch(() => {});
+  },
+
+  /** Pull the server cart (cross-device) and replace the local cache. */
+  async sync(): Promise<void> {
+    try {
+      const res = await api.get<CartItem[]>('/cart');
+      if (Array.isArray(res.data)) write(res.data);
+    } catch {
+      /* guest / offline — keep local cache */
+    }
   },
 };

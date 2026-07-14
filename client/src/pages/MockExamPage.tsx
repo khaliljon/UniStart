@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { mockExamService } from '../services/mockExamService';
 import { useAppSelector } from '../hooks/useAppSelector';
 import { MockResultUpsellModal } from '../components/MockResultUpsellModal';
@@ -71,6 +71,17 @@ function MockExamPage() {
   }, []);
 
   useEffect(() => { loadExams(); }, [loadExams]);
+
+  // Deep-link: /exams/result/:attemptId opens that session's review directly.
+  const { attemptId } = useParams();
+  useEffect(() => {
+    if (!attemptId) return;
+    const id = Number(attemptId);
+    if (!Number.isFinite(id) || id <= 0) return;
+    mockExamService.getResults(id)
+      .then((r) => { if (r) { setResults(r); setShowReview(false); setPhase('results'); } })
+      .catch(() => {});
+  }, [attemptId]);
 
   // ── Timer logic ───────────────────────────────────────
   useEffect(() => {

@@ -4,6 +4,8 @@ import { useTranslation } from '../i18n';
 import { cscaStrings } from '../i18n/csca';
 import { purchaseService, type Purchase } from '../services/purchaseService';
 import { mockCatalogService, type MockTemplate } from '../services/mockCatalogService';
+import { mockExamService } from '../services/mockExamService';
+import type { MockExamHistoryItem } from '../types';
 import { cartService } from '../services/cartService';
 
 function PurchasesPage() {
@@ -12,6 +14,7 @@ function PurchasesPage() {
   const s = cscaStrings[locale];
   const [items, setItems] = useState<Purchase[] | null>(null);
   const [runs, setRuns] = useState<MockTemplate[]>([]);
+  const [history, setHistory] = useState<MockExamHistoryItem[]>([]);
   const [paid, setPaid] = useState(false);
 
   useEffect(() => {
@@ -24,6 +27,7 @@ function PurchasesPage() {
     mockCatalogService.getCatalog()
       .then((c) => setRuns(c.templates.filter((t) => t.runsRemaining > 0)))
       .catch(() => {});
+    mockExamService.getHistory().then(setHistory).catch(() => {});
   }, []);
 
   const fmt = (iso: string) =>
@@ -56,6 +60,31 @@ function PurchasesPage() {
           <button className="btn btn-primary" style={{ marginTop: '0.75rem', fontSize: '0.85rem' }} onClick={() => navigate('/learn?tab=mock')}>
             Перейти к решению
           </button>
+        </div>
+      )}
+
+      {/* Session history with review deep-link */}
+      {history.length > 0 && (
+        <div className="card" style={{ marginBottom: '1.25rem' }}>
+          <div style={{ fontWeight: 700, marginBottom: '0.5rem' }}>История сессий</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            {history.slice(0, 15).map((h) => (
+              <div key={h.attemptId} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', borderTop: '1px solid var(--border-color)', paddingTop: '0.5rem' }}>
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{h.examTitle}</div>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                    {new Date(h.startedAt).toLocaleDateString('ru-RU')} · {h.status === 'completed' ? `${h.totalScore ?? 0}%` : 'в процессе'}
+                  </div>
+                </div>
+                {h.status === 'completed' && (
+                  <button className="btn btn-outline" style={{ fontSize: '0.82rem', padding: '0.25rem 0.75rem' }}
+                          onClick={() => navigate(`/exams/result/${h.attemptId}`)}>
+                    Разбор
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

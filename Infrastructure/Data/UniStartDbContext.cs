@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using UniStart.Domain.Entities;
 
 namespace UniStart.Infrastructure.Data;
@@ -81,6 +81,7 @@ public class UniStartDbContext : DbContext
     public DbSet<MockPriceTier> MockPriceTiers => Set<MockPriceTier>();
     public DbSet<MockPackage> MockPackages => Set<MockPackage>();
     public DbSet<UserMockRuns> UserMockRuns => Set<UserMockRuns>();
+    public DbSet<UserCartItem> UserCartItems => Set<UserCartItem>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -971,6 +972,21 @@ public class UniStartDbContext : DbContext
                   .HasForeignKey(e => e.MockExamId)
                   .OnDelete(DeleteBehavior.Cascade);
             entity.HasIndex(e => new { e.UserId, e.MockExamId }).IsUnique();
+        });
+
+        modelBuilder.Entity<UserCartItem>(entity =>
+        {
+            entity.ToTable("UserCartItems");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.ItemType).IsRequired().HasMaxLength(30);
+            entity.Property(e => e.ItemCode).IsRequired().HasMaxLength(60);
+            entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Subjects).HasMaxLength(200);
+            entity.Property(e => e.Amount).HasColumnType("numeric(12,2)");
+            entity.Property(e => e.Currency).IsRequired().HasMaxLength(8).HasDefaultValue("KZT");
+            entity.Property(e => e.SelectedMockIds).HasMaxLength(200);
+            entity.HasOne(e => e.User).WithMany().HasForeignKey(e => e.UserId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(e => new { e.UserId, e.ItemType, e.ItemCode }).IsUnique();
         });
 
         // CSCA-only platform: exam types are managed at runtime (seeder / admin),

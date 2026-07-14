@@ -1,13 +1,17 @@
 import { Outlet, NavLink } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import ProfileDropdown from './ProfileDropdown';
 import GuidedTour from './GuidedTour';
 import LanguageSwitcher from './LanguageSwitcher';
 import { useTranslation } from '../hooks/useTranslation';
+import { cartService } from '../services/cartService';
 
 function Layout() {
   const { t } = useTranslation();
   const [menuOpen, setMenuOpen] = useState(false);
+
+  // Pull the server-side cart so it follows the user across devices.
+  useEffect(() => { cartService.sync(); }, []);
 
   return (
     <div className="layout">
