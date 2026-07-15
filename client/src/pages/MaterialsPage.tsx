@@ -6,23 +6,23 @@ import { purchaseService } from '../services/purchaseService';
 function MaterialsPage() {
   const navigate = useNavigate();
   const [materials, setMaterials] = useState<StudyMaterial[] | null>(null);
-  const [ownedSubjects, setOwnedSubjects] = useState<Set<string>>(new Set());
-  const [downloading, setDownloading] = useState<string | null>(null);
+  const [ownedIds, setOwnedIds] = useState<Set<string>>(new Set());
+  const [downloading, setDownloading] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     materialsService.list().then(setMaterials).catch(() => setMaterials([]));
     purchaseService
       .list()
-      .then((ps) => setOwnedSubjects(new Set(ps.filter((p) => p.itemType === 'book').map((p) => p.itemCode))))
+      .then((ps) => setOwnedIds(new Set(ps.filter((p) => p.itemType === 'book').map((p) => p.itemCode))))
       .catch(() => {});
   }, []);
 
-  const download = async (subjectKey: string) => {
-    setDownloading(subjectKey);
+  const download = async (id: number) => {
+    setDownloading(id);
     setError(null);
     try {
-      const { pdfUrl } = await materialsService.download(subjectKey);
+      const { pdfUrl } = await materialsService.download(id);
       window.open(pdfUrl, '_blank', 'noopener');
     } catch {
       setError('Не удалось получить файл. Возможно, материал ещё не куплен.');
@@ -44,7 +44,7 @@ function MaterialsPage() {
       {materials === null ? (
         <div className="loading"><div className="spinner" /></div>
       ) : (() => {
-        const owned = materials.filter((m) => ownedSubjects.has(m.subjectKey));
+        const owned = materials.filter((m) => ownedIds.has(String(m.id)));
         if (owned.length === 0) {
           return (
             <div className="card" style={{ textAlign: 'center', padding: '2rem' }}>
@@ -64,9 +64,9 @@ function MaterialsPage() {
                 <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>{m.description}</div>
               )}
               <button className="btn btn-primary" style={{ width: '100%', marginTop: 'auto' }}
-                      disabled={downloading === m.subjectKey}
-                      onClick={() => download(m.subjectKey)}>
-                {downloading === m.subjectKey ? 'Открываю…' : '⤓ Скачать PDF'}
+                      disabled={downloading === m.id}
+                      onClick={() => download(m.id)}>
+                {downloading === m.id ? 'Открываю…' : '⤓ Скачать PDF'}
               </button>
             </div>
           ))}

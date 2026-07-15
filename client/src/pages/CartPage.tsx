@@ -35,7 +35,7 @@ function CartPage() {
       const lines: CheckoutLine[] = items.map((i) => {
         if (i.itemType === 'mock') return { kind: 'mock', mockExamId: Number(i.itemCode), runs: i.runs ?? 1 };
         if (i.itemType === 'package') return { kind: 'package', packageKey: i.itemCode, selectedMockIds: i.selectedMockIds ?? [] };
-        return { kind: 'book', bookSubjectKey: i.itemCode };
+        return { kind: 'book', bookMaterialId: Number(i.itemCode) };
       });
 
       const { url } = await paymentsService.createCheckout(lines);

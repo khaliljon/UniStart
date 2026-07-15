@@ -48,8 +48,8 @@ public class CheckoutLineDto
     public string? PackageKey { get; set; }
     public List<int>? SelectedMockIds { get; set; }
 
-    // book line
-    public string? BookSubjectKey { get; set; }
+    // book line (per-material ownership)
+    public int? BookMaterialId { get; set; }
 }
 
 /// <summary>A run-based checkout request (cart of lines).</summary>

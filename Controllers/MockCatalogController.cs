@@ -47,18 +47,6 @@ public class MockCatalogController : ControllerBase
         catch (ArgumentException ex) { return BadRequest(new { error = ex.Message }); }
     }
 
-    /// <summary>
-    /// Checkout. Payment is currently a stub — this grants runs immediately.
-    /// Phase 2 replaces this with a Polar checkout + webhook grant.
-    /// </summary>
-    [HttpPost("checkout")]
-    [Authorize]
-    public async Task<IActionResult> Checkout([FromBody] RunCheckoutDto dto)
-    {
-        try { return Ok(await _entitlements.GrantAsync(CurrentUserId(), dto.Lines)); }
-        catch (ArgumentException ex) { return BadRequest(new { error = ex.Message }); }
-    }
-
     // ── Admin: price tiers ─────────────────────────────────
 
     [HttpGet("admin/tiers")]

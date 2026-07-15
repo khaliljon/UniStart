@@ -47,26 +47,27 @@ public class MaterialsController : ControllerBase
 
     /// <summary>
     /// Returns the PDF download URL for a purchased material.
-    /// Requires the user to be authenticated and to have a matching Purchase record.
+    /// Requires the user to be authenticated and to own a Purchase for this specific material.
     /// </summary>
-    [HttpGet("{subjectKey}/download")]
+    [HttpGet("{id:int}/download")]
     [Authorize]
-    public async Task<IActionResult> Download(string subjectKey)
+    public async Task<IActionResult> Download(int id)
     {
         var userId = GetUserId();
 
         var material = await _db.StudyMaterials
             .AsNoTracking()
-            .FirstOrDefaultAsync(m => m.SubjectKey == subjectKey && m.IsActive);
+            .FirstOrDefaultAsync(m => m.Id == id && m.IsActive);
 
         if (material == null)
             return NotFound(new { error = "Материал не найден." });
 
-        // Check that the user has purchased this book
+        // Check that the user has purchased THIS specific material (per-material ownership).
+        var itemCode = id.ToString();
         var purchased = await _db.Purchases.AnyAsync(p =>
             p.UserId == userId &&
             p.ItemType == "book" &&
-            p.ItemCode == subjectKey &&
+            p.ItemCode == itemCode &&
             p.Status == "Paid");
 
         if (!purchased)

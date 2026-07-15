@@ -41,7 +41,7 @@ export interface CheckoutLine {
   runs?: number;
   packageKey?: string;
   selectedMockIds?: number[];
-  bookSubjectKey?: string;
+  bookMaterialId?: number;
 }
 
 export interface CheckoutQuote {
@@ -88,8 +88,6 @@ export const mockCatalogService = {
   quote: (lines: CheckoutLine[]): Promise<CheckoutQuote> =>
     api.post<CheckoutQuote>('/mock-catalog/quote', { lines }).then((r) => r.data),
 
-  checkout: (lines: CheckoutLine[]): Promise<CheckoutQuote> =>
-    api.post<CheckoutQuote>('/mock-catalog/checkout', { lines }).then((r) => r.data),
 
   // ── Admin ──────────────────────────────────────────────
   adminTiers: (): Promise<AdminTier[]> =>

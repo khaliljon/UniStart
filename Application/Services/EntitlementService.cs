@@ -179,13 +179,13 @@ public class EntitlementService : IEntitlementService
             else if (line.Kind == "book")
             {
                 var material = await _db.StudyMaterials
-                    .FirstOrDefaultAsync(m => m.IsActive && m.SubjectKey == line.BookSubjectKey)
+                    .FirstOrDefaultAsync(m => m.IsActive && m.Id == line.BookMaterialId)
                     ?? throw new ArgumentException("Invalid book");
 
                 total += material.Price;
                 resolved.Add(new ResolvedLine(
                     "book",
-                    material.SubjectKey,
+                    material.Id.ToString(),   // itemCode = material id (per-material ownership)
                     material.Title,
                     material.SubjectKey,
                     material.Price,

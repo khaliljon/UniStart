@@ -5,7 +5,7 @@ import adminService from '../services/adminService';
 import type { AdminSection, AdminTopicSummary } from '../types';
 import { useTranslation } from '../hooks/useTranslation';
 
-const EXAM_TYPES = ['SAT', 'NUET'];
+const EXAM_TYPES = ['CSCA'];
 
 const STATUS_COLORS: Record<string, string> = {
   Pending: 'var(--warning-color)',
@@ -30,7 +30,7 @@ function AdminQuestionImportPage({ embedded = false }: { embedded?: boolean } = 
   const [drafts, setDrafts] = useState<ImportedQuestionDraft[]>([]);
   const [draftFilter, setDraftFilter] = useState<string>('');
   const [isUploading, setIsUploading] = useState(false);
-  const [examTypeCode, setExamTypeCode] = useState('SAT');
+  const [examTypeCode, setExamTypeCode] = useState('CSCA');
   const [contentType, setContentType] = useState<'questions' | 'theory'>('questions');
   const [error, setError] = useState<string | null>(null);
   const [editingDraft, setEditingDraft] = useState<number | null>(null);

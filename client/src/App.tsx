@@ -4,6 +4,7 @@ import { useAppSelector } from './hooks/useAppSelector'
 import Layout from './components/Layout'
 import AdminLayout from './components/AdminLayout'
 import CookieBanner from './components/CookieBanner'
+import Analytics from './components/Analytics'
 import { ToastProvider } from './components/Toast'
 
 // ── Lazy-loaded pages (code splitting) ──────────────────
@@ -45,7 +46,6 @@ const CscaCoursesPage = lazy(() => import('./pages/CscaCoursesPage'))
 const AboutUsPage = lazy(() => import('./pages/AboutUsPage'))
 const ContactsPage = lazy(() => import('./pages/ContactsPage'))
 const CscaNewsPage = lazy(() => import('./pages/CscaNewsPage'))
-const CheckoutPage = lazy(() => import('./pages/CheckoutPage'))
 const PurchasesPage = lazy(() => import('./pages/PurchasesPage'))
 const CartPage = lazy(() => import('./pages/CartPage'))
 const MaterialsPage = lazy(() => import('./pages/MaterialsPage'))
@@ -70,7 +70,6 @@ function StudentRoutes() {
       <Route path="cart" element={<CartPage />} />
       <Route path="materials" element={<MaterialsPage />} />
       <Route path="exams/result/:attemptId" element={<MockExamPage />} />
-      <Route path="checkout" element={<CheckoutPage />} />
       <Route path="diagnostic" element={<DiagnosticTestPage />} />
       {/* Legacy redirects */}
       <Route path="tutors" element={<Navigate to="/" replace />} />
@@ -125,6 +124,7 @@ function App() {
 
   return (
     <ToastProvider>
+    <Analytics />
     <Suspense fallback={<PageLoader />}>
     <Routes>
       <Route path="/landing" element={!isAuthenticated ? <LandingPage /> : <Navigate to="/" replace />} />

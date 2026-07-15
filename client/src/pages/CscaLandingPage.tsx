@@ -4,6 +4,8 @@ import { useTranslation } from '../i18n';
 import { cscaStrings } from '../i18n/csca';
 import { useAppSelector } from '../hooks/useAppSelector';
 import { materialsService } from '../services/materialsService';
+import { mockCatalogService, type MockPackage } from '../services/mockCatalogService';
+import { cartService } from '../services/cartService';
 import CscaNav from '../components/csca/CscaNav';
 import CscaFooter from '../components/csca/CscaFooter';
 import Reveal from '../components/csca/Reveal';
@@ -11,7 +13,7 @@ import {
   BrushDivider, MistMountains, SealStamp,
 } from '../components/csca/ChineseMotifs';
 import {
-  CSCA_SUBJECTS, CSCA_PACKAGES, CSCA_BOOK_PRICE,
+  CSCA_SUBJECTS,
   getNextSitting,
 } from '../cscaConfig';
 
@@ -41,6 +43,7 @@ function CscaLandingPage() {
   const { locale } = useTranslation();
   const { isAuthenticated } = useAppSelector((s) => s.auth);
   const [dbMaterials, setDbMaterials] = useState<{ id: number; subjectKey: string; title: string; price: number }[]>([]);
+  const [dbPackages, setDbPackages] = useState<MockPackage[] | null>(null);
 
   const s = cscaStrings[locale];
   const nextSitting = useMemo(() => getNextSitting(), []);
@@ -48,6 +51,7 @@ function CscaLandingPage() {
 
   useEffect(() => {
     materialsService.list().then(setDbMaterials).catch(() => {});
+    mockCatalogService.getCatalog().then((c) => setDbPackages(c.packages)).catch(() => setDbPackages([]));
   }, []);
 
   // Scroll to a hash target (e.g. #news) when navigating from another page.
@@ -77,26 +81,28 @@ function CscaLandingPage() {
     { icon: 'plan', t: s.fPlanT, d: s.fPlanD },
   ] as const;
 
-  const packageMeta = {
-    start: { name: s.pkgStart, for: s.pkgStartFor, subj: s.oneSubject },
-    standard: { name: s.pkgStandard, for: s.pkgStandardFor, subj: s.twoSubjects },
-    advanced: { name: s.pkgAdvanced, for: s.pkgAdvancedFor, subj: s.threeSubjects },
-    full: { name: s.pkgFull, for: s.pkgFullFor, subj: s.allSubjects },
-  } as const;
-
-  const buyPackage = (pkg: typeof CSCA_PACKAGES[number]) => {
-    const title = packageMeta[pkg.key].name + ' · CSCA';
-    const state = { itemType: 'package', itemCode: pkg.key, title, subjects: '', amount: pkg.price, currency: '₸' };
-    if (isAuthenticated) { navigate('/checkout', { state }); return; }
-    sessionStorage.setItem('checkout', JSON.stringify(state));
-    navigate('/register');
+  // Packages require choosing subjects — finish the purchase in the app storefront
+  // (MockShop on the home page), which adds to the cart and pays via Polar.
+  const buyPackage = () => {
+    navigate(isAuthenticated ? '/' : '/register');
   };
 
-  const buyBook = (subj: typeof CSCA_SUBJECTS[number], price?: number) => {
-    const bookPrice = price ?? CSCA_BOOK_PRICE;
-    const state = { itemType: 'book', itemCode: subj.key, title: `${subjectMeta[subj.key].name} · ${s.bookLabel}`, subjects: '', amount: bookPrice, currency: '₸' };
-    if (isAuthenticated) { navigate('/checkout', { state }); return; }
-    sessionStorage.setItem('checkout', JSON.stringify(state));
+  const buyBook = (mat: { id: number; subjectKey: string; title: string; price: number }) => {
+    const item = {
+      itemType: 'book',
+      itemCode: String(mat.id),
+      title: mat.title || `${subjectMeta[mat.subjectKey as keyof typeof subjectMeta]?.name ?? ''} · ${s.bookLabel}`,
+      subjects: mat.subjectKey,
+      amount: mat.price,
+      currency: '₸',
+    };
+    if (isAuthenticated) {
+      cartService.add(item);
+      navigate('/cart');
+      return;
+    }
+    // Guest: remember intent, register, then the dashboard adds it to the cart.
+    sessionStorage.setItem('checkout', JSON.stringify(item));
     navigate('/register');
   };
 
@@ -223,29 +229,45 @@ function CscaLandingPage() {
             </div>
           </Reveal>
 
+          {dbPackages === null ? (
+            <div className="loading"><div className="spinner" /></div>
+          ) : dbPackages.length === 0 ? (
+            <div className="csca-card" style={{ textAlign: 'center' }}>
+              <p className="csca-lead" style={{ margin: 0 }}>Пробники скоро появятся — мы работаем над этим.</p>
+            </div>
+          ) : (
           <Reveal stagger className="csca-grid csca-grid-4">
-            {CSCA_PACKAGES.map((pkg) => (
-              <div className={`csca-card csca-price-card ${pkg.featured ? 'featured' : ''}`} key={pkg.key}>
-                {pkg.featured && <span className="csca-price-flag">{s.popular}</span>}
-                <div className="csca-price-name">{packageMeta[pkg.key].name}</div>
-                <div className="csca-price-for">{packageMeta[pkg.key].for}</div>
+            {dbPackages.map((pkg) => {
+              const featured = pkg.key === 'standard';
+              const subjLabel = pkg.pickCount === 0 ? s.allSubjects
+                : pkg.pickCount === 1 ? s.oneSubject
+                : pkg.pickCount === 2 ? s.twoSubjects
+                : pkg.pickCount === 3 ? s.threeSubjects
+                : `${pkg.pickCount}`;
+              return (
+              <div className={`csca-card csca-price-card ${featured ? 'featured' : ''}`} key={pkg.key}>
+                {featured && <span className="csca-price-flag">{s.popular}</span>}
+                <div className="csca-price-name">{pkg.name}</div>
+                <div className="csca-price-for">{subjLabel} × {pkg.runsEach} зап.</div>
                 <div className="csca-price-amount csca-hanzi">
                   {pkg.price.toLocaleString('ru-RU')} <span className="csca-price-cur">{s.currency}</span>
                 </div>
                 <ul className="csca-price-list">
-                  <li><CheckIcon /> {packageMeta[pkg.key].subj}</li>
+                  <li><CheckIcon /> {subjLabel}</li>
                   <li><CheckIcon /> {s.pkgFeatAi}</li>
                   <li><CheckIcon /> {s.pkgFeatAnalytics}</li>
                   <li><CheckIcon /> {s.pkgFeatFull}</li>
                 </ul>
                 <button
-                  className={`csca-btn ${pkg.featured ? 'csca-btn-primary' : 'csca-btn-ghost'}`}
+                  className={`csca-btn ${featured ? 'csca-btn-primary' : 'csca-btn-ghost'}`}
                   style={{ width: '100%', marginTop: 'auto' }}
-                  onClick={() => buyPackage(pkg)}
+                  onClick={() => buyPackage()}
                 >{s.buy}</button>
               </div>
-            ))}
+              );
+            })}
           </Reveal>
+          )}
         </div>
       </section>
 
@@ -282,7 +304,7 @@ function CscaLandingPage() {
                   <div className="csca-price-amount csca-hanzi" style={{ fontSize: '1.4rem', margin: '0 0 0.6rem' }}>
                     {mat.price.toLocaleString('ru-RU')} <span className="csca-price-cur">{s.currency}</span>
                   </div>
-                  <button className="csca-btn csca-btn-ghost csca-btn-sm" style={{ width: '100%' }} onClick={() => buyBook(subj, mat.price)}>{s.buy}</button>
+                  <button className="csca-btn csca-btn-ghost csca-btn-sm" style={{ width: '100%' }} onClick={() => buyBook(mat)}>{s.buy}</button>
                 </div>
               );
             })}

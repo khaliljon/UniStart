@@ -12,15 +12,6 @@ export interface Purchase {
   purchasedAt: string;
 }
 
-export interface CheckoutRequest {
-  itemType: string;
-  itemCode: string;
-  title: string;
-  subjects?: string | null;
-  amount: number;
-  currency?: string;
-}
-
 export interface AdminPurchase extends Purchase {
   userId: number;
   userName: string;
@@ -37,11 +28,6 @@ export interface AdminSales {
 export const purchaseService = {
   async list(): Promise<Purchase[]> {
     const res = await api.get<Purchase[]>('/purchases');
-    return res.data;
-  },
-
-  async checkout(dto: CheckoutRequest): Promise<Purchase> {
-    const res = await api.post<Purchase>('/purchases/checkout', dto);
     return res.data;
   },
 

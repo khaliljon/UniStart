@@ -36,31 +36,6 @@ public class PurchaseController : ApiControllerBase
     }
 
     /// <summary>
-    /// Confirm an order. Payment is currently a stub (no real gateway);
-    /// this records the purchase so it appears in "Мои покупки".
-    /// </summary>
-    [HttpPost("checkout")]
-    public async Task<IActionResult> Checkout([FromBody] CheckoutDto dto)
-    {
-        var userId = GetCurrentUserId();
-        var purchase = new Purchase
-        {
-            UserId = userId,
-            ItemType = dto.ItemType.Trim(),
-            ItemCode = dto.ItemCode.Trim(),
-            Title = dto.Title.Trim(),
-            Subjects = string.IsNullOrWhiteSpace(dto.Subjects) ? null : dto.Subjects.Trim(),
-            Amount = dto.Amount,
-            Currency = string.IsNullOrWhiteSpace(dto.Currency) ? "KZT" : dto.Currency.Trim(),
-            Status = "Paid",
-            PurchasedAt = DateTime.UtcNow,
-        };
-        _db.Purchases.Add(purchase);
-        await _db.SaveChangesAsync();
-        return Ok(ToDto(purchase));
-    }
-
-    /// <summary>
     /// Admin sales monitor: all purchases with buyer info and revenue totals.
     /// Optional filters by status, item type and date range.
     /// </summary>

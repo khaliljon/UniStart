@@ -240,7 +240,7 @@ public class PolarService : IPolarService
             else if (l.Kind == "package")
                 parts.Add($"p:{l.PackageKey}:{string.Join(",", l.SelectedMockIds ?? new List<int>())}");
             else if (l.Kind == "book")
-                parts.Add($"b:{l.BookSubjectKey}");
+                parts.Add($"b:{l.BookMaterialId}");
         }
         return string.Join(";", parts);
     }
@@ -264,9 +264,9 @@ public class PolarService : IPolarService
                     : new List<int>();
                 result.Add(new CheckoutLineDto { Kind = "package", PackageKey = seg[1], SelectedMockIds = ids });
             }
-            else if (seg[0] == "b" && seg.Length >= 2)
+            else if (seg[0] == "b" && seg.Length >= 2 && int.TryParse(seg[1], out var bookId))
             {
-                result.Add(new CheckoutLineDto { Kind = "book", BookSubjectKey = seg[1] });
+                result.Add(new CheckoutLineDto { Kind = "book", BookMaterialId = bookId });
             }
         }
         return result;

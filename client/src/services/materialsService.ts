@@ -29,9 +29,9 @@ export const materialsService = {
   list: (): Promise<StudyMaterial[]> =>
     api.get<StudyMaterial[]>('/materials').then((r) => r.data),
 
-  /** Download link for a purchased material (authenticated, purchase-gated). */
-  download: (subjectKey: string): Promise<{ pdfUrl: string }> =>
-    api.get<{ pdfUrl: string }>(`/materials/${encodeURIComponent(subjectKey)}/download`).then((r) => r.data),
+  /** Download link for a purchased material (authenticated, purchase-gated by material id). */
+  download: (id: number): Promise<{ pdfUrl: string }> =>
+    api.get<{ pdfUrl: string }>(`/materials/${id}/download`).then((r) => r.data),
 
   // ── Admin ──────────────────────────────────────────────
 
