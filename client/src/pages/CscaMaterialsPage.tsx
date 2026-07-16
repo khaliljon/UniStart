@@ -1,46 +1,76 @@
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../i18n';
 import { cscaStrings } from '../i18n/csca';
+import { useAppSelector } from '../hooks/useAppSelector';
+import { materialsService, type StudyMaterial } from '../services/materialsService';
+import { cartService } from '../services/cartService';
+import { CSCA_SUBJECTS } from '../cscaConfig';
 import CscaPageShell, { CscaPageHero } from '../components/csca/CscaPageShell';
-import { CSCA_SUBJECTS, CSCA_BOOK_PRICE } from '../cscaConfig';
 
 function CscaMaterialsPage() {
   const navigate = useNavigate();
   const { locale } = useTranslation();
   const s = cscaStrings[locale];
+  const { isAuthenticated } = useAppSelector((st) => st.auth);
+  const [materials, setMaterials] = useState<StudyMaterial[] | null>(null);
 
-  const subjectName = {
-    chineseTech: s.subjChineseTech, chineseHum: s.subjChineseHum,
-    math: s.subjMath, physics: s.subjPhysics, chemistry: s.subjChemistry,
-  } as const;
+  useEffect(() => {
+    materialsService.list().then(setMaterials).catch(() => setMaterials([]));
+  }, []);
+
+  const coverFor = (key: string) => CSCA_SUBJECTS.find((x) => x.key === key) ?? CSCA_SUBJECTS[0];
+
+  const buy = (mat: StudyMaterial) => {
+    const item = {
+      itemType: 'book',
+      itemCode: String(mat.id),
+      title: mat.title,
+      subjects: mat.subjectKey,
+      amount: mat.price,
+      currency: '₸',
+    };
+    if (isAuthenticated) {
+      cartService.add(item);
+      navigate('/cart');
+      return;
+    }
+    sessionStorage.setItem('checkout', JSON.stringify(item));
+    navigate('/register');
+  };
 
   return (
     <CscaPageShell>
       <CscaPageHero eyebrow={s.navMaterials} title={s.materialsTitle} lead={s.materialsLead} />
 
       <section className="csca-wrap csca-section" style={{ paddingTop: '1.5rem' }}>
-        <div className="csca-card" style={{ marginBottom: '1.75rem', textAlign: 'center', background: 'linear-gradient(135deg, rgba(200,16,46,0.05), rgba(201,162,75,0.08))' }}>
-          <div className="csca-feature-title" style={{ fontSize: '1.15rem' }}>{s.freePdfTitle}</div>
-          <div className="csca-feature-desc" style={{ maxWidth: 560, margin: '0.4rem auto 1rem' }}>{s.freePdfDesc}</div>
-          <button className="csca-btn csca-btn-primary" onClick={() => navigate('/register')}>{s.getFree}</button>
-        </div>
-
+        {materials === null ? (
+          <div className="loading"><div className="spinner" /></div>
+        ) : materials.length === 0 ? (
+          <div className="csca-card" style={{ textAlign: 'center' }}>
+            <p className="csca-lead" style={{ margin: 0 }}>Учебные материалы скоро появятся — мы работаем над этим.</p>
+          </div>
+        ) : (
         <div className="csca-grid csca-grid-5">
-          {CSCA_SUBJECTS.map((subj) => (
-            <div className="csca-card csca-book" key={subj.key}>
-              <div className="csca-book-cover" style={{ background: subj.cover }}>
-                <span className="csca-book-hanzi">{subj.hanzi}</span>
-                <span className="csca-book-label csca-hanzi">CSCA · 备考教材</span>
+          {materials.map((mat) => {
+            const subj = coverFor(mat.subjectKey);
+            return (
+              <div className="csca-card csca-book" key={mat.id}>
+                <div className="csca-book-cover" style={{ background: subj.cover }}>
+                  <span className="csca-book-hanzi">{subj.hanzi}</span>
+                  <span className="csca-book-label csca-hanzi">CSCA · 备考教材</span>
+                </div>
+                <div className="csca-subject-name">{mat.title}</div>
+                <div className="csca-subject-tag" style={{ marginBottom: '0.75rem' }}>{s.bookLabel}</div>
+                <div className="csca-price-amount csca-hanzi" style={{ fontSize: '1.4rem', margin: '0 0 0.6rem' }}>
+                  {mat.price.toLocaleString('ru-RU')} <span className="csca-price-cur">{s.currency}</span>
+                </div>
+                <button className="csca-btn csca-btn-ghost csca-btn-sm" style={{ width: '100%' }} onClick={() => buy(mat)}>{s.buy}</button>
               </div>
-              <div className="csca-subject-name">{subjectName[subj.key]}</div>
-              <div className="csca-subject-tag" style={{ marginBottom: '0.75rem' }}>{s.bookLabel}</div>
-              <div className="csca-price-amount csca-hanzi" style={{ fontSize: '1.4rem', margin: '0 0 0.6rem' }}>
-                {CSCA_BOOK_PRICE.toLocaleString('ru-RU')} <span className="csca-price-cur">{s.currency}</span>
-              </div>
-              <button className="csca-btn csca-btn-ghost csca-btn-sm" style={{ width: '100%' }} onClick={() => navigate('/register')}>{s.buy}</button>
-            </div>
-          ))}
+            );
+          })}
         </div>
+        )}
       </section>
     </CscaPageShell>
   );

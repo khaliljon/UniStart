@@ -278,12 +278,6 @@ function CscaLandingPage() {
             <h2 className="csca-h2">{s.materialsTitle}</h2>
             <p className="csca-lead">{s.materialsLead}</p>
           </div>
-          <Reveal>
-            <div className="csca-card" style={{ marginBottom: '1.75rem', textAlign: 'center', background: 'linear-gradient(135deg, rgba(200,16,46,0.05), rgba(201,162,75,0.08))' }}>
-              <div className="csca-feature-title" style={{ fontSize: '1.15rem' }}>{s.freePdfTitle}</div>
-              <div className="csca-feature-desc" style={{ maxWidth: 560, margin: '0.4rem auto 0' }}>{s.freePdfDesc}</div>
-            </div>
-          </Reveal>
           {dbMaterials.length === 0 ? (
             <div className="csca-card" style={{ textAlign: 'center' }}>
               <p className="csca-lead" style={{ margin: 0 }}>Учебные материалы скоро появятся — мы работаем над этим.</p>

@@ -108,17 +108,23 @@ public class PolarService : IPolarService
         var root = doc.RootElement;
         var type = root.TryGetProperty("type", out var t) ? t.GetString() : null;
 
-        // Grant on a paid order.
-        if (type != "order.paid" && type != "order.created" && type != "checkout.updated")
+        // Grant on a paid order (Polar sends the paid transition as order.updated).
+        if (type != "order.paid" && type != "order.updated" && type != "order.created" && type != "checkout.updated")
             return true; // acknowledged, nothing to do
 
         if (!root.TryGetProperty("data", out var data)) return true;
 
-        // For checkout.updated, only act on succeeded status.
+        // Only act once payment actually succeeded.
         if (type == "checkout.updated")
         {
             var status = data.TryGetProperty("status", out var st) ? st.GetString() : null;
             if (status != "succeeded") return true;
+        }
+        else // order.*
+        {
+            var paidFlag = data.TryGetProperty("paid", out var pd) && pd.ValueKind == JsonValueKind.True;
+            var orderStatus = data.TryGetProperty("status", out var os) ? os.GetString() : null;
+            if (!paidFlag && orderStatus != "paid") return true;
         }
 
         var orderId = data.TryGetProperty("id", out var idEl) ? idEl.GetString() : null;
@@ -177,9 +183,16 @@ public class PolarService : IPolarService
 
     private bool VerifySignature(string body, string? id, string? timestamp, string? signatureHeader)
     {
-        if (string.IsNullOrEmpty(_webhookSecret) || string.IsNullOrEmpty(id)
-            || string.IsNullOrEmpty(timestamp) || string.IsNullOrEmpty(signatureHeader))
+        if (string.IsNullOrEmpty(_webhookSecret))
+        {
+            _logger.LogWarning("Polar webhook: signing secret is not configured (POLAR_SANDBOX_WEBHOOK_SECRET)");
             return false;
+        }
+        if (string.IsNullOrEmpty(id) || string.IsNullOrEmpty(timestamp) || string.IsNullOrEmpty(signatureHeader))
+        {
+            _logger.LogWarning("Polar webhook: missing webhook-id/timestamp/signature headers");
+            return false;
+        }
 
         // Standard Webhooks: secret is "whsec_<base64>"; the HMAC key is the
         // base64-decoded remainder.
@@ -198,6 +211,7 @@ public class PolarService : IPolarService
             if (sigBytes != null && CryptographicOperations.FixedTimeEquals(sigBytes, expected))
                 return true;
         }
+        _logger.LogWarning("Polar webhook: signature mismatch — verify POLAR_SANDBOX_WEBHOOK_SECRET matches the endpoint's signing secret");
         return false;
     }
 
