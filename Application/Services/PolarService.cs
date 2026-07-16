@@ -199,6 +199,7 @@ public class PolarService : IPolarService
         // to be robust against secret-format differences.
         var secretPart = _webhookSecret.StartsWith("whsec_") ? _webhookSecret["whsec_".Length..] : _webhookSecret;
         var keys = new List<byte[]>();
+        keys.Add(Encoding.UTF8.GetBytes(_webhookSecret));
         var decoded = DecodeBase64(secretPart);
         if (decoded != null) keys.Add(decoded);
         keys.Add(Encoding.UTF8.GetBytes(secretPart));
