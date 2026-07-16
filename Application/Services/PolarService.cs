@@ -195,23 +195,40 @@ public class PolarService : IPolarService
         }
 
         // Standard Webhooks: secret is "whsec_<base64>"; the HMAC key is the
-        // base64-decoded remainder.
+        // base64-decoded remainder. Try both the decoded key and the raw bytes
+        // to be robust against secret-format differences.
         var secretPart = _webhookSecret.StartsWith("whsec_") ? _webhookSecret["whsec_".Length..] : _webhookSecret;
-        var key = DecodeBase64(secretPart) ?? Encoding.UTF8.GetBytes(secretPart);
+        var keys = new List<byte[]>();
+        var decoded = DecodeBase64(secretPart);
+        if (decoded != null) keys.Add(decoded);
+        keys.Add(Encoding.UTF8.GetBytes(secretPart));
 
         var signedContent = $"{id}.{timestamp}.{body}";
-        using var hmac = new HMACSHA256(key);
-        var expected = hmac.ComputeHash(Encoding.UTF8.GetBytes(signedContent));
+        var received = signatureHeader
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Select(p => p.Contains(',') ? p.Split(',', 2)[1] : p)
+            .ToList();
 
-        // Header format: space-separated list of "v1,<base64sig>" entries.
-        foreach (var part in signatureHeader.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+        foreach (var key in keys)
         {
-            var sigB64 = part.Contains(',') ? part.Split(',', 2)[1] : part;
-            var sigBytes = DecodeBase64(sigB64);
-            if (sigBytes != null && CryptographicOperations.FixedTimeEquals(sigBytes, expected))
-                return true;
+            using var hmac = new HMACSHA256(key);
+            var expected = hmac.ComputeHash(Encoding.UTF8.GetBytes(signedContent));
+            foreach (var sigB64 in received)
+            {
+                var sigBytes = DecodeBase64(sigB64);
+                if (sigBytes != null && CryptographicOperations.FixedTimeEquals(sigBytes, expected))
+                    return true;
+            }
         }
-        _logger.LogWarning("Polar webhook: signature mismatch — verify POLAR_SANDBOX_WEBHOOK_SECRET matches the endpoint's signing secret");
+
+        // TEMP DEBUG — remove after diagnosis. Logs byte-level details (never the secret itself).
+        using (var dbg = new HMACSHA256(keys[0]))
+        {
+            var exp = Convert.ToBase64String(dbg.ComputeHash(Encoding.UTF8.GetBytes(signedContent)));
+            _logger.LogWarning(
+                "Polar webhook signature mismatch. id={Id} ts={Ts} bodyLen={Len} keyLen={KeyLen} expectedSig={Exp} receivedHeader={Recv}",
+                id, timestamp, body.Length, keys[0].Length, exp, signatureHeader);
+        }
         return false;
     }
 
