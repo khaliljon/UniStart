@@ -17,7 +17,6 @@ const MockExamPage = lazy(() => import('./pages/MockExamPage'))
 const ProgressPage = lazy(() => import('./pages/ProgressPage'))
 const StudyPlanPage = lazy(() => import('./pages/StudyPlanPage'))
 const ProfilePage = lazy(() => import('./pages/ProfilePage'))
-const NotificationSettingsPage = lazy(() => import('./pages/NotificationSettingsPage'))
 const DiagnosticTestPage = lazy(() => import('./pages/DiagnosticTestPage'))
 const AdminStatsPage = lazy(() => import('./pages/AdminStatsPage'))
 const AdminQuestionsPage = lazy(() => import('./pages/AdminQuestionsPage'))
@@ -65,7 +64,6 @@ function StudentRoutes() {
       <Route path="progress" element={<ProgressPage />} />
       <Route path="plan" element={<StudyPlanPage />} />
       <Route path="profile" element={<ProfilePage />} />
-      <Route path="profile/notifications" element={<NotificationSettingsPage />} />
       <Route path="purchases" element={<PurchasesPage />} />
       <Route path="cart" element={<CartPage />} />
       <Route path="materials" element={<MaterialsPage />} />
@@ -85,7 +83,7 @@ function StudentRoutes() {
       <Route path="history" element={<Navigate to="/progress?tab=history" replace />} />
       <Route path="study-plan" element={<Navigate to="/plan" replace />} />
       <Route path="recommendations" element={<Navigate to="/" replace />} />
-      <Route path="notifications" element={<Navigate to="/profile/notifications" replace />} />
+      <Route path="notifications" element={<Navigate to="/" replace />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Route>
   )

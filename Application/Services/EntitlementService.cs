@@ -107,6 +107,16 @@ public class EntitlementService : IEntitlementService
 
     // ── internals ──────────────────────────────────────────
 
+    private static string MoksLabel(int n)
+    {
+        var mod10 = n % 10;
+        var mod100 = n % 100;
+        string word = (mod10 == 1 && mod100 != 11) ? "мок"
+            : (mod10 >= 2 && mod10 <= 4 && !(mod100 >= 12 && mod100 <= 14)) ? "мока"
+            : "моков";
+        return $"{n} {word}";
+    }
+
     private sealed record ResolvedLine(
         string ItemType,
         string ItemCode,
@@ -143,7 +153,7 @@ public class EntitlementService : IEntitlementService
                 resolved.Add(new ResolvedLine(
                     "mock",
                     mockId.ToString(),
-                    $"{mock.Title} · {tier.Runs} зап.",
+                    $"{mock.Title} · {MoksLabel(tier.Runs)}",
                     mock.ExamTypeCode,
                     tier.Price,
                     new List<(int, int)> { (mockId, tier.Runs) }));

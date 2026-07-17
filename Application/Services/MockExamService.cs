@@ -285,6 +285,7 @@ public class MockExamService : IMockExamService
             .Include(a => a.Question).ThenInclude(q => q.AnswerOptions)
             .Include(a => a.Question).ThenInclude(q => q.Topic)
             .Include(a => a.Question).ThenInclude(q => q.ReadingPassage)
+            .Include(a => a.SelectedOptions)
             .Where(a => a.AttemptId == attempt.Id && a.SectionIndex == sectionIndex)
             .OrderBy(a => a.SortOrder)
             .ToListAsync();
@@ -311,7 +312,9 @@ public class MockExamService : IMockExamService
                 a.Question.ReadingPassageId,
                 a.Question.ReadingPassage?.Title,
                 a.Question.ReadingPassage?.Content,
-                a.Question.ImageUrl
+                a.Question.ImageUrl,
+                a.Question.IsMultipleChoice,
+                a.SelectedOptions.Select(s => s.AnswerOptionId).ToList()
             );
         });
 
@@ -346,13 +349,32 @@ public class MockExamService : IMockExamService
 
         var answer = await _context.MockExamAnswers
             .Include(a => a.Question).ThenInclude(q => q.AnswerOptions)
+            .Include(a => a.SelectedOptions)
             .FirstOrDefaultAsync(a => a.AttemptId == attemptId && a.QuestionId == dto.QuestionId);
         if (answer == null) return false;
 
-        answer.SelectedOptionId = dto.SelectedOptionId;
+        // Resolve the selected option id(s): prefer the multi-select list, fall back
+        // to the single legacy id. Keep only ids that belong to this question.
+        var validIds = answer.Question.AnswerOptions.Select(o => o.Id).ToHashSet();
+        var ids = ((dto.SelectedOptionIds != null && dto.SelectedOptionIds.Count > 0)
+                ? dto.SelectedOptionIds
+                : (dto.SelectedOptionId > 0 ? new List<int> { dto.SelectedOptionId } : new List<int>()))
+            .Where(validIds.Contains).Distinct().ToList();
+
+        // Replace the stored selection set.
+        if (answer.SelectedOptions.Count > 0)
+            _context.MockExamAnswerOptions.RemoveRange(answer.SelectedOptions.ToList());
+        answer.SelectedOptions.Clear();
+        foreach (var oid in ids)
+            answer.SelectedOptions.Add(new MockExamAnswerOption { MockExamAnswerId = answer.Id, AnswerOptionId = oid });
+
+        answer.SelectedOptionId = ids.Count > 0 ? ids[0] : (int?)null;
         answer.TimeSpentSeconds = dto.TimeSpentSeconds;
-        answer.IsCorrect = answer.Question.AnswerOptions
-            .Any(o => o.Id == dto.SelectedOptionId && o.IsCorrect);
+
+        var correctIds = answer.Question.AnswerOptions.Where(o => o.IsCorrect).Select(o => o.Id).ToHashSet();
+        answer.IsCorrect = answer.Question.IsMultipleChoice
+            ? ids.Count > 0 && correctIds.SetEquals(ids)
+            : ids.Count == 1 && correctIds.Contains(ids[0]);
 
         await _context.SaveChangesAsync();
         return true;
@@ -488,6 +510,7 @@ public class MockExamService : IMockExamService
         var allAnswers = await _context.MockExamAnswers
             .Include(a => a.Question).ThenInclude(q => q.AnswerOptions)
             .Include(a => a.Question).ThenInclude(q => q.Topic).ThenInclude(t => t.Section)
+            .Include(a => a.SelectedOptions)
             .Where(a => a.AttemptId == attemptId)
             .OrderBy(a => a.SectionIndex).ThenBy(a => a.QuestionId)
             .ToListAsync();
@@ -521,6 +544,10 @@ public class MockExamService : IMockExamService
                 : null;
             var sectionName = a.SectionIndex < sections.Count ? sections[a.SectionIndex].Name : "Unknown";
 
+            var correctIds = a.Question.AnswerOptions.Where(o => o.IsCorrect).Select(o => o.Id).ToList();
+            var selectedIds = a.SelectedOptions.Select(s => s.AnswerOptionId).ToList();
+            if (selectedIds.Count == 0 && a.SelectedOptionId.HasValue) selectedIds.Add(a.SelectedOptionId.Value);
+
             return new MockExamAnswerReviewDto(
                 a.QuestionId,
                 a.Question.Text,
@@ -532,8 +559,11 @@ public class MockExamService : IMockExamService
                 correctOption?.Id ?? 0,
                 correctOption?.Text ?? "",
                 a.IsCorrect,
-                !a.SelectedOptionId.HasValue,
-                a.Question.Explanation
+                selectedIds.Count == 0,
+                a.Question.Explanation,
+                a.Question.IsMultipleChoice,
+                selectedIds,
+                correctIds
             );
         }).ToList();
 

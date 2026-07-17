@@ -35,11 +35,12 @@ export const mockExamService = {
     return response.data;
   },
 
-  async submitAnswer(attemptId: number, questionId: number, selectedOptionId: number, timeSpentSeconds?: number): Promise<void> {
+  async submitAnswer(attemptId: number, questionId: number, selectedOptionId: number, timeSpentSeconds?: number, selectedOptionIds?: number[]): Promise<void> {
     await api.post(`/mock-exams/attempts/${attemptId}/answer`, {
       questionId,
       selectedOptionId,
       timeSpentSeconds,
+      selectedOptionIds,
     });
   },
 

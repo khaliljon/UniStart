@@ -76,7 +76,9 @@ public record MockExamQuestionDto(
     int? ReadingPassageId,
     string? PassageTitle,
     string? PassageContent,
-    string? ImageUrl
+    string? ImageUrl,
+    bool IsMultipleChoice = false,
+    IEnumerable<int>? SelectedOptionIds = null
 );
 
 /// <summary>Answer option</summary>
@@ -89,7 +91,8 @@ public record MockExamOptionDto(
 public record MockExamSubmitAnswerDto(
     int QuestionId,
     int SelectedOptionId,
-    int? TimeSpentSeconds = null
+    int? TimeSpentSeconds = null,
+    List<int>? SelectedOptionIds = null
 );
 
 /// <summary>Section result after completion</summary>
@@ -133,7 +136,10 @@ public record MockExamAnswerReviewDto(
     string CorrectOptionText,
     bool IsCorrect,
     bool IsUnanswered,
-    string? Explanation
+    string? Explanation,
+    bool IsMultipleChoice = false,
+    IEnumerable<int>? SelectedOptionIds = null,
+    IEnumerable<int>? CorrectOptionIds = null
 );
 
 /// <summary>User's mock exam history item</summary>

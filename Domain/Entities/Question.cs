@@ -6,6 +6,8 @@ public class Question : ISoftDeletable, IAuditable
     public int TopicId { get; set; }
     public string Text { get; set; } = string.Empty;
     public QuestionDifficulty Difficulty { get; set; }
+    /// <summary>When true, the question has multiple correct options and is answered with checkboxes.</summary>
+    public bool IsMultipleChoice { get; set; } = false;
     public string? Explanation { get; set; }
     public string? Hint { get; set; }
     public string? VideoUrl { get; set; }

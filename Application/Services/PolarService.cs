@@ -108,24 +108,19 @@ public class PolarService : IPolarService
         var root = doc.RootElement;
         var type = root.TryGetProperty("type", out var t) ? t.GetString() : null;
 
-        // Grant on a paid order (Polar sends the paid transition as order.updated).
-        if (type != "order.paid" && type != "order.updated" && type != "order.created" && type != "checkout.updated")
+        // Grant on a paid order. Polar sends the paid transition as order.updated
+        // (and possibly order.paid); both carry the same order id, so the dedup key
+        // below prevents a double grant. We deliberately ignore checkout.updated —
+        // its data.id is the checkout id (a different dedup key), which would double-grant.
+        if (type != "order.paid" && type != "order.updated" && type != "order.created")
             return true; // acknowledged, nothing to do
 
         if (!root.TryGetProperty("data", out var data)) return true;
 
         // Only act once payment actually succeeded.
-        if (type == "checkout.updated")
-        {
-            var status = data.TryGetProperty("status", out var st) ? st.GetString() : null;
-            if (status != "succeeded") return true;
-        }
-        else // order.*
-        {
-            var paidFlag = data.TryGetProperty("paid", out var pd) && pd.ValueKind == JsonValueKind.True;
-            var orderStatus = data.TryGetProperty("status", out var os) ? os.GetString() : null;
-            if (!paidFlag && orderStatus != "paid") return true;
-        }
+        var paidFlag = data.TryGetProperty("paid", out var pd) && pd.ValueKind == JsonValueKind.True;
+        var orderStatus = data.TryGetProperty("status", out var os) ? os.GetString() : null;
+        if (!paidFlag && orderStatus != "paid") return true;
 
         var orderId = data.TryGetProperty("id", out var idEl) ? idEl.GetString() : null;
         var metadata = ExtractMetadata(data);
@@ -194,12 +189,11 @@ public class PolarService : IPolarService
             return false;
         }
 
-        // Standard Webhooks: secret is "whsec_<base64>"; the HMAC key is the
-        // base64-decoded remainder. Try both the decoded key and the raw bytes
-        // to be robust against secret-format differences.
+        // Polar deviates from Standard Webhooks: the HMAC key is the raw secret
+        // (including the "whsec_" prefix) as UTF-8 bytes. We also try the base64-
+        // decoded variants as a fallback for compatibility.
         var secretPart = _webhookSecret.StartsWith("whsec_") ? _webhookSecret["whsec_".Length..] : _webhookSecret;
-        var keys = new List<byte[]>();
-        keys.Add(Encoding.UTF8.GetBytes(_webhookSecret));
+        var keys = new List<byte[]> { Encoding.UTF8.GetBytes(_webhookSecret) };
         var decoded = DecodeBase64(secretPart);
         if (decoded != null) keys.Add(decoded);
         keys.Add(Encoding.UTF8.GetBytes(secretPart));
@@ -222,14 +216,7 @@ public class PolarService : IPolarService
             }
         }
 
-        // TEMP DEBUG — remove after diagnosis. Logs byte-level details (never the secret itself).
-        using (var dbg = new HMACSHA256(keys[0]))
-        {
-            var exp = Convert.ToBase64String(dbg.ComputeHash(Encoding.UTF8.GetBytes(signedContent)));
-            _logger.LogWarning(
-                "Polar webhook signature mismatch. id={Id} ts={Ts} bodyLen={Len} keyLen={KeyLen} expectedSig={Exp} receivedHeader={Recv}",
-                id, timestamp, body.Length, keys[0].Length, exp, signatureHeader);
-        }
+        _logger.LogWarning("Polar webhook: signature mismatch — verify POLAR_SANDBOX_WEBHOOK_SECRET matches the endpoint's signing secret");
         return false;
     }
 

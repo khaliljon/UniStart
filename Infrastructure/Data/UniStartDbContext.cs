@@ -29,6 +29,7 @@ public class UniStartDbContext : DbContext
     public DbSet<MockExamSection> MockExamSections => Set<MockExamSection>();
     public DbSet<MockExamAttempt> MockExamAttempts => Set<MockExamAttempt>();
     public DbSet<MockExamAnswer> MockExamAnswers => Set<MockExamAnswer>();
+    public DbSet<MockExamAnswerOption> MockExamAnswerOptions => Set<MockExamAnswerOption>();
     public DbSet<NotificationPreferences> NotificationPreferences => Set<NotificationPreferences>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
@@ -454,6 +455,14 @@ public class UniStartDbContext : DbContext
         });
 
         // ─── Notification Preferences ───────────────────────
+        modelBuilder.Entity<MockExamAnswerOption>(entity =>
+        {
+            entity.ToTable("MockExamAnswerOptions");
+            entity.HasKey(e => new { e.MockExamAnswerId, e.AnswerOptionId });
+            entity.HasOne(e => e.Answer).WithMany(a => a.SelectedOptions).HasForeignKey(e => e.MockExamAnswerId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Option).WithMany().HasForeignKey(e => e.AnswerOptionId).OnDelete(DeleteBehavior.Cascade);
+        });
+
         modelBuilder.Entity<NotificationPreferences>(entity =>
         {
             entity.ToTable("NotificationPreferences");

@@ -77,14 +77,6 @@ function ProfileDropdown() {
             <div>
               <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{user?.name}</div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{user?.email}</div>
-              {user?.subscriptionTier === 'Pro' && (
-                <span style={{
-                  fontSize: '0.65rem', fontWeight: 700, color: '#fff',
-                  background: 'linear-gradient(135deg, #f59e0b, #ef4444)',
-                  padding: '0.1rem 0.4rem', borderRadius: '999px', marginTop: '0.15rem',
-                  display: 'inline-block',
-                }}>PRO</span>
-              )}
             </div>
           </div>
 
@@ -106,9 +98,6 @@ function ProfileDropdown() {
           </button>
           <button className="profile-dropdown-item" onClick={() => goTo('/profile')}>
             {t.nav.myProfile}
-          </button>
-          <button className="profile-dropdown-item" onClick={() => goTo('/profile/notifications')}>
-            {t.nav.notifications}
           </button>
 
           <div className="profile-dropdown-divider" />

@@ -257,7 +257,7 @@ function AdminMocksPage() {
           <div style={{ flex: '1 1 100%' }}>
             <h2 style={{ fontSize: '1.1rem', margin: 0 }}>Цена учебника</h2>
             <p style={{ margin: '0.25rem 0 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-              Цены на запуски пробников и пакеты — во вкладке «Цены».
+              Цены на моки и пакеты — во вкладке «Цены».
             </p>
           </div>
           <label style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', fontSize: '0.85rem' }}>

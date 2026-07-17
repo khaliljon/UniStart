@@ -7,6 +7,7 @@ import { mockCatalogService, type MockTemplate } from '../services/mockCatalogSe
 import { mockExamService } from '../services/mockExamService';
 import type { MockExamHistoryItem } from '../types';
 import { cartService } from '../services/cartService';
+import { moks } from '../utils/plural';
 
 function PurchasesPage() {
   const navigate = useNavigate();
@@ -41,7 +42,7 @@ function PurchasesPage() {
         <div className="card" style={{ marginBottom: '1.25rem', border: '2px solid #10b981', background: 'rgba(16,185,129,0.08)' }}>
           <div style={{ fontWeight: 700, color: '#10b981' }}>✓ Оплата прошла</div>
           <div style={{ fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
-            Доступ начислен. Запуски пробников — во вкладке «Пробные экзамены», учебники — в «Материалах».
+            Доступ начислен. Моки — во вкладке «Пробные экзамены», учебники — в «Материалах».
           </div>
         </div>
       )}
@@ -49,11 +50,11 @@ function PurchasesPage() {
       {/* My runs */}
       {runs.length > 0 && (
         <div className="card" style={{ marginBottom: '1.25rem' }}>
-          <div style={{ fontWeight: 700, marginBottom: '0.5rem' }}>Мои запуски</div>
+          <div style={{ fontWeight: 700, marginBottom: '0.5rem' }}>Мои моки</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
             {runs.map((t) => (
               <span key={t.mockExamId} style={{ fontSize: '0.85rem', padding: '0.3rem 0.7rem', borderRadius: '999px', background: 'rgba(16,185,129,0.12)', color: '#10b981', fontWeight: 700 }}>
-                {t.title}: {t.runsRemaining}
+                {t.title}: {moks(t.runsRemaining)}
               </span>
             ))}
           </div>

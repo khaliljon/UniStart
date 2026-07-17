@@ -5,6 +5,7 @@ import { cscaStrings } from '../i18n/csca';
 import CscaPageShell, { CscaPageHero } from '../components/csca/CscaPageShell';
 import { SealStamp } from '../components/csca/ChineseMotifs';
 import { mockCatalogService, type MockCatalog } from '../services/mockCatalogService';
+import { moks } from '../utils/plural';
 
 const CheckIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -53,7 +54,7 @@ function CscaMocksPage() {
           {catalog.packages.map((pkg) => (
             <div className="csca-card csca-price-card" key={pkg.key}>
               <div className="csca-price-name">{pkg.name}</div>
-              <div className="csca-price-for">{subjectsLabel(pkg.pickCount)} × {pkg.runsEach} зап.</div>
+              <div className="csca-price-for">{subjectsLabel(pkg.pickCount)} × {moks(pkg.runsEach)}</div>
               <div className="csca-price-amount csca-hanzi">
                 {pkg.price.toLocaleString('ru-RU')} <span className="csca-price-cur">{pkg.currency}</span>
               </div>

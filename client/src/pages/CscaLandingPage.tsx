@@ -6,6 +6,7 @@ import { useAppSelector } from '../hooks/useAppSelector';
 import { materialsService } from '../services/materialsService';
 import { mockCatalogService, type MockPackage } from '../services/mockCatalogService';
 import { cartService } from '../services/cartService';
+import { moks } from '../utils/plural';
 import CscaNav from '../components/csca/CscaNav';
 import CscaFooter from '../components/csca/CscaFooter';
 import Reveal from '../components/csca/Reveal';
@@ -248,7 +249,7 @@ function CscaLandingPage() {
               <div className={`csca-card csca-price-card ${featured ? 'featured' : ''}`} key={pkg.key}>
                 {featured && <span className="csca-price-flag">{s.popular}</span>}
                 <div className="csca-price-name">{pkg.name}</div>
-                <div className="csca-price-for">{subjLabel} × {pkg.runsEach} зап.</div>
+                <div className="csca-price-for">{subjLabel} × {moks(pkg.runsEach)}</div>
                 <div className="csca-price-amount csca-hanzi">
                   {pkg.price.toLocaleString('ru-RU')} <span className="csca-price-cur">{s.currency}</span>
                 </div>

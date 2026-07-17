@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { mockCatalogService, type MockCatalog, type MockTemplate } from '../services/mockCatalogService';
 import { cartService } from '../services/cartService';
+import { moks } from '../utils/plural';
 
 /**
  * Storefront for run-based mocks: per-subject run tiers (1/3/5) and discounted
@@ -21,7 +22,7 @@ function MockShop() {
     cartService.add({
       itemType: 'mock',
       itemCode: String(tpl.mockExamId),
-      title: `${tpl.title} · ${runs} зап.`,
+      title: `${tpl.title} · ${moks(runs)}`,
       amount: price,
       currency,
       runs,
@@ -64,9 +65,9 @@ function MockShop() {
 
       {catalog.freeRunAvailable && (
         <div className="card" style={{ marginBottom: '1rem', border: '2px dashed var(--primary-color)', background: 'var(--bg-secondary)' }}>
-          <div style={{ fontWeight: 700, marginBottom: '0.2rem' }}>🎁 Первый запуск — бесплатно</div>
+          <div style={{ fontWeight: 700, marginBottom: '0.2rem' }}>🎁 Первый мок — бесплатно</div>
           <div style={{ color: 'var(--text-secondary)', fontSize: '0.88rem' }}>
-            Начните любой пробник бесплатно во вкладке «Пробные экзамены». Дальше — покупка запусков поштучно или пакетом.
+            Начните любой пробник бесплатно во вкладке «Пробные экзамены». Дальше — покупка моков поштучно или пакетом.
           </div>
         </div>
       )}
@@ -79,7 +80,7 @@ function MockShop() {
               <div style={{ fontWeight: 700 }}>{tpl.title}</div>
               {tpl.runsRemaining > 0 && (
                 <span style={{ background: 'rgba(16,185,129,0.12)', color: '#10b981', padding: '1px 7px', borderRadius: 10, fontSize: '0.7rem', fontWeight: 700 }}>
-                  Запусков: {tpl.runsRemaining}
+                  Осталось: {moks(tpl.runsRemaining)}
                 </span>
               )}
             </div>
@@ -90,9 +91,10 @@ function MockShop() {
               {tpl.tiers.length === 0 ? (
                 <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>Цены не заданы</span>
               ) : tpl.tiers.map((tier) => (
-                <button key={tier.id} className="btn btn-outline" style={{ fontSize: '0.8rem', flex: '1 1 auto', whiteSpace: 'nowrap' }}
+                <button key={tier.id} className="btn btn-outline" style={{ fontSize: '0.85rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', padding: '0.55rem 0.9rem' }}
                         onClick={() => addTierToCart(tpl, tier.runs, tier.price, tier.currency)}>
-                  {tier.runs} зап. · {tier.price.toLocaleString('ru-RU')} {tier.currency}
+                  <span style={{ fontWeight: 700 }}>{moks(tier.runs)}</span>
+                  <span style={{ color: 'var(--primary-color)', fontWeight: 800, whiteSpace: 'nowrap' }}>{tier.price.toLocaleString('ru-RU')} {tier.currency}</span>
                 </button>
               ))}
             </div>
@@ -108,18 +110,30 @@ function MockShop() {
             {catalog.packages.map((pkg) => {
               const picking = pkgPicker === pkg.key;
               const allSubjects = pkg.pickCount === 0;
+              const featured = pkg.key === 'standard';
+              const subjLabel = allSubjects ? 'Все предметы' : `Любые ${pkg.pickCount} предмета`;
               return (
-                <div key={pkg.key} className="card" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  <div style={{ fontWeight: 800, fontSize: '1.05rem' }}>{pkg.name}</div>
+                <div key={pkg.key} className="card" style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: '0.5rem', padding: '1.25rem', borderRadius: 16, border: featured ? '2px solid var(--primary-color)' : '1px solid var(--border-color)', overflow: 'hidden' }}>
+                  {featured && (
+                    <span style={{ position: 'absolute', top: 0, right: 0, background: 'var(--primary-color)', color: '#fff', fontSize: '0.68rem', fontWeight: 700, padding: '3px 12px', borderBottomLeftRadius: 10 }}>Популярный</span>
+                  )}
+                  <div style={{ fontWeight: 800, fontSize: '1.15rem' }}>{pkg.name}</div>
                   <div style={{ color: 'var(--text-secondary)', fontSize: '0.82rem' }}>
-                    {allSubjects ? 'Все предметы' : `Любые ${pkg.pickCount} предмета`} × {pkg.runsEach} запусков
+                    {subjLabel} × {moks(pkg.runsEach)}
                   </div>
-                  <div style={{ fontWeight: 800, fontSize: '1.2rem', color: 'var(--csca-red, #C8102E)' }}>
-                    {pkg.price.toLocaleString('ru-RU')} {pkg.currency}
+                  <div style={{ fontWeight: 900, fontSize: '1.5rem', color: 'var(--csca-red, #C8102E)', margin: '0.15rem 0' }}>
+                    {pkg.price.toLocaleString('ru-RU')} <span style={{ fontSize: '0.9rem', fontWeight: 700 }}>{pkg.currency}</span>
                   </div>
+                  <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 0.3rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                    {[subjLabel, `${moks(pkg.runsEach)} на каждый предмет`, 'ИИ-объяснения к заданиям', 'Дашборд аналитики'].map((f, i) => (
+                      <li key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+                        <Check /> {f}
+                      </li>
+                    ))}
+                  </ul>
 
                   {picking && !allSubjects && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', margin: '0.4rem 0' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', margin: '0.2rem 0', padding: '0.5rem', background: 'var(--bg-secondary)', borderRadius: 10 }}>
                       {catalog.templates.map((t) => {
                         const checked = pkgChosen.includes(t.mockExamId);
                         const disabled = !checked && pkgChosen.length >= pkg.pickCount;
@@ -135,18 +149,18 @@ function MockShop() {
                   )}
 
                   {allSubjects ? (
-                    <button className="btn btn-primary" style={{ marginTop: 'auto' }}
+                    <button className={`btn ${featured ? 'btn-primary' : 'btn-outline'}`} style={{ marginTop: 'auto', width: '100%' }}
                             onClick={() => addPackageToCart(pkg.key, pkg.name, pkg.price, pkg.currency, [])}>
                       В корзину
                     </button>
                   ) : picking ? (
-                    <button className="btn btn-primary" style={{ marginTop: 'auto' }}
+                    <button className="btn btn-primary" style={{ marginTop: 'auto', width: '100%' }}
                             disabled={pkgChosen.length !== pkg.pickCount}
                             onClick={() => addPackageToCart(pkg.key, pkg.name, pkg.price, pkg.currency, pkgChosen)}>
                       В корзину ({pkgChosen.length}/{pkg.pickCount})
                     </button>
                   ) : (
-                    <button className="btn btn-outline" style={{ marginTop: 'auto' }}
+                    <button className={`btn ${featured ? 'btn-primary' : 'btn-outline'}`} style={{ marginTop: 'auto', width: '100%' }}
                             onClick={() => { setPkgPicker(pkg.key); setPkgChosen([]); }}>
                       Выбрать предметы
                     </button>
@@ -162,3 +176,11 @@ function MockShop() {
 }
 
 export default MockShop;
+
+function Check() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--primary-color)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flexShrink: 0 }}>
+      <path d="M20 6L9 17l-5-5" />
+    </svg>
+  );
+}

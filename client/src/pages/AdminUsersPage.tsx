@@ -13,11 +13,6 @@ const ROLE_COLORS: Record<string, string> = {
   Student: 'var(--primary-color)',
 };
 
-const TIER_COLORS: Record<string, string> = {
-  Pro: '#f59e0b',
-  Free: 'var(--text-muted)',
-};
-
 function AdminUsersPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -229,7 +224,6 @@ function AdminUsersPage() {
           <StatCard label={t.admin.users.students} value={stats.students} color="var(--primary-color)" />
           <StatCard label={t.admin.users.tutorsLabel} value={stats.tutors} color="var(--warning-color)" />
           <StatCard label={t.admin.users.admins} value={stats.admins} color="var(--error-color)" />
-          <StatCard label="Pro" value={stats.proUsers} color="#f59e0b" />
           <StatCard label={t.admin.users.activeDays} value={stats.activeLast7Days} color="var(--success-color)" />
         </div>
       )}
@@ -289,7 +283,6 @@ function AdminUsersPage() {
                   <th style={{ padding: '0.5rem' }}>Email</th>
                   <th style={{ padding: '0.5rem' }}>{t.admin.users.phoneCol}</th>
                   <th style={{ padding: '0.5rem' }}>{t.admin.users.roleCol}</th>
-                  <th style={{ padding: '0.5rem' }}>{t.admin.users.planCol}</th>
                   <th style={{ padding: '0.5rem' }}>{t.admin.users.answersCol}</th>
                 </tr>
               </thead>
@@ -325,18 +318,6 @@ function AdminUsersPage() {
                         fontWeight: 600,
                       }}>
                         {u.role}
-                      </span>
-                    </td>
-                    <td style={{ padding: '0.5rem' }}>
-                      <span style={{
-                        padding: '0.15rem 0.5rem',
-                        borderRadius: '999px',
-                        background: TIER_COLORS[u.subscriptionTier] || 'var(--text-muted)',
-                        color: '#fff',
-                        fontSize: '0.75rem',
-                        fontWeight: 600,
-                      }}>
-                        {u.subscriptionTier}
                       </span>
                     </td>
                     <td style={{ padding: '0.5rem', textAlign: 'center' }}>
@@ -411,17 +392,6 @@ function AdminUsersPage() {
                     <option value="Admin">Admin</option>
                   </select>
                 </label>
-                <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                  {t.admin.users.subscriptionLabel}
-                  <select
-                    value={editData.subscriptionTier}
-                    onChange={(e) => setEditData({ ...editData, subscriptionTier: e.target.value })}
-                    style={{ width: '100%', marginTop: '0.25rem' }}
-                  >
-                    <option value="Free">Free</option>
-                    <option value="Pro">Pro</option>
-                  </select>
-                </label>
 
                 <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
                   <button className="btn btn-primary" onClick={saveUser} style={{ flex: 1 }}>{t.admin.common.save}</button>
@@ -436,7 +406,6 @@ function AdminUsersPage() {
                   <InfoField label={t.admin.users.nameLabel} value={selected.name} />
                   <InfoField label={t.admin.users.emailLabel} value={selected.email} />
                   <InfoField label={t.admin.users.roleLabel} value={selected.role} color={ROLE_COLORS[selected.role]} />
-                  <InfoField label={t.admin.users.subscriptionLabel} value={selected.subscriptionTier} color={TIER_COLORS[selected.subscriptionTier]} />
                   <InfoField label={t.admin.users.onboarding} value={selected.hasCompletedOnboarding ? t.admin.users.onboardingDone : t.admin.users.onboardingNotDone} />
                   <InfoField label={t.admin.users.registeredAt} value={new Date(selected.createdAt).toLocaleDateString(getDateLocale())} />
                   <InfoField label={t.admin.users.updatedAt} value={selected.updatedAt ? new Date(selected.updatedAt).toLocaleDateString(getDateLocale()) : '—'} />

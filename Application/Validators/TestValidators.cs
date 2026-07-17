@@ -102,7 +102,8 @@ public class MockExamSubmitAnswerDtoValidator : AbstractValidator<MockExamSubmit
             .GreaterThan(0).WithMessage("QuestionId must be a positive integer.");
 
         RuleFor(x => x.SelectedOptionId)
-            .GreaterThan(0).WithMessage("SelectedOptionId must be a positive integer.");
+            .GreaterThan(0).WithMessage("SelectedOptionId must be a positive integer.")
+            .When(x => x.SelectedOptionIds == null || x.SelectedOptionIds.Count == 0);
 
         RuleFor(x => x.TimeSpentSeconds)
             .GreaterThanOrEqualTo(0).WithMessage("TimeSpentSeconds cannot be negative.")

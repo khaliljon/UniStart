@@ -5,6 +5,7 @@ import {
   type AdminTier,
   type AdminPackage,
 } from '../services/mockCatalogService';
+import { moks } from '../utils/plural';
 
 const RUN_COLUMNS = [1, 3, 5];
 
@@ -69,7 +70,7 @@ function AdminPricingPage() {
           }
         }
       }
-      setMsg('Цены запусков сохранены');
+      setMsg('Цены моков сохранены');
       await load();
     } catch {
       setErr('Ошибка сохранения цен');
@@ -134,15 +135,15 @@ function AdminPricingPage() {
 
       {/* Tier matrix */}
       <div className="card" style={{ padding: '1.25rem', marginBottom: '2rem', overflow: 'auto' }}>
-        <h2 style={{ fontSize: '1.15rem', marginTop: 0 }}>Цены запусков (по предметам)</h2>
+        <h2 style={{ fontSize: '1.15rem', marginTop: 0 }}>Цены моков (по предметам)</h2>
         <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: 0 }}>
-          Цена за 1 / 3 / 5 запусков каждого пробника. Пустая ячейка — тир не продаётся.
+          Цена за 1 / 3 / 5 моков каждого пробника. Пустая ячейка — тир не продаётся.
         </p>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr>
               <th style={th}>Пробник</th>
-              {RUN_COLUMNS.map((r) => <th key={r} style={th}>{r} зап.</th>)}
+              {RUN_COLUMNS.map((r) => <th key={r} style={th}>{moks(r)}</th>)}
             </tr>
           </thead>
           <tbody>
@@ -167,7 +168,7 @@ function AdminPricingPage() {
             )}
           </tbody>
         </table>
-        <button className="btn btn-primary" style={{ marginTop: '1rem' }} onClick={saveTiers}>Сохранить цены запусков</button>
+        <button className="btn btn-primary" style={{ marginTop: '1rem' }} onClick={saveTiers}>Сохранить цены моков</button>
       </div>
 
       {/* Packages */}
@@ -177,7 +178,7 @@ function AdminPricingPage() {
           <button className="btn btn-outline" onClick={addPackage}>+ Пакет</button>
         </div>
         <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
-          «Выбор предметов» = сколько предметов выбирает покупатель (0 = все). «Запусков» = сколько запусков на каждый выбранный предмет.
+          «Выбор предметов» = сколько предметов выбирает покупатель (0 = все). «Моков» = сколько моков на каждый выбранный предмет.
         </p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
           {packages.map((p, idx) => (
@@ -185,7 +186,7 @@ function AdminPricingPage() {
               <label style={{ fontSize: '0.75rem' }}>Ключ<input value={p.key} onChange={(e) => updatePkgField(idx, { key: e.target.value })} style={input} /></label>
               <label style={{ fontSize: '0.75rem' }}>Название<input value={p.name} onChange={(e) => updatePkgField(idx, { name: e.target.value })} style={input} /></label>
               <label style={{ fontSize: '0.75rem' }}>Выбор предм. (0=все)<input type="number" min={0} value={p.pickCount} onChange={(e) => updatePkgField(idx, { pickCount: Number(e.target.value) })} style={input} /></label>
-              <label style={{ fontSize: '0.75rem' }}>Запусков<input type="number" min={1} value={p.runsEach} onChange={(e) => updatePkgField(idx, { runsEach: Number(e.target.value) })} style={input} /></label>
+              <label style={{ fontSize: '0.75rem' }}>Моков<input type="number" min={1} value={p.runsEach} onChange={(e) => updatePkgField(idx, { runsEach: Number(e.target.value) })} style={input} /></label>
               <label style={{ fontSize: '0.75rem' }}>Цена<input type="number" min={0} value={p.price} onChange={(e) => updatePkgField(idx, { price: Number(e.target.value) })} style={input} /></label>
               <label style={{ fontSize: '0.75rem' }}>Порядок<input type="number" value={p.sortOrder} onChange={(e) => updatePkgField(idx, { sortOrder: Number(e.target.value) })} style={input} /></label>
               <label style={{ fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>

@@ -443,15 +443,11 @@ public static class UniStartStartupExtensions
             DashboardTitle = "UniStart Jobs"
         });
 
-        RecurringJob.AddOrUpdate<IBackgroundJobsService>(
-            "streak-reminder",
-            service => service.ProcessStreakRemindersAsync(),
-            "0 */6 * * *");
-
-        RecurringJob.AddOrUpdate<IBackgroundJobsService>(
-            "weekly-digest",
-            service => service.ProcessWeeklyDigestsAsync(),
-            "0 8 * * 1");
+        // Notification emails (streak reminders, weekly digest) were removed —
+        // only transactional emails remain (verification code, welcome, receipt).
+        // Unschedule any previously registered jobs so they stop firing.
+        RecurringJob.RemoveIfExists("streak-reminder");
+        RecurringJob.RemoveIfExists("weekly-digest");
 
         RecurringJob.AddOrUpdate<IBackgroundJobsService>(
             "soft-delete-purge",

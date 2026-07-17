@@ -688,6 +688,8 @@ export interface MockExamQuestion {
   passageTitle: string | null;
   passageContent: string | null;
   imageUrl: string | null;
+  isMultipleChoice: boolean;
+  selectedOptionIds: number[];
 }
 
 export interface MockExamOption {
@@ -734,6 +736,9 @@ export interface MockExamAnswerReview {
   isCorrect: boolean;
   isUnanswered: boolean;
   explanation: string | null;
+  isMultipleChoice: boolean;
+  selectedOptionIds: number[];
+  correctOptionIds: number[];
 }
 
 export interface MockExamHistoryItem {

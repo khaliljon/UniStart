@@ -2,7 +2,7 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { mockExamService } from '../services/mockExamService';
 import { useAppSelector } from '../hooks/useAppSelector';
-import { MockResultUpsellModal } from '../components/MockResultUpsellModal';
+import { moks } from '../utils/plural';
 import type {
   MockExamListItem,
   MockExamDetail,
@@ -25,8 +25,7 @@ function MockExamPage() {
   // Phase
   const [phase, setPhase] = useState<Phase>('list');
   const { user } = useAppSelector((state) => state.auth);
-  const isPro = user?.subscriptionTier === 'Pro' || user?.role === 'Admin';
-  const [showUpsell, setShowUpsell] = useState(false);
+  const isPro = user?.role === 'Admin';
   const navigate = useNavigate();
 
   // List phase
@@ -193,17 +192,26 @@ function MockExamPage() {
   };
 
   // ── Select answer ─────────────────────────────────────
-  const handleSelectOption = async (questionId: number, optionId: number) => {
+  const handleSelectOption = async (question: MockExamQuestion, optionId: number) => {
     if (!attempt || !sectionState) return;
+    const current = question.selectedOptionIds && question.selectedOptionIds.length > 0
+      ? question.selectedOptionIds
+      : (question.selectedOptionId != null ? [question.selectedOptionId] : []);
+    const nextIds = question.isMultipleChoice
+      ? (current.includes(optionId) ? current.filter(id => id !== optionId) : [...current, optionId])
+      : [optionId];
+    const primary = nextIds.length > 0 ? nextIds[0] : 0;
     try {
-      await mockExamService.submitAnswer(attempt.attemptId, questionId, optionId);
+      await mockExamService.submitAnswer(attempt.attemptId, question.questionId, primary, undefined, nextIds);
       // Update local state
       setSectionState(prev => {
         if (!prev) return prev;
         const updatedQuestions = prev.questions.map(q =>
-          q.questionId === questionId ? { ...q, selectedOptionId: optionId } : q
+          q.questionId === question.questionId
+            ? { ...q, selectedOptionIds: nextIds, selectedOptionId: nextIds.length > 0 ? nextIds[0] : null }
+            : q
         );
-        const answeredCount = updatedQuestions.filter(q => q.selectedOptionId !== null).length;
+        const answeredCount = updatedQuestions.filter(q => (q.selectedOptionIds?.length ?? (q.selectedOptionId !== null ? 1 : 0)) > 0).length;
         return { ...prev, questions: updatedQuestions, answeredCount };
       });
     } catch (e) { console.error(e); }
@@ -220,7 +228,6 @@ function MockExamPage() {
       const res = await mockExamService.getResults(updated.attemptId);
       setResults(res);
       setPhase('results');
-      if (!isPro) setShowUpsell(true);
     } catch (e) { console.error(e); }
     setLoading(false);
   };
@@ -274,9 +281,9 @@ function MockExamPage() {
         {/* First run free banner */}
         {!isPro && mockExams.some(m => m.freeAvailable) && (
           <div className="card" style={{ marginBottom: '1.5rem', border: '2px dashed var(--primary-color)', background: 'var(--bg-secondary)' }}>
-            <div style={{ fontWeight: 700, marginBottom: '0.2rem' }}>🎁 Первый запуск — бесплатно</div>
+            <div style={{ fontWeight: 700, marginBottom: '0.2rem' }}>🎁 Первый мок — бесплатно</div>
             <div style={{ color: 'var(--text-secondary)', fontSize: '0.88rem' }}>
-              Выберите любой пробник ниже и пройдите один запуск бесплатно. Купить ещё запуски можно на Главной.
+              Выберите любой пробник ниже и пройдите один мок бесплатно. Купить ещё моки можно на Главной.
             </div>
           </div>
         )}
@@ -316,7 +323,7 @@ function MockExamPage() {
             return (
               <div className="card" style={{ textAlign: 'center', padding: '2rem', marginBottom: '2rem' }}>
                 <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-                  У вас пока нет доступных пробников. Приобретите запуски на Главной.
+                  У вас пока нет доступных пробников. Приобретите моки на Главной.
                 </p>
                 <button className="btn btn-primary" onClick={() => navigate('/')}>Приобрести на Главной</button>
               </div>
@@ -337,11 +344,11 @@ function MockExamPage() {
                     <h3 style={{ margin: 0, fontSize: '1.1rem' }}>{exam.title}</h3>
                     {exam.runsRemaining > 0 && (
                       <span style={{ background: 'rgba(16,185,129,0.12)', color: '#10b981', padding: '2px 8px', borderRadius: 10, fontSize: '0.7rem', fontWeight: 700 }}>
-                        Запусков: {exam.runsRemaining}
+                        Осталось: {moks(exam.runsRemaining)}
                       </span>
                     )}
                     {isFreeStart && (
-                      <span style={{ background: 'rgba(200,16,46,0.1)', color: 'var(--csca-red, #C8102E)', padding: '2px 8px', borderRadius: 10, fontSize: '0.7rem', fontWeight: 700 }}>Бесплатный запуск</span>
+                      <span style={{ background: 'rgba(200,16,46,0.1)', color: 'var(--csca-red, #C8102E)', padding: '2px 8px', borderRadius: 10, fontSize: '0.7rem', fontWeight: 700 }}>Бесплатный мок</span>
                     )}
                   </div>
                   <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: '0.25rem 0' }}>{exam.description}</p>
@@ -354,7 +361,7 @@ function MockExamPage() {
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'stretch', minWidth: 180 }}>
                   <button className="btn btn-primary" onClick={() => handleSelectExam(exam.id)}>
-                    {exam.runsRemaining > 0 ? '▶ Решить (−1 запуск)' : '▶ Решить бесплатно'}
+                    {exam.runsRemaining > 0 ? '▶ Решить (−1 мок)' : '▶ Решить бесплатно'}
                   </button>
                 </div>
               </div>
@@ -663,14 +670,22 @@ function MockExamPage() {
             )}
 
             {/* Options */}
+            {currentQuestion.isMultipleChoice && (
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>
+                Можно выбрать несколько вариантов
+              </div>
+            )}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               {currentQuestion.options.map((opt, i) => {
-                const isSelected = currentQuestion.selectedOptionId === opt.id;
+                const selIds = currentQuestion.selectedOptionIds && currentQuestion.selectedOptionIds.length > 0
+                  ? currentQuestion.selectedOptionIds
+                  : (currentQuestion.selectedOptionId != null ? [currentQuestion.selectedOptionId] : []);
+                const isSelected = selIds.includes(opt.id);
                 const letter = String.fromCharCode(65 + i);
                 return (
                   <button
                     key={opt.id}
-                    onClick={() => handleSelectOption(currentQuestion.questionId, opt.id)}
+                    onClick={() => handleSelectOption(currentQuestion, opt.id)}
                     style={{
                       display: 'flex', alignItems: 'center', gap: '0.75rem',
                       padding: '0.75rem 1rem', borderRadius: 8, border: '2px solid',
@@ -681,7 +696,7 @@ function MockExamPage() {
                     }}
                   >
                     <span style={{
-                      width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      width: 28, height: 28, borderRadius: currentQuestion.isMultipleChoice ? '6px' : '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
                       background: isSelected ? 'var(--primary-color)' : 'var(--bg-secondary)',
                       color: isSelected ? '#fff' : 'var(--text-primary)',
                       fontWeight: 600, fontSize: '0.8rem', flexShrink: 0,
@@ -854,14 +869,6 @@ function MockExamPage() {
             Back to Mock Exams
           </button>
         </div>
-
-        <MockResultUpsellModal
-          isOpen={showUpsell}
-          onClose={() => setShowUpsell(false)}
-          score={results.totalScore}
-          totalCorrect={results.totalCorrect}
-          totalQuestions={results.totalQuestions}
-        />
       </div>
     );
   }
