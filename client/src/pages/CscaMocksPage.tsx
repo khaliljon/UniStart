@@ -61,8 +61,6 @@ function CscaMocksPage() {
               <ul className="csca-price-list">
                 <li><CheckIcon /> {subjectsLabel(pkg.pickCount)}</li>
                 <li><CheckIcon /> {s.pkgFeatAi}</li>
-                <li><CheckIcon /> {s.pkgFeatAnalytics}</li>
-                <li><CheckIcon /> {s.pkgFeatFull}</li>
               </ul>
               <button
                 className="csca-btn csca-btn-primary"

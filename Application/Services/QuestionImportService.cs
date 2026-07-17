@@ -12,6 +12,7 @@ public class QuestionImportService : IQuestionImportService
     private readonly UniStartDbContext _db;
     private readonly IFileParserService _parser;
     private readonly IQuestionExtractorService _extractor;
+    private readonly IStrictDocxParserService _strictParser;
     private readonly ILlmExtractionService _llm;
     private readonly ILogger<QuestionImportService> _logger;
 
@@ -19,12 +20,14 @@ public class QuestionImportService : IQuestionImportService
         UniStartDbContext db,
         IFileParserService parser,
         IQuestionExtractorService extractor,
+        IStrictDocxParserService strictParser,
         ILlmExtractionService llm,
         ILogger<QuestionImportService> logger)
     {
         _db = db;
         _parser = parser;
         _extractor = extractor;
+        _strictParser = strictParser;
         _llm = llm;
         _logger = logger;
     }
@@ -49,7 +52,7 @@ public class QuestionImportService : IQuestionImportService
         return MapJob(job);
     }
 
-    public async Task ProcessImportJobAsync(int jobId, Stream fileStream)
+    public async Task ProcessImportJobAsync(int jobId, Stream fileStream, bool strictTemplate = false)
     {
         var job = await _db.QuestionImportJobs.FindAsync(jobId);
         if (job == null) return;
@@ -68,6 +71,12 @@ public class QuestionImportService : IQuestionImportService
 
             List<ExtractedQuestion> extracted;
 
+            // Strict template: deterministic .docx table parser (no LLM).
+            if (strictTemplate && job.FileType.ToUpper() == "DOCX")
+            {
+                extracted = _strictParser.Parse(fileStream);
+            }
+            else
             switch (job.FileType.ToUpper())
             {
                 case "PDF":
@@ -248,6 +257,8 @@ public class QuestionImportService : IQuestionImportService
             DifficultyParam = draft.IrtB,
             DiscriminationParam = draft.IrtA,
             GuessParam = draft.IrtC,
+            // A question with more than one correct option is treated as multiple-choice.
+            IsMultipleChoice = options.Count(o => o.IsCorrect) > 1,
         };
 
         if (question.TopicId == 0)

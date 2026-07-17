@@ -32,6 +32,7 @@ function AdminQuestionImportPage({ embedded = false }: { embedded?: boolean } = 
   const [isUploading, setIsUploading] = useState(false);
   const [examTypeCode, setExamTypeCode] = useState('CSCA');
   const [contentType, setContentType] = useState<'questions' | 'theory'>('questions');
+  const [mode, setMode] = useState<'ai' | 'strict'>('ai');
   const [error, setError] = useState<string | null>(null);
   const [editingDraft, setEditingDraft] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<UpdateDraftPayload>({});
@@ -104,6 +105,7 @@ function AdminQuestionImportPage({ embedded = false }: { embedded?: boolean } = 
         topicId === '' ? undefined : topicId,
         instructions || undefined,
         contentType,
+        contentType === 'theory' ? undefined : mode,
       );
       await loadJobs();
       setSelectedJob(job);
@@ -293,6 +295,31 @@ function AdminQuestionImportPage({ embedded = false }: { embedded?: boolean } = 
               </button>
             </div>
           </div>
+
+          {contentType !== 'theory' && (
+            <div>
+              <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.25rem' }}>
+                Режим распознавания
+              </label>
+              <div style={{ display: 'flex', gap: '0.25rem' }}>
+                <button
+                  className={`btn ${mode === 'ai' ? 'btn-primary' : 'btn-secondary'}`}
+                  style={{ fontSize: '0.8rem', padding: '0.45rem 0.75rem' }}
+                  onClick={() => setMode('ai')}
+                >
+                  ИИ-распознавание
+                </button>
+                <button
+                  className={`btn ${mode === 'strict' ? 'btn-primary' : 'btn-secondary'}`}
+                  style={{ fontSize: '0.8rem', padding: '0.45rem 0.75rem' }}
+                  onClick={() => setMode('strict')}
+                  title="Детерминированный разбор .docx по фиксированному шаблону (без ИИ)"
+                >
+                  Строгий шаблон (.docx)
+                </button>
+              </div>
+            </div>
+          )}
           <div>
             <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.25rem' }}>
               {t.admin.questionImport.examLabel}

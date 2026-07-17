@@ -1,1 +1,0 @@
-import{j as a}from"./index-NR_YRxKW.js";import e from"./MockExamPage-B9TACRWM.js";import"./mockExamService-B0N96Vzs.js";import"./PricingModal-ry98HGDE.js";function o(){return a.jsx("div",{className:"animate-fade-in",style:{padding:"1.5rem 0"},children:a.jsx(e,{})})}export{o as default};

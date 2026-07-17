@@ -1,0 +1,1 @@
+import{g as a}from"./index-DONlDV9m.js";const t={async list(){return(await a.get("/purchases")).data},async adminList(s){return(await a.get("/purchases/admin/all",{params:s})).data},async adminExportCsv(s){return(await a.get("/purchases/admin/export.csv",{params:s,responseType:"blob"})).data}};export{t as p};

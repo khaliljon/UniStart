@@ -92,6 +92,7 @@ public static class UniStartStartupExtensions
         services.AddScoped<IMistakeService, MistakeService>();
         services.AddScoped<IFileParserService, FileParserService>();
         services.AddScoped<IQuestionExtractorService, QuestionExtractorService>();
+        services.AddScoped<IStrictDocxParserService, StrictDocxParserService>();
         services.AddScoped<IQuestionImportService, QuestionImportService>();
         services.AddSingleton<ILlmExtractionService, LlmExtractionService>();
         services.AddSingleton<IImageUploadService, ImageUploadService>();

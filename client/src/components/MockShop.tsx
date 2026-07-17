@@ -125,7 +125,7 @@ function MockShop() {
                     {pkg.price.toLocaleString('ru-RU')} <span style={{ fontSize: '0.9rem', fontWeight: 700 }}>{pkg.currency}</span>
                   </div>
                   <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 0.3rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                    {[subjLabel, `${moks(pkg.runsEach)} на каждый предмет`, 'ИИ-объяснения к заданиям', 'Дашборд аналитики'].map((f, i) => (
+                    {[subjLabel, `${moks(pkg.runsEach)} на каждый предмет`, 'ИИ-объяснения к заданиям'].map((f, i) => (
                       <li key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
                         <Check /> {f}
                       </li>

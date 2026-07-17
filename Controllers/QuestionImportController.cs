@@ -32,7 +32,8 @@ public class QuestionImportController : ControllerBase
         [FromForm] int? sectionId = null,
         [FromForm] int? topicId = null,
         [FromForm] string? instructions = null,
-        [FromForm] string? contentType = null)
+        [FromForm] string? contentType = null,
+        [FromForm] string? mode = null)
     {
         if (file == null || file.Length == 0)
             return BadRequest(new { error = "No file uploaded" });
@@ -65,7 +66,8 @@ public class QuestionImportController : ControllerBase
 
         // Process synchronously for now (can be moved to Hangfire for large files)
         using var stream = file.OpenReadStream();
-        await _importService.ProcessImportJobAsync(job.Id, stream);
+        var strictTemplate = string.Equals(mode, "strict", StringComparison.OrdinalIgnoreCase);
+        await _importService.ProcessImportJobAsync(job.Id, stream, strictTemplate);
 
         // Reload to get updated status
         var updated = await _importService.GetJobAsync(job.Id);

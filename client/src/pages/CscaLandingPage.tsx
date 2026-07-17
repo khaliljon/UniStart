@@ -256,8 +256,6 @@ function CscaLandingPage() {
                 <ul className="csca-price-list">
                   <li><CheckIcon /> {subjLabel}</li>
                   <li><CheckIcon /> {s.pkgFeatAi}</li>
-                  <li><CheckIcon /> {s.pkgFeatAnalytics}</li>
-                  <li><CheckIcon /> {s.pkgFeatFull}</li>
                 </ul>
                 <button
                   className={`csca-btn ${featured ? 'csca-btn-primary' : 'csca-btn-ghost'}`}
