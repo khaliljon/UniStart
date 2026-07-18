@@ -74,12 +74,9 @@ function CscaLandingPage() {
   } as const;
 
   const features = [
-    { icon: 'adaptive', t: s.fAdaptiveT, d: s.fAdaptiveD },
-    { icon: 'analytics', t: s.fAnalyticsT, d: s.fAnalyticsD },
     { icon: 'mock', t: s.fMockT, d: s.fMockD },
     { icon: 'materials', t: s.fMaterialsT, d: s.fMaterialsD },
     { icon: 'ai', t: s.fAiT, d: s.fAiD },
-    { icon: 'plan', t: s.fPlanT, d: s.fPlanD },
   ] as const;
 
   // Packages may require choosing subjects. We carry the chosen package into the

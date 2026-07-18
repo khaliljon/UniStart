@@ -44,6 +44,10 @@ export default function CscaFooter() {
         </div>
         <div className="csca-footer-bottom">
           <span>© {new Date().getFullYear()} UniStart. {s.footerRights}</span>
+          <span style={{ display: 'flex', gap: '1.25rem', flexWrap: 'wrap' }}>
+            <Link to="/terms">Пользовательское соглашение</Link>
+            <Link to="/privacy">Политика конфиденциальности</Link>
+          </span>
           <span className="csca-hanzi">学无止境</span>
         </div>
       </div>
