@@ -4,6 +4,7 @@ import { useAppSelector } from '../hooks/useAppSelector';
 import { useTranslation } from '../hooks/useTranslation';
 import { cartService } from '../services/cartService';
 import { materialsService, type StudyMaterial } from '../services/materialsService';
+import { purchaseService } from '../services/purchaseService';
 import { cscaStrings } from '../i18n/csca';
 import { CSCA_SUBJECTS } from '../cscaConfig';
 import CscaNewsSection from '../components/csca/CscaNewsSection';
@@ -98,8 +99,12 @@ function MaterialsSection() {
   const s = cscaStrings[locale];
 
   const [materials, setMaterials] = useState<StudyMaterial[] | null>(null);
+  const [ownedBooks, setOwnedBooks] = useState<Set<string>>(new Set());
   useEffect(() => {
     materialsService.list().then(setMaterials).catch(() => setMaterials([]));
+    purchaseService.list()
+      .then((ps) => setOwnedBooks(new Set(ps.filter((p) => p.itemType === 'book').map((p) => p.itemCode))))
+      .catch(() => {});
   }, []);
 
   const coverFor = (key: string) => CSCA_SUBJECTS.find((x) => x.key === key);
@@ -151,9 +156,15 @@ function MaterialsSection() {
                 <div style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--primary-color)', textAlign: 'center' }}>
                   {m.price.toLocaleString('ru-RU')} ₸
                 </div>
-                <button className="btn btn-outline" style={{ fontSize: '0.85rem' }} onClick={() => buy(m)}>
-                  {s.addToCart}
-                </button>
+                {ownedBooks.has(String(m.id)) ? (
+                  <button className="btn btn-outline" style={{ fontSize: '0.85rem' }} onClick={() => navigate('/materials')}>
+                    ✓ Куплено — открыть
+                  </button>
+                ) : (
+                  <button className="btn btn-outline" style={{ fontSize: '0.85rem' }} onClick={() => buy(m)}>
+                    {s.addToCart}
+                  </button>
+                )}
               </div>
             </div>
           );

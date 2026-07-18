@@ -29,6 +29,7 @@ public class PolarService : IPolarService
     private readonly string _productId;
     private readonly string _successUrl;
     private readonly string _baseUrl;
+    private readonly bool _useSandbox;
 
     public PolarService(IConfiguration config, IEntitlementService entitlements, IEmailService email, UniStartDbContext db, ILogger<PolarService> logger)
     {
@@ -38,16 +39,20 @@ public class PolarService : IPolarService
         _logger = logger;
 
         var useSandbox = config.GetValue<bool>("POLAR_USE_SANDBOX", true);
+        _useSandbox = useSandbox;
 
         _token = useSandbox
             ? config["POLAR_SANDBOX_ACCESS_TOKEN"] ?? ""
             : config["POLAR_PRODUCTION_ACCESS_TOKEN"] ?? "";
+
         _webhookSecret = useSandbox
             ? config["POLAR_SANDBOX_WEBHOOK_SECRET"] ?? ""
             : config["POLAR_PRODUCTION_WEBHOOK_SECRET"] ?? "";
+
         _productId = useSandbox
             ? config["POLAR_SANDBOX_PRODUCT_ID"] ?? ""
             : config["POLAR_PRODUCTION_PRODUCT_ID"] ?? "";
+
         _successUrl = config["POLAR_SUCCESS_URL"] ?? "https://unistart.kz/purchases?paid=1";
         _baseUrl = useSandbox ? "https://sandbox-api.polar.sh" : "https://api.polar.sh";
 
@@ -57,7 +62,10 @@ public class PolarService : IPolarService
     public async Task<string> CreateCheckoutUrlAsync(int userId, List<CheckoutLineDto> lines)
     {
         if (string.IsNullOrEmpty(_token) || string.IsNullOrEmpty(_productId))
+        {
+            _logger.LogError("Polar checkout guard failed: tokenLen={TokenLen} productId='{ProductId}'", _token?.Length ?? -1, _productId);
             throw new InvalidOperationException("Polar is not configured (token/product id missing).");
+        }
 
         // Server-side price — never trust the client.
         var quote = await _entitlements.QuoteAsync(lines);
@@ -147,7 +155,8 @@ public class PolarService : IPolarService
         var lines = DecodeLines(linesRaw);
         if (lines.Count == 0) return true;
 
-        await _entitlements.GrantAsync(userId, lines);
+        var amounts = ExtractAmounts(data);
+        await _entitlements.GrantAsync(userId, lines, amounts);
         _db.AppSettings.Add(new AppSetting { Key = dedupKey, Value = DateTime.UtcNow.ToString("o") });
         await _db.SaveChangesAsync();
 
@@ -188,7 +197,8 @@ public class PolarService : IPolarService
     {
         if (string.IsNullOrEmpty(_webhookSecret))
         {
-            _logger.LogWarning("Polar webhook: signing secret is not configured (POLAR_SANDBOX_WEBHOOK_SECRET)");
+            _logger.LogWarning("Polar webhook: signing secret is not configured ({VarName})",
+                _useSandbox ? "POLAR_SANDBOX_WEBHOOK_SECRET" : "POLAR_PRODUCTION_WEBHOOK_SECRET");
             return false;
         }
         if (string.IsNullOrEmpty(id) || string.IsNullOrEmpty(timestamp) || string.IsNullOrEmpty(signatureHeader))
@@ -224,7 +234,8 @@ public class PolarService : IPolarService
             }
         }
 
-        _logger.LogWarning("Polar webhook: signature mismatch — verify POLAR_SANDBOX_WEBHOOK_SECRET matches the endpoint's signing secret");
+        _logger.LogWarning("Polar webhook: signature mismatch — verify {VarName} matches the endpoint's signing secret",
+            _useSandbox ? "POLAR_SANDBOX_WEBHOOK_SECRET" : "POLAR_PRODUCTION_WEBHOOK_SECRET");
         return false;
     }
 
@@ -250,6 +261,28 @@ public class PolarService : IPolarService
         foreach (var p in meta.EnumerateObject())
             dict[p.Name] = p.Value.ValueKind == JsonValueKind.String ? p.Value.GetString() ?? "" : p.Value.ToString();
         return dict;
+    }
+
+    /// <summary>
+    /// Reads the money breakdown from a Polar order payload. All amount fields arrive
+    /// as integer minor units (÷100); platform_fee_currency is a plain string. Missing
+    /// fields fall back to 0/null since not every event type carries every field.
+    /// </summary>
+    private static PurchaseAmountsDto ExtractAmounts(JsonElement data)
+    {
+        decimal Amt(string prop) => data.TryGetProperty(prop, out var e) && e.ValueKind == JsonValueKind.Number
+            ? e.GetDecimal() / 100m
+            : 0m;
+        var feeCurrency = data.TryGetProperty("platform_fee_currency", out var fc) && fc.ValueKind == JsonValueKind.String
+            ? fc.GetString()
+            : null;
+        return new PurchaseAmountsDto(
+            Amt("subtotal_amount"),
+            Amt("tax_amount"),
+            Amt("platform_fee_amount"),
+            feeCurrency,
+            Amt("net_amount"),
+            Amt("total_amount"));
     }
 
     // ── Compact line encoding for metadata ─────────────────

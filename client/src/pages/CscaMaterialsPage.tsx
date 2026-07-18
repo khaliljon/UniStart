@@ -4,6 +4,7 @@ import { useTranslation } from '../i18n';
 import { cscaStrings } from '../i18n/csca';
 import { useAppSelector } from '../hooks/useAppSelector';
 import { materialsService, type StudyMaterial } from '../services/materialsService';
+import { purchaseService } from '../services/purchaseService';
 import { cartService } from '../services/cartService';
 import { CSCA_SUBJECTS } from '../cscaConfig';
 import CscaPageShell, { CscaPageHero } from '../components/csca/CscaPageShell';
@@ -14,10 +15,16 @@ function CscaMaterialsPage() {
   const s = cscaStrings[locale];
   const { isAuthenticated } = useAppSelector((st) => st.auth);
   const [materials, setMaterials] = useState<StudyMaterial[] | null>(null);
+  const [ownedBooks, setOwnedBooks] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     materialsService.list().then(setMaterials).catch(() => setMaterials([]));
-  }, []);
+    if (isAuthenticated) {
+      purchaseService.list()
+        .then((ps) => setOwnedBooks(new Set(ps.filter((p) => p.itemType === 'book').map((p) => p.itemCode))))
+        .catch(() => {});
+    }
+  }, [isAuthenticated]);
 
   const coverFor = (key: string) => CSCA_SUBJECTS.find((x) => x.key === key) ?? CSCA_SUBJECTS[0];
 
@@ -65,7 +72,11 @@ function CscaMaterialsPage() {
                 <div className="csca-price-amount csca-hanzi" style={{ fontSize: '1.4rem', margin: '0 0 0.6rem' }}>
                   {mat.price.toLocaleString('ru-RU')} <span className="csca-price-cur">{s.currency}</span>
                 </div>
-                <button className="csca-btn csca-btn-ghost csca-btn-sm" style={{ width: '100%' }} onClick={() => buy(mat)}>{s.buy}</button>
+                {ownedBooks.has(String(mat.id)) ? (
+                  <button className="csca-btn csca-btn-ghost csca-btn-sm" style={{ width: '100%' }} onClick={() => navigate('/materials')}>✓ Куплено</button>
+                ) : (
+                  <button className="csca-btn csca-btn-ghost csca-btn-sm" style={{ width: '100%' }} onClick={() => buy(mat)}>{s.buy}</button>
+                )}
               </div>
             );
           })}
