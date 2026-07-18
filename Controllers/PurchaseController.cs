@@ -47,7 +47,8 @@ public class PurchaseController : ApiControllerBase
         var rows = await FilteredRowsAsync(status, itemType, from, to);
         var currency = rows.FirstOrDefault()?.Currency ?? "KZT";
         var revenue = rows.Where(r => r.Status == "Paid").Sum(r => r.Amount);
-        return Ok(new AdminSalesDto(rows.Count, revenue, currency, rows));
+        var net = rows.Where(r => r.Status == "Paid").Sum(r => r.NetAmount);
+        return Ok(new AdminSalesDto(rows.Count, revenue, currency, rows, net));
     }
 
     /// <summary>Export the (filtered) sales list as CSV — Admin only.</summary>
@@ -58,15 +59,19 @@ public class PurchaseController : ApiControllerBase
     {
         var rows = await FilteredRowsAsync(status, itemType, from, to);
         var sb = new System.Text.StringBuilder();
-        sb.AppendLine("Date,User,Email,Type,Code,Title,Subjects,Amount,Currency,Status");
+        sb.AppendLine("Date,User,Email,Type,Code,Title,Subjects,Amount,Currency,Status,Gross,Tax,Fee,FeeCurrency,Net,Total");
         foreach (var r in rows)
         {
+            var inv = System.Globalization.CultureInfo.InvariantCulture;
             sb.AppendLine(string.Join(",",
                 Csv(r.PurchasedAt.ToString("o")),
                 Csv(r.UserName), Csv(r.UserEmail), Csv(r.ItemType), Csv(r.ItemCode),
                 Csv(r.Title), Csv(r.Subjects ?? ""),
-                Csv(r.Amount.ToString(System.Globalization.CultureInfo.InvariantCulture)),
-                Csv(r.Currency), Csv(r.Status)));
+                Csv(r.Amount.ToString(inv)),
+                Csv(r.Currency), Csv(r.Status),
+                Csv(r.GrossAmount.ToString(inv)), Csv(r.TaxAmount.ToString(inv)),
+                Csv(r.PlatformFeeAmount.ToString(inv)), Csv(r.PlatformFeeCurrency ?? ""),
+                Csv(r.NetAmount.ToString(inv)), Csv(r.TotalAmount.ToString(inv))));
         }
         var bytes = System.Text.Encoding.UTF8.GetPreamble().Concat(System.Text.Encoding.UTF8.GetBytes(sb.ToString())).ToArray();
         return File(bytes, "text/csv", $"sales-{DateTime.UtcNow:yyyyMMdd}.csv");
@@ -89,7 +94,8 @@ public class PurchaseController : ApiControllerBase
             .OrderByDescending(p => p.PurchasedAt)
             .Select(p => new AdminPurchaseDto(
                 p.Id, p.UserId, p.User.Name, p.User.Email, p.ItemType, p.ItemCode,
-                p.Title, p.Subjects, p.Amount, p.Currency, p.Status, p.PurchasedAt))
+                p.Title, p.Subjects, p.Amount, p.Currency, p.Status, p.PurchasedAt,
+                p.GrossAmount, p.TaxAmount, p.PlatformFeeAmount, p.PlatformFeeCurrency, p.NetAmount, p.TotalAmount))
             .ToListAsync();
     }
 

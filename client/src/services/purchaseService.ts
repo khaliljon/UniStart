@@ -16,6 +16,12 @@ export interface AdminPurchase extends Purchase {
   userId: number;
   userName: string;
   userEmail: string;
+  grossAmount: number;
+  taxAmount: number;
+  platformFeeAmount: number;
+  platformFeeCurrency?: string | null;
+  netAmount: number;
+  totalAmount: number;
 }
 
 export interface AdminSales {
@@ -23,6 +29,7 @@ export interface AdminSales {
   totalRevenue: number;
   currency: string;
   items: AdminPurchase[];
+  totalNet: number;
 }
 
 export const purchaseService = {

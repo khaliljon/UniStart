@@ -21,7 +21,7 @@ function AdminSalesPage() {
     purchaseService
       .adminList(params)
       .then(setData)
-      .catch(() => setData({ count: 0, totalRevenue: 0, currency: 'KZT', items: [] }))
+      .catch(() => setData({ count: 0, totalRevenue: 0, currency: 'KZT', items: [], totalNet: 0 }))
       .finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, itemType, from, to]);
@@ -57,6 +57,13 @@ function AdminSalesPage() {
           <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--csca-red, #C8102E)' }}>
             {(data?.totalRevenue ?? 0).toLocaleString('ru-RU')} {data?.currency ?? 'KZT'}
           </div>
+        </div>
+        <div className="card" style={{ padding: '1rem 1.25rem', flex: '1 1 180px' }}>
+          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Net (к выплате)</div>
+          <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#10b981' }}>
+            {(data?.totalNet ?? 0) > 0 ? `${(data?.totalNet ?? 0).toLocaleString('ru-RU')} ${data?.currency ?? 'KZT'}` : '—'}
+          </div>
+          <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>после налогов Polar (без комиссии в USD)</div>
         </div>
         <div className="card" style={{ padding: '1rem 1.25rem', flex: '1 1 180px' }}>
           <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Всего заказов</div>
@@ -110,6 +117,9 @@ function AdminSalesPage() {
                 <th style={th}>Тип</th>
                 <th style={th}>Товар</th>
                 <th style={th}>Сумма</th>
+                <th style={th}>Налог</th>
+                <th style={th}>Комиссия</th>
+                <th style={th}>Net</th>
                 <th style={th}>Статус</th>
               </tr>
             </thead>
@@ -125,6 +135,15 @@ function AdminSalesPage() {
                   <td style={td}>{p.title}</td>
                   <td style={{ ...td, fontWeight: 700, whiteSpace: 'nowrap' }}>
                     {p.amount.toLocaleString('ru-RU')} {p.currency}
+                  </td>
+                  <td style={{ ...td, whiteSpace: 'nowrap', color: 'var(--text-secondary)' }}>
+                    {p.taxAmount > 0 ? `${p.taxAmount.toLocaleString('ru-RU')} ${p.currency}` : '—'}
+                  </td>
+                  <td style={{ ...td, whiteSpace: 'nowrap', color: 'var(--text-secondary)' }}>
+                    {p.platformFeeAmount > 0 ? `${p.platformFeeAmount.toLocaleString('ru-RU')} ${(p.platformFeeCurrency ?? '').toUpperCase()}` : '—'}
+                  </td>
+                  <td style={{ ...td, whiteSpace: 'nowrap', fontWeight: 700, color: '#10b981' }}>
+                    {p.netAmount > 0 ? `${p.netAmount.toLocaleString('ru-RU')} ${p.currency}` : '—'}
                   </td>
                   <td style={{ ...td, color: p.status === 'Paid' ? '#10b981' : 'var(--text-secondary)', fontWeight: 600 }}>
                     {p.status}

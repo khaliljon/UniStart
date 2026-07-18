@@ -27,6 +27,20 @@ public class Purchase : IAuditable
 
     public string Currency { get; set; } = "KZT";
 
+    // ── Polar order breakdown (populated from the webhook; 0 for pre-Polar rows) ──
+    /// <summary>Subtotal reported by Polar (order currency, e.g. KZT), allocated per line.</summary>
+    public decimal GrossAmount { get; set; }
+    /// <summary>Tax computed by Polar for the buyer's country (order currency).</summary>
+    public decimal TaxAmount { get; set; }
+    /// <summary>Polar platform fee. NOTE: charged in <see cref="PlatformFeeCurrency"/> (often USD), not the order currency.</summary>
+    public decimal PlatformFeeAmount { get; set; }
+    /// <summary>Currency of the platform fee (e.g. "usd") — do not sum with order-currency amounts.</summary>
+    public string? PlatformFeeCurrency { get; set; }
+    /// <summary>Net payout amount reported by Polar (order currency).</summary>
+    public decimal NetAmount { get; set; }
+    /// <summary>Total charged to the buyer incl. tax (order currency).</summary>
+    public decimal TotalAmount { get; set; }
+
     /// <summary>"Paid" | "Pending" | "Cancelled".</summary>
     public string Status { get; set; } = "Paid";
 

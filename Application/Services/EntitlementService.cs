@@ -65,9 +65,10 @@ public class EntitlementService : IEntitlementService
         return new CheckoutQuoteDto(total, currency);
     }
 
-    public async Task<CheckoutQuoteDto> GrantAsync(int userId, List<CheckoutLineDto> lines)
+    public async Task<CheckoutQuoteDto> GrantAsync(int userId, List<CheckoutLineDto> lines, PurchaseAmountsDto? amounts = null)
     {
         var (total, currency, resolved) = await ResolveAsync(lines);
+        var totalLinePrice = resolved.Sum(l => l.Price);
 
         foreach (var line in resolved)
         {
@@ -86,6 +87,11 @@ public class EntitlementService : IEntitlementService
                 }
             }
 
+            // Allocate the order-level Polar amounts across lines proportionally to price.
+            decimal share = amounts == null ? 0m
+                : totalLinePrice > 0 ? line.Price / totalLinePrice
+                : (resolved.Count > 0 ? 1m / resolved.Count : 0m);
+
             // Record the sale for the admin "Продажи" view
             _db.Purchases.Add(new Purchase
             {
@@ -98,6 +104,12 @@ public class EntitlementService : IEntitlementService
                 Currency = currency,
                 Status = "Paid",
                 PurchasedAt = DateTime.UtcNow,
+                GrossAmount = amounts != null ? Math.Round(amounts.Gross * share, 2) : 0m,
+                TaxAmount = amounts != null ? Math.Round(amounts.Tax * share, 2) : 0m,
+                PlatformFeeAmount = amounts != null ? Math.Round(amounts.PlatformFee * share, 2) : 0m,
+                PlatformFeeCurrency = amounts?.PlatformFeeCurrency,
+                NetAmount = amounts != null ? Math.Round(amounts.Net * share, 2) : 0m,
+                TotalAmount = amounts != null ? Math.Round(amounts.Total * share, 2) : 0m,
             });
         }
 

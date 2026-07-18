@@ -16,5 +16,5 @@ public interface IEntitlementService
     Task<CheckoutQuoteDto> QuoteAsync(List<CheckoutLineDto> lines);
 
     /// <summary>Grant the runs described by the lines to the user and record purchases.</summary>
-    Task<CheckoutQuoteDto> GrantAsync(int userId, List<CheckoutLineDto> lines);
+    Task<CheckoutQuoteDto> GrantAsync(int userId, List<CheckoutLineDto> lines, PurchaseAmountsDto? amounts = null);
 }

@@ -27,11 +27,27 @@ public record AdminPurchaseDto(
     decimal Amount,
     string Currency,
     string Status,
-    DateTime PurchasedAt);
+    DateTime PurchasedAt,
+    decimal GrossAmount = 0,
+    decimal TaxAmount = 0,
+    decimal PlatformFeeAmount = 0,
+    string? PlatformFeeCurrency = null,
+    decimal NetAmount = 0,
+    decimal TotalAmount = 0);
 
 /// <summary>Aggregated sales view for the admin panel.</summary>
 public record AdminSalesDto(
     int Count,
     decimal TotalRevenue,
     string Currency,
-    IEnumerable<AdminPurchaseDto> Items);
+    IEnumerable<AdminPurchaseDto> Items,
+    decimal TotalNet = 0);
+
+/// <summary>Polar order money breakdown, taken from the webhook payload (already ÷100).</summary>
+public record PurchaseAmountsDto(
+    decimal Gross,
+    decimal Tax,
+    decimal PlatformFee,
+    string? PlatformFeeCurrency,
+    decimal Net,
+    decimal Total);
