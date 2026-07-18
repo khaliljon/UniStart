@@ -37,11 +37,19 @@ public class PolarService : IPolarService
         _db = db;
         _logger = logger;
 
-        _token = config["POLAR_SANDBOX_ACCESS_TOKEN"] ?? config["POLAR_ACCESS_TOKEN"] ?? config["Polar:AccessToken"] ?? "";
-        _webhookSecret = config["POLAR_SANDBOX_WEBHOOK_SECRET"] ?? config["POLAR_WEBHOOK_SECRET"] ?? config["Polar:WebhookSecret"] ?? "";
-        _productId = config["POLAR_PRODUCT_ID"] ?? config["Polar:ProductId"] ?? "";
-        _successUrl = config["POLAR_SUCCESS_URL"] ?? config["Polar:SuccessUrl"] ?? "https://unistart.kz/purchases?paid=1";
-        _baseUrl = (config["POLAR_API_BASE"] ?? config["Polar:ApiBase"] ?? "https://sandbox-api.polar.sh").TrimEnd('/');
+        var useSandbox = config.GetValue<bool>("POLAR_USE_SANDBOX", true);
+
+        _token = useSandbox
+            ? config["POLAR_SANDBOX_ACCESS_TOKEN"] ?? ""
+            : config["POLAR_PRODUCTION_ACCESS_TOKEN"] ?? "";
+        _webhookSecret = useSandbox
+            ? config["POLAR_SANDBOX_WEBHOOK_SECRET"] ?? ""
+            : config["POLAR_PRODUCTION_WEBHOOK_SECRET"] ?? "";
+        _productId = useSandbox
+            ? config["POLAR_SANDBOX_PRODUCT_ID"] ?? ""
+            : config["POLAR_PRODUCTION_PRODUCT_ID"] ?? "";
+        _successUrl = config["POLAR_SUCCESS_URL"] ?? "https://unistart.kz/purchases?paid=1";
+        _baseUrl = useSandbox ? "https://sandbox-api.polar.sh" : "https://api.polar.sh";
 
         _http = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
     }
@@ -49,10 +57,7 @@ public class PolarService : IPolarService
     public async Task<string> CreateCheckoutUrlAsync(int userId, List<CheckoutLineDto> lines)
     {
         if (string.IsNullOrEmpty(_token) || string.IsNullOrEmpty(_productId))
-        {
-            _logger.LogError("Polar checkout guard failed: tokenLen={TokenLen} productId='{ProductId}'", _token?.Length ?? -1, _productId);
             throw new InvalidOperationException("Polar is not configured (token/product id missing).");
-        }
 
         // Server-side price — never trust the client.
         var quote = await _entitlements.QuoteAsync(lines);
