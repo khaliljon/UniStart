@@ -54,7 +54,7 @@ function CartPage() {
       {items.length === 0 ? (
         <div className="csca-card" style={{ textAlign: 'center' }}>
           <p className="csca-lead">{s.cartEmpty}</p>
-          <button className="btn btn-primary" onClick={() => navigate('/learn?tab=mock')}>{s.cartBrowse}</button>
+          <button className="btn btn-primary" onClick={() => navigate('/')}>{s.cartBrowse}</button>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>

@@ -5,6 +5,7 @@ import { cscaStrings } from '../i18n/csca';
 import { useAppSelector } from '../hooks/useAppSelector';
 import { materialsService } from '../services/materialsService';
 import { mockCatalogService, type MockPackage } from '../services/mockCatalogService';
+import { purchaseService } from '../services/purchaseService';
 import { cartService } from '../services/cartService';
 import { moks } from '../utils/plural';
 import CscaNav from '../components/csca/CscaNav';
@@ -45,6 +46,7 @@ function CscaLandingPage() {
   const { isAuthenticated } = useAppSelector((s) => s.auth);
   const [dbMaterials, setDbMaterials] = useState<{ id: number; subjectKey: string; title: string; price: number }[]>([]);
   const [dbPackages, setDbPackages] = useState<MockPackage[] | null>(null);
+  const [ownedBooks, setOwnedBooks] = useState<Set<string>>(new Set());
 
   const s = cscaStrings[locale];
   const nextSitting = useMemo(() => getNextSitting(), []);
@@ -53,7 +55,12 @@ function CscaLandingPage() {
   useEffect(() => {
     materialsService.list().then(setDbMaterials).catch(() => {});
     mockCatalogService.getCatalog().then((c) => setDbPackages(c.packages)).catch(() => setDbPackages([]));
-  }, []);
+    if (isAuthenticated) {
+      purchaseService.list()
+        .then((ps) => setOwnedBooks(new Set(ps.filter((p) => p.itemType === 'book').map((p) => p.itemCode))))
+        .catch(() => {});
+    }
+  }, [isAuthenticated]);
 
   // Scroll to a hash target (e.g. #news) when navigating from another page.
   useEffect(() => {
@@ -88,6 +95,11 @@ function CscaLandingPage() {
   };
 
   const buyBook = (mat: { id: number; subjectKey: string; title: string; price: number }) => {
+    // Already owned → send to the library instead of charging again.
+    if (isAuthenticated && ownedBooks.has(String(mat.id))) {
+      navigate('/materials');
+      return;
+    }
     const item = {
       itemType: 'book',
       itemCode: String(mat.id),
@@ -296,7 +308,7 @@ function CscaLandingPage() {
                   <div className="csca-price-amount csca-hanzi" style={{ fontSize: '1.4rem', margin: '0 0 0.6rem' }}>
                     {mat.price.toLocaleString('ru-RU')} <span className="csca-price-cur">{s.currency}</span>
                   </div>
-                  <button className="csca-btn csca-btn-ghost csca-btn-sm" style={{ width: '100%' }} onClick={() => buyBook(mat)}>{s.buy}</button>
+                  <button className="csca-btn csca-btn-ghost csca-btn-sm" style={{ width: '100%' }} onClick={() => buyBook(mat)}>{isAuthenticated && ownedBooks.has(String(mat.id)) ? 'Открыть' : s.buy}</button>
                 </div>
               );
             })}
