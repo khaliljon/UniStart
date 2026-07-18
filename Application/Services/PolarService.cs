@@ -49,7 +49,10 @@ public class PolarService : IPolarService
     public async Task<string> CreateCheckoutUrlAsync(int userId, List<CheckoutLineDto> lines)
     {
         if (string.IsNullOrEmpty(_token) || string.IsNullOrEmpty(_productId))
+        {
+            _logger.LogError("Polar checkout guard failed: tokenLen={TokenLen} productId='{ProductId}'", _token?.Length ?? -1, _productId);
             throw new InvalidOperationException("Polar is not configured (token/product id missing).");
+        }
 
         // Server-side price — never trust the client.
         var quote = await _entitlements.QuoteAsync(lines);
