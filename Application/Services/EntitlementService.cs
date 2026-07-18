@@ -65,7 +65,7 @@ public class EntitlementService : IEntitlementService
         return new CheckoutQuoteDto(total, currency);
     }
 
-    public async Task<CheckoutQuoteDto> GrantAsync(int userId, List<CheckoutLineDto> lines, PurchaseAmountsDto? amounts = null)
+    public async Task<CheckoutQuoteDto> GrantAsync(int userId, List<CheckoutLineDto> lines, PurchaseAmountsDto? amounts = null, string? polarOrderId = null)
     {
         var (total, currency, resolved) = await ResolveAsync(lines);
         var totalLinePrice = resolved.Sum(l => l.Price);
@@ -110,11 +110,52 @@ public class EntitlementService : IEntitlementService
                 PlatformFeeCurrency = amounts?.PlatformFeeCurrency,
                 NetAmount = amounts != null ? Math.Round(amounts.Net * share, 2) : 0m,
                 TotalAmount = amounts != null ? Math.Round(amounts.Total * share, 2) : 0m,
+                PolarOrderId = polarOrderId,
             });
         }
 
         await _db.SaveChangesAsync();
         return new CheckoutQuoteDto(total, currency);
+    }
+
+    /// <summary>
+    /// Refreshes the Polar money breakdown on already-granted purchases for an order.
+    /// Polar sends several webhook events per order; the platform fee (and sometimes tax)
+    /// is computed a moment after the first paid event, so we fill in fields as later
+    /// events arrive — without ever re-granting access or zeroing already-set values.
+    /// </summary>
+    public async Task UpdatePurchaseAmountsAsync(string polarOrderId, PurchaseAmountsDto amounts)
+    {
+        var purchases = await _db.Purchases
+            .Where(p => p.PolarOrderId == polarOrderId)
+            .ToListAsync();
+        if (purchases.Count == 0) return;
+
+        var totalPrice = purchases.Sum(p => p.Amount);
+        var changed = false;
+
+        foreach (var p in purchases)
+        {
+            decimal share = totalPrice > 0 ? p.Amount / totalPrice : 1m / purchases.Count;
+
+            var gross = Math.Round(amounts.Gross * share, 2);
+            var tax = Math.Round(amounts.Tax * share, 2);
+            var fee = Math.Round(amounts.PlatformFee * share, 2);
+            var net = Math.Round(amounts.Net * share, 2);
+            var totalAmt = Math.Round(amounts.Total * share, 2);
+
+            // Only fill/upgrade fields when the new event actually carries data,
+            // so a later partial event can never wipe a previously-set value.
+            if (gross > 0 && p.GrossAmount != gross) { p.GrossAmount = gross; changed = true; }
+            if (tax > 0 && p.TaxAmount != tax) { p.TaxAmount = tax; changed = true; }
+            if (fee > 0 && p.PlatformFeeAmount != fee) { p.PlatformFeeAmount = fee; changed = true; }
+            if (!string.IsNullOrEmpty(amounts.PlatformFeeCurrency) && p.PlatformFeeCurrency != amounts.PlatformFeeCurrency)
+            { p.PlatformFeeCurrency = amounts.PlatformFeeCurrency; changed = true; }
+            if (net > 0 && p.NetAmount != net) { p.NetAmount = net; changed = true; }
+            if (totalAmt > 0 && p.TotalAmount != totalAmt) { p.TotalAmount = totalAmt; changed = true; }
+        }
+
+        if (changed) await _db.SaveChangesAsync();
     }
 
     // ── internals ──────────────────────────────────────────

@@ -147,16 +147,26 @@ public class PolarService : IPolarService
             _logger.LogWarning("Polar webhook missing metadata; type={Type}", type);
             return true;
         }
-
-        // Idempotency: skip if we already granted for this order/checkout.
-        var dedupKey = $"polar:{orderId ?? webhookId}";
-        if (await _db.AppSettings.AnyAsync(s => s.Key == dedupKey)) return true;
-
         var lines = DecodeLines(linesRaw);
         if (lines.Count == 0) return true;
 
         var amounts = ExtractAmounts(data);
-        await _entitlements.GrantAsync(userId, lines, amounts);
+
+        // Idempotency applies ONLY to granting access. Polar sends several events per
+        // order (order.created/updated) and the platform fee is computed a moment after
+        // the first paid event — so we still refresh the financial metadata on later events.
+        var dedupKey = $"polar:{orderId ?? webhookId}";
+        var alreadyGranted = await _db.AppSettings.AnyAsync(s => s.Key == dedupKey);
+
+        if (alreadyGranted)
+        {
+            // Access was already granted; just fill in any newly-available amounts (e.g. fee).
+            if (!string.IsNullOrEmpty(orderId))
+                await _entitlements.UpdatePurchaseAmountsAsync(orderId, amounts);
+            return true;
+        }
+
+        await _entitlements.GrantAsync(userId, lines, amounts, orderId);
         _db.AppSettings.Add(new AppSetting { Key = dedupKey, Value = DateTime.UtcNow.ToString("o") });
         await _db.SaveChangesAsync();
 

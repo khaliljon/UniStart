@@ -41,6 +41,9 @@ public class Purchase : IAuditable
     /// <summary>Total charged to the buyer incl. tax (order currency).</summary>
     public decimal TotalAmount { get; set; }
 
+    /// <summary>Polar order id — used to correlate later webhook events (e.g. delayed platform fee).</summary>
+    public string? PolarOrderId { get; set; }
+
     /// <summary>"Paid" | "Pending" | "Cancelled".</summary>
     public string Status { get; set; } = "Paid";
 
