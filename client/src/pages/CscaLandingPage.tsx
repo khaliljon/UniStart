@@ -82,9 +82,11 @@ function CscaLandingPage() {
     { icon: 'plan', t: s.fPlanT, d: s.fPlanD },
   ] as const;
 
-  // Packages require choosing subjects — finish the purchase in the app storefront
-  // (MockShop on the home page), which adds to the cart and pays via Polar.
-  const buyPackage = () => {
+  // Packages may require choosing subjects. We carry the chosen package into the
+  // storefront (MockShop on the home page): it opens the subject picker (or adds
+  // straight to the cart for "all subjects" packages) and pays via Polar.
+  const buyPackage = (pkg: MockPackage) => {
+    sessionStorage.setItem('buyPackage', pkg.key);
     navigate(isAuthenticated ? '/' : '/register');
   };
 
@@ -260,7 +262,7 @@ function CscaLandingPage() {
                 <button
                   className={`csca-btn ${featured ? 'csca-btn-primary' : 'csca-btn-ghost'}`}
                   style={{ width: '100%', marginTop: 'auto' }}
-                  onClick={() => buyPackage()}
+                  onClick={() => buyPackage(pkg)}
                 >{s.buy}</button>
               </div>
               );

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { mockCatalogService, type MockCatalog, type MockTemplate } from '../services/mockCatalogService';
 import { cartService } from '../services/cartService';
@@ -13,6 +13,7 @@ function MockShop() {
   const [catalog, setCatalog] = useState<MockCatalog | null>(null);
   const [pkgPicker, setPkgPicker] = useState<string | null>(null);
   const [pkgChosen, setPkgChosen] = useState<number[]>([]);
+  const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   useEffect(() => {
     mockCatalogService.getCatalog().then(setCatalog).catch(() => {});
@@ -44,6 +45,24 @@ function MockShop() {
     setPkgChosen([]);
     navigate('/cart');
   };
+
+  // If the user clicked "Buy" on a landing package, open its picker here (or add
+  // straight to the cart for "all subjects" packages) once the catalog is loaded.
+  useEffect(() => {
+    if (!catalog) return;
+    const key = sessionStorage.getItem('buyPackage');
+    if (!key) return;
+    sessionStorage.removeItem('buyPackage');
+    const pkg = catalog.packages.find((p) => p.key === key);
+    if (!pkg) return;
+    if (pkg.pickCount === 0) {
+      addPackageToCart(pkg.key, pkg.name, pkg.price, pkg.currency, []);
+    } else {
+      setPkgPicker(pkg.key);
+      setTimeout(() => cardRefs.current[pkg.key]?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 120);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [catalog]);
 
   if (!catalog) return null;
 
@@ -113,7 +132,7 @@ function MockShop() {
               const featured = pkg.key === 'standard';
               const subjLabel = allSubjects ? 'Все предметы' : `Любые ${pkg.pickCount} предмета`;
               return (
-                <div key={pkg.key} className="card" style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: '0.5rem', padding: '1.25rem', borderRadius: 16, border: featured ? '2px solid var(--primary-color)' : '1px solid var(--border-color)', overflow: 'hidden' }}>
+                <div key={pkg.key} className="card" ref={(el) => { cardRefs.current[pkg.key] = el; }} style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: '0.5rem', padding: '1.25rem', borderRadius: 16, border: featured ? '2px solid var(--primary-color)' : '1px solid var(--border-color)', overflow: 'hidden' }}>
                   {featured && (
                     <span style={{ position: 'absolute', top: 0, right: 0, background: 'var(--primary-color)', color: '#fff', fontSize: '0.68rem', fontWeight: 700, padding: '3px 12px', borderBottomLeftRadius: 10 }}>Популярный</span>
                   )}
