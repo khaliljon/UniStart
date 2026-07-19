@@ -4,6 +4,7 @@ import { useTranslation } from '../i18n';
 import { cscaStrings } from '../i18n/csca';
 import { cartService, type CartItem } from '../services/cartService';
 import { type CheckoutLine } from '../services/mockCatalogService';
+import { purchaseService } from '../services/purchaseService';
 import { paymentsService } from '../services/paymentsService';
 
 function CartPage() {
@@ -18,6 +19,16 @@ function CartPage() {
     const refresh = () => setItems(cartService.list());
     refresh();
     window.addEventListener(cartService.eventName, refresh);
+    // Remove any book the user already owns (e.g. left in the cart before purchase)
+    // so it can never be paid for twice.
+    purchaseService.list()
+      .then((ps) => {
+        const owned = new Set(ps.filter((p) => p.itemType === 'book').map((p) => p.itemCode));
+        cartService.list().forEach((i) => {
+          if (i.itemType === 'book' && owned.has(i.itemCode)) cartService.remove(i.itemType, i.itemCode);
+        });
+      })
+      .catch(() => {});
     return () => window.removeEventListener(cartService.eventName, refresh);
   }, []);
 
