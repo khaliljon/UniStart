@@ -76,7 +76,11 @@ public class MockExamService : IMockExamService
                 bestScore,
                 examAttempts.Count,
                 runsByMock.TryGetValue(exam.Id, out var rr) ? rr : 0,
-                freeAvailable
+                freeAvailable,
+                exam.TitleKz,
+                exam.TitleEn,
+                exam.DescriptionKz,
+                exam.DescriptionEn
             ));
         }
         return result;
@@ -108,7 +112,11 @@ public class MockExamService : IMockExamService
             exam.Title,
             exam.Description,
             exam.TotalTimeMinutes,
-            sectionDtos
+            sectionDtos,
+            exam.TitleKz,
+            exam.TitleEn,
+            exam.DescriptionKz,
+            exam.DescriptionEn
         );
     }
 

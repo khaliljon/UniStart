@@ -5,6 +5,10 @@ export interface StudyMaterial {
   subjectKey: string;
   title: string;
   description?: string | null;
+  titleKz?: string | null;
+  titleEn?: string | null;
+  descriptionKz?: string | null;
+  descriptionEn?: string | null;
   price: number;
 }
 
@@ -19,6 +23,10 @@ export interface SaveStudyMaterialDto {
   subjectKey: string;
   title: string;
   description?: string | null;
+  titleKz?: string | null;
+  titleEn?: string | null;
+  descriptionKz?: string | null;
+  descriptionEn?: string | null;
   pdfUrl?: string | null;
   price: number;
   isActive: boolean;

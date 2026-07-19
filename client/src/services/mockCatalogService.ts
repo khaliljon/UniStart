@@ -21,6 +21,8 @@ export interface MockPackage {
   id: number;
   key: string;
   name: string;
+  nameKz?: string | null;
+  nameEn?: string | null;
   pickCount: number; // 0 = all subjects
   runsEach: number;
   price: number;
@@ -72,6 +74,8 @@ export interface AdminPackage {
   id: number;
   key: string;
   name: string;
+  nameKz?: string | null;
+  nameEn?: string | null;
   pickCount: number;
   runsEach: number;
   price: number;

@@ -1193,8 +1193,8 @@ select option,
 @media (max-width: 768px) { .csca-hero-emblem { display: none; } }
 .csca-hero-title {
   font-family: var(--font-display); font-weight: 900; letter-spacing: -0.01em;
-  font-size: clamp(2.3rem, 6vw, 4.2rem); line-height: 1.08; margin: 1.2rem auto 1.1rem; max-width: 12ch;
-  color: var(--csca-ink);
+  font-size: clamp(2.3rem, 6vw, 4.2rem); line-height: 1.08; margin: 1.2rem auto 1.1rem; max-width: 14ch;
+  color: var(--csca-ink); text-align: center; overflow-wrap: break-word;
 }
 .csca-hero-title .accent {
   background: linear-gradient(135deg, var(--csca-red-soft), var(--c-red) 55%, var(--c-red-deep));

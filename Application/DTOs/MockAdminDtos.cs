@@ -30,7 +30,11 @@ public record AdminMockExamListItemDto(
     bool IsActive,
     int SectionCount,
     int QuestionCount,
-    int AttemptCount
+    int AttemptCount,
+    string? TitleKz = null,
+    string? TitleEn = null,
+    string? DescriptionKz = null,
+    string? DescriptionEn = null
 );
 
 public record AdminMockExamDetailDto(
@@ -40,7 +44,11 @@ public record AdminMockExamDetailDto(
     string Description,
     int TotalTimeMinutes,
     bool IsActive,
-    IEnumerable<AdminMockSectionDto> Sections
+    IEnumerable<AdminMockSectionDto> Sections,
+    string? TitleKz = null,
+    string? TitleEn = null,
+    string? DescriptionKz = null,
+    string? DescriptionEn = null
 );
 
 public record SaveMockExamDto(
@@ -49,5 +57,9 @@ public record SaveMockExamDto(
     string Description,
     int TotalTimeMinutes,
     bool IsActive,
-    List<AdminMockSectionInputDto> Sections
+    List<AdminMockSectionInputDto> Sections,
+    string? TitleKz = null,
+    string? TitleEn = null,
+    string? DescriptionKz = null,
+    string? DescriptionEn = null
 );

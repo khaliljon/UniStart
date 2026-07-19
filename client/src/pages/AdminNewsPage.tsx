@@ -3,7 +3,7 @@ import { newsService, type NewsItem, type NewsUpsert } from '../services/newsSer
 import adminService from '../services/adminService';
 import { useToast } from '../components/Toast';
 
-const EMPTY: NewsUpsert = { title: '', summary: '', body: '', imageUrl: '', isPublished: false };
+const EMPTY: NewsUpsert = { title: '', summary: '', body: '', titleKz: '', titleEn: '', summaryKz: '', summaryEn: '', bodyKz: '', bodyEn: '', imageUrl: '', isPublished: false };
 
 function AdminNewsPage() {
   const { showToast } = useToast();
@@ -41,7 +41,13 @@ function AdminNewsPage() {
   const startCreate = () => { setEditingId(0); setForm(EMPTY); };
   const startEdit = (n: NewsItem) => {
     setEditingId(n.id);
-    setForm({ title: n.title, summary: n.summary, body: n.body, imageUrl: n.imageUrl ?? '', isPublished: n.isPublished });
+    setForm({
+      title: n.title, summary: n.summary, body: n.body,
+      titleKz: n.titleKz ?? '', titleEn: n.titleEn ?? '',
+      summaryKz: n.summaryKz ?? '', summaryEn: n.summaryEn ?? '',
+      bodyKz: n.bodyKz ?? '', bodyEn: n.bodyEn ?? '',
+      imageUrl: n.imageUrl ?? '', isPublished: n.isPublished,
+    });
   };
   const cancel = () => { setEditingId(null); setForm(EMPTY); };
 
@@ -97,11 +103,29 @@ function AdminNewsPage() {
           <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>Заголовок
             <input style={inputStyle} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
           </label>
+          <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>Заголовок (KZ)
+            <input style={inputStyle} value={form.titleKz ?? ''} onChange={(e) => setForm({ ...form, titleKz: e.target.value })} placeholder="Оставьте пустым — покажется русский" />
+          </label>
+          <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>Заголовок (EN)
+            <input style={inputStyle} value={form.titleEn ?? ''} onChange={(e) => setForm({ ...form, titleEn: e.target.value })} placeholder="Leave empty to fall back to Russian" />
+          </label>
           <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>Краткое описание (тизер)
             <textarea style={{ ...inputStyle, minHeight: 60 }} value={form.summary} onChange={(e) => setForm({ ...form, summary: e.target.value })} />
           </label>
+          <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>Тизер (KZ)
+            <textarea style={{ ...inputStyle, minHeight: 60 }} value={form.summaryKz ?? ''} onChange={(e) => setForm({ ...form, summaryKz: e.target.value })} />
+          </label>
+          <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>Тизер (EN)
+            <textarea style={{ ...inputStyle, minHeight: 60 }} value={form.summaryEn ?? ''} onChange={(e) => setForm({ ...form, summaryEn: e.target.value })} />
+          </label>
           <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>Текст новости
             <textarea style={{ ...inputStyle, minHeight: 160 }} value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} />
+          </label>
+          <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>Текст (KZ)
+            <textarea style={{ ...inputStyle, minHeight: 160 }} value={form.bodyKz ?? ''} onChange={(e) => setForm({ ...form, bodyKz: e.target.value })} />
+          </label>
+          <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>Текст (EN)
+            <textarea style={{ ...inputStyle, minHeight: 160 }} value={form.bodyEn ?? ''} onChange={(e) => setForm({ ...form, bodyEn: e.target.value })} />
           </label>
           <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>Изображение (необязательно)
             <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: '0.4rem', flexWrap: 'wrap' }}>

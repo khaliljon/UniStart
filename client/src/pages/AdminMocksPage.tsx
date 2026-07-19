@@ -30,6 +30,10 @@ function AdminMocksPage() {
     examTypeCode: '',
     title: '',
     description: '',
+    titleKz: '',
+    titleEn: '',
+    descriptionKz: '',
+    descriptionEn: '',
     totalTimeMinutes: 120,
     isActive: true,
     sections: [] as MockSectionInput[],
@@ -92,6 +96,10 @@ function AdminMocksPage() {
       examTypeCode: examTypes[0]?.code || '',
       title: '',
       description: '',
+      titleKz: '',
+      titleEn: '',
+      descriptionKz: '',
+      descriptionEn: '',
       totalTimeMinutes: 120,
       isActive: true,
       sections: [],
@@ -110,6 +118,10 @@ function AdminMocksPage() {
         examTypeCode: detail.examTypeCode,
         title: detail.title,
         description: detail.description,
+        titleKz: detail.titleKz || '',
+        titleEn: detail.titleEn || '',
+        descriptionKz: detail.descriptionKz || '',
+        descriptionEn: detail.descriptionEn || '',
         totalTimeMinutes: detail.totalTimeMinutes,
         isActive: detail.isActive,
         sections: detail.sections.map((s) => ({
@@ -201,6 +213,10 @@ function AdminMocksPage() {
         examTypeCode: form.examTypeCode,
         title: form.title,
         description: form.description,
+        titleKz: form.titleKz || null,
+        titleEn: form.titleEn || null,
+        descriptionKz: form.descriptionKz || null,
+        descriptionEn: form.descriptionEn || null,
         totalTimeMinutes: form.totalTimeMinutes,
         isActive: form.isActive,
         sections: form.sections,
@@ -331,10 +347,52 @@ function AdminMocksPage() {
           </label>
 
           <label style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+            <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>Название (KZ)</span>
+            <input
+              type="text"
+              value={form.titleKz}
+              onChange={(e) => setForm((p) => ({ ...p, titleKz: e.target.value }))}
+              style={inputStyle}
+              placeholder="Оставьте пустым — покажется русское"
+            />
+          </label>
+
+          <label style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+            <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>Название (EN)</span>
+            <input
+              type="text"
+              value={form.titleEn}
+              onChange={(e) => setForm((p) => ({ ...p, titleEn: e.target.value }))}
+              style={inputStyle}
+              placeholder="Leave empty to fall back to Russian"
+            />
+          </label>
+
+          <label style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
             <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>Описание</span>
             <textarea
               value={form.description}
               onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
+              rows={3}
+              style={{ ...inputStyle, resize: 'vertical' }}
+            />
+          </label>
+
+          <label style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+            <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>Описание (KZ)</span>
+            <textarea
+              value={form.descriptionKz}
+              onChange={(e) => setForm((p) => ({ ...p, descriptionKz: e.target.value }))}
+              rows={3}
+              style={{ ...inputStyle, resize: 'vertical' }}
+            />
+          </label>
+
+          <label style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+            <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>Описание (EN)</span>
+            <textarea
+              value={form.descriptionEn}
+              onChange={(e) => setForm((p) => ({ ...p, descriptionEn: e.target.value }))}
               rows={3}
               style={{ ...inputStyle, resize: 'vertical' }}
             />

@@ -1,5 +1,9 @@
-/** Russian pluralization for "мок": 1 мок, 3 мока, 5 моков. */
-export function moks(n: number): string {
+export type PluralLocale = 'ru' | 'kz' | 'en';
+
+/** Localized count of "mock" runs: RU declension, KZ invariant, EN plural. */
+export function moks(n: number, locale: PluralLocale = 'ru'): string {
+  if (locale === 'en') return `${n} ${n === 1 ? 'mock' : 'mocks'}`;
+  if (locale === 'kz') return `${n} мок`;
   const mod10 = n % 10;
   const mod100 = n % 100;
   let word: string;

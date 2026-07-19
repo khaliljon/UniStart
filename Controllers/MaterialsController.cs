@@ -41,6 +41,10 @@ public class MaterialsController : ControllerBase
             m.SubjectKey,
             m.Title,
             m.Description,
+            m.TitleKz,
+            m.TitleEn,
+            m.DescriptionKz,
+            m.DescriptionEn,
             m.Price,
         }));
     }
@@ -96,6 +100,7 @@ public class MaterialsController : ControllerBase
         return Ok(items.Select(m => new
         {
             m.Id, m.SubjectKey, m.Title, m.Description,
+            m.TitleKz, m.TitleEn, m.DescriptionKz, m.DescriptionEn,
             m.PdfUrl, m.Price, m.IsActive, m.CreatedAt, m.UpdatedAt
         }));
     }
@@ -110,6 +115,10 @@ public class MaterialsController : ControllerBase
             SubjectKey = dto.SubjectKey.Trim(),
             Title = dto.Title.Trim(),
             Description = dto.Description?.Trim(),
+            TitleKz = string.IsNullOrWhiteSpace(dto.TitleKz) ? null : dto.TitleKz.Trim(),
+            TitleEn = string.IsNullOrWhiteSpace(dto.TitleEn) ? null : dto.TitleEn.Trim(),
+            DescriptionKz = string.IsNullOrWhiteSpace(dto.DescriptionKz) ? null : dto.DescriptionKz.Trim(),
+            DescriptionEn = string.IsNullOrWhiteSpace(dto.DescriptionEn) ? null : dto.DescriptionEn.Trim(),
             PdfUrl = dto.PdfUrl?.Trim(),
             Price = dto.Price,
             IsActive = dto.IsActive,
@@ -130,6 +139,10 @@ public class MaterialsController : ControllerBase
         item.SubjectKey = dto.SubjectKey.Trim();
         item.Title = dto.Title.Trim();
         item.Description = dto.Description?.Trim();
+        item.TitleKz = string.IsNullOrWhiteSpace(dto.TitleKz) ? null : dto.TitleKz.Trim();
+        item.TitleEn = string.IsNullOrWhiteSpace(dto.TitleEn) ? null : dto.TitleEn.Trim();
+        item.DescriptionKz = string.IsNullOrWhiteSpace(dto.DescriptionKz) ? null : dto.DescriptionKz.Trim();
+        item.DescriptionEn = string.IsNullOrWhiteSpace(dto.DescriptionEn) ? null : dto.DescriptionEn.Trim();
         if (dto.PdfUrl != null) item.PdfUrl = dto.PdfUrl.Trim();
         item.Price = dto.Price;
         item.IsActive = dto.IsActive;
@@ -197,5 +210,9 @@ public record SaveStudyMaterialDto(
     string? Description,
     string? PdfUrl,
     decimal Price,
-    bool IsActive
+    bool IsActive,
+    string? TitleKz = null,
+    string? TitleEn = null,
+    string? DescriptionKz = null,
+    string? DescriptionEn = null
 );

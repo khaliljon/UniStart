@@ -24,7 +24,9 @@ public record MockPackageDto(
     int RunsEach,
     decimal Price,
     string Currency,
-    int SortOrder);
+    int SortOrder,
+    string? NameKz = null,
+    string? NameEn = null);
 
 /// <summary>Full catalog returned to the storefront.</summary>
 public record MockCatalogDto(

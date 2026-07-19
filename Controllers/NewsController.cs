@@ -20,7 +20,8 @@ public class NewsController : ControllerBase
 
     private static NewsArticleDto ToDto(NewsArticle n) => new(
         n.Id, n.Title, n.Summary, n.Body, n.ImageUrl,
-        n.IsPublished, n.PublishedAt, n.CreatedAt, n.UpdatedAt);
+        n.IsPublished, n.PublishedAt, n.CreatedAt, n.UpdatedAt,
+        n.TitleKz, n.TitleEn, n.SummaryKz, n.SummaryEn, n.BodyKz, n.BodyEn);
 
     /// <summary>Public: published articles, newest first.</summary>
     [HttpGet]
@@ -69,6 +70,12 @@ public class NewsController : ControllerBase
             Title = dto.Title.Trim(),
             Summary = dto.Summary.Trim(),
             Body = dto.Body,
+            TitleKz = string.IsNullOrWhiteSpace(dto.TitleKz) ? null : dto.TitleKz.Trim(),
+            TitleEn = string.IsNullOrWhiteSpace(dto.TitleEn) ? null : dto.TitleEn.Trim(),
+            SummaryKz = string.IsNullOrWhiteSpace(dto.SummaryKz) ? null : dto.SummaryKz.Trim(),
+            SummaryEn = string.IsNullOrWhiteSpace(dto.SummaryEn) ? null : dto.SummaryEn.Trim(),
+            BodyKz = string.IsNullOrWhiteSpace(dto.BodyKz) ? null : dto.BodyKz,
+            BodyEn = string.IsNullOrWhiteSpace(dto.BodyEn) ? null : dto.BodyEn,
             ImageUrl = string.IsNullOrWhiteSpace(dto.ImageUrl) ? null : dto.ImageUrl.Trim(),
             IsPublished = dto.IsPublished,
             PublishedAt = dto.IsPublished ? DateTime.UtcNow : null,
@@ -89,6 +96,12 @@ public class NewsController : ControllerBase
         article.Title = dto.Title.Trim();
         article.Summary = dto.Summary.Trim();
         article.Body = dto.Body;
+        article.TitleKz = string.IsNullOrWhiteSpace(dto.TitleKz) ? null : dto.TitleKz.Trim();
+        article.TitleEn = string.IsNullOrWhiteSpace(dto.TitleEn) ? null : dto.TitleEn.Trim();
+        article.SummaryKz = string.IsNullOrWhiteSpace(dto.SummaryKz) ? null : dto.SummaryKz.Trim();
+        article.SummaryEn = string.IsNullOrWhiteSpace(dto.SummaryEn) ? null : dto.SummaryEn.Trim();
+        article.BodyKz = string.IsNullOrWhiteSpace(dto.BodyKz) ? null : dto.BodyKz;
+        article.BodyEn = string.IsNullOrWhiteSpace(dto.BodyEn) ? null : dto.BodyEn;
         article.ImageUrl = string.IsNullOrWhiteSpace(dto.ImageUrl) ? null : dto.ImageUrl.Trim();
         article.IsPublished = dto.IsPublished;
         if (dto.IsPublished && !wasPublished)

@@ -5,6 +5,12 @@ export interface NewsItem {
   title: string;
   summary: string;
   body: string;
+  titleKz?: string | null;
+  titleEn?: string | null;
+  summaryKz?: string | null;
+  summaryEn?: string | null;
+  bodyKz?: string | null;
+  bodyEn?: string | null;
   imageUrl?: string | null;
   isPublished: boolean;
   publishedAt: string | null;
@@ -16,6 +22,12 @@ export interface NewsUpsert {
   title: string;
   summary: string;
   body: string;
+  titleKz?: string | null;
+  titleEn?: string | null;
+  summaryKz?: string | null;
+  summaryEn?: string | null;
+  bodyKz?: string | null;
+  bodyEn?: string | null;
   imageUrl?: string | null;
   isPublished: boolean;
 }

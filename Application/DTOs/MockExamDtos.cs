@@ -17,7 +17,11 @@ public record MockExamListDto(
     int? BestScore,      // User's best score (null if never attempted)
     int AttemptCount,     // How many times user attempted
     int RunsRemaining,    // Paid runs left for this template (run-based model)
-    bool FreeAvailable    // User still has their one free run (same for every row)
+    bool FreeAvailable,    // User still has their one free run (same for every row)
+    string? TitleKz = null,
+    string? TitleEn = null,
+    string? DescriptionKz = null,
+    string? DescriptionEn = null
 );
 
 /// <summary>Full mock exam detail with sections</summary>
@@ -28,7 +32,11 @@ public record MockExamDetailDto(
     string Title,
     string Description,
     int TotalTimeMinutes,
-    IEnumerable<MockExamSectionDto> Sections
+    IEnumerable<MockExamSectionDto> Sections,
+    string? TitleKz = null,
+    string? TitleEn = null,
+    string? DescriptionKz = null,
+    string? DescriptionEn = null
 );
 
 /// <summary>Section within a mock exam</summary>

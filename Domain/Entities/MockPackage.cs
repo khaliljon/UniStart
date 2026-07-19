@@ -14,6 +14,10 @@ public class MockPackage : IAuditable
 
     public string Name { get; set; } = string.Empty;
 
+    /// <summary>Localized names (fallback to <see cref="Name"/> when empty).</summary>
+    public string? NameKz { get; set; }
+    public string? NameEn { get; set; }
+
     /// <summary>How many subjects the buyer selects. 0 means "all subjects".</summary>
     public int PickCount { get; set; }
 

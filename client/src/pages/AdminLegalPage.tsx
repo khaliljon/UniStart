@@ -2,13 +2,22 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from '../hooks/useTranslation';
 import legalService, { type LegalDocument } from '../services/legalService';
 
+type Lang = 'ru' | 'kz' | 'en';
+
+const LANGS: { key: Lang; label: string }[] = [
+  { key: 'ru', label: 'Русский' },
+  { key: 'kz', label: 'Қазақша' },
+  { key: 'en', label: 'English' },
+];
+
 function AdminLegalPage() {
   const { t } = useTranslation();
   const [docs, setDocs] = useState<LegalDocument[]>([]);
   const [activeSlug, setActiveSlug] = useState<string>('');
-  const [title, setTitle] = useState('');
-  const [lastUpdatedLabel, setLastUpdatedLabel] = useState('');
-  const [content, setContent] = useState('');
+  const [lang, setLang] = useState<Lang>('ru');
+  const [title, setTitle] = useState({ ru: '', kz: '', en: '' });
+  const [lastUpdatedLabel, setLastUpdatedLabel] = useState({ ru: '', kz: '', en: '' });
+  const [content, setContent] = useState({ ru: '', kz: '', en: '' });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<string | null>(null);
@@ -18,8 +27,9 @@ function AdminLegalPage() {
     legalService
       .getAll()
       .then((list) => {
-        setDocs(list);
-        if (list.length > 0) selectDoc(list[0]);
+        const filtered = list.filter((d) => d.slug !== 'referral');
+        setDocs(filtered);
+        if (filtered.length > 0) selectDoc(filtered[0]);
       })
       .catch(() => setError(t.common.error))
       .finally(() => setLoading(false));
@@ -28,9 +38,14 @@ function AdminLegalPage() {
 
   const selectDoc = (doc: LegalDocument) => {
     setActiveSlug(doc.slug);
-    setTitle(doc.title);
-    setLastUpdatedLabel(doc.lastUpdatedLabel);
-    setContent(doc.content);
+    setLang('ru');
+    setTitle({ ru: doc.title, kz: doc.titleKz ?? '', en: doc.titleEn ?? '' });
+    setLastUpdatedLabel({
+      ru: doc.lastUpdatedLabel,
+      kz: doc.lastUpdatedLabelKz ?? '',
+      en: doc.lastUpdatedLabelEn ?? '',
+    });
+    setContent({ ru: doc.content, kz: doc.contentKz ?? '', en: doc.contentEn ?? '' });
     setSavedAt(null);
     setError(null);
   };
@@ -46,7 +61,17 @@ function AdminLegalPage() {
     setError(null);
     setSavedAt(null);
     try {
-      const updated = await legalService.update(activeSlug, { title, lastUpdatedLabel, content });
+      const updated = await legalService.update(activeSlug, {
+        title: title.ru,
+        lastUpdatedLabel: lastUpdatedLabel.ru,
+        content: content.ru,
+        titleKz: title.kz || null,
+        titleEn: title.en || null,
+        lastUpdatedLabelKz: lastUpdatedLabel.kz || null,
+        lastUpdatedLabelEn: lastUpdatedLabel.en || null,
+        contentKz: content.kz || null,
+        contentEn: content.en || null,
+      });
       setDocs((prev) => prev.map((d) => (d.slug === updated.slug ? updated : d)));
       setSavedAt(new Date().toLocaleTimeString());
     } catch {
@@ -80,12 +105,25 @@ function AdminLegalPage() {
 
       {activeSlug && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxWidth: '900px' }}>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            {LANGS.map((l) => (
+              <button
+                key={l.key}
+                onClick={() => setLang(l.key)}
+                className={lang === l.key ? 'btn btn-primary' : 'btn btn-outline'}
+                style={{ padding: '0.4rem 0.9rem', fontSize: '0.85rem' }}
+              >
+                {l.label}
+              </button>
+            ))}
+          </div>
+
           <label style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
             <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{t.admin.legal.docTitle}</span>
             <input
               type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              value={title[lang]}
+              onChange={(e) => setTitle((p) => ({ ...p, [lang]: e.target.value }))}
               style={inputStyle}
             />
           </label>
@@ -94,8 +132,8 @@ function AdminLegalPage() {
             <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{t.admin.legal.lastUpdated}</span>
             <input
               type="text"
-              value={lastUpdatedLabel}
-              onChange={(e) => setLastUpdatedLabel(e.target.value)}
+              value={lastUpdatedLabel[lang]}
+              onChange={(e) => setLastUpdatedLabel((p) => ({ ...p, [lang]: e.target.value }))}
               style={inputStyle}
             />
           </label>
@@ -103,8 +141,8 @@ function AdminLegalPage() {
           <label style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
             <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{t.admin.legal.content}</span>
             <textarea
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
+              value={content[lang]}
+              onChange={(e) => setContent((p) => ({ ...p, [lang]: e.target.value }))}
               rows={26}
               style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}
             />

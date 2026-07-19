@@ -7,6 +7,7 @@ import { materialsService, type StudyMaterial } from '../services/materialsServi
 import { purchaseService } from '../services/purchaseService';
 import { cscaStrings } from '../i18n/csca';
 import { CSCA_SUBJECTS } from '../cscaConfig';
+import { pickLocalized } from '../utils/localize';
 import CscaNewsSection from '../components/csca/CscaNewsSection';
 import MockShop from '../components/MockShop';
 
@@ -113,7 +114,7 @@ function MaterialsSection() {
     cartService.add({
       itemType: 'book',
       itemCode: String(m.id),
-      title: m.title,
+      title: pickLocalized(m.title, m.titleKz, m.titleEn, locale),
       subjects: m.subjectKey,
       amount: m.price,
       currency: '₸',
@@ -148,9 +149,9 @@ function MaterialsSection() {
                   <span className="csca-book-label csca-hanzi" style={{ fontSize: '0.55rem' }}>CSCA · 备考教材</span>
                 </div>
               )}
-              <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>{m.title}</div>
-              {m.description && (
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>{m.description}</div>
+              <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>{pickLocalized(m.title, m.titleKz, m.titleEn, locale)}</div>
+              {pickLocalized(m.description ?? '', m.descriptionKz, m.descriptionEn, locale) && (
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>{pickLocalized(m.description ?? '', m.descriptionKz, m.descriptionEn, locale)}</div>
               )}
               <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                 <div style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--primary-color)', textAlign: 'center' }}>

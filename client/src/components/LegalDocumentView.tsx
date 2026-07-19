@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from '../hooks/useTranslation';
+import { pickLocalized } from '../utils/localize';
 import legalService, { type LegalDocument } from '../services/legalService';
 
 interface Props {
@@ -16,7 +17,7 @@ interface Props {
  * Content is editable from the admin panel and rendered as preformatted text.
  */
 function LegalDocumentView({ slug, fallbackTitle, footerLink }: Props) {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const [doc, setDoc] = useState<LegalDocument | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -55,12 +56,12 @@ function LegalDocumentView({ slug, fallbackTitle, footerLink }: Props) {
       </Link>
 
       <h1 style={{ margin: '1.5rem 0 0.5rem', fontSize: '2rem', fontWeight: 700 }}>
-        {doc?.title || fallbackTitle}
+        {doc ? pickLocalized(doc.title, doc.titleKz, doc.titleEn, locale) : fallbackTitle}
       </h1>
 
-      {doc?.lastUpdatedLabel && (
+      {doc && pickLocalized(doc.lastUpdatedLabel, doc.lastUpdatedLabelKz, doc.lastUpdatedLabelEn, locale) && (
         <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem', fontSize: '0.85rem' }}>
-          {t.legal.lastUpdated}: {doc.lastUpdatedLabel}
+          {t.legal.lastUpdated}: {pickLocalized(doc.lastUpdatedLabel, doc.lastUpdatedLabelKz, doc.lastUpdatedLabelEn, locale)}
         </p>
       )}
 
@@ -80,7 +81,7 @@ function LegalDocumentView({ slug, fallbackTitle, footerLink }: Props) {
             wordBreak: 'break-word',
           }}
         >
-          {doc.content}
+          {pickLocalized(doc.content, doc.contentKz, doc.contentEn, locale)}
         </div>
       )}
 

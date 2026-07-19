@@ -627,6 +627,10 @@ export interface MockExamListItem {
   examTypeName: string;
   title: string;
   description: string;
+  titleKz?: string | null;
+  titleEn?: string | null;
+  descriptionKz?: string | null;
+  descriptionEn?: string | null;
   totalTimeMinutes: number;
   sectionCount: number;
   totalQuestions: number;
@@ -642,6 +646,10 @@ export interface MockExamDetail {
   examTypeName: string;
   title: string;
   description: string;
+  titleKz?: string | null;
+  titleEn?: string | null;
+  descriptionKz?: string | null;
+  descriptionEn?: string | null;
   totalTimeMinutes: number;
   sections: MockExamSectionInfo[];
 }

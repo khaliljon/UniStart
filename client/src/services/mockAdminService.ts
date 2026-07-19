@@ -15,6 +15,10 @@ export interface MockExamListItem {
   examTypeCode: string;
   title: string;
   description: string;
+  titleKz?: string | null;
+  titleEn?: string | null;
+  descriptionKz?: string | null;
+  descriptionEn?: string | null;
   totalTimeMinutes: number;
   isActive: boolean;
   sectionCount: number;
@@ -27,6 +31,10 @@ export interface MockExamDetail {
   examTypeCode: string;
   title: string;
   description: string;
+  titleKz?: string | null;
+  titleEn?: string | null;
+  descriptionKz?: string | null;
+  descriptionEn?: string | null;
   totalTimeMinutes: number;
   isActive: boolean;
   sections: Array<{
@@ -44,6 +52,10 @@ export interface SaveMockExam {
   examTypeCode: string;
   title: string;
   description: string;
+  titleKz?: string | null;
+  titleEn?: string | null;
+  descriptionKz?: string | null;
+  descriptionEn?: string | null;
   totalTimeMinutes: number;
   isActive: boolean;
   sections: MockSectionInput[];

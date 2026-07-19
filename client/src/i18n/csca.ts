@@ -117,6 +117,8 @@ export interface CscaStrings {
   footerAbout: string;
   footerContacts: string;
   footerRights: string;
+  footerTerms: string;
+  footerPrivacy: string;
   // exam dates (About page)
   examDatesTitle: string;
   examDatesLead: string;
@@ -216,6 +218,8 @@ const ru: CscaStrings = {
   footerDesc: 'Платформа подготовки к экзамену CSCA. Источник достоверной информации и онлайн-обучения для абитуриентов всего СНГ.',
   footerPlatform: 'Платформа', footerAbout: 'Об экзамене', footerContacts: 'Контакты',
   footerRights: 'Все права защищены.',
+  footerTerms: 'Пользовательское соглашение',
+  footerPrivacy: 'Политика конфиденциальности',
   examDatesTitle: 'Даты экзамена 2026',
   examDatesLead: 'CSCA проводится 5 раз в 2026 году. Проверьте даты и расписание ниже.',
   regOpensLabel: 'Регистрация открывается',
@@ -299,6 +303,8 @@ const en: CscaStrings = {
   footerDesc: 'A CSCA exam preparation platform. A trusted source of information and online learning for applicants across the CIS.',
   footerPlatform: 'Platform', footerAbout: 'About the exam', footerContacts: 'Contacts',
   footerRights: 'All rights reserved.',
+  footerTerms: 'Terms of Service',
+  footerPrivacy: 'Privacy Policy',
   examDatesTitle: 'CSCA exam dates 2026',
   examDatesLead: 'CSCA runs 5 times in 2026. Check the dates and schedule below.',
   regOpensLabel: 'Registration opens',
@@ -356,7 +362,7 @@ const kz: CscaStrings = {
   calGoogle: 'Google Күнтізбе', calApple: 'Apple / Outlook (.ics)',
   newsTitle: 'CSCA жаңалықтары', newsLead: 'Емтихан, күндер және қабылдау туралы өзекті ақпарат.',
   newsReadMore: 'Оқу', newsReadLess: 'Жабу', newsEmpty: 'Әзірше жаңалық жоқ — жақында жаңа материалдар пайда болады.',
-  featuresTitle: 'Платформада не аласыз?', featuresLead: 'Тиімді дайындыққа қажеттінің бәрі бір жерде.',
+  featuresTitle: 'Платформадан не аласыз?', featuresLead: 'Тиімді дайындыққа қажеттінің бәрі бір жерде.',
   fAdaptiveT: 'Бейімделетін оқу', fAdaptiveD: 'Жүйе деңгейіңізге бейімделіп, әлсіз тақырыптарды нығайтады.',
   fAnalyticsT: 'Аналитика және прогресс', fAnalyticsD: 'Әр пән бойынша дайындық пайызы мен проблемалық тақырыптар тізімі.',
   fMockT: 'Сынақ тесттері', fMockD: 'CSCA емтихан форматындағы шынайы сынақтар.',
@@ -382,6 +388,8 @@ const kz: CscaStrings = {
   footerDesc: 'CSCA емтиханына дайындық платформасы. Бүкіл ТМД талапкерлеріне арналған сенімді ақпарат пен онлайн оқыту көзі.',
   footerPlatform: 'Платформа', footerAbout: 'Емтихан туралы', footerContacts: 'Байланыс',
   footerRights: 'Барлық құқықтар қорғалған.',
+  footerTerms: 'Пайдаланушы келісімі',
+  footerPrivacy: 'Құпиялық саясаты',
   examDatesTitle: '2026 CSCA емтихан күндері',
   examDatesLead: 'CSCA 2026 жылы 5 рет өтеді. Төмендегі күндер мен кестені қараңыз.',
   regOpensLabel: 'Тіркеу ашылады',

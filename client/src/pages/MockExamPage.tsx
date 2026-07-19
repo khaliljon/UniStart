@@ -2,6 +2,8 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { mockExamService } from '../services/mockExamService';
 import { useAppSelector } from '../hooks/useAppSelector';
+import { useTranslation } from '../hooks/useTranslation';
+import { pickLocalized } from '../utils/localize';
 import { moks } from '../utils/plural';
 import type {
   MockExamListItem,
@@ -27,6 +29,7 @@ function MockExamPage() {
   const { user } = useAppSelector((state) => state.auth);
   const isPro = user?.role === 'Admin';
   const navigate = useNavigate();
+  const { locale } = useTranslation();
 
   // List phase
   const [mockExams, setMockExams] = useState<MockExamListItem[]>([]);
@@ -341,17 +344,17 @@ function MockExamPage() {
                     <span style={{ background: examBadgeColor(exam.examTypeCode), color: '#fff', padding: '2px 10px', borderRadius: 12, fontSize: '0.75rem', fontWeight: 600 }}>
                       {exam.examTypeCode}
                     </span>
-                    <h3 style={{ margin: 0, fontSize: '1.1rem' }}>{exam.title}</h3>
+                    <h3 style={{ margin: 0, fontSize: '1.1rem' }}>{pickLocalized(exam.title, exam.titleKz, exam.titleEn, locale)}</h3>
                     {exam.runsRemaining > 0 && (
                       <span style={{ background: 'rgba(16,185,129,0.12)', color: '#10b981', padding: '2px 8px', borderRadius: 10, fontSize: '0.7rem', fontWeight: 700 }}>
-                        Осталось: {moks(exam.runsRemaining)}
+                        Осталось: {moks(exam.runsRemaining, locale)}
                       </span>
                     )}
                     {isFreeStart && (
                       <span style={{ background: 'rgba(200,16,46,0.1)', color: 'var(--csca-red, #C8102E)', padding: '2px 8px', borderRadius: 10, fontSize: '0.7rem', fontWeight: 700 }}>Бесплатный мок</span>
                     )}
                   </div>
-                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: '0.25rem 0' }}>{exam.description}</p>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: '0.25rem 0' }}>{pickLocalized(exam.description, exam.descriptionKz, exam.descriptionEn, locale)}</p>
                   <div style={{ display: 'flex', gap: '1.25rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
                     <Stat label="Вопросов" value={exam.totalQuestions} />
                     <Stat label="Время" value={`${exam.totalTimeMinutes}м`} />
@@ -449,8 +452,8 @@ function MockExamPage() {
           <span style={{ background: examBadgeColor(examDetail.examTypeCode), color: '#fff', padding: '3px 14px', borderRadius: 14, fontSize: '0.8rem', fontWeight: 600 }}>
             {examDetail.examTypeCode}
           </span>
-          <h1 style={{ fontSize: '1.5rem', margin: '0.75rem 0 0.25rem' }}>{examDetail.title}</h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{examDetail.description}</p>
+          <h1 style={{ fontSize: '1.5rem', margin: '0.75rem 0 0.25rem' }}>{pickLocalized(examDetail.title, examDetail.titleKz, examDetail.titleEn, locale)}</h1>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{pickLocalized(examDetail.description, examDetail.descriptionKz, examDetail.descriptionEn, locale)}</p>
           <div style={{ display: 'flex', justifyContent: 'center', gap: '2rem', marginTop: '1rem' }}>
             <Stat label="Total Time" value={`${totalTime} min`} />
             <Stat label="Sections" value={examDetail.sections.length} />

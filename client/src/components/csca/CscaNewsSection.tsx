@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { newsService, type NewsItem } from '../../services/newsService';
+import { useTranslation } from '../../hooks/useTranslation';
+import { pickLocalized } from '../../utils/localize';
 
 interface Props {
   title: string;
@@ -17,6 +19,7 @@ interface Props {
 
 /** Renders published CSCA news. Used on the landing and the student dashboard. */
 export default function CscaNewsSection({ title, lead, readMore, readLess, emptyText, limit = 6, section = false, appTheme = false, id }: Props) {
+  const { locale } = useTranslation();
   const [items, setItems] = useState<NewsItem[] | null>(null);
   const [openId, setOpenId] = useState<number | null>(null);
 
@@ -29,7 +32,7 @@ export default function CscaNewsSection({ title, lead, readMore, readLess, empty
   }, [limit]);
 
   const fmtDate = (iso: string | null) =>
-    iso ? new Date(iso).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+    iso ? new Date(iso).toLocaleDateString(locale === 'kz' ? 'kk-KZ' : locale === 'en' ? 'en-US' : 'ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
 
   const cardClass = appTheme ? 'card' : 'csca-card';
   const subColor = appTheme ? 'var(--text-secondary)' : 'var(--csca-ink-soft, var(--text-secondary))';
@@ -38,17 +41,20 @@ export default function CscaNewsSection({ title, lead, readMore, readLess, empty
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
       {(items ?? []).map((n) => {
         const expanded = openId === n.id;
+        const nTitle = pickLocalized(n.title, n.titleKz, n.titleEn, locale);
+        const nSummary = pickLocalized(n.summary, n.summaryKz, n.summaryEn, locale);
+        const nBody = pickLocalized(n.body, n.bodyKz, n.bodyEn, locale);
         return (
           <article className={cardClass} key={n.id}>
             {n.imageUrl && (
               <img src={n.imageUrl} alt="" style={{ width: '100%', maxHeight: 320, objectFit: 'contain', background: 'transparent', borderRadius: '0.75rem', marginBottom: '1rem', display: 'block' }} />
             )}
             <div style={{ fontSize: '0.78rem', color: subColor, marginBottom: '0.35rem' }}>{fmtDate(n.publishedAt)}</div>
-            <div className={appTheme ? undefined : 'csca-feature-title'} style={appTheme ? { fontSize: '1.15rem', fontWeight: 700, color: 'var(--text-primary)' } : { fontSize: '1.15rem' }}>{n.title}</div>
+            <div className={appTheme ? undefined : 'csca-feature-title'} style={appTheme ? { fontSize: '1.15rem', fontWeight: 700, color: 'var(--text-primary)' } : { fontSize: '1.15rem' }}>{nTitle}</div>
             <div className={appTheme ? undefined : 'csca-feature-desc'} style={{ marginTop: '0.45rem', whiteSpace: 'pre-wrap', color: appTheme ? 'var(--text-secondary)' : undefined }}>
-              {expanded ? n.body : n.summary}
+              {expanded ? nBody : nSummary}
             </div>
-            {n.body && n.body !== n.summary && (
+            {nBody && nBody !== nSummary && (
               <button
                 type="button"
                 className={appTheme ? 'btn btn-outline' : 'csca-btn csca-btn-ghost csca-btn-sm'}

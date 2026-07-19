@@ -9,6 +9,16 @@ public class MockExam
     public string ExamTypeCode { get; set; } = string.Empty;
     public string Title { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
+
+    /// <summary>Kazakh title (optional; falls back to <see cref="Title"/>).</summary>
+    public string? TitleKz { get; set; }
+    /// <summary>English title (optional; falls back to <see cref="Title"/>).</summary>
+    public string? TitleEn { get; set; }
+    /// <summary>Kazakh description (optional; falls back to <see cref="Description"/>).</summary>
+    public string? DescriptionKz { get; set; }
+    /// <summary>English description (optional; falls back to <see cref="Description"/>).</summary>
+    public string? DescriptionEn { get; set; }
+
     public int TotalTimeMinutes { get; set; }
     public bool IsActive { get; set; } = true;
 

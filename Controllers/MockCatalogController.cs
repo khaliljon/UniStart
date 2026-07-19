@@ -111,7 +111,7 @@ public class MockCatalogController : ControllerBase
     {
         var packages = await _db.MockPackages
             .OrderBy(p => p.SortOrder)
-            .Select(p => new { p.Id, p.Key, p.Name, p.PickCount, p.RunsEach, p.Price, p.Currency, p.SortOrder, p.IsActive })
+            .Select(p => new { p.Id, p.Key, p.Name, p.NameKz, p.NameEn, p.PickCount, p.RunsEach, p.Price, p.Currency, p.SortOrder, p.IsActive })
             .ToListAsync();
         return Ok(packages);
     }
@@ -124,6 +124,8 @@ public class MockCatalogController : ControllerBase
         {
             Key = dto.Key.Trim(),
             Name = dto.Name.Trim(),
+            NameKz = string.IsNullOrWhiteSpace(dto.NameKz) ? null : dto.NameKz.Trim(),
+            NameEn = string.IsNullOrWhiteSpace(dto.NameEn) ? null : dto.NameEn.Trim(),
             PickCount = dto.PickCount,
             RunsEach = dto.RunsEach,
             Price = dto.Price,
@@ -144,6 +146,8 @@ public class MockCatalogController : ControllerBase
         if (pkg == null) return NotFound();
         pkg.Key = dto.Key.Trim();
         pkg.Name = dto.Name.Trim();
+        pkg.NameKz = string.IsNullOrWhiteSpace(dto.NameKz) ? null : dto.NameKz.Trim();
+        pkg.NameEn = string.IsNullOrWhiteSpace(dto.NameEn) ? null : dto.NameEn.Trim();
         pkg.PickCount = dto.PickCount;
         pkg.RunsEach = dto.RunsEach;
         pkg.Price = dto.Price;
@@ -179,6 +183,8 @@ public class SavePackageDto
 {
     public string Key { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
+    public string? NameKz { get; set; }
+    public string? NameEn { get; set; }
     public int PickCount { get; set; }
     public int RunsEach { get; set; }
     public decimal Price { get; set; }

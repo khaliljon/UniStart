@@ -1,0 +1,1 @@
+function m(e,s="ru"){if(s==="en")return`${e} ${e===1?"mock":"mocks"}`;if(s==="kz")return`${e} мок`;const r=e%10,t=e%100;let o;return r===1&&t!==11?o="мок":r>=2&&r<=4&&!(t>=12&&t<=14)?o="мока":o="моков",`${e} ${o}`}export{m};

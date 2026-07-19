@@ -68,7 +68,11 @@ public class SchoolAdminMocksController : ControllerBase
             m.IsActive,
             m.Sections.Count,
             m.Sections.Sum(s => s.QuestionCount),
-            m.Attempts.Count
+            m.Attempts.Count,
+            m.TitleKz,
+            m.TitleEn,
+            m.DescriptionKz,
+            m.DescriptionEn
         ));
 
         return Ok(result);
@@ -100,7 +104,11 @@ public class SchoolAdminMocksController : ControllerBase
                 s.QuestionCount,
                 s.SortOrder,
                 s.Instructions
-            ))
+            )),
+            exam.TitleKz,
+            exam.TitleEn,
+            exam.DescriptionKz,
+            exam.DescriptionEn
         );
 
         return Ok(dto);
@@ -115,6 +123,10 @@ public class SchoolAdminMocksController : ControllerBase
             ExamTypeCode = dto.ExamTypeCode,
             Title = dto.Title,
             Description = dto.Description,
+            TitleKz = string.IsNullOrWhiteSpace(dto.TitleKz) ? null : dto.TitleKz.Trim(),
+            TitleEn = string.IsNullOrWhiteSpace(dto.TitleEn) ? null : dto.TitleEn.Trim(),
+            DescriptionKz = string.IsNullOrWhiteSpace(dto.DescriptionKz) ? null : dto.DescriptionKz.Trim(),
+            DescriptionEn = string.IsNullOrWhiteSpace(dto.DescriptionEn) ? null : dto.DescriptionEn.Trim(),
             TotalTimeMinutes = dto.TotalTimeMinutes,
             IsActive = dto.IsActive,
         };
@@ -150,7 +162,11 @@ public class SchoolAdminMocksController : ControllerBase
                 s.QuestionCount,
                 s.SortOrder,
                 s.Instructions
-            ))
+            )),
+            exam.TitleKz,
+            exam.TitleEn,
+            exam.DescriptionKz,
+            exam.DescriptionEn
         ));
     }
 
@@ -167,6 +183,10 @@ public class SchoolAdminMocksController : ControllerBase
         exam.ExamTypeCode = dto.ExamTypeCode;
         exam.Title = dto.Title;
         exam.Description = dto.Description;
+        exam.TitleKz = string.IsNullOrWhiteSpace(dto.TitleKz) ? null : dto.TitleKz.Trim();
+        exam.TitleEn = string.IsNullOrWhiteSpace(dto.TitleEn) ? null : dto.TitleEn.Trim();
+        exam.DescriptionKz = string.IsNullOrWhiteSpace(dto.DescriptionKz) ? null : dto.DescriptionKz.Trim();
+        exam.DescriptionEn = string.IsNullOrWhiteSpace(dto.DescriptionEn) ? null : dto.DescriptionEn.Trim();
         exam.TotalTimeMinutes = dto.TotalTimeMinutes;
         exam.IsActive = dto.IsActive;
 
@@ -204,7 +224,11 @@ public class SchoolAdminMocksController : ControllerBase
                 s.QuestionCount,
                 s.SortOrder,
                 s.Instructions
-            ))
+            )),
+            exam.TitleKz,
+            exam.TitleEn,
+            exam.DescriptionKz,
+            exam.DescriptionEn
         ));
     }
 

@@ -7,6 +7,7 @@ import { materialsService, type StudyMaterial } from '../services/materialsServi
 import { purchaseService } from '../services/purchaseService';
 import { cartService } from '../services/cartService';
 import { CSCA_SUBJECTS } from '../cscaConfig';
+import { pickLocalized } from '../utils/localize';
 import CscaPageShell, { CscaPageHero } from '../components/csca/CscaPageShell';
 
 function CscaMaterialsPage() {
@@ -32,7 +33,7 @@ function CscaMaterialsPage() {
     const item = {
       itemType: 'book',
       itemCode: String(mat.id),
-      title: mat.title,
+      title: pickLocalized(mat.title, mat.titleKz, mat.titleEn, locale),
       subjects: mat.subjectKey,
       amount: mat.price,
       currency: '₸',
@@ -67,7 +68,7 @@ function CscaMaterialsPage() {
                   <span className="csca-book-hanzi">{subj.hanzi}</span>
                   <span className="csca-book-label csca-hanzi">CSCA · 备考教材</span>
                 </div>
-                <div className="csca-subject-name">{mat.title}</div>
+                <div className="csca-subject-name">{pickLocalized(mat.title, mat.titleKz, mat.titleEn, locale)}</div>
                 <div className="csca-subject-tag" style={{ marginBottom: '0.75rem' }}>{s.bookLabel}</div>
                 <div className="csca-price-amount csca-hanzi" style={{ fontSize: '1.4rem', margin: '0 0 0.6rem' }}>
                   {mat.price.toLocaleString('ru-RU')} <span className="csca-price-cur">{s.currency}</span>

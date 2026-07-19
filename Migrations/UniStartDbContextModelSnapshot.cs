@@ -541,6 +541,12 @@ namespace UniStart.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("ContentEn")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ContentKz")
+                        .HasColumnType("text");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -548,6 +554,12 @@ namespace UniStart.Migrations
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
+
+                    b.Property<string>("LastUpdatedLabelEn")
+                        .HasColumnType("text");
+
+                    b.Property<string>("LastUpdatedLabelKz")
+                        .HasColumnType("text");
 
                     b.Property<string>("Slug")
                         .IsRequired()
@@ -558,6 +570,12 @@ namespace UniStart.Migrations
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
+
+                    b.Property<string>("TitleEn")
+                        .HasColumnType("text");
+
+                    b.Property<string>("TitleKz")
+                        .HasColumnType("text");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -632,6 +650,12 @@ namespace UniStart.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
 
+                    b.Property<string>("DescriptionEn")
+                        .HasColumnType("text");
+
+                    b.Property<string>("DescriptionKz")
+                        .HasColumnType("text");
+
                     b.Property<string>("ExamTypeCode")
                         .IsRequired()
                         .HasColumnType("character varying(10)");
@@ -645,6 +669,12 @@ namespace UniStart.Migrations
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
+
+                    b.Property<string>("TitleEn")
+                        .HasColumnType("text");
+
+                    b.Property<string>("TitleKz")
+                        .HasColumnType("text");
 
                     b.Property<int>("TotalTimeMinutes")
                         .HasColumnType("integer");
@@ -832,6 +862,12 @@ namespace UniStart.Migrations
                         .HasMaxLength(120)
                         .HasColumnType("character varying(120)");
 
+                    b.Property<string>("NameEn")
+                        .HasColumnType("text");
+
+                    b.Property<string>("NameKz")
+                        .HasColumnType("text");
+
                     b.Property<int>("PickCount")
                         .HasColumnType("integer");
 
@@ -910,6 +946,12 @@ namespace UniStart.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("BodyEn")
+                        .HasColumnType("text");
+
+                    b.Property<string>("BodyKz")
+                        .HasColumnType("text");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -928,10 +970,22 @@ namespace UniStart.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
+                    b.Property<string>("SummaryEn")
+                        .HasColumnType("text");
+
+                    b.Property<string>("SummaryKz")
+                        .HasColumnType("text");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
+
+                    b.Property<string>("TitleEn")
+                        .HasColumnType("text");
+
+                    b.Property<string>("TitleKz")
+                        .HasColumnType("text");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -1534,6 +1588,12 @@ namespace UniStart.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
 
+                    b.Property<string>("DescriptionEn")
+                        .HasColumnType("text");
+
+                    b.Property<string>("DescriptionKz")
+                        .HasColumnType("text");
+
                     b.Property<bool>("IsActive")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
@@ -1555,6 +1615,12 @@ namespace UniStart.Migrations
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
+
+                    b.Property<string>("TitleEn")
+                        .HasColumnType("text");
+
+                    b.Property<string>("TitleKz")
+                        .HasColumnType("text");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");

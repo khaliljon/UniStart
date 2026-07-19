@@ -35,7 +35,7 @@ public class EntitlementService : IEntitlementService
         var packages = await _db.MockPackages
             .Where(p => p.IsActive)
             .OrderBy(p => p.SortOrder)
-            .Select(p => new MockPackageDto(p.Id, p.Key, p.Name, p.PickCount, p.RunsEach, p.Price, p.Currency, p.SortOrder))
+            .Select(p => new MockPackageDto(p.Id, p.Key, p.Name, p.PickCount, p.RunsEach, p.Price, p.Currency, p.SortOrder, p.NameKz, p.NameEn))
             .ToListAsync();
 
         var user = userId > 0 ? await _db.Users.FindAsync(userId) : null;

@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { mockCatalogService, type MockCatalog, type MockTemplate } from '../services/mockCatalogService';
 import { cartService } from '../services/cartService';
 import { moks } from '../utils/plural';
+import { pickLocalized } from '../utils/localize';
+import { useTranslation } from '../hooks/useTranslation';
 
 /**
  * Storefront for run-based mocks: per-subject run tiers (1/3/5) and discounted
@@ -10,6 +12,7 @@ import { moks } from '../utils/plural';
  */
 function MockShop() {
   const navigate = useNavigate();
+  const { locale } = useTranslation();
   const [catalog, setCatalog] = useState<MockCatalog | null>(null);
   const [pkgPicker, setPkgPicker] = useState<string | null>(null);
   const [pkgChosen, setPkgChosen] = useState<number[]>([]);
@@ -99,7 +102,7 @@ function MockShop() {
               <div style={{ fontWeight: 700 }}>{tpl.title}</div>
               {tpl.runsRemaining > 0 && (
                 <span style={{ background: 'rgba(16,185,129,0.12)', color: '#10b981', padding: '1px 7px', borderRadius: 10, fontSize: '0.7rem', fontWeight: 700 }}>
-                  Осталось: {moks(tpl.runsRemaining)}
+                  Осталось: {moks(tpl.runsRemaining, locale)}
                 </span>
               )}
             </div>
@@ -112,7 +115,7 @@ function MockShop() {
               ) : tpl.tiers.map((tier) => (
                 <button key={tier.id} className="btn btn-outline" style={{ fontSize: '0.85rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', padding: '0.55rem 0.9rem' }}
                         onClick={() => addTierToCart(tpl, tier.runs, tier.price, tier.currency)}>
-                  <span style={{ fontWeight: 700 }}>{moks(tier.runs)}</span>
+                  <span style={{ fontWeight: 700 }}>{moks(tier.runs, locale)}</span>
                   <span style={{ color: 'var(--primary-color)', fontWeight: 800, whiteSpace: 'nowrap' }}>{tier.price.toLocaleString('ru-RU')} {tier.currency}</span>
                 </button>
               ))}
@@ -136,15 +139,15 @@ function MockShop() {
                   {featured && (
                     <span style={{ position: 'absolute', top: 0, right: 0, background: 'var(--primary-color)', color: '#fff', fontSize: '0.68rem', fontWeight: 700, padding: '3px 12px', borderBottomLeftRadius: 10 }}>Популярный</span>
                   )}
-                  <div style={{ fontWeight: 800, fontSize: '1.15rem' }}>{pkg.name}</div>
+                  <div style={{ fontWeight: 800, fontSize: '1.15rem' }}>{pickLocalized(pkg.name, pkg.nameKz, pkg.nameEn, locale)}</div>
                   <div style={{ color: 'var(--text-secondary)', fontSize: '0.82rem' }}>
-                    {subjLabel} × {moks(pkg.runsEach)}
+                    {subjLabel} × {moks(pkg.runsEach, locale)}
                   </div>
                   <div style={{ fontWeight: 900, fontSize: '1.5rem', color: 'var(--csca-red, #C8102E)', margin: '0.15rem 0' }}>
                     {pkg.price.toLocaleString('ru-RU')} <span style={{ fontSize: '0.9rem', fontWeight: 700 }}>{pkg.currency}</span>
                   </div>
                   <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 0.3rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                    {[subjLabel, `${moks(pkg.runsEach)} на каждый предмет`, 'ИИ-объяснения к заданиям'].map((f, i) => (
+                    {[subjLabel, `${moks(pkg.runsEach, locale)} на каждый предмет`, 'ИИ-объяснения к заданиям'].map((f, i) => (
                       <li key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
                         <Check /> {f}
                       </li>

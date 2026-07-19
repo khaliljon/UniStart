@@ -93,7 +93,9 @@ function AdminPricingPage() {
     setErr(null); setMsg(null);
     const p = packages[idx];
     const dto = {
-      key: p.key.trim(), name: p.name.trim(), pickCount: p.pickCount, runsEach: p.runsEach,
+      key: p.key.trim(), name: p.name.trim(),
+      nameKz: p.nameKz?.trim() || undefined, nameEn: p.nameEn?.trim() || undefined,
+      pickCount: p.pickCount, runsEach: p.runsEach,
       price: p.price, currency, sortOrder: p.sortOrder, isActive: p.isActive,
     };
     if (!dto.key || !dto.name) { setErr('Ключ и название пакета обязательны'); return; }
@@ -184,7 +186,9 @@ function AdminPricingPage() {
           {packages.map((p, idx) => (
             <div key={p.id || `new-${idx}`} className="card" style={{ padding: '0.85rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: '0.6rem', alignItems: 'end' }}>
               <label style={{ fontSize: '0.75rem' }}>Ключ<input value={p.key} onChange={(e) => updatePkgField(idx, { key: e.target.value })} style={input} /></label>
-              <label style={{ fontSize: '0.75rem' }}>Название<input value={p.name} onChange={(e) => updatePkgField(idx, { name: e.target.value })} style={input} /></label>
+              <label style={{ fontSize: '0.75rem' }}>Название (RU)<input value={p.name} onChange={(e) => updatePkgField(idx, { name: e.target.value })} style={input} /></label>
+              <label style={{ fontSize: '0.75rem' }}>Название (KZ)<input value={p.nameKz ?? ''} onChange={(e) => updatePkgField(idx, { nameKz: e.target.value })} style={input} /></label>
+              <label style={{ fontSize: '0.75rem' }}>Название (EN)<input value={p.nameEn ?? ''} onChange={(e) => updatePkgField(idx, { nameEn: e.target.value })} style={input} /></label>
               <label style={{ fontSize: '0.75rem' }}>Выбор предм. (0=все)<input type="number" min={0} value={p.pickCount} onChange={(e) => updatePkgField(idx, { pickCount: Number(e.target.value) })} style={input} /></label>
               <label style={{ fontSize: '0.75rem' }}>Моков<input type="number" min={1} value={p.runsEach} onChange={(e) => updatePkgField(idx, { runsEach: Number(e.target.value) })} style={input} /></label>
               <label style={{ fontSize: '0.75rem' }}>Цена<input type="number" min={0} value={p.price} onChange={(e) => updatePkgField(idx, { price: Number(e.target.value) })} style={input} /></label>

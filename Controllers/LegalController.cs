@@ -28,7 +28,8 @@ public class LegalController : ControllerBase
     {
         var docs = await _db.LegalDocuments
             .OrderBy(d => d.Slug)
-            .Select(d => new LegalDocumentDto(d.Slug, d.Title, d.LastUpdatedLabel, d.Content, d.UpdatedAt))
+            .Select(d => new LegalDocumentDto(d.Slug, d.Title, d.LastUpdatedLabel, d.Content, d.UpdatedAt,
+                d.TitleKz, d.TitleEn, d.ContentKz, d.ContentEn, d.LastUpdatedLabelKz, d.LastUpdatedLabelEn))
             .ToListAsync();
         return Ok(docs);
     }
@@ -39,7 +40,8 @@ public class LegalController : ControllerBase
     {
         var doc = await _db.LegalDocuments
             .Where(d => d.Slug == slug)
-            .Select(d => new LegalDocumentDto(d.Slug, d.Title, d.LastUpdatedLabel, d.Content, d.UpdatedAt))
+            .Select(d => new LegalDocumentDto(d.Slug, d.Title, d.LastUpdatedLabel, d.Content, d.UpdatedAt,
+                d.TitleKz, d.TitleEn, d.ContentKz, d.ContentEn, d.LastUpdatedLabelKz, d.LastUpdatedLabelEn))
             .FirstOrDefaultAsync();
 
         if (doc == null) return NotFound();
@@ -63,8 +65,15 @@ public class LegalController : ControllerBase
         doc.Title = dto.Title.Trim();
         doc.LastUpdatedLabel = dto.LastUpdatedLabel?.Trim() ?? string.Empty;
         doc.Content = dto.Content;
+        doc.TitleKz = string.IsNullOrWhiteSpace(dto.TitleKz) ? null : dto.TitleKz.Trim();
+        doc.TitleEn = string.IsNullOrWhiteSpace(dto.TitleEn) ? null : dto.TitleEn.Trim();
+        doc.ContentKz = string.IsNullOrWhiteSpace(dto.ContentKz) ? null : dto.ContentKz;
+        doc.ContentEn = string.IsNullOrWhiteSpace(dto.ContentEn) ? null : dto.ContentEn;
+        doc.LastUpdatedLabelKz = string.IsNullOrWhiteSpace(dto.LastUpdatedLabelKz) ? null : dto.LastUpdatedLabelKz.Trim();
+        doc.LastUpdatedLabelEn = string.IsNullOrWhiteSpace(dto.LastUpdatedLabelEn) ? null : dto.LastUpdatedLabelEn.Trim();
         await _db.SaveChangesAsync();
 
-        return Ok(new LegalDocumentDto(doc.Slug, doc.Title, doc.LastUpdatedLabel, doc.Content, doc.UpdatedAt));
+        return Ok(new LegalDocumentDto(doc.Slug, doc.Title, doc.LastUpdatedLabel, doc.Content, doc.UpdatedAt,
+            doc.TitleKz, doc.TitleEn, doc.ContentKz, doc.ContentEn, doc.LastUpdatedLabelKz, doc.LastUpdatedLabelEn));
     }
 }

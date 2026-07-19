@@ -6,6 +6,24 @@ export interface LegalDocument {
   lastUpdatedLabel: string;
   content: string;
   updatedAt: string | null;
+  titleKz?: string | null;
+  titleEn?: string | null;
+  contentKz?: string | null;
+  contentEn?: string | null;
+  lastUpdatedLabelKz?: string | null;
+  lastUpdatedLabelEn?: string | null;
+}
+
+export interface UpdateLegalDocument {
+  title: string;
+  lastUpdatedLabel: string;
+  content: string;
+  titleKz?: string | null;
+  titleEn?: string | null;
+  contentKz?: string | null;
+  contentEn?: string | null;
+  lastUpdatedLabelKz?: string | null;
+  lastUpdatedLabelEn?: string | null;
 }
 
 const legalService = {
@@ -14,7 +32,7 @@ const legalService = {
   getBySlug: (slug: string) =>
     api.get<LegalDocument>(`/legal/${slug}`).then((r) => r.data),
 
-  update: (slug: string, data: { title: string; lastUpdatedLabel: string; content: string }) =>
+  update: (slug: string, data: UpdateLegalDocument) =>
     api.put<LegalDocument>(`/legal/${slug}`, data).then((r) => r.data),
 };
 

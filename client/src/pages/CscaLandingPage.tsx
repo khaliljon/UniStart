@@ -9,6 +9,7 @@ import { purchaseService } from '../services/purchaseService';
 import { examSittingsService } from '../services/examSittingsService';
 import { cartService } from '../services/cartService';
 import { moks } from '../utils/plural';
+import { pickLocalized } from '../utils/localize';
 import CscaNav from '../components/csca/CscaNav';
 import CscaFooter from '../components/csca/CscaFooter';
 import Reveal from '../components/csca/Reveal';
@@ -45,7 +46,7 @@ function CscaLandingPage() {
   const location = useLocation();
   const { locale } = useTranslation();
   const { isAuthenticated } = useAppSelector((s) => s.auth);
-  const [dbMaterials, setDbMaterials] = useState<{ id: number; subjectKey: string; title: string; price: number }[]>([]);
+  const [dbMaterials, setDbMaterials] = useState<{ id: number; subjectKey: string; title: string; titleKz?: string | null; titleEn?: string | null; price: number }[]>([]);
   const [dbPackages, setDbPackages] = useState<MockPackage[] | null>(null);
   const [ownedBooks, setOwnedBooks] = useState<Set<string>>(new Set());
 
@@ -101,7 +102,7 @@ function CscaLandingPage() {
     navigate(isAuthenticated ? '/' : '/register');
   };
 
-  const buyBook = (mat: { id: number; subjectKey: string; title: string; price: number }) => {
+  const buyBook = (mat: { id: number; subjectKey: string; title: string; titleKz?: string | null; titleEn?: string | null; price: number }) => {
     // Already owned → send to the library instead of charging again.
     if (isAuthenticated && ownedBooks.has(String(mat.id))) {
       navigate('/materials');
@@ -110,7 +111,7 @@ function CscaLandingPage() {
     const item = {
       itemType: 'book',
       itemCode: String(mat.id),
-      title: mat.title || `${subjectMeta[mat.subjectKey as keyof typeof subjectMeta]?.name ?? ''} · ${s.bookLabel}`,
+      title: pickLocalized(mat.title, mat.titleKz, mat.titleEn, locale) || `${subjectMeta[mat.subjectKey as keyof typeof subjectMeta]?.name ?? ''} · ${s.bookLabel}`,
       subjects: mat.subjectKey,
       amount: mat.price,
       currency: '₸',
@@ -266,8 +267,8 @@ function CscaLandingPage() {
               return (
               <div className={`csca-card csca-price-card ${featured ? 'featured' : ''}`} key={pkg.key}>
                 {featured && <span className="csca-price-flag">{s.popular}</span>}
-                <div className="csca-price-name">{pkg.name}</div>
-                <div className="csca-price-for">{subjLabel} × {moks(pkg.runsEach)}</div>
+                <div className="csca-price-name">{pickLocalized(pkg.name, pkg.nameKz, pkg.nameEn, locale)}</div>
+                <div className="csca-price-for">{subjLabel} × {moks(pkg.runsEach, locale)}</div>
                 <div className="csca-price-amount csca-hanzi">
                   {pkg.price.toLocaleString('ru-RU')} <span className="csca-price-cur">{s.currency}</span>
                 </div>
@@ -304,13 +305,14 @@ function CscaLandingPage() {
             {dbMaterials.map((mat) => {
               const subj = CSCA_SUBJECTS.find(cs => cs.key === mat.subjectKey) ?? CSCA_SUBJECTS[0];
               const name = subjectMeta[subj.key as keyof typeof subjectMeta]?.name ?? mat.title;
+              const localizedTitle = pickLocalized(mat.title, mat.titleKz, mat.titleEn, locale);
               return (
                 <div className="csca-card csca-book" key={mat.id}>
                   <div className="csca-book-cover" style={{ background: subj.cover }}>
                     <span className="csca-book-hanzi">{subj.hanzi}</span>
                     <span className="csca-book-label csca-hanzi">CSCA · 备考教材</span>
                   </div>
-                  <div className="csca-subject-name">{mat.title || name}</div>
+                  <div className="csca-subject-name">{localizedTitle || name}</div>
                   <div className="csca-subject-tag" style={{ marginBottom: '0.75rem' }}>{s.bookLabel}</div>
                   <div className="csca-price-amount csca-hanzi" style={{ fontSize: '1.4rem', margin: '0 0 0.6rem' }}>
                     {mat.price.toLocaleString('ru-RU')} <span className="csca-price-cur">{s.currency}</span>

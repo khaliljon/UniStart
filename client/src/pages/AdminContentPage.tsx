@@ -78,7 +78,7 @@ export default function AdminContentPage() {
   const [materials, setMaterials] = useState<StudyMaterialAdmin[]>([]);
   const [materialsLoading, setMaterialsLoading] = useState(false);
   const [showMaterialForm, setShowMaterialForm] = useState(false);
-  const [materialForm, setMaterialForm] = useState({ subjectKey: 'math', title: '', description: '', pdfUrl: '', price: 6990, isActive: true });
+  const [materialForm, setMaterialForm] = useState({ subjectKey: 'math', title: '', titleKz: '', titleEn: '', description: '', descriptionKz: '', descriptionEn: '', pdfUrl: '', price: 6990, isActive: true });
   const [editingMaterialId, setEditingMaterialId] = useState<number | null>(null);
   const [uploadingPdf, setUploadingPdf] = useState(false);
 
@@ -459,7 +459,7 @@ export default function AdminContentPage() {
   // ─── StudyMaterial actions ────────────────
   const openMaterialCreate = () => {
     setEditingMaterialId(null);
-    setMaterialForm({ subjectKey: 'math', title: '', description: '', pdfUrl: '', price: 6990, isActive: true });
+    setMaterialForm({ subjectKey: 'math', title: '', titleKz: '', titleEn: '', description: '', descriptionKz: '', descriptionEn: '', pdfUrl: '', price: 6990, isActive: true });
     setShowMaterialForm(true);
     setError(null);
   };
@@ -469,7 +469,11 @@ export default function AdminContentPage() {
     setMaterialForm({
       subjectKey: m.subjectKey,
       title: m.title,
+      titleKz: m.titleKz || '',
+      titleEn: m.titleEn || '',
       description: m.description || '',
+      descriptionKz: m.descriptionKz || '',
+      descriptionEn: m.descriptionEn || '',
       pdfUrl: m.pdfUrl || '',
       price: Number(m.price),
       isActive: m.isActive,
@@ -484,7 +488,11 @@ export default function AdminContentPage() {
       const payload = {
         subjectKey: materialForm.subjectKey,
         title: materialForm.title,
+        titleKz: materialForm.titleKz || null,
+        titleEn: materialForm.titleEn || null,
         description: materialForm.description || null,
+        descriptionKz: materialForm.descriptionKz || null,
+        descriptionEn: materialForm.descriptionEn || null,
         pdfUrl: materialForm.pdfUrl || null,
         price: materialForm.price,
         isActive: materialForm.isActive,
@@ -1184,8 +1192,24 @@ export default function AdminContentPage() {
                 <input className="form-input" value={materialForm.title} onChange={e => setMaterialForm(p => ({ ...p, title: e.target.value }))} />
               </div>
               <div style={formRow}>
+                <span style={label}>Название (KZ)</span>
+                <input className="form-input" value={materialForm.titleKz} onChange={e => setMaterialForm(p => ({ ...p, titleKz: e.target.value }))} placeholder="Оставьте пустым — покажется русское" />
+              </div>
+              <div style={formRow}>
+                <span style={label}>Название (EN)</span>
+                <input className="form-input" value={materialForm.titleEn} onChange={e => setMaterialForm(p => ({ ...p, titleEn: e.target.value }))} placeholder="Leave empty to fall back to Russian" />
+              </div>
+              <div style={formRow}>
                 <span style={label}>Описание</span>
                 <textarea className="form-input" rows={3} value={materialForm.description} onChange={e => setMaterialForm(p => ({ ...p, description: e.target.value }))} />
+              </div>
+              <div style={formRow}>
+                <span style={label}>Описание (KZ)</span>
+                <textarea className="form-input" rows={3} value={materialForm.descriptionKz} onChange={e => setMaterialForm(p => ({ ...p, descriptionKz: e.target.value }))} />
+              </div>
+              <div style={formRow}>
+                <span style={label}>Описание (EN)</span>
+                <textarea className="form-input" rows={3} value={materialForm.descriptionEn} onChange={e => setMaterialForm(p => ({ ...p, descriptionEn: e.target.value }))} />
               </div>
               <div style={formRow}>
                 <span style={label}>Цена (₸) *</span>
