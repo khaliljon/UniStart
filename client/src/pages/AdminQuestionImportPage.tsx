@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { questionImportService } from '../services/questionImportService';
-import type { QuestionImportJob, ImportedQuestionDraft, UpdateDraftPayload, FileRole, BatchFileEntry } from '../services/questionImportService';
+import type { QuestionImportJob, ImportedQuestionDraft, UpdateDraftPayload, FileRole, BatchFileEntry, DraftOption } from '../services/questionImportService';
 import adminService from '../services/adminService';
 import type { AdminSection, AdminTopicSummary } from '../types';
 import { useTranslation } from '../hooks/useTranslation';
@@ -36,6 +36,7 @@ function AdminQuestionImportPage({ embedded = false }: { embedded?: boolean } = 
   const [error, setError] = useState<string | null>(null);
   const [editingDraft, setEditingDraft] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<UpdateDraftPayload>({});
+  const [editMulti, setEditMulti] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Section / topic targeting
@@ -234,11 +235,34 @@ function AdminQuestionImportPage({ embedded = false }: { embedded?: boolean } = 
 
   const startEdit = (draft: ImportedQuestionDraft) => {
     setEditingDraft(draft.id);
+    setEditMulti(draft.options.filter((o) => o.isCorrect).length > 1);
     setEditForm({
       questionText: draft.questionText,
       explanation: draft.explanation ?? '',
       difficulty: draft.difficulty,
+      options: draft.options.map((o) => ({ text: o.text, isCorrect: o.isCorrect })),
     });
+  };
+
+  // ─── Option editing (approve stage) ─────────────────────
+  const setOptions = (opts: DraftOption[]) => setEditForm((f) => ({ ...f, options: opts }));
+  const updateOptionText = (i: number, text: string) =>
+    setOptions((editForm.options ?? []).map((o, j) => (j === i ? { ...o, text } : o)));
+  const toggleOptionCorrect = (i: number) => {
+    const opts = editForm.options ?? [];
+    setOptions(editMulti
+      ? opts.map((o, j) => (j === i ? { ...o, isCorrect: !o.isCorrect } : o))
+      : opts.map((o, j) => ({ ...o, isCorrect: j === i })));
+  };
+  const deleteOption = (i: number) => setOptions((editForm.options ?? []).filter((_, j) => j !== i));
+  const addOption = () => setOptions([...(editForm.options ?? []), { text: '', isCorrect: false }]);
+  const switchMode = (multi: boolean) => {
+    setEditMulti(multi);
+    if (!multi) {
+      const opts = editForm.options ?? [];
+      const firstCorrect = opts.findIndex((o) => o.isCorrect);
+      setOptions(opts.map((o, j) => ({ ...o, isCorrect: j === firstCorrect })));
+    }
   };
 
   // ─── Drop zone handlers ─────────────────────────────────
@@ -718,6 +742,59 @@ function AdminQuestionImportPage({ embedded = false }: { embedded?: boolean } = 
                       )}
 
                       {/* Options */}
+                      {editingDraft === draft.id ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', marginBottom: '0.5rem' }}>
+                          <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', marginTop: '0.25rem' }}>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Тип ответа:</span>
+                            <button
+                              className={`btn ${!editMulti ? 'btn-primary' : 'btn-secondary'}`}
+                              style={{ fontSize: '0.72rem', padding: '0.2rem 0.55rem' }}
+                              onClick={() => switchMode(false)}
+                            >Одиночный</button>
+                            <button
+                              className={`btn ${editMulti ? 'btn-primary' : 'btn-secondary'}`}
+                              style={{ fontSize: '0.72rem', padding: '0.2rem 0.55rem' }}
+                              onClick={() => switchMode(true)}
+                            >Множественный</button>
+                          </div>
+                          {(editForm.options ?? []).map((opt, oi) => (
+                            <div key={oi} style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                              <input
+                                type={editMulti ? 'checkbox' : 'radio'}
+                                checked={opt.isCorrect}
+                                onChange={() => toggleOptionCorrect(oi)}
+                                title="Правильный вариант"
+                              />
+                              <span style={{ fontSize: '0.8rem', minWidth: '1.1rem', color: 'var(--text-secondary)' }}>{String.fromCharCode(65 + oi)}.</span>
+                              <input
+                                value={opt.text}
+                                onChange={e => updateOptionText(oi, e.target.value)}
+                                placeholder="Текст варианта"
+                                style={{
+                                  flex: 1, padding: '0.3rem 0.4rem', fontSize: '0.85rem',
+                                  borderRadius: '0.375rem', border: '1px solid var(--border-color)',
+                                  background: 'var(--card-background)', color: 'var(--text-primary)',
+                                }}
+                              />
+                              <button
+                                onClick={() => deleteOption(oi)}
+                                title="Удалить вариант"
+                                style={{ background: 'transparent', border: 'none', color: 'var(--error-color)', cursor: 'pointer', fontSize: '1rem', lineHeight: 1 }}
+                              >✕</button>
+                            </div>
+                          ))}
+                          <button
+                            className="btn btn-secondary"
+                            style={{ fontSize: '0.75rem', padding: '0.25rem 0.6rem', alignSelf: 'flex-start' }}
+                            onClick={addOption}
+                          >+ Добавить вариант</button>
+                          {editMulti && (
+                            <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+                              Отметьте все правильные варианты — вопрос сохранится как множественный выбор.
+                            </span>
+                          )}
+                        </div>
+                      ) : (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', marginBottom: '0.5rem' }}>
                         {draft.options.length > 0 ? draft.options.map((opt, oi) => (
                           <span key={oi} style={{
@@ -736,6 +813,7 @@ function AdminQuestionImportPage({ embedded = false }: { embedded?: boolean } = 
                           </span>
                         )}
                       </div>
+                      )}
 
                       {draft.explanation && (
                         <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontStyle: 'italic' }}>

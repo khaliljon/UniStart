@@ -67,6 +67,7 @@ public class UniStartDbContext : DbContext
 
     // User order history (mock packages / books / courses)
     public DbSet<Purchase> Purchases => Set<Purchase>();
+    public DbSet<ExamSitting> ExamSittings => Set<ExamSitting>();
 
     // PDF study materials (textbooks per subject)
     public DbSet<StudyMaterial> StudyMaterials => Set<StudyMaterial>();
@@ -892,6 +893,20 @@ public class UniStartDbContext : DbContext
                   .HasForeignKey(e => e.UserId)
                   .OnDelete(DeleteBehavior.Cascade);
             entity.HasIndex(e => e.UserId).HasDatabaseName("IX_Purchases_UserId");
+        });
+
+        modelBuilder.Entity<ExamSitting>(entity =>
+        {
+            entity.ToTable("ExamSittings");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.HasData(
+                new ExamSitting { Id = 1, Date = new DateOnly(2026, 1, 17), IsActive = true, SortOrder = 1 },
+                new ExamSitting { Id = 2, Date = new DateOnly(2026, 3, 15), IsActive = true, SortOrder = 2 },
+                new ExamSitting { Id = 3, Date = new DateOnly(2026, 6, 27), IsActive = true, SortOrder = 3 },
+                new ExamSitting { Id = 4, Date = new DateOnly(2026, 9, 19), IsActive = true, SortOrder = 4 },
+                new ExamSitting { Id = 5, Date = new DateOnly(2026, 11, 21), IsActive = true, SortOrder = 5 }
+            );
         });
 
         modelBuilder.Entity<SupportTicket>(entity =>

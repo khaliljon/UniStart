@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from '../i18n';
 import { cscaStrings } from '../i18n/csca';
@@ -6,6 +6,7 @@ import { useAppSelector } from '../hooks/useAppSelector';
 import { materialsService } from '../services/materialsService';
 import { mockCatalogService, type MockPackage } from '../services/mockCatalogService';
 import { purchaseService } from '../services/purchaseService';
+import { examSittingsService } from '../services/examSittingsService';
 import { cartService } from '../services/cartService';
 import { moks } from '../utils/plural';
 import CscaNav from '../components/csca/CscaNav';
@@ -49,12 +50,18 @@ function CscaLandingPage() {
   const [ownedBooks, setOwnedBooks] = useState<Set<string>>(new Set());
 
   const s = cscaStrings[locale];
-  const nextSitting = useMemo(() => getNextSitting(), []);
-  const { days, hours, minutes } = useCountdown(nextSitting.date);
+  const [nextDate, setNextDate] = useState<string>(getNextSitting().date);
+  const { days, hours, minutes } = useCountdown(nextDate);
 
   useEffect(() => {
     materialsService.list().then(setDbMaterials).catch(() => {});
     mockCatalogService.getCatalog().then((c) => setDbPackages(c.packages)).catch(() => setDbPackages([]));
+    examSittingsService.list().then((list) => {
+      if (list.length === 0) return;
+      const now = Date.now();
+      const upcoming = list.find((x) => new Date(x.date).getTime() >= now) ?? list[list.length - 1];
+      setNextDate(upcoming.date);
+    }).catch(() => {});
     if (isAuthenticated) {
       purchaseService.list()
         .then((ps) => setOwnedBooks(new Set(ps.filter((p) => p.itemType === 'book').map((p) => p.itemCode))))

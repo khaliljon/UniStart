@@ -1,9 +1,11 @@
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../i18n';
 import { cscaStrings } from '../i18n/csca';
 import CscaPageShell, { CscaPageHero } from '../components/csca/CscaPageShell';
 import { BrushDivider } from '../components/csca/ChineseMotifs';
 import { CSCA_SUBJECTS, CSCA_EXAM_SITTINGS } from '../cscaConfig';
+import { examSittingsService } from '../services/examSittingsService';
 import AddToCalendarButton from '../components/csca/AddToCalendarButton';
 
 function AboutCscaPage() {
@@ -23,6 +25,19 @@ function AboutCscaPage() {
   const monthLabel: Record<string, string> = {
     january: s.monthJanuary, march: s.monthMarch, june: s.monthJune,
     september: s.monthSeptember, november: s.monthNovember,
+  };
+  void monthLabel;
+
+  const localeTag = locale === 'en' ? 'en-US' : locale === 'kz' ? 'kk-KZ' : 'ru-RU';
+  const [sittings, setSittings] = useState<{ date: string }[]>(CSCA_EXAM_SITTINGS.map((x) => ({ date: x.date })));
+  useEffect(() => {
+    examSittingsService.list()
+      .then((list) => { if (list.length > 0) setSittings(list.map((x) => ({ date: x.date }))); })
+      .catch(() => {});
+  }, []);
+  const monthName = (iso: string) => {
+    const m = new Date(iso).toLocaleDateString(localeTag, { month: 'long' });
+    return m.charAt(0).toUpperCase() + m.slice(1);
   };
 
   return (
@@ -63,15 +78,15 @@ function AboutCscaPage() {
             <p className="csca-lead">{s.examDatesLead}</p>
           </div>
           <div style={{ maxWidth: 640, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            {CSCA_EXAM_SITTINGS.map((sit) => {
+            {sittings.map((sit) => {
               const d = new Date(sit.date);
               const past = d.getTime() < now.getTime();
               return (
                 <div key={sit.date} className="csca-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem 1.25rem' }}>
                   <div>
-                    <div style={{ fontWeight: 700, color: 'var(--csca-ink)' }}>{monthLabel[sit.monthKey] ?? sit.monthKey}</div>
+                    <div style={{ fontWeight: 700, color: 'var(--csca-ink)' }}>{monthName(sit.date)}</div>
                     <div style={{ fontSize: '0.85rem', color: 'var(--csca-ink-soft)' }}>
-                      {d.toLocaleDateString(locale === 'en' ? 'en-US' : locale === 'kz' ? 'kk-KZ' : 'ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}
+                      {d.toLocaleDateString(localeTag, { day: 'numeric', month: 'long', year: 'numeric' })}
                     </div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
@@ -80,9 +95,9 @@ function AboutCscaPage() {
                         label={s.addToCalendar}
                         googleLabel={s.calGoogle}
                         appleLabel={s.calApple}
-                        fileName={`csca-${sit.monthKey}-2026.ics`}
+                        fileName={`csca-${sit.date}.ics`}
                         event={{
-                          title: `CSCA — ${monthLabel[sit.monthKey] ?? sit.monthKey}`,
+                          title: `CSCA — ${monthName(sit.date)}`,
                           description: s.examDatesLead,
                           date: sit.date,
                         }}
