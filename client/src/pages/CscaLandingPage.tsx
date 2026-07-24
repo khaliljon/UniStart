@@ -274,6 +274,7 @@ function CscaLandingPage() {
                 </div>
                 <ul className="csca-price-list">
                   <li><CheckIcon /> {subjLabel}</li>
+                  <li><CheckIcon /> {moks(pkg.runsEach, locale)} {s.perSubject}</li>
                   <li><CheckIcon /> {s.pkgFeatAi}</li>
                 </ul>
                 <button

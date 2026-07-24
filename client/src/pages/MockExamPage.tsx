@@ -5,6 +5,8 @@ import { useAppSelector } from '../hooks/useAppSelector';
 import { useTranslation } from '../hooks/useTranslation';
 import { pickLocalized } from '../utils/localize';
 import { moks } from '../utils/plural';
+import { cscaStrings } from '../i18n/csca';
+import { shortDateLocalized } from '../utils/dates';
 import type {
   MockExamListItem,
   MockExamDetail,
@@ -30,6 +32,7 @@ function MockExamPage() {
   const isPro = user?.role === 'Admin';
   const navigate = useNavigate();
   const { locale } = useTranslation();
+  const s = cscaStrings[locale];
 
   // List phase
   const [mockExams, setMockExams] = useState<MockExamListItem[]>([]);
@@ -347,24 +350,24 @@ function MockExamPage() {
                     <h3 style={{ margin: 0, fontSize: '1.1rem' }}>{pickLocalized(exam.title, exam.titleKz, exam.titleEn, locale)}</h3>
                     {exam.runsRemaining > 0 && (
                       <span style={{ background: 'rgba(16,185,129,0.12)', color: '#10b981', padding: '2px 8px', borderRadius: 10, fontSize: '0.7rem', fontWeight: 700 }}>
-                        Осталось: {moks(exam.runsRemaining, locale)}
+                        {s.mockRemaining}: {moks(exam.runsRemaining, locale)}
                       </span>
                     )}
                     {isFreeStart && (
-                      <span style={{ background: 'rgba(200,16,46,0.1)', color: 'var(--csca-red, #C8102E)', padding: '2px 8px', borderRadius: 10, fontSize: '0.7rem', fontWeight: 700 }}>Бесплатный мок</span>
+                      <span style={{ background: 'rgba(200,16,46,0.1)', color: 'var(--csca-red, #C8102E)', padding: '2px 8px', borderRadius: 10, fontSize: '0.7rem', fontWeight: 700 }}>{s.mockFreeBadge}</span>
                     )}
                   </div>
                   <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: '0.25rem 0' }}>{pickLocalized(exam.description, exam.descriptionKz, exam.descriptionEn, locale)}</p>
                   <div style={{ display: 'flex', gap: '1.25rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
-                    <Stat label="Вопросов" value={exam.totalQuestions} />
-                    <Stat label="Время" value={`${exam.totalTimeMinutes}м`} />
-                    {exam.bestScore !== null && <Stat label="Лучший" value={`${exam.bestScore}%`} />}
-                    {exam.attemptCount > 0 && <Stat label="Сессий" value={exam.attemptCount} />}
+                    <Stat label={s.mockQuestions} value={exam.totalQuestions} />
+                    <Stat label={s.mockTime} value={`${exam.totalTimeMinutes}м`} />
+                    {exam.bestScore !== null && <Stat label={s.mockBest} value={`${exam.bestScore}%`} />}
+                    {exam.attemptCount > 0 && <Stat label={s.mockSessions} value={exam.attemptCount} />}
                   </div>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'stretch', minWidth: 180 }}>
                   <button className="btn btn-primary" onClick={() => handleSelectExam(exam.id)}>
-                    {exam.runsRemaining > 0 ? '▶ Решить (−1 мок)' : '▶ Решить бесплатно'}
+                    {exam.runsRemaining > 0 ? `${s.mockSolvePaid} (−1 ${moks(1, locale).replace(/^\d+\s*/, '')})` : s.mockSolveFree}
                   </button>
                 </div>
               </div>
@@ -378,15 +381,15 @@ function MockExamPage() {
         {/* History */}
         {history.length > 0 && (
           <>
-            <h2 style={{ fontSize: '1.1rem', marginBottom: '0.75rem' }}>Recent Attempts</h2>
+            <h2 style={{ fontSize: '1.1rem', marginBottom: '0.75rem' }}>{s.recentAttempts}</h2>
             <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
                 <thead>
                   <tr style={{ background: 'var(--bg-secondary)', textAlign: 'left' }}>
-                    <th style={{ padding: '0.5rem 1rem' }}>Exam</th>
-                    <th style={{ padding: '0.5rem' }}>Score</th>
-                    <th style={{ padding: '0.5rem' }}>Status</th>
-                    <th style={{ padding: '0.5rem' }}>Date</th>
+                    <th style={{ padding: '0.5rem 1rem' }}>{s.thExam}</th>
+                    <th style={{ padding: '0.5rem' }}>{s.thScore}</th>
+                    <th style={{ padding: '0.5rem' }}>{s.thStatus}</th>
+                    <th style={{ padding: '0.5rem' }}>{s.thDate}</th>
                     <th style={{ padding: '0.5rem' }}></th>
                   </tr>
                 </thead>
@@ -404,23 +407,23 @@ function MockExamPage() {
                       </td>
                       <td style={{ padding: '0.5rem' }}>
                         <span style={{ color: h.status === 'completed' ? '#27ae60' : '#e67e22', fontWeight: 500 }}>
-                          {h.status === 'completed' ? '✓ Completed' : 'In progress'}
+                          {h.status === 'completed' ? `✓ ${s.statusCompleted}` : s.statusInProgress}
                         </span>
                       </td>
                       <td style={{ padding: '0.5rem', color: 'var(--text-secondary)' }}>
-                        {new Date(h.startedAt).toLocaleDateString()}
+                        {shortDateLocalized(h.startedAt, locale)}
                       </td>
                       <td style={{ padding: '0.5rem' }}>
                         {h.status === 'completed' && (
                           <button className="btn btn-outline" style={{ padding: '2px 12px', fontSize: '0.75rem' }}
                                   onClick={async (e) => { e.stopPropagation(); const r = await mockExamService.getResults(h.attemptId); setResults(r); setShowReview(false); setPhase('results'); }}>
-                            View
+                            {s.viewBtn}
                           </button>
                         )}
                         {h.status === 'in_progress' && (
                           <button className="btn btn-primary" style={{ padding: '2px 12px', fontSize: '0.75rem' }}
                                   onClick={(e) => { e.stopPropagation(); handleResume({ attemptId: h.attemptId, mockExamId: h.mockExamId, examTitle: h.examTitle, status: h.status, currentSectionIndex: 0, totalSections: 0, startedAt: h.startedAt, totalTimeMinutes: 0 }); }}>
-                            Resume
+                            {s.resumeBtn}
                           </button>
                         )}
                       </td>

@@ -6,9 +6,6 @@ public interface IImageUploadService
 {
     Task<string> UploadAsync(IFormFile file, CancellationToken ct = default);
 
-    /// <summary>Upload a PDF document (large files allowed) and return its public URL.</summary>
-    Task<string> UploadPdfAsync(IFormFile file, CancellationToken ct = default);
-
     /// <summary>
     /// Creates a short-lived presigned URL the browser can PUT a PDF straight to R2 with,
     /// bypassing the API server (no server memory/bandwidth used for the file).

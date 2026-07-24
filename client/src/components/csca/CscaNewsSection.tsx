@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { newsService, type NewsItem } from '../../services/newsService';
 import { useTranslation } from '../../hooks/useTranslation';
 import { pickLocalized } from '../../utils/localize';
+import { fullDateLocalized } from '../../utils/dates';
 
 interface Props {
   title: string;
@@ -32,7 +33,7 @@ export default function CscaNewsSection({ title, lead, readMore, readLess, empty
   }, [limit]);
 
   const fmtDate = (iso: string | null) =>
-    iso ? new Date(iso).toLocaleDateString(locale === 'kz' ? 'kk-KZ' : locale === 'en' ? 'en-US' : 'ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+    iso ? fullDateLocalized(iso, locale) : '';
 
   const cardClass = appTheme ? 'card' : 'csca-card';
   const subColor = appTheme ? 'var(--text-secondary)' : 'var(--csca-ink-soft, var(--text-secondary))';

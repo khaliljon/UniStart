@@ -5,6 +5,7 @@ import { cartService } from '../services/cartService';
 import { moks } from '../utils/plural';
 import { pickLocalized } from '../utils/localize';
 import { useTranslation } from '../hooks/useTranslation';
+import { cscaStrings } from '../i18n/csca';
 
 /**
  * Storefront for run-based mocks: per-subject run tiers (1/3/5) and discounted
@@ -13,6 +14,7 @@ import { useTranslation } from '../hooks/useTranslation';
 function MockShop() {
   const navigate = useNavigate();
   const { locale } = useTranslation();
+  const s = cscaStrings[locale];
   const [catalog, setCatalog] = useState<MockCatalog | null>(null);
   const [pkgPicker, setPkgPicker] = useState<string | null>(null);
   const [pkgChosen, setPkgChosen] = useState<number[]>([]);
@@ -83,13 +85,13 @@ function MockShop() {
 
   return (
     <div style={{ marginBottom: '1.75rem' }}>
-      <h2 style={{ fontSize: '1.1rem', marginBottom: '0.75rem' }}>Пробные экзамены</h2>
+      <h2 style={{ fontSize: '1.1rem', marginBottom: '0.75rem' }}>{s.mocksTitle}</h2>
 
       {catalog.freeRunAvailable && (
         <div className="card" style={{ marginBottom: '1rem', border: '2px dashed var(--primary-color)', background: 'var(--bg-secondary)' }}>
-          <div style={{ fontWeight: 700, marginBottom: '0.2rem' }}>🎁 Первый мок — бесплатно</div>
+          <div style={{ fontWeight: 700, marginBottom: '0.2rem' }}>{s.firstMockFree}</div>
           <div style={{ color: 'var(--text-secondary)', fontSize: '0.88rem' }}>
-            Начните любой пробник бесплатно во вкладке «Пробные экзамены». Дальше — покупка моков поштучно или пакетом.
+            {s.firstMockFreeDesc}
           </div>
         </div>
       )}
@@ -102,12 +104,12 @@ function MockShop() {
               <div style={{ fontWeight: 700 }}>{tpl.title}</div>
               {tpl.runsRemaining > 0 && (
                 <span style={{ background: 'rgba(16,185,129,0.12)', color: '#10b981', padding: '1px 7px', borderRadius: 10, fontSize: '0.7rem', fontWeight: 700 }}>
-                  Осталось: {moks(tpl.runsRemaining, locale)}
+                  {s.mockRemaining}: {moks(tpl.runsRemaining, locale)}
                 </span>
               )}
             </div>
             <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
-              {tpl.totalQuestions} вопросов · {tpl.totalTimeMinutes} мин
+              {tpl.totalQuestions} {s.mockQuestions.toLowerCase()} · {tpl.totalTimeMinutes} {s.minShort}
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginTop: 'auto' }}>
               {tpl.tiers.length === 0 ? (
@@ -127,17 +129,21 @@ function MockShop() {
       {/* Packages */}
       {catalog.packages.length > 0 && (
         <>
-          <h3 style={{ fontSize: '1rem', marginBottom: '0.5rem' }}>Пакеты со скидкой</h3>
+          <h3 style={{ fontSize: '1rem', marginBottom: '0.5rem' }}>{s.discountPackages}</h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.75rem' }}>
             {catalog.packages.map((pkg) => {
               const picking = pkgPicker === pkg.key;
               const allSubjects = pkg.pickCount === 0;
               const featured = pkg.key === 'standard';
-              const subjLabel = allSubjects ? 'Все предметы' : `Любые ${pkg.pickCount} предмета`;
+              const subjLabel = allSubjects ? s.allSubjects
+                : pkg.pickCount === 1 ? s.oneSubject
+                : pkg.pickCount === 2 ? s.twoSubjects
+                : pkg.pickCount === 3 ? s.threeSubjects
+                : `${pkg.pickCount}`;
               return (
                 <div key={pkg.key} className="card" ref={(el) => { cardRefs.current[pkg.key] = el; }} style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: '0.5rem', padding: '1.25rem', borderRadius: 16, border: featured ? '2px solid var(--primary-color)' : '1px solid var(--border-color)', overflow: 'hidden' }}>
                   {featured && (
-                    <span style={{ position: 'absolute', top: 0, right: 0, background: 'var(--primary-color)', color: '#fff', fontSize: '0.68rem', fontWeight: 700, padding: '3px 12px', borderBottomLeftRadius: 10 }}>Популярный</span>
+                    <span style={{ position: 'absolute', top: 0, right: 0, background: 'var(--primary-color)', color: '#fff', fontSize: '0.68rem', fontWeight: 700, padding: '3px 12px', borderBottomLeftRadius: 10 }}>{s.popular}</span>
                   )}
                   <div style={{ fontWeight: 800, fontSize: '1.15rem' }}>{pickLocalized(pkg.name, pkg.nameKz, pkg.nameEn, locale)}</div>
                   <div style={{ color: 'var(--text-secondary)', fontSize: '0.82rem' }}>
@@ -147,7 +153,7 @@ function MockShop() {
                     {pkg.price.toLocaleString('ru-RU')} <span style={{ fontSize: '0.9rem', fontWeight: 700 }}>{pkg.currency}</span>
                   </div>
                   <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 0.3rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                    {[subjLabel, `${moks(pkg.runsEach, locale)} на каждый предмет`, 'ИИ-объяснения к заданиям'].map((f, i) => (
+                    {[subjLabel, `${moks(pkg.runsEach, locale)} ${s.perSubject}`, s.pkgFeatAi].map((f, i) => (
                       <li key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
                         <Check /> {f}
                       </li>

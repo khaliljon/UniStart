@@ -6,6 +6,7 @@ import CscaPageShell, { CscaPageHero } from '../components/csca/CscaPageShell';
 import { BrushDivider } from '../components/csca/ChineseMotifs';
 import { CSCA_SUBJECTS, CSCA_EXAM_SITTINGS } from '../cscaConfig';
 import { examSittingsService } from '../services/examSittingsService';
+import { monthNameLocalized, fullDateLocalized } from '../utils/dates';
 import AddToCalendarButton from '../components/csca/AddToCalendarButton';
 
 function AboutCscaPage() {
@@ -28,17 +29,13 @@ function AboutCscaPage() {
   };
   void monthLabel;
 
-  const localeTag = locale === 'en' ? 'en-US' : locale === 'kz' ? 'kk-KZ' : 'ru-RU';
   const [sittings, setSittings] = useState<{ date: string }[]>(CSCA_EXAM_SITTINGS.map((x) => ({ date: x.date })));
   useEffect(() => {
     examSittingsService.list()
       .then((list) => { if (list.length > 0) setSittings(list.map((x) => ({ date: x.date }))); })
       .catch(() => {});
   }, []);
-  const monthName = (iso: string) => {
-    const m = new Date(iso).toLocaleDateString(localeTag, { month: 'long' });
-    return m.charAt(0).toUpperCase() + m.slice(1);
-  };
+  const monthName = (iso: string) => monthNameLocalized(iso, locale);
 
   return (
     <CscaPageShell>
@@ -86,7 +83,7 @@ function AboutCscaPage() {
                   <div>
                     <div style={{ fontWeight: 700, color: 'var(--csca-ink)' }}>{monthName(sit.date)}</div>
                     <div style={{ fontSize: '0.85rem', color: 'var(--csca-ink-soft)' }}>
-                      {d.toLocaleDateString(localeTag, { day: 'numeric', month: 'long', year: 'numeric' })}
+                      {fullDateLocalized(sit.date, locale)}
                     </div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>

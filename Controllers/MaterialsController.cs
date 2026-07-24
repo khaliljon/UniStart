@@ -170,36 +170,6 @@ public class MaterialsController : ControllerBase
         return Ok(new { deleted = true });
     }
 
-    /// <summary>Upload a PDF file to R2 and return its URL — Admin only.</summary>
-    [HttpPost("admin/upload-pdf")]
-    [Authorize(Roles = "Admin")]
-    [Consumes("multipart/form-data")]
-    [RequestSizeLimit(1_073_741_824)] // 1 GB
-    [RequestFormLimits(MultipartBodyLengthLimit = 1_073_741_824)]
-    public async Task<IActionResult> UploadPdf(IFormFile file, CancellationToken ct)
-    {
-        if (file == null || file.Length == 0)
-            return BadRequest(new { error = "Файл не выбран." });
-
-        var allowedTypes = new[] { "application/pdf", "application/octet-stream" };
-        if (!allowedTypes.Contains(file.ContentType) && !file.FileName.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
-            return BadRequest(new { error = "Допускается только PDF-файл." });
-
-        try
-        {
-            var url = await _upload.UploadPdfAsync(file, ct);
-            return Ok(new { url });
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return StatusCode(503, new { error = ex.Message });
-        }
-    }
-
     /// <summary>
     /// Returns a short-lived presigned URL so the browser can upload a large PDF
     /// directly to R2, bypassing the API server (no server memory/bandwidth used).

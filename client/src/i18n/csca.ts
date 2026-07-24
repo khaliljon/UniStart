@@ -158,6 +158,38 @@ export interface CscaStrings {
   purchasesEmpty: string;
   purchasesBrowse: string;
   currency: string;
+  // packages / mocks / purchases (localized UI added later)
+  perSubject: string;
+  discountPackages: string;
+  mockQuestions: string;
+  mockTime: string;
+  mockBest: string;
+  mockSessions: string;
+  mockRemaining: string;
+  mockFreeBadge: string;
+  mockSolvePaid: string;
+  mockSolveFree: string;
+  recentAttempts: string;
+  thExam: string;
+  thScore: string;
+  thStatus: string;
+  thDate: string;
+  statusInProgress: string;
+  review: string;
+  viewBtn: string;
+  resumeBtn: string;
+  paymentDone: string;
+  paymentDoneDesc: string;
+  myMocks: string;
+  goSolve: string;
+  sessionHistory: string;
+  statusPaid: string;
+  myMaterialsTitle: string;
+  downloadPdf: string;
+  materialsEmptyOwned: string;
+  minShort: string;
+  firstMockFree: string;
+  firstMockFreeDesc: string;
   // cart (internal)
   cartTitle: string;
   cartEmpty: string;
@@ -244,6 +276,37 @@ const ru: CscaStrings = {
   purchasesEmpty: 'У вас пока нет покупок.',
   purchasesBrowse: 'Выбрать пакет',
   currency: '₸',
+  perSubject: 'на каждый предмет',
+  discountPackages: 'Пакеты со скидкой',
+  mockQuestions: 'Вопросов',
+  mockTime: 'Время',
+  mockBest: 'Лучший',
+  mockSessions: 'Сессий',
+  mockRemaining: 'Осталось',
+  mockFreeBadge: 'Бесплатный мок',
+  mockSolvePaid: '▶ Решить',
+  mockSolveFree: '▶ Решить бесплатно',
+  recentAttempts: 'Недавние попытки',
+  thExam: 'Экзамен',
+  thScore: 'Балл',
+  thStatus: 'Статус',
+  thDate: 'Дата',
+  statusInProgress: 'В процессе',
+  review: 'Разбор',
+  viewBtn: 'Открыть',
+  resumeBtn: 'Продолжить',
+  paymentDone: 'Оплата прошла',
+  paymentDoneDesc: 'Доступ начислен. Моки — во вкладке «Пробные экзамены», учебники — в «Материалах».',
+  myMocks: 'Мои моки',
+  goSolve: 'Перейти к решению',
+  sessionHistory: 'История сессий',
+  statusPaid: 'Оплачено',
+  myMaterialsTitle: 'Материалы',
+  downloadPdf: '⇓ Скачать PDF',
+  materialsEmptyOwned: 'У вас пока нет материалов. Приобретите учебники на Главной.',
+  minShort: 'мин',
+  firstMockFree: '🎁 Первый мок — бесплатно',
+  firstMockFreeDesc: 'Начните любой пробник бесплатно во вкладке «Пробные экзамены». Дальше — покупка моков поштучно или пакетом.',
   cartTitle: 'Моя корзина',
   cartEmpty: 'Корзина пуста. Выберите пробник или учебник.',
   cartRemove: 'Удалить',
@@ -329,6 +392,37 @@ const en: CscaStrings = {
   purchasesEmpty: 'You have no purchases yet.',
   purchasesBrowse: 'Choose a package',
   currency: '₸',
+  perSubject: 'per subject',
+  discountPackages: 'Discount packages',
+  mockQuestions: 'Questions',
+  mockTime: 'Time',
+  mockBest: 'Best',
+  mockSessions: 'Sessions',
+  mockRemaining: 'Left',
+  mockFreeBadge: 'Free mock',
+  mockSolvePaid: '▶ Start',
+  mockSolveFree: '▶ Start for free',
+  recentAttempts: 'Recent attempts',
+  thExam: 'Exam',
+  thScore: 'Score',
+  thStatus: 'Status',
+  thDate: 'Date',
+  statusInProgress: 'In progress',
+  review: 'Review',
+  viewBtn: 'View',
+  resumeBtn: 'Resume',
+  paymentDone: 'Payment successful',
+  paymentDoneDesc: 'Access granted. Mocks are in “Mock exams”, textbooks in “Materials”.',
+  myMocks: 'My mocks',
+  goSolve: 'Go to practice',
+  sessionHistory: 'Session history',
+  statusPaid: 'Paid',
+  myMaterialsTitle: 'Materials',
+  downloadPdf: '⇓ Download PDF',
+  materialsEmptyOwned: 'You have no materials yet. Buy textbooks on the Home page.',
+  minShort: 'min',
+  firstMockFree: '🎁 First mock — free',
+  firstMockFreeDesc: 'Start any mock for free in the “Mock exams” tab. After that — buy mocks individually or as a package.',
   cartTitle: 'My cart',
   cartEmpty: 'Your cart is empty. Pick a mock or a textbook.',
   cartRemove: 'Remove',
@@ -413,8 +507,37 @@ const kz: CscaStrings = {
   purchasesTitle: 'Сатып алуларым',
   purchasesEmpty: 'Сізде әзірше сатып алулар жоқ.',
   purchasesBrowse: 'Пакет таңдау',
-  currency: '₸',
-  cartTitle: 'Менің себетім',
+  currency: '₸',  perSubject: 'әр пәнге',
+  discountPackages: 'Жеңілдікпен пакеттер',
+  mockQuestions: 'Сұрақтар',
+  mockTime: 'Уақыт',
+  mockBest: 'Ең жақсы',
+  mockSessions: 'Сессиялар',
+  mockRemaining: 'Қалды',
+  mockFreeBadge: 'Тегін мок',
+  mockSolvePaid: '▶ Шешу',
+  mockSolveFree: '▶ Тегін шешу',
+  recentAttempts: 'Соңғы әрекеттер',
+  thExam: 'Емтихан',
+  thScore: 'Ұпай',
+  thStatus: 'Күйі',
+  thDate: 'Күні',
+  statusInProgress: 'Орындалуда',
+  review: 'Талдау',
+  viewBtn: 'Ашу',
+  resumeBtn: 'Жалғастыру',
+  paymentDone: 'Төлем сәтті өтті',
+  paymentDoneDesc: 'Қолжетімділік берілді. Моктар — «Сынақ емтихандар», оқулықтар — «Материалдар» бөлімінде.',
+  myMocks: 'Менің моктарым',
+  goSolve: 'Шешуге өту',
+  sessionHistory: 'Сессиялар тарихы',
+  statusPaid: 'Төленді',
+  myMaterialsTitle: 'Материалдар',
+  downloadPdf: '⇓ PDF жүктеу',
+  materialsEmptyOwned: 'Сізде әзᑖрше материалдар жоқ. Оқулықтарды Басты беттен сатып алыңыз.',
+  minShort: 'мин',
+  firstMockFree: '🎁 Алғашқы мок — тегін',
+  firstMockFreeDesc: '«Сынақ емтихандар» бөлімінде кез келген пробникті тегін бастаңыз. Ары қарай — моктарды даналап немесе пакетпен сатып алу.',  cartTitle: 'Менің себетім',
   cartEmpty: 'Себет бос. Сынақ немесе оқулық таңдаңыз.',
   cartRemove: 'Жою',
   cartTotal: 'Барлығы',

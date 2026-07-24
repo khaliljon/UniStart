@@ -111,50 +111,6 @@ public class ImageUploadService : IImageUploadService, IDisposable
         return $"{_publicUrl}/{key}";
     }
 
-    private const long MaxPdfBytes = 1024L * 1024 * 1024; // 1 GB
-
-    public async Task<string> UploadPdfAsync(IFormFile file, CancellationToken ct = default)
-    {
-        if (file is null || file.Length == 0)
-            throw new ArgumentException("File is empty.");
-
-        var isPdf = string.Equals(file.ContentType, "application/pdf", StringComparison.OrdinalIgnoreCase)
-                 || string.Equals(file.ContentType, "application/octet-stream", StringComparison.OrdinalIgnoreCase)
-                 || file.FileName.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase);
-        if (!isPdf)
-            throw new ArgumentException($"Unsupported file type: {file.ContentType}. Only PDF is allowed.");
-
-        if (file.Length > MaxPdfBytes)
-            throw new ArgumentException("Файл превышает максимальный размер 1 ГБ.");
-
-        if (string.IsNullOrWhiteSpace(_publicUrl))
-            throw new InvalidOperationException("R2:PublicUrl is not configured. Set R2__PublicUrl environment variable.");
-
-        var client = GetClient();
-        var key = $"materials/{Guid.NewGuid():N}.pdf";
-
-        using var stream = file.OpenReadStream();
-        var request = new PutObjectRequest
-        {
-            BucketName            = _bucket,
-            Key                   = key,
-            InputStream           = stream,
-            ContentType           = "application/pdf",
-            DisablePayloadSigning = true,
-        };
-
-        try
-        {
-            await client.PutObjectAsync(request, ct);
-        }
-        catch (Amazon.S3.AmazonS3Exception ex)
-        {
-            throw new InvalidOperationException($"R2 upload failed ({(int)ex.StatusCode}): {ex.Message}", ex);
-        }
-
-        return $"{_publicUrl}/{key}";
-    }
-
     public PdfUploadTarget CreatePdfUploadTarget()
     {
         if (string.IsNullOrWhiteSpace(_publicUrl))

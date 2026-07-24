@@ -8,6 +8,7 @@ import { mockExamService } from '../services/mockExamService';
 import type { MockExamHistoryItem } from '../types';
 import { cartService } from '../services/cartService';
 import { moks } from '../utils/plural';
+import { fullDateLocalized, shortDateLocalized } from '../utils/dates';
 
 function PurchasesPage() {
   const navigate = useNavigate();
@@ -31,8 +32,7 @@ function PurchasesPage() {
     mockExamService.getHistory().then(setHistory).catch(() => {});
   }, []);
 
-  const fmt = (iso: string) =>
-    new Date(iso).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+  const fmt = (iso: string) => fullDateLocalized(iso, locale);
 
   return (
     <div style={{ maxWidth: 720, margin: '1.5rem auto' }}>
@@ -40,9 +40,9 @@ function PurchasesPage() {
 
       {paid && (
         <div className="card" style={{ marginBottom: '1.25rem', border: '2px solid #10b981', background: 'rgba(16,185,129,0.08)' }}>
-          <div style={{ fontWeight: 700, color: '#10b981' }}>✓ Оплата прошла</div>
+          <div style={{ fontWeight: 700, color: '#10b981' }}>✓ {s.paymentDone}</div>
           <div style={{ fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
-            Доступ начислен. Моки — во вкладке «Пробные экзамены», учебники — в «Материалах».
+            {s.paymentDoneDesc}
           </div>
         </div>
       )}
@@ -50,16 +50,16 @@ function PurchasesPage() {
       {/* My runs */}
       {runs.length > 0 && (
         <div className="card" style={{ marginBottom: '1.25rem' }}>
-          <div style={{ fontWeight: 700, marginBottom: '0.5rem' }}>Мои моки</div>
+          <div style={{ fontWeight: 700, marginBottom: '0.5rem' }}>{s.myMocks}</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
             {runs.map((t) => (
               <span key={t.mockExamId} style={{ fontSize: '0.85rem', padding: '0.3rem 0.7rem', borderRadius: '999px', background: 'rgba(16,185,129,0.12)', color: '#10b981', fontWeight: 700 }}>
-                {t.title}: {moks(t.runsRemaining)}
+                {t.title}: {moks(t.runsRemaining, locale)}
               </span>
             ))}
           </div>
           <button className="btn btn-primary" style={{ marginTop: '0.75rem', fontSize: '0.85rem' }} onClick={() => navigate('/learn?tab=mock')}>
-            Перейти к решению
+            {s.goSolve}
           </button>
         </div>
       )}
@@ -67,20 +67,20 @@ function PurchasesPage() {
       {/* Session history with review deep-link */}
       {history.length > 0 && (
         <div className="card" style={{ marginBottom: '1.25rem' }}>
-          <div style={{ fontWeight: 700, marginBottom: '0.5rem' }}>История сессий</div>
+          <div style={{ fontWeight: 700, marginBottom: '0.5rem' }}>{s.sessionHistory}</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             {history.slice(0, 15).map((h) => (
               <div key={h.attemptId} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', borderTop: '1px solid var(--border-color)', paddingTop: '0.5rem' }}>
                 <div>
                   <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{h.examTitle}</div>
                   <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
-                    {new Date(h.startedAt).toLocaleDateString('ru-RU')} · {h.status === 'completed' ? `${h.totalScore ?? 0}%` : 'в процессе'}
+                    {shortDateLocalized(h.startedAt, locale)} · {h.status === 'completed' ? `${h.totalScore ?? 0}%` : s.statusInProgress}
                   </div>
                 </div>
                 {h.status === 'completed' && (
                   <button className="btn btn-outline" style={{ fontSize: '0.82rem', padding: '0.25rem 0.75rem' }}
                           onClick={() => navigate(`/exams/result/${h.attemptId}`)}>
-                    Разбор
+                    {s.review}
                   </button>
                 )}
               </div>
@@ -115,7 +115,7 @@ function PurchasesPage() {
                 <div style={{ fontWeight: 800, color: 'var(--csca-red, #C8102E)' }}>
                   {p.amount.toLocaleString('ru-RU')} {p.currency}
                 </div>
-                <div style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 700 }}>{p.status}</div>
+                <div style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 700 }}>{p.status === 'Paid' ? s.statusPaid : p.status}</div>
               </div>
             </div>
           ))}
