@@ -186,7 +186,28 @@ public static class UniStartStartupExtensions
             });
 
             options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
-                RateLimitPartition.GetSlidingWindowLimiter(
+            {
+                // Admins are exempt from the global limiter — bulk admin actions
+                // (mass delete, repeated lookups) must not be throttled.
+                if (context.User.Identity?.IsAuthenticated == true && context.User.IsInRole("Admin"))
+                    return RateLimitPartition.GetNoLimiter("admin");
+
+                // Authenticated users get their own generous per-user budget so
+                // one user's activity can't starve another sharing the same IP.
+                var userId = context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                if (context.User.Identity?.IsAuthenticated == true && userId != null)
+                    return RateLimitPartition.GetSlidingWindowLimiter(
+                        $"user:{userId}",
+                        _ => new SlidingWindowRateLimiterOptions
+                        {
+                            PermitLimit = 600,
+                            Window = TimeSpan.FromMinutes(1),
+                            SegmentsPerWindow = 4,
+                            QueueLimit = 0,
+                        });
+
+                // Anonymous traffic is limited per IP.
+                return RateLimitPartition.GetSlidingWindowLimiter(
                     context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
                     _ => new SlidingWindowRateLimiterOptions
                     {
@@ -194,7 +215,8 @@ public static class UniStartStartupExtensions
                         Window = TimeSpan.FromMinutes(1),
                         SegmentsPerWindow = 4,
                         QueueLimit = 0,
-                    }));
+                    });
+            });
 
             options.OnRejected = async (context, cancellationToken) =>
             {
@@ -346,10 +368,12 @@ public static class UniStartStartupExtensions
 
         app.UseCors("ReactApp");
 
-        app.UseRateLimiter();
-
         app.UseAuthentication();
         app.UseAuthorization();
+
+        // Rate limiter must run AFTER authentication so the global limiter can
+        // read the authenticated user (to exempt admins / partition per user).
+        app.UseRateLimiter();
 
         app.Use(async (context, next) =>
         {
