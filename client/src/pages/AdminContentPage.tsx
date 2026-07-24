@@ -484,6 +484,7 @@ export default function AdminContentPage() {
 
   const saveMaterial = async () => {
     if (!materialForm.title.trim()) { setError('Введите название'); return; }
+    if (!materialForm.pdfUrl.trim()) { setError('Загрузите PDF файл — без него сохранить нельзя'); return; }
     try {
       const payload = {
         subjectKey: materialForm.subjectKey,
@@ -1221,6 +1222,11 @@ export default function AdminContentPage() {
                 {uploadingPdf && <span style={{ fontSize: '0.8rem', color: 'var(--primary-color)' }}>Загрузка файла на Cloudflare R2...</span>}
                 <span style={label}>URL PDF файла</span>
                 <input className="form-input" value={materialForm.pdfUrl} onChange={e => setMaterialForm(p => ({ ...p, pdfUrl: e.target.value }))} placeholder="https://..." />
+                {!materialForm.pdfUrl.trim() && (
+                  <span style={{ fontSize: '0.8rem', color: '#ef4444', marginTop: '0.35rem' }}>
+                    ⚠ Загрузите PDF файл — без него сохранить нельзя.
+                  </span>
+                )}
               </div>
               <div style={formRow}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem' }}>
@@ -1229,7 +1235,7 @@ export default function AdminContentPage() {
                 </label>
               </div>
               <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
-                <button className="btn btn-primary" onClick={saveMaterial}>{editingMaterialId ? 'Сохранить' : 'Создать'}</button>
+                <button className="btn btn-primary" onClick={saveMaterial} disabled={uploadingPdf || !materialForm.pdfUrl.trim()}>{editingMaterialId ? 'Сохранить' : 'Создать'}</button>
                 <button className="btn btn-outline" onClick={() => { setShowMaterialForm(false); setEditingMaterialId(null); }}>Отмена</button>
               </div>
             </div>

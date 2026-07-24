@@ -24,8 +24,9 @@ function MaterialsPage() {
     try {
       const { pdfUrl } = await materialsService.download(id);
       window.open(pdfUrl, '_blank', 'noopener');
-    } catch {
-      setError('Не удалось получить файл. Возможно, материал ещё не куплен.');
+    } catch (e) {
+      const serverMsg = (e as { response?: { data?: { error?: string } } })?.response?.data?.error;
+      setError(serverMsg || 'Не удалось получить файл. Возможно, материал ещё не куплен.');
     } finally {
       setDownloading(null);
     }

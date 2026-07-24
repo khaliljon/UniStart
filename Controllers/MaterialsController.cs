@@ -110,6 +110,9 @@ public class MaterialsController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Create([FromBody] SaveStudyMaterialDto dto)
     {
+        if (string.IsNullOrWhiteSpace(dto.PdfUrl))
+            return BadRequest(new { error = "Загрузите PDF файл — без него сохранить нельзя." });
+
         var item = new StudyMaterial
         {
             SubjectKey = dto.SubjectKey.Trim(),
@@ -133,6 +136,9 @@ public class MaterialsController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Update(int id, [FromBody] SaveStudyMaterialDto dto)
     {
+        if (string.IsNullOrWhiteSpace(dto.PdfUrl))
+            return BadRequest(new { error = "Загрузите PDF файл — без него сохранить нельзя." });
+
         var item = await _db.StudyMaterials.FindAsync(id);
         if (item == null) return NotFound();
 
