@@ -61,6 +61,7 @@ function CscaMocksPage() {
               </div>
               <ul className="csca-price-list">
                 <li><CheckIcon /> {subjectsLabel(pkg.pickCount)}</li>
+                <li><CheckIcon /> {moks(pkg.runsEach, locale)} {s.perSubject}</li>
                 <li><CheckIcon /> {s.pkgFeatAi}</li>
               </ul>
               <button
