@@ -111,7 +111,7 @@ public class ImageUploadService : IImageUploadService, IDisposable
         return $"{_publicUrl}/{key}";
     }
 
-    private const long MaxPdfBytes = 512L * 1024 * 1024; // 512 MB
+    private const long MaxPdfBytes = 1024L * 1024 * 1024; // 1 GB
 
     public async Task<string> UploadPdfAsync(IFormFile file, CancellationToken ct = default)
     {
@@ -125,7 +125,7 @@ public class ImageUploadService : IImageUploadService, IDisposable
             throw new ArgumentException($"Unsupported file type: {file.ContentType}. Only PDF is allowed.");
 
         if (file.Length > MaxPdfBytes)
-            throw new ArgumentException("Файл превышает максимальный размер 512 МБ.");
+            throw new ArgumentException("Файл превышает максимальный размер 1 ГБ.");
 
         if (string.IsNullOrWhiteSpace(_publicUrl))
             throw new InvalidOperationException("R2:PublicUrl is not configured. Set R2__PublicUrl environment variable.");
@@ -153,6 +153,27 @@ public class ImageUploadService : IImageUploadService, IDisposable
         }
 
         return $"{_publicUrl}/{key}";
+    }
+
+    public PdfUploadTarget CreatePdfUploadTarget()
+    {
+        if (string.IsNullOrWhiteSpace(_publicUrl))
+            throw new InvalidOperationException("R2:PublicUrl is not configured. Set R2__PublicUrl environment variable.");
+
+        var client = GetClient();
+        var key = $"materials/{Guid.NewGuid():N}.pdf";
+
+        var request = new GetPreSignedUrlRequest
+        {
+            BucketName  = _bucket,
+            Key         = key,
+            Verb        = HttpVerb.PUT,
+            Expires     = DateTime.UtcNow.AddMinutes(30),
+            ContentType = "application/pdf",
+        };
+
+        var uploadUrl = client.GetPreSignedURL(request);
+        return new PdfUploadTarget(uploadUrl, $"{_publicUrl}/{key}");
     }
 
     public void Dispose()

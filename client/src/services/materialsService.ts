@@ -55,13 +55,34 @@ export const materialsService = {
   remove: (id: number): Promise<void> =>
     api.delete(`/materials/admin/${id}`).then(() => undefined),
 
-  /** Upload a PDF to R2 and returns the public URL. */
-  uploadPdf: async (file: File): Promise<string> => {
-    const form = new FormData();
-    form.append('file', file);
-    const res = await api.post<{ url: string }>('/materials/admin/upload-pdf', form, {
-      headers: { 'Content-Type': 'multipart/form-data' },
+  /**
+   * Uploads a PDF straight to Cloudflare R2 using a short-lived presigned URL.
+   * The file never passes through our API server, so large files don't consume
+   * server memory/bandwidth. Returns the final public URL to store on the material.
+   */
+  uploadPdf: async (file: File, onProgress?: (percent: number) => void): Promise<string> => {
+    // 1) Ask our API for a presigned direct-to-R2 upload target.
+    const { data } = await api.post<{ uploadUrl: string; publicUrl: string }>(
+      '/materials/admin/presign-pdf'
+    );
+
+    // 2) PUT the file directly to R2. Use XHR so we can report upload progress.
+    await new Promise<void>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('PUT', data.uploadUrl, true);
+      xhr.setRequestHeader('Content-Type', 'application/pdf');
+      xhr.upload.onprogress = (e) => {
+        if (onProgress && e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+      };
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) resolve();
+        else reject(new Error(`Загрузка в хранилище не удалась (${xhr.status}).`));
+      };
+      xhr.onerror = () => reject(new Error('Ошибка сети при загрузке файла в хранилище.'));
+      xhr.send(file);
     });
-    return res.data.url;
+
+    // 3) The object is now in R2 — return its public URL.
+    return data.publicUrl;
   },
 };

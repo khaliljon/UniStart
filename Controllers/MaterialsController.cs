@@ -200,6 +200,27 @@ public class MaterialsController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Returns a short-lived presigned URL so the browser can upload a large PDF
+    /// directly to R2, bypassing the API server (no server memory/bandwidth used).
+    /// The client PUTs the file to <c>uploadUrl</c> with Content-Type: application/pdf,
+    /// then saves <c>publicUrl</c> on the material — Admin only.
+    /// </summary>
+    [HttpPost("admin/presign-pdf")]
+    [Authorize(Roles = "Admin")]
+    public IActionResult PresignPdf()
+    {
+        try
+        {
+            var target = _upload.CreatePdfUploadTarget();
+            return Ok(new { uploadUrl = target.UploadUrl, publicUrl = target.PublicUrl });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return StatusCode(503, new { error = ex.Message });
+        }
+    }
+
     private int GetUserId()
     {
         var claim = User.FindFirst(ClaimTypes.NameIdentifier) ?? User.FindFirst("sub");

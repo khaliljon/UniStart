@@ -81,6 +81,7 @@ export default function AdminContentPage() {
   const [materialForm, setMaterialForm] = useState({ subjectKey: 'math', title: '', titleKz: '', titleEn: '', description: '', descriptionKz: '', descriptionEn: '', pdfUrl: '', price: 6990, isActive: true });
   const [editingMaterialId, setEditingMaterialId] = useState<number | null>(null);
   const [uploadingPdf, setUploadingPdf] = useState(false);
+  const [uploadPdfPct, setUploadPdfPct] = useState(0);
 
   // Bulk selection
   const [selectedLessons, setSelectedLessons] = useState<Set<number>>(new Set());
@@ -528,13 +529,14 @@ export default function AdminContentPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploadingPdf(true);
+    setUploadPdfPct(0);
     setError(null);
     try {
-      const url = await materialsService.uploadPdf(file);
+      const url = await materialsService.uploadPdf(file, setUploadPdfPct);
       setMaterialForm(p => ({ ...p, pdfUrl: url }));
       setSuccess('PDF файл успешно загружен');
     } catch (err: any) {
-      setError(err?.response?.data?.error || 'Ошибка при загрузке PDF');
+      setError(err?.response?.data?.error || err?.message || 'Ошибка при загрузке PDF');
     } finally {
       setUploadingPdf(false);
     }
@@ -1219,7 +1221,7 @@ export default function AdminContentPage() {
               <div style={formRow}>
                 <span style={label}>Загрузить PDF файл</span>
                 <input type="file" accept=".pdf" onChange={handleUploadPdf} disabled={uploadingPdf} style={{ marginBottom: '0.5rem' }} />
-                {uploadingPdf && <span style={{ fontSize: '0.8rem', color: 'var(--primary-color)' }}>Загрузка файла на Cloudflare R2...</span>}
+                {uploadingPdf && <span style={{ fontSize: '0.8rem', color: 'var(--primary-color)' }}>Загрузка файла в хранилище… {uploadPdfPct}%</span>}
                 <span style={label}>URL PDF файла</span>
                 <input className="form-input" value={materialForm.pdfUrl} onChange={e => setMaterialForm(p => ({ ...p, pdfUrl: e.target.value }))} placeholder="https://..." />
                 {!materialForm.pdfUrl.trim() && (
