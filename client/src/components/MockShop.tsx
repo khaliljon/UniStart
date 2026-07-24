@@ -179,18 +179,18 @@ function MockShop() {
                   {allSubjects ? (
                     <button className={`btn ${featured ? 'btn-primary' : 'btn-outline'}`} style={{ marginTop: 'auto', width: '100%' }}
                             onClick={() => addPackageToCart(pkg.key, pkg.name, pkg.price, pkg.currency, [])}>
-                      В корзину
+                      {s.addToCart}
                     </button>
                   ) : picking ? (
                     <button className="btn btn-primary" style={{ marginTop: 'auto', width: '100%' }}
                             disabled={pkgChosen.length !== pkg.pickCount}
                             onClick={() => addPackageToCart(pkg.key, pkg.name, pkg.price, pkg.currency, pkgChosen)}>
-                      В корзину ({pkgChosen.length}/{pkg.pickCount})
+                      {s.addToCart} ({pkgChosen.length}/{pkg.pickCount})
                     </button>
                   ) : (
                     <button className={`btn ${featured ? 'btn-primary' : 'btn-outline'}`} style={{ marginTop: 'auto', width: '100%' }}
                             onClick={() => { setPkgPicker(pkg.key); setPkgChosen([]); }}>
-                      Выбрать предметы
+                      {s.pickSubjects}
                     </button>
                   )}
                 </div>

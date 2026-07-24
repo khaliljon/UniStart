@@ -190,6 +190,18 @@ export interface CscaStrings {
   minShort: string;
   firstMockFree: string;
   firstMockFreeDesc: string;
+  mocksFullLead: string;
+  freeMockBannerDesc: string;
+  examInProgress: string;
+  sectionLabel: string;
+  abandon: string;
+  noMocksAvailable: string;
+  buyOnHome: string;
+  mockRunsOut: string;
+  pickSubjects: string;
+  bought: string;
+  boughtOpen: string;
+  openBtn: string;
   // cart (internal)
   cartTitle: string;
   cartEmpty: string;
@@ -307,6 +319,18 @@ const ru: CscaStrings = {
   minShort: 'мин',
   firstMockFree: '🎁 Первый мок — бесплатно',
   firstMockFreeDesc: 'Начните любой пробник бесплатно во вкладке «Пробные экзамены». Дальше — покупка моков поштучно или пакетом.',
+  mocksFullLead: 'Полноформатный пробник в реальных экзаменационных условиях с таймером по секциям',
+  freeMockBannerDesc: 'Выберите любой пробник ниже и пройдите один мок бесплатно. Купить ещё моки можно на Главной.',
+  examInProgress: 'Экзамен в процессе',
+  sectionLabel: 'секция',
+  abandon: 'Прервать',
+  noMocksAvailable: 'У вас пока нет доступных пробников. Приобретите моки на Главной.',
+  buyOnHome: 'Приобрести на Главной',
+  mockRunsOut: 'Закончились — в каталог',
+  pickSubjects: 'Выбрать предметы',
+  bought: '✓ Куплено',
+  boughtOpen: '✓ Куплено — открыть',
+  openBtn: 'Открыть',
   cartTitle: 'Моя корзина',
   cartEmpty: 'Корзина пуста. Выберите пробник или учебник.',
   cartRemove: 'Удалить',
@@ -423,6 +447,18 @@ const en: CscaStrings = {
   minShort: 'min',
   firstMockFree: '🎁 First mock — free',
   firstMockFreeDesc: 'Start any mock for free in the “Mock exams” tab. After that — buy mocks individually or as a package.',
+  mocksFullLead: 'A full-length mock under real exam conditions with a per-section timer',
+  freeMockBannerDesc: 'Pick any mock below and take one for free. You can buy more mocks on the Home page.',
+  examInProgress: 'Exam in progress',
+  sectionLabel: 'section',
+  abandon: 'Abort',
+  noMocksAvailable: 'You have no available mocks yet. Buy mocks on the Home page.',
+  buyOnHome: 'Buy on the Home page',
+  mockRunsOut: 'Sold out — to catalog',
+  pickSubjects: 'Choose subjects',
+  bought: '✓ Purchased',
+  boughtOpen: '✓ Purchased — open',
+  openBtn: 'Open',
   cartTitle: 'My cart',
   cartEmpty: 'Your cart is empty. Pick a mock or a textbook.',
   cartRemove: 'Remove',
@@ -537,7 +573,19 @@ const kz: CscaStrings = {
   materialsEmptyOwned: 'Сізде әзᑖрше материалдар жоқ. Оқулықтарды Басты беттен сатып алыңыз.',
   minShort: 'мин',
   firstMockFree: '🎁 Алғашқы мок — тегін',
-  firstMockFreeDesc: '«Сынақ емтихандар» бөлімінде кез келген пробникті тегін бастаңыз. Ары қарай — моктарды даналап немесе пакетпен сатып алу.',  cartTitle: 'Менің себетім',
+  firstMockFreeDesc: '«Сынақ емтихандар» бөлімінде кез келген пробникті тегін бастаңыз. Ары қарай — моктарды даналап немесе пакетпен сатып алу.',
+  mocksFullLead: 'Нақты емтихан жағдайында бөлімдер бойынша таймермен толық сынақ',
+  freeMockBannerDesc: 'Төмендегі кез келген пробникті таңдап, бір мокты тегін тапсырыңыз. Көбірек мок сатып алуды Басты беттен жасай аласыз.',
+  examInProgress: 'Емтихан орындалуда',
+  sectionLabel: 'бөлім',
+  abandon: 'Тоқтату',
+  noMocksAvailable: 'Сізде әзᑖрше қолжетімді пробниктер жоқ. Моктарды Басты беттен сатып алыңыз.',
+  buyOnHome: 'Басты беттен сатып алу',
+  mockRunsOut: 'Бітті — каталогқа',
+  pickSubjects: 'Пәндерді таңдау',
+  bought: '✓ Сатып алынды',
+  boughtOpen: '✓ Сатып алынды — ашу',
+  openBtn: 'Ашу',  cartTitle: 'Менің себетім',
   cartEmpty: 'Себет бос. Сынақ немесе оқулық таңдаңыз.',
   cartRemove: 'Жою',
   cartTotal: 'Барлығы',

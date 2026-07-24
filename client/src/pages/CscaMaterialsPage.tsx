@@ -74,7 +74,7 @@ function CscaMaterialsPage() {
                   {mat.price.toLocaleString('ru-RU')} <span className="csca-price-cur">{s.currency}</span>
                 </div>
                 {ownedBooks.has(String(mat.id)) ? (
-                  <button className="csca-btn csca-btn-ghost csca-btn-sm" style={{ width: '100%' }} onClick={() => navigate('/materials')}>✓ Куплено</button>
+                  <button className="csca-btn csca-btn-ghost csca-btn-sm" style={{ width: '100%' }} onClick={() => navigate('/materials')}>{s.bought}</button>
                 ) : (
                   <button className="csca-btn csca-btn-ghost csca-btn-sm" style={{ width: '100%' }} onClick={() => buy(mat)}>{s.buy}</button>
                 )}

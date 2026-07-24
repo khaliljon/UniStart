@@ -318,7 +318,7 @@ function CscaLandingPage() {
                   <div className="csca-price-amount csca-hanzi" style={{ fontSize: '1.4rem', margin: '0 0 0.6rem' }}>
                     {mat.price.toLocaleString('ru-RU')} <span className="csca-price-cur">{s.currency}</span>
                   </div>
-                  <button className="csca-btn csca-btn-ghost csca-btn-sm" style={{ width: '100%' }} onClick={() => buyBook(mat)}>{isAuthenticated && ownedBooks.has(String(mat.id)) ? 'Открыть' : s.buy}</button>
+                  <button className="csca-btn csca-btn-ghost csca-btn-sm" style={{ width: '100%' }} onClick={() => buyBook(mat)}>{isAuthenticated && ownedBooks.has(String(mat.id)) ? s.openBtn : s.buy}</button>
                 </div>
               );
             })}

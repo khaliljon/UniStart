@@ -1,0 +1,1 @@
+import{b as r,j as t}from"./index-Cs2zEwsM.js";import{L as l}from"./LegalDocumentView-CnvipQ2H.js";import"./localize-i5KYzjjt.js";import"./legalService-G39hjGzx.js";function m(){const{t:e}=r();return t.jsx(l,{slug:"referral",fallbackTitle:e.legal.referralTermsTitle,footerLink:{to:"/terms",label:e.legal.termsTitle}})}export{m as default};

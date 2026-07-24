@@ -159,7 +159,7 @@ function MaterialsSection() {
                 </div>
                 {ownedBooks.has(String(m.id)) ? (
                   <button className="btn btn-outline" style={{ fontSize: '0.85rem' }} onClick={() => navigate('/materials')}>
-                    ✓ Куплено — открыть
+                    {s.boughtOpen}
                   </button>
                 ) : (
                   <button className="btn btn-outline" style={{ fontSize: '0.85rem' }} onClick={() => buy(m)}>

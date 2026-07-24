@@ -278,18 +278,18 @@ function MockExamPage() {
     return (
       <div style={{ maxWidth: 900, margin: '0 auto' }}>
         <h1 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.5rem' }}>
-          Пробные экзамены
+          {s.mocksTitle}
         </h1>
         <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
-          Полноформатный пробник в реальных экзаменационных условиях с таймером по секциям
+          {s.mocksFullLead}
         </p>
 
         {/* First run free banner */}
         {!isPro && mockExams.some(m => m.freeAvailable) && (
           <div className="card" style={{ marginBottom: '1.5rem', border: '2px dashed var(--primary-color)', background: 'var(--bg-secondary)' }}>
-            <div style={{ fontWeight: 700, marginBottom: '0.2rem' }}>🎁 Первый мок — бесплатно</div>
+            <div style={{ fontWeight: 700, marginBottom: '0.2rem' }}>{s.firstMockFree}</div>
             <div style={{ color: 'var(--text-secondary)', fontSize: '0.88rem' }}>
-              Выберите любой пробник ниже и пройдите один мок бесплатно. Купить ещё моки можно на Главной.
+              {s.freeMockBannerDesc}
             </div>
           </div>
         )}
@@ -300,20 +300,20 @@ function MockExamPage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
               <div>
                 <div style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '0.25rem' }}>
-                  Экзамен в процессе
+                  {s.examInProgress}
                 </div>
                 <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-                  {activeAttempt.examTitle} — секция {activeAttempt.currentSectionIndex + 1}/{activeAttempt.totalSections}
+                  {activeAttempt.examTitle} — {s.sectionLabel} {activeAttempt.currentSectionIndex + 1}/{activeAttempt.totalSections}
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '0.5rem' }}>
                 <button className="btn btn-outline" style={{ fontSize: '0.85rem' }}
                         onClick={async () => { await mockExamService.abandonAttempt(activeAttempt.attemptId); setActiveAttempt(null); await loadExams(); }}>
-                  Прервать
+                  {s.abandon}
                 </button>
                 <button className="btn btn-primary" style={{ fontSize: '0.85rem' }}
                         onClick={() => handleResume(activeAttempt)}>
-                  ▶ Продолжить
+                  ▶ {s.resumeBtn}
                 </button>
               </div>
             </div>
@@ -329,9 +329,9 @@ function MockExamPage() {
             return (
               <div className="card" style={{ textAlign: 'center', padding: '2rem', marginBottom: '2rem' }}>
                 <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-                  У вас пока нет доступных пробников. Приобретите моки на Главной.
+                  {s.noMocksAvailable}
                 </p>
-                <button className="btn btn-primary" onClick={() => navigate('/')}>Приобрести на Главной</button>
+                <button className="btn btn-primary" onClick={() => navigate('/')}>{s.buyOnHome}</button>
               </div>
             );
           }
@@ -366,9 +366,19 @@ function MockExamPage() {
                   </div>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'stretch', minWidth: 180 }}>
-                  <button className="btn btn-primary" onClick={() => handleSelectExam(exam.id)}>
-                    {exam.runsRemaining > 0 ? `${s.mockSolvePaid} (−1 ${moks(1, locale).replace(/^\d+\s*/, '')})` : s.mockSolveFree}
-                  </button>
+                  {(isPro || exam.runsRemaining > 0) ? (
+                    <button className="btn btn-primary" onClick={() => handleSelectExam(exam.id)}>
+                      {exam.runsRemaining > 0 ? `${s.mockSolvePaid} (−1 ${moks(1, locale).replace(/^\d+\s*/, '')})` : s.mockSolvePaid}
+                    </button>
+                  ) : exam.freeAvailable ? (
+                    <button className="btn btn-primary" onClick={() => handleSelectExam(exam.id)}>
+                      {s.mockSolveFree}
+                    </button>
+                  ) : (
+                    <button className="btn btn-outline" onClick={() => navigate('/')}>
+                      {s.mockRunsOut}
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
