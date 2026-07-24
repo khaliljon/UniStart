@@ -168,8 +168,8 @@ public class MaterialsController : ControllerBase
     [HttpPost("admin/upload-pdf")]
     [Authorize(Roles = "Admin")]
     [Consumes("multipart/form-data")]
-    [RequestSizeLimit(536_870_912)] // 512 MB
-    [RequestFormLimits(MultipartBodyLengthLimit = 536_870_912)]
+    [RequestSizeLimit(1_073_741_824)] // 1 GB
+    [RequestFormLimits(MultipartBodyLengthLimit = 1_073_741_824)]
     public async Task<IActionResult> UploadPdf(IFormFile file, CancellationToken ct)
     {
         if (file == null || file.Length == 0)
