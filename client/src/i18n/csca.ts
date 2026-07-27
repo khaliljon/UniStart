@@ -202,6 +202,7 @@ export interface CscaStrings {
   bought: string;
   boughtOpen: string;
   openBtn: string;
+  singleMocksTitle: string;
   // cart (internal)
   cartTitle: string;
   cartEmpty: string;
@@ -331,6 +332,7 @@ const ru: CscaStrings = {
   bought: '✓ Куплено',
   boughtOpen: '✓ Куплено — открыть',
   openBtn: 'Открыть',
+  singleMocksTitle: 'Отдельные пробники по предметам',
   cartTitle: 'Моя корзина',
   cartEmpty: 'Корзина пуста. Выберите пробник или учебник.',
   cartRemove: 'Удалить',
@@ -459,6 +461,7 @@ const en: CscaStrings = {
   bought: '✓ Purchased',
   boughtOpen: '✓ Purchased — open',
   openBtn: 'Open',
+  singleMocksTitle: 'Individual mocks by subject',
   cartTitle: 'My cart',
   cartEmpty: 'Your cart is empty. Pick a mock or a textbook.',
   cartRemove: 'Remove',
@@ -585,7 +588,8 @@ const kz: CscaStrings = {
   pickSubjects: 'Пәндерді таңдау',
   bought: '✓ Сатып алынды',
   boughtOpen: '✓ Сатып алынды — ашу',
-  openBtn: 'Ашу',  cartTitle: 'Менің себетім',
+  openBtn: 'Ашу',
+  singleMocksTitle: 'Пәндер бойынша жеке пробниктер',  cartTitle: 'Менің себетім',
   cartEmpty: 'Себет бос. Сынақ немесе оқулық таңдаңыз.',
   cartRemove: 'Жою',
   cartTotal: 'Барлығы',

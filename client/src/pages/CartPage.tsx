@@ -110,9 +110,6 @@ function CartPage() {
           <button className="btn btn-primary" style={{ padding: '0.75rem' }} onClick={checkout} disabled={processing}>
             {processing ? '…' : s.cartCheckout}
           </button>
-          <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textAlign: 'center', margin: 0 }}>
-            {s.checkoutStubNote}
-          </p>
         </div>
       )}
     </div>

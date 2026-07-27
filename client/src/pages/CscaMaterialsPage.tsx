@@ -59,7 +59,7 @@ function CscaMaterialsPage() {
             <p className="csca-lead" style={{ margin: 0 }}>Учебные материалы скоро появятся — мы работаем над этим.</p>
           </div>
         ) : (
-        <div className="csca-grid csca-grid-5">
+        <div className="csca-grid csca-grid-books">
           {materials.map((mat) => {
             const subj = coverFor(mat.subjectKey);
             return (

@@ -15,6 +15,11 @@ export interface MockTemplate {
   totalTimeMinutes: number;
   runsRemaining: number;
   tiers: MockTier[];
+  titleKz?: string | null;
+  titleEn?: string | null;
+  description?: string | null;
+  descriptionKz?: string | null;
+  descriptionEn?: string | null;
 }
 
 export interface MockPackage {

@@ -28,7 +28,7 @@ function MockShop() {
     cartService.add({
       itemType: 'mock',
       itemCode: String(tpl.mockExamId),
-      title: `${tpl.title} · ${moks(runs)}`,
+      title: `${pickLocalized(tpl.title, tpl.titleKz, tpl.titleEn, locale)} · ${moks(runs, locale)}`,
       amount: price,
       currency,
       runs,
@@ -101,7 +101,7 @@ function MockShop() {
         {catalog.templates.map((tpl) => (
           <div key={tpl.mockExamId} className="card" style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-              <div style={{ fontWeight: 700 }}>{tpl.title}</div>
+              <div style={{ fontWeight: 700 }}>{pickLocalized(tpl.title, tpl.titleKz, tpl.titleEn, locale)}</div>
               {tpl.runsRemaining > 0 && (
                 <span style={{ background: 'rgba(16,185,129,0.12)', color: '#10b981', padding: '1px 7px', borderRadius: 10, fontSize: '0.7rem', fontWeight: 700 }}>
                   {s.mockRemaining}: {moks(tpl.runsRemaining, locale)}

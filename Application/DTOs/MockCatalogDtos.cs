@@ -13,7 +13,12 @@ public record MockTemplateDto(
     int TotalQuestions,
     int TotalTimeMinutes,
     int RunsRemaining,
-    IEnumerable<MockTierDto> Tiers);
+    IEnumerable<MockTierDto> Tiers,
+    string? TitleKz = null,
+    string? TitleEn = null,
+    string? Description = null,
+    string? DescriptionKz = null,
+    string? DescriptionEn = null);
 
 /// <summary>A discounted package (user picks subjects).</summary>
 public record MockPackageDto(

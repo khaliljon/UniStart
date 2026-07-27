@@ -53,7 +53,12 @@ public class EntitlementService : IEntitlementService
                 tiers.Where(t => t.MockExamId == m.Id)
                      .OrderBy(t => t.Runs)
                      .Select(t => new MockTierDto(t.Id, t.Runs, t.Price, t.Currency))
-                     .ToList()))
+                     .ToList(),
+                m.TitleKz,
+                m.TitleEn,
+                m.Description,
+                m.DescriptionKz,
+                m.DescriptionEn))
             .ToList();
 
         return new MockCatalogDto(freeAvailable, templates, packages);

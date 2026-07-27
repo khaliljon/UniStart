@@ -4,7 +4,7 @@ import { useTranslation } from '../i18n';
 import { cscaStrings } from '../i18n/csca';
 import { useAppSelector } from '../hooks/useAppSelector';
 import { materialsService } from '../services/materialsService';
-import { mockCatalogService, type MockPackage } from '../services/mockCatalogService';
+import { mockCatalogService, type MockPackage, type MockTemplate } from '../services/mockCatalogService';
 import { purchaseService } from '../services/purchaseService';
 import { examSittingsService } from '../services/examSittingsService';
 import { cartService } from '../services/cartService';
@@ -48,6 +48,7 @@ function CscaLandingPage() {
   const { isAuthenticated } = useAppSelector((s) => s.auth);
   const [dbMaterials, setDbMaterials] = useState<{ id: number; subjectKey: string; title: string; titleKz?: string | null; titleEn?: string | null; price: number }[]>([]);
   const [dbPackages, setDbPackages] = useState<MockPackage[] | null>(null);
+  const [dbTemplates, setDbTemplates] = useState<MockTemplate[]>([]);
   const [ownedBooks, setOwnedBooks] = useState<Set<string>>(new Set());
 
   const s = cscaStrings[locale];
@@ -56,7 +57,7 @@ function CscaLandingPage() {
 
   useEffect(() => {
     materialsService.list().then(setDbMaterials).catch(() => {});
-    mockCatalogService.getCatalog().then((c) => setDbPackages(c.packages)).catch(() => setDbPackages([]));
+    mockCatalogService.getCatalog().then((c) => { setDbPackages(c.packages); setDbTemplates(c.templates); }).catch(() => setDbPackages([]));
     examSittingsService.list().then((list) => {
       if (list.length === 0) return;
       const now = Date.now();
@@ -100,6 +101,26 @@ function CscaLandingPage() {
   const buyPackage = (pkg: MockPackage) => {
     sessionStorage.setItem('buyPackage', pkg.key);
     navigate(isAuthenticated ? '/' : '/register');
+  };
+
+  // Buy a single mock run tier. Authenticated → straight to cart; guest → remember
+  // intent and register (the dashboard then adds it to the cart).
+  const buyMockTier = (tpl: MockTemplate, tier: { runs: number; price: number; currency: string }) => {
+    const item = {
+      itemType: 'mock',
+      itemCode: String(tpl.mockExamId),
+      title: `${pickLocalized(tpl.title, tpl.titleKz, tpl.titleEn, locale)} · ${moks(tier.runs, locale)}`,
+      amount: tier.price,
+      currency: tier.currency,
+      runs: tier.runs,
+    };
+    if (isAuthenticated) {
+      cartService.add(item);
+      navigate('/cart');
+      return;
+    }
+    sessionStorage.setItem('checkout', JSON.stringify(item));
+    navigate('/register');
   };
 
   const buyBook = (mat: { id: number; subjectKey: string; title: string; titleKz?: string | null; titleEn?: string | null; price: number }) => {
@@ -251,11 +272,37 @@ function CscaLandingPage() {
 
           {dbPackages === null ? (
             <div className="loading"><div className="spinner" /></div>
-          ) : dbPackages.length === 0 ? (
+          ) : dbPackages.length === 0 && dbTemplates.length === 0 ? (
             <div className="csca-card" style={{ textAlign: 'center' }}>
               <p className="csca-lead" style={{ margin: 0 }}>Пробники скоро появятся — мы работаем над этим.</p>
             </div>
           ) : (
+          <>
+          {/* Individual mocks per subject */}
+          {dbTemplates.length > 0 && (
+            <>
+              <h3 className="csca-h3" style={{ fontSize: '1.15rem', margin: '0 0 1rem' }}>{s.singleMocksTitle}</h3>
+              <div className="csca-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', marginBottom: '2rem' }}>
+                {dbTemplates.map((tpl) => (
+                  <div className="csca-card" key={tpl.mockExamId} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <div className="csca-price-name" style={{ fontSize: '1.05rem' }}>{pickLocalized(tpl.title, tpl.titleKz, tpl.titleEn, locale)}</div>
+                    <div className="csca-subject-tag" style={{ marginBottom: '0.35rem' }}>{tpl.totalQuestions} {s.mockQuestions.toLowerCase()} · {tpl.totalTimeMinutes} {s.minShort}</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: 'auto' }}>
+                      {tpl.tiers.map((tier) => (
+                        <button key={tier.id} className="csca-btn csca-btn-ghost csca-btn-sm"
+                                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}
+                                onClick={() => buyMockTier(tpl, tier)}>
+                          <span>{moks(tier.runs, locale)}</span>
+                          <span style={{ fontWeight: 800, color: 'var(--csca-red, #C8102E)', whiteSpace: 'nowrap' }}>{tier.price.toLocaleString('ru-RU')} {tier.currency}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <h3 className="csca-h3" style={{ fontSize: '1.15rem', margin: '0 0 1rem' }}>{s.discountPackages}</h3>
+            </>
+          )}
           <Reveal stagger className="csca-grid csca-grid-4">
             {dbPackages.map((pkg) => {
               const featured = pkg.key === 'standard';
@@ -286,6 +333,7 @@ function CscaLandingPage() {
               );
             })}
           </Reveal>
+          </>
           )}
         </div>
       </section>
@@ -302,7 +350,7 @@ function CscaLandingPage() {
               <p className="csca-lead" style={{ margin: 0 }}>Учебные материалы скоро появятся — мы работаем над этим.</p>
             </div>
           ) : (
-          <Reveal stagger className="csca-grid csca-grid-5">
+          <Reveal stagger className="csca-grid csca-grid-books">
             {dbMaterials.map((mat) => {
               const subj = CSCA_SUBJECTS.find(cs => cs.key === mat.subjectKey) ?? CSCA_SUBJECTS[0];
               const name = subjectMeta[subj.key as keyof typeof subjectMeta]?.name ?? mat.title;

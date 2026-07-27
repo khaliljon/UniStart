@@ -1226,6 +1226,8 @@ select option,
 .csca-grid { display: grid; gap: 1.25rem; }
 .csca-grid-4 { grid-template-columns: repeat(4, 1fr); }
 .csca-grid-5 { grid-template-columns: repeat(5, 1fr); }
+/* Book/materials grid: fixed-width cards centered as a group (no left-hugging when few). */
+.csca-grid-books { grid-template-columns: repeat(auto-fit, minmax(170px, 200px)); justify-content: center; }
 .csca-grid-3 { grid-template-columns: repeat(3, 1fr); }
 .csca-grid-2 { grid-template-columns: repeat(2, 1fr); }
 
