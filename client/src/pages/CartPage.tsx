@@ -3,15 +3,17 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../i18n';
 import { cscaStrings } from '../i18n/csca';
 import { cartService, type CartItem } from '../services/cartService';
-import { type CheckoutLine } from '../services/mockCatalogService';
+import { mockCatalogService, type CheckoutLine, type MockTemplate } from '../services/mockCatalogService';
 import { purchaseService } from '../services/purchaseService';
 import { paymentsService } from '../services/paymentsService';
+import { pickLocalized } from '../utils/localize';
 
 function CartPage() {
   const navigate = useNavigate();
   const { locale } = useTranslation();
   const s = cscaStrings[locale];
   const [items, setItems] = useState<CartItem[]>([]);
+  const [templates, setTemplates] = useState<MockTemplate[]>([]);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -31,6 +33,24 @@ function CartPage() {
       .catch(() => {});
     return () => window.removeEventListener(cartService.eventName, refresh);
   }, []);
+
+  // Catalog is used to turn selected mock IDs (stored on package cart items) into
+  // human-readable, localized names for the chips.
+  useEffect(() => {
+    mockCatalogService.getCatalog().then((c) => setTemplates(c.templates)).catch(() => {});
+  }, []);
+
+  const nameById = new Map(
+    templates.map((t) => [String(t.mockExamId), pickLocalized(t.title, t.titleKz, t.titleEn, locale)])
+  );
+  const subjectName: Record<string, string> = {
+    math: s.subjMath,
+    physics: s.subjPhysics,
+    chemistry: s.subjChemistry,
+    chineseTech: s.subjChineseTech,
+    chineseHum: s.subjChineseHum,
+  };
+  const chipLabel = (sub: string) => nameById.get(sub) ?? subjectName[sub] ?? sub;
 
   const total = items.reduce((sum, i) => sum + i.amount, 0);
   const currency = items[0]?.currency ?? s.currency;
@@ -76,7 +96,7 @@ function CartPage() {
                 {item.subjects && (
                   <div style={{ marginTop: '0.4rem', display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
                     {item.subjects.split(',').filter(Boolean).map((sub) => (
-                      <span key={sub} style={{ fontSize: '0.75rem', padding: '0.15rem 0.5rem', borderRadius: '1rem', background: 'var(--bg-secondary, #f3f4f6)', color: 'var(--text-secondary)' }}>{sub}</span>
+                      <span key={sub} style={{ fontSize: '0.75rem', padding: '0.15rem 0.5rem', borderRadius: '1rem', background: 'var(--bg-secondary, #f3f4f6)', color: 'var(--text-secondary)' }}>{chipLabel(sub)}</span>
                     ))}
                   </div>
                 )}

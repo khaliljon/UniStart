@@ -9,6 +9,7 @@ import type { MockExamHistoryItem } from '../types';
 import { cartService } from '../services/cartService';
 import { moks } from '../utils/plural';
 import { fullDateLocalized, shortDateLocalized } from '../utils/dates';
+import { pickLocalized } from '../utils/localize';
 
 function PurchasesPage() {
   const navigate = useNavigate();
@@ -16,6 +17,7 @@ function PurchasesPage() {
   const s = cscaStrings[locale];
   const [items, setItems] = useState<Purchase[] | null>(null);
   const [runs, setRuns] = useState<MockTemplate[]>([]);
+  const [allTemplates, setAllTemplates] = useState<MockTemplate[]>([]);
   const [history, setHistory] = useState<MockExamHistoryItem[]>([]);
   const [paid, setPaid] = useState(false);
 
@@ -27,10 +29,22 @@ function PurchasesPage() {
     }
     purchaseService.list().then(setItems).catch(() => setItems([]));
     mockCatalogService.getCatalog()
-      .then((c) => setRuns(c.templates.filter((t) => t.runsRemaining > 0)))
+      .then((c) => { setRuns(c.templates.filter((t) => t.runsRemaining > 0)); setAllTemplates(c.templates); })
       .catch(() => {});
     mockExamService.getHistory().then(setHistory).catch(() => {});
   }, []);
+
+  const nameById = new Map(
+    allTemplates.map((t) => [String(t.mockExamId), pickLocalized(t.title, t.titleKz, t.titleEn, locale)])
+  );
+  const subjectName: Record<string, string> = {
+    math: s.subjMath,
+    physics: s.subjPhysics,
+    chemistry: s.subjChemistry,
+    chineseTech: s.subjChineseTech,
+    chineseHum: s.subjChineseHum,
+  };
+  const chipLabel = (sub: string) => nameById.get(sub) ?? subjectName[sub] ?? sub;
 
   const fmt = (iso: string) => fullDateLocalized(iso, locale);
 
@@ -106,7 +120,7 @@ function PurchasesPage() {
                 {p.subjects && (
                   <div style={{ marginTop: '0.4rem', display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
                     {p.subjects.split(',').filter(Boolean).map((sub) => (
-                      <span key={sub} style={{ fontSize: '0.75rem', padding: '0.15rem 0.5rem', borderRadius: '1rem', background: 'var(--bg-secondary, #f3f4f6)', color: 'var(--text-secondary)' }}>{sub}</span>
+                      <span key={sub} style={{ fontSize: '0.75rem', padding: '0.15rem 0.5rem', borderRadius: '1rem', background: 'var(--bg-secondary, #f3f4f6)', color: 'var(--text-secondary)' }}>{chipLabel(sub)}</span>
                     ))}
                   </div>
                 )}
