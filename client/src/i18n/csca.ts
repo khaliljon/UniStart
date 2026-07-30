@@ -209,6 +209,7 @@ export interface CscaStrings {
   cartRemove: string;
   cartTotal: string;
   cartCheckout: string;
+  continueShopping: string;
   cartBrowse: string;
   addedToCart: string;
 }
@@ -338,6 +339,7 @@ const ru: CscaStrings = {
   cartRemove: 'Удалить',
   cartTotal: 'Итого',
   cartCheckout: 'Оформить заказ',
+  continueShopping: 'Продолжить покупки',
   cartBrowse: 'В каталог',
   addedToCart: 'Добавлено в корзину',
 };
@@ -467,6 +469,7 @@ const en: CscaStrings = {
   cartRemove: 'Remove',
   cartTotal: 'Total',
   cartCheckout: 'Checkout',
+  continueShopping: 'Continue shopping',
   cartBrowse: 'Browse catalog',
   addedToCart: 'Added to cart',
 };
@@ -594,6 +597,7 @@ const kz: CscaStrings = {
   cartRemove: 'Жою',
   cartTotal: 'Барлығы',
   cartCheckout: 'Тапсырыс беру',
+  continueShopping: 'Сатып алуды жалғастыру',
   cartBrowse: 'Каталогқа',
   addedToCart: 'Себетке қосылды',
 };

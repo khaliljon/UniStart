@@ -130,6 +130,9 @@ function CartPage() {
           <button className="btn btn-primary" style={{ padding: '0.75rem' }} onClick={checkout} disabled={processing}>
             {processing ? '…' : s.cartCheckout}
           </button>
+          <button className="btn btn-outline" style={{ padding: '0.75rem' }} onClick={() => navigate('/')}>
+            {s.continueShopping}
+          </button>
         </div>
       )}
     </div>
