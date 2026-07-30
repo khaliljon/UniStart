@@ -5,7 +5,6 @@ import { cscaStrings } from '../i18n/csca';
 import CscaPageShell, { CscaPageHero } from '../components/csca/CscaPageShell';
 import { SealStamp } from '../components/csca/ChineseMotifs';
 import { mockCatalogService, type MockCatalog, type MockTemplate } from '../services/mockCatalogService';
-import { cartService } from '../services/cartService';
 import { useAppSelector } from '../hooks/useAppSelector';
 import { moks } from '../utils/plural';
 import { pickLocalized } from '../utils/localize';
@@ -32,22 +31,9 @@ function CscaMocksPage() {
   const subjectsLabel = (pickCount: number) =>
     pickCount === 0 ? s.allSubjects : pickCount === 1 ? s.oneSubject : pickCount === 2 ? s.twoSubjects : s.threeSubjects;
 
-  const buyMockTier = (tpl: MockTemplate, tier: { runs: number; price: number; currency: string }) => {
-    const item = {
-      itemType: 'mock',
-      itemCode: String(tpl.mockExamId),
-      title: `${pickLocalized(tpl.title, tpl.titleKz, tpl.titleEn, locale)} · ${moks(tier.runs, locale)}`,
-      amount: tier.price,
-      currency: tier.currency,
-      runs: tier.runs,
-    };
-    if (isAuthenticated) {
-      cartService.add(item);
-      navigate('/cart');
-      return;
-    }
-    sessionStorage.setItem('checkout', JSON.stringify(item));
-    navigate('/register');
+  const buyMockTier = (tpl: MockTemplate) => {
+    sessionStorage.setItem('focusMock', String(tpl.mockExamId));
+    navigate(isAuthenticated ? '/' : '/register');
   };
 
   return (
@@ -86,7 +72,7 @@ function CscaMocksPage() {
                     {tpl.tiers.map((tier) => (
                       <button key={tier.id} className="csca-btn csca-btn-ghost csca-btn-sm"
                               style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}
-                              onClick={() => buyMockTier(tpl, tier)}>
+                              onClick={() => buyMockTier(tpl)}>
                         <span>{moks(tier.runs, locale)}</span>
                         <span style={{ fontWeight: 800, color: 'var(--csca-red, #C8102E)', whiteSpace: 'nowrap' }}>{tier.price.toLocaleString('ru-RU')} {tier.currency}</span>
                       </button>

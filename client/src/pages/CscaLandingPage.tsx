@@ -7,7 +7,6 @@ import { materialsService } from '../services/materialsService';
 import { mockCatalogService, type MockPackage, type MockTemplate } from '../services/mockCatalogService';
 import { purchaseService } from '../services/purchaseService';
 import { examSittingsService } from '../services/examSittingsService';
-import { cartService } from '../services/cartService';
 import { moks } from '../utils/plural';
 import { pickLocalized } from '../utils/localize';
 import CscaNav from '../components/csca/CscaNav';
@@ -103,24 +102,11 @@ function CscaLandingPage() {
     navigate(isAuthenticated ? '/' : '/register');
   };
 
-  // Buy a single mock run tier. Authenticated → straight to cart; guest → remember
-  // intent and register (the dashboard then adds it to the cart).
-  const buyMockTier = (tpl: MockTemplate, tier: { runs: number; price: number; currency: string }) => {
-    const item = {
-      itemType: 'mock',
-      itemCode: String(tpl.mockExamId),
-      title: `${pickLocalized(tpl.title, tpl.titleKz, tpl.titleEn, locale)} · ${moks(tier.runs, locale)}`,
-      amount: tier.price,
-      currency: tier.currency,
-      runs: tier.runs,
-    };
-    if (isAuthenticated) {
-      cartService.add(item);
-      navigate('/cart');
-      return;
-    }
-    sessionStorage.setItem('checkout', JSON.stringify(item));
-    navigate('/register');
+  // Buy a single mock: send the user to the Home storefront and focus that mock
+  // (tier is chosen there), mirroring how packages behave.
+  const buyMockTier = (tpl: MockTemplate) => {
+    sessionStorage.setItem('focusMock', String(tpl.mockExamId));
+    navigate(isAuthenticated ? '/' : '/register');
   };
 
   const buyBook = (mat: { id: number; subjectKey: string; title: string; titleKz?: string | null; titleEn?: string | null; price: number }) => {
@@ -129,22 +115,10 @@ function CscaLandingPage() {
       navigate('/materials');
       return;
     }
-    const item = {
-      itemType: 'book',
-      itemCode: String(mat.id),
-      title: pickLocalized(mat.title, mat.titleKz, mat.titleEn, locale) || `${subjectMeta[mat.subjectKey as keyof typeof subjectMeta]?.name ?? ''} · ${s.bookLabel}`,
-      subjects: mat.subjectKey,
-      amount: mat.price,
-      currency: '₸',
-    };
-    if (isAuthenticated) {
-      cartService.add(item);
-      navigate('/cart');
-      return;
-    }
-    // Guest: remember intent, register, then the dashboard adds it to the cart.
-    sessionStorage.setItem('checkout', JSON.stringify(item));
-    navigate('/register');
+    // Send to the Home materials section and focus this book (like packages/mocks),
+    // instead of adding straight to the cart.
+    sessionStorage.setItem('focusBook', String(mat.id));
+    navigate(isAuthenticated ? '/' : '/register');
   };
 
   const statMeta = {
@@ -291,7 +265,7 @@ function CscaLandingPage() {
                       {tpl.tiers.map((tier) => (
                         <button key={tier.id} className="csca-btn csca-btn-ghost csca-btn-sm"
                                 style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}
-                                onClick={() => buyMockTier(tpl, tier)}>
+                                onClick={() => buyMockTier(tpl)}>
                           <span>{moks(tier.runs, locale)}</span>
                           <span style={{ fontWeight: 800, color: 'var(--csca-red, #C8102E)', whiteSpace: 'nowrap' }}>{tier.price.toLocaleString('ru-RU')} {tier.currency}</span>
                         </button>

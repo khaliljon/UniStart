@@ -69,6 +69,22 @@ function MockShop() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [catalog]);
 
+  // If the user clicked "Buy" on a specific mock on the landing, scroll to that
+  // template card here and highlight it briefly (the tier is chosen here).
+  const [highlight, setHighlight] = useState<string | null>(null);
+  useEffect(() => {
+    if (!catalog) return;
+    const id = sessionStorage.getItem('focusMock');
+    if (!id) return;
+    sessionStorage.removeItem('focusMock');
+    const key = `mock:${id}`;
+    setTimeout(() => cardRefs.current[key]?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 120);
+    setHighlight(key);
+    const t = setTimeout(() => setHighlight(null), 2400);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [catalog]);
+
   if (!catalog) return null;
 
   const isEmpty = catalog.templates.length === 0 && catalog.packages.length === 0;
@@ -99,7 +115,7 @@ function MockShop() {
       {/* Per-subject run tiers */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '0.75rem', marginBottom: '1.25rem' }}>
         {catalog.templates.map((tpl) => (
-          <div key={tpl.mockExamId} className="card" style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+          <div key={tpl.mockExamId} ref={(el) => { cardRefs.current[`mock:${tpl.mockExamId}`] = el; }} className="card" style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', outline: highlight === `mock:${tpl.mockExamId}` ? '2px solid var(--primary-color)' : 'none', outlineOffset: 2, transition: 'outline-color 0.3s' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
               <div style={{ fontWeight: 700 }}>{pickLocalized(tpl.title, tpl.titleKz, tpl.titleEn, locale)}</div>
               {tpl.runsRemaining > 0 && (

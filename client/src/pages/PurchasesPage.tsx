@@ -107,8 +107,8 @@ function PurchasesPage() {
         <div className="loading"><div className="spinner" /></div>
       ) : items.length === 0 ? (
         <div className="csca-card" style={{ textAlign: 'center' }}>
-          <p className="csca-lead">{s.purchasesEmpty}</p>
-          <button className="csca-btn csca-btn-primary" onClick={() => navigate('/')}>{s.purchasesBrowse}</button>
+          <p className="csca-lead" style={{ color: 'var(--text-secondary)' }}>{s.purchasesEmpty}</p>
+          <button className="btn btn-primary" onClick={() => navigate('/')}>{s.cartBrowse}</button>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppSelector } from '../hooks/useAppSelector';
 import { useTranslation } from '../hooks/useTranslation';
@@ -101,12 +101,27 @@ function MaterialsSection() {
 
   const [materials, setMaterials] = useState<StudyMaterial[] | null>(null);
   const [ownedBooks, setOwnedBooks] = useState<Set<string>>(new Set());
+  const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const [highlight, setHighlight] = useState<string | null>(null);
   useEffect(() => {
     materialsService.list().then(setMaterials).catch(() => setMaterials([]));
     purchaseService.list()
       .then((ps) => setOwnedBooks(new Set(ps.filter((p) => p.itemType === 'book').map((p) => p.itemCode))))
       .catch(() => {});
   }, []);
+
+  // If the user clicked "Buy" on a book on the landing, scroll to it here and
+  // highlight it briefly (instead of adding straight to the cart).
+  useEffect(() => {
+    if (!materials || materials.length === 0) return;
+    const id = sessionStorage.getItem('focusBook');
+    if (!id) return;
+    sessionStorage.removeItem('focusBook');
+    setTimeout(() => cardRefs.current[id]?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 150);
+    setHighlight(id);
+    const t = setTimeout(() => setHighlight(null), 2400);
+    return () => clearTimeout(t);
+  }, [materials]);
 
   const coverFor = (key: string) => CSCA_SUBJECTS.find((x) => x.key === key);
 
@@ -142,7 +157,7 @@ function MaterialsSection() {
         {materials.map((m) => {
           const cover = coverFor(m.subjectKey);
           return (
-            <div key={m.id} className="card csca-book" style={{ padding: '1.1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', background: 'var(--card-background)' }}>
+            <div key={m.id} ref={(el) => { cardRefs.current[String(m.id)] = el; }} className="card csca-book" style={{ padding: '1.1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', background: 'var(--card-background)', outline: highlight === String(m.id) ? '2px solid var(--primary-color)' : 'none', outlineOffset: 2, transition: 'outline-color 0.3s' }}>
               {cover && (
                 <div className="csca-book-cover" style={{ background: cover.cover, width: '100%', margin: '0 auto 0.5rem', maxWidth: '140px' }}>
                   <span className="csca-book-hanzi" style={{ fontSize: '1.8rem' }}>{cover.hanzi}</span>

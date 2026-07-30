@@ -5,7 +5,6 @@ import { cscaStrings } from '../i18n/csca';
 import { useAppSelector } from '../hooks/useAppSelector';
 import { materialsService, type StudyMaterial } from '../services/materialsService';
 import { purchaseService } from '../services/purchaseService';
-import { cartService } from '../services/cartService';
 import { CSCA_SUBJECTS } from '../cscaConfig';
 import { pickLocalized } from '../utils/localize';
 import CscaPageShell, { CscaPageHero } from '../components/csca/CscaPageShell';
@@ -30,21 +29,10 @@ function CscaMaterialsPage() {
   const coverFor = (key: string) => CSCA_SUBJECTS.find((x) => x.key === key) ?? CSCA_SUBJECTS[0];
 
   const buy = (mat: StudyMaterial) => {
-    const item = {
-      itemType: 'book',
-      itemCode: String(mat.id),
-      title: pickLocalized(mat.title, mat.titleKz, mat.titleEn, locale),
-      subjects: mat.subjectKey,
-      amount: mat.price,
-      currency: '₸',
-    };
-    if (isAuthenticated) {
-      cartService.add(item);
-      navigate('/cart');
-      return;
-    }
-    sessionStorage.setItem('checkout', JSON.stringify(item));
-    navigate('/register');
+    // Send to the Home materials section and focus this book, instead of adding
+    // straight to the cart (mirrors packages/mocks behaviour).
+    sessionStorage.setItem('focusBook', String(mat.id));
+    navigate(isAuthenticated ? '/' : '/register');
   };
 
   return (
