@@ -51,8 +51,9 @@ function MockShop() {
     navigate('/cart');
   };
 
-  // If the user clicked "Buy" on a landing package, open its picker here (or add
-  // straight to the cart for "all subjects" packages) once the catalog is loaded.
+  // If the user clicked "Buy" on a landing package, focus its card here (open the
+  // subject picker for pick packages) once the catalog is loaded — never straight to cart.
+  const [highlight, setHighlight] = useState<string | null>(null);
   useEffect(() => {
     if (!catalog) return;
     const key = sessionStorage.getItem('buyPackage');
@@ -60,18 +61,15 @@ function MockShop() {
     sessionStorage.removeItem('buyPackage');
     const pkg = catalog.packages.find((p) => p.key === key);
     if (!pkg) return;
-    if (pkg.pickCount === 0) {
-      addPackageToCart(pkg.key, pkg.name, pkg.price, pkg.currency, []);
-    } else {
-      setPkgPicker(pkg.key);
-      setTimeout(() => cardRefs.current[pkg.key]?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 120);
-    }
+    if (pkg.pickCount > 0) setPkgPicker(pkg.key);
+    setTimeout(() => cardRefs.current[pkg.key]?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 120);
+    setHighlight(pkg.key);
+    setTimeout(() => setHighlight((h) => (h === pkg.key ? null : h)), 2400);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [catalog]);
 
   // If the user clicked "Buy" on a specific mock on the landing, scroll to that
   // template card here and highlight it briefly (the tier is chosen here).
-  const [highlight, setHighlight] = useState<string | null>(null);
   useEffect(() => {
     if (!catalog) return;
     const id = sessionStorage.getItem('focusMock');
@@ -157,7 +155,7 @@ function MockShop() {
                 : pkg.pickCount === 3 ? s.threeSubjects
                 : `${pkg.pickCount}`;
               return (
-                <div key={pkg.key} className="card" ref={(el) => { cardRefs.current[pkg.key] = el; }} style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: '0.5rem', padding: '1.25rem', borderRadius: 16, border: featured ? '2px solid var(--primary-color)' : '1px solid var(--border-color)', overflow: 'hidden' }}>
+                <div key={pkg.key} className="card" ref={(el) => { cardRefs.current[pkg.key] = el; }} style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: '0.5rem', padding: '1.25rem', borderRadius: 16, border: featured ? '2px solid var(--primary-color)' : '1px solid var(--border-color)', overflow: 'hidden', outline: highlight === pkg.key ? '2px solid var(--primary-color)' : 'none', outlineOffset: 2, transition: 'outline-color 0.3s' }}>
                   {featured && (
                     <span style={{ position: 'absolute', top: 0, right: 0, background: 'var(--primary-color)', color: '#fff', fontSize: '0.68rem', fontWeight: 700, padding: '3px 12px', borderBottomLeftRadius: 10 }}>{s.popular}</span>
                   )}
