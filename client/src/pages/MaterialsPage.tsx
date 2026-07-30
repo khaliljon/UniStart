@@ -57,7 +57,7 @@ function MaterialsPage() {
               <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
                 {s.materialsEmptyOwned}
               </p>
-              <button className="btn btn-primary" onClick={() => navigate('/')}>{s.purchasesBrowse}</button>
+              <button className="btn btn-primary" onClick={() => { sessionStorage.setItem('scrollToMaterials', '1'); navigate('/'); }}>{s.buyOnHome}</button>
             </div>
           );
         }

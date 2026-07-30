@@ -102,6 +102,7 @@ function MaterialsSection() {
   const [materials, setMaterials] = useState<StudyMaterial[] | null>(null);
   const [ownedBooks, setOwnedBooks] = useState<Set<string>>(new Set());
   const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const sectionRef = useRef<HTMLDivElement>(null);
   const [highlight, setHighlight] = useState<string | null>(null);
   useEffect(() => {
     materialsService.list().then(setMaterials).catch(() => setMaterials([]));
@@ -115,12 +116,18 @@ function MaterialsSection() {
   useEffect(() => {
     if (!materials || materials.length === 0) return;
     const id = sessionStorage.getItem('focusBook');
-    if (!id) return;
-    sessionStorage.removeItem('focusBook');
-    setTimeout(() => cardRefs.current[id]?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 150);
-    setHighlight(id);
-    const t = setTimeout(() => setHighlight(null), 2400);
-    return () => clearTimeout(t);
+    if (id) {
+      sessionStorage.removeItem('focusBook');
+      setTimeout(() => cardRefs.current[id]?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 150);
+      setHighlight(id);
+      const t = setTimeout(() => setHighlight(null), 2400);
+      return () => clearTimeout(t);
+    }
+    // Coming from the Materials page "buy on home" button: focus the whole section.
+    if (sessionStorage.getItem('scrollToMaterials')) {
+      sessionStorage.removeItem('scrollToMaterials');
+      setTimeout(() => sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150);
+    }
   }, [materials]);
 
   const coverFor = (key: string) => CSCA_SUBJECTS.find((x) => x.key === key);
@@ -151,7 +158,7 @@ function MaterialsSection() {
   }
 
   return (
-    <div style={{ marginBottom: '1.75rem' }}>
+    <div ref={sectionRef} style={{ marginBottom: '1.75rem', scrollMarginTop: '80px' }}>
       <h2 style={{ fontSize: '1.1rem', marginBottom: '0.75rem' }}>{s.materialsTitle}</h2>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem' }}>
         {materials.map((m) => {
