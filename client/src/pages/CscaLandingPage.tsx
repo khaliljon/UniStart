@@ -260,7 +260,10 @@ function CscaLandingPage() {
                 {dbTemplates.map((tpl) => (
                   <div className="csca-card" key={tpl.mockExamId} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                     <div className="csca-price-name" style={{ fontSize: '1.05rem' }}>{pickLocalized(tpl.title, tpl.titleKz, tpl.titleEn, locale)}</div>
-                    <div className="csca-subject-tag" style={{ marginBottom: '0.35rem' }}>{tpl.totalQuestions} {s.mockQuestions.toLowerCase()} · {tpl.totalTimeMinutes} {s.minShort}</div>
+                    {pickLocalized(tpl.description ?? '', tpl.descriptionKz, tpl.descriptionEn, locale) && (
+                      <div className="csca-price-for" style={{ marginBottom: '0.15rem' }}>{pickLocalized(tpl.description ?? '', tpl.descriptionKz, tpl.descriptionEn, locale)}</div>
+                    )}
+                    <div className="csca-subject-tag" style={{ marginBottom: '0.35rem' }}>{tpl.totalQuestions} {s.questionsCount} · {tpl.totalTimeMinutes} {s.minShort}</div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: 'auto' }}>
                       {tpl.tiers.map((tier) => (
                         <button key={tier.id} className="csca-btn csca-btn-ghost csca-btn-sm"

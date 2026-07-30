@@ -122,8 +122,11 @@ function MockShop() {
                 </span>
               )}
             </div>
+            {pickLocalized(tpl.description ?? '', tpl.descriptionKz, tpl.descriptionEn, locale) && (
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>{pickLocalized(tpl.description ?? '', tpl.descriptionKz, tpl.descriptionEn, locale)}</div>
+            )}
             <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
-              {tpl.totalQuestions} {s.mockQuestions.toLowerCase()} · {tpl.totalTimeMinutes} {s.minShort}
+              {tpl.totalQuestions} {s.questionsCount} · {tpl.totalTimeMinutes} {s.minShort}
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginTop: 'auto' }}>
               {tpl.tiers.length === 0 ? (
@@ -183,7 +186,7 @@ function MockShop() {
                           <label key={t.mockExamId} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem', opacity: disabled ? 0.5 : 1 }}>
                             <input type="checkbox" checked={checked} disabled={disabled}
                                    onChange={() => setPkgChosen((prev) => checked ? prev.filter((x) => x !== t.mockExamId) : [...prev, t.mockExamId])} />
-                            {t.title}
+                            {pickLocalized(t.title, t.titleKz, t.titleEn, locale)}
                           </label>
                         );
                       })}

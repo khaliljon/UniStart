@@ -36,8 +36,8 @@ export default function CscaFooter() {
             <h4>{s.footerContacts}</h4>
             <Link to="/csca/contacts">{s.navContacts}</Link>
             <a href={`mailto:${SOCIAL_LINKS.email}`}>{SOCIAL_LINKS.email}</a>
-            <a href={SOCIAL_LINKS.telegramChannel} target="_blank" rel="noopener noreferrer">Telegram-канал</a>
-            <a href={SOCIAL_LINKS.supportBot} target="_blank" rel="noopener noreferrer">Бот поддержки</a>
+            <a href={SOCIAL_LINKS.telegramChannel} target="_blank" rel="noopener noreferrer">{s.socialTelegram}</a>
+            <a href={SOCIAL_LINKS.supportBot} target="_blank" rel="noopener noreferrer">{s.socialSupportBot}</a>
             <a href={SOCIAL_LINKS.instagram} target="_blank" rel="noopener noreferrer">Instagram</a>
             <a href={SOCIAL_LINKS.tiktok} target="_blank" rel="noopener noreferrer">TikTok</a>
           </div>

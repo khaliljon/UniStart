@@ -119,6 +119,9 @@ export interface CscaStrings {
   footerRights: string;
   footerTerms: string;
   footerPrivacy: string;
+  socialTelegram: string;
+  socialSupportBot: string;
+  questionsCount: string;
   // exam dates (About page)
   examDatesTitle: string;
   examDatesLead: string;
@@ -266,6 +269,9 @@ const ru: CscaStrings = {
   footerRights: 'Все права защищены.',
   footerTerms: 'Пользовательское соглашение',
   footerPrivacy: 'Политика конфиденциальности',
+  socialTelegram: 'Telegram-канал',
+  socialSupportBot: 'Бот поддержки',
+  questionsCount: 'вопросов',
   examDatesTitle: 'Даты экзамена 2026',
   examDatesLead: 'CSCA проводится 5 раз в 2026 году. Проверьте даты и расписание ниже.',
   regOpensLabel: 'Регистрация открывается',
@@ -396,6 +402,9 @@ const en: CscaStrings = {
   footerRights: 'All rights reserved.',
   footerTerms: 'Terms of Service',
   footerPrivacy: 'Privacy Policy',
+  socialTelegram: 'Telegram channel',
+  socialSupportBot: 'Support bot',
+  questionsCount: 'questions',
   examDatesTitle: 'CSCA exam dates 2026',
   examDatesLead: 'CSCA runs 5 times in 2026. Check the dates and schedule below.',
   regOpensLabel: 'Registration opens',
@@ -526,6 +535,9 @@ const kz: CscaStrings = {
   footerRights: 'Барлық құқықтар қорғалған.',
   footerTerms: 'Пайдаланушы келісімі',
   footerPrivacy: 'Құпиялық саясаты',
+  socialTelegram: 'Telegram-арна',
+  socialSupportBot: 'Қолдау боты',
+  questionsCount: 'сұрақ',
   examDatesTitle: '2026 CSCA емтихан күндері',
   examDatesLead: 'CSCA 2026 жылы 5 рет өтеді. Төмендегі күндер мен кестені қараңыз.',
   regOpensLabel: 'Тіркеу ашылады',

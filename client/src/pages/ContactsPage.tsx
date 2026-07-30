@@ -9,8 +9,8 @@ function ContactsPage() {
 
   const contacts = [
     { label: 'Email', value: SOCIAL_LINKS.email, href: `mailto:${SOCIAL_LINKS.email}`, hanzi: '邮' },
-    { label: 'Бот поддержки', value: '@unistart_support_bot', href: SOCIAL_LINKS.supportBot, hanzi: '助' },
-    { label: 'Telegram-канал', value: '@unistart_csca', href: SOCIAL_LINKS.telegramChannel, hanzi: '电' },
+    { label: s.socialSupportBot, value: '@unistart_support_bot', href: SOCIAL_LINKS.supportBot, hanzi: '助' },
+    { label: s.socialTelegram, value: '@unistart_csca', href: SOCIAL_LINKS.telegramChannel, hanzi: '电' },
     { label: 'Instagram', value: '@unistartkz', href: SOCIAL_LINKS.instagram, hanzi: '图' },
     { label: 'TikTok', value: '@unistartkz', href: SOCIAL_LINKS.tiktok, hanzi: '视' },
   ];

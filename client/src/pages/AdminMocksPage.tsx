@@ -5,7 +5,6 @@ import mockAdminService, {
   type ExamTypeOption,
   type ExamSectionOption,
 } from '../services/mockAdminService';
-import { pricingService } from '../services/pricingService';
 import { useTranslation } from '../hooks/useTranslation';
 
 function AdminMocksPage() {
@@ -16,12 +15,6 @@ function AdminMocksPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-
-  // Global pricing (mock price is uniform, admin-editable)
-  const [mockPrice, setMockPrice] = useState<number>(0);
-  const [materialPrice, setMaterialPrice] = useState<number>(0);
-  const [priceCurrency, setPriceCurrency] = useState<string>('KZT');
-  const [savingPrice, setSavingPrice] = useState(false);
 
   // Form states
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -55,31 +48,6 @@ function AdminMocksPage() {
     loadExams();
     mockAdminService.getExamTypes().then(setExamTypes).catch(() => {});
   }, [loadExams]);
-
-  useEffect(() => {
-    pricingService.get().then((p) => {
-      setMockPrice(p.mockPrice);
-      setMaterialPrice(p.materialPrice);
-      setPriceCurrency(p.currency);
-    }).catch(() => {});
-  }, []);
-
-  const savePricing = async () => {
-    setSavingPrice(true);
-    setError(null);
-    setSuccess(null);
-    try {
-      const saved = await pricingService.update({ mockPrice, materialPrice, currency: priceCurrency });
-      setMockPrice(saved.mockPrice);
-      setMaterialPrice(saved.materialPrice);
-      setPriceCurrency(saved.currency);
-      setSuccess('Цены сохранены');
-    } catch {
-      setError('Не удалось сохранить цены');
-    } finally {
-      setSavingPrice(false);
-    }
-  };
 
   useEffect(() => {
     if (form.examTypeCode) {      mockAdminService.getExamSections(form.examTypeCode)
@@ -265,40 +233,6 @@ function AdminMocksPage() {
       {success && (
         <div style={{ padding: '0.75rem 1rem', background: 'rgba(16,185,129,0.08)', color: 'var(--success-color)', borderRadius: '8px', marginBottom: '1rem', fontSize: '0.9rem' }}>
           ✓ {success}
-        </div>
-      )}
-
-      {!showForm && (
-        <div className="card" style={{ padding: '1.25rem', marginBottom: '1.5rem', display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', gap: '1rem' }}>
-          <div style={{ flex: '1 1 100%' }}>
-            <h2 style={{ fontSize: '1.1rem', margin: 0 }}>Цена учебника</h2>
-            <p style={{ margin: '0.25rem 0 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-              Цены на моки и пакеты — во вкладке «Цены».
-            </p>
-          </div>
-          <label style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', fontSize: '0.85rem' }}>
-            Цена за учебник
-            <input
-              type="number"
-              min={0}
-              value={materialPrice}
-              onChange={(e) => setMaterialPrice(Number(e.target.value))}
-              style={{ padding: '0.5rem', border: '1px solid var(--border-color)', borderRadius: '6px', width: '140px' }}
-            />
-          </label>
-          <label style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', fontSize: '0.85rem' }}>
-            Валюта
-            <input
-              type="text"
-              value={priceCurrency}
-              onChange={(e) => setPriceCurrency(e.target.value.toUpperCase())}
-              maxLength={8}
-              style={{ padding: '0.5rem', border: '1px solid var(--border-color)', borderRadius: '6px', width: '90px' }}
-            />
-          </label>
-          <button className="btn btn-primary" onClick={savePricing} disabled={savingPrice}>
-            {savingPrice ? 'Сохранение…' : 'Сохранить'}
-          </button>
         </div>
       )}
 
