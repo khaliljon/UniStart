@@ -2,6 +2,7 @@ import { useEffect, useState, FormEvent } from 'react';
 import { useAppSelector } from '../hooks/useAppSelector';
 import { useAppDispatch } from '../hooks/useAppDispatch';
 import { useTranslation } from '../hooks/useTranslation';
+import { cscaStrings } from '../i18n/csca';
 import { fetchExams, fetchExamSections, toggleExamSelection, setSelectedSectionIds } from '../store/slices/examSlice';
 import { completeProfile } from '../store/slices/authSlice';
 import { subscriptionService } from '../services/subscriptionService';
@@ -16,7 +17,8 @@ function ProfilePage() {
   const { user } = useAppSelector((state) => state.auth);
   const { exams, selectedExams, selectedSectionIds } = useAppSelector((state) => state.exam);
   const dispatch = useAppDispatch();
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
+  const s = cscaStrings[locale];
   const [sub, setSub] = useState<SubscriptionStatus | null>(null);
   const [showPricing, setShowPricing] = useState(false);
   const [allSections, setAllSections] = useState<ExamSection[]>([]);
@@ -192,13 +194,13 @@ function ProfilePage() {
 
       {/* ─── Support & socials ─── */}
       <div className="card" style={{ padding: '1.5rem', marginBottom: '1.25rem' }}>
-        <h2 style={{ fontSize: '1.05rem', margin: '0 0 0.35rem' }}>Поддержка и соцсети</h2>
+        <h2 style={{ fontSize: '1.05rem', margin: '0 0 0.35rem' }}>{s.supportSocials}</h2>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', margin: '0 0 1rem' }}>
-          Есть вопрос? Напишите в бот поддержки — оператор ответит вам в Telegram.
+          {s.supportSocialsDesc}
         </p>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem' }}>
-          <a className="btn btn-primary" href={SOCIAL_LINKS.supportBot} target="_blank" rel="noopener noreferrer">💬 Бот поддержки</a>
-          <a className="btn btn-outline" href={SOCIAL_LINKS.telegramChannel} target="_blank" rel="noopener noreferrer">Telegram-канал</a>
+          <a className="btn btn-primary" href={SOCIAL_LINKS.supportBot} target="_blank" rel="noopener noreferrer">💬 {s.socialSupportBot}</a>
+          <a className="btn btn-outline" href={SOCIAL_LINKS.telegramChannel} target="_blank" rel="noopener noreferrer">{s.socialTelegram}</a>
           <a className="btn btn-outline" href={SOCIAL_LINKS.instagram} target="_blank" rel="noopener noreferrer">Instagram</a>
           <a className="btn btn-outline" href={SOCIAL_LINKS.tiktok} target="_blank" rel="noopener noreferrer">TikTok</a>
           <a className="btn btn-outline" href={`mailto:${SOCIAL_LINKS.email}`}>Email</a>

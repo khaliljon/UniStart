@@ -122,6 +122,8 @@ export interface CscaStrings {
   socialTelegram: string;
   socialSupportBot: string;
   questionsCount: string;
+  supportSocials: string;
+  supportSocialsDesc: string;
   // exam dates (About page)
   examDatesTitle: string;
   examDatesLead: string;
@@ -272,6 +274,8 @@ const ru: CscaStrings = {
   socialTelegram: 'Telegram-канал',
   socialSupportBot: 'Бот поддержки',
   questionsCount: 'вопросов',
+  supportSocials: 'Поддержка и соцсети',
+  supportSocialsDesc: 'Есть вопрос? Напишите в бот поддержки — оператор ответит вам в Telegram.',
   examDatesTitle: 'Даты экзамена 2026',
   examDatesLead: 'CSCA проводится 5 раз в 2026 году. Проверьте даты и расписание ниже.',
   regOpensLabel: 'Регистрация открывается',
@@ -405,6 +409,8 @@ const en: CscaStrings = {
   socialTelegram: 'Telegram channel',
   socialSupportBot: 'Support bot',
   questionsCount: 'questions',
+  supportSocials: 'Support & socials',
+  supportSocialsDesc: 'Have a question? Message the support bot — an operator will reply in Telegram.',
   examDatesTitle: 'CSCA exam dates 2026',
   examDatesLead: 'CSCA runs 5 times in 2026. Check the dates and schedule below.',
   regOpensLabel: 'Registration opens',
@@ -538,6 +544,8 @@ const kz: CscaStrings = {
   socialTelegram: 'Telegram-арна',
   socialSupportBot: 'Қолдау боты',
   questionsCount: 'сұрақ',
+  supportSocials: 'Қолдау және әлеуметтік желілер',
+  supportSocialsDesc: 'Сұрағыңыз бар ма? Қолдау ботына жазыңыз — оператор Telegram-да жауап береді.',
   examDatesTitle: '2026 CSCA емтихан күндері',
   examDatesLead: 'CSCA 2026 жылы 5 рет өтеді. Төмендегі күндер мен кестені қараңыз.',
   regOpensLabel: 'Тіркеу ашылады',
