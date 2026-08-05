@@ -817,7 +817,7 @@ function MockExamPage() {
 
             {/* Review list */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              {filteredReview.map((a, i) => (
+              {filteredReview.map((a) => (
                 <div key={a.questionId} className="card" style={{
                   borderLeft: `4px solid ${a.isCorrect ? '#27ae60' : a.isUnanswered ? '#95a5a6' : '#e74c3c'}`
                 }}>
@@ -838,7 +838,7 @@ function MockExamPage() {
                     </div>
                   </div>
                   <p style={{ fontWeight: 500, marginBottom: '0.5rem', fontSize: '0.9rem' }}>
-                    {i + 1}. {a.questionText}
+                    {results.answerReview.indexOf(a) + 1}. {a.questionText}
                   </p>
                   {!a.isUnanswered && !a.isCorrect && (
                     <p style={{ color: 'var(--error-color)', fontSize: '0.85rem', margin: '0.25rem 0' }}>
