@@ -451,6 +451,17 @@ public class AdminController : ControllerBase
         return Ok(result);
     }
 
+    /// <summary>Grant the user another one-time free mock run.</summary>
+    [HttpPost("users/{id:int}/reset-free-mock")]
+    public async Task<IActionResult> ResetFreeMock(int id)
+    {
+        var result = await _svc.ResetFreeMockAsync(id);
+        if (result == null) return NotFound();
+        var (adminId, email) = GetCurrentAdmin();
+        await _audit.LogAsync(adminId, email, "ResetFreeMock", "User", id.ToString(), ipAddress: GetClientIp());
+        return Ok(result);
+    }
+
     // ═══════════════════════════════════════════════════════
     //  AUDIT LOGS (OP-7)
     // ═══════════════════════════════════════════════════════

@@ -623,6 +623,7 @@ export interface Translations {
       import: string; questionImport: string; trash: string; more: string; applications: string;
       schools: string; advisorConfig: string; backups: string;
       legal: string; news: string; support: string; mocks: string; sales: string; pricing: string;
+      examDates: string;
     };
     legal: {
       title: string; docTitle: string; lastUpdated: string; content: string; saved: string;
@@ -740,6 +741,8 @@ export interface Translations {
       blockReasonPrompt: string; userBlocked: string; blockError: string;
       userUnblocked: string; unblockError: string;
       restoreConfirm: string; userRestored: string; restoreError: string;
+      freeMock: string; freeMockUsedLabel: string; freeMockAvailableLabel: string;
+      resetFreeMockBtn: string; freeMockResetOk: string;
     };
     tutors: {
       title: string;

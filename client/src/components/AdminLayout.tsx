@@ -109,7 +109,7 @@ function AdminLayout() {
                       { label: t.admin.nav.support, path: '/support' },
                       { label: t.admin.nav.mocks, path: '/mocks' },
                       { label: t.admin.nav.pricing, path: '/pricing' },
-                      { label: 'Даты экзаменов', path: '/exam-dates' },
+                      { label: t.admin.nav.examDates, path: '/exam-dates' },
                       { label: t.admin.nav.sales, path: '/sales' },
                       { label: t.admin.nav.import, path: '/import' },
                       { label: t.admin.nav.audit, path: '/audit' },

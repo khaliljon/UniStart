@@ -587,6 +587,7 @@ export const ru: Translations = {
       questionImport: 'Загрузка вопросов', trash: 'Корзина', more: 'Ещё', applications: 'Заявки',
       schools: 'Школы', advisorConfig: 'Советник', backups: 'Резервные копии',
       legal: 'Юр. документы', news: 'Новости', support: 'Поддержка', mocks: 'Пробные экзамены', sales: 'Продажи', pricing: 'Цены',
+      examDates: 'Даты экзаменов',
     },
     legal: {
       title: 'Юридические документы', docTitle: 'Название документа', lastUpdated: 'Метка «Обновлено»',
@@ -733,6 +734,8 @@ export const ru: Translations = {
       specializations: 'Специализации:',
       answersCount: 'Ответов', correctCount: 'Верных', sessionsCount: 'Сессий',
       accuracyLabel: 'Точность:',
+      freeMock: 'Бесплатный мок', freeMockUsedLabel: 'Использован', freeMockAvailableLabel: 'Доступен',
+      resetFreeMockBtn: 'Сбросить бесплатный мок', freeMockResetOk: 'Бесплатный мок восстановлен',
       editBtn: 'Редактировать', activityBtn: 'Активность',
       unblockBtn: 'Разблокировать', blockBtn: 'Заблокировать',
       restoreBtn: 'Восстановить', deleteBtn: 'Удалить',

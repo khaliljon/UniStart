@@ -520,7 +520,7 @@ public class MockExamService : IMockExamService
             .Include(a => a.Question).ThenInclude(q => q.Topic).ThenInclude(t => t.Section)
             .Include(a => a.SelectedOptions)
             .Where(a => a.AttemptId == attemptId)
-            .OrderBy(a => a.SectionIndex).ThenBy(a => a.QuestionId)
+            .OrderBy(a => a.SectionIndex).ThenBy(a => a.SortOrder)
             .ToListAsync();
 
         var sections = GetEffectiveSections(attempt);

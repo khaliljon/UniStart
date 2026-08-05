@@ -23,6 +23,7 @@ public interface IAdminService
     // Block / Suspend (OP-14)
     Task<AdminUserDto?> BlockUserAsync(int id, string? reason = null);
     Task<AdminUserDto?> UnblockUserAsync(int id);
+    Task<AdminUserDto?> ResetFreeMockAsync(int id);
 
     // Dashboard
     Task<AdminDashboardDto> GetDashboardAsync();

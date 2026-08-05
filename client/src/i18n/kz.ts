@@ -587,6 +587,7 @@ export const kz: Translations = {
       questionImport: 'Сұрақтарды жүктеу', trash: 'Қоқыс жәшігі', more: 'Тағы', applications: 'Өтінімдер',
       schools: 'Мектептер', advisorConfig: 'Советник', backups: 'Сақтық көшірмелер',
       legal: 'Заң құжаттары', news: 'Жаңалықтар', support: 'Қолдау', mocks: 'Сынақ емтихандар', sales: 'Сатылымдар', pricing: 'Бағалар',
+      examDates: 'Емтихан күндері',
     },
     legal: {
       title: 'Заңдық құжаттар', docTitle: 'Құжат атауы', lastUpdated: '«Жаңартылды» белгісі',
@@ -732,6 +733,8 @@ export const kz: Translations = {
       specializations: 'Мамандықтар:',
       answersCount: 'Жауаптар', correctCount: 'Дұрыс', sessionsCount: 'Сессиялар',
       accuracyLabel: 'Дәлдік:',
+      freeMock: 'Тегін мок', freeMockUsedLabel: 'Пайдаланылған', freeMockAvailableLabel: 'Қолжетімді',
+      resetFreeMockBtn: 'Тегін мокты қайта қосу', freeMockResetOk: 'Тегін мок қалпына келтірілді',
       editBtn: 'Өңдеу', activityBtn: 'Белсенділік',
       unblockBtn: 'Бұғаттан шығару', blockBtn: 'Бұғаттау',
       restoreBtn: 'Қалпына келтіру', deleteBtn: 'Жою',

@@ -3,6 +3,7 @@ import { useAppSelector } from '../hooks/useAppSelector';
 import { useAppDispatch } from '../hooks/useAppDispatch';
 import { useTranslation } from '../hooks/useTranslation';
 import { authService } from '../services/authService';
+import api from '../services/api';
 import { completeProfile } from '../store/slices/authSlice';
 
 function AdminProfilePage() {
@@ -24,12 +25,12 @@ function AdminProfilePage() {
   const [phoneSuccess, setPhoneSuccess] = useState<string | null>(null);
   const [phoneLoading, setPhoneLoading] = useState(false);
 
-  // Email change
-  const [newEmail, setNewEmail] = useState('');
-  const [emailPassword, setEmailPassword] = useState('');
-  const [emailError, setEmailError] = useState<string | null>(null);
-  const [emailSuccess, setEmailSuccess] = useState<string | null>(null);
-  const [emailLoading, setEmailLoading] = useState(false);
+  // Name change
+  const [editFirstName, setEditFirstName] = useState(user?.firstName || '');
+  const [editLastName, setEditLastName] = useState(user?.lastName || '');
+  const [nameError, setNameError] = useState<string | null>(null);
+  const [nameSuccess, setNameSuccess] = useState<string | null>(null);
+  const [nameLoading, setNameLoading] = useState(false);
 
   const handleChangePassword = async () => {
     setPwdError(null);
@@ -74,26 +75,23 @@ function AdminProfilePage() {
     }
   };
 
-  const handleChangeEmail = async () => {
-    setEmailError(null);
-    setEmailSuccess(null);
-
-    if (!newEmail.trim() || !newEmail.includes('@')) {
-      setEmailError('Invalid email');
-      return;
-    }
-
+  const handleChangeName = async () => {
+    setNameError(null);
+    setNameSuccess(null);
+    if (editFirstName.trim().length < 2 || /\d/.test(editFirstName)) { setNameError(t.auth.firstName); return; }
+    if (editLastName.trim().length < 2 || /\d/.test(editLastName)) { setNameError(t.auth.lastName); return; }
     try {
-      setEmailLoading(true);
-      await authService.changeEmail({ newEmail, password: emailPassword });
-      setEmailSuccess(t.profilePage.emailChanged);
-      setNewEmail('');
-      setEmailPassword('');
+      setNameLoading(true);
+      await api.put(`/users/${user?.id}`, { firstName: editFirstName.trim(), lastName: editLastName.trim() });
+      setNameSuccess(t.common.save + ' ✓');
+      if (user) {
+        const updated = { ...user, firstName: editFirstName.trim(), lastName: editLastName.trim(), name: `${editFirstName.trim()} ${editLastName.trim()}`.trim() };
+        localStorage.setItem('user', JSON.stringify(updated));
+      }
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || t.profilePage.emailChangeError;
-      setEmailError(msg);
+      setNameError((err as { response?: { data?: { error?: string } } })?.response?.data?.error || t.profilePage.passwordChangeError);
     } finally {
-      setEmailLoading(false);
+      setNameLoading(false);
     }
   };
 
@@ -133,6 +131,35 @@ function AdminProfilePage() {
               {user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : '—'}
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* ─── Edit Name ─── */}
+      <div className="card" style={{ padding: '1.5rem', marginBottom: '1.25rem' }}>
+        <h3 style={{ margin: '0 0 1rem', fontSize: '1rem' }}>{t.auth.firstName} / {t.auth.lastName}</h3>
+        {nameError && (
+          <div style={{ color: 'var(--error-color)', marginBottom: '0.75rem', padding: '0.5rem 0.75rem', background: 'var(--error-bg)', borderRadius: '6px', fontSize: '0.85rem' }}>{nameError}</div>
+        )}
+        {nameSuccess && (
+          <div style={{ color: 'var(--success-color)', marginBottom: '0.75rem', padding: '0.5rem 0.75rem', background: 'rgba(16,185,129,0.08)', borderRadius: '6px', fontSize: '0.85rem' }}>✓ {nameSuccess}</div>
+        )}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          <div>
+            <label style={{ display: 'block', marginBottom: '0.3rem', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)' }}>{t.auth.firstName}</label>
+            <input type="text" className="form-input" value={editFirstName} onChange={e => setEditFirstName(e.target.value)} style={{ width: '100%' }} />
+          </div>
+          <div>
+            <label style={{ display: 'block', marginBottom: '0.3rem', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)' }}>{t.auth.lastName}</label>
+            <input type="text" className="form-input" value={editLastName} onChange={e => setEditLastName(e.target.value)} style={{ width: '100%' }} />
+          </div>
+          <button
+            className="btn btn-primary"
+            onClick={handleChangeName}
+            disabled={nameLoading || !editFirstName.trim() || !editLastName.trim()}
+            style={{ alignSelf: 'flex-start', fontSize: '0.9rem' }}
+          >
+            {nameLoading ? '...' : t.common.save}
+          </button>
         </div>
       </div>
 
@@ -241,57 +268,6 @@ function AdminProfilePage() {
             style={{ alignSelf: 'flex-start', fontSize: '0.9rem' }}
           >
             {phoneLoading ? '...' : t.common.save}
-          </button>
-        </div>
-      </div>
-
-      {/* ─── Change Email ─── */}
-      <div className="card" style={{ padding: '1.5rem', marginBottom: '1.25rem' }}>
-        <h3 style={{ margin: '0 0 1rem', fontSize: '1rem' }}>{t.profilePage.newEmail}</h3>
-        {emailError && (
-          <div style={{ color: 'var(--error-color)', marginBottom: '0.75rem', padding: '0.5rem 0.75rem', background: 'var(--error-bg)', borderRadius: '6px', fontSize: '0.85rem' }}>
-            {emailError}
-          </div>
-        )}
-        {emailSuccess && (
-          <div style={{ color: 'var(--success-color)', marginBottom: '0.75rem', padding: '0.5rem 0.75rem', background: 'rgba(16,185,129,0.08)', borderRadius: '6px', fontSize: '0.85rem' }}>
-            ✓ {emailSuccess}
-          </div>
-        )}
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          <div>
-            <label style={{ display: 'block', marginBottom: '0.3rem', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
-              {t.profilePage.newEmail}
-            </label>
-            <input
-              type="email"
-              className="form-input"
-              value={newEmail}
-              onChange={e => setNewEmail(e.target.value)}
-              placeholder="new@email.com"
-              style={{ width: '100%' }}
-            />
-          </div>
-          <div>
-            <label style={{ display: 'block', marginBottom: '0.3rem', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
-              {t.profilePage.enterPassword}
-            </label>
-            <input
-              type="password"
-              className="form-input"
-              value={emailPassword}
-              onChange={e => setEmailPassword(e.target.value)}
-              style={{ width: '100%' }}
-            />
-          </div>
-          <button
-            className="btn btn-primary"
-            onClick={handleChangeEmail}
-            disabled={emailLoading || !newEmail || !emailPassword}
-            style={{ alignSelf: 'flex-start', fontSize: '0.9rem' }}
-          >
-            {emailLoading ? '...' : t.admin.common.save}
           </button>
         </div>
       </div>

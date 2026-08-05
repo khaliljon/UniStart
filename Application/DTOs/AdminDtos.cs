@@ -118,7 +118,8 @@ public record AdminUserDto(
     int TestSessions,
     int? SchoolId = null,
     string? SchoolName = null,
-    string? PhoneNumber = null
+    string? PhoneNumber = null,
+    bool FreeMockUsed = false
 );
 
 public record AdminUpdateUserDto(

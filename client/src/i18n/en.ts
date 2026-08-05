@@ -587,6 +587,7 @@ export const en: Translations = {
       questionImport: 'Question import', trash: 'Trash', more: 'More', applications: 'Applications',
       schools: 'Schools', advisorConfig: 'Advisor config', backups: 'Backups',
       legal: 'Legal docs', news: 'News', support: 'Support', mocks: 'Mock exams', sales: 'Sales', pricing: 'Pricing',
+      examDates: 'Exam dates',
     },
     legal: {
       title: 'Legal documents', docTitle: 'Document title', lastUpdated: 'Last updated label',
@@ -732,6 +733,8 @@ export const en: Translations = {
       specializations: 'Specializations:',
       answersCount: 'Answers', correctCount: 'Correct', sessionsCount: 'Sessions',
       accuracyLabel: 'Accuracy:',
+      freeMock: 'Free mock', freeMockUsedLabel: 'Used', freeMockAvailableLabel: 'Available',
+      resetFreeMockBtn: 'Reset free mock', freeMockResetOk: 'Free mock restored',
       editBtn: 'Edit', activityBtn: 'Activity',
       unblockBtn: 'Unblock', blockBtn: 'Block',
       restoreBtn: 'Restore', deleteBtn: 'Delete',

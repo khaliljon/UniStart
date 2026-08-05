@@ -195,6 +195,19 @@ function AdminUsersPage() {
     }
   };
 
+  const resetFreeMock = async (id: number) => {
+    try {
+      setError(null);
+      const updated = await adminService.resetFreeMock(id);
+      setSelected(updated);
+      setSuccess(t.admin.users.freeMockResetOk);
+      loadUsers();
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || t.admin.users.userUpdateError;
+      setError(msg);
+    }
+  };
+
   const restoreUser = async (id: number) => {
     if (!confirm(t.admin.users.restoreConfirm)) return;
     try {
@@ -406,7 +419,7 @@ function AdminUsersPage() {
                   <InfoField label={t.admin.users.nameLabel} value={selected.name} />
                   <InfoField label={t.admin.users.emailLabel} value={selected.email} />
                   <InfoField label={t.admin.users.roleLabel} value={selected.role} color={ROLE_COLORS[selected.role]} />
-                  <InfoField label={t.admin.users.onboarding} value={selected.hasCompletedOnboarding ? t.admin.users.onboardingDone : t.admin.users.onboardingNotDone} />
+                  <InfoField label={t.admin.users.freeMock} value={selected.freeMockUsed ? t.admin.users.freeMockUsedLabel : t.admin.users.freeMockAvailableLabel} color={selected.freeMockUsed ? undefined : 'var(--success-color)'} />
                   <InfoField label={t.admin.users.registeredAt} value={new Date(selected.createdAt).toLocaleDateString(getDateLocale())} />
                   <InfoField label={t.admin.users.updatedAt} value={selected.updatedAt ? new Date(selected.updatedAt).toLocaleDateString(getDateLocale()) : '—'} />
                   {selected.schoolName && (
@@ -495,6 +508,15 @@ function AdminUsersPage() {
                   >
                     {t.admin.users.activityBtn}
                   </button>
+                  {selected.freeMockUsed && (
+                    <button
+                      className="btn btn-outline"
+                      onClick={() => resetFreeMock(selected.id)}
+                      style={{ flex: 1 }}
+                    >
+                      {t.admin.users.resetFreeMockBtn}
+                    </button>
+                  )}
                   {selected.role !== 'Admin' && (
                     selected.isBlocked ? (
                       <button

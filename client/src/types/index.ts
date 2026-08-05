@@ -538,6 +538,7 @@ export interface AdminUser {
   schoolId: number | null;
   schoolName: string | null;
   phoneNumber: string | null;
+  freeMockUsed: boolean;
 }
 
 export interface AdminUserStats {

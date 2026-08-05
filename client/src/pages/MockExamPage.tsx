@@ -57,7 +57,7 @@ function MockExamPage() {
   // Results
   const [results, setResults] = useState<MockExamResult | null>(null);
   const [showReview, setShowReview] = useState(false);
-  const [reviewFilter, setReviewFilter] = useState<'all' | 'incorrect' | 'unanswered'>('all');
+  const [reviewFilter, setReviewFilter] = useState<'all' | 'correct' | 'incorrect' | 'unanswered'>('all');
 
   // ── Load mock exams list ──────────────────────────────
   const loadExams = useCallback(async () => {
@@ -238,16 +238,6 @@ function MockExamPage() {
     setLoading(false);
   };
 
-  // ── Abandon attempt ───────────────────────────────────
-  const handleAbandon = async () => {
-    if (!attempt) return;
-    if (!window.confirm('Are you sure you want to abandon this exam? Your progress will be lost.')) return;
-    if (timerRef.current) clearInterval(timerRef.current);
-    try {
-      await mockExamService.abandonAttempt(attempt.attemptId);
-    } catch (e) { console.error(e); }
-    resetToList();
-  };
 
   // ── Back to list ──────────────────────────────────────
   const resetToList = async () => {
@@ -307,10 +297,6 @@ function MockExamPage() {
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <button className="btn btn-outline" style={{ fontSize: '0.85rem' }}
-                        onClick={async () => { await mockExamService.abandonAttempt(activeAttempt.attemptId); setActiveAttempt(null); await loadExams(); }}>
-                  {s.abandon}
-                </button>
                 <button className="btn btn-primary" style={{ fontSize: '0.85rem' }}
                         onClick={() => handleResume(activeAttempt)}>
                   ▶ {s.resumeBtn}
@@ -545,9 +531,6 @@ function MockExamPage() {
           </p>
 
           <div style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem', justifyContent: 'center' }}>
-            <button className="btn btn-outline" onClick={handleAbandon}>
-              Abandon Exam
-            </button>
             <button className="btn btn-primary" style={{ padding: '0.75rem 2rem' }} onClick={handleBeginSection}>
               ▶ Begin Exam
             </button>
@@ -746,12 +729,6 @@ function MockExamPage() {
           </div>
         </div>
 
-        {/* Abandon button */}
-        <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
-          <button className="btn btn-outline" style={{ color: 'var(--error-color)', borderColor: 'var(--error-color)', fontSize: '0.8rem' }} onClick={handleAbandon}>
-            Abandon Exam
-          </button>
-        </div>
       </div>
     );
   }
@@ -761,6 +738,7 @@ function MockExamPage() {
   // ══════════════════════════════════════════════════════
   if (phase === 'results' && results) {
     const filteredReview = results.answerReview.filter(a => {
+      if (reviewFilter === 'correct') return a.isCorrect;
       if (reviewFilter === 'incorrect') return !a.isCorrect && !a.isUnanswered;
       if (reviewFilter === 'unanswered') return a.isUnanswered;
       return true;
@@ -822,7 +800,7 @@ function MockExamPage() {
           <>
             {/* Filter tabs */}
             <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
-              {(['all', 'incorrect', 'unanswered'] as const).map(f => (
+              {(['all', 'correct', 'incorrect', 'unanswered'] as const).map(f => (
                 <button
                   key={f}
                   className={`btn ${reviewFilter === f ? 'btn-primary' : 'btn-outline'}`}
@@ -830,6 +808,7 @@ function MockExamPage() {
                   onClick={() => setReviewFilter(f)}
                 >
                   {f === 'all' ? `All (${results.answerReview.length})` :
+                   f === 'correct' ? `Correct (${results.answerReview.filter(a => a.isCorrect).length})` :
                    f === 'incorrect' ? `Incorrect (${results.answerReview.filter(a => !a.isCorrect && !a.isUnanswered).length})` :
                    `Unanswered (${results.answerReview.filter(a => a.isUnanswered).length})`}
                 </button>

@@ -183,6 +183,9 @@ const adminService = {
   unblockUser: (id: number) =>
     api.post<AdminUser>(`/admin/users/${id}/unblock`).then(r => r.data),
 
+  resetFreeMock: (id: number) =>
+    api.post<AdminUser>(`/admin/users/${id}/reset-free-mock`).then(r => r.data),
+
   // ─── Restore (OP-9) ──────────────────────────────────────
   restoreQuestion: (id: number) =>
     api.post(`/admin/questions/${id}/restore`).then(r => r.data),

@@ -38,13 +38,6 @@ function ProfilePage() {
   const [pwdSuccess, setPwdSuccess] = useState<string | null>(null);
   const [pwdLoading, setPwdLoading] = useState(false);
 
-  // Email change
-  const [newEmail, setNewEmail] = useState('');
-  const [emailPassword, setEmailPassword] = useState('');
-  const [emailError, setEmailError] = useState<string | null>(null);
-  const [emailSuccess, setEmailSuccess] = useState<string | null>(null);
-  const [emailLoading, setEmailLoading] = useState(false);
-
   // Name change
   const [editFirstName, setEditFirstName] = useState(user?.firstName || '');
   const [editLastName, setEditLastName] = useState(user?.lastName || '');
@@ -134,21 +127,6 @@ function ProfilePage() {
     } catch (err: unknown) {
       setPwdError((err as { response?: { data?: { error?: string } } })?.response?.data?.error || t.profilePage.passwordChangeError);
     } finally { setPwdLoading(false); }
-  };
-
-  const handleChangeEmail = async (e: FormEvent) => {
-    e.preventDefault();
-    setEmailError(null);
-    setEmailSuccess(null);
-    if (!newEmail.includes('@')) { setEmailError('Invalid email'); return; }
-    try {
-      setEmailLoading(true);
-      await authService.changeEmail({ newEmail, password: emailPassword });
-      setEmailSuccess(t.profilePage.emailChanged);
-      setNewEmail(''); setEmailPassword('');
-    } catch (err: unknown) {
-      setEmailError((err as { response?: { data?: { error?: string } } })?.response?.data?.error || t.profilePage.emailChangeError);
-    } finally { setEmailLoading(false); }
   };
 
   const handleChangeName = async (e: FormEvent) => {
@@ -468,26 +446,6 @@ function ProfilePage() {
           </div>
           <button type="submit" className="btn btn-primary" disabled={pwdLoading || !currentPassword || !newPassword || !confirmPassword} style={{ alignSelf: 'flex-start', fontSize: '0.9rem' }}>
             {pwdLoading ? '...' : t.profilePage.changePassword}
-          </button>
-        </form>
-      </div>
-
-      {/* ─── Change Email ─── */}
-      <div className="card" style={{ padding: '1.5rem', marginBottom: '1.25rem' }}>
-        <h3 style={{ margin: '0 0 1rem', fontSize: '1rem' }}>{t.profilePage.newEmail}</h3>
-        {emailError && <div style={{ color: 'var(--error-color)', marginBottom: '0.75rem', padding: '0.5rem 0.75rem', background: 'var(--error-bg)', borderRadius: '6px', fontSize: '0.85rem' }}>{emailError}</div>}
-        {emailSuccess && <div style={{ color: 'var(--success-color)', marginBottom: '0.75rem', padding: '0.5rem 0.75rem', background: 'rgba(16,185,129,0.08)', borderRadius: '6px', fontSize: '0.85rem' }}>✓ {emailSuccess}</div>}
-        <form onSubmit={handleChangeEmail} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          <div>
-            <label className="form-label">{t.profilePage.newEmail}</label>
-            <input type="email" className="form-input" value={newEmail} onChange={e => setNewEmail(e.target.value)} placeholder="new@email.com" style={{ width: '100%' }} />
-          </div>
-          <div>
-            <label className="form-label">{t.profilePage.enterPassword}</label>
-            <input type="password" className="form-input" value={emailPassword} onChange={e => setEmailPassword(e.target.value)} style={{ width: '100%' }} />
-          </div>
-          <button type="submit" className="btn btn-primary" disabled={emailLoading || !newEmail || !emailPassword} style={{ alignSelf: 'flex-start', fontSize: '0.9rem' }}>
-            {emailLoading ? '...' : t.common.save}
           </button>
         </form>
       </div>

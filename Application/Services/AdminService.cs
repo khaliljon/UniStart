@@ -400,12 +400,28 @@ public class AdminService : IAdminService
             .Select(g => new { UserId = g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.UserId, x => x.Count);
 
+        // Mock exams live in separate tables — count them too so the stats reflect
+        // real activity for users who only take mocks (not practice).
+        var mockAnswerStats = await _db.MockExamAnswers
+            .Where(a => userIds.Contains(a.Attempt.UserId) && (a.SelectedOptionId != null || a.SelectedOptions.Any()))
+            .GroupBy(a => a.Attempt.UserId)
+            .Select(g => new { UserId = g.Key, Total = g.Count(), Correct = g.Count(a => a.IsCorrect) })
+            .ToDictionaryAsync(x => x.UserId);
+
+        var mockSessionCounts = await _db.MockExamAttempts
+            .Where(a => userIds.Contains(a.UserId))
+            .GroupBy(a => a.UserId)
+            .Select(g => new { UserId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.UserId, x => x.Count);
+
         var schoolNames = new Dictionary<int, string>();
 
         var items = users.Select(u =>
         {
             answerStats.TryGetValue(u.Id, out var stats);
             sessionCounts.TryGetValue(u.Id, out var sessions);
+            mockAnswerStats.TryGetValue(u.Id, out var mockStats);
+            mockSessionCounts.TryGetValue(u.Id, out var mockSessions);
             schoolNames.TryGetValue(u.SchoolId ?? 0, out var sName);
 
             return new AdminUserDto(
@@ -423,12 +439,13 @@ public class AdminService : IAdminService
                 DeletedAt: u.DeletedAt,
                 CreatedAt: u.CreatedAt,
                 UpdatedAt: u.UpdatedAt,
-                TotalAnswers: stats?.Total ?? 0,
-                CorrectAnswers: stats?.Correct ?? 0,
-                TestSessions: sessions,
+                TotalAnswers: (stats?.Total ?? 0) + (mockStats?.Total ?? 0),
+                CorrectAnswers: (stats?.Correct ?? 0) + (mockStats?.Correct ?? 0),
+                TestSessions: sessions + mockSessions,
                 SchoolId: u.SchoolId,
                 SchoolName: sName,
-                PhoneNumber: u.PhoneNumber
+                PhoneNumber: u.PhoneNumber,
+                FreeMockUsed: u.FreeMockUsed
             );
         }).ToList();
 
@@ -450,6 +467,10 @@ public class AdminService : IAdminService
             .CountAsync(a => a.UserId == id && a.AnswerOption.IsCorrect);
         var testSessions = await _db.TestSessions.CountAsync(s => s.UserId == id);
 
+        var mockTotal = await _db.MockExamAnswers.CountAsync(a => a.Attempt.UserId == id && (a.SelectedOptionId != null || a.SelectedOptions.Any()));
+        var mockCorrect = await _db.MockExamAnswers.CountAsync(a => a.Attempt.UserId == id && a.IsCorrect);
+        var mockSessions = await _db.MockExamAttempts.CountAsync(a => a.UserId == id);
+
         // Resolve school name for display
         string? schoolName = null;
 
@@ -468,12 +489,13 @@ public class AdminService : IAdminService
             DeletedAt: user.DeletedAt,
             CreatedAt: user.CreatedAt,
             UpdatedAt: user.UpdatedAt,
-            TotalAnswers: totalAnswers,
-            CorrectAnswers: correctAnswers,
-            TestSessions: testSessions,
+            TotalAnswers: totalAnswers + mockTotal,
+            CorrectAnswers: correctAnswers + mockCorrect,
+            TestSessions: testSessions + mockSessions,
             SchoolId: user.SchoolId,
             SchoolName: schoolName,
-            PhoneNumber: user.PhoneNumber
+            PhoneNumber: user.PhoneNumber,
+            FreeMockUsed: user.FreeMockUsed
         );
     }
 
@@ -1116,6 +1138,20 @@ public class AdminService : IAdminService
         await _db.SaveChangesAsync();
 
         _logger.LogInformation("Unblocked user {UserId} ({Email})", id, user.Email);
+        return await GetUserByIdAsync(id);
+    }
+
+    /// <summary>Grants the user another one-time free mock run by clearing FreeMockUsed.</summary>
+    public async Task<AdminUserDto?> ResetFreeMockAsync(int id)
+    {
+        var user = await _db.Users.FindAsync(id);
+        if (user == null) return null;
+
+        user.FreeMockUsed = false;
+        user.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+
+        _logger.LogInformation("Reset free mock for user {UserId} ({Email})", id, user.Email);
         return await GetUserByIdAsync(id);
     }
 
