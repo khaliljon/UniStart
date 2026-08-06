@@ -490,6 +490,11 @@ public static class UniStartStartupExtensions
             service => service.CreateBackupAsync("scheduled"),
             "0 1 * * *");
 
+        RecurringJob.AddOrUpdate<IExchangeRateService>(
+            "fx-usd-kzt-refresh",
+            service => service.RefreshAsync(),
+            "0 6 * * *");
+
         return app;
     }
 

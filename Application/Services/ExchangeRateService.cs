@@ -34,6 +34,31 @@ public class ExchangeRateService : IExchangeRateService
 
         var fallback = _config.GetValue<decimal?>("Polar:UsdToLocalRate") ?? 500m;
 
+        var fetched = await FetchAsync(ct);
+        if (fetched is > 0)
+        {
+            _cache.Set(CacheKey, fetched.Value, TimeSpan.FromHours(12));
+            return fetched.Value;
+        }
+
+        // Cache the fallback briefly so a downed API isn't hit on every request.
+        _cache.Set(CacheKey, fallback, TimeSpan.FromMinutes(30));
+        return fallback;
+    }
+
+    public async Task RefreshAsync()
+    {
+        var fetched = await FetchAsync(CancellationToken.None);
+        if (fetched is > 0)
+        {
+            _cache.Set(CacheKey, fetched.Value, TimeSpan.FromHours(24));
+            _logger.LogInformation("Refreshed USD/KZT rate: {Rate}", fetched.Value);
+        }
+        // On failure keep whatever is cached; GetUsdToKztAsync handles fallback.
+    }
+
+    private async Task<decimal?> FetchAsync(CancellationToken ct)
+    {
         try
         {
             using var resp = await _http.GetAsync(ApiUrl, ct);
@@ -45,18 +70,14 @@ public class ExchangeRateService : IExchangeRateService
                 && rates.TryGetProperty("KZT", out var kzt)
                 && kzt.TryGetDecimal(out var rate) && rate > 0)
             {
-                _cache.Set(CacheKey, rate, TimeSpan.FromHours(12));
                 return rate;
             }
-            _logger.LogWarning("USD/KZT rate missing in exchange API response; using fallback {Fallback}", fallback);
+            _logger.LogWarning("USD/KZT rate missing in exchange API response");
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to fetch USD/KZT rate; using fallback {Fallback}", fallback);
+            _logger.LogWarning(ex, "Failed to fetch USD/KZT rate");
         }
-
-        // Cache the fallback briefly so a downed API isn't hit on every request.
-        _cache.Set(CacheKey, fallback, TimeSpan.FromMinutes(30));
-        return fallback;
+        return null;
     }
 }

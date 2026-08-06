@@ -4,8 +4,14 @@ namespace UniStart.Application.Interfaces;
 public interface IExchangeRateService
 {
     /// <summary>
-    /// Current USD→KZT rate. Cached and refreshed automatically from an external API;
-    /// falls back to the configured <c>Polar:UsdToLocalRate</c> when the API is unavailable.
+    /// Current USD→KZT rate. Returns the cached value; if the cache is empty it fetches
+    /// from the external API, falling back to the configured <c>Polar:UsdToLocalRate</c>.
     /// </summary>
     Task<decimal> GetUsdToKztAsync(CancellationToken ct = default);
+
+    /// <summary>
+    /// Forces a fresh fetch of the USD→KZT rate and updates the cache. Invoked by the
+    /// daily background job so requests always hit a warm cache.
+    /// </summary>
+    Task RefreshAsync();
 }
