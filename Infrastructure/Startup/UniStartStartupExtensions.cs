@@ -96,6 +96,7 @@ public static class UniStartStartupExtensions
         services.AddScoped<IQuestionImportService, QuestionImportService>();
         services.AddSingleton<ILlmExtractionService, LlmExtractionService>();
         services.AddSingleton<IImageUploadService, ImageUploadService>();
+        services.AddSingleton<IExchangeRateService, ExchangeRateService>();
 
         services.AddSingleton<PresenceTracker>();
 

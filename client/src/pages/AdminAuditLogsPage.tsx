@@ -26,6 +26,7 @@ const ACTION_COLORS: Record<string, string> = {
   BulkImport: '#8b5cf6',
   HardDelete: '#dc2626',
   EmptyTrash: '#991b1b',
+  ResetFreeMock: '#0891b2',
   VerifyTutor: '#16a34a',
   UnverifyTutor: '#ea580c',
   ToggleTutorSubscription: '#0891b2',
@@ -126,15 +127,7 @@ function AdminAuditLogsPage() {
             <option value="BulkImport">BulkImport</option>
             <option value="HardDelete">HardDelete</option>
             <option value="EmptyTrash">EmptyTrash</option>
-            <option value="VerifyTutor">VerifyTutor</option>
-            <option value="UnverifyTutor">UnverifyTutor</option>
-            <option value="ToggleTutorSubscription">ToggleTutorSubscription</option>
-            <option value="ActivateSchoolSubscription">ActivateSchoolSubscription</option>
-            <option value="DeactivateSchoolSubscription">DeactivateSchoolSubscription</option>
-            <option value="DeleteSchool">DeleteSchool</option>
-            <option value="ApproveSchool">ApproveSchool</option>
-            <option value="UnapproveSchool">UnapproveSchool</option>
-            <option value="RestoreSchool">RestoreSchool</option>
+            <option value="ResetFreeMock">ResetFreeMock</option>
           </select>
         </div>
 
@@ -151,8 +144,6 @@ function AdminAuditLogsPage() {
             <option value="User">User</option>
             <option value="Topic">Topic</option>
             <option value="Section">Section</option>
-            <option value="TutorProfile">TutorProfile</option>
-            <option value="TutorSchool">TutorSchool</option>
           </select>
         </div>
 

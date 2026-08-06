@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using UniStart.Application.DTOs;
+using UniStart.Application.Interfaces;
 using UniStart.Domain.Entities;
 using UniStart.Infrastructure.Data;
 
@@ -13,10 +14,12 @@ namespace UniStart.Controllers;
 public class PurchaseController : ApiControllerBase
 {
     private readonly UniStartDbContext _db;
+    private readonly IExchangeRateService _fx;
 
-    public PurchaseController(UniStartDbContext db)
+    public PurchaseController(UniStartDbContext db, IExchangeRateService fx)
     {
         _db = db;
+        _fx = fx;
     }
 
     private static PurchaseDto ToDto(Purchase p) => new(
@@ -46,8 +49,17 @@ public class PurchaseController : ApiControllerBase
     {
         var rows = await FilteredRowsAsync(status, itemType, from, to);
         var currency = rows.FirstOrDefault()?.Currency ?? "KZT";
-        var revenue = rows.Where(r => r.Status == "Paid").Sum(r => r.Amount);
-        var net = rows.Where(r => r.Status == "Paid").Sum(r => r.NetAmount);
+        var paid = rows.Where(r => r.Status == "Paid").ToList();
+        var revenue = paid.Sum(r => r.Amount);
+
+        // Polar charges its commission in USD; convert it to the sale currency (live
+        // USD/KZT rate, cached) so the "to payout" figure reflects the real amount.
+        var usdRate = await _fx.GetUsdToKztAsync();
+        var feeInLocal = paid.Sum(r =>
+            r.PlatformFeeCurrency != null && !string.Equals(r.PlatformFeeCurrency, currency, StringComparison.OrdinalIgnoreCase)
+                ? r.PlatformFeeAmount * usdRate
+                : r.PlatformFeeAmount);
+        var net = Math.Round(revenue - feeInLocal, 2);
         return Ok(new AdminSalesDto(rows.Count, revenue, currency, rows, net));
     }
 
