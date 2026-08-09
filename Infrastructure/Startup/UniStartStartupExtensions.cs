@@ -385,6 +385,17 @@ public static class UniStartStartupExtensions
                 {
                     var cache = context.RequestServices.GetRequiredService<IMemoryCache>();
                     var cacheKey = $"blocked:{userId}";
+
+                    // Throttled "last seen" update — at most one DB write per 2 min per user.
+                    var seenKey = $"lastseen:{userId}";
+                    if (!cache.TryGetValue(seenKey, out _))
+                    {
+                        cache.Set(seenKey, true, TimeSpan.FromMinutes(2));
+                        var seenDb = context.RequestServices.GetRequiredService<UniStartDbContext>();
+                        await seenDb.Users.Where(u => u.Id == userId)
+                            .ExecuteUpdateAsync(s => s.SetProperty(u => u.LastSeenAt, _ => DateTime.UtcNow));
+                    }
+
                     if (!cache.TryGetValue(cacheKey, out object? cached) || cached is not bool isBlocked)
                     {
                         var db = context.RequestServices.GetRequiredService<UniStartDbContext>();

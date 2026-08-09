@@ -33,11 +33,6 @@ function formatDate(iso: string | null): string {
   });
 }
 
-const LEVEL_COLORS: Record<string, string> = {
-  Novice: '#6b7280', Beginner: '#3b82f6', Intermediate: '#f59e0b',
-  Advanced: '#22c55e', Expert: '#a855f7', Master: '#ef4444'
-};
-
 export default function AdminUserActivityPage() {
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -159,60 +154,7 @@ export default function AdminUserActivityPage() {
             <SummaryCard label={t.admin.activity.totalAnswers} value={data.summary.totalAnswers} />
             <SummaryCard label={t.admin.activity.correctAnswers} value={data.summary.correctAnswers} />
             <SummaryCard label={t.admin.activity.sessionsCount} value={data.summary.totalSessions} />
-            <SummaryCard label="Streak" value={data.summary.currentStreak} suffix={` ${t.admin.activity.daysShort}`} />
             <SummaryCard label={t.admin.activity.lastActivity} text={formatDate(data.summary.lastActivity)} />
-          </div>
-
-          {/* Two-column: Skills + Activity Heatmap */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 24 }}>
-            {/* Skills */}
-            <div style={{ background: 'var(--bg-secondary)', borderRadius: 12, padding: 20 }}>
-              <h3 style={{ margin: '0 0 12px' }}>{t.admin.activity.skills}</h3>
-              {data.skills.length === 0 ? (
-                <div style={{ color: 'var(--text-secondary)' }}>{t.admin.common.noData}</div>
-              ) : data.skills.map(s => (
-                <div key={s.skillName} style={{
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  padding: '8px 0', borderBottom: '1px solid var(--border)'
-                }}>
-                  <div>
-                    <div style={{ fontWeight: 600, fontSize: 14 }}>{s.skillName}</div>
-                    <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-                      θ = {s.theta.toFixed(2)} ± {s.thetaSE.toFixed(2)}
-                    </div>
-                  </div>
-                  <span style={{
-                    padding: '2px 10px', borderRadius: 12, fontSize: 12, fontWeight: 600,
-                    color: '#fff', background: LEVEL_COLORS[s.level] || '#6b7280'
-                  }}>{s.level}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* Daily Activity Chart (simple bar chart) */}
-            <div style={{ background: 'var(--bg-secondary)', borderRadius: 12, padding: 20 }}>
-              <h3 style={{ margin: '0 0 12px' }}>{t.admin.activity.activity30days}</h3>
-              {data.dailyActivity.length === 0 ? (
-                <div style={{ color: 'var(--text-secondary)' }}>{t.admin.common.noData}</div>
-              ) : (
-                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 120 }}>
-                  {data.dailyActivity.map(d => {
-                    const max = Math.max(...data.dailyActivity.map(x => x.count));
-                    const h = max > 0 ? (d.count / max) * 100 : 0;
-                    return (
-                      <div key={d.date} title={`${new Date(d.date).toLocaleDateString(getDateLocale())}: ${d.count}`}
-                        style={{
-                          flex: 1, minWidth: 4, borderRadius: '4px 4px 0 0',
-                          height: `${Math.max(h, 4)}%`,
-                          background: d.count > 0 ? 'var(--accent-color)' : 'var(--border)',
-                          opacity: d.count > 0 ? 0.6 + (h / 250) : 0.3
-                        }}
-                      />
-                    );
-                  })}
-                </div>
-              )}
-            </div>
           </div>
 
           {/* Sessions (mock attempts) with review */}

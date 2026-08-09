@@ -316,14 +316,9 @@ const adminService = {
       };
       summary: {
         totalAnswers: number; correctAnswers: number; accuracy: number;
-        totalSessions: number; currentStreak: number;
+        totalSessions: number;
         lastActivity: string | null;
       };
-      skills: Array<{
-        skillName: string; theta: number; thetaSE: number;
-        level: string; lastUpdated: string;
-      }>;
-      dailyActivity: Array<{ date: string; count: number }>;
       sessions: {
         items: Array<{
           id: number; startedAt: string; completedAt: string | null;

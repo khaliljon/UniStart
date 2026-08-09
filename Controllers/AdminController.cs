@@ -809,17 +809,8 @@ public class AdminController : ControllerBase
         totalAnswers += mockAnswered;
         correctAnswers += mockCorrect;
 
-        var lastPracticeActivity = await _db.UserAnswers
-            .Where(a => a.UserId == id)
-            .OrderByDescending(a => a.AnsweredAt)
-            .Select(a => (DateTime?)a.AnsweredAt)
-            .FirstOrDefaultAsync();
-        var lastMockActivity = await _db.MockExamAttempts
-            .Where(a => a.UserId == id)
-            .OrderByDescending(a => a.StartedAt)
-            .Select(a => (DateTime?)(a.CompletedAt ?? a.StartedAt))
-            .FirstOrDefaultAsync();
-        var lastActivity = new[] { lastPracticeActivity, lastMockActivity }.Max();
+        // "Last activity" = last time the user was present on the platform.
+        var lastActivity = user.LastSeenAt;
 
         // The user's mock attempts (sessions) with score + status, newest first.
         var mockSessions = await _db.MockExamAttempts
@@ -836,46 +827,6 @@ public class AdminController : ControllerBase
                 a.TotalScore,
                 a.Status,
             })
-            .ToListAsync();
-
-        // Section ability profiles
-        var skills = await _db.UserSkillProfiles
-            .Where(p => p.UserId == id)
-            .Include(p => p.Section)
-            .Select(p => new
-            {
-                skillName = p.Section.Name,
-                p.Theta,
-                p.ThetaSE,
-                p.Level,
-                p.LastUpdated
-            })
-            .ToListAsync();
-
-        // Streak — single query instead of per-day loop
-        var activityDates = await _db.UserAnswers
-            .Where(a => a.UserId == id)
-            .Select(a => a.AnsweredAt.Date)
-            .Distinct()
-            .OrderByDescending(d => d)
-            .ToListAsync();
-
-        var streak = 0;
-        var checkDate = DateTime.UtcNow.Date.AddDays(-1);
-        foreach (var d in activityDates)
-        {
-            if (d != checkDate) break;
-            streak++;
-            checkDate = checkDate.AddDays(-1);
-        }
-
-        // Activity by day (last 30 days)
-        var thirtyDaysAgo = DateTime.UtcNow.AddDays(-30);
-        var dailyActivity = await _db.UserAnswers
-            .Where(a => a.UserId == id && a.AnsweredAt > thirtyDaysAgo)
-            .GroupBy(a => a.AnsweredAt.Date)
-            .Select(g => new { date = g.Key, count = g.Count() })
-            .OrderBy(x => x.date)
             .ToListAsync();
 
         return Ok(new
@@ -897,11 +848,8 @@ public class AdminController : ControllerBase
                 correctAnswers,
                 accuracy = totalAnswers > 0 ? Math.Round((double)correctAnswers / totalAnswers * 100, 1) : 0,
                 totalSessions = totalSessions + mockAttemptCount,
-                currentStreak = streak,
                 lastActivity
             },
-            skills,
-            dailyActivity,
             sessions = new
             {
                 items = sessions,

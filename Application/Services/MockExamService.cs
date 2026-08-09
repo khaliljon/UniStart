@@ -542,13 +542,30 @@ public class MockExamService : IMockExamService
 
         var sections = GetEffectiveSections(attempt);
 
+        // Correctness is re-derived from the CURRENT question (correct option + the
+        // user's stored selection), so edits to a question/options are reflected in
+        // old reviews instead of showing stale results.
+        static (bool answered, bool correct) Evaluate(MockExamAnswer a)
+        {
+            var correctIds = a.Question.AnswerOptions.Where(o => o.IsCorrect).Select(o => o.Id).OrderBy(x => x).ToList();
+            var selectedIds = a.SelectedOptions.Select(s => s.AnswerOptionId).ToList();
+            if (selectedIds.Count == 0 && a.SelectedOptionId.HasValue) selectedIds.Add(a.SelectedOptionId.Value);
+            var answered = selectedIds.Count > 0;
+            if (!answered || correctIds.Count == 0) return (answered, false);
+            var selSorted = selectedIds.Distinct().OrderBy(x => x).ToList();
+            var correct = a.Question.IsMultipleChoice
+                ? selSorted.SequenceEqual(correctIds)
+                : selSorted.Count == 1 && correctIds.Contains(selSorted[0]);
+            return (answered, correct);
+        }
+
         // Section results
         var sectionResults = new List<MockExamSectionResultDto>();
         for (int si = 0; si < sections.Count; si++)
         {
             var sectionAnswers = allAnswers.Where(a => a.SectionIndex == si).ToList();
-            var correct = sectionAnswers.Count(a => a.IsCorrect);
-            var unanswered = sectionAnswers.Count(a => !a.SelectedOptionId.HasValue);
+            var correct = sectionAnswers.Count(a => Evaluate(a).correct);
+            var unanswered = sectionAnswers.Count(a => !Evaluate(a).answered);
             sectionResults.Add(new MockExamSectionResultDto(
                 si,
                 sections[si].Name,
@@ -572,6 +589,7 @@ public class MockExamService : IMockExamService
             var correctIds = a.Question.AnswerOptions.Where(o => o.IsCorrect).Select(o => o.Id).ToList();
             var selectedIds = a.SelectedOptions.Select(s => s.AnswerOptionId).ToList();
             if (selectedIds.Count == 0 && a.SelectedOptionId.HasValue) selectedIds.Add(a.SelectedOptionId.Value);
+            var (answered, isCorrect) = Evaluate(a);
 
             return new MockExamAnswerReviewDto(
                 a.QuestionId,
@@ -583,8 +601,8 @@ public class MockExamService : IMockExamService
                 selectedOption?.Text,
                 correctOption?.Id ?? 0,
                 correctOption?.Text ?? "",
-                a.IsCorrect,
-                selectedIds.Count == 0,
+                isCorrect,
+                !answered,
                 a.Question.Explanation,
                 a.Question.IsMultipleChoice,
                 selectedIds,
@@ -592,14 +610,15 @@ public class MockExamService : IMockExamService
             );
         }).ToList();
 
-        var totalCorrect = allAnswers.Count(a => a.IsCorrect);
+        var totalCorrect = allAnswers.Count(a => Evaluate(a).correct);
+        var dynamicScore = allAnswers.Count > 0 ? (int)Math.Round(100.0 * totalCorrect / allAnswers.Count) : 0;
 
         return new MockExamResultDto(
             attempt.Id,
             attempt.MockExamId,
             attempt.MockExam.Title,
             attempt.MockExam.ExamTypeCode,
-            attempt.TotalScore ?? 0,
+            dynamicScore,
             totalCorrect,
             allAnswers.Count,
             allAnswers.Count > 0 ? Math.Round(100.0 * totalCorrect / allAnswers.Count, 1) : 0,

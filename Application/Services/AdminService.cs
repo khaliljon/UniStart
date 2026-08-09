@@ -185,12 +185,29 @@ public class AdminService : IAdminService
 
         if (dto.AnswerOptions != null && dto.AnswerOptions.Count >= 2)
         {
-            _db.AnswerOptions.RemoveRange(question.AnswerOptions);
-            question.AnswerOptions = dto.AnswerOptions.Select(o => new AnswerOption
+            // Update options in place (preserve their IDs) so already-answered mock/practice
+            // attempts keep pointing at the same option — their review stays intact and
+            // correctness is re-derived dynamically instead of showing "skipped".
+            var existing = question.AnswerOptions.OrderBy(o => o.Id).ToList();
+            for (int i = 0; i < dto.AnswerOptions.Count; i++)
             {
-                Text = o.Text,
-                IsCorrect = o.IsCorrect
-            }).ToList();
+                if (i < existing.Count)
+                {
+                    existing[i].Text = dto.AnswerOptions[i].Text;
+                    existing[i].IsCorrect = dto.AnswerOptions[i].IsCorrect;
+                }
+                else
+                {
+                    question.AnswerOptions.Add(new AnswerOption
+                    {
+                        Text = dto.AnswerOptions[i].Text,
+                        IsCorrect = dto.AnswerOptions[i].IsCorrect
+                    });
+                }
+            }
+            // Drop any surplus options beyond the new count.
+            for (int i = dto.AnswerOptions.Count; i < existing.Count; i++)
+                _db.AnswerOptions.Remove(existing[i]);
         }
 
         await _db.SaveChangesAsync();
