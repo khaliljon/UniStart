@@ -3,10 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../i18n';
 import { cscaStrings } from '../i18n/csca';
 import { cartService, type CartItem } from '../services/cartService';
-import { mockCatalogService, type CheckoutLine, type MockTemplate } from '../services/mockCatalogService';
+import { mockCatalogService, type CheckoutLine, type MockTemplate, type MockPackage } from '../services/mockCatalogService';
+import { materialsService, type StudyMaterial } from '../services/materialsService';
 import { purchaseService } from '../services/purchaseService';
 import { paymentsService } from '../services/paymentsService';
 import { pickLocalized } from '../utils/localize';
+import { moks } from '../utils/plural';
 
 function CartPage() {
   const navigate = useNavigate();
@@ -14,6 +16,8 @@ function CartPage() {
   const s = cscaStrings[locale];
   const [items, setItems] = useState<CartItem[]>([]);
   const [templates, setTemplates] = useState<MockTemplate[]>([]);
+  const [packages, setPackages] = useState<MockPackage[]>([]);
+  const [materials, setMaterials] = useState<StudyMaterial[]>([]);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,9 +39,10 @@ function CartPage() {
   }, []);
 
   // Catalog is used to turn selected mock IDs (stored on package cart items) into
-  // human-readable, localized names for the chips.
+  // human-readable, localized names for the chips, and to localize item titles.
   useEffect(() => {
-    mockCatalogService.getCatalog().then((c) => setTemplates(c.templates)).catch(() => {});
+    mockCatalogService.getCatalog().then((c) => { setTemplates(c.templates); setPackages(c.packages); }).catch(() => {});
+    materialsService.list().then(setMaterials).catch(() => {});
   }, []);
 
   const nameById = new Map(
@@ -51,6 +56,22 @@ function CartPage() {
     chineseHum: s.subjChineseHum,
   };
   const chipLabel = (sub: string) => nameById.get(sub) ?? subjectName[sub] ?? sub;
+
+  // Re-derive a localized title from the catalog so it follows the language
+  // switch, instead of the snapshot stored when the item was added.
+  const displayTitle = (item: CartItem): string => {
+    if (item.itemType === 'mock') {
+      const tpl = templates.find((t) => String(t.mockExamId) === item.itemCode);
+      if (tpl) return `${pickLocalized(tpl.title, tpl.titleKz, tpl.titleEn, locale)} · ${moks(item.runs ?? 1, locale)}`;
+    } else if (item.itemType === 'package') {
+      const pkg = packages.find((p) => p.key === item.itemCode);
+      if (pkg) return pickLocalized(pkg.name, pkg.nameKz, pkg.nameEn, locale);
+    } else if (item.itemType === 'book') {
+      const mat = materials.find((m) => String(m.id) === item.itemCode);
+      if (mat) return pickLocalized(mat.title, mat.titleKz, mat.titleEn, locale);
+    }
+    return item.title;
+  };
 
   const total = items.reduce((sum, i) => sum + i.amount, 0);
   const currency = items[0]?.currency ?? s.currency;
@@ -92,7 +113,7 @@ function CartPage() {
           {items.map((item) => (
             <div key={`${item.itemType}:${item.itemCode}`} className="csca-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
               <div>
-                <div style={{ fontWeight: 700 }}>{item.title}</div>
+                <div style={{ fontWeight: 700 }}>{displayTitle(item)}</div>
                 {item.subjects && (
                   <div style={{ marginTop: '0.4rem', display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
                     {item.subjects.split(',').filter(Boolean).map((sub) => (

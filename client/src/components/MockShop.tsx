@@ -179,6 +179,12 @@ function MockShop() {
 
                   {picking && !allSubjects && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', margin: '0.2rem 0', padding: '0.5rem', background: 'var(--bg-secondary)', borderRadius: 10 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.15rem' }}>
+                        <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-secondary)' }}>{s.pickSubjects}</span>
+                        <button type="button" aria-label="Close"
+                                onClick={() => { setPkgPicker(null); setPkgChosen([]); }}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem', lineHeight: 1, color: 'var(--text-muted)' }}>✕</button>
+                      </div>
                       {catalog.templates.map((t) => {
                         const checked = pkgChosen.includes(t.mockExamId);
                         const disabled = !checked && pkgChosen.length >= pkg.pickCount;

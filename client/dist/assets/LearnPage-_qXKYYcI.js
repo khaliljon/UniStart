@@ -1,0 +1,1 @@
+import{j as r}from"./index-CnI8BtjS.js";import t from"./MockExamPage-DhQUNpS2.js";import"./mockExamService-DbQDnu_n.js";import"./localize-i5KYzjjt.js";import"./plural-BrUX0eS6.js";import"./csca-Bygf-xKH.js";import"./dates-Ba_hdIhh.js";function s(){return r.jsx("div",{className:"animate-fade-in",style:{padding:"1.5rem 0"},children:r.jsx(t,{})})}export{s as default};
