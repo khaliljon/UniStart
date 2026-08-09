@@ -3,19 +3,22 @@ import { useAppDispatch } from '../hooks/useAppDispatch';
 import { useAppSelector } from '../hooks/useAppSelector';
 import { useTranslation } from '../hooks/useTranslation';
 import { completeProfile, logout, clearError } from '../store/slices/authSlice';
+import PhoneField from '../components/PhoneField';
+import { splitPhone, isValidPhone } from '../utils/countries';
 
 function CompleteProfilePage() {
   const dispatch = useAppDispatch();
   const { isLoading, error } = useAppSelector((state) => state.auth);
   const { t } = useTranslation();
 
-  const [phoneNumber, setPhoneNumber] = useState('+7');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [validationError, setValidationError] = useState('');
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     setValidationError('');
-    if (!/^\+77\d{9}$/.test(phoneNumber)) {
+    const { country, national } = splitPhone(phoneNumber);
+    if (!isValidPhone(country, national)) {
       setValidationError(t.auth.phoneInvalid);
       return;
     }
@@ -33,23 +36,10 @@ function CompleteProfilePage() {
             <label htmlFor="phoneNumber" className="form-label">
               {t.auth.phone}
             </label>
-            <input
-              type="tel"
+            <PhoneField
               id="phoneNumber"
-              className="form-input"
               value={phoneNumber}
-              onChange={(e) => {
-                let digits = e.target.value.replace(/\D/g, '');
-                if (digits.startsWith('8')) digits = '7' + digits.slice(1);
-                if (!digits.startsWith('7')) digits = '7' + digits;
-                setPhoneNumber('+' + digits.slice(0, 11));
-                if (error) dispatch(clearError());
-                setValidationError('');
-              }}
-              placeholder="+7 700 123 45 67"
-              maxLength={12}
-              required
-              autoFocus
+              onChange={(v) => { setPhoneNumber(v); if (error) dispatch(clearError()); setValidationError(''); }}
             />
             <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.4rem' }}>
               {t.auth.completeProfile.hint}

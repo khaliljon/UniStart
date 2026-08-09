@@ -514,7 +514,24 @@ public class MockExamService : IMockExamService
             .FirstOrDefaultAsync(a => a.Id == attemptId && a.UserId == userId);
 
         if (attempt == null || attempt.Status != "completed") return null;
+        return await BuildResultsAsync(attempt);
+    }
 
+    /// <summary>Admin-only: results for any completed attempt (no ownership check).</summary>
+    public async Task<MockExamResultDto?> GetResultsForAdminAsync(int attemptId)
+    {
+        var attempt = await _context.MockExamAttempts
+            .Include(a => a.MockExam).ThenInclude(m => m.ExamType)
+            .Include(a => a.MockExam).ThenInclude(m => m.Sections.OrderBy(s => s.SortOrder))
+            .FirstOrDefaultAsync(a => a.Id == attemptId);
+
+        if (attempt == null || attempt.Status != "completed") return null;
+        return await BuildResultsAsync(attempt);
+    }
+
+    private async Task<MockExamResultDto?> BuildResultsAsync(MockExamAttempt attempt)
+    {
+        var attemptId = attempt.Id;
         var allAnswers = await _context.MockExamAnswers
             .Include(a => a.Question).ThenInclude(q => q.AnswerOptions)
             .Include(a => a.Question).ThenInclude(q => q.Topic).ThenInclude(t => t.Section)

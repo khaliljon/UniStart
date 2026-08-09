@@ -448,8 +448,8 @@ public class AuthService : IAuthService
             ?? throw new KeyNotFoundException("User not found");
 
         var phone = dto.PhoneNumber.Trim();
-        if (!System.Text.RegularExpressions.Regex.IsMatch(phone, @"^\+77\d{9}$"))
-            throw new InvalidOperationException("Phone must be a Kazakhstan number in the format +77XXXXXXXXX.");
+        if (!System.Text.RegularExpressions.Regex.IsMatch(phone, @"^\+\d{7,15}$"))
+            throw new InvalidOperationException("Enter a valid phone number in international format (+...).");
 
         user.PhoneNumber = phone;
         await _unitOfWork.SaveChangesAsync();

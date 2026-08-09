@@ -19,6 +19,7 @@ function AdminUsersPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [stats, setStats] = useState<AdminUserStats | null>(null);
   const [selected, setSelected] = useState<AdminUser | null>(null);
+  const [purchases, setPurchases] = useState<Awaited<ReturnType<typeof adminService.getUserPurchases>> | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -94,6 +95,8 @@ function AdminUsersPage() {
     setSelected(user);
     setEditMode(false);
     setSuccess(null);
+    setPurchases(null);
+    adminService.getUserPurchases(user.id).then(setPurchases).catch(() => setPurchases([]));
     // Load tutor data if user is a Tutor and not cached
     if (user.role === 'Tutor' && !tutorCache.has(user.id)) {
       setTutorLoading(true);
@@ -235,7 +238,6 @@ function AdminUsersPage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '1rem' }}>
           <StatCard label={t.admin.common.total} value={stats.totalUsers} color="var(--primary-color)" />
           <StatCard label={t.admin.users.students} value={stats.students} color="var(--primary-color)" />
-          <StatCard label={t.admin.users.tutorsLabel} value={stats.tutors} color="var(--warning-color)" />
           <StatCard label={t.admin.users.admins} value={stats.admins} color="var(--error-color)" />
           <StatCard label={t.admin.users.activeDays} value={stats.activeLast7Days} color="var(--success-color)" />
         </div>
@@ -496,6 +498,33 @@ function AdminUsersPage() {
                         </div>
                       )}
                     </>
+                  )}
+                </div>
+
+                {/* Purchases */}
+                <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem' }}>
+                  <h3 style={{ fontSize: '1rem', margin: '0 0 0.5rem' }}>{t.admin.users.purchases}</h3>
+                  {purchases === null ? (
+                    <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{t.admin.common.loading}</div>
+                  ) : purchases.length === 0 ? (
+                    <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{t.admin.users.noPurchases}</div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                      {purchases.map(p => (
+                        <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', fontSize: '0.85rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.35rem' }}>
+                          <div>
+                            <div style={{ fontWeight: 600 }}>{p.title}</div>
+                            <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>
+                              {new Date(p.purchasedAt).toLocaleDateString(getDateLocale())}
+                            </div>
+                          </div>
+                          <div style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                            <div style={{ fontWeight: 700, color: 'var(--csca-red, #C8102E)' }}>{p.amount.toLocaleString('ru-RU')} {p.currency}</div>
+                            <div style={{ fontSize: '0.72rem', color: p.status === 'Paid' ? '#10b981' : 'var(--text-secondary)' }}>{p.status}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   )}
                 </div>
 

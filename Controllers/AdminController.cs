@@ -27,8 +27,9 @@ public class AdminController : ControllerBase
     private readonly HealthCheckService _healthCheck;
     private readonly IEmailService _email;
     private readonly IImageUploadService _imageUpload;
+    private readonly IMockExamService _mockExams;
 
-    public AdminController(IAdminService svc, IAuditService audit, UniStartDbContext db, HealthCheckService healthCheck, IEmailService email, IImageUploadService imageUpload)
+    public AdminController(IAdminService svc, IAuditService audit, UniStartDbContext db, HealthCheckService healthCheck, IEmailService email, IImageUploadService imageUpload, IMockExamService mockExams)
     {
         _svc = svc;
         _audit = audit;
@@ -36,6 +37,7 @@ public class AdminController : ControllerBase
         _healthCheck = healthCheck;
         _email = email;
         _imageUpload = imageUpload;
+        _mockExams = mockExams;
     }
 
     /// <summary>Upload an image to Cloudflare R2 and return its public URL</summary>
@@ -66,9 +68,10 @@ public class AdminController : ControllerBase
         [FromQuery] string? difficulty = null,
         [FromQuery] string? section = null,
         [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 50)
+        [FromQuery] int pageSize = 50,
+        [FromQuery] string? search = null)
     {
-        var result = await _svc.GetQuestionsAsync(examTypeCode, topic, difficulty, section, page, pageSize);
+        var result = await _svc.GetQuestionsAsync(examTypeCode, topic, difficulty, section, page, pageSize, search);
         return Ok(result);
     }
 
@@ -796,11 +799,44 @@ public class AdminController : ControllerBase
         var correctAnswers = await _db.UserAnswers
             .CountAsync(a => a.UserId == id && a.AnswerOption.IsCorrect);
 
-        var lastActivity = await _db.UserAnswers
+        // Mock-exam activity (separate tables) — folded into the stats so mock-only
+        // users show real numbers, not zeros.
+        var mockAnswered = await _db.MockExamAnswers
+            .CountAsync(a => a.Attempt.UserId == id && (a.SelectedOptionId != null || a.SelectedOptions.Any()));
+        var mockCorrect = await _db.MockExamAnswers
+            .CountAsync(a => a.Attempt.UserId == id && a.IsCorrect);
+        var mockAttemptCount = await _db.MockExamAttempts.CountAsync(a => a.UserId == id);
+        totalAnswers += mockAnswered;
+        correctAnswers += mockCorrect;
+
+        var lastPracticeActivity = await _db.UserAnswers
             .Where(a => a.UserId == id)
             .OrderByDescending(a => a.AnsweredAt)
             .Select(a => (DateTime?)a.AnsweredAt)
             .FirstOrDefaultAsync();
+        var lastMockActivity = await _db.MockExamAttempts
+            .Where(a => a.UserId == id)
+            .OrderByDescending(a => a.StartedAt)
+            .Select(a => (DateTime?)(a.CompletedAt ?? a.StartedAt))
+            .FirstOrDefaultAsync();
+        var lastActivity = new[] { lastPracticeActivity, lastMockActivity }.Max();
+
+        // The user's mock attempts (sessions) with score + status, newest first.
+        var mockSessions = await _db.MockExamAttempts
+            .Where(a => a.UserId == id)
+            .OrderByDescending(a => a.StartedAt)
+            .Take(50)
+            .Select(a => new
+            {
+                a.Id,
+                title = a.MockExam.Title,
+                a.MockExam.ExamTypeCode,
+                a.StartedAt,
+                a.CompletedAt,
+                a.TotalScore,
+                a.Status,
+            })
+            .ToListAsync();
 
         // Section ability profiles
         var skills = await _db.UserSkillProfiles
@@ -860,7 +896,7 @@ public class AdminController : ControllerBase
                 totalAnswers,
                 correctAnswers,
                 accuracy = totalAnswers > 0 ? Math.Round((double)correctAnswers / totalAnswers * 100, 1) : 0,
-                totalSessions,
+                totalSessions = totalSessions + mockAttemptCount,
                 currentStreak = streak,
                 lastActivity
             },
@@ -873,8 +909,33 @@ public class AdminController : ControllerBase
                 page,
                 pageSize,
                 totalPages = (int)Math.Ceiling((double)totalSessions / pageSize)
-            }
+            },
+            mockSessions
         });
+    }
+
+    /// <summary>Admin: full answer review for any completed mock attempt.</summary>
+    [HttpGet("mock-attempts/{attemptId:int}/review")]
+    public async Task<IActionResult> GetMockAttemptReview(int attemptId)
+    {
+        var result = await _mockExams.GetResultsForAdminAsync(attemptId);
+        return result == null ? NotFound() : Ok(result);
+    }
+
+    /// <summary>Admin: a user's purchase history.</summary>
+    [HttpGet("users/{id:int}/purchases")]
+    public async Task<IActionResult> GetUserPurchases(int id)
+    {
+        var items = await _db.Purchases
+            .Where(p => p.UserId == id)
+            .OrderByDescending(p => p.PurchasedAt)
+            .Select(p => new
+            {
+                p.Id, p.ItemType, p.Title, p.Subjects,
+                p.Amount, p.Currency, p.Status, p.PurchasedAt
+            })
+            .ToListAsync();
+        return Ok(items);
     }
 
     private (int userId, string email) GetCurrentAdmin()

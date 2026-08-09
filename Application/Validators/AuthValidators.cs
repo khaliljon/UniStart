@@ -39,7 +39,7 @@ public class RegisterDtoValidator : AbstractValidator<RegisterDto>
 
         RuleFor(x => x.PhoneNumber)
             .NotEmpty().WithMessage("Phone number is required.")
-            .Matches(@"^\+77\d{9}$").WithMessage("Phone must be a Kazakhstan number in the format +77XXXXXXXXX.");
+            .Matches(@"^\+\d{7,15}$").WithMessage("Enter a valid phone number in international format (+...).");
     }
 }
 
@@ -70,7 +70,7 @@ public class UpdatePhoneDtoValidator : AbstractValidator<UpdatePhoneDto>
     {
         RuleFor(x => x.PhoneNumber)
             .NotEmpty().WithMessage("Phone number is required.")
-            .Matches(@"^\+77\d{9}$").WithMessage("Phone must be a Kazakhstan number in the format +77XXXXXXXXX.");
+            .Matches(@"^\+\d{7,15}$").WithMessage("Enter a valid phone number in international format (+...).");
     }
 }
 

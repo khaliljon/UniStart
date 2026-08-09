@@ -30,7 +30,7 @@ public class AdminService : IAdminService
 
     public async Task<PagedResult<QuestionListDto>> GetQuestionsAsync(
         string? examTypeCode = null, string? topicName = null, string? difficulty = null,
-        string? sectionName = null, int page = 1, int pageSize = 50)
+        string? sectionName = null, int page = 1, int pageSize = 50, string? search = null)
     {
         var query = _db.Questions
             .Include(q => q.Topic)
@@ -47,6 +47,9 @@ public class AdminService : IAdminService
 
         if (!string.IsNullOrEmpty(topicName))
             query = query.Where(q => q.Topic.Name.Contains(topicName));
+
+        if (!string.IsNullOrEmpty(search))
+            query = query.Where(q => q.Text.Contains(search));
 
         if (!string.IsNullOrEmpty(difficulty) && Enum.TryParse<QuestionDifficulty>(difficulty, true, out var diff))
             query = query.Where(q => q.Difficulty == diff);
@@ -579,11 +582,17 @@ public class AdminService : IAdminService
         var proCount = await _db.Users.CountAsync(u => u.SubscriptionTier == SubscriptionTier.Pro);
 
         var sevenDaysAgo = DateTime.UtcNow.AddDays(-7);
-        var activeUserIds = await _db.UserAnswers
+        var activePractice = await _db.UserAnswers
             .Where(a => a.AnsweredAt >= sevenDaysAgo)
             .Select(a => a.UserId)
             .Distinct()
-            .CountAsync();
+            .ToListAsync();
+        var activeMock = await _db.MockExamAttempts
+            .Where(a => a.StartedAt >= sevenDaysAgo)
+            .Select(a => a.UserId)
+            .Distinct()
+            .ToListAsync();
+        var activeUserIds = activePractice.Union(activeMock).Count();
 
         var total = roleCounts.Values.Sum();
 

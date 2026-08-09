@@ -649,6 +649,7 @@ export interface Translations {
       questionsCount: string; topicsCount: string;
       tableView: string; topicsView: string;
       searchTopic: string; questionText: string; enterQuestion: string;
+      allTopics: string; searchQuestion: string;
       difficulty: string; answerOptions: string; answerOptionsHint: string;
       correctAnswer: string; markCorrect: string; optionPlaceholder: string;
       removeOption: string; addOption: string; explanation: string;
@@ -743,6 +744,7 @@ export interface Translations {
       restoreConfirm: string; userRestored: string; restoreError: string;
       freeMock: string; freeMockUsedLabel: string; freeMockAvailableLabel: string;
       resetFreeMockBtn: string; freeMockResetOk: string;
+      purchases: string; noPurchases: string;
     };
     tutors: {
       title: string;
@@ -779,6 +781,7 @@ export interface Translations {
       questionsCol: string; correctCol: string; statusCol: string;
       completed: string; inProgress: string;
       enterUserIdPrompt: string;
+      mockSessions: string; noMockSessions: string; scoreCol: string; reviewBtn: string; reviewTitle: string;
     };
     health: {
       title: string; refreshBtn: string;

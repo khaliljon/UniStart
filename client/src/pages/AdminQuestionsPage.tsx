@@ -58,6 +58,7 @@ function AdminQuestionsPage() {
   const [filterDiff, setFilterDiff] = useState('');
   const [filterTopic, setFilterTopic] = useState('');
   const [filterSection, setFilterSection] = useState('');
+  const [filterQuestion, setFilterQuestion] = useState('');
 
   const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [modalMode, setModalMode] = useState<ModalMode>('view');
@@ -125,7 +126,7 @@ function AdminQuestionsPage() {
     try {
       setIsLoading(true);
       setError(null);
-      const result = await adminService.getQuestions(filterExam || undefined, filterTopic || undefined, filterDiff || undefined, page, 50, filterSection || undefined);
+      const result = await adminService.getQuestions(filterExam || undefined, filterTopic || undefined, filterDiff || undefined, page, 50, filterSection || undefined, filterQuestion || undefined);
       setQuestions(result.items);
       setTotalPages(result.totalPages);
       setTotalCount(result.totalCount);
@@ -134,7 +135,7 @@ function AdminQuestionsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [filterExam, filterDiff, filterTopic, filterSection, page]);
+  }, [filterExam, filterDiff, filterTopic, filterSection, filterQuestion, page]);
 
   const loadTopics = async () => {
     try {
@@ -683,10 +684,18 @@ function AdminQuestionsPage() {
             <option value="Medium">Medium</option>
             <option value="Hard">Hard</option>
           </select>
+          <select value={filterTopic} onChange={e => { setFilterTopic(e.target.value); setPage(1); }} style={{ padding: '0.5rem' }}>
+            <option value="">{t.admin.questions.allTopics}</option>
+            {[...new Set(topics
+              .filter(tp => (!filterExam || tp.examTypeCode === filterExam) && (!filterSection || tp.sectionName === filterSection))
+              .map(tp => tp.name))]
+              .sort((a, b) => a.localeCompare(b))
+              .map(name => <option key={name} value={name}>{name}</option>)}
+          </select>
           <input
-            placeholder={t.admin.questions.searchTopic}
-            value={filterTopic}
-            onChange={e => { setFilterTopic(e.target.value); setPage(1); }}
+            placeholder={t.admin.questions.searchQuestion}
+            value={filterQuestion}
+            onChange={e => { setFilterQuestion(e.target.value); setPage(1); }}
             className="form-input"
             style={{ flex: 1, minWidth: '140px' }}
           />

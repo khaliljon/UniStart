@@ -30,6 +30,7 @@ public interface IMockExamService
 
     /// <summary>Get mock exam results after completion</summary>
     Task<MockExamResultDto?> GetResultsAsync(int userId, int attemptId);
+    Task<MockExamResultDto?> GetResultsForAdminAsync(int attemptId);
 
     /// <summary>Get user's mock exam attempt history</summary>
     Task<IEnumerable<MockExamHistoryDto>> GetHistoryAsync(int userId);

@@ -10,6 +10,8 @@ import { referralService, type ReferralStats } from '../services/referralService
 import { authService } from '../services/authService';
 import { SOCIAL_LINKS } from '../socialLinks';
 import api from '../services/api';
+import PhoneField from '../components/PhoneField';
+import { splitPhone, isValidPhone } from '../utils/countries';
 import { PricingModal } from '../components/PricingModal';
 import type { SubscriptionStatus, ExamSection } from '../types';
 
@@ -46,7 +48,7 @@ function ProfilePage() {
   const [nameLoading, setNameLoading] = useState(false);
 
   // Phone change
-  const [editPhone, setEditPhone] = useState(user?.phoneNumber || '+7');
+  const [editPhone, setEditPhone] = useState(user?.phoneNumber || '');
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const [phoneSuccess, setPhoneSuccess] = useState<string | null>(null);
   const [phoneLoading, setPhoneLoading] = useState(false);
@@ -155,7 +157,8 @@ function ProfilePage() {
     e.preventDefault();
     setPhoneError(null);
     setPhoneSuccess(null);
-    if (!/^\+77\d{9}$/.test(editPhone)) { setPhoneError(t.auth.phoneInvalid); return; }
+    const { country, national } = splitPhone(editPhone);
+    if (!isValidPhone(country, national)) { setPhoneError(t.auth.phoneInvalid); return; }
     try {
       setPhoneLoading(true);
       await dispatch(completeProfile(editPhone)).unwrap();
@@ -236,20 +239,7 @@ function ProfilePage() {
         <form onSubmit={handleChangePhone} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
           <div>
             <label className="form-label">{t.auth.phone}</label>
-            <input
-              type="tel"
-              className="form-input"
-              value={editPhone}
-              onChange={e => {
-                let digits = e.target.value.replace(/\D/g, '');
-                if (digits.startsWith('8')) digits = '7' + digits.slice(1);
-                if (!digits.startsWith('7')) digits = '7' + digits;
-                setEditPhone('+' + digits.slice(0, 11));
-              }}
-              placeholder="+7 700 123 45 67"
-              maxLength={12}
-              style={{ width: '100%' }}
-            />
+            <PhoneField value={editPhone} onChange={setEditPhone} />
           </div>
           <button type="submit" className="btn btn-primary" disabled={phoneLoading || !editPhone.trim()} style={{ alignSelf: 'flex-start', fontSize: '0.9rem' }}>
             {phoneLoading ? '...' : t.common.save}

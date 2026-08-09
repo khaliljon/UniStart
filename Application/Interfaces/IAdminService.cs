@@ -5,7 +5,7 @@ namespace UniStart.Application.Interfaces;
 public interface IAdminService
 {
     // Questions
-    Task<PagedResult<QuestionListDto>> GetQuestionsAsync(string? examTypeCode = null, string? topicName = null, string? difficulty = null, string? sectionName = null, int page = 1, int pageSize = 50);
+    Task<PagedResult<QuestionListDto>> GetQuestionsAsync(string? examTypeCode = null, string? topicName = null, string? difficulty = null, string? sectionName = null, int page = 1, int pageSize = 50, string? search = null);
     Task<QuestionDetailDto?> GetQuestionByIdAsync(int id);
     Task<QuestionDetailDto> CreateQuestionAsync(CreateQuestionDto dto);
     Task<QuestionDetailDto?> UpdateQuestionAsync(int id, UpdateQuestionDto dto);

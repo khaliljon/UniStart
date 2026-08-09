@@ -6,6 +6,25 @@ import { getDateLocale } from '../i18n';
 
 type ActivityData = Awaited<ReturnType<typeof adminService.getUserActivity>>;
 
+interface MockReviewAnswer {
+  questionId: number;
+  questionText: string;
+  topicName: string;
+  sectionName: string;
+  selectedOptionText: string | null;
+  correctOptionText: string;
+  isCorrect: boolean;
+  isUnanswered: boolean;
+  explanation: string | null;
+}
+interface MockReview {
+  examTitle: string;
+  totalScore: number;
+  totalCorrect: number;
+  totalQuestions: number;
+  answerReview: MockReviewAnswer[];
+}
+
 function formatDate(iso: string | null): string {
   if (!iso) return '—';
   return new Date(iso).toLocaleString(getDateLocale(), {
@@ -29,6 +48,20 @@ export default function AdminUserActivityPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [page, setPage] = useState(1);
+  const [review, setReview] = useState<MockReview | null>(null);
+  const [reviewLoading, setReviewLoading] = useState(false);
+
+  const openReview = async (attemptId: number) => {
+    setReviewLoading(true);
+    try {
+      const r = await adminService.getMockAttemptReview(attemptId) as MockReview;
+      setReview(r);
+    } catch {
+      setReview(null);
+    } finally {
+      setReviewLoading(false);
+    }
+  };
 
   const load = useCallback(async (uid: number, p: number) => {
     if (!uid) return;
@@ -182,73 +215,89 @@ export default function AdminUserActivityPage() {
             </div>
           </div>
 
-          {/* Sessions Table */}
-          <div style={{ background: 'var(--bg-secondary)', borderRadius: 12, padding: 20 }}>
+          {/* Sessions (mock attempts) with review */}
+          <div style={{ background: 'var(--bg-secondary)', borderRadius: 12, padding: 20, marginTop: 20 }}>
             <h3 style={{ margin: '0 0 12px' }}>
-              {t.admin.activity.sessions} ({data.sessions.totalCount})
+              {t.admin.activity.sessions} ({data.mockSessions.length})
             </h3>
-            {data.sessions.items.length === 0 ? (
+            {data.mockSessions.length === 0 ? (
               <div style={{ color: 'var(--text-secondary)' }}>{t.admin.activity.noSessions}</div>
             ) : (
-              <>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr style={{ borderBottom: '2px solid var(--border)' }}>
-                      {['ID', t.admin.activity.examCol, t.admin.activity.startCol, t.admin.activity.endCol, t.admin.activity.questionsCol, t.admin.activity.correctCol, t.admin.activity.statusCol].map(h => (
-                        <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontSize: 13, color: 'var(--text-secondary)' }}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.sessions.items.map(s => (
-                      <tr key={s.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                        <td style={{ padding: '8px 10px', fontFamily: 'monospace', fontSize: 13 }}>{s.id}</td>
-                        <td style={{ padding: '8px 10px', fontWeight: 600 }}>{s.examTypeCode}</td>
-                        <td style={{ padding: '8px 10px', fontSize: 13 }}>{formatDate(s.startedAt)}</td>
-                        <td style={{ padding: '8px 10px', fontSize: 13 }}>{formatDate(s.completedAt)}</td>
-                        <td style={{ padding: '8px 10px' }}>{s.totalQuestions}</td>
-                        <td style={{ padding: '8px 10px' }}>
-                          {s.correctCount}/{s.totalQuestions}
-                          {s.totalQuestions > 0 && (
-                            <span style={{ color: 'var(--text-secondary)', marginLeft: 4, fontSize: 12 }}>
-                              ({Math.round(s.correctCount / s.totalQuestions * 100)}%)
-                            </span>
-                          )}
-                        </td>
-                        <td style={{ padding: '8px 10px' }}>
-                          <span style={{
-                            padding: '2px 10px', borderRadius: 12, fontSize: 12, fontWeight: 600,
-                            color: '#fff',
-                            background: s.isCompleted ? '#22c55e' : '#f59e0b'
-                          }}>
-                            {s.isCompleted ? t.admin.activity.completed : t.admin.activity.inProgress}
-                          </span>
-                        </td>
-                      </tr>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid var(--border)' }}>
+                    {['ID', t.admin.activity.examCol, t.admin.activity.startCol, t.admin.activity.scoreCol, t.admin.activity.statusCol, ''].map((h, i) => (
+                      <th key={i} style={{ padding: '8px 10px', textAlign: 'left', fontSize: 13, color: 'var(--text-secondary)' }}>{h}</th>
                     ))}
-                  </tbody>
-                </table>
-
-                {/* Pagination */}
-                {data.sessions.totalPages > 1 && (
-                  <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 16 }}>
-                    <button onClick={() => setPage(1)} disabled={page <= 1}
-                      style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-primary)', cursor: 'pointer', color: 'var(--text-primary)' }}>«</button>
-                    <button onClick={() => setPage(p => p - 1)} disabled={page <= 1}
-                      style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-primary)', cursor: 'pointer', color: 'var(--text-primary)' }}>‹</button>
-                    <span style={{ padding: '4px 12px', color: 'var(--text-secondary)' }}>
-                      {page} / {data.sessions.totalPages}
-                    </span>
-                    <button onClick={() => setPage(p => p + 1)} disabled={page >= data.sessions.totalPages}
-                      style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-primary)', cursor: 'pointer', color: 'var(--text-primary)' }}>›</button>
-                    <button onClick={() => setPage(data.sessions.totalPages)} disabled={page >= data.sessions.totalPages}
-                      style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-primary)', cursor: 'pointer', color: 'var(--text-primary)' }}>»</button>
-                  </div>
-                )}
-              </>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.mockSessions.map(m => (
+                    <tr key={m.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                      <td style={{ padding: '8px 10px', fontFamily: 'monospace', fontSize: 13 }}>{m.id}</td>
+                      <td style={{ padding: '8px 10px', fontWeight: 600 }}>{m.title || m.examTypeCode}</td>
+                      <td style={{ padding: '8px 10px', fontSize: 13 }}>{formatDate(m.startedAt)}</td>
+                      <td style={{ padding: '8px 10px' }}>{m.totalScore != null ? `${m.totalScore}%` : '—'}</td>
+                      <td style={{ padding: '8px 10px' }}>
+                        <span style={{
+                          padding: '2px 10px', borderRadius: 12, fontSize: 12, fontWeight: 600, color: '#fff',
+                          background: m.status === 'completed' ? '#22c55e' : '#f59e0b'
+                        }}>
+                          {m.status === 'completed' ? t.admin.activity.completed : t.admin.activity.inProgress}
+                        </span>
+                      </td>
+                      <td style={{ padding: '8px 10px', textAlign: 'right' }}>
+                        {m.status === 'completed' && (
+                          <button className="btn btn-outline" style={{ fontSize: 12, padding: '2px 12px' }} onClick={() => openReview(m.id)}>
+                            {t.admin.activity.reviewBtn}
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             )}
           </div>
         </>
+      )}
+
+      {/* Review modal */}
+      {(review || reviewLoading) && (
+        <div onClick={() => setReview(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', zIndex: 1000, padding: '2rem 1rem', overflowY: 'auto' }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: 'var(--card-background)', borderRadius: 12, maxWidth: 800, width: '100%', padding: '1.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <h3 style={{ margin: 0 }}>{t.admin.activity.reviewTitle}</h3>
+              <button onClick={() => setReview(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', color: 'var(--text-muted)' }}>✕</button>
+            </div>
+            {reviewLoading || !review ? (
+              <div style={{ color: 'var(--text-secondary)' }}>{t.admin.common?.loading ?? '...'}</div>
+            ) : (
+              <>
+                <div style={{ marginBottom: '1rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                  {review.examTitle} — {review.totalScore}% ({review.totalCorrect}/{review.totalQuestions})
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  {review.answerReview.map((a, i) => (
+                    <div key={a.questionId} className="card" style={{ borderLeft: `4px solid ${a.isCorrect ? '#27ae60' : a.isUnanswered ? '#95a5a6' : '#e74c3c'}`, padding: '0.75rem' }}>
+                      <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>
+                        {i + 1}. {a.sectionName} • {a.topicName} — {a.isCorrect ? '✓' : a.isUnanswered ? '—' : '✕'}
+                      </div>
+                      <p style={{ fontWeight: 500, margin: '0 0 0.5rem', fontSize: '0.9rem' }}>{a.questionText}</p>
+                      {!a.isUnanswered && !a.isCorrect && (
+                        <p style={{ color: 'var(--error-color)', fontSize: '0.85rem', margin: '0.15rem 0' }}>{a.selectedOptionText}</p>
+                      )}
+                      <p style={{ color: 'var(--success-color)', fontSize: '0.85rem', margin: '0.15rem 0' }}>{a.correctOptionText}</p>
+                      {a.explanation && (
+                        <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginTop: '0.4rem', fontStyle: 'italic' }}>{a.explanation}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
       )}
 
       {!data && !loading && !error && (

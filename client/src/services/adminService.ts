@@ -39,12 +39,13 @@ export type AdminUpdateSchoolBranding = Omit<AdminSchoolBranding, 'id' | 'slug' 
 
 const adminService = {
   // ─── Questions ───────────────────────────────────────────
-  getQuestions: (examTypeCode?: string, topic?: string, difficulty?: string, page: number = 1, pageSize: number = 50, section?: string) => {
+  getQuestions: (examTypeCode?: string, topic?: string, difficulty?: string, page: number = 1, pageSize: number = 50, section?: string, search?: string) => {
     const params = new URLSearchParams();
     if (examTypeCode) params.set('examTypeCode', examTypeCode);
     if (topic) params.set('topic', topic);
     if (difficulty) params.set('difficulty', difficulty);
     if (section) params.set('section', section);
+    if (search) params.set('search', search);
     params.set('page', String(page));
     params.set('pageSize', String(pageSize));
     const qs = params.toString();
@@ -331,7 +332,21 @@ const adminService = {
         }>;
         totalCount: number; page: number; pageSize: number; totalPages: number;
       };
+      mockSessions: Array<{
+        id: number; title: string; examTypeCode: string;
+        startedAt: string; completedAt: string | null;
+        totalScore: number | null; status: string;
+      }>;
     }>(`/admin/users/${userId}/activity?page=${page}&pageSize=${pageSize}`).then(r => r.data),
+
+  getMockAttemptReview: (attemptId: number) =>
+    api.get(`/admin/mock-attempts/${attemptId}/review`).then(r => r.data),
+
+  getUserPurchases: (userId: number) =>
+    api.get<Array<{
+      id: number; itemType: string; title: string; subjects: string | null;
+      amount: number; currency: string; status: string; purchasedAt: string;
+    }>>(`/admin/users/${userId}/purchases`).then(r => r.data),
 
   // ─── Tutor Moderation (T-10) ──────────────────────────────
   getTutors: () =>

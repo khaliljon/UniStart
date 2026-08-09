@@ -4,6 +4,8 @@ import { useAppDispatch } from '../hooks/useAppDispatch';
 import { useTranslation } from '../hooks/useTranslation';
 import { authService } from '../services/authService';
 import api from '../services/api';
+import PhoneField from '../components/PhoneField';
+import { splitPhone, isValidPhone } from '../utils/countries';
 import { completeProfile } from '../store/slices/authSlice';
 
 function AdminProfilePage() {
@@ -20,7 +22,7 @@ function AdminProfilePage() {
   const [pwdLoading, setPwdLoading] = useState(false);
 
   // Phone change
-  const [editPhone, setEditPhone] = useState(user?.phoneNumber || '+7');
+  const [editPhone, setEditPhone] = useState(user?.phoneNumber || '');
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const [phoneSuccess, setPhoneSuccess] = useState<string | null>(null);
   const [phoneLoading, setPhoneLoading] = useState(false);
@@ -63,7 +65,8 @@ function AdminProfilePage() {
   const handleChangePhone = async () => {
     setPhoneError(null);
     setPhoneSuccess(null);
-    if (!/^\+77\d{9}$/.test(editPhone)) { setPhoneError(t.auth.phoneInvalid); return; }
+    const { country, national } = splitPhone(editPhone);
+    if (!isValidPhone(country, national)) { setPhoneError(t.auth.phoneInvalid); return; }
     try {
       setPhoneLoading(true);
       await dispatch(completeProfile(editPhone)).unwrap();
@@ -246,20 +249,7 @@ function AdminProfilePage() {
             <label style={{ display: 'block', marginBottom: '0.3rem', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
               {t.auth.phone}
             </label>
-            <input
-              type="tel"
-              className="form-input"
-              value={editPhone}
-              onChange={e => {
-                let digits = e.target.value.replace(/\D/g, '');
-                if (digits.startsWith('8')) digits = '7' + digits.slice(1);
-                if (!digits.startsWith('7')) digits = '7' + digits;
-                setEditPhone('+' + digits.slice(0, 11));
-              }}
-              placeholder="+7 700 123 45 67"
-              maxLength={12}
-              style={{ width: '100%' }}
-            />
+            <PhoneField value={editPhone} onChange={setEditPhone} />
           </div>
           <button
             className="btn btn-primary"
