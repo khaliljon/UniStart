@@ -12,7 +12,6 @@ import type {
 } from '../types';
 
 export const studyPlanService = {
-  // ─── Goals ───────────────────────────────────────────────
 
   async createGoal(dto: CreateStudyGoalRequest): Promise<StudyGoal> {
     const response = await api.post<StudyGoal>('/study-plan/goals', dto);
@@ -60,28 +59,24 @@ export const studyPlanService = {
     return response.data;
   },
 
-  // ─── Today ───────────────────────────────────────────────
 
   async getTodayPlan(): Promise<TodayPlan> {
     const response = await api.get<TodayPlan>('/study-plan/today');
     return response.data;
   },
 
-  // ─── Entry Completion ────────────────────────────────────
 
   async completeEntry(entryId: number, dto: CompleteEntryRequest): Promise<StudyPlanEntry> {
     const response = await api.post<StudyPlanEntry>(`/study-plan/entries/${entryId}/complete`, dto);
     return response.data;
   },
 
-  // ─── Auto-Complete ───────────────────────────────────────
 
   async autoCompleteToday(): Promise<TodayPlan> {
     const response = await api.post<TodayPlan>('/study-plan/auto-complete-today');
     return response.data;
   },
 
-  // ─── Stats ───────────────────────────────────────────────
 
   async getPlanStats(): Promise<PlanStats> {
     const response = await api.get<PlanStats>('/study-plan/stats');

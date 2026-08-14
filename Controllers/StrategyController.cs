@@ -20,9 +20,6 @@ public class StrategyController : ControllerBase
         _strategyService = strategyService;
     }
 
-    /// <summary>
-    /// Get strategy guides for a specific exam
-    /// </summary>
     [HttpGet]
     [ProducesResponseType(typeof(IEnumerable<StrategyGuideSummaryDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetGuides([FromQuery] string[]? examTypeCodes = null)
@@ -32,9 +29,6 @@ public class StrategyController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>
-    /// Get full strategy guide content
-    /// </summary>
     [HttpGet("{guideId}")]
     [ProducesResponseType(typeof(StrategyGuideDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -46,9 +40,6 @@ public class StrategyController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>
-    /// Mark a strategy guide as read
-    /// </summary>
     [HttpPost("{guideId}/read")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> MarkRead(int guideId)

@@ -7,10 +7,6 @@ import { pickLocalized } from '../utils/localize';
 import { useTranslation } from '../hooks/useTranslation';
 import { cscaStrings } from '../i18n/csca';
 
-/**
- * Storefront for run-based mocks: per-subject run tiers (1/3/5) and discounted
- * packages with subject selection. Used on the Home page. Adds items to the cart.
- */
 function MockShop() {
   const navigate = useNavigate();
   const { locale } = useTranslation();
@@ -51,8 +47,6 @@ function MockShop() {
     navigate('/cart');
   };
 
-  // If the user clicked "Buy" on a landing package, focus its card here (open the
-  // subject picker for pick packages) once the catalog is loaded — never straight to cart.
   const [highlight, setHighlight] = useState<string | null>(null);
   useEffect(() => {
     if (!catalog) return;
@@ -65,11 +59,8 @@ function MockShop() {
     setTimeout(() => cardRefs.current[pkg.key]?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 120);
     setHighlight(pkg.key);
     setTimeout(() => setHighlight((h) => (h === pkg.key ? null : h)), 2400);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [catalog]);
 
-  // If the user clicked "Buy" on a specific mock on the landing, scroll to that
-  // template card here and highlight it briefly (the tier is chosen here).
   useEffect(() => {
     if (!catalog) return;
     const id = sessionStorage.getItem('focusMock');
@@ -80,7 +71,6 @@ function MockShop() {
     setHighlight(key);
     const t = setTimeout(() => setHighlight(null), 2400);
     return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [catalog]);
 
   if (!catalog) return null;
@@ -110,7 +100,6 @@ function MockShop() {
         </div>
       )}
 
-      {/* Per-subject run tiers */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '0.75rem', marginBottom: '1.25rem' }}>
         {catalog.templates.map((tpl) => (
           <div key={tpl.mockExamId} ref={(el) => { cardRefs.current[`mock:${tpl.mockExamId}`] = el; }} className="card" style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', outline: highlight === `mock:${tpl.mockExamId}` ? '2px solid var(--primary-color)' : 'none', outlineOffset: 2, transition: 'outline-color 0.3s' }}>
@@ -143,7 +132,6 @@ function MockShop() {
         ))}
       </div>
 
-      {/* Packages */}
       {catalog.packages.length > 0 && (
         <>
           <h3 style={{ fontSize: '1rem', marginBottom: '0.5rem' }}>{s.discountPackages}</h3>

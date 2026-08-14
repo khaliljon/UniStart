@@ -1,6 +1,5 @@
 namespace UniStart.Application.DTOs;
 
-// ─── Database Backups ──────────────────────────────────
 
 public record BackupFileDto(
     string FileName,
@@ -8,7 +7,6 @@ public record BackupFileDto(
     DateTime CreatedAtUtc
 );
 
-// ─── Admin Question Management ──────────────────────────
 
 public record QuestionListDto(
     int Id,
@@ -49,7 +47,7 @@ public record AdminAnswerOptionDto(
 public record CreateQuestionDto(
     int TopicId,
     string Text,
-    string Difficulty,  // "Easy", "Medium", "Hard"
+    string Difficulty,
     string? Explanation,
     string? ImageUrl,
     double? DifficultyParam,
@@ -96,7 +94,6 @@ public record QuestionStatsDto(
     List<string> TopicsWithoutQuestionsList
 );
 
-// ─── Admin User Management ──────────────────────────
 
 public record AdminUserDto(
     int Id,
@@ -125,22 +122,21 @@ public record AdminUserDto(
 public record AdminUpdateUserDto(
     string? Name = null,
     string? Email = null,
-    string? Role = null,  // "Student", "Tutor", "Admin", "SchoolAdmin"
-    string? SubscriptionTier = null,  // "Free", "Pro"
+    string? Role = null,
+    string? SubscriptionTier = null,
     DateTime? SubscriptionExpiresAt = null,
-    int? SchoolId = null,  // bind user to a specific school
-    bool ClearSchool = false  // explicitly unbind from school
+    int? SchoolId = null,
+    bool ClearSchool = false
 );
 
 public record BlockUserDto(
     string? Reason
 );
 
-// ─── Trash / Recycle Bin ────────────────────────────
 
 public record TrashItemDto(
     int Id,
-    string EntityType,     // "User" | "Question"
+    string EntityType,
     string DisplayName,
     string? Detail,
     DateTime? DeletedAt,
@@ -163,7 +159,6 @@ public record AdminUserStatsDto(
     int ActiveLast7Days
 );
 
-// ─── Admin Dashboard / Overview ─────────────────────
 
 public record AdminDashboardDto(
     QuestionStatsDto QuestionStats,
@@ -209,7 +204,6 @@ public record AdminSkillDto(
     string Name
 );
 
-// ─── Audit Log (OP-7) ──────────────────────────────────
 
 public record AuditLogDto(
     long Id,
@@ -232,7 +226,6 @@ public record AuditLogPagedResult(
     int TotalPages
 );
 
-// ─── Generic Paged Result (OP-13) ────────────────
 
 public record PagedResult<T>(
     List<T> Items,

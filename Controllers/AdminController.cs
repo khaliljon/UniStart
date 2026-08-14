@@ -40,7 +40,6 @@ public class AdminController : ControllerBase
         _mockExams = mockExams;
     }
 
-    /// <summary>Upload an image to Cloudflare R2 and return its public URL</summary>
     [HttpPost("upload-image")]
     [Consumes("multipart/form-data")]
     public async Task<IActionResult> UploadImage(IFormFile file, CancellationToken ct)
@@ -60,7 +59,6 @@ public class AdminController : ControllerBase
         }
     }
 
-    /// <summary>List questions with optional filters</summary>
     [HttpGet("questions")]
     public async Task<IActionResult> GetQuestions(
         [FromQuery] string? examTypeCode = null,
@@ -75,7 +73,6 @@ public class AdminController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>Get question details by ID</summary>
     [HttpGet("questions/{id:int}")]
     public async Task<IActionResult> GetQuestion(int id)
     {
@@ -84,7 +81,6 @@ public class AdminController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>Create a new question</summary>
     [HttpPost("questions")]
     public async Task<IActionResult> CreateQuestion([FromBody] CreateQuestionDto dto)
     {
@@ -103,7 +99,6 @@ public class AdminController : ControllerBase
         }
     }
 
-    /// <summary>Update an existing question</summary>
     [HttpPut("questions/{id:int}")]
     public async Task<IActionResult> UpdateQuestion(int id, [FromBody] UpdateQuestionDto dto)
     {
@@ -118,7 +113,6 @@ public class AdminController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>Delete a question</summary>
     [HttpDelete("questions/{id:int}")]
     public async Task<IActionResult> DeleteQuestion(int id)
     {
@@ -132,7 +126,6 @@ public class AdminController : ControllerBase
         return NoContent();
     }
 
-    /// <summary>Bulk import questions (JSON array)</summary>
     [HttpPost("questions/import")]
     public async Task<IActionResult> BulkImport([FromBody] BulkImportDto dto)
     {
@@ -144,7 +137,6 @@ public class AdminController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>Question database stats</summary>
     [HttpGet("stats")]
     public async Task<IActionResult> GetStats()
     {
@@ -152,11 +144,6 @@ public class AdminController : ControllerBase
         return Ok(result);
     }
 
-    // ═══════════════════════════════════════════════════════
-    //  USERS
-    // ═══════════════════════════════════════════════════════
-
-    /// <summary>List all users with optional filters</summary>
     [HttpGet("users")]
     public async Task<IActionResult> GetUsers(
         [FromQuery] string? role = null,
@@ -169,7 +156,6 @@ public class AdminController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>Get user details by ID</summary>
     [HttpGet("users/{id:int}")]
     public async Task<IActionResult> GetUser(int id)
     {
@@ -178,7 +164,6 @@ public class AdminController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>Update user (role, subscription, etc.)</summary>
     [HttpPut("users/{id:int}")]
     public async Task<IActionResult> UpdateUser(int id, [FromBody] AdminUpdateUserDto dto)
     {
@@ -200,7 +185,6 @@ public class AdminController : ControllerBase
         }
     }
 
-    /// <summary>Delete a user and all related data</summary>
     [HttpDelete("users/{id:int}")]
     public async Task<IActionResult> DeleteUser(int id)
     {
@@ -221,7 +205,6 @@ public class AdminController : ControllerBase
         }
     }
 
-    /// <summary>User statistics summary</summary>
     [HttpGet("users/stats")]
     public async Task<IActionResult> GetUserStats()
     {
@@ -229,11 +212,6 @@ public class AdminController : ControllerBase
         return Ok(result);
     }
 
-    // ═══════════════════════════════════════════════════════
-    //  DASHBOARD & TOPICS
-    // ═══════════════════════════════════════════════════════
-
-    /// <summary>Admin dashboard with overview stats</summary>
     [HttpGet("dashboard")]
     public async Task<IActionResult> GetDashboard()
     {
@@ -241,7 +219,6 @@ public class AdminController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>List all topics with question counts</summary>
     [HttpGet("topics")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> GetTopics()
@@ -250,7 +227,6 @@ public class AdminController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>Create a new topic</summary>
     [HttpPost("topics")]
     public async Task<IActionResult> CreateTopic([FromBody] CreateTopicDto dto)
     {
@@ -269,7 +245,6 @@ public class AdminController : ControllerBase
         }
     }
 
-    /// <summary>Update an existing topic name</summary>
     [HttpPut("topics/{id:int}")]
     public async Task<IActionResult> UpdateTopic(int id, [FromBody] UpdateTopicDto dto)
     {
@@ -289,7 +264,6 @@ public class AdminController : ControllerBase
         }
     }
 
-    /// <summary>Delete a topic and soft-delete all its questions</summary>
     [HttpDelete("topics/{id:int}")]
     public async Task<IActionResult> DeleteTopic(int id)
     {
@@ -301,7 +275,6 @@ public class AdminController : ControllerBase
         return NoContent();
     }
 
-    /// <summary>Delete all questions of a topic while keeping the topic itself</summary>
     [HttpDelete("topics/{id:int}/questions")]
     public async Task<IActionResult> ClearTopicQuestions(int id)
     {
@@ -313,7 +286,6 @@ public class AdminController : ControllerBase
         return Ok(new { removed });
     }
 
-    /// <summary>List all exam sections (for dropdowns)</summary>
     [HttpGet("sections")]
     public async Task<IActionResult> GetSections()
     {
@@ -321,7 +293,6 @@ public class AdminController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>Create a new exam section</summary>
     [HttpPost("sections")]
     public async Task<IActionResult> CreateSection([FromBody] CreateSectionDto dto)
     {
@@ -340,7 +311,6 @@ public class AdminController : ControllerBase
         }
     }
 
-    /// <summary>Update an existing section name</summary>
     [HttpPut("sections/{id:int}")]
     public async Task<IActionResult> UpdateSection(int id, [FromBody] UpdateSectionDto dto)
     {
@@ -360,7 +330,6 @@ public class AdminController : ControllerBase
         }
     }
 
-    /// <summary>Delete a section and cascade soft-delete all its topics' questions</summary>
     [HttpDelete("sections/{id:int}")]
     public async Task<IActionResult> DeleteSection(int id)
     {
@@ -372,11 +341,6 @@ public class AdminController : ControllerBase
         return NoContent();
     }
 
-    // ═══════════════════════════════════════════════════════
-    //  EXAM TYPES — CRUD
-    // ═══════════════════════════════════════════════════════
-
-    /// <summary>List all exam types</summary>
     [HttpGet("exam-types")]
     public async Task<IActionResult> GetExamTypes()
     {
@@ -384,7 +348,6 @@ public class AdminController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>Create a new exam type</summary>
     [HttpPost("exam-types")]
     public async Task<IActionResult> CreateExamType([FromBody] CreateExamTypeDto dto)
     {
@@ -395,7 +358,6 @@ public class AdminController : ControllerBase
         return CreatedAtAction(nameof(GetExamTypes), result);
     }
 
-    /// <summary>Update an exam type's name</summary>
     [HttpPut("exam-types/{code}")]
     public async Task<IActionResult> UpdateExamType(string code, [FromBody] UpdateExamTypeDto dto)
     {
@@ -407,7 +369,6 @@ public class AdminController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>Delete an exam type (cascades to sections, topics, questions)</summary>
     [HttpDelete("exam-types/{code}")]
     public async Task<IActionResult> DeleteExamType(string code)
     {
@@ -419,11 +380,6 @@ public class AdminController : ControllerBase
         return NoContent();
     }
 
-    // ═══════════════════════════════════════════════════════
-    //  BLOCK / SUSPEND (OP-14)
-    // ═══════════════════════════════════════════════════════
-
-    /// <summary>Block a user</summary>
     [HttpPost("users/{id:int}/block")]
     public async Task<IActionResult> BlockUser(int id, [FromBody] BlockUserDto? dto = null)
     {
@@ -443,7 +399,6 @@ public class AdminController : ControllerBase
         }
     }
 
-    /// <summary>Unblock a user</summary>
     [HttpPost("users/{id:int}/unblock")]
     public async Task<IActionResult> UnblockUser(int id)
     {
@@ -454,7 +409,6 @@ public class AdminController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>Grant the user another one-time free mock run.</summary>
     [HttpPost("users/{id:int}/reset-free-mock")]
     public async Task<IActionResult> ResetFreeMock(int id)
     {
@@ -465,11 +419,6 @@ public class AdminController : ControllerBase
         return Ok(result);
     }
 
-    // ═══════════════════════════════════════════════════════
-    //  AUDIT LOGS (OP-7)
-    // ═══════════════════════════════════════════════════════
-
-    /// <summary>Query audit logs with filters</summary>
     [HttpGet("audit-logs")]
     public async Task<IActionResult> GetAuditLogs(
         [FromQuery] string? action = null,
@@ -484,11 +433,6 @@ public class AdminController : ControllerBase
         return Ok(result);
     }
 
-    // ═══════════════════════════════════════════════════════
-    //  RESTORE (Soft Delete — OP-9)
-    // ═══════════════════════════════════════════════════════
-
-    /// <summary>Restore a soft-deleted question</summary>
     [HttpPost("questions/{id:int}/restore")]
     public async Task<IActionResult> RestoreQuestion(int id)
     {
@@ -499,7 +443,6 @@ public class AdminController : ControllerBase
         return Ok(new { message = "Question restored" });
     }
 
-    /// <summary>Restore a soft-deleted user</summary>
     [HttpPost("users/{id:int}/restore")]
     public async Task<IActionResult> RestoreUser(int id)
     {
@@ -510,11 +453,6 @@ public class AdminController : ControllerBase
         return Ok(new { message = "User restored" });
     }
 
-    // ═══════════════════════════════════════════════════════
-    //  TRASH / RECYCLE BIN
-    // ═══════════════════════════════════════════════════════
-
-    /// <summary>List all soft-deleted items (users + questions)</summary>
     [HttpGet("trash")]
     public async Task<IActionResult> GetTrash()
     {
@@ -522,7 +460,6 @@ public class AdminController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>Permanently delete a soft-deleted question</summary>
     [HttpDelete("trash/questions/{id:int}")]
     public async Task<IActionResult> HardDeleteQuestion(int id)
     {
@@ -533,7 +470,6 @@ public class AdminController : ControllerBase
         return NoContent();
     }
 
-    /// <summary>Permanently delete a soft-deleted user</summary>
     [HttpDelete("trash/users/{id:int}")]
     public async Task<IActionResult> HardDeleteUser(int id)
     {
@@ -551,7 +487,6 @@ public class AdminController : ControllerBase
         }
     }
 
-    /// <summary>Permanently delete all items in trash</summary>
     [HttpDelete("trash")]
     public async Task<IActionResult> EmptyTrash()
     {
@@ -563,11 +498,6 @@ public class AdminController : ControllerBase
         return Ok(new { message = $"Trash emptied: {count} records permanently removed", count });
     }
 
-    // ═══════════════════════════════════════════════════════
-    //  CSV EXPORT (OP-18)
-    // ═══════════════════════════════════════════════════════
-
-    /// <summary>Export all questions as CSV</summary>
     [HttpGet("questions/export")]
     [FeatureGate("CsvExport")]
     public async Task<IActionResult> ExportQuestions(
@@ -591,7 +521,6 @@ public class AdminController : ControllerBase
         return File(System.Text.Encoding.UTF8.GetBytes(csv), "text/csv", "questions.csv");
     }
 
-    /// <summary>Export all users as CSV</summary>
     [HttpGet("users/export")]
     [FeatureGate("CsvExport")]
     public async Task<IActionResult> ExportUsers(
@@ -616,18 +545,12 @@ public class AdminController : ControllerBase
         return File(System.Text.Encoding.UTF8.GetBytes(csv), "text/csv", "users.csv");
     }
 
-    // ═══════════════════════════════════════════════════════
-    //  HELPERS
-    // ═══════════════════════════════════════════════════════
 
     private static string BuildCsv<T>(List<T> items, (string header, Func<T, string> getValue)[] columns)
     {
         var sb = new System.Text.StringBuilder();
-        // BOM for Excel UTF-8 detection
         sb.Append('\uFEFF');
-        // Header
         sb.AppendLine(string.Join(",", columns.Select(c => CsvEscape(c.header))));
-        // Rows
         foreach (var item in items)
             sb.AppendLine(string.Join(",", columns.Select(c => CsvEscape(c.getValue(item)))));
         return sb.ToString();
@@ -641,11 +564,6 @@ public class AdminController : ControllerBase
         return value;
     }
 
-    // ───────────────────────────────────────────────────────
-    //  BACKGROUND JOBS STATUS (OP-12)
-    // ───────────────────────────────────────────────────────
-
-    /// <summary>Get status of all recurring background jobs</summary>
     [HttpGet("jobs/status")]
     public IActionResult GetJobsStatus()
     {
@@ -669,7 +587,6 @@ public class AdminController : ControllerBase
         return Ok(new { jobs = result });
     }
 
-    /// <summary>Trigger a recurring job manually</summary>
     [HttpPost("jobs/{jobId}/trigger")]
     public IActionResult TriggerJob(string jobId)
     {
@@ -677,18 +594,11 @@ public class AdminController : ControllerBase
         return Ok(new { message = $"Job '{jobId}' triggered." });
     }
 
-    // ───────────────────────────────────────────────────────
-    //  SYSTEM HEALTH (OP-23)
-    // ───────────────────────────────────────────────────────
-
-    /// <summary>Get comprehensive system health overview</summary>
     [HttpGet("system/health")]
     public async Task<IActionResult> GetSystemHealth()
     {
-        // 1. Health checks
         var healthReport = await _healthCheck.CheckHealthAsync();
 
-        // 2. Database stats
         var totalUsers = await _db.Users.CountAsync();
         var totalQuestions = await _db.Questions.CountAsync();
         var totalAnswers = await _db.UserAnswers.CountAsync();
@@ -702,7 +612,6 @@ public class AdminController : ControllerBase
             .Where(a => a.AnsweredAt.Date == DateTime.UtcNow.Date)
             .CountAsync();
 
-        // 3. Recurring jobs
         object? jobsInfo = null;
         try
         {
@@ -719,9 +628,8 @@ public class AdminController : ControllerBase
                     : null
             });
         }
-        catch { /* Hangfire may not be ready */ }
+        catch {}
 
-        // 4. Process info
         var process = Process.GetCurrentProcess();
 
         return Ok(new
@@ -757,11 +665,6 @@ public class AdminController : ControllerBase
         });
     }
 
-    // ───────────────────────────────────────────────────────
-    //  USER ACTIVITY (OP-23)
-    // ───────────────────────────────────────────────────────
-
-    /// <summary>Get detailed activity for a specific user</summary>
     [HttpGet("users/{id:int}/activity")]
     public async Task<IActionResult> GetUserActivity(
         int id,
@@ -774,7 +677,6 @@ public class AdminController : ControllerBase
             .FirstOrDefaultAsync(u => u.Id == id);
         if (user == null) return NotFound(new { error = "User not found" });
 
-        // Recent sessions
         var sessionsQuery = _db.TestSessions
             .Where(s => s.UserId == id)
             .OrderByDescending(s => s.StartedAt);
@@ -794,13 +696,10 @@ public class AdminController : ControllerBase
             })
             .ToListAsync();
 
-        // Summary stats
         var totalAnswers = await _db.UserAnswers.CountAsync(a => a.UserId == id);
         var correctAnswers = await _db.UserAnswers
             .CountAsync(a => a.UserId == id && a.AnswerOption.IsCorrect);
 
-        // Mock-exam activity (separate tables) — folded into the stats so mock-only
-        // users show real numbers, not zeros.
         var mockAnswered = await _db.MockExamAnswers
             .CountAsync(a => a.Attempt.UserId == id && (a.SelectedOptionId != null || a.SelectedOptions.Any()));
         var mockCorrect = await _db.MockExamAnswers
@@ -809,10 +708,8 @@ public class AdminController : ControllerBase
         totalAnswers += mockAnswered;
         correctAnswers += mockCorrect;
 
-        // "Last activity" = last time the user was present on the platform.
         var lastActivity = user.LastSeenAt;
 
-        // The user's mock attempts (sessions) with score + status, newest first.
         var mockSessions = await _db.MockExamAttempts
             .Where(a => a.UserId == id)
             .OrderByDescending(a => a.StartedAt)
@@ -862,7 +759,6 @@ public class AdminController : ControllerBase
         });
     }
 
-    /// <summary>Admin: full answer review for any completed mock attempt.</summary>
     [HttpGet("mock-attempts/{attemptId:int}/review")]
     public async Task<IActionResult> GetMockAttemptReview(int attemptId)
     {
@@ -870,7 +766,6 @@ public class AdminController : ControllerBase
         return result == null ? NotFound() : Ok(result);
     }
 
-    /// <summary>Admin: a user's purchase history.</summary>
     [HttpGet("users/{id:int}/purchases")]
     public async Task<IActionResult> GetUserPurchases(int id)
     {

@@ -27,7 +27,6 @@ export const lessonService = {
     }
   },
 
-  // Step-based lessons (TH-1)
   async getLessonWithSteps(lessonId: number): Promise<LessonWithSteps> {
     const response = await api.get<LessonWithSteps>(`/lessons/${lessonId}/steps`);
     return response.data;

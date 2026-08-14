@@ -24,11 +24,6 @@ public class StudyPlanController : ControllerBase
         _logger = logger;
     }
 
-    // ─── Goals ───────────────────────────────────────────────
-
-    /// <summary>
-    /// Create a new study goal (deactivates previous goals)
-    /// </summary>
     [HttpPost("goals")]
     [ProducesResponseType(typeof(StudyGoalDto), StatusCodes.Status201Created)]
     public async Task<IActionResult> CreateGoal([FromBody] CreateStudyGoalDto dto)
@@ -38,22 +33,15 @@ public class StudyPlanController : ControllerBase
         return CreatedAtAction(nameof(GetActiveGoal), null, goal);
     }
 
-    /// <summary>
-    /// Get the user's active study goal
-    /// </summary>
     [HttpGet("goals/active")]
     [ProducesResponseType(typeof(StudyGoalDto), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetActiveGoal()
     {
         var userId = GetCurrentUserId();
         var goal = await _service.GetActiveGoalAsync(userId);
-        // Return 200 with null when there is no active goal (avoids noisy 404s in the client console)
         return Ok(goal);
     }
 
-    /// <summary>
-    /// Update a study goal
-    /// </summary>
     [HttpPut("goals/{goalId}")]
     [ProducesResponseType(typeof(StudyGoalDto), StatusCodes.Status200OK)]
     public async Task<IActionResult> UpdateGoal(int goalId, [FromBody] UpdateStudyGoalDto dto)
@@ -64,9 +52,6 @@ public class StudyPlanController : ControllerBase
         return Ok(goal);
     }
 
-    /// <summary>
-    /// Delete (deactivate) a study goal
-    /// </summary>
     [HttpDelete("goals/{goalId}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> DeleteGoal(int goalId)
@@ -77,11 +62,6 @@ public class StudyPlanController : ControllerBase
         return NoContent();
     }
 
-    // ─── Plan ────────────────────────────────────────────────
-
-    /// <summary>
-    /// Generate a study plan for the specified goal
-    /// </summary>
     [HttpPost("generate/{goalId}")]
     [ProducesResponseType(typeof(StudyPlanDto), StatusCodes.Status200OK)]
     public async Task<IActionResult> GeneratePlan(int goalId)
@@ -98,22 +78,15 @@ public class StudyPlanController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Get the user's active study plan with all entries
-    /// </summary>
     [HttpGet("active")]
     [ProducesResponseType(typeof(StudyPlanDto), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetActivePlan()
     {
         var userId = GetCurrentUserId();
         var plan = await _service.GetActivePlanAsync(userId);
-        // Return 200 with null when there is no active plan (avoids noisy 404s in the client console)
         return Ok(plan);
     }
 
-    /// <summary>
-    /// Regenerate the plan based on current progress (dynamic adaptation)
-    /// </summary>
     [HttpPost("regenerate")]
     [ProducesResponseType(typeof(StudyPlanDto), StatusCodes.Status200OK)]
     public async Task<IActionResult> RegeneratePlan()
@@ -130,11 +103,6 @@ public class StudyPlanController : ControllerBase
         }
     }
 
-    // ─── Today ───────────────────────────────────────────────
-
-    /// <summary>
-    /// Get today's study tasks
-    /// </summary>
     [HttpGet("today")]
     [ProducesResponseType(typeof(TodayPlanDto), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetTodayPlan()
@@ -144,11 +112,6 @@ public class StudyPlanController : ControllerBase
         return Ok(today);
     }
 
-    // ─── Entry Completion ────────────────────────────────────
-
-    /// <summary>
-    /// Mark a plan entry as completed with results
-    /// </summary>
     [HttpPost("entries/{entryId}/complete")]
     [ProducesResponseType(typeof(StudyPlanEntryDto), StatusCodes.Status200OK)]
     public async Task<IActionResult> CompleteEntry(int entryId, [FromBody] CompleteEntryDto dto)
@@ -159,11 +122,6 @@ public class StudyPlanController : ControllerBase
         return Ok(entry);
     }
 
-    /// <summary>
-    /// Auto-complete today's plan entries based on actual user answers.
-    /// Checks UserAnswers for each pending topic and marks entries as completed
-    /// with real question counts and accuracy.
-    /// </summary>
     [HttpPost("auto-complete-today")]
     [ProducesResponseType(typeof(TodayPlanDto), StatusCodes.Status200OK)]
     public async Task<IActionResult> AutoCompleteToday()
@@ -173,11 +131,6 @@ public class StudyPlanController : ControllerBase
         return Ok(todayPlan);
     }
 
-    // ─── Stats ───────────────────────────────────────────────
-
-    /// <summary>
-    /// Get plan adherence and performance statistics
-    /// </summary>
     [HttpGet("stats")]
     [ProducesResponseType(typeof(PlanStatsDto), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetPlanStats()
@@ -187,7 +140,6 @@ public class StudyPlanController : ControllerBase
         return Ok(stats);
     }
 
-    // ─── Helpers ─────────────────────────────────────────────
 
     private int GetCurrentUserId()
     {

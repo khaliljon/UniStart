@@ -29,7 +29,6 @@ const emptyForm = {
     { text: '', isCorrect: false },
     { text: '', isCorrect: false },
   ],
-  // IRT advanced params (null = auto from difficulty)
   difficultyParam: null as number | null,
   discriminationParam: null as number | null,
   guessParam: null as number | null,
@@ -64,13 +63,11 @@ function AdminQuestionsPage() {
   const [modalMode, setModalMode] = useState<ModalMode>('view');
   const [form, setForm] = useState(emptyForm);
 
-  // Pagination (OP-13)
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [uploadingImage, setUploadingImage] = useState(false);
 
-  // Topic view — independent state
   const [topicPage, setTopicPage] = useState(1);
   const TOPICS_PER_PAGE = 10;
   const [topicViewQuestions, setTopicViewQuestions] = useState<QuestionListItem[]>([]);
@@ -79,48 +76,38 @@ function AdminQuestionsPage() {
   const [topicFilterTopic, setTopicFilterTopic] = useState('');
   const [topicFilterSection, setTopicFilterSection] = useState('');
 
-  // Topic creation
   const [showTopicModal, setShowTopicModal] = useState(false);
   const [sections, setSections] = useState<AdminSection[]>([]);
   const [topicForm, setTopicForm] = useState({ name: '', sectionId: 0 });
 
-  // Section management
   const [showSectionModal, setShowSectionModal] = useState(false);
   const [sectionForm, setSectionForm] = useState({ name: '', examTypeCode: '' });
   const [editingSectionId, setEditingSectionId] = useState<number | null>(null);
 
-  // Math keyboard
   const [showMathKeyboard, setShowMathKeyboard] = useState(false);
   const [mathTarget, setMathTarget] = useState<'text' | 'explanation' | number | null>(null);
 
-  // Inline topic rename
   const [editingTopicId, setEditingTopicId] = useState<number | null>(null);
   const [editingTopicName, setEditingTopicName] = useState('');
   const [showTopicRenameModal, setShowTopicRenameModal] = useState(false);
 
-  // Section view
   const [sectionPage, setSectionPage] = useState(1);
   const SECTIONS_PER_PAGE = 10;
   const [sectionFilterExam, setSectionFilterExam] = useState('');
 
-  // Section selector in question edit/create
   const [formSectionId, setFormSectionId] = useState<number>(0);
 
-  // Advanced IRT parameters toggle
   const [showIrtParams, setShowIrtParams] = useState(false);
 
-  // Bulk selection (table view)
   const [selectedQuestions, setSelectedQuestions] = useState<Set<number>>(new Set());
   const [selectionMode, setSelectionMode] = useState(false);
 
-  // Exam types CRUD
   const [examTypes, setExamTypes] = useState<{ code: string; name: string }[]>([]);
   const [examTypesLoading, setExamTypesLoading] = useState(false);
   const [showExamTypeForm, setShowExamTypeForm] = useState(false);
   const [examTypeForm, setExamTypeForm] = useState({ code: '', name: '' });
   const [editingExamTypeCode, setEditingExamTypeCode] = useState<string | null>(null);
 
-  // ─── Load ────────────────────
 
   const loadQuestions = useCallback(async () => {
     try {
@@ -141,13 +128,13 @@ function AdminQuestionsPage() {
     try {
       const tp = await adminService.getTopics();
       setTopics(tp);
-    } catch { /* ignore */ }
+    } catch {}
   };
 
   const loadSectionsAndSkills = async () => {
     try {
       setSections(await adminService.getSections());
-    } catch { /* ignore */ }
+    } catch {}
   };
 
   const loadExamTypes = async () => {
@@ -189,13 +176,12 @@ function AdminQuestionsPage() {
   useEffect(() => { loadQuestions(); }, [loadQuestions]);
   useEffect(() => { loadTopics(); loadSectionsAndSkills(); loadExamTypes(); }, []);
 
-  // Load topic view questions independently
   const loadTopicViewQuestions = useCallback(async () => {
     try {
       setTopicViewLoading(true);
       const result = await adminService.getQuestions(topicFilterExam || undefined, topicFilterTopic || undefined, undefined, 1, 1000);
       setTopicViewQuestions(result.items);
-    } catch { /* ignore */ } finally {
+    } catch {} finally {
       setTopicViewLoading(false);
     }
   }, [topicFilterExam, topicFilterTopic]);
@@ -207,7 +193,6 @@ function AdminQuestionsPage() {
     setSelectionMode(false);
   }, [viewMode, loadTopicViewQuestions]);
 
-  // ─── Inline Topic Rename ─────
 
   const startTopicRename = (topicId: number, currentName: string) => {
     setEditingTopicId(topicId);
@@ -226,7 +211,6 @@ function AdminQuestionsPage() {
     }
   };
 
-  // ─── Topic Actions ───────────
 
   const openTopicModal = () => {
     setTopicForm({ name: '', sectionId: 0 });
@@ -250,7 +234,6 @@ function AdminQuestionsPage() {
     }
   };
 
-  // ─── Section Actions ─────────
 
   const openSectionModal = (section?: AdminSection) => {
     if (section) {
@@ -286,7 +269,6 @@ function AdminQuestionsPage() {
     }
   };
 
-  // ─── Math keyboard ──────────
 
   const MATH_SYMBOLS: Record<string, string[]> = {
     '123': ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.', ',', '%', '='],
@@ -311,7 +293,6 @@ function AdminQuestionsPage() {
     }
   };
 
-  // ─── Actions ─────────────────
 
   const openDetail = async (id: number) => {
     try {
@@ -337,7 +318,6 @@ function AdminQuestionsPage() {
       discriminationParam: selected.discriminationParam ?? null,
       guessParam: selected.guessParam ?? null,
     });
-    // Find section for the selected topic
     const tp = topics.find(t => t.id === selected.topicId);
     const sec = tp ? sections.find(s => s.name === tp.sectionName && s.examTypeCode === tp.examTypeCode) : null;
     setFormSectionId(sec?.id || 0);
@@ -495,7 +475,6 @@ function AdminQuestionsPage() {
     } catch { setError(t.admin.common.deleteError); }
   };
 
-  // ─── Form helpers ────────────
 
   const updateOption = (idx: number, field: 'text' | 'isCorrect', value: string | boolean) => {
     setForm(prev => ({
@@ -528,10 +507,8 @@ function AdminQuestionsPage() {
     }));
   };
 
-  // ─── Group by topic (from full topics list, not just questions) ──────────
 
   const groupedByTopic = (() => {
-    // Use all topics (including those with 0 questions)
     let filtered = topics;
     if (topicFilterExam) filtered = filtered.filter(tp => tp.examTypeCode === topicFilterExam);
     if (topicFilterSection) filtered = filtered.filter(tp => tp.sectionName === topicFilterSection);
@@ -540,7 +517,6 @@ function AdminQuestionsPage() {
       filtered = filtered.filter(tp => tp.name.toLowerCase().includes(q));
     }
 
-    // Build questions lookup by topic name + exam
     const qMap = new Map<string, QuestionListItem[]>();
     for (const q of topicViewQuestions) {
       const key = `${q.examTypeCode}|${q.topicName}`;
@@ -548,17 +524,14 @@ function AdminQuestionsPage() {
       qMap.get(key)!.push(q);
     }
 
-    // Natural numeric sort: "1.1.1" < "1.1.2" < "2.1.1" < "10.1.1", "P1.1.1" groups after numbers
     return filtered
       .map(tp => ({
         topic: tp,
         questions: qMap.get(`${tp.examTypeCode}|${tp.name}`) ?? [],
       }))
       .sort((a, b) => {
-        // Sort by exam first
         const examCmp = a.topic.examTypeCode.localeCompare(b.topic.examTypeCode);
         if (examCmp !== 0) return examCmp;
-        // Natural numeric sort on topic name
         const na = a.topic.name.match(/^[P]?(\d+)/);
         const nb = b.topic.name.match(/^[P]?(\d+)/);
         if (na && nb) {
@@ -569,7 +542,6 @@ function AdminQuestionsPage() {
       });
   })();
 
-  // ─── Render ──────────────────
 
   if (isLoading && questions.length === 0) {
     return (
@@ -582,7 +554,6 @@ function AdminQuestionsPage() {
 
   return (
     <div className="animate-fade-in" style={{ padding: '2rem 0' }}>
-      {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
         <div>
           <h1 style={{ margin: 0 }}>{t.admin.questions.title}</h1>
@@ -624,7 +595,6 @@ function AdminQuestionsPage() {
         </div>
       )}
 
-      {/* View Toggle */}
       <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
         <div style={{ display: 'flex', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
           <button
@@ -665,7 +635,6 @@ function AdminQuestionsPage() {
         </div>
       </div>
 
-      {/* Table Filters */}
       {viewMode === 'table' && (
         <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', flexWrap: 'wrap', alignItems: 'center' }}>
           <select value={filterExam} onChange={e => { setFilterExam(e.target.value); setFilterSection(''); setPage(1); }} style={{ padding: '0.5rem' }}>
@@ -702,7 +671,6 @@ function AdminQuestionsPage() {
         </div>
       )}
 
-      {/* Topic View Filters */}
       {viewMode === 'topics' && (
         <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', flexWrap: 'wrap', alignItems: 'center' }}>
           <select value={topicFilterExam} onChange={e => { setTopicFilterExam(e.target.value); setTopicFilterSection(''); setTopicPage(1); }} style={{ padding: '0.5rem' }}>
@@ -725,7 +693,6 @@ function AdminQuestionsPage() {
         </div>
       )}
 
-      {/* ─── TABLE VIEW ─── */}
       {viewMode === 'table' && (
         <div style={{ overflowX: 'auto' }}>
           {selectionMode && selectedQuestions.size > 0 && (
@@ -791,7 +758,6 @@ function AdminQuestionsPage() {
               {t.admin.questions.noQuestionsFilter}
             </div>
           )}
-          {/* Pagination (OP-13) */}
           {totalPages > 1 && (
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', padding: '1rem 0' }}>
               <button className="btn btn-outline" disabled={page <= 1} onClick={() => setPage(1)} style={{ fontSize: '0.85rem' }}>«</button>
@@ -806,7 +772,6 @@ function AdminQuestionsPage() {
         </div>
       )}
 
-      {/* ─── TOPICS VIEW ─── */}
       {viewMode === 'topics' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           {topicViewLoading && (
@@ -835,7 +800,6 @@ function AdminQuestionsPage() {
                 )}
                 {sliced.map(({ topic: tp, questions: qs }) => (
                     <div key={`${tp.examTypeCode}-${tp.id}`} className="card" style={{ padding: '1rem 1.25rem' }}>
-                      {/* Topic header */}
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: qs.length > 0 ? '0.75rem' : 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                           <Badge bg={EXAM_COLORS[tp.examTypeCode]}>{tp.examTypeCode}</Badge>
@@ -876,7 +840,6 @@ function AdminQuestionsPage() {
                           ✕
                         </button>
                       </div>
-                      {/* Questions list */}
                       {qs.length > 0 && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                           {qs.map(q => (
@@ -904,7 +867,6 @@ function AdminQuestionsPage() {
                       )}
                     </div>
                 ))}
-                {/* Topic Pagination */}
                 {topicTotalPages > 1 && (
                   <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', padding: '1rem 0' }}>
                     <button className="btn btn-outline" disabled={topicPage <= 1} onClick={() => setTopicPage(1)} style={{ fontSize: '0.85rem' }}>«</button>
@@ -922,7 +884,6 @@ function AdminQuestionsPage() {
         </div>
       )}
 
-      {/* ─── SECTIONS VIEW ─── */}
       {viewMode === 'sections' && (
         <>
           <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', flexWrap: 'wrap', alignItems: 'center' }}>
@@ -1041,7 +1002,6 @@ function AdminQuestionsPage() {
         </>
       )}
 
-      {/* ═══ EXAM TYPES VIEW ═══ */}
       {viewMode === 'examTypes' && (
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
@@ -1096,7 +1056,6 @@ function AdminQuestionsPage() {
         </div>
       )}
 
-      {/* ═══ MODAL: View / Edit / Create ═══ */}
       {(selected || modalMode === 'create') && (
         <div
           style={{
@@ -1111,7 +1070,6 @@ function AdminQuestionsPage() {
             style={{ maxWidth: '740px', width: '100%', maxHeight: '85vh', overflow: 'auto', padding: '2rem' }}
             onClick={e => e.stopPropagation()}
           >
-            {/* ─── VIEW MODE ─── */}
             {modalMode === 'view' && selected && (
               <>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
@@ -1174,7 +1132,6 @@ function AdminQuestionsPage() {
               </>
             )}
 
-            {/* ─── EDIT / CREATE MODE ─── */}
             {(modalMode === 'edit' || modalMode === 'create') && (
               <>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
@@ -1191,7 +1148,6 @@ function AdminQuestionsPage() {
                 )}
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  {/* Section selector (for create AND edit) */}
                   {(modalMode === 'create' || modalMode === 'edit') && (
                     <FormField label={t.admin.questions.selectSectionForQuestion}>
                       <select
@@ -1209,7 +1165,6 @@ function AdminQuestionsPage() {
                     </FormField>
                   )}
 
-                  {/* Topic selector (for create AND edit) */}
                   {(modalMode === 'create' || modalMode === 'edit') && (
                     <FormField label={t.admin.questions.selectTopic}>
                       <select
@@ -1230,7 +1185,6 @@ function AdminQuestionsPage() {
                     </FormField>
                   )}
 
-                  {/* Question text */}
                   <FormField label={t.admin.questions.questionText}>
                     <textarea
                       value={form.text}
@@ -1243,7 +1197,6 @@ function AdminQuestionsPage() {
                     />
                   </FormField>
 
-                  {/* Math keyboard toggle */}
                   <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                     <button
                       type="button"
@@ -1255,7 +1208,6 @@ function AdminQuestionsPage() {
                     </button>
                   </div>
 
-                  {/* Math keyboard panel — Photomath style */}
                   {showMathKeyboard && (
                     <div style={{
                       borderRadius: '12px',
@@ -1264,7 +1216,6 @@ function AdminQuestionsPage() {
                       overflow: 'hidden',
                       boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
                     }}>
-                      {/* Target selector — pill buttons */}
                       <div style={{ display: 'flex', gap: '0.35rem', padding: '0.6rem 0.75rem', flexWrap: 'wrap', borderBottom: '1px solid var(--border-color)' }}>
                         {[
                           { key: 'text', label: t.admin.questions.questionText },
@@ -1287,7 +1238,6 @@ function AdminQuestionsPage() {
                           </button>
                         ))}
                       </div>
-                      {/* Category tabs */}
                       <div style={{
                         display: 'flex', gap: 0, overflowX: 'auto',
                         borderBottom: '1px solid var(--border-color)', background: 'var(--card-background)',
@@ -1310,7 +1260,6 @@ function AdminQuestionsPage() {
                           </button>
                         ))}
                       </div>
-                      {/* Symbol grid */}
                       <div style={{
                         display: 'grid',
                         gridTemplateColumns: 'repeat(auto-fill, minmax(38px, 1fr))',
@@ -1342,7 +1291,6 @@ function AdminQuestionsPage() {
                     </div>
                   )}
 
-                  {/* Difficulty */}
                   <FormField label={t.admin.questions.difficulty}>
                     <div style={{ display: 'flex', gap: '0.5rem' }}>
                       {['Easy', 'Medium', 'Hard'].map(d => (
@@ -1362,7 +1310,6 @@ function AdminQuestionsPage() {
                     </div>
                   </FormField>
 
-                  {/* Answer options */}
                   <FormField label={`${t.admin.questions.answerOptions} (${t.admin.questions.answerOptionsHint})`}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                       {form.answerOptions.map((opt, i) => (
@@ -1415,7 +1362,6 @@ function AdminQuestionsPage() {
                     </div>
                   </FormField>
 
-                  {/* Image URL */}
                   <FormField label="URL изображения (необязательно)">
                     <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                       <input
@@ -1456,7 +1402,6 @@ function AdminQuestionsPage() {
                     )}
                   </FormField>
 
-                  {/* Explanation */}
                   <FormField label={t.admin.questions.explanationOptional}>
                     <textarea
                       value={form.explanation}
@@ -1468,7 +1413,6 @@ function AdminQuestionsPage() {
                     />
                   </FormField>
 
-                  {/* Advanced IRT Parameters */}
                   <div style={{ marginTop: '0.5rem' }}>
                     <button
                       type="button"
@@ -1489,7 +1433,6 @@ function AdminQuestionsPage() {
                         background: 'var(--bg-secondary)', border: '1px solid var(--border-color)',
                         display: 'flex', flexDirection: 'column', gap: '0.75rem'
                       }}>
-                        {/* Presets */}
                         <div>
                           <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>
                             Пресеты
@@ -1509,7 +1452,6 @@ function AdminQuestionsPage() {
                           </div>
                         </div>
 
-                        {/* Numeric inputs */}
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem' }}>
                           {[
                             { key: 'difficultyParam' as const, label: 'b (сложность)', min: -4, max: 4, step: 0.1 },
@@ -1550,7 +1492,6 @@ function AdminQuestionsPage() {
                     )}
                   </div>
 
-                  {/* Actions */}
                   <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
                     <button className="btn btn-primary" onClick={modalMode === 'create' ? saveCreate : saveEdit} style={{ flex: 1 }}>
                       {modalMode === 'create' ? t.admin.questions.createQuestion : t.admin.common.save}
@@ -1565,7 +1506,6 @@ function AdminQuestionsPage() {
           </div>
         </div>
       )}
-      {/* ═══ TOPIC CREATION MODAL ═══ */}
       {showTopicModal && (
         <div
           style={{
@@ -1630,7 +1570,6 @@ function AdminQuestionsPage() {
           </div>
         </div>
       )}
-      {/* ═══ SECTION CREATION/EDIT MODAL ═══ */}
       {showSectionModal && (
         <div
           style={{
@@ -1683,7 +1622,6 @@ function AdminQuestionsPage() {
                 </FormField>
               )}
 
-              {/* Existing sections list for editing */}
               {!editingSectionId && sections.length > 0 && (
                 <div style={{ marginTop: '0.5rem' }}>
                   <label style={{ display: 'block', marginBottom: '0.35rem', fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
@@ -1726,7 +1664,6 @@ function AdminQuestionsPage() {
           </div>
         </div>
       )}
-      {/* ═══ TOPIC RENAME MODAL ═══ */}
       {showTopicRenameModal && editingTopicId && (
         <div
           style={{
@@ -1772,7 +1709,6 @@ function AdminQuestionsPage() {
   );
 }
 
-// ─── Shared sub-components ────────────────────────────────
 
 function Badge({ bg, children }: { bg?: string; children: React.ReactNode }) {
   return (

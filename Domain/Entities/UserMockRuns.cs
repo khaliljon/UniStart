@@ -1,10 +1,5 @@
 namespace UniStart.Domain.Entities;
 
-/// <summary>
-/// A user's remaining run balance for a specific mock template.
-/// Incremented when a purchase is granted (stub checkout or Polar webhook),
-/// decremented each time the user starts a new session.
-/// </summary>
 public class UserMockRuns : IAuditable
 {
     public int Id { get; set; }

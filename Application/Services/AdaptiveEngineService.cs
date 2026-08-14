@@ -7,22 +7,11 @@ using UniStart.Infrastructure.Data;
 
 namespace UniStart.Application.Services;
 
-/// <summary>
-/// Adaptive Engine v2 — IRT-based (3PL) with EAP ability estimation and CAT question selection.
-/// 
-/// Key changes from v1:
-/// - Question selection: CAT (maximum Fisher information) instead of difficulty-threshold matching
-/// - Skill update: Bayesian EAP estimation of θ instead of linear +5/−3
-/// - Display level: θ mapped to 0–100 via logistic function
-/// - Forgetting curve: Ebbinghaus decay applied to spaced repetition priority
-/// - Topic dependencies: prerequisite-aware question ordering
-/// </summary>
 public class AdaptiveEngineService : IAdaptiveEngineService
 {
     private readonly UniStartDbContext _context;
     private readonly IUnitOfWork _unitOfWork;
 
-    // Legacy thresholds kept for GetDifficultyForSkillLevel (used externally)
     private const int EasyThreshold = 40;
     private const int MediumThreshold = 70;
 
@@ -39,22 +28,14 @@ public class AdaptiveEngineService : IAdaptiveEngineService
         return QuestionDifficulty.Hard;
     }
 
-    // ─── CAT Question Selection (IRT-based) ──────────────────────
-
-    /// <summary>
-    /// Selects next question using Computerized Adaptive Testing (CAT).
-    /// Uses maximum Fisher information criterion with randomized top-fraction selection.
-    /// </summary>
     public async Task<QuestionDto?> GetNextQuestionAsync(int userId, string[] examTypeCodes, int? sectionId = null, int[]? sectionIds = null, int? topicId = null)
     {
-        // Get user's answered question IDs to avoid repetition
         var answeredQuestionIds = await _context.UserAnswers
             .Where(ua => ua.UserId == userId)
             .Select(ua => ua.QuestionId)
             .Distinct()
             .ToListAsync();
 
-        // Load available questions with their IRT parameters
         var questionsQuery = _context.Questions
             .Include(q => q.Topic)
                 .ThenInclude(t => t.Section)
@@ -68,7 +49,6 @@ public class AdaptiveEngineService : IAdaptiveEngineService
                 examTypeCodes.Contains(q.Topic.Section.ExamTypeCode));
         }
 
-        // Filter by multiple section IDs (preferred) or single sectionId (backward compat)
         if (sectionIds is { Length: > 0 })
         {
             questionsQuery = questionsQuery.Where(q => q.Topic.SectionId != null && sectionIds.Contains(q.Topic.SectionId.Value));
@@ -85,8 +65,6 @@ public class AdaptiveEngineService : IAdaptiveEngineService
 
         var availableQuestions = await questionsQuery.ToListAsync();
         
-        // If no unanswered questions remain, recycle previously answered ones
-        // Only recycle questions that still need work (not mastered)
         if (availableQuestions.Count == 0)
         {
             var recycleQuery = _context.Questions
@@ -107,7 +85,6 @@ public class AdaptiveEngineService : IAdaptiveEngineService
             var allRecyclable = await recycleQuery.ToListAsync();
             if (allRecyclable.Count == 0) return null;
 
-            // Get answer history for each question (fetch raw, compute streaks in memory)
             var recyclableIds = allRecyclable.Select(q => q.Id).ToList();
             var rawAnswers = await _context.UserAnswers
                 .Where(ua => ua.UserId == userId && recyclableIds.Contains(ua.QuestionId))
@@ -118,7 +95,7 @@ public class AdaptiveEngineService : IAdaptiveEngineService
             var lastAnswers = rawAnswers
                 .GroupBy(ua => ua.QuestionId)
                 .Select(g => {
-                    var ordered = g.ToList(); // already sorted desc by AnsweredAt
+                    var ordered = g.ToList();
                     var streak = 0;
                     foreach (var ua in ordered)
                     {
@@ -136,15 +113,12 @@ public class AdaptiveEngineService : IAdaptiveEngineService
 
             var lookup = lastAnswers.ToDictionary(a => a.QuestionId);
 
-            // Filter out questions with 2+ consecutive correct answers (mastered)
             availableQuestions = allRecyclable
                 .Where(q => !lookup.TryGetValue(q.Id, out var a) || a.CorrectStreak < 2)
                 .OrderBy(q => lookup.TryGetValue(q.Id, out var a) && a.WasCorrect ? 1 : 0)
                 .ThenBy(q => lookup.TryGetValue(q.Id, out var a) ? a.LastAnswered : DateTime.MinValue)
                 .ToList();
 
-            // If all questions are mastered, allow free practice over all questions
-            // (user can keep practicing even after mastery — just recycle everything)
             if (availableQuestions.Count == 0)
             {
                 availableQuestions = allRecyclable
@@ -152,31 +126,21 @@ public class AdaptiveEngineService : IAdaptiveEngineService
                     .ToList();
             }
 
-            // Take top candidates for CAT selection
             var candidateCount = Math.Min(availableQuestions.Count, Math.Max(5, availableQuestions.Count / 2));
             availableQuestions = availableQuestions.Take(candidateCount).ToList();
         }
 
-        // Get user's current θ estimate (average across skills relevant to these exams)
         var theta = await GetUserThetaAsync(userId);
 
-        // CAT: select question with maximum information at current θ, with randomized top fraction
         var selected = IrtMath.SelectNextItemRandomized(theta, availableQuestions, topFraction: 0.7);
 
-        // Fallback to random if CAT fails
         selected ??= availableQuestions[Random.Shared.Next(availableQuestions.Count)];
 
         return MapToQuestionDto(selected);
     }
 
-    // ─── IRT-based Answer Processing ─────────────────────────────
-
-    /// <summary>
-    /// Processes answer and updates skill using IRT EAP estimation.
-    /// </summary>
     public async Task<AnswerResultDto> ProcessAnswerAsync(int userId, SubmitAnswerDto answer)
     {
-        // Validate TestSession ownership if provided
         if (answer.TestSessionId.HasValue)
         {
             var session = await _context.TestSessions
@@ -198,7 +162,6 @@ public class AdaptiveEngineService : IAdaptiveEngineService
         var selectedOption = question.AnswerOptions.FirstOrDefault(o => o.Id == answer.AnswerOptionId)
             ?? throw new ArgumentException("Answer option not found");
 
-        // Prevent rapid duplicate submits of the exact same answer (double-click protection only)
         var duplicateCutoff = DateTime.UtcNow.AddSeconds(-1);
         var recentDuplicate = await _context.UserAnswers
             .AnyAsync(ua => ua.UserId == userId 
@@ -211,7 +174,6 @@ public class AdaptiveEngineService : IAdaptiveEngineService
         var correctOption = question.AnswerOptions.First(o => o.IsCorrect);
         var isCorrect = selectedOption.IsCorrect;
 
-        // Record the answer
         var userAnswer = new UserAnswer
         {
             UserId = userId,
@@ -223,13 +185,10 @@ public class AdaptiveEngineService : IAdaptiveEngineService
         };
         _context.UserAnswers.Add(userAnswer);
 
-        // Update section-level ability using IRT EAP estimation
         var sectionId = question.Topic.SectionId
             ?? throw new InvalidOperationException("Question's topic has no section; cannot update ability.");
         var (newLevel, change, theta, thetaSE) = await UpdateSkillLevelAsync(userId, sectionId, isCorrect);
 
-        // Online IRT cold-start: fold this real response into the item's difficulty so it
-        // drifts away from its difficulty-derived prior toward a data-driven value.
         question.DifficultyParam = IrtMath.UpdateDifficultyOnline(
             question.DifficultyParam, question.DiscriminationParam, question.GuessParam,
             theta, isCorrect, question.ResponseCount);
@@ -256,12 +215,6 @@ public class AdaptiveEngineService : IAdaptiveEngineService
         );
     }
 
-    // ─── IRT Skill Update (EAP Estimation) ───────────────────────
-
-    /// <summary>
-    /// Updates the user's ability for one exam Section using Bayesian EAP estimation of θ.
-    /// Replays all answers for this section and recomputes θ from scratch.
-    /// </summary>
     public async Task<(int newLevel, int change, double theta, double thetaSE)> UpdateSkillLevelAsync(int userId, int sectionId, bool isCorrect)
     {
         var profile = await _context.UserSkillProfiles
@@ -282,7 +235,6 @@ public class AdaptiveEngineService : IAdaptiveEngineService
 
         var oldLevel = profile.Level;
 
-        // Get all answers for this section to re-estimate θ
         var skillAnswers = await _context.UserAnswers
             .Include(ua => ua.Question)
                 .ThenInclude(q => q.Topic)
@@ -300,12 +252,10 @@ public class AdaptiveEngineService : IAdaptiveEngineService
             return (profile.Level, 0, profile.Theta, profile.ThetaSE);
         }
 
-        // Build response vector for EAP
         var responses = skillAnswers
             .Select(ua => (ua.Question, ua.AnswerOption.IsCorrect))
             .ToList();
 
-        // Use current θ as prior mean for Bayesian continuity
         var (theta, se) = IrtMath.EstimateAbilityEAP(responses, priorMean: 0.0, priorSD: 1.5);
 
         profile.Theta = theta;
@@ -354,11 +304,6 @@ public class AdaptiveEngineService : IAdaptiveEngineService
         );
     }
 
-    // ─── IRT Helpers ─────────────────────────────────────────────
-
-    /// <summary>
-    /// Gets user's average θ across all skills for CAT question selection.
-    /// </summary>
     private async Task<double> GetUserThetaAsync(int userId)
     {
         var avgTheta = await _context.UserSkillProfiles
@@ -382,9 +327,6 @@ public class AdaptiveEngineService : IAdaptiveEngineService
         );
     }
 
-    /// <summary>
-    /// Resets user's test progress — clears answers and resets skill profiles to defaults.
-    /// </summary>
     public async Task ResetUserProgressAsync(int userId)
     {
         var userAnswers = await _context.UserAnswers
@@ -406,9 +348,6 @@ public class AdaptiveEngineService : IAdaptiveEngineService
         await _unitOfWork.SaveChangesAsync();
     }
 
-    /// <summary>
-    /// Gets total question count for selected exams, optionally filtered by section/topic
-    /// </summary>
     public async Task<int> GetTotalQuestionsCountAsync(string[] examTypeCodes, int? sectionId = null, int[]? sectionIds = null, int? topicId = null)
     {
         var query = _context.Questions
@@ -424,9 +363,6 @@ public class AdaptiveEngineService : IAdaptiveEngineService
         return await query.CountAsync();
     }
 
-    /// <summary>
-    /// Gets count of answered questions for user in selected exams, optionally filtered by section/topic
-    /// </summary>
     public async Task<int> GetAnsweredQuestionsCountAsync(int userId, string[] examTypeCodes, int? sectionId = null, int[]? sectionIds = null, int? topicId = null)
     {
         var query = _context.UserAnswers
@@ -442,11 +378,6 @@ public class AdaptiveEngineService : IAdaptiveEngineService
         return await query.CountAsync();
     }
 
-    /// <summary>
-    /// Calculates mastery percentage for a topic based on the last answer to each question.
-    /// Mastery = (questions with last answer correct) / (total questions in topic) * 100
-    /// Returns 0 if no questions answered yet.
-    /// </summary>
     public async Task<int> GetTopicMasteryAsync(int userId, string[] examTypeCodes, int? topicId = null)
     {
         if (!topicId.HasValue) return 0;
@@ -454,7 +385,6 @@ public class AdaptiveEngineService : IAdaptiveEngineService
         var totalQuestions = await GetTotalQuestionsCountAsync(examTypeCodes, topicId: topicId);
         if (totalQuestions == 0) return 0;
 
-        // Get the last answer for each question in this topic
         var lastAnswerPerQuestion = await _context.UserAnswers
             .Include(ua => ua.AnswerOption)
             .Include(ua => ua.Question)
@@ -472,10 +402,6 @@ public class AdaptiveEngineService : IAdaptiveEngineService
         return (int)Math.Round((double)correctCount / totalQuestions * 100);
     }
 
-    /// <summary>
-    /// Gets questions for spaced repetition review, prioritized by Ebbinghaus forgetting curve.
-    /// Questions with lower retention probability appear first (most urgently need review).
-    /// </summary>
     public async Task<IEnumerable<QuestionDto>> GetIncorrectlyAnsweredQuestionsAsync(int userId, string[]? examTypeCodes = null)
     {
         var query = _context.UserAnswers
@@ -494,7 +420,6 @@ public class AdaptiveEngineService : IAdaptiveEngineService
 
         var incorrectAnswers = await query.ToListAsync();
 
-        // Group by question, calculate forgetting-curve priority
         var now = DateTime.UtcNow;
         var questionsWithPriority = incorrectAnswers
             .GroupBy(ua => ua.QuestionId)
@@ -505,24 +430,19 @@ public class AdaptiveEngineService : IAdaptiveEngineService
                 var daysSinceLastReview = (now - lastAnswer.AnsweredAt).TotalDays;
                 var incorrectCount = g.Count();
                 
-                // Stability decreases with more errors; base stability = 1 day for never-correct items
                 var stability = IrtMath.CalculateStability(0, baseStability: 0.5, factor: 1.0);
                 var retention = IrtMath.RetentionProbability(daysSinceLastReview, stability);
                 
-                // Priority: lower retention + more errors = higher priority (lower value = show first)
                 var priority = retention - (incorrectCount * 0.1);
                 
                 return (question, priority);
             })
-            .OrderBy(x => x.priority) // lowest priority first = most needs review
+            .OrderBy(x => x.priority)
             .Select(x => MapToQuestionDto(x.question));
 
         return questionsWithPriority;
     }
 
-    /// <summary>
-    /// Gets topics with user progress statistics
-    /// </summary>
     public async Task<IEnumerable<TopicProgressDto>> GetTopicsWithProgressAsync(int userId, string[]? examTypeCodes = null, int[]? sectionIds = null)
     {
         var topicsQuery = _context.Topics
@@ -542,7 +462,6 @@ public class AdaptiveEngineService : IAdaptiveEngineService
 
         var topics = await topicsQuery.ToListAsync();
 
-        // Fetch IRT section ability profiles for the user
         var skillProfiles = await _context.UserSkillProfiles
             .Where(p => p.UserId == userId)
             .ToDictionaryAsync(p => p.SectionId);
@@ -558,25 +477,21 @@ public class AdaptiveEngineService : IAdaptiveEngineService
         {
             var topicAnswers = userAnswers.Where(ua => ua.Question.TopicId == topic.Id).ToList();
             
-            // Count unique questions answered correctly (at least once)
             var uniqueCorrectQuestions = topicAnswers
                 .Where(ua => ua.AnswerOption.IsCorrect)
                 .Select(ua => ua.QuestionId)
                 .Distinct()
                 .Count();
             
-            // Total attempts for display
             var correctAttempts = topicAnswers.Count(ua => ua.AnswerOption.IsCorrect);
             var incorrectAttempts = topicAnswers.Count(ua => !ua.AnswerOption.IsCorrect);
             
             var totalQuestions = topic.Questions.Count;
             
-            // Mastery based on unique correct questions (capped at 100%)
             var mastery = totalQuestions > 0 
                 ? Math.Min((double)uniqueCorrectQuestions / totalQuestions * 100, 100.0)
                 : 0;
 
-            // IRT level from the topic's section profile (same formula as WhatIf)
             var irtLevel = topic.SectionId is int tsecId && skillProfiles.TryGetValue(tsecId, out var sp)
                 ? IrtMath.ThetaToLevel(sp.Theta)
                 : 50;
@@ -600,9 +515,6 @@ public class AdaptiveEngineService : IAdaptiveEngineService
         return result.OrderBy(t => t.MasteryPercentage);
     }
 
-    /// <summary>
-    /// Gets all questions for a specific topic
-    /// </summary>
     public async Task<IEnumerable<QuestionDto>> GetQuestionsByTopicAsync(int topicId)
     {
         var questions = await _context.Questions

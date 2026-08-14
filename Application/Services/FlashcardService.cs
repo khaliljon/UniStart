@@ -79,9 +79,6 @@ public class FlashcardService : IFlashcardService
         return dueCards;
     }
 
-    /// <summary>
-    /// SM-2 algorithm: update flashcard progress based on quality rating (0-5).
-    /// </summary>
     public async Task ReviewCardAsync(int userId, ReviewFlashcardRequest request)
     {
         var progress = await _context.UserFlashcardProgress
@@ -105,12 +102,10 @@ public class FlashcardService : IFlashcardService
             }
             catch (DbUpdateException)
             {
-                // Race condition: another request already inserted this row.
-                // Detach the failed entity and re-fetch the existing one.
                 _context.Entry(progress).State = EntityState.Detached;
                 progress = await _context.UserFlashcardProgress
                     .FirstOrDefaultAsync(p => p.UserId == userId && p.FlashcardId == request.FlashcardId);
-                if (progress == null) return; // should not happen
+                if (progress == null) return;
             }
         }
 
@@ -118,7 +113,6 @@ public class FlashcardService : IFlashcardService
 
         if (quality >= 3)
         {
-            // Correct response
             progress.Repetitions++;
             if (progress.Repetitions == 1)
                 progress.IntervalDays = 1;
@@ -132,7 +126,6 @@ public class FlashcardService : IFlashcardService
         }
         else
         {
-            // Incorrect — reset
             progress.Repetitions = 0;
             progress.IntervalDays = 1;
         }
@@ -147,7 +140,6 @@ public class FlashcardService : IFlashcardService
         }
         catch (DbUpdateException)
         {
-            // Concurrent update — safe to ignore, the other request's values are equivalent
         }
     }
 
@@ -212,11 +204,9 @@ public class FlashcardService : IFlashcardService
     {
         var now = DateTime.UtcNow;
 
-        // Cards with progress due for review
         var dueWithProgress = await _context.UserFlashcardProgress
             .CountAsync(p => p.UserId == userId && p.NextReviewAt <= now);
 
-        // New cards (no progress yet) from accessible decks
         var accessibleDeckIds = await _context.FlashcardDecks
             .Where(d => d.IsSystem || d.CreatedByUserId == userId)
             .Select(d => d.Id)

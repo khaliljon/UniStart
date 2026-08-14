@@ -7,7 +7,6 @@ using UniStart.Infrastructure.Data;
 
 namespace UniStart.Controllers;
 
-/// <summary>CSCA exam sittings (dates) — public list + admin CRUD.</summary>
 [ApiController]
 [Route("api/exam-sittings")]
 public class ExamSittingsController : ControllerBase
@@ -16,7 +15,6 @@ public class ExamSittingsController : ControllerBase
 
     public ExamSittingsController(UniStartDbContext db) => _db = db;
 
-    /// <summary>Public: active sittings for the landing / about pages.</summary>
     [HttpGet]
     public async Task<IActionResult> List()
     {
@@ -28,7 +26,6 @@ public class ExamSittingsController : ControllerBase
         return Ok(items);
     }
 
-    /// <summary>Admin: all sittings (including inactive).</summary>
     [HttpGet("admin/all")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> AdminList()

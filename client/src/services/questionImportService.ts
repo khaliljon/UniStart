@@ -1,6 +1,5 @@
 import api from './api';
 
-// ─── Types ──────────────────────────────────────────────────
 
 export interface QuestionImportJob {
   id: number;
@@ -72,7 +71,6 @@ export interface UpdateDraftPayload {
   irtC?: number;
 }
 
-// ─── API Service ────────────────────────────────────────────
 
 export const questionImportService = {
   async upload(file: File, examTypeCode: string, sectionId?: number, topicId?: number, instructions?: string, contentType?: 'questions' | 'theory', mode?: 'ai' | 'strict'): Promise<QuestionImportJob> {
@@ -86,7 +84,7 @@ export const questionImportService = {
     if (mode) formData.append('mode', mode);
     const resp = await api.post<QuestionImportJob>('/admin/question-import/upload', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
-      timeout: 600000, // 10 minutes — OCR + LLM extraction can be slow
+      timeout: 600000,
     });
     return resp.data;
   },
@@ -109,7 +107,7 @@ export const questionImportService = {
     if (instructions) formData.append('instructions', instructions);
     const resp = await api.post<QuestionImportJob>('/admin/question-import/upload-batch', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
-      timeout: 600000, // 10 minutes — OCR on image-based PDFs can be slow
+      timeout: 600000,
     });
     return resp.data;
   },

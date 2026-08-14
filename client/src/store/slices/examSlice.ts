@@ -12,7 +12,6 @@ interface ExamState {
   error: string | null;
 }
 
-// Restore selectedExams from localStorage so they survive page refresh
 const savedExams = (() => {
   try {
     const stored = localStorage.getItem('selectedExams');
@@ -92,9 +91,6 @@ const examSlice = createSlice({
       .addCase(fetchExams.fulfilled, (state, action: PayloadAction<ExamType[]>) => {
         state.isLoading = false;
         state.exams = action.payload;
-        // Reconcile persisted selections against the exams that actually exist in
-        // the DB (admin-managed). Drops stale codes (e.g. a deleted NUET) so they
-        // never show in the UI or trigger 404 section requests.
         const validCodes = new Set(action.payload.map((e) => e.code));
         const filtered = state.selectedExams.filter((c) => validCodes.has(c));
         if (filtered.length !== state.selectedExams.length) {

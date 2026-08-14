@@ -1,11 +1,6 @@
-// Standalone i18n strings for the CSCA landing page.
-// Kept separate from the main Translations interface so all three locales
-// stay in parity in one file and the huge types.ts is untouched.
-
 import type { Locale } from './types';
 
 export interface CscaStrings {
-  // nav
   navAbout: string;
   navNews: string;
   navCourses: string;
@@ -15,25 +10,21 @@ export interface CscaStrings {
   navContacts: string;
   login: string;
   cabinet: string;
-  // hero
   heroBadge: string;
   heroTitle: string;
   heroTitleAccent: string;
   heroSub: string;
   ctaStart: string;
   ctaLearnMore: string;
-  // countdown
   cdNextExam: string;
   cdRegOpens: string;
   cdDays: string;
   cdHours: string;
   cdMinutes: string;
-  // stats
   statStudents: string;
   statQuestions: string;
   statAnswered: string;
   statSuccess: string;
-  // about exam
   aboutTitle: string;
   aboutLead: string;
   aboutBody: string;
@@ -56,13 +47,11 @@ export interface CscaStrings {
   addToCalendar: string;
   calGoogle: string;
   calApple: string;
-  // news
   newsTitle: string;
   newsLead: string;
   newsReadMore: string;
   newsReadLess: string;
   newsEmpty: string;
-  // features
   featuresTitle: string;
   featuresLead: string;
   fAdaptiveT: string;
@@ -77,7 +66,6 @@ export interface CscaStrings {
   fAiD: string;
   fPlanT: string;
   fPlanD: string;
-  // mocks
   mocksTitle: string;
   mocksLead: string;
   freeMockTitle: string;
@@ -100,18 +88,15 @@ export interface CscaStrings {
   pkgFeatAi: string;
   pkgFeatAnalytics: string;
   pkgFeatFull: string;
-  // materials
   materialsTitle: string;
   materialsLead: string;
   bookLabel: string;
   addToCart: string;
   freePdfTitle: string;
   freePdfDesc: string;
-  // cta
   ctaBandTitle: string;
   ctaBandDesc: string;
   ctaBandBtn: string;
-  // footer
   footerDesc: string;
   footerPlatform: string;
   footerAbout: string;
@@ -124,7 +109,6 @@ export interface CscaStrings {
   questionsCount: string;
   supportSocials: string;
   supportSocialsDesc: string;
-  // exam dates (About page)
   examDatesTitle: string;
   examDatesLead: string;
   regOpensLabel: string;
@@ -136,22 +120,18 @@ export interface CscaStrings {
   monthJune: string;
   monthSeptember: string;
   monthNovember: string;
-  // Courses page
   coursesLead2: string;
   coursesComingSoon: string;
   coursesFree: string;
   coursesPaid: string;
   coursesPriceNote: string;
-  // About us page
   aboutUsTitle: string;
   aboutUsLead: string;
   aboutUsMission: string;
   aboutUsGoal: string;
-  // Contacts page
   contactsTitle: string;
   contactsLead: string;
   contactsWriteUs: string;
-  // checkout / purchases (internal)
   checkoutTitle: string;
   checkoutEmpty: string;
   checkoutBackHome: string;
@@ -163,7 +143,6 @@ export interface CscaStrings {
   purchasesEmpty: string;
   purchasesBrowse: string;
   currency: string;
-  // packages / mocks / purchases (localized UI added later)
   perSubject: string;
   discountPackages: string;
   mockQuestions: string;
@@ -208,7 +187,6 @@ export interface CscaStrings {
   boughtOpen: string;
   openBtn: string;
   singleMocksTitle: string;
-  // cart (internal)
   cartTitle: string;
   cartEmpty: string;
   cartRemove: string;

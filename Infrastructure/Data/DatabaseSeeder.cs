@@ -14,12 +14,6 @@ public class DatabaseSeeder
         _context = context;
     }
 
-    // ─── NUET Mathematics backbone taxonomy ─────────────────────────────────
-    // Canonical Unit → Topic tree for the NUET "Math" section. Each Unit becomes a
-    // Skill (the grouping the IRT/prediction engine aggregates on, and the unit-level
-    // bucket the content-ingestion pipeline maps files onto); each item becomes a
-    // Topic with a 1-based SortOrder. Seeded on fresh databases and reconciled on
-    // existing ones via EnsureNuetMathSkillsAsync / EnsureNuetMathTopicsAsync.
     private static readonly (string Code, string Name, string Description, string[] Topics)[] NuetMathTaxonomy =
     {
         ("SK_NUET_UNITS", "Units & Measures",
@@ -115,16 +109,10 @@ public class DatabaseSeeder
 
     public async Task SeedAsync()
     {
-        // CSCA-only platform: the DB is considered correctly seeded once the CSCA
-        // exam type exists. (Historically this checked for a SAT sample topic.)
         var hasCorrectData = await _context.ExamTypes.AnyAsync(e => e.Code == "CSCA");
 
         if (await _context.Topics.AnyAsync() && !hasCorrectData)
         {
-            // SAFETY: never wipe a database that already holds real activity.
-            // A schema/seed-marker change must not be allowed to destroy live data
-            // (user answers, mock attempts, real accounts). Only auto-reset when the
-            // DB is effectively empty of user activity (fresh/dev environment).
             if (await HasRealUserDataAsync())
             {
                 System.Console.WriteLine(
@@ -141,8 +129,6 @@ public class DatabaseSeeder
 
         if (totalQuestions > 0 && questionsWithExplanation < totalQuestions)
         {
-            // Only wipe questions if no real user data exists (dev/empty DB).
-            // On production with MockExamAnswers/UserAnswers skip cleanup to avoid data loss.
             var hasMockData = await _context.MockExamAnswers.AnyAsync()
                            || await _context.MockExamAttempts.AnyAsync();
             var hasUserData = await _context.UserAnswers.AnyAsync();
@@ -153,7 +139,6 @@ public class DatabaseSeeder
                 _context.Questions.RemoveRange(_context.Questions);
                 await _context.SaveChangesAsync();
             }
-            // else: skip — questions will remain as-is; new ones will be seeded below
         }
 
         if (!await _context.ExamTypes.AnyAsync())
@@ -185,11 +170,6 @@ public class DatabaseSeeder
             await SeedTopicsAsync();
         }
 
-        // Reconcile taxonomy. CSCA-only platform: no NUET/SAT taxonomy is rebuilt.
-
-        // NOTE: Question seeding has been intentionally removed. The question base is
-        // now built via the content-ingestion pipeline (admin upload / Google Drive sync),
-        // so seeded SAT/NUET sample questions are no longer re-created on startup.
 
         await UpdateIrtParametersAsync();
 
@@ -234,7 +214,6 @@ public class DatabaseSeeder
             },
         };
 
-        // Only insert documents that are missing — never overwrite admin edits.
         var toAdd = docs.Where(d => !existing.Contains(d.Slug)).ToList();
         if (toAdd.Count > 0)
         {
@@ -244,8 +223,6 @@ public class DatabaseSeeder
 
     private async Task<bool> HasRealUserDataAsync()
     {
-        // Treat the DB as "live" if any student activity exists, or if there are
-        // user accounts beyond the seeded defaults (test/admin) and partner schools.
         if (await _context.UserAnswers.AnyAsync()) return true;
         if (await _context.MockExamAnswers.AnyAsync()) return true;
         if (await _context.MockExamAttempts.AnyAsync()) return true;
@@ -314,10 +291,6 @@ public class DatabaseSeeder
         await _context.SaveChangesAsync();
     }
 
-    /// <summary>
-    /// Ensures the CSCA exam type exists even if the table was already partially seeded.
-    /// CSCA-only platform: no other exam types are (re)created.
-    /// </summary>
     private async Task EnsureExamTypesAsync()
     {
         var existing = new HashSet<string>(
@@ -333,23 +306,16 @@ public class DatabaseSeeder
 
     private Task SeedExamSectionsAsync()
     {
-        // CSCA-only platform: the CSCA subject/section structure is not finalized yet,
-        // so nothing is hard-seeded. Sections are created later via the admin panel /
-        // content-ingestion pipeline once the material structure is known.
         return Task.CompletedTask;
     }
 
     private Task SeedSkillsAsync()
     {
-        // CSCA-only platform: skills (subjects) are not hard-seeded yet — added later
-        // via the admin panel once the CSCA material structure is defined.
         return Task.CompletedTask;
     }
 
     private Task SeedTopicsAsync()
     {
-        // CSCA-only platform: topics are built via the content-ingestion pipeline
-        // (admin upload / import), not hard-seeded here.
         return Task.CompletedTask;
     }
 
@@ -374,7 +340,6 @@ public class DatabaseSeeder
 
     private Task SeedMockExamsAsync()
     {
-        // CSCA-only platform: mock exams are authored via the admin panel, not hard-seeded.
         return Task.CompletedTask;
     }
 }

@@ -12,10 +12,8 @@ public class StudyPlanService : IStudyPlanService
     private readonly UniStartDbContext _db;
     private readonly ILogger<StudyPlanService> _logger;
 
-    // Spaced repetition intervals (days after initial study)
     private static readonly int[] ReviewIntervals = { 1, 3, 7, 14, 30 };
 
-    // Minutes per session limits
     private const int MinDailyMinutes = 30;
     private const int MaxDailyMinutes = 120;
     private const int DefaultTopicMinutes = 20;
@@ -28,13 +26,9 @@ public class StudyPlanService : IStudyPlanService
         _logger = logger;
     }
 
-    // ═══════════════════════════════════════════════════════
-    //  GOALS
-    // ═══════════════════════════════════════════════════════
 
     public async Task<StudyGoalDto> CreateGoalAsync(int userId, CreateStudyGoalDto dto)
     {
-        // Deactivate previous goals
         var existing = await _db.StudyGoals
             .Where(g => g.UserId == userId && g.IsActive)
             .ToListAsync();
@@ -97,7 +91,6 @@ public class StudyPlanService : IStudyPlanService
 
         goal.IsActive = false;
 
-        // Also deactivate associated plans
         var plans = await _db.StudyPlans
             .Where(p => p.GoalId == goalId && p.IsActive)
             .ToListAsync();
@@ -107,9 +100,6 @@ public class StudyPlanService : IStudyPlanService
         return true;
     }
 
-    // ═══════════════════════════════════════════════════════
-    //  PLAN GENERATION — Core Algorithm
-    // ═══════════════════════════════════════════════════════
 
     public async Task<StudyPlanDto> GeneratePlanAsync(int userId, int goalId)
     {
@@ -118,7 +108,6 @@ public class StudyPlanService : IStudyPlanService
             .FirstOrDefaultAsync(g => g.Id == goalId && g.UserId == userId)
             ?? throw new InvalidOperationException("Goal not found");
 
-        // Deactivate old plans for this goal and remove their entries
         var oldPlans = await _db.StudyPlans
             .Where(p => p.UserId == userId && p.IsActive)
             .ToListAsync();
@@ -132,7 +121,6 @@ public class StudyPlanService : IStudyPlanService
             foreach (var p in oldPlans) p.IsActive = false;
         }
 
-        // ─── 1. Load topics for this exam ────────────────────
         var selectedSectionIds = goal.SelectedSectionIds?
             .Split(',', StringSplitOptions.RemoveEmptyEntries)
             .Select(int.Parse)
@@ -149,41 +137,33 @@ public class StudyPlanService : IStudyPlanService
 
         if (!topics.Any())
         {
-            // Fallback: load all topics if exam-specific filter returns nothing
             topics = await _db.Topics.Include(t => t.Section).ToListAsync();
         }
 
-        // ─── 2. Load user skill profiles ─────────────────────
         var profiles = await _db.UserSkillProfiles
             .Where(p => p.UserId == userId)
             .ToDictionaryAsync(p => p.SectionId, p => p);
 
-        // ─── 3. Load topic dependencies ──────────────────────
         var dependencies = await _db.TopicDependencies.ToListAsync();
 
-        // ─── 4. Load completion history for review scheduling ─
         var completedTopicIds = await _db.UserAnswers
             .Where(a => a.UserId == userId)
             .Select(a => a.Question!.TopicId)
             .Distinct()
             .ToListAsync();
 
-        // ─── 5. Topological sort with priority ───────────────
         var sortedTopics = TopologicalSortWithPriority(topics, dependencies, profiles);
 
-        // ─── 6. Calculate available days ─────────────────────
         var today = DateTime.SpecifyKind(DateTime.UtcNow.Date, DateTimeKind.Utc);
         var daysUntilExam = (int)(goal.TargetDate.Date - today).TotalDays;
-        if (daysUntilExam < 1) daysUntilExam = 7; // At least one week
+        if (daysUntilExam < 1) daysUntilExam = 7;
 
-        // ─── 6b. Get actual question counts per topic ────
         var topicQuestionCounts = await _db.Questions
             .Where(q => topics.Select(t => t.Id).Contains(q.TopicId))
             .GroupBy(q => q.TopicId)
             .Select(g => new { TopicId = g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.TopicId, x => x.Count);
 
-        // ─── 7. Build the plan ───────────────────────────────
         var plan = new StudyPlan
         {
             UserId = userId,
@@ -192,7 +172,7 @@ public class StudyPlanService : IStudyPlanService
             IsActive = true
         };
         _db.StudyPlans.Add(plan);
-        await _db.SaveChangesAsync(); // Get plan ID
+        await _db.SaveChangesAsync();
 
         var entries = BuildPlanEntries(
             plan.Id, sortedTopics, profiles, dependencies,
@@ -221,9 +201,6 @@ public class StudyPlanService : IStudyPlanService
         return await GeneratePlanAsync(userId, goal.Id);
     }
 
-    // ═══════════════════════════════════════════════════════
-    //  TODAY'S PLAN
-    // ═══════════════════════════════════════════════════════
 
     public async Task<TodayPlanDto> GetTodayPlanAsync(int userId)
     {
@@ -261,7 +238,6 @@ public class StudyPlanService : IStudyPlanService
                          e.Type == StudyEntryType.New ? 2 : 3)
             .ToListAsync();
 
-        // Cap RecommendedQuestions to actual topic question count
         var entryTopicIds = entries.Select(e => e.TopicId).Distinct().ToList();
         var topicQCounts = await _db.Questions
             .Where(q => entryTopicIds.Contains(q.TopicId))
@@ -306,9 +282,6 @@ public class StudyPlanService : IStudyPlanService
         );
     }
 
-    // ═══════════════════════════════════════════════════════
-    //  ENTRY COMPLETION
-    // ═══════════════════════════════════════════════════════
 
     public async Task<StudyPlanEntryDto?> CompleteEntryAsync(int userId, int entryId, CompleteEntryDto dto)
     {
@@ -333,9 +306,6 @@ public class StudyPlanService : IStudyPlanService
         return MapEntry(entry);
     }
 
-    // ═══════════════════════════════════════════════════════
-    //  AUTO-COMPLETE TODAY'S ENTRIES FROM ACTUAL ANSWERS
-    // ═══════════════════════════════════════════════════════
 
     public async Task<TodayPlanDto> AutoCompleteTodayAsync(int userId)
     {
@@ -347,7 +317,6 @@ public class StudyPlanService : IStudyPlanService
         if (plan == null)
             return await GetTodayPlanAsync(userId);
 
-        // Get today's entries (both incomplete for auto-completion and completed for stats refresh)
         var todayEntries = await _db.StudyPlanEntries
             .Include(e => e.Topic)
             .Include(e => e.Plan)
@@ -357,7 +326,6 @@ public class StudyPlanService : IStudyPlanService
         var incompleteEntries = todayEntries.Where(e => !e.IsCompleted).ToList();
         var completedEntries = todayEntries.Where(e => e.IsCompleted).ToList();
 
-        // Fix RecommendedQuestions if they exceed actual topic question count
         var topicIds = todayEntries.Select(e => e.TopicId).Distinct().ToList();
         var actualTopicCounts = await _db.Questions
             .Where(q => topicIds.Contains(q.TopicId))
@@ -372,7 +340,6 @@ public class StudyPlanService : IStudyPlanService
                 entry.RecommendedQuestions = actual;
         }
 
-        // Get all user answers from today, grouped by topicId
         var todayAnswers = await _db.UserAnswers
             .Include(a => a.Question)
             .Include(a => a.AnswerOption)
@@ -396,11 +363,8 @@ public class StudyPlanService : IStudyPlanService
             if (!answersByTopic.TryGetValue(entry.TopicId, out var topicStats))
                 continue;
 
-            // Auto-complete if user answered enough questions for this topic today
-            // Require at least half the recommended amount (minimum 2) to prevent trivial completion
             var threshold = Math.Max(2, entry.RecommendedQuestions / 2);
             
-            // Also require minimum 30% accuracy — answering everything wrong doesn't count
             var accuracy = topicStats.Total > 0 ? (double)topicStats.Correct / topicStats.Total : 0;
             var minAccuracy = 0.3;
             
@@ -414,7 +378,6 @@ public class StudyPlanService : IStudyPlanService
             }
         }
 
-        // Also refresh stats for already-completed entries (user may have continued practicing)
         var statsUpdated = false;
         foreach (var entry in completedEntries)
         {
@@ -438,18 +401,12 @@ public class StudyPlanService : IStudyPlanService
                     autoCompleted, userId);
         }
 
-        // ─── Adaptive redistribution check ───────────────
-        // When today's entries are all done and there are future entries,
-        // redistribute remaining work based on actual performance
         if (autoCompleted > 0)
             await AdaptPlanAsync(userId, plan.Id, today);
 
         return await GetTodayPlanAsync(userId);
     }
 
-    // ═══════════════════════════════════════════════════════
-    //  ADAPTIVE PLAN REDISTRIBUTION
-    // ═══════════════════════════════════════════════════════
 
     private async Task AdaptPlanAsync(int userId, int planId, DateTime today)
     {
@@ -457,7 +414,6 @@ public class StudyPlanService : IStudyPlanService
             .FirstOrDefaultAsync(g => g.UserId == userId && g.IsActive);
         if (goal == null) return;
 
-        // Get all entries for this plan
         var allEntries = await _db.StudyPlanEntries
             .Include(e => e.Topic)
             .Where(e => e.PlanId == planId)
@@ -469,7 +425,6 @@ public class StudyPlanService : IStudyPlanService
 
         if (!futureIncomplete.Any()) return;
 
-        // Collect actual accuracy per topic from completed entries
         var completedWithAnswers = allEntries
             .Where(e => e.IsCompleted && e.QuestionsAnswered > 0)
             .ToList();
@@ -480,26 +435,22 @@ public class StudyPlanService : IStudyPlanService
                 g => g.Key,
                 g => g.Average(e => (double)e.CorrectAnswers / e.QuestionsAnswered));
 
-        // Identify weak topics (accuracy < 50%) that need more review
         var weakTopicIds = topicAccuracy
             .Where(kv => kv.Value < 0.5)
             .Select(kv => kv.Key)
             .ToHashSet();
 
-        // Strong topics (accuracy >= 80%) — can drop some review entries
         var strongTopicIds = topicAccuracy
             .Where(kv => kv.Value >= 0.8)
             .Select(kv => kv.Key)
             .ToHashSet();
 
-        // Remove redundant review entries for strong topics
         var droppedCount = 0;
         var futureReviews = futureIncomplete
             .Where(e => e.Type == StudyEntryType.Review && strongTopicIds.Contains(e.TopicId))
             .OrderByDescending(e => e.Date)
             .ToList();
 
-        // Keep at most 1 future review for strong topics
         var reviewsByTopic = futureReviews.GroupBy(e => e.TopicId);
         foreach (var group in reviewsByTopic)
         {
@@ -511,13 +462,11 @@ public class StudyPlanService : IStudyPlanService
             }
         }
 
-        // Redistribute remaining entries evenly across remaining days
         var daysUntilExam = Math.Max(1, (int)(goal.TargetDate.Date - today).TotalDays);
         var remainingDays = daysUntilExam;
 
         if (futureIncomplete.Any())
         {
-            // Sort: weakness first, then new, then review, then practice
             var sorted = futureIncomplete
                 .OrderBy(e => e.Type == StudyEntryType.Weakness ? 0 :
                               e.Type == StudyEntryType.New ? 1 :
@@ -543,7 +492,6 @@ public class StudyPlanService : IStudyPlanService
             }
         }
 
-        // Add extra weakness practice entries for low-accuracy topics
         var topicQCounts = await _db.Questions
             .Where(q => weakTopicIds.Contains(q.TopicId))
             .GroupBy(q => q.TopicId)
@@ -553,14 +501,12 @@ public class StudyPlanService : IStudyPlanService
         var addedCount = 0;
         foreach (var weakId in weakTopicIds)
         {
-            // Only add if there aren't already 2+ future entries for this topic
             var existingFutureCount = futureIncomplete.Count(e => e.TopicId == weakId);
             if (existingFutureCount >= 2) continue;
 
             var maxQ = topicQCounts.GetValueOrDefault(weakId, 5);
             if (maxQ == 0) continue;
 
-            // Schedule weakness practice within the first third of remaining days
             var targetDay = Math.Min(remainingDays / 3, remainingDays - 1);
             _db.StudyPlanEntries.Add(new StudyPlanEntry
             {
@@ -583,9 +529,6 @@ public class StudyPlanService : IStudyPlanService
         }
     }
 
-    // ═══════════════════════════════════════════════════════
-    //  STATS
-    // ═══════════════════════════════════════════════════════
 
     public async Task<PlanStatsDto> GetPlanStatsAsync(int userId)
     {
@@ -610,7 +553,6 @@ public class StudyPlanService : IStudyPlanService
             .Where(e => e.IsCompleted)
             .Select(e => e.Date).Distinct().Count();
 
-        // Days with entries where none were completed
         var skippedDays = pastEntries
             .GroupBy(e => e.Date)
             .Count(g => g.All(e => !e.IsCompleted) && g.Key < today);
@@ -626,7 +568,6 @@ public class StudyPlanService : IStudyPlanService
             ? (double)completedDays / totalDays * 100
             : 0;
 
-        // Weekly summary
         var weeklyData = entries
             .GroupBy(e => StartOfWeek(e.Date))
             .OrderBy(g => g.Key)
@@ -655,9 +596,6 @@ public class StudyPlanService : IStudyPlanService
         );
     }
 
-    // ═══════════════════════════════════════════════════════
-    //  PLAN GENERATION ALGORITHM
-    // ═══════════════════════════════════════════════════════
 
     private List<StudyPlanEntry> BuildPlanEntries(
         int planId,
@@ -670,23 +608,19 @@ public class StudyPlanService : IStudyPlanService
         int totalDays)
     {
         var entries = new List<StudyPlanEntry>();
-        var dailyLoad = new Dictionary<int, int>(); // dayOffset → minutes
+        var dailyLoad = new Dictionary<int, int>();
 
-        // Initialize daily load tracker
         for (int d = 0; d < totalDays; d++)
             dailyLoad[d] = 0;
 
-        // Target daily minutes — distribute evenly
         var totalTopics = sortedTopics.Count;
         var targetDailyMinutes = Math.Clamp(
             totalTopics * DefaultTopicMinutes / Math.Max(totalDays, 1),
             MinDailyMinutes, MaxDailyMinutes);
 
-        // ─── Pass 1: Assign main study sessions ─────────
         int dayIndex = 0;
         foreach (var (topic, priority) in sortedTopics)
         {
-            // Find the next day that has room
             var assignDay = FindAvailableDay(dailyLoad, dayIndex, totalDays, targetDailyMinutes);
             if (assignDay >= totalDays) break;
 
@@ -699,7 +633,6 @@ public class StudyPlanService : IStudyPlanService
                      : isWeak ? StudyEntryType.Weakness
                      : StudyEntryType.Practice;
 
-            // Weak topics get more time
             var minutes = type switch
             {
                 StudyEntryType.Weakness => (int)(DefaultTopicMinutes * 1.5),
@@ -707,7 +640,6 @@ public class StudyPlanService : IStudyPlanService
                 _ => PracticeMinutes
             };
 
-            // More questions for weak topics, but never more than available in the topic
             var maxQuestions = topicQuestionCounts.GetValueOrDefault(topic.Id, 5);
             var questions = type switch
             {
@@ -727,20 +659,17 @@ public class StudyPlanService : IStudyPlanService
             });
 
             dailyLoad[assignDay] += minutes;
-            dayIndex = assignDay; // Next topic starts from this day or later
+            dayIndex = assignDay;
 
-            // ─── Pass 2: Schedule reviews using Ebbinghaus curve ───
             foreach (var interval in ReviewIntervals)
             {
                 var reviewDay = assignDay + interval;
                 if (reviewDay >= totalDays) break;
 
-                // Check retention — skip review if retention is still high
                 var successCount = completedTopicIds.Contains(topic.Id) ? 2 : 0;
                 var stability = IrtMath.CalculateStability(successCount);
                 var retention = IrtMath.RetentionProbability(interval, stability);
 
-                // Only schedule review if retention drops below 80%
                 if (retention >= 0.8) continue;
 
                 var reviewAvailDay = FindAvailableDay(
@@ -761,7 +690,6 @@ public class StudyPlanService : IStudyPlanService
             }
         }
 
-        // ─── Pass 3: Fill gaps with weakness practice ────
         var weakTopics = sortedTopics
             .Where(t =>
             {
@@ -775,7 +703,6 @@ public class StudyPlanService : IStudyPlanService
             int weakIdx = 0;
             for (int d = 0; d < totalDays; d++)
             {
-                // Fill days with less than minimum load
                 while (dailyLoad[d] < MinDailyMinutes && weakIdx < weakTopics.Count * 3)
                 {
                     var (topic, _) = weakTopics[weakIdx % weakTopics.Count];
@@ -804,16 +731,13 @@ public class StudyPlanService : IStudyPlanService
         return entries;
     }
 
-    /// <summary>
-    /// Topologically sort topics respecting dependencies, then by priority (weak first).
-    /// </summary>
     private List<(Topic topic, double priority)> TopologicalSortWithPriority(
         List<Topic> topics,
         List<TopicDependency> dependencies,
         Dictionary<int, UserSkillProfile> profiles)
     {
         var topicIds = new HashSet<int>(topics.Select(t => t.Id));
-        var graph = new Dictionary<int, List<int>>(); // topic → prerequisite topic IDs
+        var graph = new Dictionary<int, List<int>>();
         var inDegree = new Dictionary<int, int>();
 
         foreach (var t in topics)
@@ -831,26 +755,21 @@ public class StudyPlanService : IStudyPlanService
             inDegree[dep.TopicId]++;
         }
 
-        // Kahn's algorithm with priority queue (higher priority = earlier)
         var result = new List<(Topic topic, double priority)>();
         var topicMap = topics.ToDictionary(t => t.Id);
 
-        // Priority: lower theta = higher priority (study weak topics first)
         double GetPriority(Topic t)
         {
             var profile = profiles.GetValueOrDefault(t.SectionId ?? 0);
             var theta = profile?.Theta ?? 0.0;
-            // Invert theta so weak topics (negative θ) get high priority
-            // Also factor in: topics without profile data get medium-high priority
             return profile == null ? 5.0 : (3.0 - theta);
         }
 
-        // Start with topics that have no prerequisites
         var queue = new PriorityQueue<int, double>();
         foreach (var id in topicIds)
         {
             if (inDegree[id] == 0)
-                queue.Enqueue(id, -GetPriority(topicMap[id])); // Negate for max-heap behavior
+                queue.Enqueue(id, -GetPriority(topicMap[id]));
         }
 
         var visited = new HashSet<int>();
@@ -862,7 +781,6 @@ public class StudyPlanService : IStudyPlanService
             var topic = topicMap[currentId];
             result.Add((topic, GetPriority(topic)));
 
-            // Release dependent topics
             foreach (var dep in dependencies)
             {
                 if (dep.PrerequisiteTopicId == currentId && topicIds.Contains(dep.TopicId))
@@ -876,7 +794,6 @@ public class StudyPlanService : IStudyPlanService
             }
         }
 
-        // Add any remaining topics (cycles or disconnected)
         foreach (var t in topics.Where(t => !visited.Contains(t.Id)))
         {
             result.Add((t, GetPriority(t)));
@@ -885,30 +802,20 @@ public class StudyPlanService : IStudyPlanService
         return result;
     }
 
-    /// <summary>
-    /// Find the next available day that hasn't exceeded the daily minutes target.
-    /// Falls back to the globally least-loaded day to prevent piling on the last day.
-    /// </summary>
     private static int FindAvailableDay(
         Dictionary<int, int> dailyLoad, int startDay, int totalDays, int targetMinutes)
     {
-        // First try to find a day from startDay that has room
         for (int d = startDay; d < totalDays; d++)
         {
             if (dailyLoad.GetValueOrDefault(d, 0) < targetMinutes)
                 return d;
         }
 
-        // All forward days are at target — find the globally least-loaded day
-        // This prevents everything piling onto the last day
         return Enumerable.Range(0, totalDays)
             .OrderBy(d => dailyLoad.GetValueOrDefault(d, 0))
             .First();
     }
 
-    // ═══════════════════════════════════════════════════════
-    //  MAPPERS
-    // ═══════════════════════════════════════════════════════
 
     private async Task<StudyGoalDto> MapGoalAsync(StudyGoal goal)
     {
@@ -918,7 +825,6 @@ public class StudyPlanService : IStudyPlanService
         var today = DateTime.SpecifyKind(DateTime.UtcNow.Date, DateTimeKind.Utc);
         var daysUntilExam = (int)(goal.TargetDate.Date - today).TotalDays;
 
-        // Estimate recommended hours per day
         var profiles = await _db.UserSkillProfiles
             .Where(p => p.UserId == goal.UserId)
             .ToListAsync();
@@ -927,8 +833,7 @@ public class StudyPlanService : IStudyPlanService
         var targetTheta = IrtMath.LevelToTheta(Math.Min(goal.TargetScore, 100));
         var gap = Math.Max(0, targetTheta - avgTheta);
 
-        // More gap = more hours needed; distribute over remaining days
-        var totalHoursNeeded = gap * 15; // rough: ~15 hours per θ unit gap
+        var totalHoursNeeded = gap * 15;
         var hoursPerDay = goal.HoursPerDay
             ?? (daysUntilExam > 0
                 ? Math.Round(Math.Clamp(totalHoursNeeded / daysUntilExam, 0.5, 4.0), 1)

@@ -8,10 +8,6 @@ interface Props {
   disabled?: boolean;
 }
 
-/**
- * Country selector + national number input. Emits a full E.164 number
- * ("+<dial><national>"). The country defaults to the browser locale region.
- */
 export default function PhoneField({ value, onChange, id, disabled }: Props) {
   const [country, setCountry] = useState<Country>(() => splitPhone(value).country);
 

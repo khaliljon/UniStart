@@ -16,9 +16,6 @@ using Serilog.Events;
 using UniStart.Application.Interfaces;
 using UniStart.Infrastructure.Startup;
 
-// ═══════════════════════════════════════════════════
-//  SERILOG BOOTSTRAP
-// ═══════════════════════════════════════════════════
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()
     .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
@@ -62,7 +59,6 @@ try
 
     var app = builder.Build();
 
-    // Report LLM extraction status at startup so misconfigured API keys are obvious in the logs.
     using (var startupScope = app.Services.CreateScope())
     {
         var llm = startupScope.ServiceProvider.GetRequiredService<ILlmExtractionService>();

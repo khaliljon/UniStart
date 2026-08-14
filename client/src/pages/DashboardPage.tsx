@@ -17,7 +17,6 @@ function DashboardPage() {
   const { selectedExams } = useAppSelector((state) => state.exam);
   const { t } = useTranslation();
 
-  // Guest → register → dashboard: pick up pending book intent and add it to the cart.
   useEffect(() => {
     const pending = sessionStorage.getItem('checkout');
     if (pending) {
@@ -32,7 +31,6 @@ function DashboardPage() {
         sessionStorage.removeItem('checkout');
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const greeting = (() => {
@@ -45,7 +43,6 @@ function DashboardPage() {
 
   return (
     <div className="animate-fade-in" style={{ padding: '1.5rem 0' }}>
-      {/* ─── Header ─── */}
       <div style={{ marginBottom: '1.5rem', position: 'relative', overflow: 'hidden' }}>
         <span className="csca-app-hanzi" style={{ position: 'absolute', right: 0, top: '-1.4rem', fontSize: '5.5rem', zIndex: 0 }} aria-hidden="true">学</span>
         <h1 style={{ margin: 0, fontSize: '1.5rem', position: 'relative' }}>
@@ -63,13 +60,10 @@ function DashboardPage() {
         )}
       </div>
 
-      {/* ─── Shop: run-based mocks (tiers + packages) ─── */}
       <MockShop />
 
-      {/* ─── Materials (PDF textbooks) ─── */}
       <MaterialsSection />
 
-      {/* ─── News ─── */}
       <div style={{ marginTop: '2rem' }}>
         <NewsBlock />
       </div>
@@ -93,7 +87,6 @@ function NewsBlock() {
   );
 }
 
-/* ─── Materials section (study textbooks) ─── */
 function MaterialsSection() {
   const navigate = useNavigate();
   const { locale } = useTranslation();
@@ -111,8 +104,6 @@ function MaterialsSection() {
       .catch(() => {});
   }, []);
 
-  // If the user clicked "Buy" on a book on the landing, scroll to it here and
-  // highlight it briefly (instead of adding straight to the cart).
   useEffect(() => {
     if (!materials || materials.length === 0) return;
     const id = sessionStorage.getItem('focusBook');
@@ -123,7 +114,6 @@ function MaterialsSection() {
       const t = setTimeout(() => setHighlight(null), 2400);
       return () => clearTimeout(t);
     }
-    // Coming from the Materials page "buy on home" button: focus the whole section.
     if (sessionStorage.getItem('scrollToMaterials')) {
       sessionStorage.removeItem('scrollToMaterials');
       setTimeout(() => sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150);
@@ -144,7 +134,7 @@ function MaterialsSection() {
     navigate('/cart');
   };
 
-  if (materials === null) return null; // loading
+  if (materials === null) return null;
 
   if (materials.length === 0) {
     return (

@@ -20,9 +20,6 @@ public class LessonController : ControllerBase
         _lessonService = lessonService;
     }
 
-    /// <summary>
-    /// Get all topics with their lesson summaries
-    /// </summary>
     [HttpGet]
     [ProducesResponseType(typeof(IEnumerable<TopicWithLessonsDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAllTopicLessons([FromQuery] string[]? examTypeCodes = null)
@@ -31,9 +28,6 @@ public class LessonController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>
-    /// Get all lessons for a specific topic
-    /// </summary>
     [HttpGet("topic/{topicId}")]
     [ProducesResponseType(typeof(IEnumerable<TopicLessonDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetLessonsByTopic(int topicId)
@@ -42,9 +36,6 @@ public class LessonController : ControllerBase
         return Ok(lessons);
     }
 
-    /// <summary>
-    /// Get a single lesson by ID (full content)
-    /// </summary>
     [HttpGet("{lessonId}")]
     [ProducesResponseType(typeof(TopicLessonDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -55,9 +46,6 @@ public class LessonController : ControllerBase
         return Ok(lesson);
     }
 
-    /// <summary>
-    /// Get hint for a specific question
-    /// </summary>
     [HttpGet("hint/{questionId}")]
     [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -68,9 +56,6 @@ public class LessonController : ControllerBase
         return Ok(new { hint });
     }
 
-    /// <summary>
-    /// Get lesson with steps and user progress
-    /// </summary>
     [HttpGet("{lessonId}/steps")]
     [ProducesResponseType(typeof(LessonWithStepsDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -82,9 +67,6 @@ public class LessonController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>
-    /// Mark a lesson step as completed
-    /// </summary>
     [HttpPost("steps/{stepId}/complete")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> MarkStepCompleted(int stepId)
@@ -94,9 +76,6 @@ public class LessonController : ControllerBase
         return NoContent();
     }
 
-    /// <summary>
-    /// Get lesson progress percentage
-    /// </summary>
     [HttpGet("{lessonId}/progress")]
     [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetLessonProgress(int lessonId)

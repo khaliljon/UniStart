@@ -7,13 +7,12 @@ public class StudyGoal : IAuditable
     public string ExamTypeCode { get; set; } = string.Empty;
     public DateTime TargetDate { get; set; }
     public int TargetScore { get; set; }
-    public string? SelectedSectionIds { get; set; } // Comma-separated section IDs; null = all sections
-    public double? HoursPerDay { get; set; } // User-specified hours/day; null = auto-calculated
+    public string? SelectedSectionIds { get; set; } 
+    public double? HoursPerDay { get; set; } 
     public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
 
-    // Navigation properties
     public virtual User User { get; set; } = null!;
     public virtual ExamType ExamType { get; set; } = null!;
     public virtual ICollection<StudyPlan> StudyPlans { get; set; } = new List<StudyPlan>();

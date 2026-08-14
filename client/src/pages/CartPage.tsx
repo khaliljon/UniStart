@@ -25,8 +25,6 @@ function CartPage() {
     const refresh = () => setItems(cartService.list());
     refresh();
     window.addEventListener(cartService.eventName, refresh);
-    // Remove any book the user already owns (e.g. left in the cart before purchase)
-    // so it can never be paid for twice.
     purchaseService.list()
       .then((ps) => {
         const owned = new Set(ps.filter((p) => p.itemType === 'book').map((p) => p.itemCode));
@@ -38,8 +36,6 @@ function CartPage() {
     return () => window.removeEventListener(cartService.eventName, refresh);
   }, []);
 
-  // Catalog is used to turn selected mock IDs (stored on package cart items) into
-  // human-readable, localized names for the chips, and to localize item titles.
   useEffect(() => {
     mockCatalogService.getCatalog().then((c) => { setTemplates(c.templates); setPackages(c.packages); }).catch(() => {});
     materialsService.list().then(setMaterials).catch(() => {});
@@ -57,8 +53,6 @@ function CartPage() {
   };
   const chipLabel = (sub: string) => nameById.get(sub) ?? subjectName[sub] ?? sub;
 
-  // Re-derive a localized title from the catalog so it follows the language
-  // switch, instead of the snapshot stored when the item was added.
   const displayTitle = (item: CartItem): string => {
     if (item.itemType === 'mock') {
       const tpl = templates.find((t) => String(t.mockExamId) === item.itemCode);
@@ -83,7 +77,6 @@ function CartPage() {
     setProcessing(true);
     setError(null);
     try {
-      // All paid items (mocks, packages, books) go through Polar. Server prices them.
       const lines: CheckoutLine[] = items.map((i) => {
         if (i.itemType === 'mock') return { kind: 'mock', mockExamId: Number(i.itemCode), runs: i.runs ?? 1 };
         if (i.itemType === 'package') return { kind: 'package', packageKey: i.itemCode, selectedMockIds: i.selectedMockIds ?? [] };

@@ -22,7 +22,6 @@ function PurchasesPage() {
   const [paid, setPaid] = useState(false);
 
   useEffect(() => {
-    // Returning from a successful Polar payment — clear the cart, show a banner.
     if (new URLSearchParams(window.location.search).get('paid') === '1') {
       cartService.clear();
       setPaid(true);
@@ -61,7 +60,6 @@ function PurchasesPage() {
         </div>
       )}
 
-      {/* My runs */}
       {runs.length > 0 && (
         <div className="card" style={{ marginBottom: '1.25rem' }}>
           <div style={{ fontWeight: 700, marginBottom: '0.5rem' }}>{s.myMocks}</div>
@@ -78,7 +76,6 @@ function PurchasesPage() {
         </div>
       )}
 
-      {/* Session history with review deep-link */}
       {history.length > 0 && (
         <div className="card" style={{ marginBottom: '1.25rem' }}>
           <div style={{ fontWeight: 700, marginBottom: '0.5rem' }}>{s.sessionHistory}</div>

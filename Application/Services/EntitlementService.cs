@@ -77,7 +77,6 @@ public class EntitlementService : IEntitlementService
 
         foreach (var line in resolved)
         {
-            // Grant runs (upsert balance per template)
             foreach (var (mockExamId, runs) in line.Grants)
             {
                 var balance = await _db.UserMockRuns
@@ -92,12 +91,10 @@ public class EntitlementService : IEntitlementService
                 }
             }
 
-            // Allocate the order-level Polar amounts across lines proportionally to price.
             decimal share = amounts == null ? 0m
                 : totalLinePrice > 0 ? line.Price / totalLinePrice
                 : (resolved.Count > 0 ? 1m / resolved.Count : 0m);
 
-            // Record the sale for the admin "Продажи" view
             _db.Purchases.Add(new Purchase
             {
                 UserId = userId,
@@ -123,12 +120,6 @@ public class EntitlementService : IEntitlementService
         return new CheckoutQuoteDto(total, currency);
     }
 
-    /// <summary>
-    /// Refreshes the Polar money breakdown on already-granted purchases for an order.
-    /// Polar sends several webhook events per order; the platform fee (and sometimes tax)
-    /// is computed a moment after the first paid event, so we fill in fields as later
-    /// events arrive — without ever re-granting access or zeroing already-set values.
-    /// </summary>
     public async Task UpdatePurchaseAmountsAsync(string polarOrderId, PurchaseAmountsDto amounts)
     {
         var purchases = await _db.Purchases
@@ -149,8 +140,6 @@ public class EntitlementService : IEntitlementService
             var net = Math.Round(amounts.Net * share, 2);
             var totalAmt = Math.Round(amounts.Total * share, 2);
 
-            // Only fill/upgrade fields when the new event actually carries data,
-            // so a later partial event can never wipe a previously-set value.
             if (gross > 0 && p.GrossAmount != gross) { p.GrossAmount = gross; changed = true; }
             if (tax > 0 && p.TaxAmount != tax) { p.TaxAmount = tax; changed = true; }
             if (fee > 0 && p.PlatformFeeAmount != fee) { p.PlatformFeeAmount = fee; changed = true; }
@@ -163,7 +152,6 @@ public class EntitlementService : IEntitlementService
         if (changed) await _db.SaveChangesAsync();
     }
 
-    // ── internals ──────────────────────────────────────────
 
     private static string MoksLabel(int n)
     {
@@ -253,11 +241,11 @@ public class EntitlementService : IEntitlementService
                 total += material.Price;
                 resolved.Add(new ResolvedLine(
                     "book",
-                    material.Id.ToString(),   // itemCode = material id (per-material ownership)
+                    material.Id.ToString(),
                     material.Title,
                     material.SubjectKey,
                     material.Price,
-                    new List<(int, int)>())); // no runs; grants access via the Purchase record
+                    new List<(int, int)>()));
             }
             else
             {

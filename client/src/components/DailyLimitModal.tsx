@@ -2,9 +2,6 @@ import { useState } from 'react';
 import { PricingModal } from './PricingModal';
 import { useTranslation } from '../hooks/useTranslation';
 
-/**
- * Modal shown when daily question limit is reached.
- */
 interface DailyLimitModalProps {
   isOpen: boolean;
   onClose: () => void;

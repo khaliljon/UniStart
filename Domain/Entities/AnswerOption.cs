@@ -7,7 +7,6 @@ public class AnswerOption
     public string Text { get; set; } = string.Empty;
     public bool IsCorrect { get; set; }
 
-    // Navigation properties
     public virtual Question Question { get; set; } = null!;
     public virtual ICollection<UserAnswer> UserAnswers { get; set; } = new List<UserAnswer>();
 }

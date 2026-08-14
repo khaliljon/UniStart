@@ -24,9 +24,6 @@ public class AdminService : IAdminService
         _cache = cache;
     }
 
-    // ═══════════════════════════════════════════════════════
-    //  LIST
-    // ═══════════════════════════════════════════════════════
 
     public async Task<PagedResult<QuestionListDto>> GetQuestionsAsync(
         string? examTypeCode = null, string? topicName = null, string? difficulty = null,
@@ -86,9 +83,6 @@ public class AdminService : IAdminService
         return new PagedResult<QuestionListDto>(items, totalCount, page, pageSize, totalPages);
     }
 
-    // ═══════════════════════════════════════════════════════
-    //  GET BY ID
-    // ═══════════════════════════════════════════════════════
 
     public async Task<QuestionDetailDto?> GetQuestionByIdAsync(int id)
     {
@@ -103,9 +97,6 @@ public class AdminService : IAdminService
         return MapDetail(q);
     }
 
-    // ═══════════════════════════════════════════════════════
-    //  CREATE
-    // ═══════════════════════════════════════════════════════
 
     public async Task<QuestionDetailDto> CreateQuestionAsync(CreateQuestionDto dto)
     {
@@ -147,13 +138,9 @@ public class AdminService : IAdminService
         _db.Questions.Add(question);
         await _db.SaveChangesAsync();
 
-        // Reload with navigation
         return (await GetQuestionByIdAsync(question.Id))!;
     }
 
-    // ═══════════════════════════════════════════════════════
-    //  UPDATE
-    // ═══════════════════════════════════════════════════════
 
     public async Task<QuestionDetailDto?> UpdateQuestionAsync(int id, UpdateQuestionDto dto)
     {
@@ -185,9 +172,6 @@ public class AdminService : IAdminService
 
         if (dto.AnswerOptions != null && dto.AnswerOptions.Count >= 2)
         {
-            // Update options in place (preserve their IDs) so already-answered mock/practice
-            // attempts keep pointing at the same option — their review stays intact and
-            // correctness is re-derived dynamically instead of showing "skipped".
             var existing = question.AnswerOptions.OrderBy(o => o.Id).ToList();
             for (int i = 0; i < dto.AnswerOptions.Count; i++)
             {
@@ -205,7 +189,6 @@ public class AdminService : IAdminService
                     });
                 }
             }
-            // Drop any surplus options beyond the new count.
             for (int i = dto.AnswerOptions.Count; i < existing.Count; i++)
                 _db.AnswerOptions.Remove(existing[i]);
         }
@@ -214,9 +197,6 @@ public class AdminService : IAdminService
         return MapDetail(question);
     }
 
-    // ═══════════════════════════════════════════════════════
-    //  DELETE
-    // ═══════════════════════════════════════════════════════
 
     public async Task<bool> DeleteQuestionAsync(int id)
     {
@@ -226,7 +206,6 @@ public class AdminService : IAdminService
 
         if (question == null) return false;
 
-        // Soft delete (OP-9) — mark as deleted instead of removing
         question.IsDeleted = true;
         question.DeletedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync();
@@ -235,9 +214,6 @@ public class AdminService : IAdminService
         return true;
     }
 
-    // ═══════════════════════════════════════════════════════
-    //  BULK IMPORT
-    // ═══════════════════════════════════════════════════════
 
     public async Task<BulkImportResultDto> BulkImportAsync(BulkImportDto dto)
     {
@@ -316,9 +292,6 @@ public class AdminService : IAdminService
         );
     }
 
-    // ═══════════════════════════════════════════════════════
-    //  STATS
-    // ═══════════════════════════════════════════════════════
 
     public async Task<QuestionStatsDto> GetStatsAsync()
     {
@@ -349,9 +322,6 @@ public class AdminService : IAdminService
         );
     }
 
-    // ═══════════════════════════════════════════════════════
-    //  MAP
-    // ═══════════════════════════════════════════════════════
 
     private static QuestionDetailDto MapDetail(Question q) => new(
         Id: q.Id,
@@ -370,9 +340,6 @@ public class AdminService : IAdminService
         AnswerOptions: q.AnswerOptions.Select(o => new AdminAnswerOptionDto(o.Id, o.Text, o.IsCorrect)).ToList()
     );
 
-    // ═══════════════════════════════════════════════════════
-    //  USERS — LIST
-    // ═══════════════════════════════════════════════════════
 
     public async Task<PagedResult<AdminUserDto>> GetUsersAsync(string? role = null, string? search = null,
         int page = 1, int pageSize = 50, bool includeDeleted = false)
@@ -420,8 +387,6 @@ public class AdminService : IAdminService
             .Select(g => new { UserId = g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.UserId, x => x.Count);
 
-        // Mock exams live in separate tables — count them too so the stats reflect
-        // real activity for users who only take mocks (not practice).
         var mockAnswerStats = await _db.MockExamAnswers
             .Where(a => userIds.Contains(a.Attempt.UserId) && (a.SelectedOptionId != null || a.SelectedOptions.Any()))
             .GroupBy(a => a.Attempt.UserId)
@@ -472,9 +437,6 @@ public class AdminService : IAdminService
         return new PagedResult<AdminUserDto>(items, totalCount, page, pageSize, totalPages);
     }
 
-    // ═══════════════════════════════════════════════════════
-    //  USERS — GET BY ID
-    // ═══════════════════════════════════════════════════════
 
     public async Task<AdminUserDto?> GetUserByIdAsync(int id)
     {
@@ -491,7 +453,6 @@ public class AdminService : IAdminService
         var mockCorrect = await _db.MockExamAnswers.CountAsync(a => a.Attempt.UserId == id && a.IsCorrect);
         var mockSessions = await _db.MockExamAttempts.CountAsync(a => a.UserId == id);
 
-        // Resolve school name for display
         string? schoolName = null;
 
         return new AdminUserDto(
@@ -519,9 +480,6 @@ public class AdminService : IAdminService
         );
     }
 
-    // ═══════════════════════════════════════════════════════
-    //  USERS — UPDATE
-    // ═══════════════════════════════════════════════════════
 
     public async Task<AdminUserDto?> UpdateUserAsync(int id, AdminUpdateUserDto dto)
     {
@@ -558,16 +516,12 @@ public class AdminService : IAdminService
         return await GetUserByIdAsync(id);
     }
 
-    // ═══════════════════════════════════════════════════════
-    //  USERS — DELETE
-    // ═══════════════════════════════════════════════════════
 
     public async Task<bool> DeleteUserAsync(int id)
     {
         var user = await _db.Users.FindAsync(id);
         if (user == null) return false;
 
-        // Prevent deleting the last admin
         if (user.Role == UserRole.Admin)
         {
             var adminCount = await _db.Users.CountAsync(u => u.Role == UserRole.Admin);
@@ -575,7 +529,6 @@ public class AdminService : IAdminService
                 throw new InvalidOperationException("Cannot delete the last admin user");
         }
 
-        // Soft delete (OP-9) — mark as deleted instead of removing
         user.IsDeleted = true;
         user.DeletedAt = DateTime.UtcNow;
         user.UpdatedAt = DateTime.UtcNow;
@@ -585,9 +538,6 @@ public class AdminService : IAdminService
         return true;
     }
 
-    // ═══════════════════════════════════════════════════════
-    //  USERS — STATS
-    // ═══════════════════════════════════════════════════════
 
     public async Task<AdminUserStatsDto> GetUserStatsAsync()
     {
@@ -623,9 +573,6 @@ public class AdminService : IAdminService
         );
     }
 
-    // ═══════════════════════════════════════════════════════
-    //  DASHBOARD
-    // ═══════════════════════════════════════════════════════
 
     public async Task<AdminDashboardDto> GetDashboardAsync()
     {
@@ -642,9 +589,6 @@ public class AdminService : IAdminService
         );
     }
 
-    // ═══════════════════════════════════════════════════════
-    //  TOPICS LIST
-    // ═══════════════════════════════════════════════════════
 
     public async Task<List<AdminTopicSummaryDto>> GetTopicsAsync()
     {
@@ -665,9 +609,6 @@ public class AdminService : IAdminService
         )).ToList();
     }
 
-    // ═══════════════════════════════════════════════════════
-    //  CREATE TOPIC
-    // ═══════════════════════════════════════════════════════
 
     public async Task<AdminTopicSummaryDto> CreateTopicAsync(CreateTopicDto dto)
     {
@@ -690,7 +631,6 @@ public class AdminService : IAdminService
         _db.Topics.Add(topic);
         await _db.SaveChangesAsync();
 
-        // Invalidate caches
         _cache.Remove("admin:sections");
         _cache.Remove("admin:skills");
 
@@ -737,9 +677,6 @@ public class AdminService : IAdminService
         var topic = await _db.Topics.FindAsync(id);
         if (topic == null) return false;
 
-        // Phase 1: clear Restrict-FK rows that block Topic→Question cascade
-        // IgnoreQueryFilters to include soft-deleted questions (IsDeleted=true) —
-        // they still exist in the DB and their FK dependents must be cleared too.
         var questionIds = await _db.Questions
             .IgnoreQueryFilters()
             .Where(q => q.TopicId == id)
@@ -748,14 +685,12 @@ public class AdminService : IAdminService
 
         if (questionIds.Count > 0)
         {
-            // MockExamAnswer.QuestionId is Restrict
             var mockAnswers = await _db.MockExamAnswers
                 .Where(a => questionIds.Contains(a.QuestionId))
                 .ToListAsync();
             if (mockAnswers.Count > 0)
                 _db.MockExamAnswers.RemoveRange(mockAnswers);
 
-            // UserAnswer.AnswerOptionId is Restrict on AnswerOption (AnswerOption cascades from Question)
             var userAnswers = await _db.UserAnswers
                 .Where(a => questionIds.Contains(a.QuestionId))
                 .ToListAsync();
@@ -763,23 +698,20 @@ public class AdminService : IAdminService
                 _db.UserAnswers.RemoveRange(userAnswers);
         }
 
-        // StudyPlanEntry.TopicId is Restrict
         var planEntries = await _db.StudyPlanEntries
             .Where(e => e.TopicId == id)
             .ToListAsync();
         if (planEntries.Count > 0)
             _db.StudyPlanEntries.RemoveRange(planEntries);
 
-        // TopicDependency.PrerequisiteTopicId is Restrict
         var prereqDeps = await _db.TopicDependencies
             .Where(d => d.PrerequisiteTopicId == id)
             .ToListAsync();
         if (prereqDeps.Count > 0)
             _db.TopicDependencies.RemoveRange(prereqDeps);
 
-        await _db.SaveChangesAsync(); // commit phase 1 before Topic cascades to Questions
+        await _db.SaveChangesAsync();
 
-        // Phase 2: delete topic (DB cascade deletes Questions → AnswerOptions/UserAnswers)
         _db.Topics.Remove(topic);
         await _db.SaveChangesAsync();
         _cache.Remove("admin:sections");
@@ -788,18 +720,11 @@ public class AdminService : IAdminService
         return true;
     }
 
-    /// <summary>
-    /// Hard-delete every question of a topic (and their FK dependents) while keeping
-    /// the topic itself. Returns the number of questions removed, or null if the topic
-    /// does not exist.
-    /// </summary>
     public async Task<int?> ClearTopicQuestionsAsync(int id)
     {
         var topic = await _db.Topics.FindAsync(id);
         if (topic == null) return null;
 
-        // Include soft-deleted questions: they still exist in the DB and their FK
-        // dependents must be cleared before the questions can be removed.
         var questions = await _db.Questions
             .IgnoreQueryFilters()
             .Where(q => q.TopicId == id)
@@ -809,7 +734,6 @@ public class AdminService : IAdminService
 
         var questionIds = questions.Select(q => q.Id).ToList();
 
-        // Clear Restrict-FK rows that block deleting the questions (same set as DeleteTopicAsync).
         var mockAnswers = await _db.MockExamAnswers
             .Where(a => questionIds.Contains(a.QuestionId))
             .ToListAsync();
@@ -822,9 +746,8 @@ public class AdminService : IAdminService
         if (userAnswers.Count > 0)
             _db.UserAnswers.RemoveRange(userAnswers);
 
-        await _db.SaveChangesAsync(); // commit FK cleanup before removing questions
+        await _db.SaveChangesAsync();
 
-        // Remove the questions (AnswerOptions cascade-delete from Question).
         _db.Questions.RemoveRange(questions);
         await _db.SaveChangesAsync();
         _cache.Remove("admin:sections");
@@ -834,9 +757,6 @@ public class AdminService : IAdminService
         return questions.Count;
     }
 
-    // ═══════════════════════════════════════════════════════
-    //  SECTIONS & SKILLS (for dropdowns)
-    // ═══════════════════════════════════════════════════════
 
     public async Task<List<AdminSectionDto>> GetSectionsAsync()
     {
@@ -907,8 +827,6 @@ public class AdminService : IAdminService
         {
             var topicIds = section.Topics.Select(t => t.Id).ToList();
 
-            // Load questionIds — needed to clear Restrict-FK rows before Topics cascade to Questions
-            // IgnoreQueryFilters to include soft-deleted questions that still exist in the DB.
             var questionIds = await _db.Questions
                 .IgnoreQueryFilters()
                 .Where(q => topicIds.Contains(q.TopicId))
@@ -917,14 +835,12 @@ public class AdminService : IAdminService
 
             if (questionIds.Count > 0)
             {
-                // MockExamAnswer.QuestionId is Restrict
                 var mockAnswers = await _db.MockExamAnswers
                     .Where(a => questionIds.Contains(a.QuestionId))
                     .ToListAsync();
                 if (mockAnswers.Count > 0)
                     _db.MockExamAnswers.RemoveRange(mockAnswers);
 
-                // UserAnswer.AnswerOptionId is Restrict on AnswerOption (AnswerOption cascades from Question)
                 var userAnswers = await _db.UserAnswers
                     .Where(a => questionIds.Contains(a.QuestionId))
                     .ToListAsync();
@@ -932,21 +848,19 @@ public class AdminService : IAdminService
                     _db.UserAnswers.RemoveRange(userAnswers);
             }
 
-            // StudyPlanEntry.TopicId is Restrict
             var planEntries = await _db.StudyPlanEntries
                 .Where(e => topicIds.Contains(e.TopicId))
                 .ToListAsync();
             if (planEntries.Count > 0)
                 _db.StudyPlanEntries.RemoveRange(planEntries);
 
-            // TopicDependency.PrerequisiteTopicId is Restrict
             var prereqDeps = await _db.TopicDependencies
                 .Where(d => topicIds.Contains(d.PrerequisiteTopicId))
                 .ToListAsync();
             if (prereqDeps.Count > 0)
                 _db.TopicDependencies.RemoveRange(prereqDeps);
 
-            await _db.SaveChangesAsync(); // commit phase 1 before Topics cascade-delete Questions
+            await _db.SaveChangesAsync();
 
             _db.Topics.RemoveRange(section.Topics);
         }
@@ -959,9 +873,6 @@ public class AdminService : IAdminService
         return true;
     }
 
-    // ═══════════════════════════════════════════════════════
-    //  EXAM TYPES — CRUD
-    // ═══════════════════════════════════════════════════════
 
     public async Task<List<ExamTypeDto>> GetExamTypesAsync()
     {
@@ -1003,14 +914,9 @@ public class AdminService : IAdminService
             .Select(t => t.Id)
             .ToList();
 
-        // ── Phase 1: delete all Restrict-FK dependents and commit ─────────────────
-        // Phase 2 deletes Topics → DB cascades Questions; anything with a Restrict FK
-        // on QuestionId or TopicId must be explicitly deleted here first.
 
         if (topicIds.Count > 0)
         {
-            // Load questionIds to clear per-question Restrict rows
-            // IgnoreQueryFilters to include soft-deleted questions that still exist in the DB.
             var questionIds = await _db.Questions
                 .IgnoreQueryFilters()
                 .Where(q => topicIds.Contains(q.TopicId))
@@ -1019,14 +925,12 @@ public class AdminService : IAdminService
 
             if (questionIds.Count > 0)
             {
-                // MockExamAnswer.QuestionId is Restrict (catches cross-exam answers to these questions)
                 var mockAnswers = await _db.MockExamAnswers
                     .Where(a => questionIds.Contains(a.QuestionId))
                     .ToListAsync();
                 if (mockAnswers.Count > 0)
                     _db.MockExamAnswers.RemoveRange(mockAnswers);
 
-                // UserAnswer.AnswerOptionId is Restrict on AnswerOption (AnswerOption cascades from Question)
                 var userAnswers = await _db.UserAnswers
                     .Where(a => questionIds.Contains(a.QuestionId))
                     .ToListAsync();
@@ -1034,14 +938,12 @@ public class AdminService : IAdminService
                     _db.UserAnswers.RemoveRange(userAnswers);
             }
 
-            // StudyPlanEntry.TopicId is Restrict
             var planEntries = await _db.StudyPlanEntries
                 .Where(e => topicIds.Contains(e.TopicId))
                 .ToListAsync();
             if (planEntries.Count > 0)
                 _db.StudyPlanEntries.RemoveRange(planEntries);
 
-            // TopicDependency.PrerequisiteTopicId is Restrict
             var prereqDeps = await _db.TopicDependencies
                 .Where(d => topicIds.Contains(d.PrerequisiteTopicId))
                 .ToListAsync();
@@ -1049,31 +951,26 @@ public class AdminService : IAdminService
                 _db.TopicDependencies.RemoveRange(prereqDeps);
         }
 
-        // TestSession → ExamType is Restrict
         var testSessions = await _db.TestSessions
             .Where(s => s.ExamTypeCode == code)
             .ToListAsync();
         if (testSessions.Count > 0)
             _db.TestSessions.RemoveRange(testSessions);
 
-        // StudyGoal → ExamType is Restrict (cascades StudyPlan→StudyPlanEntry at DB level)
         var studyGoals = await _db.StudyGoals
             .Where(g => g.ExamTypeCode == code)
             .ToListAsync();
         if (studyGoals.Count > 0)
             _db.StudyGoals.RemoveRange(studyGoals);
 
-        // MockExam → ExamType is Restrict (cascades MockExamAttempt→MockExamAnswer at DB level)
         var mockExams = await _db.MockExams
             .Where(m => m.ExamTypeCode == code)
             .ToListAsync();
         if (mockExams.Count > 0)
             _db.MockExams.RemoveRange(mockExams);
 
-        await _db.SaveChangesAsync(); // commit phase 1 before any Topics are deleted
+        await _db.SaveChangesAsync();
 
-        // ── Phase 2: delete Topics, Sections, ExamType ───────────────────────────
-        // Topics cascade to Questions at DB level; all MockExamAnswers are already gone.
         foreach (var section in entity.Sections)
         {
             if (section.Topics?.Any() == true)
@@ -1090,13 +987,9 @@ public class AdminService : IAdminService
         return true;
     }
 
-    // ═══════════════════════════════════════════════════════
-    //  RESTORE (Soft Delete — OP-9)
-    // ═══════════════════════════════════════════════════════
 
     public async Task<bool> RestoreQuestionAsync(int id)
     {
-        // IgnoreQueryFilters to find soft-deleted records
         var question = await _db.Questions
             .IgnoreQueryFilters()
             .FirstOrDefaultAsync(q => q.Id == id && q.IsDeleted);
@@ -1130,9 +1023,6 @@ public class AdminService : IAdminService
         return true;
     }
 
-    // ═══════════════════════════════════════════════════════
-    //  BLOCK / SUSPEND (OP-14)
-    // ═══════════════════════════════════════════════════════
 
     public async Task<AdminUserDto?> BlockUserAsync(int id, string? reason = null)
     {
@@ -1167,7 +1057,6 @@ public class AdminService : IAdminService
         return await GetUserByIdAsync(id);
     }
 
-    /// <summary>Grants the user another one-time free mock run by clearing FreeMockUsed.</summary>
     public async Task<AdminUserDto?> ResetFreeMockAsync(int id)
     {
         var user = await _db.Users.FindAsync(id);
@@ -1181,9 +1070,6 @@ public class AdminService : IAdminService
         return await GetUserByIdAsync(id);
     }
 
-    // ═══════════════════════════════════════════════════════
-    //  TRASH / RECYCLE BIN
-    // ═══════════════════════════════════════════════════════
 
     private const int PurgeRetentionDays = 30;
 
@@ -1256,7 +1142,6 @@ public class AdminService : IAdminService
 
         if (question == null) return false;
 
-        // Remove UserAnswers that reference this question's answer options (Restrict FK)
         var optionIds = question.AnswerOptions.Select(a => a.Id).ToList();
         if (optionIds.Count > 0)
         {
@@ -1264,7 +1149,6 @@ public class AdminService : IAdminService
             if (userAnswers.Count > 0) _db.UserAnswers.RemoveRange(userAnswers);
         }
 
-        // Remove MockExamAnswers that reference this question (Restrict FK)
         var mockAnswers = await _db.MockExamAnswers.Where(ma => ma.QuestionId == id).ToListAsync();
         if (mockAnswers.Count > 0) _db.MockExamAnswers.RemoveRange(mockAnswers);
 
@@ -1283,7 +1167,6 @@ public class AdminService : IAdminService
 
         if (user == null) return false;
 
-        // Prevent hard-deleting the last admin
         if (user.Role == UserRole.Admin)
         {
             var adminCount = await _db.Users.CountAsync(u => u.Role == UserRole.Admin);
@@ -1319,13 +1202,11 @@ public class AdminService : IAdminService
         {
             var questionIds = deletedQuestions.Select(q => q.Id).ToList();
 
-            // UserAnswer.AnswerOptionId is Restrict on AnswerOption (cascades from Question)
             var userAnswers = await _db.UserAnswers
                 .Where(a => questionIds.Contains(a.QuestionId))
                 .ToListAsync();
             if (userAnswers.Count > 0) _db.UserAnswers.RemoveRange(userAnswers);
 
-            // MockExamAnswer.QuestionId is Restrict
             var mockAnswers = await _db.MockExamAnswers
                 .Where(a => questionIds.Contains(a.QuestionId))
                 .ToListAsync();
@@ -1338,11 +1219,9 @@ public class AdminService : IAdminService
         {
             var userIds = deletedUsers.Select(u => u.Id).ToList();
 
-            // QuestionImportJob.AdminUserId is Restrict
             var importJobs = await _db.QuestionImportJobs.Where(j => userIds.Contains(j.AdminUserId)).ToListAsync();
             if (importJobs.Count > 0) _db.QuestionImportJobs.RemoveRange(importJobs);
 
-            // ReferralUsage.ReferredUserId is Restrict
             var referralUsages = await _db.ReferralUsages.Where(r => userIds.Contains(r.ReferredUserId)).ToListAsync();
             if (referralUsages.Count > 0) _db.ReferralUsages.RemoveRange(referralUsages);
 

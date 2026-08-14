@@ -18,15 +18,14 @@ import type {
 } from '../types';
 
 type Phase =
-  | 'list'        // Choose a mock exam
-  | 'detail'      // View exam info + sections before starting
-  | 'instructions' // Section instructions before starting section
-  | 'section'     // Answering questions in a section
-  | 'section-break' // Between sections
-  | 'results';    // Final results
+  | 'list'
+  | 'detail'
+  | 'instructions'
+  | 'section'
+  | 'section-break'
+  | 'results';
 
 function MockExamPage() {
-  // Phase
   const [phase, setPhase] = useState<Phase>('list');
   const { user } = useAppSelector((state) => state.auth);
   const isPro = user?.role === 'Admin';
@@ -34,32 +33,25 @@ function MockExamPage() {
   const { locale } = useTranslation();
   const s = cscaStrings[locale];
 
-  // List phase
   const [mockExams, setMockExams] = useState<MockExamListItem[]>([]);
   const [history, setHistory] = useState<MockExamHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Detail phase
   const [examDetail, setExamDetail] = useState<MockExamDetail | null>(null);
 
-  // Active attempt
   const [attempt, setAttempt] = useState<MockExamAttempt | null>(null);
   const [sectionState, setSectionState] = useState<MockExamSectionState | null>(null);
   const [currentQIndex, setCurrentQIndex] = useState(0);
 
-  // Active attempt (resume support)
   const [activeAttempt, setActiveAttempt] = useState<MockExamAttempt | null>(null);
 
-  // Timer
   const [timeLeft, setTimeLeft] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Results
   const [results, setResults] = useState<MockExamResult | null>(null);
   const [showReview, setShowReview] = useState(false);
   const [reviewFilter, setReviewFilter] = useState<'all' | 'correct' | 'incorrect' | 'unanswered'>('all');
 
-  // ── Load mock exams list ──────────────────────────────
   const loadExams = useCallback(async () => {
     setLoading(true);
     try {
@@ -77,7 +69,6 @@ function MockExamPage() {
 
   useEffect(() => { loadExams(); }, [loadExams]);
 
-  // Deep-link: /exams/result/:attemptId opens that session's review directly.
   const { attemptId } = useParams();
   useEffect(() => {
     if (!attemptId) return;
@@ -88,13 +79,11 @@ function MockExamPage() {
       .catch(() => {});
   }, [attemptId]);
 
-  // ── Timer logic ───────────────────────────────────────
   useEffect(() => {
     if (phase === 'section' && timeLeft > 0) {
       timerRef.current = setInterval(() => {
         setTimeLeft(prev => {
           if (prev <= 1) {
-            // Time's up — auto-complete section
             handleCompleteSection();
             return 0;
           }
@@ -103,7 +92,6 @@ function MockExamPage() {
       }, 1000);
     }
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, timeLeft > 0]);
 
   const formatTime = (seconds: number) => {
@@ -112,17 +100,14 @@ function MockExamPage() {
     return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
-  // ── Resume an in-progress attempt ─────────────────────
   const handleResume = async (att: MockExamAttempt) => {
     setLoading(true);
     try {
-      // Re-fetch to get accurate totalTimeMinutes (may differ from inline construction)
       const freshAttempt = await mockExamService.getActiveAttempt();
       const effectiveAtt = (freshAttempt && freshAttempt.attemptId === att.attemptId) ? freshAttempt : att;
       setAttempt(effectiveAtt);
       const section = await mockExamService.getCurrentSection(effectiveAtt.attemptId);
       if (!section) {
-        // Attempt was auto-completed by server (time expired) — load results
         const res = await mockExamService.getResults(effectiveAtt.attemptId);
         if (res) { setResults(res); setPhase('results'); }
         else { resetToList(); }
@@ -131,7 +116,6 @@ function MockExamPage() {
       }
       setSectionState(section);
       setCurrentQIndex(0);
-      // Calculate remaining time from attempt start
       const elapsed = Math.floor((Date.now() - new Date(effectiveAtt.startedAt).getTime()) / 1000);
       const totalSec = effectiveAtt.totalTimeMinutes * 60;
       const remaining = Math.max(0, totalSec - elapsed);
@@ -142,7 +126,6 @@ function MockExamPage() {
     setLoading(false);
   };
 
-  // ── Select exam to view detail ────────────────────────
   const handleSelectExam = async (examId: number) => {
     setLoading(true);
     try {
@@ -153,14 +136,12 @@ function MockExamPage() {
     setLoading(false);
   };
 
-  // ── Start exam ────────────────────────────────────────
   const handleStartExam = async () => {
     if (!examDetail) return;
     setLoading(true);
     try {
       const att = await mockExamService.startMockExam(examDetail.id);
       setAttempt(att);
-      // Load first section
       const section = await mockExamService.getCurrentSection(att.attemptId);
       setSectionState(section);
       setCurrentQIndex(0);
@@ -169,7 +150,6 @@ function MockExamPage() {
     } catch (e) {
       const status = (e as { response?: { status?: number } })?.response?.status;
       if (status === 403) {
-        // No runs left and free run used — send the user to the shop (Home) to buy.
         navigate('/');
         return;
       }
@@ -179,12 +159,10 @@ function MockExamPage() {
     }
   };
 
-  // ── Begin section (after instructions) ────────────────
   const handleBeginSection = () => {
     setPhase('section');
   };
 
-  // ── Switch to a different section ─────────────────────
   const handleSwitchSection = async (sectionIndex: number) => {
     if (!attempt) return;
     if (sectionState && sectionState.sectionIndex === sectionIndex) return;
@@ -197,7 +175,6 @@ function MockExamPage() {
     setLoading(false);
   };
 
-  // ── Select answer ─────────────────────────────────────
   const handleSelectOption = async (question: MockExamQuestion, optionId: number) => {
     if (!attempt || !sectionState) return;
     const current = question.selectedOptionIds && question.selectedOptionIds.length > 0
@@ -209,7 +186,6 @@ function MockExamPage() {
     const primary = nextIds.length > 0 ? nextIds[0] : 0;
     try {
       await mockExamService.submitAnswer(attempt.attemptId, question.questionId, primary, undefined, nextIds);
-      // Update local state
       setSectionState(prev => {
         if (!prev) return prev;
         const updatedQuestions = prev.questions.map(q =>
@@ -223,7 +199,6 @@ function MockExamPage() {
     } catch (e) { console.error(e); }
   };
 
-  // ── Complete section ──────────────────────────────────
   const handleCompleteSection = async () => {
     if (!attempt) return;
     if (timerRef.current) clearInterval(timerRef.current);
@@ -239,7 +214,6 @@ function MockExamPage() {
   };
 
 
-  // ── Back to list ──────────────────────────────────────
   const resetToList = async () => {
     setPhase('list');
     setAttempt(null);
@@ -252,16 +226,11 @@ function MockExamPage() {
     await loadExams();
   };
 
-  // ── Current question ──────────────────────────────────
   const currentQuestion: MockExamQuestion | null =
     sectionState?.questions?.[currentQIndex] ?? null;
 
-  // ── Timer color ───────────────────────────────────────
   const timerColor = timeLeft < 60 ? '#e74c3c' : timeLeft < 180 ? '#f39c12' : 'var(--text-primary)';
 
-  // ══════════════════════════════════════════════════════
-  //  RENDER PHASE: LIST
-  // ══════════════════════════════════════════════════════
   if (phase === 'list') {
     if (loading) return <div className="loading"><div className="spinner" /></div>;
 
@@ -274,7 +243,6 @@ function MockExamPage() {
           {s.mocksFullLead}
         </p>
 
-        {/* First run free banner */}
         {!isPro && mockExams.some(m => m.freeAvailable) && (
           <div className="card" style={{ marginBottom: '1.5rem', border: '2px dashed var(--primary-color)', background: 'var(--bg-secondary)' }}>
             <div style={{ fontWeight: 700, marginBottom: '0.2rem' }}>{s.firstMockFree}</div>
@@ -284,7 +252,6 @@ function MockExamPage() {
           </div>
         )}
 
-        {/* Resume banner — active in-progress attempt */}
         {activeAttempt && (
           <div className="card" style={{ marginBottom: '1.5rem', border: '2px solid var(--primary-color)', background: 'var(--bg-secondary)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
@@ -306,10 +273,7 @@ function MockExamPage() {
           </div>
         )}
 
-        {/* Exam cards — solve-only (purchase happens on Home) */}
         {(() => {
-          // Show only mocks the user can actually solve: bought (runs left),
-          // already started, or their one-time free run. Otherwise, a buy hint.
           const visible = mockExams.filter(m => isPro || m.runsRemaining > 0 || m.attemptCount > 0 || m.freeAvailable);
           if (visible.length === 0) {
             return (
@@ -374,7 +338,6 @@ function MockExamPage() {
           );
         })()}
 
-        {/* History */}
         {history.length > 0 && (
           <>
             <h2 style={{ fontSize: '1.1rem', marginBottom: '0.75rem' }}>{s.recentAttempts}</h2>
@@ -434,9 +397,6 @@ function MockExamPage() {
     );
   }
 
-  // ══════════════════════════════════════════════════════
-  //  RENDER PHASE: DETAIL (exam info before starting)
-  // ══════════════════════════════════════════════════════
   if (phase === 'detail' && examDetail) {
     const totalTime = examDetail.sections.reduce((sum, s) => sum + s.timeLimitMinutes, 0);
     const totalQuestions = examDetail.sections.reduce((sum, s) => sum + s.questionCount, 0);
@@ -495,9 +455,6 @@ function MockExamPage() {
     );
   }
 
-  // ══════════════════════════════════════════════════════
-  //  RENDER PHASE: INSTRUCTIONS (before each section)
-  // ══════════════════════════════════════════════════════
   if (phase === 'instructions' && sectionState && attempt) {
     const sectionNames = attempt.sectionNames ?? [];
     return (
@@ -540,9 +497,6 @@ function MockExamPage() {
     );
   }
 
-  // ══════════════════════════════════════════════════════
-  //  RENDER PHASE: SECTION (answering questions)
-  // ══════════════════════════════════════════════════════
   if (phase === 'section' && sectionState && currentQuestion && attempt) {
     const questions = sectionState.questions;
     const hasPassage = !!currentQuestion.passageContent;
@@ -550,7 +504,6 @@ function MockExamPage() {
 
     return (
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-        {/* Section tabs */}
         {sectionNames.length > 1 && (
           <div style={{ display: 'flex', gap: '0.25rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
             {sectionNames.map((name, i) => (
@@ -572,7 +525,6 @@ function MockExamPage() {
           </div>
         )}
 
-        {/* Header bar: timer + section info + progress */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <span style={{ background: 'var(--bg-secondary)', padding: '4px 12px', borderRadius: 8, fontWeight: 600, fontSize: '0.85rem' }}>
@@ -584,7 +536,6 @@ function MockExamPage() {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-            {/* Finish Exam button */}
             <button
               className="btn btn-primary"
               style={{ background: 'var(--success-color)', fontSize: '0.8rem', padding: '6px 16px' }}
@@ -596,14 +547,12 @@ function MockExamPage() {
             >
               Finish Exam
             </button>
-            {/* Timer */}
             <div style={{ background: 'var(--bg-secondary)', padding: '6px 16px', borderRadius: 8, fontWeight: 700, fontSize: '1.1rem', fontFamily: 'monospace', color: timerColor, minWidth: 80, textAlign: 'center' }}>
               {formatTime(timeLeft)}
             </div>
           </div>
         </div>
 
-        {/* Question navigator grid */}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: '1rem' }}>
           {questions.map((q, i) => (
             <button
@@ -626,9 +575,7 @@ function MockExamPage() {
           ))}
         </div>
 
-        {/* Main content area: passage (left) + question (right) */}
         <div style={{ display: 'flex', gap: '1rem', alignItems: hasPassage ? 'stretch' : 'flex-start', flexWrap: 'wrap' }}>
-          {/* Reading passage panel */}
           {hasPassage && (
             <div className="card" style={{ flex: '1 1 300px', maxHeight: 600, overflowY: 'auto', fontSize: '0.88rem', lineHeight: 1.7 }}>
               <h3 style={{ margin: '0 0 0.75rem', fontSize: '1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
@@ -640,7 +587,6 @@ function MockExamPage() {
             </div>
           )}
 
-          {/* Question panel */}
           <div className="card" style={{ flex: '1 1 300px', minWidth: 0 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
               <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
@@ -668,7 +614,6 @@ function MockExamPage() {
               />
             )}
 
-            {/* Options */}
             {currentQuestion.isMultipleChoice && (
               <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>
                 Можно выбрать несколько вариантов
@@ -708,7 +653,6 @@ function MockExamPage() {
               })}
             </div>
 
-            {/* Navigation */}
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)' }}>
               <button
                 className="btn btn-outline"
@@ -733,9 +677,6 @@ function MockExamPage() {
     );
   }
 
-  // ══════════════════════════════════════════════════════
-  //  RENDER PHASE: RESULTS
-  // ══════════════════════════════════════════════════════
   if (phase === 'results' && results) {
     const filteredReview = results.answerReview.filter(a => {
       if (reviewFilter === 'correct') return a.isCorrect;
@@ -750,7 +691,6 @@ function MockExamPage() {
           ← Back to Mock Exams
         </button>
 
-        {/* Score header */}
         <div className="card" style={{ textAlign: 'center', marginBottom: '1.5rem', background: results.overallAccuracy >= 80 ? 'linear-gradient(135deg, #27ae6020, #2ecc7120)' : results.overallAccuracy >= 60 ? 'linear-gradient(135deg, #f39c1220, #e67e2220)' : 'linear-gradient(135deg, #e74c3c20, #c0392b20)' }}>
           <span style={{ background: examBadgeColor(results.examTypeCode), color: '#fff', padding: '3px 14px', borderRadius: 14, fontSize: '0.8rem', fontWeight: 600 }}>
             {results.examTypeCode}
@@ -766,7 +706,6 @@ function MockExamPage() {
           </p>
         </div>
 
-        {/* Section breakdown */}
         <h2 style={{ fontSize: '1.1rem', marginBottom: '0.75rem' }}>Section Results</h2>
         <div style={{ display: 'grid', gap: '0.75rem', marginBottom: '1.5rem', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))' }}>
           {results.sectionResults.map(sr => (
@@ -780,7 +719,6 @@ function MockExamPage() {
                 <span>✕ {sr.totalQuestions - sr.correctCount - sr.unansweredCount} wrong</span>
                 {sr.unansweredCount > 0 && <span>{sr.unansweredCount} skipped</span>}
               </div>
-              {/* Progress bar */}
               <div style={{ marginTop: '0.5rem', height: 6, borderRadius: 3, background: 'var(--bg-secondary)', overflow: 'hidden' }}>
                 <div style={{ width: `${sr.accuracy}%`, height: '100%', borderRadius: 3, background: sr.accuracy >= 80 ? '#27ae60' : sr.accuracy >= 60 ? '#f39c12' : '#e74c3c', transition: 'width 0.5s' }} />
               </div>
@@ -788,7 +726,6 @@ function MockExamPage() {
           ))}
         </div>
 
-        {/* Answer review toggle */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
           <h2 style={{ fontSize: '1.1rem', margin: 0 }}>Answer Review</h2>
           <button className="btn btn-outline" style={{ fontSize: '0.8rem' }} onClick={() => setShowReview(!showReview)}>
@@ -798,7 +735,6 @@ function MockExamPage() {
 
         {showReview && (
           <>
-            {/* Filter tabs */}
             <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
               {(['all', 'correct', 'incorrect', 'unanswered'] as const).map(f => (
                 <button
@@ -815,7 +751,6 @@ function MockExamPage() {
               ))}
             </div>
 
-            {/* Review list */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               {filteredReview.map((a) => (
                 <div key={a.questionId} className="card" style={{
@@ -868,11 +803,9 @@ function MockExamPage() {
     );
   }
 
-  // ── Fallback loading ──────────────────────────────────
   return <div className="loading"><div className="spinner" /></div>;
 }
 
-// ── Helper components ─────────────────────────────────────
 
 function Stat({ label, value }: { label: string; value: string | number }) {
   return (

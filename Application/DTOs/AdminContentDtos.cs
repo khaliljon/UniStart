@@ -1,8 +1,5 @@
 namespace UniStart.Application.DTOs;
 
-// ─── Admin Content Management DTOs ──────────────────────
-
-// Lessons
 public record AdminLessonListDto(
     int Id,
     int TopicId,
@@ -28,7 +25,6 @@ public record AdminUpdateLessonDto(
     int? SortOrder
 );
 
-// Flashcard Decks
 public record AdminDeckListDto(
     int Id,
     string Title,
@@ -55,7 +51,6 @@ public record AdminUpdateDeckDto(
     int? TopicId
 );
 
-// Flashcards
 public record AdminFlashcardDto(
     int Id,
     int DeckId,
@@ -77,7 +72,6 @@ public record AdminUpdateFlashcardDto(
     int? SortOrder
 );
 
-// Formulas
 public record AdminFormulaListDto(
     int Id,
     int TopicId,
@@ -103,7 +97,6 @@ public record AdminUpdateFormulaDto(
     int? SortOrder
 );
 
-// Strategies
 public record AdminStrategyListDto(
     int Id,
     string ExamTypeCode,
@@ -133,7 +126,6 @@ public record AdminUpdateStrategyDto(
     int? SortOrder
 );
 
-// Drill Templates
 public record AdminDrillTemplateListDto(
     int Id,
     string Title,

@@ -9,12 +9,6 @@ using UniStart.Infrastructure.Data;
 
 namespace UniStart.Application.Services;
 
-/// <summary>
-/// Creates and manages PostgreSQL database backups (compressed pg_dump output).
-/// Backups are written to BACKUP_DIR (env) and retained up to a fixed count.
-/// Requires the <c>pg_dump</c> client to be available on PATH (installed in the
-/// production container via postgresql-client).
-/// </summary>
 public class BackupService : IBackupService
 {
     private const int RetentionCount = 14;
@@ -78,7 +72,6 @@ public class BackupService : IBackupService
 
         try
         {
-            // Read stderr concurrently to avoid pipe deadlocks while streaming stdout.
             var stderrTask = process.StandardError.ReadToEndAsync();
 
             await using (var fileStream = File.Create(filePath))

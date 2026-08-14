@@ -1,12 +1,8 @@
-// SVG decorative motifs for the CSCA (Chinese ink-wash) theme.
-// All are inline SVG so they inherit `currentColor` and scale crisply.
-
 interface MotifProps {
   className?: string;
   style?: React.CSSProperties;
 }
 
-/** A brush-stroke horizontal divider (张力 brush sweep). */
 export function BrushDivider({ className, style }: MotifProps) {
   return (
     <svg className={className} style={style} viewBox="0 0 1200 26" fill="none" preserveAspectRatio="none" aria-hidden="true">
@@ -20,7 +16,6 @@ export function BrushDivider({ className, style }: MotifProps) {
   );
 }
 
-/** Traditional 祥云 (auspicious cloud) pattern — used as subtle background flourish. */
 export function CloudPattern({ className, style }: MotifProps) {
   return (
     <svg className={className} style={style} viewBox="0 0 120 60" fill="none" aria-hidden="true">
@@ -32,23 +27,19 @@ export function CloudPattern({ className, style }: MotifProps) {
   );
 }
 
-/** Stylized pagoda + open-book mark echoing the UniStart logo. */
 export function PagodaMark({ className, style }: MotifProps) {
   return (
     <svg className={className} style={style} viewBox="0 0 64 64" fill="none" aria-hidden="true">
       <circle cx="32" cy="30" r="26" stroke="currentColor" strokeWidth="2.5" opacity="0.9" />
-      {/* pagoda roofs */}
       <path d="M20 22h24l-4 4H24z" fill="currentColor" />
       <path d="M23 28h18l-3 4H26z" fill="currentColor" />
       <path d="M26 34h12v8H26z" fill="currentColor" />
       <path d="M31 14l6 6H25z" fill="currentColor" />
-      {/* open book base */}
       <path d="M14 46c6-3 12-3 18 0 6-3 12-3 18 0v3c-6-3-12-3-18 0-6-3-12-3-18 0z" fill="currentColor" />
     </svg>
   );
 }
 
-/** A red seal stamp (印章) with up to two hanzi characters. */
 export function SealStamp({ text = '备考', size = 56, className, style }: MotifProps & { text?: string; size?: number }) {
   return (
     <div
@@ -71,7 +62,6 @@ export function SealStamp({ text = '备考', size = 56, className, style }: Moti
   );
 }
 
-/** Small mountains-in-mist SVG used as a hero backdrop accent. */
 export function MistMountains({ className, style }: MotifProps) {
   return (
     <svg className={className} style={style} viewBox="0 0 1200 220" fill="none" preserveAspectRatio="none" aria-hidden="true">
@@ -81,7 +71,6 @@ export function MistMountains({ className, style }: MotifProps) {
   );
 }
 
-/** Simple line icons for feature cards. */
 export function FeatureIcon({ name, size = 24 }: { name: 'adaptive' | 'analytics' | 'mock' | 'materials' | 'ai' | 'plan'; size?: number }) {
   const common = { width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, 'aria-hidden': true };
   switch (name) {

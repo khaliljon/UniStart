@@ -1,10 +1,5 @@
 namespace UniStart.Application.DTOs;
 
-// ═══════════════════════════════════════════════════════
-//  MOCK EXAM DTOs
-// ═══════════════════════════════════════════════════════
-
-/// <summary>Mock exam listing item</summary>
 public record MockExamListDto(
     int Id,
     string ExamTypeCode,
@@ -14,17 +9,16 @@ public record MockExamListDto(
     int TotalTimeMinutes,
     int SectionCount,
     int TotalQuestions,
-    int? BestScore,      // User's best score (null if never attempted)
-    int AttemptCount,     // How many times user attempted
-    int RunsRemaining,    // Paid runs left for this template (run-based model)
-    bool FreeAvailable,    // User still has their one free run (same for every row)
+    int? BestScore,
+    int AttemptCount,
+    int RunsRemaining,
+    bool FreeAvailable,
     string? TitleKz = null,
     string? TitleEn = null,
     string? DescriptionKz = null,
     string? DescriptionEn = null
 );
 
-/// <summary>Full mock exam detail with sections</summary>
 public record MockExamDetailDto(
     int Id,
     string ExamTypeCode,
@@ -39,7 +33,6 @@ public record MockExamDetailDto(
     string? DescriptionEn = null
 );
 
-/// <summary>Section within a mock exam</summary>
 public record MockExamSectionDto(
     int Id,
     string Name,
@@ -49,7 +42,6 @@ public record MockExamSectionDto(
     string? Instructions
 );
 
-/// <summary>Starting a mock exam attempt — returns attempt info + first section</summary>
 public record MockExamAttemptDto(
     int AttemptId,
     int MockExamId,
@@ -62,7 +54,6 @@ public record MockExamAttemptDto(
     IEnumerable<string>? SectionNames = null
 );
 
-/// <summary>Section state during an active attempt</summary>
 public record MockExamSectionStateDto(
     int SectionIndex,
     string SectionName,
@@ -73,14 +64,13 @@ public record MockExamSectionStateDto(
     int AnsweredCount
 );
 
-/// <summary>Question within a mock exam section — includes passage for TOEFL-style reading</summary>
 public record MockExamQuestionDto(
     int QuestionId,
     string Text,
     string Difficulty,
     string TopicName,
     IEnumerable<MockExamOptionDto> Options,
-    int? SelectedOptionId,      // Previously selected answer (for navigation)
+    int? SelectedOptionId,
     int? ReadingPassageId,
     string? PassageTitle,
     string? PassageContent,
@@ -89,13 +79,11 @@ public record MockExamQuestionDto(
     IEnumerable<int>? SelectedOptionIds = null
 );
 
-/// <summary>Answer option</summary>
 public record MockExamOptionDto(
     int Id,
     string Text
 );
 
-/// <summary>Submit or update an answer within a mock exam</summary>
 public record MockExamSubmitAnswerDto(
     int QuestionId,
     int SelectedOptionId,
@@ -103,7 +91,6 @@ public record MockExamSubmitAnswerDto(
     List<int>? SelectedOptionIds = null
 );
 
-/// <summary>Section result after completion</summary>
 public record MockExamSectionResultDto(
     int SectionIndex,
     string SectionName,
@@ -114,7 +101,6 @@ public record MockExamSectionResultDto(
     int TimeLimitMinutes
 );
 
-/// <summary>Complete mock exam results</summary>
 public record MockExamResultDto(
     int AttemptId,
     int MockExamId,
@@ -131,7 +117,6 @@ public record MockExamResultDto(
     IEnumerable<MockExamAnswerReviewDto> AnswerReview
 );
 
-/// <summary>Individual answer review in results</summary>
 public record MockExamAnswerReviewDto(
     int QuestionId,
     string QuestionText,
@@ -150,7 +135,6 @@ public record MockExamAnswerReviewDto(
     IEnumerable<int>? CorrectOptionIds = null
 );
 
-/// <summary>User's mock exam history item</summary>
 public record MockExamHistoryDto(
     int AttemptId,
     int MockExamId,

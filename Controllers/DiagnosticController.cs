@@ -32,9 +32,6 @@ public class DiagnosticController : ControllerBase
         throw new UnauthorizedAccessException("Invalid user identity");
     }
 
-    /// <summary>
-    /// Start a diagnostic test for a specific exam type
-    /// </summary>
     [HttpPost("start")]
     [ProducesResponseType(typeof(DiagnosticSessionDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -51,9 +48,6 @@ public class DiagnosticController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Get current question in the diagnostic test
-    /// </summary>
     [HttpGet("{sessionId}/current")]
     [ProducesResponseType(typeof(DiagnosticQuestionDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -72,9 +66,6 @@ public class DiagnosticController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Submit an answer for the diagnostic test
-    /// </summary>
     [HttpPost("answer")]
     [ProducesResponseType(typeof(DiagnosticAnswerResultDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -96,9 +87,6 @@ public class DiagnosticController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Get diagnostic test results
-    /// </summary>
     [HttpGet("{sessionId}/results")]
     [ProducesResponseType(typeof(DiagnosticResultDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

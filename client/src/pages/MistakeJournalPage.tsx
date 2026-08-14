@@ -75,7 +75,6 @@ function MistakeJournalPage() {
     return <div className="loading-container"><div className="loading-spinner" /></div>;
   }
 
-  // Analysis view
   if (showAnalysis && analysis) {
     return (
       <div className="animate-fade-in">
@@ -123,7 +122,6 @@ function MistakeJournalPage() {
     );
   }
 
-  // Mistake list view
   return (
     <div className="animate-fade-in">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
@@ -131,7 +129,6 @@ function MistakeJournalPage() {
         <button className="btn btn-secondary" onClick={loadAnalysis}>Analysis</button>
       </div>
 
-      {/* Filter */}
       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
         {['all', 'unclassified', ...ERROR_TYPES].map(type => (
           <button
@@ -177,7 +174,6 @@ function MistakeJournalPage() {
                 </p>
               )}
 
-              {/* Error type selector */}
               <div style={{ display: 'flex', gap: '0.25rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
                 {ERROR_TYPES.map(type => (
                   <button
@@ -191,7 +187,6 @@ function MistakeJournalPage() {
                 ))}
               </div>
 
-              {/* Note */}
               {editingNote === m.userAnswerId ? (
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                   <input
@@ -217,7 +212,6 @@ function MistakeJournalPage() {
         </div>
       )}
 
-      {/* Pagination */}
       {mistakes.length === 20 && (
         <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', marginTop: '1rem' }}>
           <button className="btn btn-secondary" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>

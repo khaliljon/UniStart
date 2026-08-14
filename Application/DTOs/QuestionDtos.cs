@@ -1,6 +1,5 @@
 namespace UniStart.Application.DTOs;
 
-// Question DTOs
 public record QuestionDto(
     int Id,
     string Text,
@@ -46,7 +45,6 @@ public record NextQuestionDto(
     bool MasteryReached = false
 );
 
-// Topic progress for topic selection page
 public record TopicProgressDto(
     int TopicId,
     string TopicName,

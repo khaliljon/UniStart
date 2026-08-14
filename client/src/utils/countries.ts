@@ -1,8 +1,5 @@
-// Country dial codes for the phone input. `dial` is the E.164 country calling
-// code without the leading "+". `min`/`max` are the expected national number
-// length (digits after the code) used for light validation.
 export interface Country {
-  code: string;   // ISO-3166 alpha-2
+  code: string;
   name: string;
   dial: string;
   min: number;
@@ -35,10 +32,8 @@ export const COUNTRIES: Country[] = [
   { code: 'JP', name: '日本', dial: '81', min: 10, max: 10 },
 ];
 
-/** All dial codes, longest first — so prefix matching picks the most specific. */
 const DIALS_BY_LENGTH = [...COUNTRIES].sort((a, b) => b.dial.length - a.dial.length);
 
-/** Best-guess the user's country from the browser locale region. */
 export function detectCountry(): Country {
   try {
     const region =
@@ -49,12 +44,10 @@ export function detectCountry(): Country {
       if (found) return found;
     }
   } catch {
-    /* ignore */
   }
-  return COUNTRIES[0]; // Kazakhstan
+  return COUNTRIES[0];
 }
 
-/** Splits a full "+<dial><national>" string into a country + national digits. */
 export function splitPhone(full: string | null | undefined): { country: Country; national: string } {
   const digits = (full ?? '').replace(/\D/g, '');
   if (digits) {
@@ -64,7 +57,6 @@ export function splitPhone(full: string | null | undefined): { country: Country;
   return { country: detectCountry(), national: '' };
 }
 
-/** True when the national part length fits the country's expected range. */
 export function isValidPhone(country: Country, national: string): boolean {
   const len = national.replace(/\D/g, '').length;
   return len >= country.min && len <= country.max;

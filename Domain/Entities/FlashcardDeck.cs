@@ -7,12 +7,11 @@ public class FlashcardDeck : IAuditable
     public string? Description { get; set; }
     public string? ExamTypeCode { get; set; }
     public int? TopicId { get; set; }
-    public bool IsSystem { get; set; }           // system-created vs user-created
-    public int? CreatedByUserId { get; set; }     // null for system decks
+    public bool IsSystem { get; set; }
+    public int? CreatedByUserId { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
 
-    // Navigation
     public virtual ExamType? ExamType { get; set; }
     public virtual Topic? Topic { get; set; }
     public virtual User? CreatedByUser { get; set; }

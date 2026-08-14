@@ -4,7 +4,6 @@ import { useTranslation } from '../../i18n';
 import { cscaStrings } from '../../i18n/csca';
 import LanguageSwitcher from '../LanguageSwitcher';
 
-/** Public navigation bar for the CSCA marketing pages. Links to real routes. */
 export default function CscaNav() {
   const navigate = useNavigate();
   const { locale } = useTranslation();

@@ -7,7 +7,6 @@ import CookieBanner from './components/CookieBanner'
 import Analytics from './components/Analytics'
 import { ToastProvider } from './components/Toast'
 
-// ── Lazy-loaded pages (code splitting) ──────────────────
 const LoginPage = lazy(() => import('./pages/LoginPage'))
 const RegisterPage = lazy(() => import('./pages/RegisterPage'))
 const CompleteProfilePage = lazy(() => import('./pages/CompleteProfilePage'))
@@ -52,7 +51,6 @@ const MaterialsPage = lazy(() => import('./pages/MaterialsPage'))
 const AdminNewsPage = lazy(() => import('./pages/AdminNewsPage'))
 const AdminSupportPage = lazy(() => import('./pages/AdminSupportPage'))
 
-// ── Suspense fallback ───────────────────────────────────
 const PageLoader = () => (
   <div className="loading"><div className="spinner" /></div>
 )
@@ -70,7 +68,6 @@ function StudentRoutes() {
       <Route path="materials" element={<MaterialsPage />} />
       <Route path="exams/result/:attemptId" element={<MockExamPage />} />
       <Route path="diagnostic" element={<DiagnosticTestPage />} />
-      {/* Legacy redirects */}
       <Route path="tutors" element={<Navigate to="/" replace />} />
       <Route path="tutors/*" element={<Navigate to="/" replace />} />
       <Route path="messages" element={<Navigate to="/" replace />} />

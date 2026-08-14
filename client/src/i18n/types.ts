@@ -1,7 +1,6 @@
 export type Locale = 'ru' | 'kz' | 'en';
 
 export interface Translations {
-  // ─── Common ───
   common: {
     loading: string;
     error: string;
@@ -28,7 +27,6 @@ export interface Translations {
     actions: string;
   };
 
-  // ─── Navigation ───
   nav: {
     home: string;
     learn: string;
@@ -54,7 +52,6 @@ export interface Translations {
     materials: string;
   };
 
-  // ─── Auth ───
   auth: {
     login: string;
     register: string;
@@ -123,7 +120,6 @@ export interface Translations {
     };
   };
 
-  // ─── Dashboard ───
   dashboard: {
     welcome: string;
     quickStats: string;
@@ -166,7 +162,6 @@ export interface Translations {
     of: string;
   };
 
-  // ─── Learn page tabs ───
   learn: {
     title: string;
     groupLearn: string;
@@ -193,7 +188,6 @@ export interface Translations {
     selectExamDesc: string;
   };
 
-  // ─── Flashcards ───
   flashcards: {
     decks: string;
     newDeck: string;
@@ -221,7 +215,6 @@ export interface Translations {
     failedReview: string;
   };
 
-  // ─── Formulas ───
   formulas: {
     title: string;
     noFormulas: string;
@@ -231,7 +224,6 @@ export interface Translations {
     unbookmark: string;
   };
 
-  // ─── Strategies ───
   strategies: {
     title: string;
     noStrategies: string;
@@ -240,7 +232,6 @@ export interface Translations {
     category: string;
   };
 
-  // ─── Drills ───
   drills: {
     title: string;
     history: string;
@@ -262,7 +253,6 @@ export interface Translations {
     noDrills: string;
   };
 
-  // ─── Practice / Test ───
   practice: {
     title: string;
     startPractice: string;
@@ -302,7 +292,6 @@ export interface Translations {
     hard: string;
   };
 
-  // ─── Mock Exam ───
   mockExam: {
     title: string;
     startExam: string;
@@ -315,7 +304,6 @@ export interface Translations {
     minutes: string;
   };
 
-  // ─── Mock Upsell ───
   mockUpsell: {
     title: string;
     scoreText: string;
@@ -330,7 +318,6 @@ export interface Translations {
     close: string;
   };
 
-  // ─── Progress / Analytics ───
   progress: {
     title: string;
     analytics: string;
@@ -365,7 +352,6 @@ export interface Translations {
     noAnalyticsData: string;
   };
 
-  // ─── History ───
   history: {
     title: string;
     noSessions: string;
@@ -382,7 +368,6 @@ export interface Translations {
     page: string;
   };
 
-  // ─── Prediction ───
   prediction: {
     title: string;
     loading: string;
@@ -424,7 +409,6 @@ export interface Translations {
     selectedSections: string;
   };
 
-  // ─── Limits / Subscription ───
   limits: {
     exhausted: string;
     exhaustedMsg: string;
@@ -473,7 +457,6 @@ export interface Translations {
     reviewBlockedDesc: string;
   };
 
-  // ─── Study Plan ───
   studyPlan: {
     title: string;
     setGoal: string;
@@ -560,7 +543,6 @@ export interface Translations {
     continuePractice: string;
   };
 
-  // ─── Profile ───
   profilePage: {
     title: string;
     personalInfo: string;
@@ -615,7 +597,6 @@ export interface Translations {
     referralActivate: string;
   };
 
-  // ─── Admin ───
   admin: {
     nav: {
       dashboard: string; questions: string; content: string; users: string;
@@ -875,7 +856,6 @@ export interface Translations {
     };
   };
 
-  // ─── Onboarding ───
   onboarding: {
     welcome: string;
     selectExams: string;
@@ -923,7 +903,6 @@ export interface Translations {
     selectSections: string;
   };
 
-  // ─── Landing ───
   landing: {
     hero: string;
     heroDesc: string;
@@ -1014,7 +993,6 @@ export interface Translations {
     allRights: string;
   };
 
-  // ─── For Schools ───
   forSchools: {
     heroTitle: string;
     heroDesc: string;
@@ -1068,7 +1046,6 @@ export interface Translations {
     fieldMessage: string;
   };
 
-  // ─── Topics / Lessons ───
   topics: {
     title: string;
     noTopics: string;
@@ -1104,7 +1081,6 @@ export interface Translations {
     backToTopics: string;
   };
 
-  // ─── Review / Mistakes ───
   reviewPage: {
     title: string;
     noMistakes: string;
@@ -1127,7 +1103,6 @@ export interface Translations {
     finish: string;
   };
 
-  // ─── Tutor ───
   tutor: {
     findTutor: string;
     specialization: string;
@@ -1181,7 +1156,6 @@ export interface Translations {
     unlinkStudent: string;
     confirmUnlinkStudent: string;
     linkedSince: string;
-    // Tutor Questions (Этап 2)
     myQuestions: string;
     totalQuestions: string;
     createQuestion: string;
@@ -1218,7 +1192,6 @@ export interface Translations {
     addOption: string;
     markCorrect: string;
     mathTarget: string;
-    // School Detail Page
     schoolNotFound: string;
     backToTutors: string;
     partnerBadge: string;
@@ -1254,11 +1227,9 @@ export interface Translations {
     send: string;
   };
 
-  // ─── Legal ───
   legal: {
     backToHome: string;
     lastUpdated: string;
-    // Privacy Policy
     privacyTitle: string;
     privacyDate: string;
     privacyIntroTitle: string;
@@ -1299,7 +1270,6 @@ export interface Translations {
     privacyChangesText: string;
     privacyContactTitle: string;
     privacyContactText: string;
-    // Terms of Service
     termsTitle: string;
     termsDate: string;
     termsIntroTitle: string;
@@ -1343,14 +1313,11 @@ export interface Translations {
     termsChangesText: string;
     termsContactTitle: string;
     termsContactText: string;
-    // Cookie Banner
     cookieText: string;
     cookieAccept: string;
     cookieDecline: string;
-    // Registration consent
     consentText: string;
     consentRequired: string;
-    // Referral Terms
     referralTermsTitle: string;
     referralTermsDate: string;
   };
@@ -1372,7 +1339,6 @@ export interface Translations {
     getStarted: string;
   };
 
-  // ─── White Label Landing ───
   wl: {
     heroTitle: string;
     heroWith: string;
@@ -1412,7 +1378,6 @@ export interface Translations {
     mockBuy: string;
   };
 
-  // ─── Tutor Verification Gate ───
   tutorGate: {
     description: string;
     pendingDesc: string;
@@ -1459,7 +1424,6 @@ export interface Translations {
     emailDirect: string;
   };
 
-  // ─── School Admin ───
   schoolAdmin: {
     badge: string;
     dashboard: string;

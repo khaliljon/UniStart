@@ -34,13 +34,11 @@ export function MockResultUpsellModal({ isOpen, onClose, score, totalCorrect, to
     <>
       <div style={overlay} onClick={onClose}>
         <div style={modal} onClick={e => e.stopPropagation()}>
-          {/* Close */}
           <button onClick={onClose} style={{
             position: 'absolute', top: 12, right: 16, background: 'none', border: 'none',
             fontSize: '1.5rem', cursor: 'pointer', color: 'var(--text-secondary)',
           }}>×</button>
 
-          {/* Step indicator dots */}
           <div style={stepIndicator}>
             {[1, 2, 3, 4].map(s => (
               <div key={s} style={{
@@ -51,7 +49,6 @@ export function MockResultUpsellModal({ isOpen, onClose, score, totalCorrect, to
             ))}
           </div>
 
-          {/* Step 1: Score + CTA analytics */}
           {step === 1 && (
             <div style={{ textAlign: 'center' }}>
               <h2 style={{ margin: '0 0 0.5rem', fontSize: '1.3rem' }}>{t.mockUpsell.title}</h2>
@@ -74,12 +71,10 @@ export function MockResultUpsellModal({ isOpen, onClose, score, totalCorrect, to
             </div>
           )}
 
-          {/* Step 2: Analytics preview (blurred) */}
           {step === 2 && (
             <div style={{ textAlign: 'center' }}>
               <h2 style={{ margin: '0 0 1rem', fontSize: '1.2rem' }}>{t.mockUpsell.analyticsPreview}</h2>
 
-              {/* Faux blurred radar chart */}
               <div style={{
                 height: 160, borderRadius: 12, margin: '0 auto 1rem',
                 background: 'linear-gradient(135deg, var(--bg-secondary), var(--border-color))',
@@ -105,12 +100,10 @@ export function MockResultUpsellModal({ isOpen, onClose, score, totalCorrect, to
             </div>
           )}
 
-          {/* Step 3: Mistakes preview (blurred partial list) */}
           {step === 3 && (
             <div style={{ textAlign: 'center' }}>
               <h2 style={{ margin: '0 0 1rem', fontSize: '1.2rem' }}>{t.mockUpsell.mistakesPreview}</h2>
 
-              {/* Faux mistake items — first visible, rest blurred */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
                 <div style={{
                   background: 'var(--bg-secondary)', borderRadius: 8, padding: '0.6rem 0.8rem',
@@ -137,7 +130,6 @@ export function MockResultUpsellModal({ isOpen, onClose, score, totalCorrect, to
             </div>
           )}
 
-          {/* Step 4: CTA with pricing */}
           {step === 4 && (
             <div style={{ textAlign: 'center' }}>
               <h2 style={{ margin: '0 0 0.75rem', fontSize: '1.3rem' }}>{t.mockUpsell.tryPro}</h2>

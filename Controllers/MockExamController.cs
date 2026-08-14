@@ -24,7 +24,6 @@ public class MockExamController : ControllerBase
         _subscriptionService = subscriptionService;
     }
 
-    /// <summary>List available mock exams</summary>
     [HttpGet]
     public async Task<IActionResult> GetAvailableMockExams()
     {
@@ -33,7 +32,6 @@ public class MockExamController : ControllerBase
         return Ok(exams);
     }
 
-    /// <summary>Public list of active mock exams for the landing page (no auth required).</summary>
     [HttpGet("public")]
     [AllowAnonymous]
     public async Task<IActionResult> GetPublicMockExams()
@@ -42,7 +40,6 @@ public class MockExamController : ControllerBase
         return Ok(exams);
     }
 
-    /// <summary>Get mock exam details with sections</summary>
     [HttpGet("{id}")]
     public async Task<IActionResult> GetMockExamDetail(int id)
     {
@@ -50,7 +47,6 @@ public class MockExamController : ControllerBase
         return exam == null ? NotFound() : Ok(exam);
     }
 
-    /// <summary>Start a new mock exam attempt</summary>
     [HttpPost("{id}/start")]
     public async Task<IActionResult> StartMockExam(int id, [FromBody] StartMockExamRequest? request = null)
     {
@@ -75,7 +71,6 @@ public class MockExamController : ControllerBase
         public List<int>? SelectedSectionIds { get; set; }
     }
 
-    /// <summary>Get current section state (questions + answers)</summary>
     [HttpGet("attempts/{attemptId}/current-section")]
     public async Task<IActionResult> GetCurrentSection(int attemptId)
     {
@@ -84,7 +79,6 @@ public class MockExamController : ControllerBase
         return section == null ? NotFound() : Ok(section);
     }
 
-    /// <summary>Get a specific section by index</summary>
     [HttpGet("attempts/{attemptId}/sections/{sectionIndex}")]
     public async Task<IActionResult> GetSection(int attemptId, int sectionIndex)
     {
@@ -93,13 +87,11 @@ public class MockExamController : ControllerBase
         return section == null ? NotFound() : Ok(section);
     }
 
-    /// <summary>Submit or update an answer</summary>
     [HttpPost("attempts/{attemptId}/answer")]
     public async Task<IActionResult> SubmitAnswer(int attemptId, [FromBody] MockExamSubmitAnswerDto dto)
     {
         var userId = GetUserId();
 
-        // Server-side daily question limit enforcement (Free tier)
         if (!await _subscriptionService.CanAnswerQuestionAsync(userId))
             return StatusCode(429, new { error = "Дневной лимит вопросов исчерпан. Перейдите на Pro для безлимитного доступа." });
 
@@ -107,7 +99,6 @@ public class MockExamController : ControllerBase
         return success ? Ok(new { success = true }) : BadRequest(new { error = "Cannot submit answer" });
     }
 
-    /// <summary>Complete current section and advance to next</summary>
     [HttpPost("attempts/{attemptId}/complete-section")]
     public async Task<IActionResult> CompleteSection(int attemptId)
     {
@@ -116,7 +107,6 @@ public class MockExamController : ControllerBase
         return attempt == null ? BadRequest(new { error = "Cannot complete section" }) : Ok(attempt);
     }
 
-    /// <summary>Complete the entire exam</summary>
     [HttpPost("attempts/{attemptId}/complete-exam")]
     public async Task<IActionResult> CompleteExam(int attemptId)
     {
@@ -125,7 +115,6 @@ public class MockExamController : ControllerBase
         return attempt == null ? BadRequest(new { error = "Cannot complete exam" }) : Ok(attempt);
     }
 
-    /// <summary>Get mock exam results (after completion)</summary>
     [HttpGet("attempts/{attemptId}/results")]
     public async Task<IActionResult> GetResults(int attemptId)
     {
@@ -134,7 +123,6 @@ public class MockExamController : ControllerBase
         return results == null ? NotFound() : Ok(results);
     }
 
-    /// <summary>Get user's mock exam history</summary>
     [HttpGet("history")]
     public async Task<IActionResult> GetHistory()
     {
@@ -143,7 +131,6 @@ public class MockExamController : ControllerBase
         return Ok(history);
     }
 
-    /// <summary>Get user's active (in_progress) attempt, if any</summary>
     [HttpGet("active-attempt")]
     public async Task<IActionResult> GetActiveAttempt()
     {
@@ -153,7 +140,6 @@ public class MockExamController : ControllerBase
         return Ok(attempt);
     }
 
-    /// <summary>Abandon an in-progress attempt</summary>
     [HttpPost("attempts/{attemptId}/abandon")]
     public async Task<IActionResult> AbandonAttempt(int attemptId)
     {

@@ -100,9 +100,6 @@ public class ReferralService : IReferralService
             .ToListAsync();
     }
 
-    /// <summary>
-    /// Called when a user upgrades to Pro. Grants reward to the referrer.
-    /// </summary>
     public async Task GrantRewardForProUpgradeAsync(int userId)
     {
         var usage = await _context.ReferralUsages
@@ -131,7 +128,6 @@ public class ReferralService : IReferralService
 
         _context.ReferralRewards.Add(reward);
 
-        // For students: auto-extend subscription by 5 days
         if (isStudent && owner.IsPro && owner.SubscriptionExpiresAt.HasValue)
         {
             owner.SubscriptionExpiresAt = owner.SubscriptionExpiresAt.Value.AddDays(5);
@@ -146,7 +142,7 @@ public class ReferralService : IReferralService
 
     private static string GenerateCode()
     {
-        const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no I/O/0/1 for clarity
+        const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
         var random = new Random();
         return new string(Enumerable.Range(0, 8).Select(_ => chars[random.Next(chars.Length)]).ToArray());
     }

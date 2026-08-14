@@ -3,9 +3,6 @@ using UniStart.Application.DTOs;
 
 namespace UniStart.Application.Validators;
 
-// ═══════════════════════════════════════════════════════════
-//  REGISTER
-// ═══════════════════════════════════════════════════════════
 
 public class RegisterDtoValidator : AbstractValidator<RegisterDto>
 {
@@ -43,9 +40,6 @@ public class RegisterDtoValidator : AbstractValidator<RegisterDto>
     }
 }
 
-// ═══════════════════════════════════════════════════════════
-//  LOGIN
-// ═══════════════════════════════════════════════════════════
 
 public class LoginDtoValidator : AbstractValidator<LoginDto>
 {
@@ -60,9 +54,6 @@ public class LoginDtoValidator : AbstractValidator<LoginDto>
     }
 }
 
-// ═══════════════════════════════════════════════════════════
-//  UPDATE PHONE (profile completion)
-// ═══════════════════════════════════════════════════════════
 
 public class UpdatePhoneDtoValidator : AbstractValidator<UpdatePhoneDto>
 {
@@ -74,9 +65,6 @@ public class UpdatePhoneDtoValidator : AbstractValidator<UpdatePhoneDto>
     }
 }
 
-// ═══════════════════════════════════════════════════════════
-//  UPDATE USER (self)
-// ═══════════════════════════════════════════════════════════
 
 public class UpdateUserDtoValidator : AbstractValidator<UpdateUserDto>
 {

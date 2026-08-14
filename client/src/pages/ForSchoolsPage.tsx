@@ -52,7 +52,6 @@ function ForSchoolsPage() {
 
   return (
     <div style={{ background: 'var(--background-color)', minHeight: '100vh' }}>
-      {/* Navbar */}
       <nav style={{
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         padding: '1rem 2rem', maxWidth: 1200, margin: '0 auto',
@@ -63,7 +62,6 @@ function ForSchoolsPage() {
         <a href="#apply" className="btn btn-primary">{s.applyNow}</a>
       </nav>
 
-      {/* Hero */}
       <section style={{
         textAlign: 'center', padding: '4rem 2rem 3rem', maxWidth: 800, margin: '0 auto',
       }}>
@@ -87,7 +85,6 @@ function ForSchoolsPage() {
         </div>
       </section>
 
-      {/* Pricing */}
       <section style={{ padding: '2rem 2rem 3rem', maxWidth: 800, margin: '0 auto' }}>
         <div style={{
           display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
@@ -120,7 +117,6 @@ function ForSchoolsPage() {
         </div>
       </section>
 
-      {/* Benefits Grid */}
       <section id="benefits" style={{ padding: '3rem 2rem', maxWidth: 1100, margin: '0 auto' }}>
         <h2 style={{ fontSize: '1.8rem', fontWeight: 700, textAlign: 'center', marginBottom: '0.5rem', color: 'var(--text-primary)' }}>
           {s.benefitsTitle}
@@ -144,7 +140,6 @@ function ForSchoolsPage() {
         </div>
       </section>
 
-      {/* How it works */}
       <section style={{ padding: '3rem 2rem', maxWidth: 800, margin: '0 auto' }}>
         <h2 style={{ fontSize: '1.8rem', fontWeight: 700, textAlign: 'center', marginBottom: '2rem', color: 'var(--text-primary)' }}>
           {s.howItWorksTitle}
@@ -165,7 +160,6 @@ function ForSchoolsPage() {
         </div>
       </section>
 
-      {/* What's included */}
       <section style={{
         padding: '3rem 2rem', maxWidth: 700, margin: '0 auto',
         background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '1rem',
@@ -184,7 +178,6 @@ function ForSchoolsPage() {
         </div>
       </section>
 
-      {/* Application Form */}
       <section id="apply" style={{
         padding: '3rem 2rem', maxWidth: 600, margin: '0 auto 3rem',
         background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '1rem',
@@ -272,7 +265,6 @@ function ForSchoolsPage() {
         )}
       </section>
 
-      {/* Footer */}
       <footer style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
         © {new Date().getFullYear()} UniStart. {t.landing.allRights}
       </footer>

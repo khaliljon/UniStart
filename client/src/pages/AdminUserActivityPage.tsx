@@ -90,7 +90,6 @@ export default function AdminUserActivityPage() {
     <div style={{ maxWidth: 1100, margin: '0 auto' }}>
       <h2 style={{ marginBottom: 16 }}>{t.admin.activity.title}</h2>
 
-      {/* Search bar */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
         <input
           type="number"
@@ -120,7 +119,6 @@ export default function AdminUserActivityPage() {
 
       {data && !loading && (
         <>
-          {/* User Info Header */}
           <div style={{
             background: 'var(--bg-secondary)', borderRadius: 12, padding: 20, marginBottom: 24,
             display: 'flex', justifyContent: 'space-between', alignItems: 'center'
@@ -146,7 +144,6 @@ export default function AdminUserActivityPage() {
             </div>
           </div>
 
-          {/* Summary Cards */}
           <div style={{
             display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
             gap: 12, marginBottom: 24
@@ -157,7 +154,6 @@ export default function AdminUserActivityPage() {
             <SummaryCard label={t.admin.activity.lastActivity} text={formatDate(data.summary.lastActivity)} />
           </div>
 
-          {/* Sessions (mock attempts) with review */}
           <div style={{ background: 'var(--bg-secondary)', borderRadius: 12, padding: 20, marginTop: 20 }}>
             <h3 style={{ margin: '0 0 12px' }}>
               {t.admin.activity.sessions} ({data.mockSessions.length})
@@ -204,7 +200,6 @@ export default function AdminUserActivityPage() {
         </>
       )}
 
-      {/* Review modal */}
       {(review || reviewLoading) && (
         <div onClick={() => setReview(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', zIndex: 1000, padding: '2rem 1rem', overflowY: 'auto' }}>
           <div onClick={e => e.stopPropagation()} style={{ background: 'var(--card-background)', borderRadius: 12, maxWidth: 800, width: '100%', padding: '1.5rem' }}>

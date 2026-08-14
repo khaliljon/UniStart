@@ -3,9 +3,7 @@ import { useEffect } from 'react';
 import CscaNav from './CscaNav';
 import CscaFooter from './CscaFooter';
 
-/** Shared shell (ink-wash background + nav + footer) for CSCA marketing pages. */
 export default function CscaPageShell({ children }: { children: ReactNode }) {
-  // Marketing pages always scroll to top on mount.
   useEffect(() => { window.scrollTo({ top: 0 }); }, []);
 
   return (
@@ -17,7 +15,6 @@ export default function CscaPageShell({ children }: { children: ReactNode }) {
   );
 }
 
-/** Simple page hero used across the CSCA sub-pages. */
 export function CscaPageHero({ eyebrow, title, lead }: { eyebrow?: string; title: string; lead?: string }) {
   return (
     <header className="csca-wrap" style={{ padding: '3rem 1.5rem 1rem', textAlign: 'center' }}>

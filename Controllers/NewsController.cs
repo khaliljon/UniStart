@@ -23,7 +23,6 @@ public class NewsController : ControllerBase
         n.IsPublished, n.PublishedAt, n.CreatedAt, n.UpdatedAt,
         n.TitleKz, n.TitleEn, n.SummaryKz, n.SummaryEn, n.BodyKz, n.BodyEn);
 
-    /// <summary>Public: published articles, newest first.</summary>
     [HttpGet]
     [AllowAnonymous]
     public async Task<IActionResult> List([FromQuery] int? limit)
@@ -40,7 +39,6 @@ public class NewsController : ControllerBase
         return Ok(items.Select(ToDto));
     }
 
-    /// <summary>Public: a single published article.</summary>
     [HttpGet("{id:int}")]
     [AllowAnonymous]
     public async Task<IActionResult> GetById(int id)
@@ -50,7 +48,6 @@ public class NewsController : ControllerBase
         return Ok(ToDto(n));
     }
 
-    /// <summary>Admin: all articles (including drafts).</summary>
     [HttpGet("all")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> ListAll()

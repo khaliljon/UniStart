@@ -6,41 +6,29 @@ public class Question : ISoftDeletable, IAuditable
     public int TopicId { get; set; }
     public string Text { get; set; } = string.Empty;
     public QuestionDifficulty Difficulty { get; set; }
-    /// <summary>When true, the question has multiple correct options and is answered with checkboxes.</summary>
     public bool IsMultipleChoice { get; set; } = false;
     public string? Explanation { get; set; }
     public string? Hint { get; set; }
     public string? VideoUrl { get; set; }
     public string? ImageUrl { get; set; }
     public int? ReadingPassageId { get; set; }
-    /// <summary>Ordering within a Topic (e.g. Q1..Q50). Lower = earlier.</summary>
     public int SortOrder { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
 
-    // IRT parameters (Item Response Theory)
-    /// <summary>Difficulty parameter (b) on the logit scale, typically -3 to +3</summary>
     public double DifficultyParam { get; set; } = 0.0;
-    /// <summary>Discrimination parameter (a) for 2PL model, typically 0.5 to 2.5</summary>
     public double DiscriminationParam { get; set; } = 1.0;
-    /// <summary>Guessing parameter (c) for 3PL model, typically 0.0 to 0.35</summary>
     public double GuessParam { get; set; } = 0.25;
-    /// <summary>Number of real student responses folded into the IRT parameters so far.</summary>
     public int ResponseCount { get; set; }
-    /// <summary>True once enough real responses have accumulated that DifficultyParam is
-    /// data-driven rather than just a difficulty-derived prior.</summary>
     public bool IsCalibrated { get; set; }
 
-    // Soft Delete (OP-9)
     public bool IsDeleted { get; set; }
     public DateTime? DeletedAt { get; set; }
     public int? DeletedBy { get; set; }
 
-    // Tutor content (Sprint 7 Этап 2)
     public int? CreatedByTutorId { get; set; }
     public bool IsPrivate { get; set; }
 
-    // Navigation properties
     public virtual Topic Topic { get; set; } = null!;
     public virtual ReadingPassage? ReadingPassage { get; set; }
     public virtual User? CreatedByTutor { get; set; }

@@ -1,12 +1,9 @@
 namespace UniStart.Application.DTOs;
 
-// ═══════════════════════════════════════════════════════
-//  RECOMMENDATIONS
-// ═══════════════════════════════════════════════════════
 
 public record RecommendationDto(
-    string Type,        // "after_session" | "daily" | "mode" | "milestone" | "streak"
-    string Priority,    // "high" | "medium" | "low"
+    string Type,
+    string Priority,
     string Title,
     string Description,
     string? Icon,

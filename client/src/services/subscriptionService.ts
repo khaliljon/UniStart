@@ -18,8 +18,6 @@ export const subscriptionService = {
   getDailyUsage: async (): Promise<DailyUsage> => {
     const response = await api.get('/subscription/daily-usage');
     const data: DailyUsage = response.data;
-    // If the user's local clock is off by >2 hours, treat the limit as reached
-    // to prevent gaming by changing the device clock
     if (hasClockSkew(data.serverTimeUtc)) {
       return { ...data, isLimitReached: true, questionsRemaining: 0 };
     }

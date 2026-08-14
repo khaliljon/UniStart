@@ -28,7 +28,7 @@ export interface MockPackage {
   name: string;
   nameKz?: string | null;
   nameEn?: string | null;
-  pickCount: number; // 0 = all subjects
+  pickCount: number;
   runsEach: number;
   price: number;
   currency: string;
@@ -41,7 +41,6 @@ export interface MockCatalog {
   packages: MockPackage[];
 }
 
-/** A single checkout line (run purchase, package, or book). */
 export interface CheckoutLine {
   kind: 'mock' | 'package' | 'book';
   mockExamId?: number;
@@ -56,7 +55,6 @@ export interface CheckoutQuote {
   currency: string;
 }
 
-// ── Admin catalog shapes ─────────────────────────────────
 
 export interface AdminTier {
   id: number;
@@ -98,7 +96,6 @@ export const mockCatalogService = {
     api.post<CheckoutQuote>('/mock-catalog/quote', { lines }).then((r) => r.data),
 
 
-  // ── Admin ──────────────────────────────────────────────
   adminTiers: (): Promise<AdminTier[]> =>
     api.get<AdminTier[]>('/mock-catalog/admin/tiers').then((r) => r.data),
   createTier: (dto: SaveTier): Promise<{ id: number }> =>

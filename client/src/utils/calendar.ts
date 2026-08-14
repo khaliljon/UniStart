@@ -1,16 +1,11 @@
-// Helpers to add an event to the user's calendar (works on desktop & mobile).
-// Downloading a .ics file opens the native calendar app on both platforms.
-
 export interface CalendarEvent {
   title: string;
   description?: string;
   location?: string;
-  /** All-day event date in YYYY-MM-DD. */
   date: string;
 }
 
 function toIcsDate(date: string): string {
-  // All-day event: YYYYMMDD
   return date.replace(/-/g, '');
 }
 
@@ -24,7 +19,6 @@ function escapeIcs(text: string): string {
   return text.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
 }
 
-/** Builds an iCalendar (.ics) string for a single all-day event. */
 export function buildIcs(event: CalendarEvent): string {
   const uid = `${toIcsDate(event.date)}-${Math.random().toString(36).slice(2)}@unistart.kz`;
   const stamp = new Date().toISOString().replace(/[-:]/g, '').slice(0, 15) + 'Z';
@@ -47,7 +41,6 @@ export function buildIcs(event: CalendarEvent): string {
   ].filter(Boolean).join('\r\n');
 }
 
-/** Triggers a download of an .ics file that opens the device's calendar app. */
 export function downloadIcs(event: CalendarEvent, fileName = 'csca-exam.ics'): void {
   const blob = new Blob([buildIcs(event)], { type: 'text/calendar;charset=utf-8' });
   const url = URL.createObjectURL(blob);
@@ -60,7 +53,6 @@ export function downloadIcs(event: CalendarEvent, fileName = 'csca-exam.ics'): v
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-/** Google Calendar "add event" URL (opens in a new tab). */
 export function googleCalendarUrl(event: CalendarEvent): string {
   const start = toIcsDate(event.date);
   const end = addOneDay(event.date);

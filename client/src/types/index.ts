@@ -1,4 +1,3 @@
-// Auth types
 export interface User {
   id: number;
   email: string;
@@ -62,7 +61,6 @@ export interface GoogleLoginRequest {
   idToken: string;
 }
 
-// Exam types
 export interface ExamType {
   code: string;
   name: string;
@@ -76,7 +74,6 @@ export interface ExamSection {
   maxScore: number;
 }
 
-// Question types
 export interface AnswerOption {
   id: number;
   text: string;
@@ -109,21 +106,18 @@ export interface AnswerResult {
   explanation: string | null;
   newSkillLevel: number;
   skillChange: number;
-  // IRT fields
   theta?: number;
   thetaSE?: number;
   confidenceLow?: number;
   confidenceHigh?: number;
 }
 
-// Skill types
 export interface UserSkillProfile {
   skillId: number;
   skillName: string;
   skillCode: string;
   level: number;
   lastUpdated: string;
-  // IRT fields
   theta?: number;
   thetaSE?: number;
   confidenceLow?: number;
@@ -145,7 +139,6 @@ export interface SkillProgress {
   date: string;
 }
 
-// Test session types
 export interface StartTestRequest {
   examTypeCodes: string[];
   sectionId?: number;
@@ -153,7 +146,6 @@ export interface StartTestRequest {
   topicId?: number;
 }
 
-// Topic progress for learning features
 export interface TopicProgress {
   topicId: number;
   topicName: string;
@@ -169,7 +161,6 @@ export interface TopicProgress {
   examTypeCode?: string;
 }
 
-// ─── Stage 4: Enhanced Analytics Types ───────────────────────────
 
 export interface Dashboard {
   totalQuestionsAnswered: number;
@@ -240,7 +231,6 @@ export interface SubmitAnswerRequest {
   testSessionId?: number;
 }
 
-// Stage 6: Study Plan Types
 export interface StudyGoal {
   id: number;
   examTypeCode: string;
@@ -330,9 +320,6 @@ export interface WeekSummary {
   accuracy: number;
 }
 
-// ═══════════════════════════════════════════════════════
-//  SCORE PREDICTION
-// ═══════════════════════════════════════════════════════
 
 export interface ScorePrediction {
   examTypeCode: string;
@@ -400,7 +387,6 @@ export interface PredictionHistory {
   confidenceHigh: number;
 }
 
-// ─── Recommendations (Stage 8) ──────────────────────────
 
 export interface Recommendation {
   type: 'after_session' | 'daily' | 'mode' | 'milestone' | 'streak';
@@ -452,7 +438,6 @@ export interface AfterSession {
   recommendations: Recommendation[];
 }
 
-// ─── Admin (Stage 9) ────────────────────────────────────
 
 export interface PagedResult<T> {
   items: T[];
@@ -515,7 +500,6 @@ export interface BulkImportResult {
   errors: string[];
 }
 
-// ─── Admin User Management ──────────────────────────────
 
 export interface AdminUser {
   id: number;
@@ -576,7 +560,6 @@ export interface AdminDashboard {
   topics: AdminTopicSummary[];
 }
 
-// ─── Trash / Recycle Bin ────────────────────────────────
 
 export interface TrashItem {
   id: number;
@@ -594,7 +577,6 @@ export interface TrashSummary {
   items: TrashItem[];
 }
 
-// ─── Stage 9.2: Learning Materials ──────────────────────
 
 export interface TopicLessonSummary {
   id: number;
@@ -620,7 +602,6 @@ export interface TopicLesson {
   sortOrder: number;
 }
 
-// ─── Stage 9.3: Mock Exams ─────────────────────────────
 
 export interface MockExamListItem {
   id: number;
@@ -761,7 +742,6 @@ export interface MockExamHistoryItem {
   completedAt: string | null;
 }
 
-// Onboarding types
 export interface OnboardingStatus {
   hasCompletedOnboarding: boolean;
   examTypeCode: string | null;
@@ -792,7 +772,6 @@ export interface CompleteOnboardingRequest {
   targetScore: number;
 }
 
-// Diagnostic test types
 export interface DiagnosticSession {
   sessionId: number;
   examTypeCode: string;
@@ -859,7 +838,6 @@ export interface DiagnosticAnswerReview {
   explanation: string | null;
 }
 
-// Subscription types
 export interface SubscriptionStatus {
   tier: string;
   isPro: boolean;
@@ -898,7 +876,6 @@ export interface UpgradeResponse {
   message: string;
 }
 
-// Notification types
 export interface NotificationPreferences {
   welcomeEmail: boolean;
   streakReminder: boolean;
@@ -915,7 +892,6 @@ export interface UpdateNotificationPreferences {
   achievementNotification?: boolean;
 }
 
-// ─── Tutor types ──────────────────────────────────────
 export interface TutorCard {
   userId: number;
   name: string;
@@ -1005,7 +981,6 @@ export interface CreateReviewRequest {
   comment?: string;
 }
 
-// ─── Messaging types ──────────────────────────────────
 export interface Conversation {
   id: number;
   otherUserId: number;
@@ -1061,9 +1036,6 @@ export interface AcceptDeclineResult {
   systemMessage: string | null;
 }
 
-// ─── Learning v2 types ────────────────────────────────
-
-// Lesson Steps (TH-1)
 export interface LessonStep {
   id: number;
   lessonId: number;
@@ -1085,7 +1057,6 @@ export interface LessonWithSteps {
   totalSteps: number;
 }
 
-// Formula Cards (TH-2)
 export interface FormulaCard {
   id: number;
   topicId: number;
@@ -1097,7 +1068,6 @@ export interface FormulaCard {
   isBookmarked: boolean;
 }
 
-// Flashcards (TH-3)
 export interface FlashcardDeck {
   id: number;
   title: string;
@@ -1144,7 +1114,6 @@ export interface ReviewFlashcardRequest {
   quality: number; // 0-5
 }
 
-// Timed Drills (TH-4)
 export interface StartDrillRequest {
   drillType: 'Speed' | 'Marathon' | 'Streak';
   examTypeCodes?: string[];
@@ -1202,7 +1171,6 @@ export interface PersonalBest {
   achievedAt: string | null;
 }
 
-// Strategy Guides (TH-5)
 export interface StrategyGuide {
   id: number;
   examTypeCode: string;
@@ -1224,7 +1192,6 @@ export interface StrategyGuideSummary {
   isRead: boolean;
 }
 
-// Mistake Journal (TH-6)
 export interface MistakeEntry {
   userAnswerId: number;
   questionId: number;
@@ -1257,7 +1224,6 @@ export interface MistakeAnalysis {
   topicBreakdown: TopicMistake[];
 }
 
-// ─── Tutor-Student Binding ───────────────────────────────
 export interface TutorStudentInfo {
   id: number;
   studentUserId: number;
@@ -1284,7 +1250,6 @@ export interface LinkResult {
 }
 
 
-// ─── Tutor Questions (Этап 2) ───────────────────────────
 export interface TutorQuestionListItem {
   id: number;
   text: string;
@@ -1318,7 +1283,6 @@ export interface TutorQuestionsPage {
   totalPages: number;
 }
 
-// ─── Tutor Schools ──────────────────────────────────────
 export interface TutorSchoolCard {
   id: number;
   name: string;
@@ -1354,7 +1318,6 @@ export interface TutorSchoolDetail {
   tutors: TutorCard[];
 }
 
-// ─── School Admin (Этап 4) ─────────────────────────────
 export interface SchoolAdmin {
   id: number;
   name: string;
@@ -1406,7 +1369,6 @@ export interface UpdateSchoolRequest {
   navbarTitle?: string;
 }
 
-// ─── School Branding (White Label) ─────────────────────
 export interface SchoolBranding {
   id: number;
   name: string;
@@ -1422,7 +1384,6 @@ export interface SchoolBranding {
   specializations: string[];
 }
 
-// ─── Assignments (Этап 3) ──────────────────────────────
 
 export interface AssignmentListItem {
   id: number;

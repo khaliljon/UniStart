@@ -8,7 +8,7 @@ public record ReferralStatsDto(
     decimal TotalEarned,
     decimal AvailableBalance,
     int BonusDays,
-    string RewardType  // "money" or "days"
+    string RewardType
 );
 
 public record ReferralActivateResponseDto(

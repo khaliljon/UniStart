@@ -26,7 +26,6 @@ public class PurchaseController : ApiControllerBase
         p.Id, p.ItemType, p.ItemCode, p.Title, p.Subjects,
         p.Amount, p.Currency, p.Status, p.PurchasedAt);
 
-    /// <summary>Current user's purchase history, newest first.</summary>
     [HttpGet]
     public async Task<IActionResult> List()
     {
@@ -38,10 +37,6 @@ public class PurchaseController : ApiControllerBase
         return Ok(items.Select(ToDto));
     }
 
-    /// <summary>
-    /// Admin sales monitor: all purchases with buyer info and revenue totals.
-    /// Optional filters by status, item type and date range.
-    /// </summary>
     [HttpGet("admin/all")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> AdminList([FromQuery] string? status, [FromQuery] string? itemType,
@@ -52,8 +47,6 @@ public class PurchaseController : ApiControllerBase
         var paid = rows.Where(r => r.Status == "Paid").ToList();
         var revenue = paid.Sum(r => r.Amount);
 
-        // Polar charges its commission in USD; convert it to the sale currency (live
-        // USD/KZT rate, cached) so the "to payout" figure reflects the real amount.
         var usdRate = await _fx.GetUsdToKztAsync();
         var feeInLocal = paid.Sum(r =>
             r.PlatformFeeCurrency != null && !string.Equals(r.PlatformFeeCurrency, currency, StringComparison.OrdinalIgnoreCase)
@@ -63,7 +56,6 @@ public class PurchaseController : ApiControllerBase
         return Ok(new AdminSalesDto(rows.Count, revenue, currency, rows, net));
     }
 
-    /// <summary>Export the (filtered) sales list as CSV — Admin only.</summary>
     [HttpGet("admin/export.csv")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> ExportCsv([FromQuery] string? status, [FromQuery] string? itemType,

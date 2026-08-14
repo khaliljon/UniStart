@@ -21,7 +21,7 @@ public class ImageUploadService : IImageUploadService, IDisposable
         ["image/webp"] = ".webp",
         ["image/gif"]  = ".gif",
     };
-    private const long MaxBytes = 5 * 1024 * 1024; // 5 MB
+    private const long MaxBytes = 5 * 1024 * 1024;
 
     private readonly string _endpoint;
     private readonly string _keyId;

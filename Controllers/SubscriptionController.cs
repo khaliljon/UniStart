@@ -28,7 +28,6 @@ public class SubscriptionController : ControllerBase
         throw new UnauthorizedAccessException("Invalid user identity");
     }
 
-    /// <summary>Full subscription status including tier, limits, daily usage</summary>
     [HttpGet("status")]
     public async Task<IActionResult> GetStatus()
     {
@@ -36,7 +35,6 @@ public class SubscriptionController : ControllerBase
         return Ok(status);
     }
 
-    /// <summary>Daily usage only (lightweight endpoint for frequent polling)</summary>
     [HttpGet("daily-usage")]
     public async Task<IActionResult> GetDailyUsage()
     {
@@ -44,7 +42,6 @@ public class SubscriptionController : ControllerBase
         return Ok(usage);
     }
 
-    /// <summary>Check access to a specific feature</summary>
     [HttpGet("access/{feature}")]
     public async Task<IActionResult> CheckAccess(string feature)
     {
@@ -52,7 +49,6 @@ public class SubscriptionController : ControllerBase
         return Ok(new { feature, hasAccess });
     }
 
-    /// <summary>Upgrade or downgrade plan (stub for future payment integration)</summary>
     [HttpPost("upgrade")]
     public async Task<IActionResult> Upgrade([FromBody] UpgradeRequestDto dto)
     {
@@ -67,7 +63,6 @@ public class SubscriptionController : ControllerBase
         }
     }
 
-    /// <summary>Get tier limits configuration (no auth needed for display)</summary>
     [HttpGet("plans")]
     [AllowAnonymous]
     public IActionResult GetPlans()

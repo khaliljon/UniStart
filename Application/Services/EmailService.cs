@@ -51,8 +51,6 @@ public class EmailService : IEmailService
     {
         var subject = "Восстановление пароля — UniStart";
         var body = GetPasswordResetTemplate(userName, code);
-        // The user is actively waiting for this code, so surface delivery failures
-        // instead of swallowing them (otherwise the UI falsely says "code sent").
         var sent = await SendEmailAsync(toEmail, subject, body);
         if (!sent)
             throw new EmailDeliveryException("Failed to send password reset code email");
@@ -115,14 +113,6 @@ public class EmailService : IEmailService
         await SendEmailAsync(adminEmail, subject, body);
     }
 
-    // ─── Core Send Method ─────────────────────────────────
-
-    /// <summary>
-    /// Sends an email. Returns <c>true</c> if the message was sent (or email is
-    /// intentionally disabled), <c>false</c> if delivery failed. Failures are logged
-    /// rather than thrown so fire-and-forget callers keep working; callers that need
-    /// to know about failures should inspect the return value.
-    /// </summary>
     private async Task<bool> SendEmailAsync(string toEmail, string subject, string htmlBody)
     {
         var emailSettings = _config.GetSection("EmailSettings");
@@ -163,9 +153,6 @@ public class EmailService : IEmailService
             }
             else
             {
-                // Enabled but no credentials configured — most public SMTP relays
-                // (e.g. Gmail) will reject the message. Warn loudly so the
-                // misconfiguration is visible in the logs.
                 _logger.LogWarning(
                     "EmailSettings:Enabled is true but Username/Password are empty. " +
                     "SMTP server {Host} will likely reject the message to {Email}.", host, toEmail);
@@ -184,7 +171,6 @@ public class EmailService : IEmailService
         }
     }
 
-    // ─── HTML Templates ───────────────────────────────────
 
     private string GetBaseUrl() =>
         _config["EmailSettings:ClientBaseUrl"]?.TrimEnd('/') ?? "https://unistart.kz";
@@ -497,7 +483,6 @@ public class EmailService : IEmailService
         }
     }
 
-    // ─── Helpers ──────────────────────────────────────────
 
     private static string GetDaysWord(int count)
     {

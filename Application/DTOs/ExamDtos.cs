@@ -1,6 +1,5 @@
 namespace UniStart.Application.DTOs;
 
-// Exam DTOs
 public record ExamTypeDto(
     string Code,
     string Name

@@ -29,7 +29,6 @@ public class RecommendationController : ControllerBase
         throw new UnauthorizedAccessException("Invalid user identity");
     }
 
-    /// <summary>Daily briefing: streak, recommendations, milestones, yesterday summary</summary>
     [HttpGet("daily")]
     public async Task<IActionResult> GetDailyBriefing([FromQuery] string? sectionIds)
     {
@@ -46,7 +45,6 @@ public class RecommendationController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>After-session recommendations based on errors and performance</summary>
     [HttpGet("after-session/{sessionId:int}")]
     public async Task<IActionResult> GetAfterSession(int sessionId)
     {
@@ -54,7 +52,6 @@ public class RecommendationController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>Current streak info</summary>
     [HttpGet("streak")]
     public async Task<IActionResult> GetStreak()
     {
@@ -62,7 +59,6 @@ public class RecommendationController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>All milestones for user</summary>
     [HttpGet("milestones")]
     public async Task<IActionResult> GetMilestones()
     {
@@ -70,7 +66,6 @@ public class RecommendationController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>Check and award new milestones</summary>
     [HttpPost("check-milestones")]
     public async Task<IActionResult> CheckMilestones()
     {

@@ -35,8 +35,6 @@ const DIFFICULTY_COLORS: Record<string, string> = {
   Hard: '#ef4444',
 };
 
-// Maps each exam to the skill codes it uses.
-// CSCA subject/skill structure is not finalized yet — filled once it is defined.
 const EXAM_SKILL_MAP: Record<string, string[]> = {
   CSCA: [],
 };
@@ -83,18 +81,15 @@ function AnalyticsPage() {
     return 'var(--error-color)';
   };
 
-  // Format skill name with exam type prefix
   const getSkillLabel = (skillName: string, _skillCode: string) => {
     const label = EXAM_LABELS[selectedExam];
     return label ? `${label} — ${skillName}` : skillName;
   };
 
-  // Filter skill profiles and history by selected exam
   const allowedSkillCodes = EXAM_SKILL_MAP[selectedExam] ?? [];
   const filteredProfiles = dashboard.skillProfiles.filter((s) => allowedSkillCodes.includes(s.skillCode));
   const filteredHistory = dashboard.skillHistory.filter((p) => allowedSkillCodes.includes(p.skillCode));
 
-  // Prepare line chart data — pivot skill history into { date, skill1, skill2, ... }
   const lineChartData = (() => {
     const byDate: Record<string, Record<string, number>> = {};
     filteredHistory.forEach((p) => {
@@ -108,26 +103,22 @@ function AnalyticsPage() {
 
   const uniqueSkills = [...new Set(filteredHistory.map((p) => getSkillLabel(p.skillName, p.skillCode)))];
 
-  // Radar chart data
   const radarData = filteredProfiles.map((s) => ({
     skill: getSkillLabel(s.skillName, s.skillCode),
     level: s.level,
     fullMark: 100,
   }));
 
-  // Difficulty bar chart
   const difficultyData = dashboard.difficultyBreakdown.map((d) => ({
     ...d,
     incorrectCount: d.totalAnswered - d.correctCount,
   }));
 
-  // Activity heatmap — last 12 weeks grid
   const activityWeeks = (() => {
     const weeks: { date: string; count: number; level: number }[][] = [];
     const today = new Date();
     const map = new Map(dashboard.activityHeatmap.map((a) => [new Date(a.date).toISOString().slice(0, 10), a.questionsAnswered]));
     
-    // Build 12 weeks × 7 days grid
     for (let w = 11; w >= 0; w--) {
       const week: { date: string; count: number; level: number }[] = [];
       for (let d = 0; d < 7; d++) {
@@ -154,7 +145,6 @@ function AnalyticsPage() {
         {t.progress.title}
       </h1>
 
-      {/* Stats Overview */}
       <div className="stats-grid">
         <div className="card stat-card animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
           <div className="stat-value">{dashboard.totalQuestionsAnswered}</div>
@@ -176,7 +166,6 @@ function AnalyticsPage() {
         </div>
       </div>
 
-      {/* Exam Filter Tabs */}
       <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '2rem' }}>
         {Object.keys(EXAM_LABELS).map((code) => (
           <button
@@ -190,10 +179,8 @@ function AnalyticsPage() {
         ))}
       </div>
 
-      {/* Pro-gated analytics charts */}
       <ProGate hasAccess={hasFullAnalytics} featureName={t.progress.skillProfile}>
       <>
-      {/* Skill Levels — Radar Chart (or Bar Chart for ≤2 skills) */}
       {radarData.length > 0 && (
         <div className="card card-static animate-fade-in-up" style={{ marginTop: '2rem', animationDelay: '0.5s' }}>
           <h2 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1rem' }}>
@@ -239,7 +226,6 @@ function AnalyticsPage() {
         </div>
       )}
 
-      {/* Skill Progress Over Time — Line Chart */}
       {lineChartData.length > 1 && (
         <div className="card card-static animate-fade-in-up" style={{ marginTop: '2rem', animationDelay: '0.6s' }}>
           <h2 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1rem' }}>
@@ -276,7 +262,6 @@ function AnalyticsPage() {
         </div>
       )}
 
-      {/* Difficulty Breakdown — Bar Chart */}
       {difficultyData.length > 0 && (
         <div className="card card-static animate-fade-in-up" style={{ marginTop: '2rem', animationDelay: '0.7s' }}>
           <h2 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1rem' }}>
@@ -311,7 +296,6 @@ function AnalyticsPage() {
         </div>
       )}
 
-      {/* Activity Heatmap */}
       <div className="card card-static animate-fade-in-up" style={{ marginTop: '2rem', animationDelay: '0.8s' }}>
         <h2 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1rem' }}>
           Activity (Last 12 Weeks)
@@ -346,7 +330,6 @@ function AnalyticsPage() {
       </>
       </ProGate>
 
-      {/* Skill Bars (detailed, with confidence intervals) */}
       <ProGate hasAccess={hasFullAnalytics} featureName={t.progress.skillLevels}>
       <div className="card card-static animate-fade-in-up" style={{ marginTop: '2rem', animationDelay: '0.9s' }}>
         <h2 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1.5rem' }}>
@@ -368,7 +351,6 @@ function AnalyticsPage() {
                 >
                   <span className="skill-name">{getSkillLabel(skill.skillName, skill.skillCode)}</span>
                   <div className="skill-bar" style={{ position: 'relative' }}>
-                    {/* Confidence interval band */}
                     {hasConfidence && (
                       <div
                         style={{
@@ -412,7 +394,6 @@ function AnalyticsPage() {
       </div>
       </ProGate>
 
-      {/* Legend */}
       <div className="card" style={{ marginTop: '2rem' }}>
         <h2 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1rem' }}>
           {t.progress.understanding}

@@ -5,9 +5,6 @@ using UniStart.Infrastructure.Data;
 
 namespace UniStart.Application.Services;
 
-/// <summary>
-/// Background job: sends weekly digest emails every Monday at ~8:00 UTC.
-/// </summary>
 public class WeeklyDigestBackgroundService : BackgroundService
 {
     private readonly IServiceScopeFactory _scopeFactory;
@@ -32,7 +29,6 @@ public class WeeklyDigestBackgroundService : BackgroundService
             try
             {
                 var now = DateTime.UtcNow;
-                // Send on Mondays between 8:00-9:00 UTC
                 if (now.DayOfWeek == DayOfWeek.Monday && now.Hour is >= 8 and < 9)
                 {
                     await ProcessWeeklyDigestsAsync(stoppingToken);
@@ -56,7 +52,6 @@ public class WeeklyDigestBackgroundService : BackgroundService
         var oneWeekAgo = DateTime.UtcNow.AddDays(-7);
         var oneDayAgo = DateTime.UtcNow.AddDays(-1);
 
-        // Get users with weekly digest enabled who haven't received one in the last day
         var users = await context.Users
             .Include(u => u.NotificationPreferences)
             .Where(u => u.NotificationPreferences != null
@@ -69,7 +64,6 @@ public class WeeklyDigestBackgroundService : BackgroundService
 
         foreach (var user in users)
         {
-            // Get weekly answers
             var weeklyAnswers = await context.UserAnswers
                 .Include(a => a.AnswerOption)
                 .Include(a => a.Question)
@@ -84,7 +78,6 @@ public class WeeklyDigestBackgroundService : BackgroundService
             var correctAnswers = weeklyAnswers.Count(a => a.AnswerOption.IsCorrect);
             var accuracy = totalQuestions > 0 ? (double)correctAnswers / totalQuestions * 100 : 0;
 
-            // Calculate streak
             var streak = 0;
             var checkDate = DateTime.UtcNow.Date.AddDays(-1);
             while (true)
@@ -98,7 +91,6 @@ public class WeeklyDigestBackgroundService : BackgroundService
                 checkDate = checkDate.AddDays(-1);
             }
 
-            // Get exam type — find the most used one
             var examTypeCode = await context.UserAnswers
                 .Include(a => a.Question).ThenInclude(q => q.Topic).ThenInclude(t => t.Section)
                 .Where(a => a.UserId == user.Id && a.AnsweredAt > oneWeekAgo && a.TimeSpentSeconds != -1
@@ -111,7 +103,6 @@ public class WeeklyDigestBackgroundService : BackgroundService
 
             var examType = await context.ExamTypes.FindAsync(new object[] { examTypeCode }, ct);
 
-            // Topic progress
             var topProgress = weeklyAnswers
                 .Where(a => a.Question?.Topic != null)
                 .GroupBy(a => a.Question.Topic.Name)
@@ -126,19 +117,16 @@ public class WeeklyDigestBackgroundService : BackgroundService
                 .Take(5)
                 .ToList();
 
-            // Simple predicted score (use skill profiles)
             var predictedScore = 0;
             var maxScore = 1600;
             try
             {
-                // Get sections for the exam and their score ranges
                 var sections = await context.ExamSections
                     .Where(s => s.ExamTypeCode == examTypeCode)
                     .ToListAsync(ct);
                 maxScore = sections.Sum(s => s.MaxScore);
                 var minScore = sections.Sum(s => s.MinScore);
 
-                // Get user section ability profiles for this exam's sections
                 var sectionIds = sections.Select(s => s.Id).ToList();
                 var profiles = await context.UserSkillProfiles
                     .Where(p => p.UserId == user.Id && sectionIds.Contains(p.SectionId))
@@ -151,7 +139,7 @@ public class WeeklyDigestBackgroundService : BackgroundService
                     predictedScore = (int)(minScore + probability * (maxScore - minScore));
                 }
             }
-            catch { /* fallback to 0 */ }
+            catch {}
 
             var recommendations = new List<string>();
             if (accuracy < 50)

@@ -41,7 +41,6 @@ function CscaMocksPage() {
       <CscaPageHero eyebrow={s.navMocks} title={s.mocksTitle} lead={s.mocksLead} />
 
       <section className="csca-wrap csca-section" style={{ paddingTop: '1.5rem' }}>
-        {/* Free mock banner */}
         <div className="csca-card" style={{ display: 'flex', gap: '1.25rem', alignItems: 'center', flexWrap: 'wrap', marginBottom: '1.75rem', background: 'linear-gradient(135deg, rgba(200,16,46,0.06), rgba(201,162,75,0.08))' }}>
           <SealStamp text="免费" size={64} />
           <div style={{ flex: 1, minWidth: 240 }}>
@@ -59,7 +58,6 @@ function CscaMocksPage() {
           </div>
         ) : (
         <>
-        {/* Individual mocks per subject */}
         {catalog.templates.length > 0 && (
           <>
             <h3 className="csca-h3" style={{ fontSize: '1.15rem', margin: '0 0 1rem' }}>{s.singleMocksTitle}</h3>

@@ -23,7 +23,6 @@ function AdminSalesPage() {
       .then(setData)
       .catch(() => setData({ count: 0, totalRevenue: 0, currency: 'KZT', items: [], totalNet: 0 }))
       .finally(() => setLoading(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, itemType, from, to]);
 
   const exportCsv = async () => {
@@ -35,7 +34,7 @@ function AdminSalesPage() {
       a.download = `sales-${new Date().toISOString().slice(0, 10)}.csv`;
       a.click();
       URL.revokeObjectURL(url);
-    } catch { /* ignore */ }
+    } catch {}
   };
 
   const fmt = (iso: string) =>

@@ -60,7 +60,7 @@ function DiagnosticTestPage() {
   };
 
   const handleSelectOption = (optionId: number) => {
-    if (answerResult) return; // already answered
+    if (answerResult) return;
     setSelectedOption(optionId);
   };
 
@@ -79,7 +79,6 @@ function DiagnosticTestPage() {
       setPhase('feedback');
 
       if (result.isCompleted) {
-        // Auto-load results after a brief delay
         setTimeout(async () => {
           const res = await diagnosticService.getResults(session.sessionId);
           setResults(res);
@@ -105,7 +104,6 @@ function DiagnosticTestPage() {
         questionStartRef.current = Date.now();
         setPhase('testing');
       } else {
-        // all done
         const res = await diagnosticService.getResults(session.sessionId);
         setResults(res);
         setPhase('results');
@@ -117,7 +115,6 @@ function DiagnosticTestPage() {
     }
   };
 
-  // Redirect if no exam type specified
   useEffect(() => {
     if (!examTypeCode) {
       navigate('/', { replace: true });
@@ -137,7 +134,6 @@ function DiagnosticTestPage() {
         margin: '0 auto',
       }}>
 
-        {/* ─── Intro ─── */}
         {phase === 'intro' && (
           <div style={{
             background: 'var(--card-bg, #fff)',
@@ -239,10 +235,8 @@ function DiagnosticTestPage() {
           </div>
         )}
 
-        {/* ─── Testing / Feedback ─── */}
         {(phase === 'testing' || phase === 'feedback') && question && (
           <div>
-            {/* Progress bar */}
             <div style={{ marginBottom: '1.5rem' }}>
               <div style={{
                 display: 'flex',
@@ -288,7 +282,6 @@ function DiagnosticTestPage() {
               </div>
             </div>
 
-            {/* Question card */}
             <div style={{
               background: 'var(--card-bg, #fff)',
               borderRadius: '1rem',
@@ -308,7 +301,6 @@ function DiagnosticTestPage() {
                 {question.text}
               </h2>
 
-              {/* Options */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 {question.options.map((opt, i) => {
                   const letter = String.fromCharCode(65 + i);
@@ -368,7 +360,6 @@ function DiagnosticTestPage() {
                 })}
               </div>
 
-              {/* Feedback */}
               {answerResult && (
                 <div style={{
                   marginTop: '1.5rem',
@@ -398,7 +389,6 @@ function DiagnosticTestPage() {
                 </div>
               )}
 
-              {/* Actions */}
               <div style={{ marginTop: '1.5rem' }}>
                 {!answerResult ? (
                   <button
@@ -443,10 +433,8 @@ function DiagnosticTestPage() {
           </div>
         )}
 
-        {/* ─── Results ─── */}
         {phase === 'results' && results && (
           <div>
-            {/* Header */}
             <div style={{
               background: 'linear-gradient(135deg, #667eea, #764ba2)',
               borderRadius: '1.5rem',
@@ -476,7 +464,6 @@ function DiagnosticTestPage() {
               </div>
             </div>
 
-            {/* Score breakdown */}
             <div style={{
               display: 'grid',
               gridTemplateColumns: '1fr 1fr 1fr',
@@ -505,7 +492,6 @@ function DiagnosticTestPage() {
               ))}
             </div>
 
-            {/* Section results */}
             {results.sectionResults.length > 1 && (
               <div style={{
                 background: 'var(--card-bg, #fff)',
@@ -551,7 +537,6 @@ function DiagnosticTestPage() {
               </div>
             )}
 
-            {/* Answer review toggle */}
             <div style={{
               background: 'var(--card-bg, #fff)',
               borderRadius: '1rem',
@@ -637,7 +622,6 @@ function DiagnosticTestPage() {
               )}
             </div>
 
-            {/* CTA buttons */}
             <div style={{ display: 'flex', gap: '1rem' }}>
               <button
                 onClick={() => navigate('/study-plan')}
@@ -667,7 +651,6 @@ function DiagnosticTestPage() {
           </div>
         )}
 
-        {/* Global error */}
         {error && phase !== 'intro' && (
           <div style={{
             background: 'var(--error-bg)',

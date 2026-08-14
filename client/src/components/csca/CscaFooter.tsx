@@ -3,7 +3,6 @@ import { useTranslation } from '../../i18n';
 import { cscaStrings } from '../../i18n/csca';
 import { SOCIAL_LINKS } from '../../socialLinks';
 
-/** Public footer for the CSCA marketing pages. */
 export default function CscaFooter() {
   const navigate = useNavigate();
   const { locale } = useTranslation();

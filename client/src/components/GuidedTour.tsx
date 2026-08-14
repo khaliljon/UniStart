@@ -30,7 +30,6 @@ export default function GuidedTour() {
   useEffect(() => {
     const completed = localStorage.getItem(STORAGE_KEY);
     if (!completed) {
-      // Small delay to let the page render
       const timer = setTimeout(() => setVisible(true), 800);
       return () => clearTimeout(timer);
     }
@@ -73,8 +72,6 @@ export default function GuidedTour() {
         left = rect.left - tooltipW - 16;
         break;
     }
-
-    // Clamp within viewport
     left = Math.max(12, Math.min(left, window.innerWidth - tooltipW - 12));
     top = Math.max(12, top);
 
@@ -117,7 +114,6 @@ export default function GuidedTour() {
 
   return (
     <>
-      {/* Overlay with cutout */}
       <div
         style={{
           position: 'fixed',
@@ -151,7 +147,6 @@ export default function GuidedTour() {
         </svg>
       </div>
 
-      {/* Highlight ring */}
       <div
         style={{
           position: 'fixed',
@@ -168,7 +163,6 @@ export default function GuidedTour() {
         }}
       />
 
-      {/* Tooltip */}
       <div
         style={{
           position: 'fixed',
@@ -245,7 +239,6 @@ export default function GuidedTour() {
           </div>
         </div>
 
-        {/* Progress dots */}
         <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginTop: 12 }}>
           {TOUR_STEPS.map((_, i) => (
             <div

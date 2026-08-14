@@ -60,7 +60,6 @@ function RecommendationsPage() {
         Персональные советы на основе вашего прогресса
       </p>
 
-      {/* ─── Streak Card ──────────────────────────────── */}
       {streak && (
         <div
           className="card animate-slide-up"
@@ -114,7 +113,6 @@ function RecommendationsPage() {
         </div>
       )}
 
-      {/* ─── Yesterday Summary ────────────────────────── */}
       {briefing?.yesterdaySummary && (
         <div className="card animate-slide-up" style={{ padding: '1.25rem', marginBottom: '1.5rem' }}>
           <h3 style={{ marginBottom: '1rem', fontSize: '1rem' }}>Вчерашний итог</h3>
@@ -128,7 +126,6 @@ function RecommendationsPage() {
         </div>
       )}
 
-      {/* ─── Tabs ─────────────────────────────────────── */}
       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
         <button
           className={`btn ${activeTab === 'daily' ? 'btn-primary' : 'btn-secondary'}`}
@@ -144,7 +141,6 @@ function RecommendationsPage() {
         </button>
       </div>
 
-      {/* ─── Tab: Daily Recommendations ───────────────── */}
       {activeTab === 'daily' && (
         <div className="animate-fade-in">
           {(!briefing?.recommendations || briefing.recommendations.length === 0) ? (
@@ -162,7 +158,6 @@ function RecommendationsPage() {
         </div>
       )}
 
-      {/* ─── Tab: Milestones ──────────────────────────── */}
       {activeTab === 'milestones' && (
         <div className="animate-fade-in">
           {allMilestones.length === 0 ? (
@@ -184,7 +179,6 @@ function RecommendationsPage() {
         </div>
       )}
 
-      {/* ─── Recent Milestones (new) ──────────────────── */}
       {briefing?.recentMilestones && briefing.recentMilestones.filter(m => m.isNew).length > 0 && (
         <div
           className="card animate-slide-up"
@@ -217,9 +211,6 @@ function RecommendationsPage() {
   );
 }
 
-// ═══════════════════════════════════════════════════════
-//  Sub-components
-// ═══════════════════════════════════════════════════════
 
 function StatBox({ label, value }: { label: string; value: string | number }) {
   return (

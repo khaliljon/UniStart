@@ -135,7 +135,6 @@ function HistoryPage() {
                 </div>
               </button>
 
-              {/* Session Detail Expansion */}
               {selectedSession?.id === session.id && !isDetailLoading && (
                 <div className="card animate-fade-in" style={{ marginTop: '0.5rem', borderLeft: '3px solid var(--primary-color)' }}>
                   <h3 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '1rem' }}>
@@ -207,7 +206,6 @@ function HistoryPage() {
             </div>
           ))}
 
-          {/* Pagination */}
           <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginTop: '1rem' }}>
             <button
               className="btn btn-secondary"

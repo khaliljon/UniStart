@@ -33,7 +33,6 @@ public class UniStartDbContext : DbContext
     public DbSet<NotificationPreferences> NotificationPreferences => Set<NotificationPreferences>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
-    // Learning v2 entities
     public DbSet<LessonStep> LessonSteps => Set<LessonStep>();
     public DbSet<UserLessonProgress> UserLessonProgress => Set<UserLessonProgress>();
     public DbSet<FormulaCard> FormulaCards => Set<FormulaCard>();
@@ -47,39 +46,30 @@ public class UniStartDbContext : DbContext
     public DbSet<UserGuideProgress> UserGuideProgress => Set<UserGuideProgress>();
     public DbSet<UserMistakeNote> UserMistakeNotes => Set<UserMistakeNote>();
 
-    // Question Import entities
     public DbSet<QuestionImportJob> QuestionImportJobs => Set<QuestionImportJob>();
     public DbSet<ImportedQuestionDraft> ImportedQuestionDrafts => Set<ImportedQuestionDraft>();
     public DbSet<ImportJobFile> ImportJobFiles => Set<ImportJobFile>();
 
     public DbSet<TsaClassification> TsaClassifications => Set<TsaClassification>();
 
-    // Referral program (Sprint 8)
     public DbSet<ReferralCode> ReferralCodes => Set<ReferralCode>();
     public DbSet<ReferralUsage> ReferralUsages => Set<ReferralUsage>();
     public DbSet<ReferralReward> ReferralRewards => Set<ReferralReward>();
 
-    // Editable legal documents (privacy / terms / referral)
     public DbSet<LegalDocument> LegalDocuments => Set<LegalDocument>();
 
-    // CSCA news / information articles
     public DbSet<NewsArticle> NewsArticles => Set<NewsArticle>();
 
-    // User order history (mock packages / books / courses)
     public DbSet<Purchase> Purchases => Set<Purchase>();
     public DbSet<ExamSitting> ExamSittings => Set<ExamSitting>();
 
-    // PDF study materials (textbooks per subject)
     public DbSet<StudyMaterial> StudyMaterials => Set<StudyMaterial>();
 
-    // Telegram support bot tickets
     public DbSet<SupportTicket> SupportTickets => Set<SupportTicket>();
     public DbSet<SupportMessage> SupportMessages => Set<SupportMessage>();
 
-    // Admin-editable key/value settings (pricing, etc.)
     public DbSet<AppSetting> AppSettings => Set<AppSetting>();
 
-    // Run-based mock monetization
     public DbSet<MockPriceTier> MockPriceTiers => Set<MockPriceTier>();
     public DbSet<MockPackage> MockPackages => Set<MockPackage>();
     public DbSet<UserMockRuns> UserMockRuns => Set<UserMockRuns>();
@@ -89,7 +79,6 @@ public class UniStartDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        // User configuration
         modelBuilder.Entity<User>(entity =>
         {
             entity.ToTable("Users");
@@ -100,17 +89,13 @@ public class UniStartDbContext : DbContext
             entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
             entity.Property(e => e.PasswordHash).IsRequired();
             entity.HasIndex(e => e.Email).IsUnique();
-            // Soft delete (OP-9)
             entity.HasQueryFilter(e => !e.IsDeleted);
             entity.Property(e => e.IsDeleted).HasDefaultValue(false);
-            // Block / Suspend (OP-14)
             entity.Property(e => e.IsBlocked).HasDefaultValue(false);
             entity.Property(e => e.BlockReason).HasMaxLength(500);
-            // Free mock exam tracking (FIX-37)
             entity.Property(e => e.FreeMockUsed).HasDefaultValue(false);
         });
 
-        // ExamType configuration
         modelBuilder.Entity<ExamType>(entity =>
         {
             entity.ToTable("ExamTypes");
@@ -119,7 +104,6 @@ public class UniStartDbContext : DbContext
             entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
         });
 
-        // ExamSection configuration
         modelBuilder.Entity<ExamSection>(entity =>
         {
             entity.ToTable("ExamSections");
@@ -131,7 +115,6 @@ public class UniStartDbContext : DbContext
                   .OnDelete(DeleteBehavior.Cascade);
         });
 
-        // Topic configuration
         modelBuilder.Entity<Topic>(entity =>
         {
             entity.ToTable("Topics");
@@ -144,7 +127,6 @@ public class UniStartDbContext : DbContext
                   .OnDelete(DeleteBehavior.Cascade);
         });
 
-        // Question configuration
         modelBuilder.Entity<Question>(entity =>
         {
             entity.ToTable("Questions");
@@ -161,11 +143,9 @@ public class UniStartDbContext : DbContext
                   .HasForeignKey(e => e.TopicId)
                   .OnDelete(DeleteBehavior.Cascade);
 
-            // Soft delete (OP-9)
             entity.HasQueryFilter(e => !e.IsDeleted);
             entity.Property(e => e.IsDeleted).HasDefaultValue(false);
 
-            // Tutor content (Sprint 7 Этап 2)
             entity.Property(e => e.IsPrivate).HasDefaultValue(false);
             entity.HasOne(e => e.CreatedByTutor)
                   .WithMany()
@@ -175,11 +155,9 @@ public class UniStartDbContext : DbContext
 
             entity.Property(e => e.ImageUrl).HasMaxLength(1000);
 
-            // Performance index (OP-8)
             entity.HasIndex(e => e.TopicId).HasDatabaseName("IX_Questions_TopicId");
         });
 
-        // AnswerOption configuration
         modelBuilder.Entity<AnswerOption>(entity =>
         {
             entity.ToTable("AnswerOptions");
@@ -191,7 +169,6 @@ public class UniStartDbContext : DbContext
                   .OnDelete(DeleteBehavior.Cascade);
         });
 
-        // TsaClassification configuration (per-question unit cache)
         modelBuilder.Entity<TsaClassification>(entity =>
         {
             entity.ToTable("TsaClassifications");
@@ -204,7 +181,6 @@ public class UniStartDbContext : DbContext
             entity.HasIndex(e => e.QuestionHash).IsUnique().HasDatabaseName("IX_TsaClassifications_QuestionHash");
         });
 
-        // UserAnswer configuration
         modelBuilder.Entity<UserAnswer>(entity =>
         {
             entity.ToTable("UserAnswers");
@@ -226,12 +202,10 @@ public class UniStartDbContext : DbContext
                   .HasForeignKey(e => e.TestSessionId)
                   .OnDelete(DeleteBehavior.SetNull);
 
-            // Performance indexes (OP-8)
             entity.HasIndex(e => new { e.UserId, e.AnsweredAt }).HasDatabaseName("IX_UserAnswers_UserId_AnsweredAt");
             entity.HasIndex(e => new { e.UserId, e.QuestionId, e.TestSessionId }).HasDatabaseName("IX_UserAnswers_UserId_QuestionId_SessionId");
         });
 
-        // TestSession configuration
         modelBuilder.Entity<TestSession>(entity =>
         {
             entity.ToTable("TestSessions");
@@ -243,7 +217,6 @@ public class UniStartDbContext : DbContext
                   .HasForeignKey(e => e.UserId)
                   .OnDelete(DeleteBehavior.Cascade);
 
-            // Performance index (OP-8)
             entity.HasIndex(e => new { e.UserId, e.StartedAt }).HasDatabaseName("IX_TestSessions_UserId_StartedAt");
             entity.HasOne(e => e.ExamType)
                   .WithMany()
@@ -251,7 +224,6 @@ public class UniStartDbContext : DbContext
                   .OnDelete(DeleteBehavior.Restrict);
         });
 
-        // UserSkillProfile configuration (composite key: user + exam section)
         modelBuilder.Entity<UserSkillProfile>(entity =>
         {
             entity.ToTable("UserSkillProfiles");
@@ -268,7 +240,6 @@ public class UniStartDbContext : DbContext
                   .OnDelete(DeleteBehavior.Cascade);
         });
 
-        // TopicDependency configuration (composite key)
         modelBuilder.Entity<TopicDependency>(entity =>
         {
             entity.ToTable("TopicDependencies");
@@ -284,7 +255,6 @@ public class UniStartDbContext : DbContext
                   .OnDelete(DeleteBehavior.Restrict);
         });
 
-        // ─── Study Goal ─────────────────────────────────────────
         modelBuilder.Entity<StudyGoal>(entity =>
         {
             entity.HasKey(e => e.Id);
@@ -300,7 +270,6 @@ public class UniStartDbContext : DbContext
             entity.Property(e => e.SelectedSectionIds).HasMaxLength(200);
         });
 
-        // ─── Study Plan ─────────────────────────────────────────
         modelBuilder.Entity<StudyPlan>(entity =>
         {
             entity.HasKey(e => e.Id);
@@ -315,7 +284,6 @@ public class UniStartDbContext : DbContext
             entity.Property(e => e.IsActive).HasDefaultValue(true);
         });
 
-        // ─── Study Plan Entry ───────────────────────────────────
         modelBuilder.Entity<StudyPlanEntry>(entity =>
         {
             entity.HasKey(e => e.Id);
@@ -332,7 +300,6 @@ public class UniStartDbContext : DbContext
                   .HasMaxLength(20);
             entity.Property(e => e.IsCompleted).HasDefaultValue(false);
 
-            // Performance index (OP-8)
             entity.HasIndex(e => new { e.PlanId, e.Date }).HasDatabaseName("IX_StudyPlanEntries_PlanId_Date");
         });
 
@@ -350,7 +317,6 @@ public class UniStartDbContext : DbContext
             entity.HasIndex(e => new { e.UserId, e.Code }).IsUnique();
         });
 
-        // ─── Topic Lesson ───────────────────────────────────
         modelBuilder.Entity<TopicLesson>(entity =>
         {
             entity.ToTable("TopicLessons");
@@ -365,7 +331,6 @@ public class UniStartDbContext : DbContext
                   .OnDelete(DeleteBehavior.Cascade);
         });
 
-        // ─── Reading Passage ───────────────────────────────
         modelBuilder.Entity<ReadingPassage>(entity =>
         {
             entity.ToTable("ReadingPassages");
@@ -379,14 +344,12 @@ public class UniStartDbContext : DbContext
                   .OnDelete(DeleteBehavior.Cascade);
         });
 
-        // Question → ReadingPassage (optional)
         modelBuilder.Entity<Question>()
             .HasOne(e => e.ReadingPassage)
             .WithMany(p => p.Questions)
             .HasForeignKey(e => e.ReadingPassageId)
             .OnDelete(DeleteBehavior.SetNull);
 
-        // ─── Mock Exam ──────────────────────────────────────
         modelBuilder.Entity<MockExam>(entity =>
         {
             entity.ToTable("MockExams");
@@ -400,7 +363,6 @@ public class UniStartDbContext : DbContext
                   .OnDelete(DeleteBehavior.Restrict);
         });
 
-        // ─── Mock Exam Section ──────────────────────────────
         modelBuilder.Entity<MockExamSection>(entity =>
         {
             entity.ToTable("MockExamSections");
@@ -417,7 +379,6 @@ public class UniStartDbContext : DbContext
                   .OnDelete(DeleteBehavior.SetNull);
         });
 
-        // ─── Mock Exam Attempt ──────────────────────────────
         modelBuilder.Entity<MockExamAttempt>(entity =>
         {
             entity.ToTable("MockExamAttempts");
@@ -432,11 +393,9 @@ public class UniStartDbContext : DbContext
                   .HasForeignKey(e => e.MockExamId)
                   .OnDelete(DeleteBehavior.Cascade);
 
-            // Performance index (OP-8)
             entity.HasIndex(e => new { e.UserId, e.Status }).HasDatabaseName("IX_MockExamAttempts_UserId_Status");
         });
 
-        // ─── Mock Exam Answer ───────────────────────────────
         modelBuilder.Entity<MockExamAnswer>(entity =>
         {
             entity.ToTable("MockExamAnswers");
@@ -455,7 +414,6 @@ public class UniStartDbContext : DbContext
                   .OnDelete(DeleteBehavior.SetNull);
         });
 
-        // ─── Notification Preferences ───────────────────────
         modelBuilder.Entity<MockExamAnswerOption>(entity =>
         {
             entity.ToTable("MockExamAnswerOptions");
@@ -480,7 +438,6 @@ public class UniStartDbContext : DbContext
             entity.HasIndex(e => e.UserId).IsUnique();
         });
 
-        // ─── Audit Log (OP-7) ────────────────────────────
         modelBuilder.Entity<AuditLog>(entity =>
         {
             entity.ToTable("AuditLogs");
@@ -501,7 +458,6 @@ public class UniStartDbContext : DbContext
             entity.HasIndex(e => e.UserId).HasDatabaseName("IX_AuditLogs_UserId");
         });
 
-        // ─── Lesson Step (TH-1) ────────────────────────────
         modelBuilder.Entity<LessonStep>(entity =>
         {
             entity.ToTable("LessonSteps");
@@ -520,7 +476,6 @@ public class UniStartDbContext : DbContext
                   .OnDelete(DeleteBehavior.SetNull);
         });
 
-        // ─── User Lesson Progress (TH-1) ───────────────────
         modelBuilder.Entity<UserLessonProgress>(entity =>
         {
             entity.ToTable("UserLessonProgress");
@@ -538,7 +493,6 @@ public class UniStartDbContext : DbContext
                   .HasDatabaseName("IX_UserLessonProgress_User_Step");
         });
 
-        // ─── Formula Card (TH-2) ───────────────────────────
         modelBuilder.Entity<FormulaCard>(entity =>
         {
             entity.ToTable("FormulaCards");
@@ -553,7 +507,6 @@ public class UniStartDbContext : DbContext
                   .OnDelete(DeleteBehavior.Cascade);
         });
 
-        // ─── User Formula Bookmark (TH-2) ──────────────────
         modelBuilder.Entity<UserFormulaBookmark>(entity =>
         {
             entity.ToTable("UserFormulaBookmarks");
@@ -571,7 +524,6 @@ public class UniStartDbContext : DbContext
                   .HasDatabaseName("IX_UserFormulaBookmarks_User_Formula");
         });
 
-        // ─── Flashcard Deck (TH-3) ─────────────────────────
         modelBuilder.Entity<FlashcardDeck>(entity =>
         {
             entity.ToTable("FlashcardDecks");
@@ -593,7 +545,6 @@ public class UniStartDbContext : DbContext
                   .OnDelete(DeleteBehavior.SetNull);
         });
 
-        // ─── Flashcard (TH-3) ──────────────────────────────
         modelBuilder.Entity<Flashcard>(entity =>
         {
             entity.ToTable("Flashcards");
@@ -607,7 +558,6 @@ public class UniStartDbContext : DbContext
                   .OnDelete(DeleteBehavior.Cascade);
         });
 
-        // ─── User Flashcard Progress (TH-3, SM-2) ──────────
         modelBuilder.Entity<UserFlashcardProgress>(entity =>
         {
             entity.ToTable("UserFlashcardProgress");
@@ -629,7 +579,6 @@ public class UniStartDbContext : DbContext
                   .HasDatabaseName("IX_UserFlashcardProgress_User_NextReview");
         });
 
-        // ─── Timed Drill Result (TH-4) ─────────────────────
         modelBuilder.Entity<TimedDrillResult>(entity =>
         {
             entity.ToTable("TimedDrillResults");
@@ -651,7 +600,6 @@ public class UniStartDbContext : DbContext
                   .HasDatabaseName("IX_TimedDrillResults_User_Type");
         });
 
-        // ─── Drill Template ────────────────────────────────
         modelBuilder.Entity<DrillTemplate>(entity =>
         {
             entity.ToTable("DrillTemplates");
@@ -669,7 +617,6 @@ public class UniStartDbContext : DbContext
                   .OnDelete(DeleteBehavior.SetNull);
         });
 
-        // ─── Strategy Guide (TH-5) ─────────────────────────
         modelBuilder.Entity<StrategyGuide>(entity =>
         {
             entity.ToTable("StrategyGuides");
@@ -686,7 +633,6 @@ public class UniStartDbContext : DbContext
                   .OnDelete(DeleteBehavior.Cascade);
         });
 
-        // ─── User Guide Progress (TH-5) ────────────────────
         modelBuilder.Entity<UserGuideProgress>(entity =>
         {
             entity.ToTable("UserGuideProgress");
@@ -704,7 +650,6 @@ public class UniStartDbContext : DbContext
                   .HasDatabaseName("IX_UserGuideProgress_User_Guide");
         });
 
-        // ─── User Mistake Note (TH-6) ──────────────────────
         modelBuilder.Entity<UserMistakeNote>(entity =>
         {
             entity.ToTable("UserMistakeNotes");
@@ -724,7 +669,6 @@ public class UniStartDbContext : DbContext
                   .HasDatabaseName("IX_UserMistakeNotes_User_Answer");
         });
 
-        // ─── Question Import ───────────────────────────────────────────
         modelBuilder.Entity<QuestionImportJob>(entity =>
         {
             entity.HasKey(e => e.Id);
@@ -771,23 +715,6 @@ public class UniStartDbContext : DbContext
                   .HasDatabaseName("IX_ImportedQuestionDrafts_Job_Status");
         });
 
-        // ═══════════════════════════════════════════════════════
-        //  ASSIGNMENT (Sprint 7 Этап 3)
-        // ═══════════════════════════════════════════════════════
-
-
-
-
-
-        // ═══════════════════════════════════════════════════════
-        //  TUTOR INVITE CODES (S-6)
-        // ═══════════════════════════════════════════════════════
-
-
-
-        // ═══════════════════════════════════════════════════════
-        //  REFERRAL PROGRAM (Sprint 8)
-        // ═══════════════════════════════════════════════════════
 
         modelBuilder.Entity<ReferralCode>(entity =>
         {
@@ -851,9 +778,6 @@ public class UniStartDbContext : DbContext
                   .OnDelete(DeleteBehavior.SetNull);
         });
 
-        // ═══════════════════════════════════════════════════════
-        //  LEGAL DOCUMENTS (editable from admin panel)
-        // ═══════════════════════════════════════════════════════
         modelBuilder.Entity<LegalDocument>(entity =>
         {
             entity.ToTable("LegalDocuments");
@@ -932,7 +856,6 @@ public class UniStartDbContext : DbContext
             entity.HasIndex(e => e.GroupMessageId).HasDatabaseName("IX_SupportMessages_GroupMessageId");
         });
 
-        // StudyMaterial configuration
         modelBuilder.Entity<StudyMaterial>(entity =>
         {
             entity.ToTable("StudyMaterials");
@@ -946,7 +869,6 @@ public class UniStartDbContext : DbContext
             entity.HasIndex(e => e.SubjectKey);
         });
 
-        // AppSetting configuration (key/value)
         modelBuilder.Entity<AppSetting>(entity =>
         {
             entity.ToTable("AppSettings");
@@ -956,7 +878,6 @@ public class UniStartDbContext : DbContext
             entity.HasIndex(e => e.Key).IsUnique();
         });
 
-        // Run-based mock monetization configuration
         modelBuilder.Entity<MockPriceTier>(entity =>
         {
             entity.ToTable("MockPriceTiers");
@@ -1013,14 +934,6 @@ public class UniStartDbContext : DbContext
             entity.HasIndex(e => new { e.UserId, e.ItemType, e.ItemCode }).IsUnique();
         });
 
-        // CSCA-only platform: exam types are managed at runtime (seeder / admin),
-        // no longer seeded via HasData. Legacy SAT/NUET seed rows are removed by the
-        // RemoveNonCscaSeedExamTypes migration.
-    }
-
-    // ═══════════════════════════════════════════════════════
-    //  AUTO-FILL AUDIT COLUMNS (OP-16)
-    // ═══════════════════════════════════════════════════════
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
@@ -1034,7 +947,6 @@ public class UniStartDbContext : DbContext
             if (entry.State == EntityState.Modified)
             {
                 entry.Entity.UpdatedAt = DateTime.UtcNow;
-                // Prevent overwriting CreatedAt on updates
                 entry.Property(nameof(IAuditable.CreatedAt)).IsModified = false;
             }
         }

@@ -79,7 +79,7 @@ public class FormulaService : IFormulaService
         {
             _context.UserFormulaBookmarks.Remove(existing);
             await _context.SaveChangesAsync();
-            return false; // removed
+            return false;
         }
 
         _context.UserFormulaBookmarks.Add(new Domain.Entities.UserFormulaBookmark
@@ -88,6 +88,6 @@ public class FormulaService : IFormulaService
             FormulaCardId = formulaCardId
         });
         await _context.SaveChangesAsync();
-        return true; // added
+        return true;
     }
 }

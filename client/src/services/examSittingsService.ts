@@ -2,23 +2,21 @@ import api from './api';
 
 export interface ExamSitting {
   id: number;
-  date: string;        // "YYYY-MM-DD"
+  date: string;
   isActive: boolean;
   sortOrder: number;
 }
 
 export interface SaveExamSitting {
-  date: string;        // "YYYY-MM-DD"
+  date: string;
   isActive: boolean;
   sortOrder: number;
 }
 
 export const examSittingsService = {
-  /** Public: active sittings for landing / about pages. */
   list: (): Promise<ExamSitting[]> =>
     api.get<ExamSitting[]>('/exam-sittings').then((r) => r.data),
 
-  // ── Admin ──────────────────────────────────────────────
   adminList: (): Promise<ExamSitting[]> =>
     api.get<ExamSitting[]>('/exam-sittings/admin/all').then((r) => r.data),
 

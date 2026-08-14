@@ -6,10 +6,6 @@ using UniStart.Application.Interfaces;
 
 namespace UniStart.Application.Services;
 
-/// <summary>
-/// Fetches the USD→KZT exchange rate from a free no-key API (open.er-api.com),
-/// caches it for 12h, and falls back to the configured rate when the API is down.
-/// </summary>
 public class ExchangeRateService : IExchangeRateService
 {
     private const string CacheKey = "fx:usd_kzt";
@@ -41,7 +37,6 @@ public class ExchangeRateService : IExchangeRateService
             return fetched.Value;
         }
 
-        // Cache the fallback briefly so a downed API isn't hit on every request.
         _cache.Set(CacheKey, fallback, TimeSpan.FromMinutes(30));
         return fallback;
     }
@@ -54,7 +49,6 @@ public class ExchangeRateService : IExchangeRateService
             _cache.Set(CacheKey, fetched.Value, TimeSpan.FromHours(24));
             _logger.LogInformation("Refreshed USD/KZT rate: {Rate}", fetched.Value);
         }
-        // On failure keep whatever is cached; GetUsdToKztAsync handles fallback.
     }
 
     private async Task<decimal?> FetchAsync(CancellationToken ct)

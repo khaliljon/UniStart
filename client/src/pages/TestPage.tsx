@@ -26,7 +26,6 @@ function TestPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { selectedExams, selectedSectionIds } = useAppSelector((state) => state.exam);
 
-  // Read plan-related params from URL
   const topicIdParam = searchParams.get('topicId');
   const planEntryIdParam = searchParams.get('planEntryId');
   const topicId = topicIdParam ? parseInt(topicIdParam, 10) : undefined;
@@ -55,20 +54,17 @@ function TestPage() {
   const [sessionAnswered, setSessionAnswered] = useState(0);
   const [, setMasteryShown] = useState(false);
 
-  // Daily limit state
   const [dailyUsage, setDailyUsage] = useState<DailyUsage | null>(null);
   const [showLimitModal, setShowLimitModal] = useState(false);
   const { user } = useAppSelector((state) => state.auth);
   const isPro = user?.subscriptionTier === 'Pro';
 
-  // Fetch daily usage on mount and after each answer
   useEffect(() => {
     if (!isPro) {
       subscriptionService.getDailyUsage().then(setDailyUsage).catch(() => {});
     }
   }, [isPro, questionsAnswered]);
 
-  // Redirect if no exams selected and no topicId in URL (topicId means we came from a specific link)
   useEffect(() => {
     if (selectedExams.length === 0 && !topicId) {
       navigate('/');
@@ -76,7 +72,6 @@ function TestPage() {
   }, [selectedExams, navigate, topicId]);
 
   const handleStartPractice = async () => {
-    // Check daily limit for free users
     if (!isPro) {
       try {
         const usage = await subscriptionService.getDailyUsage();
@@ -85,7 +80,7 @@ function TestPage() {
           setShowLimitModal(true);
           return;
         }
-      } catch { /* proceed if check fails */ }
+      } catch {}
     }
     setPracticeStarted(true);
     try {
@@ -121,7 +116,6 @@ function TestPage() {
   };
 
   const handleNextQuestion = async () => {
-    // Check daily limit before fetching next question (prevents 429)
     if (!isPro) {
       try {
         const usage = await subscriptionService.getDailyUsage();
@@ -130,7 +124,7 @@ function TestPage() {
           setShowLimitModal(true);
           return;
         }
-      } catch { /* proceed if check fails */ }
+      } catch {}
     }
     setShowFeedback(false);
     setHintText(null);
@@ -148,12 +142,10 @@ function TestPage() {
         console.error('Failed to complete session:', err);
       }
     }
-    // Auto-complete plan entry if we came from the plan
     if (planEntryId) {
       try {
         await studyPlanService.autoCompleteToday();
-      } catch { /* ignore */ }
-      // Clear plan params from URL and navigate back to plan
+      } catch {}
       navigate('/plan');
       return;
     }
@@ -161,7 +153,6 @@ function TestPage() {
   };
 
   const handleQuitTest = async () => {
-    // Complete the session if one exists
     if (testSessionId) {
       try {
         await analyticsService.completeSession(testSessionId);
@@ -169,19 +160,16 @@ function TestPage() {
         console.error('Failed to complete session:', err);
       }
     }
-    // Auto-complete plan entry if we came from the plan
     if (planEntryId) {
       try {
         await studyPlanService.autoCompleteToday();
-      } catch { /* ignore */ }
+      } catch {}
     }
     dispatch(resetTest());
     setPracticeStarted(false);
     setSessionAnswered(0);
     setShowQuitConfirm(false);
-    // Navigate back to plan if we came from there
     if (planEntryId) {
-      // Remove plan params from URL
       const newParams = new URLSearchParams(searchParams);
       newParams.delete('topicId');
       newParams.delete('planEntryId');
@@ -208,25 +196,19 @@ function TestPage() {
     }
   };
 
-  // Reset stale test state and auto-start when arriving with a topicId (from recommendation or plan)
   useEffect(() => {
     if (topicId && selectedExams.length > 0) {
-      // Clear any stale completed/question state from previous sessions
       dispatch(resetTest());
       setPracticeStarted(false);
       setSessionAnswered(0);
-      // Start practice directly — don't wait for re-render,
-      // resetTest() synchronously clears the store before fetchNextQuestion fires
       handleStartPractice();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [topicId]);
 
   if (selectedExams.length === 0 && !topicId) {
     return null;
   }
 
-  // Start screen — before practice begins
   if (!practiceStarted && !currentQuestion && !testCompleted) {
     return (
       <div className="test-container">
@@ -282,9 +264,6 @@ function TestPage() {
     );
   }
 
-  // Topic / selection has no questions at all yet — the server reports the
-  // session "completed" with zero total and zero answered. Show a friendly
-  // empty state instead of a misleading "Practice complete!" screen.
   if (testCompleted && totalQuestions === 0 && sessionAnswered === 0) {
     return (
       <div className="test-container">
@@ -481,7 +460,6 @@ function TestPage() {
 
   return (
     <div className="test-container">
-      {/* Daily usage banner for free users */}
       {!isPro && dailyUsage && dailyUsage.questionsRemaining >= 0 && dailyUsage.questionsRemaining <= 5 && (
         <UpgradeBanner
           questionsRemaining={dailyUsage.questionsRemaining}
@@ -492,7 +470,6 @@ function TestPage() {
       <DailyLimitModal isOpen={showLimitModal} onClose={() => setShowLimitModal(false)} />
 
       <div className="question-card card">
-        {/* Practice Mode Badge + Quit */}
         <div style={{ 
           display: 'flex', 
           justifyContent: 'space-between', 
@@ -532,7 +509,6 @@ function TestPage() {
           </button>
         </div>
 
-        {/* Quit Confirmation */}
         {showQuitConfirm && (
           <div style={{
             marginBottom: '1rem',
@@ -574,7 +550,6 @@ function TestPage() {
           </div>
         )}
 
-        {/* Progress Bar — mastery-based for topic practice, session-based otherwise */}
         {(() => {
           const hasTopic = !!topicId;
           const mastery = topicMastery;
@@ -584,7 +559,6 @@ function TestPage() {
 
           return (
             <div className="progress-container" style={{ marginBottom: '1.5rem' }}>
-              {/* Top row: question counter + mastery badge */}
               <div style={{ 
                 display: 'flex', 
                 justifyContent: 'space-between', 
@@ -614,7 +588,6 @@ function TestPage() {
                   </span>
                 )}
               </div>
-              {/* Mastery progress bar for topic practice */}
               {hasTopic ? (
                 <div style={{
                   width: '100%', height: '8px', backgroundColor: 'var(--border-color)',
@@ -674,7 +647,6 @@ function TestPage() {
           </div>
         </div>
 
-        {/* Hint Display */}
         {showHint && hintText && (
           <div style={{
             margin: '0.75rem 0',
@@ -754,7 +726,6 @@ function TestPage() {
               </div>
             )}
 
-            {/* Show explanation only in practice mode */}
             {answerResult.explanation && (
               <div style={{
                 marginBottom: '0.75rem',

@@ -9,16 +9,6 @@ using UniStart.Infrastructure.Data;
 
 namespace UniStart.Application.Services;
 
-/// <summary>
-/// Telegram support bot. Delivered via webhook. Responsibilities:
-///  - /start &amp; menu → FAQ inline keyboard
-///  - FAQ button → answer text
-///  - free-text from a user (private chat) → save ticket + forward to the support group
-///  - reply in the support group (reply to a forwarded message) → route back to the user
-/// Bot API is called directly over HTTP so no extra NuGet dependency is required.
-/// Config (env / appsettings):
-///   Telegram:BotToken, Telegram:SupportChatId, Telegram:WebhookSecret
-/// </summary>
 public class TelegramBotService : ITelegramBotService
 {
     private readonly UniStartDbContext _db;
@@ -42,7 +32,6 @@ public class TelegramBotService : ITelegramBotService
         long.TryParse(section["SupportChatId"], out _supportChatId);
     }
 
-    // ── FAQ content (RU). Extend as needed. ──────────────────
     private static readonly (string Key, string Question, string Answer)[] Faq =
     {
         ("what", "Что такое CSCA?",
@@ -91,7 +80,6 @@ public class TelegramBotService : ITelegramBotService
         var chatType = chat.TryGetProperty("type", out var t) ? t.GetString() : "private";
         var text = msg.TryGetProperty("text", out var tx) ? tx.GetString() ?? "" : "";
 
-        // Reply from the support group → route back to the user
         if (_supportChatId != 0 && chatId == _supportChatId)
         {
             if (msg.TryGetProperty("reply_to_message", out var replyTo)
@@ -102,7 +90,6 @@ public class TelegramBotService : ITelegramBotService
             return;
         }
 
-        // Private chat with a user
         if (chatType == "private")
         {
             if (text.StartsWith("/start") || text.StartsWith("/help") || text.StartsWith("/menu"))
@@ -151,7 +138,6 @@ public class TelegramBotService : ITelegramBotService
         _db.SupportMessages.Add(inbound);
         await _db.SaveChangesAsync(ct);
 
-        // Forward to the support group (if configured) and remember the group message id
         if (_supportChatId != 0)
         {
             var handle = string.IsNullOrWhiteSpace(username) ? "" : $" (@{username})";
@@ -201,7 +187,6 @@ public class TelegramBotService : ITelegramBotService
         }
     }
 
-    // ── Bot API helpers ──────────────────────────────────────
     public async Task<bool> SendOperatorReplyAsync(int ticketId, string text, CancellationToken ct = default)
     {
         var ticket = await _db.SupportTickets.FindAsync(new object[] { ticketId }, ct);

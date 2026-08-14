@@ -20,9 +20,6 @@ public class FlashcardController : ControllerBase
         _flashcardService = flashcardService;
     }
 
-    /// <summary>
-    /// Get all accessible decks with stats
-    /// </summary>
     [HttpGet("decks")]
     [ProducesResponseType(typeof(IEnumerable<FlashcardDeckDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetDecks([FromQuery] string[]? examTypeCodes = null)
@@ -32,9 +29,6 @@ public class FlashcardController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>
-    /// Get due cards for review from a specific deck
-    /// </summary>
     [HttpGet("decks/{deckId}/due")]
     [ProducesResponseType(typeof(IEnumerable<FlashcardReviewDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetDueCards(int deckId, [FromQuery] int limit = 20)
@@ -44,9 +38,6 @@ public class FlashcardController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>
-    /// Submit a review result for a flashcard (SM-2 algorithm)
-    /// </summary>
     [HttpPost("review")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> ReviewCard([FromBody] ReviewFlashcardRequest request)
@@ -56,9 +47,6 @@ public class FlashcardController : ControllerBase
         return NoContent();
     }
 
-    /// <summary>
-    /// Create a new personal deck
-    /// </summary>
     [HttpPost("decks")]
     [ProducesResponseType(typeof(FlashcardDeckDto), StatusCodes.Status201Created)]
     public async Task<IActionResult> CreateDeck([FromBody] CreateDeckRequest request)
@@ -68,9 +56,6 @@ public class FlashcardController : ControllerBase
         return CreatedAtAction(nameof(GetDecks), new { }, deck);
     }
 
-    /// <summary>
-    /// Add a card to a deck
-    /// </summary>
     [HttpPost("cards")]
     [ProducesResponseType(typeof(FlashcardDto), StatusCodes.Status201Created)]
     public async Task<IActionResult> AddCard([FromBody] CreateFlashcardRequest request)
@@ -80,9 +65,6 @@ public class FlashcardController : ControllerBase
         return Created("", card);
     }
 
-    /// <summary>
-    /// Delete a personal deck
-    /// </summary>
     [HttpDelete("decks/{deckId}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> DeleteDeck(int deckId)
@@ -92,9 +74,6 @@ public class FlashcardController : ControllerBase
         return NoContent();
     }
 
-    /// <summary>
-    /// Get total due cards count across all decks
-    /// </summary>
     [HttpGet("due-count")]
     [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetDueCount()

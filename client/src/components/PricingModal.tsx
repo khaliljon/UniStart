@@ -108,7 +108,6 @@ export function PricingModal({ isOpen, onClose }: PricingModalProps) {
         )}
 
         <div className="pricing-grid">
-          {/* Free */}
           <div style={{
             border: '2px solid var(--border-color, #e5e7eb)',
             borderRadius: '1rem',
@@ -132,7 +131,6 @@ export function PricingModal({ isOpen, onClose }: PricingModalProps) {
             </ul>
           </div>
 
-          {/* Pro Monthly */}
           <div style={{
             border: '2px solid var(--primary-color)',
             borderRadius: '1rem',
@@ -166,7 +164,6 @@ export function PricingModal({ isOpen, onClose }: PricingModalProps) {
             </button>
           </div>
 
-          {/* Pro Yearly */}
           <div style={{
             border: '2px solid var(--primary-color)',
             borderRadius: '1rem',

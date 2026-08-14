@@ -29,7 +29,6 @@ public class OnboardingService : IOnboardingService
         if (user == null)
             throw new InvalidOperationException("User not found");
 
-        // Check if user has an active goal
         var activeGoal = await _context.Set<StudyGoal>()
             .Include(g => g.ExamType)
             .FirstOrDefaultAsync(g => g.UserId == userId && g.IsActive);
@@ -90,51 +89,40 @@ public class OnboardingService : IOnboardingService
         if (user.HasCompletedOnboarding)
             throw new InvalidOperationException("Onboarding already completed");
 
-        // Validate exam type against the exams that actually exist in the DB
-        // (admin-managed), not a hardcoded list.
         var examType = await _context.ExamTypes
             .Include(e => e.Sections)
             .FirstOrDefaultAsync(e => e.Code == dto.ExamTypeCode);
         if (examType == null)
             throw new InvalidOperationException($"Invalid exam type: {dto.ExamTypeCode}");
 
-        // Validate target date is in the future
         if (dto.TargetDate.Date <= DateTime.UtcNow.Date)
             throw new InvalidOperationException("Target date must be in the future");
 
-        // Validate target score is within range
         var maxScore = examType.Sections.Sum(s => s.MaxScore);
         var minScore = examType.Sections.Sum(s => s.MinScore);
-        // Only enforce a range when the exam has scored sections. Exams whose section /
-        // score structure isn't defined yet (e.g. CSCA) accept any positive target.
         if (maxScore > 0 && (dto.TargetScore < minScore || dto.TargetScore > maxScore))
             throw new InvalidOperationException($"Target score must be between {minScore} and {maxScore} for {examType.Name}");
 
-        // Deactivate any existing goals
         var existingGoals = await _context.Set<StudyGoal>()
             .Where(g => g.UserId == userId && g.IsActive)
             .ToListAsync();
         foreach (var g in existingGoals)
             g.IsActive = false;
 
-        // Create study goal
         var goal = await _studyPlanService.CreateGoalAsync(userId, new CreateStudyGoalDto(
             dto.ExamTypeCode,
             dto.TargetDate,
             dto.TargetScore
         ));
 
-        // Generate study plan
         try
         {
             await _studyPlanService.GeneratePlanAsync(userId, goal.Id);
         }
         catch
         {
-            // Plan generation may fail if no topics, that's OK for onboarding
         }
 
-        // Mark onboarding as complete
         user.HasCompletedOnboarding = true;
         user.UpdatedAt = DateTime.UtcNow;
         await _unitOfWork.SaveChangesAsync();

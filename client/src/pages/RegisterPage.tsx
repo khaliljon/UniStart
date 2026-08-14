@@ -63,7 +63,6 @@ function RegisterPage() {
       return;
     }
 
-    // Basic email domain check (server does full DNS validation)
     const emailDomain = email.split('@')[1];
     if (!emailDomain || !emailDomain.includes('.') || emailDomain.endsWith('.')) {
       setValidationError('Please enter a valid email address with an existing domain');
@@ -127,7 +126,6 @@ function RegisterPage() {
     setValidationError('');
   };
 
-  // Verification code screen
   if (pendingVerificationEmail) {
     return (
       <div className="auth-container">

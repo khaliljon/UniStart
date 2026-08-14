@@ -30,17 +30,13 @@ public class AuthService : IAuthService
 
     public async Task<AuthResponseDto> RegisterAsync(RegisterDto dto)
     {
-        // S-4: Password complexity check
         ValidatePasswordComplexity(dto.Password);
 
-        // Name validation: no digits, min 2 chars each
         ValidateName(dto.FirstName, "First name");
         ValidateName(dto.LastName, "Last name");
 
-        // Verify email domain exists (MX / A record)
         await ValidateEmailDomainAsync(dto.Email);
 
-        // Check if user already exists (including soft-deleted)
         var existingUser = await _context.Users
             .IgnoreQueryFilters()
             .FirstOrDefaultAsync(u => u.Email == dto.Email);
@@ -48,7 +44,6 @@ public class AuthService : IAuthService
         {
             if (existingUser.IsDeleted)
             {
-                // Restore soft-deleted user with new credentials — require re-verification
                 var restoreCode = GenerateVerificationCode();
                 existingUser.IsDeleted = false;
                 existingUser.DeletedAt = null;
@@ -67,7 +62,7 @@ public class AuthService : IAuthService
                 _ = Task.Run(async () =>
                 {
                     try { await _emailService.SendVerificationCodeAsync(existingUser.Email, existingUser.Name, restoreCode); }
-                    catch { /* logged inside EmailService */ }
+                    catch {}
                 });
 
                 var restoredToken = _jwtService.GenerateToken(existingUser);
@@ -91,7 +86,6 @@ public class AuthService : IAuthService
                 );
             }
 
-            // Existing unverified user — update credentials and resend verification code
             if (!existingUser.EmailVerified)
             {
                 var reCode = GenerateVerificationCode();
@@ -106,7 +100,7 @@ public class AuthService : IAuthService
                 _ = Task.Run(async () =>
                 {
                     try { await _emailService.SendVerificationCodeAsync(existingUser.Email, existingUser.Name, reCode); }
-                    catch { /* logged inside EmailService */ }
+                    catch {}
                 });
 
                 var reToken = _jwtService.GenerateToken(existingUser);
@@ -133,7 +127,6 @@ public class AuthService : IAuthService
             throw new InvalidOperationException("User with this email already exists");
         }
 
-        // CSCA platform: only students self-register.
         var code = GenerateVerificationCode();
 
         var firstName = InputSanitizer.Sanitize(dto.FirstName)!;
@@ -157,7 +150,6 @@ public class AuthService : IAuthService
         _context.Users.Add(user);
         await _unitOfWork.SaveChangesAsync();
 
-        // Referral program: track referral usage
         if (!string.IsNullOrWhiteSpace(dto.ReferralCode))
         {
             var refCode = await _context.ReferralCodes
@@ -175,19 +167,15 @@ public class AuthService : IAuthService
             }
         }
 
-        // Section ability profiles are created lazily on the user's first answer
-        // (see AdaptiveEngineService.UpdateSkillLevelAsync).
         await _unitOfWork.SaveChangesAsync();
 
-        // Create default notification preferences and send verification code
         await _notificationService.EnsurePreferencesExistAsync(user.Id);
         _ = Task.Run(async () =>
         {
             try { await _emailService.SendVerificationCodeAsync(user.Email, user.Name, code); }
-            catch { /* logged inside EmailService */ }
+            catch {}
         });
 
-        // Generate token
         var token = _jwtService.GenerateToken(user);
         var expiresAt = DateTime.UtcNow.AddHours(24);
         var subdomain = await GetSchoolSubdomainAsync(user);
@@ -214,7 +202,6 @@ public class AuthService : IAuthService
     {
         var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
 
-        // S-5: Account lockout check
         if (user != null && user.LockoutEnd.HasValue && user.LockoutEnd > DateTime.UtcNow)
         {
             var minutesLeft = (int)Math.Ceiling((user.LockoutEnd.Value - DateTime.UtcNow).TotalMinutes);
@@ -223,7 +210,6 @@ public class AuthService : IAuthService
 
         if (user == null || !BC.Verify(dto.Password, user.PasswordHash))
         {
-            // S-5: Track failed attempts
             if (user != null)
             {
                 user.FailedLoginAttempts++;
@@ -238,7 +224,6 @@ public class AuthService : IAuthService
             throw new UnauthorizedAccessException("Invalid email or password");
         }
 
-        // Reset lockout on successful login
         if (user.FailedLoginAttempts > 0)
         {
             user.FailedLoginAttempts = 0;
@@ -299,12 +284,6 @@ public class AuthService : IAuthService
         );
     }
 
-    /// <summary>
-    /// If the user finished onboarding but their target exam type no longer exists
-    /// (e.g. it was removed from the admin panel, like a deleted NUET), reset the
-    /// onboarding flag so they are guided through onboarding again with a currently
-    /// available exam. Idempotent and cheap.
-    /// </summary>
     private async Task ReconcileOnboardingStateAsync(User user)
     {
         if (!user.HasCompletedOnboarding) return;
@@ -340,11 +319,10 @@ public class AuthService : IAuthService
         user.EmailVerificationCodeExpiresAt = null;
         await _unitOfWork.SaveChangesAsync();
 
-        // Send welcome email after verification
         _ = Task.Run(async () =>
         {
             try { await _emailService.SendWelcomeEmailAsync(user.Email, user.Name); }
-            catch { /* logged inside EmailService */ }
+            catch {}
         });
 
         var token = _jwtService.GenerateToken(user);
@@ -406,13 +384,12 @@ public class AuthService : IAuthService
             _context.Users.Add(user);
             await _unitOfWork.SaveChangesAsync();
 
-            // Section ability profiles are created lazily on first answer.
             await _notificationService.EnsurePreferencesExistAsync(user.Id);
 
             _ = Task.Run(async () =>
             {
                 try { await _emailService.SendWelcomeEmailAsync(user.Email, user.Name); }
-                catch { /* logged inside EmailService */ }
+                catch {}
             });
         }
         else
@@ -473,11 +450,9 @@ public class AuthService : IAuthService
 
     private Task<string?> GetSchoolSubdomainAsync(User user)
     {
-        // White-label schools removed — no subdomain routing.
         return Task.FromResult<string?>(null);
     }
 
-    /// <summary>S-4: Password must be 10+ chars with uppercase, lowercase, digit, and special character</summary>
     private static void ValidatePasswordComplexity(string password)
     {
         if (string.IsNullOrEmpty(password) || password.Length < 10)
@@ -500,7 +475,6 @@ public class AuthService : IAuthService
             throw new InvalidOperationException($"{fieldName} must not contain digits");
     }
 
-    /// <summary>Check that the email domain has valid DNS records (MX or A) so it can receive mail</summary>
     private static async Task ValidateEmailDomainAsync(string email)
     {
         var parts = email.Split('@');
@@ -550,7 +524,6 @@ public class AuthService : IAuthService
         
         if (!string.IsNullOrWhiteSpace(dto.Email))
         {
-            // Check if email is already taken
             var emailExists = await _context.Users.AnyAsync(u => u.Email == dto.Email && u.Id != userId);
             if (emailExists)
                 throw new InvalidOperationException("Email is already taken");
@@ -605,7 +578,6 @@ public class AuthService : IAuthService
     public async Task ForgotPasswordAsync(ForgotPasswordDto dto)
     {
         var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
-        // Always return success to avoid email enumeration
         if (user == null) return;
 
         var code = RandomNumberGenerator.GetInt32(100000, 999999).ToString();

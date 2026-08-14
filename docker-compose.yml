@@ -1,20 +1,4 @@
-# ═══════════════════════════════════════════════════════
-#  UniStart — Docker Compose (API + PostgreSQL + Client)
-# ═══════════════════════════════════════════════════════
-#  Usage:
-#    cp .env.example .env   # fill in secrets
-#    docker compose up -d --build
-#
-#  Services:
-#    postgres  — PostgreSQL 17 on port 5432
-#    api       — .NET 8 backend on port 5009
-#    client    — nginx + React SPA on port 80
-# ═══════════════════════════════════════════════════════
-
 services:
-  # ────────────────────────────────────────────────────
-  #  PostgreSQL 17
-  # ────────────────────────────────────────────────────
   postgres:
     image: postgres:17-alpine
     restart: unless-stopped
@@ -22,8 +6,6 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-UniStart}
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
-    # ports:
-    #   - "${POSTGRES_PORT:-5432}:5432"  # uncomment for local dev DB access
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -31,10 +13,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-
-  # ────────────────────────────────────────────────────
-  #  .NET 8 API
-  # ────────────────────────────────────────────────────
+      
   api:
     build:
       context: .
@@ -87,14 +66,10 @@ services:
     volumes:
       - dpkeys:/keys
       - backups:/backups
-      # Google Drive service-account key (gitignored host folder, read-only in container).
       - ./secrets:/app/secrets:ro
     ports:
       - "${API_PORT:-5009}:5009"
-
-  # ────────────────────────────────────────────────────
-  #  React Client (nginx reverse-proxy + SPA)
-  # ────────────────────────────────────────────────────
+      
   client:
     build:
       context: ./client

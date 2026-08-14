@@ -8,19 +8,6 @@ using UniStart.Application.Interfaces;
 
 namespace UniStart.Application.Services;
 
-/// <summary>
-/// LLM-based question extraction using DeepSeek or OpenAI-compatible API.
-/// Sends raw text (e.g. OCR output) to an LLM with a structured prompt
-/// and parses the response into ExtractedQuestion objects.
-/// 
-/// Config (appsettings.json):
-///   "LlmExtraction": {
-///     "Provider": "deepseek",        // or "openai"
-///     "ApiKey": "sk-...",
-///     "Model": "deepseek-chat",      // or "gpt-4o-mini"
-///     "BaseUrl": "https://api.deepseek.com"
-///   }
-/// </summary>
 public class LlmExtractionService : ILlmExtractionService
 {
     private readonly HttpClient _httpClient;
@@ -52,7 +39,6 @@ public class LlmExtractionService : ILlmExtractionService
 
         try
         {
-            // Truncate very long texts to stay within context window
             const int maxChars = 300_000;
             if (text.Length > maxChars)
             {
@@ -62,28 +48,18 @@ public class LlmExtractionService : ILlmExtractionService
 
             _logger.LogInformation("Starting LLM extraction with {Model}, text length: {Length} chars", _model, text.Length);
 
-            // Parse hard hints from the admin instructions (e.g. "50 вопросов", "5 вариантов").
-            // These become real limits enforced in code — not just suggestions to the model —
-            // which is what stops the batch loop from hallucinating extra questions.
             var (expectedCount, expectedOptions) = ParseExtractionHints(instructions);
             if (expectedCount.HasValue)
                 _logger.LogInformation("Admin context: expecting {Count} questions", expectedCount.Value);
             if (expectedOptions.HasValue)
                 _logger.LogInformation("Admin context: expecting {Options} answer options per question", expectedOptions.Value);
 
-            // Strategy: send the FULL text in each request and pull questions in batches.
-            // DeepSeek input is 128K tokens (plenty), output limit is 8192 tokens, so we
-            // cannot return 50+ questions in one response. We loop, passing a summary of
-            // already-extracted questions each round so the model only returns NEW ones,
-            // and stop when a round returns nothing new (or a short final batch). When the
-            // admin states an exact question count, that count caps the loop and the result.
             const int batchSize = 15;
-            const int maxBatches = 12; // safety cap (~180 questions)
+            const int maxBatches = 12;
             var allQuestions = new List<ExtractedQuestion>();
 
             for (int batch = 1; batch <= maxBatches; batch++)
             {
-                // How many questions to ask for this round (respect the admin's stated total).
                 int remaining = expectedCount.HasValue
                     ? Math.Max(0, expectedCount.Value - allQuestions.Count)
                     : batchSize;
@@ -109,11 +85,10 @@ public class LlmExtractionService : ILlmExtractionService
                 _logger.LogInformation("LLM batch {Batch}: {Raw} returned, {New} new (total {Total})",
                     batch, result.Count, newlyAdded, allQuestions.Count);
 
-                if (newlyAdded == 0) break;          // model is repeating itself → done
-                if (result.Count < thisBatch) break;  // short batch → end of document
+                if (newlyAdded == 0) break;
+                if (result.Count < thisBatch) break;
             }
 
-            // Enforce the admin's stated count as a hard cap (never return more than promised).
             if (expectedCount.HasValue && allQuestions.Count > expectedCount.Value)
             {
                 _logger.LogInformation("Trimming {From} → {To} questions to match admin-stated count",
@@ -131,15 +106,11 @@ public class LlmExtractionService : ILlmExtractionService
         }
     }
 
-    /// <summary>
-    /// Build a short summary of already-extracted questions so the LLM can skip them.
-    /// </summary>
     private static string BuildAlreadyExtractedSummary(List<ExtractedQuestion> questions)
     {
         var sb = new StringBuilder();
         for (int i = 0; i < questions.Count; i++)
         {
-            // Take first 80 chars of each question text
             var qText = questions[i].QuestionText;
             var summary = qText.Length > 80 ? qText[..80] + "…" : qText;
             sb.AppendLine($"  #{i + 1}: {summary}");
@@ -147,12 +118,6 @@ public class LlmExtractionService : ILlmExtractionService
         return sb.ToString();
     }
 
-    /// <summary>
-    /// Parse hard numeric hints from the admin's free-text instructions, in RU/KZ/EN:
-    ///   • expected number of questions  (e.g. "50 вопросов", "50 сұрақ", "50 questions")
-    ///   • expected options per question (e.g. "5 вариантов", "5 жауап", "5 options")
-    /// These are applied as real limits in code, not just passed to the model.
-    /// </summary>
     private static (int? expectedCount, int? expectedOptions) ParseExtractionHints(string? instructions)
     {
         if (string.IsNullOrWhiteSpace(instructions))
@@ -161,7 +126,6 @@ public class LlmExtractionService : ILlmExtractionService
         int? count = null;
         int? options = null;
 
-        // Questions: a number directly followed by a "question" word in RU / KZ / EN.
         var qMatch = Regex.Match(
             instructions,
             @"(\d{1,3})\s*(?:вопрос\w*|сұрақ\w*|задани\w*|задач\w*|question[s]?|item[s]?)",
@@ -169,7 +133,6 @@ public class LlmExtractionService : ILlmExtractionService
         if (qMatch.Success && int.TryParse(qMatch.Groups[1].Value, out var qn) && qn is > 0 and <= 500)
             count = qn;
 
-        // Options: a number directly followed by an "option/answer" word in RU / KZ / EN.
         var oMatch = Regex.Match(
             instructions,
             @"(\d{1,2})\s*(?:вариант\w*|ответ\w*|жауап\w*|option[s]?|answer[s]?|choice[s]?)",
@@ -180,10 +143,6 @@ public class LlmExtractionService : ILlmExtractionService
         return (count, options);
     }
 
-    /// <summary>
-    /// Remove near-duplicate questions based on normalized text comparison.
-    /// Uses Jaccard similarity on character trigrams.
-    /// </summary>
     private List<ExtractedQuestion> DeduplicateQuestions(List<ExtractedQuestion> questions)
     {
         if (questions.Count <= 1) return questions;
@@ -199,14 +158,12 @@ public class LlmExtractionService : ILlmExtractionService
             {
                 var existingNorm = NormalizeForComparison(existing.QuestionText);
 
-                // Check exact normalized match
                 if (normalized == existingNorm)
                 {
                     isDuplicate = true;
                     break;
                 }
 
-                // Check trigram Jaccard similarity (threshold 0.7 = ~70% overlap)
                 var similarity = TrigramSimilarity(normalized, existingNorm);
                 if (similarity >= 0.70)
                 {
@@ -228,9 +185,7 @@ public class LlmExtractionService : ILlmExtractionService
 
     private static string NormalizeForComparison(string text)
     {
-        // Remove leading question numbers like "1.", "1)", "#1", "Вопрос 1:"
         text = Regex.Replace(text, @"^[\s#]*\d+[\.\)\:]?\s*", "");
-        // Collapse whitespace, lowercase, remove punctuation that doesn't affect meaning
         text = Regex.Replace(text, @"\s+", " ").Trim().ToLowerInvariant();
         text = Regex.Replace(text, @"[""''«»\(\)]", "");
         return text;
@@ -252,7 +207,6 @@ public class LlmExtractionService : ILlmExtractionService
                 intersection++;
         }
 
-        // Jaccard: |A ∩ B| / |A ∪ B|
         int union = trigramsA.Count + trigramsB.Count - intersection;
         return union == 0 ? 0 : (double)intersection / union;
     }
@@ -265,9 +219,6 @@ public class LlmExtractionService : ILlmExtractionService
         return set;
     }
 
-    // ═══════════════════════════════════════════════════════
-    //  THEORY EXTRACTION
-    // ═══════════════════════════════════════════════════════
 
     public async Task<ExtractedTheory> ExtractTheoryAsync(string text, string? instructions = null, CancellationToken ct = default)
     {
@@ -286,8 +237,6 @@ public class LlmExtractionService : ILlmExtractionService
 
         _logger.LogInformation("Starting LLM theory extraction with {Model}, text length: {Length} chars", _model, text.Length);
 
-        // Run the four focused extractions. Each is a separate call so a single content type
-        // (e.g. a long lesson) never gets truncated by the output token limit.
         var lessons = await ExtractLessonsAsync(text, instructions, ct);
         var formulas = await ExtractFormulasAsync(text, instructions, ct);
         var flashcards = await ExtractFlashcardsAsync(text, instructions, ct);
@@ -386,7 +335,6 @@ Return ONLY valid JSON.";
             .ToList();
     }
 
-    /// <summary>Generic single-shot chat call returning the raw assistant message content (forced JSON).</summary>
     private async Task<string> CallChatAsync(string systemPrompt, string userPrompt, CancellationToken ct)
     {
         var requestBody = new
@@ -419,7 +367,6 @@ Return ONLY valid JSON.";
         return completion?.Choices?.FirstOrDefault()?.Message?.Content ?? "";
     }
 
-    /// <summary>Parse a JSON object with a single array property (or a bare array) into a typed list.</summary>
     private List<T> ParseJsonArray<T>(string content)
     {
         if (string.IsNullOrWhiteSpace(content)) return new();
@@ -502,7 +449,6 @@ Return ONLY valid JSON.";
         userPromptSb.AppendLine("Preserve each question exactly as written, including its original number of answer options. Do NOT split, merge, or invent questions.");
         userPromptSb.AppendLine("Skip theory, definitions, examples and headers.");
 
-        // Hard, code-enforced expectations parsed from the admin context.
         if (expectedCount.HasValue)
         {
             int remaining = Math.Max(0, expectedCount.Value - alreadyCount);
@@ -569,7 +515,6 @@ Return ONLY valid JSON.";
             return new List<ExtractedQuestion>();
         }
 
-        // Parse the chat completion response
         var completion = JsonSerializer.Deserialize<ChatCompletionResponse>(responseBody);
         var messageContent = completion?.Choices?.FirstOrDefault()?.Message?.Content;
 
@@ -591,17 +536,13 @@ Return ONLY valid JSON.";
 
         try
         {
-            // The response might be wrapped in a JSON object with a "questions" key
-            // or it might be a direct array
             var trimmed = responseContent.Trim();
 
             List<LlmQuestion>? questions = null;
 
-            // Try parsing as { "questions": [...] } wrapper
             if (trimmed.StartsWith("{"))
             {
                 var wrapper = JsonSerializer.Deserialize<JsonElement>(trimmed);
-                // Find the first array property
                 foreach (var prop in wrapper.EnumerateObject())
                 {
                     if (prop.Value.ValueKind == JsonValueKind.Array)
@@ -612,7 +553,6 @@ Return ONLY valid JSON.";
                 }
             }
 
-            // Try as direct array
             if (questions == null && trimmed.StartsWith("["))
             {
                 questions = JsonSerializer.Deserialize<List<LlmQuestion>>(trimmed, _jsonOptions);
@@ -657,9 +597,6 @@ Return ONLY valid JSON.";
         return results;
     }
 
-    // ═══════════════════════════════════════════════════════
-    //  JSON DTOs for LLM API communication
-    // ═══════════════════════════════════════════════════════
 
     private static readonly JsonSerializerOptions _jsonOptions = new()
     {

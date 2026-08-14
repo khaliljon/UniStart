@@ -12,13 +12,9 @@ public class ScorePredictionService : IScorePredictionService
     private readonly UniStartDbContext _db;
     private readonly ILogger<ScorePredictionService> _logger;
 
-    // θ range for mapping: practical limits
     private const double ThetaMin = -3.0;
     private const double ThetaMax = 3.0;
 
-    // Minimum answers before a section's estimate is considered trustworthy rather than a
-    // cold-start guess. Below this we avoid alarming "critical/strong" labels and flag the
-    // prediction as preliminary in the UI.
     private const int SectionReliableThreshold = 10;
 
     public ScorePredictionService(UniStartDbContext db, ILogger<ScorePredictionService> logger)
@@ -27,32 +23,25 @@ public class ScorePredictionService : IScorePredictionService
         _logger = logger;
     }
 
-    // ═══════════════════════════════════════════════════════
-    //  PREDICT SCORE
-    // ═══════════════════════════════════════════════════════
 
     public async Task<ScorePredictionDto> PredictScoreAsync(int userId, string examTypeCode)
     {
         var exam = await _db.ExamTypes.FirstOrDefaultAsync(e => e.Code == examTypeCode)
             ?? throw new InvalidOperationException($"Exam type '{examTypeCode}' not found");
 
-        // Load sections for this exam
         var sections = await _db.ExamSections
             .Where(s => s.ExamTypeCode == examTypeCode)
             .ToListAsync();
 
-        // Load user section ability profiles (keyed by section id)
         var profiles = await _db.UserSkillProfiles
             .Where(p => p.UserId == userId)
             .ToDictionaryAsync(p => p.SectionId);
 
-        // Load topics per section (used for improvement tips)
         var topicsPerSection = await _db.Topics
             .Where(t => t.SectionId != null && t.Section!.ExamTypeCode == examTypeCode)
             .GroupBy(t => t.SectionId!.Value)
             .ToDictionaryAsync(g => g.Key, g => g.ToList());
 
-        // Load user answer stats for accuracy
         var answerStats = await _db.UserAnswers
             .Where(a => a.UserId == userId && a.Question!.Topic!.Section != null
                 && a.Question.Topic.Section.ExamTypeCode == examTypeCode)
@@ -65,7 +54,6 @@ public class ScorePredictionService : IScorePredictionService
             })
             .ToDictionaryAsync(x => x.SectionId ?? 0);
 
-        // Calculate per-section predictions
         var sectionPredictions = new List<SectionPredictionDto>();
         int totalPredicted = 0;
         int totalMin = 0;
@@ -89,8 +77,6 @@ public class ScorePredictionService : IScorePredictionService
             var sectionAnswers = stats?.Total ?? 0;
             var sectionReliable = sectionAnswers >= SectionReliableThreshold;
 
-            // With too few answers, θ is dominated by the cold-start prior, so an alarming
-            // "critical"/confident "strong" label would be misleading. Show a neutral status.
             var strength = !sectionReliable
                 ? "insufficient"
                 : theta switch
@@ -124,14 +110,11 @@ public class ScorePredictionService : IScorePredictionService
             totalConfHigh += confHigh;
         }
 
-        // Get target score from active goal
         var goal = await _db.StudyGoals
             .FirstOrDefaultAsync(g => g.UserId == userId && g.IsActive && g.ExamTypeCode == examTypeCode);
 
-        // Generate improvement tips (top weaknesses sorted by ROI)
         var tips = await GenerateImprovementTips(userId, examTypeCode, sections, profiles, topicsPerSection);
 
-        // Overall reliability: enough total evidence AND at least half the sections individually reliable.
         var totalAnswers = sectionPredictions.Sum(s => s.AnswersCount);
         var reliableSections = sectionPredictions.Count(s => s.IsReliable);
         var overallReliable = totalAnswers >= SectionReliableThreshold
@@ -145,7 +128,7 @@ public class ScorePredictionService : IScorePredictionService
             MaxPossibleScore: totalMax,
             ConfidenceLow: totalConfLow,
             ConfidenceHigh: totalConfHigh,
-            ConfidencePercent: 90, // 1.645σ = 90% CI
+            ConfidencePercent: 90,
             TargetScore: goal?.TargetScore,
             GapToTarget: goal != null ? Math.Max(0, goal.TargetScore - totalPredicted) : null,
             Sections: sectionPredictions,
@@ -156,9 +139,6 @@ public class ScorePredictionService : IScorePredictionService
         );
     }
 
-    // ═══════════════════════════════════════════════════════
-    //  WHAT-IF SCENARIO
-    // ═══════════════════════════════════════════════════════
 
     public async Task<WhatIfResultDto> WhatIfAsync(int userId, string examTypeCode, int topicId, int improvedLevel)
     {
@@ -170,10 +150,8 @@ public class ScorePredictionService : IScorePredictionService
         var sectionId = topic.SectionId
             ?? throw new InvalidOperationException("Topic has no section");
 
-        // Current prediction
         var current = await PredictScoreAsync(userId, examTypeCode);
 
-        // Calculate what would happen with improved theta for this topic's section
         var profiles = await _db.UserSkillProfiles
             .Where(p => p.UserId == userId)
             .ToDictionaryAsync(p => p.SectionId);
@@ -182,12 +160,10 @@ public class ScorePredictionService : IScorePredictionService
         var currentLevel = currentProfile != null ? IrtMath.ThetaToLevel(currentProfile.Theta) : 50;
         var improvedTheta = IrtMath.LevelToTheta(Math.Clamp(improvedLevel, 1, 99));
 
-        // Temporarily compute improved score
         var sections = await _db.ExamSections
             .Where(s => s.ExamTypeCode == examTypeCode)
             .ToListAsync();
 
-        // Clone profiles and override the target section
         var modifiedProfiles = new Dictionary<int, UserSkillProfile>(profiles);
         modifiedProfiles[sectionId] = new UserSkillProfile
         {
@@ -216,9 +192,6 @@ public class ScorePredictionService : IScorePredictionService
         );
     }
 
-    // ═══════════════════════════════════════════════════════
-    //  PREDICTION HISTORY
-    // ═══════════════════════════════════════════════════════
 
     public async Task<IEnumerable<PredictionHistoryDto>> GetPredictionHistoryAsync(
         int userId, string examTypeCode, int days = 30)
@@ -227,7 +200,6 @@ public class ScorePredictionService : IScorePredictionService
             .Where(s => s.ExamTypeCode == examTypeCode)
             .ToListAsync();
 
-        // Get the user's answer history dates
         var startDate = DateTime.SpecifyKind(DateTime.UtcNow.Date.AddDays(-days), DateTimeKind.Utc);
         var answers = await _db.UserAnswers
             .Where(a => a.UserId == userId
@@ -241,20 +213,17 @@ public class ScorePredictionService : IScorePredictionService
         if (!answers.Any())
             return Enumerable.Empty<PredictionHistoryDto>();
 
-        // Group by date and reconstruct progressive skill estimates
         var answersByDate = answers
             .GroupBy(a => a.AnsweredAt.Date)
             .OrderBy(g => g.Key)
             .ToList();
 
-        // Load current profiles as baseline
         var profiles = await _db.UserSkillProfiles
             .Where(p => p.UserId == userId)
             .ToDictionaryAsync(p => p.SectionId);
 
         var history = new List<PredictionHistoryDto>();
 
-        // For each date, compute running accuracy → approximate theta → score
         var cumulativeCorrect = new Dictionary<int, (int correct, int total)>();
 
         foreach (var dayGroup in answersByDate)
@@ -268,16 +237,14 @@ public class ScorePredictionService : IScorePredictionService
                 cumulativeCorrect[a.SectionId] = (c + (a.IsCorrect ? 1 : 0), t + 1);
             }
 
-            // Build temporary profiles based on cumulative accuracy
             var tempProfiles = new Dictionary<int, UserSkillProfile>(profiles);
             foreach (var (sectionId, (correct, total)) in cumulativeCorrect)
             {
-                if (total >= 2) // Need at least 2 answers for meaningful estimate
+                if (total >= 2)
                 {
                     var accuracy = (double)correct / total;
-                    // Map accuracy (0-1) to approximate theta (-3 to +3)
                     var approxTheta = AccuracyToTheta(accuracy);
-                    var approxSE = 1.0 / Math.Sqrt(total); // SE decreases with more data
+                    var approxSE = 1.0 / Math.Sqrt(total);
                     tempProfiles[sectionId] = new UserSkillProfile
                     {
                         UserId = userId, SectionId = sectionId,
@@ -288,7 +255,6 @@ public class ScorePredictionService : IScorePredictionService
                 }
             }
 
-            // Compute prediction for this date
             int predicted = 0, confLow = 0, confHigh = 0;
             foreach (var section in sections)
             {
@@ -309,9 +275,6 @@ public class ScorePredictionService : IScorePredictionService
         return history;
     }
 
-    // ═══════════════════════════════════════════════════════
-    //  IMPROVEMENT TIPS GENERATION
-    // ═══════════════════════════════════════════════════════
 
     private Task<List<ImprovementTipDto>> GenerateImprovementTips(
         int userId,
@@ -331,10 +294,8 @@ public class ScorePredictionService : IScorePredictionService
             var theta = profile?.Theta ?? 0.0;
             var currentLevel = profile != null ? IrtMath.ThetaToLevel(theta) : 50;
 
-            // Only suggest improvement for topics below mastery
             if (currentLevel >= 80) continue;
 
-            // Calculate potential score gain if this section improves by 20 level points
             var improvedTheta = IrtMath.LevelToTheta(Math.Min(currentLevel + 20, 95));
             int currentTotal = 0, improvedTotal = 0;
 
@@ -343,7 +304,6 @@ public class ScorePredictionService : IScorePredictionService
                 var (sTheta, _) = GetSectionTheta(section.Id, profiles);
                 currentTotal += ThetaToScore(sTheta, section.MinScore, section.MaxScore);
 
-                // If this topic belongs to this section, use improved theta
                 if (section.Id == tSecId)
                 {
                     var tempProfiles = new Dictionary<int, UserSkillProfile>(profiles);
@@ -385,21 +345,12 @@ public class ScorePredictionService : IScorePredictionService
             ));
         }
 
-        // Sort by ROI: highest potential score gain first
         return Task.FromResult(tips.OrderByDescending(t => t.PotentialScoreGain)
             .DistinctBy(t => t.TopicName)
             .Take(5)
             .ToList());
     }
 
-    // ═══════════════════════════════════════════════════════
-    //  CORE MATH
-    // ═══════════════════════════════════════════════════════
-
-    /// <summary>
-    /// Get the θ for a section directly from the user's per-section ability profile.
-    /// Returns (theta, se); a cold-start default when the section has no profile yet.
-    /// </summary>
     private static (double theta, double se) GetSectionTheta(
         int sectionId,
         Dictionary<int, UserSkillProfile> profiles)
@@ -409,23 +360,15 @@ public class ScorePredictionService : IScorePredictionService
         return (0.0, 1.5);
     }
 
-    /// <summary>
-    /// Map θ (latent ability) to a score within [minScore, maxScore] using logistic mapping.
-    /// </summary>
     private static int ThetaToScore(double theta, int minScore, int maxScore)
     {
-        // Logistic mapping: maps θ ∈ [-3, 3] → proportion ∈ [0, 1]
         var proportion = 1.0 / (1.0 + Math.Exp(-1.2 * theta));
         var score = minScore + proportion * (maxScore - minScore);
         return (int)Math.Round(Math.Clamp(score, minScore, maxScore));
     }
 
-    /// <summary>
-    /// Approximate θ from accuracy (for history reconstruction).
-    /// </summary>
     private static double AccuracyToTheta(double accuracy)
     {
-        // Inverse logistic: accuracy ∈ (0, 1) → θ
         accuracy = Math.Clamp(accuracy, 0.05, 0.95);
         return Math.Log(accuracy / (1.0 - accuracy)) / 1.2;
     }

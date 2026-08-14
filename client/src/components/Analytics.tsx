@@ -10,12 +10,6 @@ declare global {
   }
 }
 
-/**
- * Sends SPA page views to Google Analytics 4 and Yandex.Metrika on every
- * client-side route change. The initial page view is already sent by the
- * inline snippets in index.html, so the first render is skipped here.
- * On non-production hosts the trackers are not loaded, so the calls no-op.
- */
 export default function Analytics() {
   const location = useLocation();
   const first = useRef(true);

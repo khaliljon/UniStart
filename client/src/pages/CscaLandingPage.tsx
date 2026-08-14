@@ -70,7 +70,6 @@ function CscaLandingPage() {
     }
   }, [isAuthenticated]);
 
-  // Scroll to a hash target (e.g. #news) when navigating from another page.
   useEffect(() => {
     if (location.hash) {
       const el = document.getElementById(location.hash.slice(1));
@@ -94,29 +93,21 @@ function CscaLandingPage() {
     { icon: 'ai', t: s.fAiT, d: s.fAiD },
   ] as const;
 
-  // Packages may require choosing subjects. We carry the chosen package into the
-  // storefront (MockShop on the home page): it opens the subject picker (or adds
-  // straight to the cart for "all subjects" packages) and pays via Polar.
   const buyPackage = (pkg: MockPackage) => {
     sessionStorage.setItem('buyPackage', pkg.key);
     navigate(isAuthenticated ? '/' : '/register');
   };
 
-  // Buy a single mock: send the user to the Home storefront and focus that mock
-  // (tier is chosen there), mirroring how packages behave.
   const buyMockTier = (tpl: MockTemplate) => {
     sessionStorage.setItem('focusMock', String(tpl.mockExamId));
     navigate(isAuthenticated ? '/' : '/register');
   };
 
   const buyBook = (mat: { id: number; subjectKey: string; title: string; titleKz?: string | null; titleEn?: string | null; price: number }) => {
-    // Already owned → send to the library instead of charging again.
     if (isAuthenticated && ownedBooks.has(String(mat.id))) {
       navigate('/materials');
       return;
     }
-    // Send to the Home materials section and focus this book (like packages/mocks),
-    // instead of adding straight to the cart.
     sessionStorage.setItem('focusBook', String(mat.id));
     navigate(isAuthenticated ? '/' : '/register');
   };
@@ -127,7 +118,7 @@ function CscaLandingPage() {
     answered: s.statAnswered,
     success: s.statSuccess,
   } as const;
-  void statMeta; // kept for future use
+  void statMeta;
 
   return (
     <div className="csca-landing">
@@ -135,7 +126,6 @@ function CscaLandingPage() {
 
       <div id="top" />
 
-      {/* ═══ Hero ═══ */}
       <header className="csca-hero csca-wrap">
         <div className="csca-hero-hanzi csca-hanzi">学</div>
         <img
@@ -161,7 +151,6 @@ function CscaLandingPage() {
             <button className="csca-btn csca-btn-ghost" onClick={() => navigate('/csca/about')}>{s.ctaLearnMore}</button>
           </div>
 
-          {/* Countdown */}
           <div className="csca-countdown">
             <div className="csca-cd-label">
               <b>{s.cdNextExam}</b>
@@ -176,7 +165,6 @@ function CscaLandingPage() {
         <MistMountains style={{ position: 'absolute', left: 0, right: 0, bottom: -1, width: '100%', height: 160, color: 'var(--csca-red)', zIndex: 0 }} />
       </header>
 
-      {/* ═══ About CSCA ═══ */}
       <section id="about" className="csca-section">
         <div className="csca-wrap">
           <div className="csca-section-head">
@@ -188,7 +176,6 @@ function CscaLandingPage() {
             </Reveal>
           </div>
 
-          {/* Subjects */}
           <div className="csca-section-head" style={{ marginBottom: '1.6rem' }}>
             <h3 className="csca-h2" style={{ fontSize: '1.5rem' }}>{s.subjectsTitle}</h3>
             <p className="csca-lead">{s.subjectsLead}</p>
@@ -206,7 +193,6 @@ function CscaLandingPage() {
         </div>
       </section>
 
-      {/* ═══ Features ═══ */}
       <section id="features" className="csca-section" style={{ background: 'rgba(255,255,255,0.5)' }}>
         <div className="csca-wrap">
           <div className="csca-section-head">
@@ -224,7 +210,6 @@ function CscaLandingPage() {
         </div>
       </section>
 
-      {/* ═══ Mock exams / packages ═══ */}
       <section id="mocks" className="csca-section">
         <div className="csca-wrap">
           <div className="csca-section-head">
@@ -232,7 +217,6 @@ function CscaLandingPage() {
             <p className="csca-lead">{s.mocksLead}</p>
           </div>
 
-          {/* Free mock banner */}
           <Reveal>
             <div className="csca-card" style={{ display: 'flex', gap: '1.25rem', alignItems: 'center', flexWrap: 'wrap', marginBottom: '1.75rem', background: 'linear-gradient(135deg, rgba(200,16,46,0.06), rgba(201,162,75,0.08))' }}>
               <SealStamp text="免费" size={64} className="csca-seal-anim" />
@@ -252,7 +236,6 @@ function CscaLandingPage() {
             </div>
           ) : (
           <>
-          {/* Individual mocks per subject */}
           {dbTemplates.length > 0 && (
             <>
               <h3 className="csca-h3" style={{ fontSize: '1.15rem', margin: '0 0 1rem' }}>{s.singleMocksTitle}</h3>
@@ -315,7 +298,6 @@ function CscaLandingPage() {
         </div>
       </section>
 
-      {/* ═══ Materials ═══ */}
       <section id="materials" className="csca-section" style={{ background: 'rgba(255,255,255,0.5)' }}>
         <div className="csca-wrap">
           <div className="csca-section-head">
@@ -351,7 +333,6 @@ function CscaLandingPage() {
           )}        </div>
       </section>
 
-      {/* ═══ CTA band ═══ */}
       <section className="csca-wrap csca-section" style={{ paddingTop: '1rem' }}>
         <Reveal variant="zoom">
           <div className="csca-cta-band">
@@ -363,7 +344,6 @@ function CscaLandingPage() {
         </Reveal>
       </section>
 
-      {/* ═══ Footer ═══ */}
       <CscaFooter />
     </div>
   );

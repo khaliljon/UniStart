@@ -42,7 +42,7 @@ function AdminApplicationsPage() {
     try {
       await api.put(`/admin/school-applications/${id}/status`, { status });
       await fetchApps();
-    } catch { /* ignore */ } finally {
+    } catch {} finally {
       setUpdating(null);
     }
   };

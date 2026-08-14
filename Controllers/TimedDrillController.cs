@@ -26,9 +26,6 @@ public class TimedDrillController : ControllerBase
         _db = db;
     }
 
-    /// <summary>
-    /// Get active drill templates
-    /// </summary>
     [HttpGet("templates")]
     public async Task<IActionResult> GetTemplates()
     {
@@ -52,9 +49,6 @@ public class TimedDrillController : ControllerBase
         return Ok(templates);
     }
 
-    /// <summary>
-    /// Start a new timed drill session
-    /// </summary>
     [HttpPost("start")]
     [ProducesResponseType(typeof(DrillResultDto), StatusCodes.Status200OK)]
     public async Task<IActionResult> StartDrill([FromBody] StartDrillRequest request)
@@ -64,9 +58,6 @@ public class TimedDrillController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>
-    /// Get next question for an active drill
-    /// </summary>
     [HttpGet("{drillId}/next")]
     [ProducesResponseType(typeof(DrillQuestionDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -77,9 +68,6 @@ public class TimedDrillController : ControllerBase
         return Ok(question);
     }
 
-    /// <summary>
-    /// Submit an answer during a drill
-    /// </summary>
     [HttpPost("answer")]
     [ProducesResponseType(typeof(DrillAnswerResultDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
@@ -93,9 +81,6 @@ public class TimedDrillController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>
-    /// Complete/end a drill session manually
-    /// </summary>
     [HttpPost("{drillId}/complete")]
     [ProducesResponseType(typeof(DrillResultDto), StatusCodes.Status200OK)]
     public async Task<IActionResult> CompleteDrill(int drillId)
@@ -105,9 +90,6 @@ public class TimedDrillController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>
-    /// Get personal best records for each drill type
-    /// </summary>
     [HttpGet("personal-bests")]
     [ProducesResponseType(typeof(IEnumerable<PersonalBestDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetPersonalBests()
@@ -117,9 +99,6 @@ public class TimedDrillController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>
-    /// Get drill session history
-    /// </summary>
     [HttpGet("history")]
     [ProducesResponseType(typeof(IEnumerable<DrillResultDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetHistory([FromQuery] int limit = 20)

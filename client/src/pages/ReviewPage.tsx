@@ -31,7 +31,6 @@ export default function ReviewPage() {
       navigate('/');
       return;
     }
-    // Check daily limit for free users before loading review questions
     if (!isPro) {
       subscriptionService.getDailyUsage().then((usage) => {
         setDailyUsage(usage);
@@ -40,7 +39,6 @@ export default function ReviewPage() {
           setLoading(false);
           return;
         }
-        // Free: 5 review questions, Pro: unlimited
         const limit = 5;
         loadWeakQuestions(limit);
       }).catch(() => {
@@ -63,11 +61,9 @@ export default function ReviewPage() {
     }
   };
 
-  // Daily limit check on answer submission
   const handleSubmit = async () => {
     if (selectedOption === null) return;
     
-    // Re-check limit before submitting
     if (!isPro) {
       try {
         const usage = await subscriptionService.getDailyUsage();
@@ -76,7 +72,7 @@ export default function ReviewPage() {
           setLimitBlocked(true);
           return;
         }
-      } catch { /* proceed */ }
+      } catch {}
     }
 
     const currentQuestion = questions[currentIndex];
@@ -120,7 +116,6 @@ export default function ReviewPage() {
     );
   }
 
-  // Blocked state when daily limit reached
   if (limitBlocked) {
     return (
       <div className="animate-fade-in" style={{ maxWidth: '500px', margin: '2rem auto' }}>
@@ -186,7 +181,6 @@ export default function ReviewPage() {
 
   return (
     <div className="animate-fade-in" style={{ maxWidth: '700px', margin: '0 auto' }}>
-      {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
         <span style={{ 
           padding: '0.375rem 0.75rem', 
@@ -203,7 +197,6 @@ export default function ReviewPage() {
         </button>
       </div>
 
-      {/* Selected Exams */}
       {selectedExams.length > 0 && (
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
           {selectedExams.map(exam => (
@@ -221,7 +214,6 @@ export default function ReviewPage() {
         </div>
       )}
 
-      {/* Progress */}
       <div className="card" style={{ padding: '1rem', marginBottom: '1.5rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
           <span>{t.reviewPage.questionOf.replace('{n}', String(currentIndex + 1)).replace('{total}', String(questions.length))}</span>
@@ -238,7 +230,6 @@ export default function ReviewPage() {
         </div>
       </div>
 
-      {/* Question Card */}
       <div className="card card-static animate-fade-in-up" key={currentQuestion.id}>
         <div style={{ marginBottom: '1rem' }}>
           <span style={{ 
@@ -297,7 +288,6 @@ export default function ReviewPage() {
           })}
         </div>
 
-        {/* Result Feedback */}
         {answerResult && (
           <div className="animate-fade-in-up" style={{
             marginTop: '1.5rem',
@@ -331,7 +321,6 @@ export default function ReviewPage() {
           </div>
         )}
 
-        {/* Actions */}
         <div style={{ marginTop: '1.5rem' }}>
           {!answerResult ? (
             <button

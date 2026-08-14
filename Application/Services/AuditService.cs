@@ -49,7 +49,6 @@ public class AuditService : IAuditService
         }
         catch (Exception ex)
         {
-            // Audit logging should never crash the main operation
             _logger.LogError(ex, "Failed to write audit log: {Action} {EntityType} {EntityId}",
                 action, entityType, entityId);
         }

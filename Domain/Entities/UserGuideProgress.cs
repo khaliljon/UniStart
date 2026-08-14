@@ -7,7 +7,6 @@ public class UserGuideProgress
     public int GuideId { get; set; }
     public DateTime ReadAt { get; set; } = DateTime.UtcNow;
 
-    // Navigation
     public virtual User User { get; set; } = null!;
     public virtual StrategyGuide Guide { get; set; } = null!;
 }

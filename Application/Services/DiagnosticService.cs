@@ -32,7 +32,6 @@ public class DiagnosticService : IDiagnosticService
             .FirstOrDefaultAsync(e => e.Code == examTypeCode)
             ?? throw new InvalidOperationException($"Exam type '{examTypeCode}' not found");
 
-        // Abandon any existing in-progress diagnostic sessions
         var existingSessions = await _context.TestSessions
             .Where(s => s.UserId == userId && s.Mode == DiagnosticMode && s.CompletedAt == null)
             .ToListAsync();
@@ -42,10 +41,8 @@ public class DiagnosticService : IDiagnosticService
             es.Score = 0;
         }
 
-        // Select questions: spread across sections, mix of difficulties
         var questions = await SelectDiagnosticQuestionsAsync(examTypeCode, userId);
 
-        // Create session
         var session = new TestSession
         {
             UserId = userId,
@@ -57,17 +54,16 @@ public class DiagnosticService : IDiagnosticService
         _context.TestSessions.Add(session);
         await _unitOfWork.SaveChangesAsync();
 
-        // Pre-create placeholder answers to track question order
         for (int i = 0; i < questions.Count; i++)
         {
             _context.UserAnswers.Add(new UserAnswer
             {
                 UserId = userId,
                 QuestionId = questions[i].Id,
-                AnswerOptionId = questions[i].AnswerOptions.First().Id, // placeholder
-                AnsweredAt = DateTime.UtcNow.AddYears(10), // far future = not yet answered
+                AnswerOptionId = questions[i].AnswerOptions.First().Id,
+                AnsweredAt = DateTime.UtcNow.AddYears(10),
                 TestSessionId = session.Id,
-                TimeSpentSeconds = -1 // sentinel: not yet answered
+                TimeSpentSeconds = -1
             });
         }
         await _unitOfWork.SaveChangesAsync();
@@ -89,9 +85,8 @@ public class DiagnosticService : IDiagnosticService
             ?? throw new InvalidOperationException("Diagnostic session not found");
 
         if (session.CompletedAt != null)
-            return null; // already completed
+            return null;
 
-        // Find first unanswered question (TimeSpentSeconds == -1 is sentinel)
         var answers = await _context.UserAnswers
             .Include(a => a.Question)
                 .ThenInclude(q => q.Topic)
@@ -104,7 +99,7 @@ public class DiagnosticService : IDiagnosticService
 
         var currentIndex = answers.FindIndex(a => a.TimeSpentSeconds == -1);
         if (currentIndex == -1)
-            return null; // all answered
+            return null;
 
         var answer = answers[currentIndex];
         var question = answer.Question;
@@ -130,7 +125,6 @@ public class DiagnosticService : IDiagnosticService
         if (session.CompletedAt != null)
             throw new InvalidOperationException("Diagnostic already completed");
 
-        // Find the placeholder answer for this question
         var answer = await _context.UserAnswers
             .Include(a => a.Question)
                 .ThenInclude(q => q.AnswerOptions)
@@ -148,17 +142,14 @@ public class DiagnosticService : IDiagnosticService
         var correctOption = question.AnswerOptions.First(o => o.IsCorrect);
         var isCorrect = selectedOption.IsCorrect;
 
-        // Update the placeholder answer with real data
         answer.AnswerOptionId = dto.AnswerOptionId;
         answer.AnsweredAt = DateTime.UtcNow;
         answer.TimeSpentSeconds = dto.TimeSpentSeconds;
 
-        // Update section ability via adaptive engine
         if (question.Topic?.SectionId is int diagSectionId)
             await _adaptiveEngine.UpdateSkillLevelAsync(userId, diagSectionId, isCorrect);
         await _unitOfWork.SaveChangesAsync();
 
-        // Check if diagnostic is complete
         var allAnswers = await _context.UserAnswers
             .Where(a => a.TestSessionId == dto.SessionId)
             .OrderBy(a => a.Id)
@@ -169,7 +160,6 @@ public class DiagnosticService : IDiagnosticService
 
         if (isCompleted)
         {
-            // Complete the session
             var answersWithOptions = await _context.UserAnswers
                 .Include(a => a.AnswerOption)
                 .Where(a => a.TestSessionId == dto.SessionId)
@@ -222,26 +212,22 @@ public class DiagnosticService : IDiagnosticService
         var scorePercent = totalQuestions > 0
             ? Math.Round((double)correctCount / totalQuestions * 100, 1) : 0;
 
-        // Get user's theta for score prediction
         var skillProfiles = await _context.UserSkillProfiles
             .Where(p => p.UserId == userId)
             .ToListAsync();
         var avgTheta = skillProfiles.Count > 0 ? skillProfiles.Average(p => p.Theta) : 0.0;
         var avgSE = skillProfiles.Count > 0 ? skillProfiles.Average(p => p.ThetaSE) : 1.0;
 
-        // Predict score based on exam type
         var sections = session.ExamType.Sections.ToList();
         var maxScore = sections.Sum(s => s.MaxScore);
         var minScore = sections.Sum(s => s.MinScore);
         var scoreRange = maxScore - minScore;
 
-        // Map theta to predicted score (logistic mapping)
         var predictedPercent = 1.0 / (1.0 + Math.Exp(-1.0 * avgTheta)); // 0..1
         var predictedScore = (int)Math.Round(minScore + predictedPercent * scoreRange);
         var predictedMin = (int)Math.Round(minScore + (1.0 / (1.0 + Math.Exp(-1.0 * (avgTheta - 1.645 * avgSE)))) * scoreRange);
         var predictedMax = (int)Math.Round(minScore + (1.0 / (1.0 + Math.Exp(-1.0 * (avgTheta + 1.645 * avgSE)))) * scoreRange);
 
-        // Determine level
         var levelPercent = (double)(predictedScore - minScore) / scoreRange;
         var level = levelPercent switch
         {
@@ -252,7 +238,6 @@ public class DiagnosticService : IDiagnosticService
             _ => "Отличный"
         };
 
-        // Section breakdown
         var sectionResults = answers
             .GroupBy(a => a.Question.Topic.Section?.Name ?? "Other")
             .Select(g => new DiagnosticSectionResultDto(
@@ -265,7 +250,6 @@ public class DiagnosticService : IDiagnosticService
             ))
             .ToList();
 
-        // Answer review
         var answerReviews = answers.Select(a =>
         {
             var selectedOpt = a.Question.AnswerOptions.First(o => o.Id == a.AnswerOptionId);
@@ -301,11 +285,9 @@ public class DiagnosticService : IDiagnosticService
         );
     }
 
-    // ─── Question Selection ──────────────────────────────────────
 
     private async Task<List<Question>> SelectDiagnosticQuestionsAsync(string examTypeCode, int userId)
     {
-        // Get all questions for this exam type, grouped by section
         var questions = await _context.Questions
             .Include(q => q.Topic)
                 .ThenInclude(t => t.Section)
@@ -316,7 +298,6 @@ public class DiagnosticService : IDiagnosticService
         if (questions.Count == 0)
             throw new InvalidOperationException("No questions available for this exam type");
 
-        // Get already answered question IDs to prefer fresh questions
         var answeredIds = await _context.UserAnswers
             .Where(ua => ua.UserId == userId)
             .Select(ua => ua.QuestionId)
@@ -324,7 +305,6 @@ public class DiagnosticService : IDiagnosticService
             .ToListAsync();
         var answeredSet = answeredIds.ToHashSet();
 
-        // Group by section
         var bySection = questions.GroupBy(q => q.Topic.Section!.Name).ToList();
         var questionsPerSection = Math.Max(1, DiagnosticQuestionCount / bySection.Count);
         var remainder = DiagnosticQuestionCount - questionsPerSection * bySection.Count;
@@ -338,7 +318,6 @@ public class DiagnosticService : IDiagnosticService
             var count = questionsPerSection + (remainder > 0 ? 1 : 0);
             if (remainder > 0) remainder--;
 
-            // Select balanced difficulty: Easy, Medium, Hard
             var byDifficulty = sectionQuestions.GroupBy(q => q.Difficulty).ToDictionary(g => g.Key, g => g.ToList());
 
             var sectionSelected = new List<Question>();
@@ -349,7 +328,6 @@ public class DiagnosticService : IDiagnosticService
                 if (sectionSelected.Count >= count) break;
                 if (!byDifficulty.TryGetValue(diff, out var pool)) continue;
 
-                // Prefer unanswered
                 var unanswered = pool.Where(q => !answeredSet.Contains(q.Id)).ToList();
                 var source = unanswered.Count > 0 ? unanswered : pool;
 
@@ -357,12 +335,10 @@ public class DiagnosticService : IDiagnosticService
                 if (pick != null)
                 {
                     sectionSelected.Add(pick);
-                    // Remove from pool to avoid duplicates
                     pool.Remove(pick);
                 }
             }
 
-            // Fill remaining from any difficulty
             while (sectionSelected.Count < count && sectionQuestions.Count > 0)
             {
                 var remaining = sectionQuestions.Where(q => !sectionSelected.Contains(q)).ToList();
@@ -375,7 +351,6 @@ public class DiagnosticService : IDiagnosticService
             selected.AddRange(sectionSelected.Take(count));
         }
 
-        // If we still need more, fill from remaining
         while (selected.Count < DiagnosticQuestionCount && questions.Count > selected.Count)
         {
             var remaining = questions.Where(q => !selected.Contains(q)).ToList();
@@ -383,7 +358,6 @@ public class DiagnosticService : IDiagnosticService
             selected.Add(remaining[rng.Next(remaining.Count)]);
         }
 
-        // Shuffle the final selection
         return selected.OrderBy(_ => rng.Next()).ToList();
     }
 }

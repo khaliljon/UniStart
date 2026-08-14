@@ -42,12 +42,6 @@ public static class UniStartStartupExtensions
     {
         services.AddHttpContextAccessor();
 
-        // ── Data Protection ──────────────────────────────────
-        // Persist keys to a stable location so they survive container
-        // restarts/rebuilds. Without this, ASP.NET regenerates the key ring on
-        // every start (ephemeral container FS), which invalidates antiforgery
-        // tokens and anything encrypted via the Data Protection API, and floods
-        // the logs with "No XML encryptor configured" / key-not-found warnings.
         var dpBuilder = services.AddDataProtection().SetApplicationName("UniStart");
         var keysPath = Environment.GetEnvironmentVariable("DATA_PROTECTION_KEYS_DIR");
         if (!string.IsNullOrWhiteSpace(keysPath))
@@ -188,13 +182,9 @@ public static class UniStartStartupExtensions
 
             options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
             {
-                // Admins are exempt from the global limiter — bulk admin actions
-                // (mass delete, repeated lookups) must not be throttled.
                 if (context.User.Identity?.IsAuthenticated == true && context.User.IsInRole("Admin"))
                     return RateLimitPartition.GetNoLimiter("admin");
 
-                // Authenticated users get their own generous per-user budget so
-                // one user's activity can't starve another sharing the same IP.
                 var userId = context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
                 if (context.User.Identity?.IsAuthenticated == true && userId != null)
                     return RateLimitPartition.GetSlidingWindowLimiter(
@@ -207,7 +197,6 @@ public static class UniStartStartupExtensions
                             QueueLimit = 0,
                         });
 
-                // Anonymous traffic is limited per IP.
                 return RateLimitPartition.GetSlidingWindowLimiter(
                     context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
                     _ => new SlidingWindowRateLimiterOptions
@@ -372,8 +361,6 @@ public static class UniStartStartupExtensions
         app.UseAuthentication();
         app.UseAuthorization();
 
-        // Rate limiter must run AFTER authentication so the global limiter can
-        // read the authenticated user (to exempt admins / partition per user).
         app.UseRateLimiter();
 
         app.Use(async (context, next) =>
@@ -386,7 +373,6 @@ public static class UniStartStartupExtensions
                     var cache = context.RequestServices.GetRequiredService<IMemoryCache>();
                     var cacheKey = $"blocked:{userId}";
 
-                    // Throttled "last seen" update — at most one DB write per 2 min per user.
                     var seenKey = $"lastseen:{userId}";
                     if (!cache.TryGetValue(seenKey, out _))
                     {
@@ -480,9 +466,6 @@ public static class UniStartStartupExtensions
             DashboardTitle = "UniStart Jobs"
         });
 
-        // Notification emails (streak reminders, weekly digest) were removed —
-        // only transactional emails remain (verification code, welcome, receipt).
-        // Unschedule any previously registered jobs so they stop firing.
         RecurringJob.RemoveIfExists("streak-reminder");
         RecurringJob.RemoveIfExists("weekly-digest");
 

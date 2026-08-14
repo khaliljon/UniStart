@@ -49,7 +49,6 @@ function StudyPlanPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Goal form state
   const [showGoalForm, setShowGoalForm] = useState(false);
   const [formExam, setFormExam] = useState('');
   const [formDate, setFormDate] = useState('');
@@ -59,7 +58,6 @@ function StudyPlanPage() {
   const [formSections, setFormSections] = useState<ExamSection[]>([]);
   const [selectedSectionIds, setSelectedSectionIds] = useState<number[]>([]);
 
-  // Delete confirmation
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [hasFullStudyPlan, setHasFullStudyPlan] = useState(true);
 
@@ -67,11 +65,10 @@ function StudyPlanPage() {
     try {
       setIsLoading(true);
 
-      // Auto-complete today's entries from actual answers first
       try {
         const autoCompletedToday = await studyPlanService.autoCompleteToday();
         setTodayPlan(autoCompletedToday);
-      } catch { /* ignore — will load normally */ }
+      } catch {}
 
       const [goalData, todayData, planData, examData] = await Promise.all([
         studyPlanService.getActiveGoal(),
@@ -103,20 +100,18 @@ function StudyPlanPage() {
     }).catch(() => {});
   }, [loadData]);
 
-  // Load sections when exam changes in goal form
   useEffect(() => {
     if (!formExam) { setFormSections([]); setSelectedSectionIds([]); return; }
     let cancelled = false;
     examService.getExamSections(formExam).then((sections) => {
       if (!cancelled) {
         setFormSections(sections);
-        setSelectedSectionIds(sections.map((s) => s.id)); // all selected by default
+        setSelectedSectionIds(sections.map((s) => s.id));
       }
     }).catch(() => { if (!cancelled) setFormSections([]); });
     return () => { cancelled = true; };
   }, [formExam]);
 
-  // ─── Handlers ──────────────────────────────────────────
 
   const handleCreateGoal = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -136,11 +131,9 @@ function StudyPlanPage() {
       setGoal(newGoal);
       setShowGoalForm(false);
 
-      // Generate plan immediately
       const newPlan = await studyPlanService.generatePlan(newGoal.id);
       setPlan(newPlan);
 
-      // Reload today
       const todayData = await studyPlanService.getTodayPlan();
       setTodayPlan(todayData);
 
@@ -155,7 +148,6 @@ function StudyPlanPage() {
   };
 
   const handleStartEntry = (entry: StudyPlanEntry) => {
-    // Navigate to practice filtered by this entry's topic
     navigate(`/learn?tab=practice&topicId=${entry.topicId}&planEntryId=${entry.id}`);
   };
 
@@ -173,7 +165,6 @@ function StudyPlanPage() {
     }
   };
 
-  // ─── Render ────────────────────────────────────────────
 
   if (isLoading) {
     return (
@@ -213,7 +204,6 @@ function StudyPlanPage() {
         )}
       </div>
 
-      {/* ─── Goal Card ─── */}
       {goal ? (
         <GoalCard goal={goal} onDelete={() => setShowDeleteConfirm(true)} />
       ) : (
@@ -228,7 +218,6 @@ function StudyPlanPage() {
         </div>
       )}
 
-      {/* ─── Goal Form Modal ─── */}
       {showGoalForm && (
         <GoalFormModal
           exams={exams}
@@ -249,7 +238,6 @@ function StudyPlanPage() {
         />
       )}
 
-      {/* ─── Tabs ─── */}
       {goal && (
         <>
           <div style={{
@@ -300,7 +288,6 @@ function StudyPlanPage() {
         </>
       )}
 
-      {/* ─── Delete Confirmation Dialog ─── */}
       {showDeleteConfirm && (
         <div style={{
           position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex',
@@ -331,9 +318,6 @@ function StudyPlanPage() {
   );
 }
 
-// ═══════════════════════════════════════════════════════════
-//  SUB COMPONENTS
-// ═══════════════════════════════════════════════════════════
 
 function GoalCard({ goal, onDelete }: { goal: StudyGoal; onDelete: () => void }) {
   const { t, dateLocale } = useTranslation();
@@ -366,7 +350,6 @@ function GoalCard({ goal, onDelete }: { goal: StudyGoal; onDelete: () => void })
             <StatBox label={t.studyPlan.deadline} value={new Date(goal.targetDate).toLocaleDateString(dateLocale)} />
           </div>
         </div>
-        {/* Three-dot menu instead of dangerous X */}
         <div style={{ position: 'relative' }}>
           <button
             onClick={() => setShowMenu(!showMenu)}
@@ -415,7 +398,6 @@ function StatBox({ label, value, color }: { label: string; value: string | numbe
   );
 }
 
-// ─── Today Tab ────────────────────────────────────────────
 
 function TodayTab({ todayPlan, onStart }: { todayPlan: TodayPlan; onStart: (entry: StudyPlanEntry) => void }) {
   const { t } = useTranslation();
@@ -425,7 +407,6 @@ function TodayTab({ todayPlan, onStart }: { todayPlan: TodayPlan; onStart: (entr
 
   return (
     <div className="animate-fade-in-up">
-      {/* Recommendation */}
       <div className="card card-static" style={{ padding: '1rem', marginBottom: '1rem', background: 'var(--primary-bg)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <div>
@@ -446,7 +427,6 @@ function TodayTab({ todayPlan, onStart }: { todayPlan: TodayPlan; onStart: (entr
         )}
       </div>
 
-      {/* Entries */}
       {todayPlan.entries.length === 0 ? (
         <div className="card card-static" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
           {t.studyPlan.noTasksToday}
@@ -517,11 +497,9 @@ function EntryCard({ entry, onStart }: { entry: StudyPlanEntry; onStart: () => v
   );
 }
 
-// ─── Plan Tab ─────────────────────────────────────────────
 
 function PlanTab({ plan }: { plan: StudyPlan }) {
   const { t, dateLocale } = useTranslation();
-  // Group entries by date
   const groupedEntries = new Map<string, StudyPlanEntry[]>();
   for (const entry of plan.entries) {
     const dateKey = entry.date.split('T')[0];
@@ -534,7 +512,6 @@ function PlanTab({ plan }: { plan: StudyPlan }) {
 
   return (
     <div className="animate-fade-in-up">
-      {/* Plan overview */}
       <div className="card card-static" style={{ padding: '1rem', marginBottom: '1rem' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '1rem' }}>
           <StatBox label={t.studyPlan.totalTasks} value={plan.totalEntries} />
@@ -550,7 +527,6 @@ function PlanTab({ plan }: { plan: StudyPlan }) {
         </div>
       </div>
 
-      {/* Calendar view */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
         {sortedDates.map((dateStr) => {
           const entries = groupedEntries.get(dateStr) || [];
@@ -598,7 +574,6 @@ function PlanTab({ plan }: { plan: StudyPlan }) {
   );
 }
 
-// ─── Stats Tab ────────────────────────────────────────────
 
 function StatsTab({ stats }: { stats: PlanStats }) {
   const { t, dateLocale } = useTranslation();
@@ -611,7 +586,6 @@ function StatsTab({ stats }: { stats: PlanStats }) {
 
   return (
     <div className="animate-fade-in-up">
-      {/* Summary stats */}
       <div className="card card-static" style={{ padding: '1.25rem', marginBottom: '1rem' }}>
         <h3 style={{ margin: '0 0 1rem' }}>{t.studyPlan.generalStats}</h3>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '1rem' }}>
@@ -631,7 +605,6 @@ function StatsTab({ stats }: { stats: PlanStats }) {
         </div>
       </div>
 
-      {/* Weekly completion chart */}
       {weeklyChartData.length > 0 && (
         <div className="card card-static" style={{ padding: '1.25rem', marginBottom: '1rem' }}>
           <h3 style={{ margin: '0 0 1rem' }}>{t.studyPlan.weeklyProgress}</h3>
@@ -653,7 +626,6 @@ function StatsTab({ stats }: { stats: PlanStats }) {
         </div>
       )}
 
-      {/* Accuracy trend */}
       {weeklyChartData.length > 1 && (
         <div className="card card-static" style={{ padding: '1.25rem' }}>
           <h3 style={{ margin: '0 0 1rem' }}>{t.studyPlan.accuracyTrend}</h3>
@@ -677,7 +649,6 @@ function StatsTab({ stats }: { stats: PlanStats }) {
   );
 }
 
-// ─── Modals ───────────────────────────────────────────────
 
 const EXAM_SCORE_CONFIG: Record<string, { min: number; max: number; step: number; default: number }> = {
   SAT:  { min: 400, max: 1600, step: 10, default: 1200 },
@@ -702,7 +673,6 @@ function GoalFormModal({
   const { t } = useTranslation();
   const cfg = EXAM_SCORE_CONFIG[formExam] ?? DEFAULT_SCORE_CONFIG;
 
-  // Dynamic max based on selected sections (if sections have maxScore)
   const selectedSections = sections.filter((s) => selectedSectionIds.includes(s.id));
   const hasSectionScores = sections.length > 0 && sections.some((s) => s.maxScore > 0);
   const dynamicMax = hasSectionScores && selectedSections.length > 0
@@ -723,7 +693,6 @@ function GoalFormModal({
       ? selectedSectionIds.filter((x) => x !== id)
       : [...selectedSectionIds, id];
     onChangeSections(next);
-    // Clamp score to new range
     if (hasSectionScores && next.length > 0) {
       const newMax = sections.filter((s) => next.includes(s.id)).reduce((sum, s) => sum + s.maxScore, 0);
       if (formScore > newMax) onChangeScore(newMax);

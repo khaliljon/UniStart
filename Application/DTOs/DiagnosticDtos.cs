@@ -2,13 +2,11 @@ using System.ComponentModel.DataAnnotations;
 
 namespace UniStart.Application.DTOs;
 
-// ─── Requests ────────────────────────────────────────────────
 
 public record StartDiagnosticDto(
     [Required] string ExamTypeCode
 );
 
-// ─── Responses ───────────────────────────────────────────────
 
 public record DiagnosticSessionDto(
     int SessionId,

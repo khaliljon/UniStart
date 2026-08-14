@@ -3,9 +3,6 @@ using UniStart.Application.DTOs;
 
 namespace UniStart.Application.Validators;
 
-// ═══════════════════════════════════════════════════════════
-//  CREATE QUESTION
-// ═══════════════════════════════════════════════════════════
 
 public class CreateQuestionDtoValidator : AbstractValidator<CreateQuestionDto>
 {
@@ -67,9 +64,6 @@ public class CreateAnswerOptionDtoValidator : AbstractValidator<CreateAnswerOpti
     }
 }
 
-// ═══════════════════════════════════════════════════════════
-//  UPDATE QUESTION
-// ═══════════════════════════════════════════════════════════
 
 public class UpdateQuestionDtoValidator : AbstractValidator<UpdateQuestionDto>
 {
@@ -118,9 +112,6 @@ public class UpdateQuestionDtoValidator : AbstractValidator<UpdateQuestionDto>
     }
 }
 
-// ═══════════════════════════════════════════════════════════
-//  BULK IMPORT
-// ═══════════════════════════════════════════════════════════
 
 public class BulkImportDtoValidator : AbstractValidator<BulkImportDto>
 {
@@ -138,9 +129,6 @@ public class BulkImportDtoValidator : AbstractValidator<BulkImportDto>
     }
 }
 
-// ═══════════════════════════════════════════════════════════
-//  ADMIN UPDATE USER
-// ═══════════════════════════════════════════════════════════
 
 public class AdminUpdateUserDtoValidator : AbstractValidator<AdminUpdateUserDto>
 {
@@ -176,9 +164,6 @@ public class AdminUpdateUserDtoValidator : AbstractValidator<AdminUpdateUserDto>
     }
 }
 
-// ═══════════════════════════════════════════════════════════
-//  CREATE TOPIC
-// ═══════════════════════════════════════════════════════════
 
 public class CreateTopicDtoValidator : AbstractValidator<CreateTopicDto>
 {

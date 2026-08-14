@@ -13,7 +13,6 @@ function AdminProfilePage() {
   const dispatch = useAppDispatch();
   const { t } = useTranslation();
 
-  // Password change
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -21,13 +20,11 @@ function AdminProfilePage() {
   const [pwdSuccess, setPwdSuccess] = useState<string | null>(null);
   const [pwdLoading, setPwdLoading] = useState(false);
 
-  // Phone change
   const [editPhone, setEditPhone] = useState(user?.phoneNumber || '');
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const [phoneSuccess, setPhoneSuccess] = useState<string | null>(null);
   const [phoneLoading, setPhoneLoading] = useState(false);
 
-  // Name change
   const [editFirstName, setEditFirstName] = useState(user?.firstName || '');
   const [editLastName, setEditLastName] = useState(user?.lastName || '');
   const [nameError, setNameError] = useState<string | null>(null);
@@ -102,7 +99,6 @@ function AdminProfilePage() {
     <div className="animate-fade-in" style={{ maxWidth: '640px', margin: '0 auto', padding: '2rem 0' }}>
       <h1 style={{ marginBottom: '1.5rem' }}>{t.profilePage.title}</h1>
 
-      {/* ─── User Info Card ─── */}
       <div className="card" style={{ padding: '1.5rem', marginBottom: '1.25rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
           <div style={{
@@ -137,7 +133,6 @@ function AdminProfilePage() {
         </div>
       </div>
 
-      {/* ─── Edit Name ─── */}
       <div className="card" style={{ padding: '1.5rem', marginBottom: '1.25rem' }}>
         <h3 style={{ margin: '0 0 1rem', fontSize: '1rem' }}>{t.auth.firstName} / {t.auth.lastName}</h3>
         {nameError && (
@@ -166,7 +161,6 @@ function AdminProfilePage() {
         </div>
       </div>
 
-      {/* ─── Change Password ─── */}
       <div className="card" style={{ padding: '1.5rem', marginBottom: '1.25rem' }}>
         <h3 style={{ margin: '0 0 1rem', fontSize: '1rem' }}>{t.profilePage.changePassword}</h3>
 
@@ -229,7 +223,6 @@ function AdminProfilePage() {
         </div>
       </div>
 
-      {/* ─── Edit Phone ─── */}
       <div className="card" style={{ padding: '1.5rem', marginBottom: '1.25rem' }}>
         <h3 style={{ margin: '0 0 1rem', fontSize: '1rem' }}>{t.auth.phone}</h3>
 

@@ -2,21 +2,13 @@ import { useEffect, useRef, useState, type ReactNode, type CSSProperties } from 
 
 interface RevealProps {
   children: ReactNode;
-  /** Direction/style of the entrance. */
   variant?: 'up' | 'left' | 'right' | 'zoom';
-  /** Delay before the transition starts (ms). */
   delay?: number;
-  /** Stagger direct children (for grids of cards). */
   stagger?: boolean;
   className?: string;
   style?: CSSProperties;
 }
 
-/**
- * Reveals its children with a smooth entrance the first time they scroll into
- * view (IntersectionObserver). Pure CSS drives the motion; this only toggles a
- * class. Honors prefers-reduced-motion via the CSS.
- */
 export default function Reveal({
   children, variant = 'up', delay = 0, stagger = false, className = '', style,
 }: RevealProps) {

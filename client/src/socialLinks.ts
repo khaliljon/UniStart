@@ -1,4 +1,3 @@
-// Central place for real social / contact links used across the app.
 export const SOCIAL_LINKS = {
   telegramChannel: 'https://t.me/unistart_csca',
   supportBot: 'https://t.me/unistart_support_bot',

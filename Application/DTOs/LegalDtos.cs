@@ -1,6 +1,5 @@
 namespace UniStart.Application.DTOs;
 
-/// <summary>Public-facing legal document payload.</summary>
 public record LegalDocumentDto(
     string Slug,
     string Title,
@@ -14,7 +13,6 @@ public record LegalDocumentDto(
     string? LastUpdatedLabelKz = null,
     string? LastUpdatedLabelEn = null);
 
-/// <summary>Admin update payload for a legal document.</summary>
 public record UpdateLegalDocumentDto(
     string Title,
     string LastUpdatedLabel,

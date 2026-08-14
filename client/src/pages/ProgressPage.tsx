@@ -28,7 +28,6 @@ function ProgressPage() {
 
   return (
     <div className="animate-fade-in" style={{ padding: '1.5rem 0' }}>
-      {/* Tab bar */}
       <div className="learn-tabs">
         {TABS.map(tab => (
           <button
@@ -42,7 +41,6 @@ function ProgressPage() {
         ))}
       </div>
 
-      {/* Tab content */}
       <div style={{ marginTop: '0.5rem' }}>
         {activeTab === 'overview' && <AnalyticsPage />}
         {activeTab === 'prediction' && <PredictionPage />}

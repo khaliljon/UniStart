@@ -19,7 +19,6 @@ public class SchoolAdminMocksController : ControllerBase
         _db = db;
     }
 
-    /// <summary>GET /api/school-admin/mocks/exam-types</summary>
     [HttpGet("exam-types")]
     public async Task<IActionResult> GetExamTypes()
     {
@@ -30,7 +29,6 @@ public class SchoolAdminMocksController : ControllerBase
         return Ok(types);
     }
 
-    /// <summary>GET /api/school-admin/mocks/exam-types/{code}/sections</summary>
     [HttpGet("exam-types/{code}/sections")]
     public async Task<IActionResult> GetExamSections(string code)
     {
@@ -41,15 +39,12 @@ public class SchoolAdminMocksController : ControllerBase
             {
                 id = s.Id,
                 name = s.Name,
-                // How many questions exist in the bank for this section (drives the
-                // admin "enough questions?" indicator).
                 availableQuestions = _db.Questions.Count(q => q.Topic.SectionId == s.Id),
             })
             .ToListAsync();
         return Ok(sections);
     }
 
-    /// <summary>GET /api/school-admin/mocks</summary>
     [HttpGet]
     public async Task<IActionResult> List()
     {
@@ -78,7 +73,6 @@ public class SchoolAdminMocksController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>GET /api/school-admin/mocks/{id}</summary>
     [HttpGet("{id:int}")]
     public async Task<IActionResult> Get(int id)
     {
@@ -114,7 +108,6 @@ public class SchoolAdminMocksController : ControllerBase
         return Ok(dto);
     }
 
-    /// <summary>POST /api/school-admin/mocks</summary>
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] SaveMockExamDto dto)
     {
@@ -170,7 +163,6 @@ public class SchoolAdminMocksController : ControllerBase
         ));
     }
 
-    /// <summary>PUT /api/school-admin/mocks/{id}</summary>
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Update(int id, [FromBody] SaveMockExamDto dto)
     {
@@ -190,7 +182,6 @@ public class SchoolAdminMocksController : ControllerBase
         exam.TotalTimeMinutes = dto.TotalTimeMinutes;
         exam.IsActive = dto.IsActive;
 
-        // Simple sync strategy for sections: remove old ones, add new ones
         _db.MockExamSections.RemoveRange(exam.Sections);
         exam.Sections.Clear();
 
@@ -232,7 +223,6 @@ public class SchoolAdminMocksController : ControllerBase
         ));
     }
 
-    /// <summary>PUT /api/school-admin/mocks/{id}/active</summary>
     [HttpPut("{id:int}/active")]
     public async Task<IActionResult> ToggleActive(int id, [FromBody] ToggleActiveDto dto)
     {
@@ -245,7 +235,6 @@ public class SchoolAdminMocksController : ControllerBase
         return Ok(new { id = exam.Id, isActive = exam.IsActive });
     }
 
-    /// <summary>DELETE /api/school-admin/mocks/{id}</summary>
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id)
     {

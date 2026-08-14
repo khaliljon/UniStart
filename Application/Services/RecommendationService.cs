@@ -29,9 +29,6 @@ public class RecommendationService : IRecommendationService
     private static string L(string lang, string ru, string kz, string en)
         => lang switch { "kz" => kz, "en" => en, _ => ru };
 
-    // ═══════════════════════════════════════════════════════
-    //  DAILY BRIEFING
-    // ═══════════════════════════════════════════════════════
 
     public async Task<DailyBriefingDto> GetDailyBriefingAsync(int userId, List<int>? sectionIds = null)
     {
@@ -51,9 +48,6 @@ public class RecommendationService : IRecommendationService
         );
     }
 
-    // ═══════════════════════════════════════════════════════
-    //  AFTER-SESSION RECOMMENDATIONS
-    // ═══════════════════════════════════════════════════════
 
     public async Task<AfterSessionDto> GetAfterSessionRecommendationsAsync(int userId, int sessionId)
     {
@@ -71,7 +65,6 @@ public class RecommendationService : IRecommendationService
 
         var recs = new List<RecommendationDto>();
 
-        // ─── Analyze errors per topic ────────────────────
         var topicErrors = session.Answers
             .Where(a => !a.AnswerOption!.IsCorrect)
             .GroupBy(a => a.Question!.Topic)
@@ -100,7 +93,6 @@ public class RecommendationService : IRecommendationService
             ));
         }
 
-        // ─── Praise strong topics ────────────────────────
         var topicSuccess = session.Answers
             .Where(a => a.AnswerOption!.IsCorrect)
             .GroupBy(a => a.Question!.Topic)
@@ -133,7 +125,6 @@ public class RecommendationService : IRecommendationService
             ));
         }
 
-        // ─── Accuracy-based advice ───────────────────────
         if (session.TotalQuestions > 0)
         {
             var accuracy = (double)session.CorrectCount / session.TotalQuestions * 100;
@@ -171,7 +162,6 @@ public class RecommendationService : IRecommendationService
             }
         }
 
-        // ─── Check for new milestones ────────────────────
         var newMilestones = await CheckAndAwardMilestonesAsync(userId);
         foreach (var m in newMilestones)
         {
@@ -190,15 +180,11 @@ public class RecommendationService : IRecommendationService
         return new AfterSessionDto(recs);
     }
 
-    // ═══════════════════════════════════════════════════════
-    //  STREAK
-    // ═══════════════════════════════════════════════════════
 
     public async Task<StreakDto> GetStreakAsync(int userId)
     {
         var today = DateTime.SpecifyKind(DateTime.UtcNow.Date, DateTimeKind.Utc);
 
-        // Get all unique study days (dates when user answered questions)
         var studyDays = await _db.UserAnswers
             .Where(a => a.UserId == userId)
             .Select(a => a.AnsweredAt.Date)
@@ -217,7 +203,6 @@ public class RecommendationService : IRecommendationService
         var studiedToday = studyDays.Contains(today);
         var lastStudyDate = studyDays.First();
 
-        // Calculate current streak
         int currentStreak = 0;
         var checkDate = studiedToday ? today : today.AddDays(-1);
         foreach (var day in studyDays)
@@ -233,11 +218,9 @@ public class RecommendationService : IRecommendationService
             }
         }
 
-        // If user didn't study today and didn't study yesterday, streak is 0
         if (!studiedToday && lastStudyDate < today.AddDays(-1))
             currentStreak = 0;
 
-        // Calculate longest streak ever
         int longestStreak = 0;
         int tempStreak = 1;
         var sortedDays = studyDays.OrderBy(d => d).ToList();
@@ -264,9 +247,6 @@ public class RecommendationService : IRecommendationService
         );
     }
 
-    // ═══════════════════════════════════════════════════════
-    //  MILESTONES
-    // ═══════════════════════════════════════════════════════
 
     public async Task<IEnumerable<MilestoneDto>> GetMilestonesAsync(int userId)
     {
@@ -292,7 +272,6 @@ public class RecommendationService : IRecommendationService
 
         var newMilestones = new List<UserMilestone>();
 
-        // ─── Questions answered milestones ───────────────
         var totalAnswers = await _db.UserAnswers.CountAsync(a => a.UserId == userId);
         var answerMilestones = new (int count, string code, string title, string icon)[]
         {
@@ -317,7 +296,6 @@ public class RecommendationService : IRecommendationService
             }
         }
 
-        // ─── Streak milestones ───────────────────────────
         var streak = await GetStreakAsync(userId);
         var streakMilestones = new (int days, string code, string title, string icon)[]
         {
@@ -340,7 +318,6 @@ public class RecommendationService : IRecommendationService
             }
         }
 
-        // ─── Mastery milestones (per section) ──────────
         var profiles = await _db.UserSkillProfiles
             .Where(p => p.UserId == userId)
             .Include(p => p.Section)
@@ -361,7 +338,6 @@ public class RecommendationService : IRecommendationService
             }
         }
 
-        // ─── Accuracy milestones ─────────────────────────
         if (totalAnswers >= 20)
         {
             var totalCorrect = await _db.UserAnswers
@@ -381,7 +357,6 @@ public class RecommendationService : IRecommendationService
             }
         }
 
-        // ─── Session count milestones ────────────────────
         var sessionCount = await _db.TestSessions.CountAsync(s => s.UserId == userId);
         if (sessionCount >= 10 && !existing.Contains("SESSIONS_10"))
         {
@@ -394,7 +369,6 @@ public class RecommendationService : IRecommendationService
             });
         }
 
-        // Persist new milestones
         if (newMilestones.Any())
         {
             _db.UserMilestones.AddRange(newMilestones);
@@ -408,9 +382,6 @@ public class RecommendationService : IRecommendationService
         ));
     }
 
-    // ═══════════════════════════════════════════════════════
-    //  DAILY RECOMMENDATIONS (PRIVATE)
-    // ═══════════════════════════════════════════════════════
 
     private async Task<List<RecommendationDto>> GenerateDailyRecommendationsAsync(int userId, List<int>? sectionIds = null)
     {
@@ -420,7 +391,6 @@ public class RecommendationService : IRecommendationService
         var filterBySections = sectionIds is { Count: > 0 };
         var sectionIdSet = filterBySections ? new HashSet<int>(sectionIds!) : null;
 
-        // ─── Forgetting Curve: topics needing review ─────
         var topicQuery = _db.UserAnswers
             .Where(a => a.UserId == userId);
         if (filterBySections)
@@ -444,7 +414,7 @@ public class RecommendationService : IRecommendationService
             var stability = IrtMath.CalculateStability(ta.TotalCorrect);
             var retention = IrtMath.RetentionProbability(daysSince, stability);
 
-            if (retention < 0.7 && daysSince >= 2) // Retention dropping below 70%
+            if (retention < 0.7 && daysSince >= 2)
             {
                 recs.Add(new RecommendationDto(
                     Type: "daily",
@@ -467,7 +437,6 @@ public class RecommendationService : IRecommendationService
             }
         }
 
-        // ─── Weak topics needing practice ────────────────
         var weakProfiles = await _db.UserSkillProfiles
             .Where(p => p.UserId == userId && p.Level < 40)
             .Include(p => p.Section)
@@ -475,7 +444,6 @@ public class RecommendationService : IRecommendationService
             .Take(3)
             .ToListAsync();
 
-        // Get mastered topic IDs — topics where ALL questions have last answer correct
         var masteredTopicIds = new HashSet<int>();
         var userTopicAnswers = await _db.UserAnswers
             .Include(ua => ua.AnswerOption)
@@ -505,13 +473,11 @@ public class RecommendationService : IRecommendationService
 
         foreach (var wp in weakProfiles)
         {
-            // Find a topic for this section (filtered by selected sections if provided)
             var weakTopicQuery = _db.Topics.Where(t => t.SectionId == wp.SectionId);
             if (filterBySections)
                 weakTopicQuery = weakTopicQuery.Where(t => t.SectionId != null && sectionIdSet!.Contains(t.SectionId!.Value));
             var topic = await weakTopicQuery.FirstOrDefaultAsync();
 
-            // Skip if topic is fully mastered (all questions answered correctly)
             if (topic != null && masteredTopicIds.Contains(topic.Id))
                 continue;
 
@@ -537,11 +503,9 @@ public class RecommendationService : IRecommendationService
             }
         }
 
-        // ─── Mode recommendation based on goal ──────────
         var goal = await _db.StudyGoals
             .FirstOrDefaultAsync(g => g.UserId == userId && g.IsActive);
 
-        // Check if user has completed any mock exam (attempts or exam-mode sessions)
         var hasCompletedMock = await _db.MockExamAttempts
             .AnyAsync(a => a.UserId == userId && a.Status == "Completed");
         if (!hasCompletedMock)
@@ -592,7 +556,6 @@ public class RecommendationService : IRecommendationService
             }
         }
 
-        // ─── Streak motivation ───────────────────────────
         var streak = await GetStreakAsync(userId);
         if (streak.CurrentStreak > 0 && !streak.StudiedToday)
         {
@@ -617,17 +580,13 @@ public class RecommendationService : IRecommendationService
             ));
         }
 
-        // Sort by priority
         var priorityOrder = new Dictionary<string, int> { ["high"] = 0, ["medium"] = 1, ["low"] = 2 };
         return recs
             .OrderBy(r => priorityOrder.GetValueOrDefault(r.Priority, 99))
-            .Take(8) // Max 8 recommendations
+            .Take(8)
             .ToList();
     }
 
-    // ═══════════════════════════════════════════════════════
-    //  HELPERS
-    // ═══════════════════════════════════════════════════════
 
     private async Task<IEnumerable<MilestoneDto>> GetRecentMilestonesAsync(int userId, int days)
     {

@@ -18,17 +18,12 @@ public class TelegramController : ControllerBase
         _logger = logger;
     }
 
-    /// <summary>
-    /// Telegram webhook endpoint. Configure it via setWebhook with a secret token:
-    /// https://api.telegram.org/bot&lt;TOKEN&gt;/setWebhook?url=https://unistart.kz/api/telegram/webhook&amp;secret_token=&lt;SECRET&gt;
-    /// </summary>
     [HttpPost("webhook")]
     [AllowAnonymous]
     public async Task<IActionResult> Webhook([FromBody] JsonElement update, CancellationToken ct)
     {
         if (!_bot.IsConfigured) return Ok();
 
-        // Validate the secret token Telegram sends back with each request.
         if (!string.IsNullOrEmpty(_bot.WebhookSecret))
         {
             var provided = Request.Headers["X-Telegram-Bot-Api-Secret-Token"].ToString();

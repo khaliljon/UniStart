@@ -29,8 +29,6 @@ function CscaMaterialsPage() {
   const coverFor = (key: string) => CSCA_SUBJECTS.find((x) => x.key === key) ?? CSCA_SUBJECTS[0];
 
   const buy = (mat: StudyMaterial) => {
-    // Send to the Home materials section and focus this book, instead of adding
-    // straight to the cart (mirrors packages/mocks behaviour).
     sessionStorage.setItem('focusBook', String(mat.id));
     navigate(isAuthenticated ? '/' : '/register');
   };

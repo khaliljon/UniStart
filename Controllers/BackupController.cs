@@ -18,11 +18,9 @@ public class BackupController : ControllerBase
         _logger = logger;
     }
 
-    /// <summary>List existing database backups (newest first).</summary>
     [HttpGet]
     public IActionResult List() => Ok(_backups.ListBackups());
 
-    /// <summary>Create a new database backup now.</summary>
     [HttpPost]
     public async Task<IActionResult> Create()
     {
@@ -38,7 +36,6 @@ public class BackupController : ControllerBase
         }
     }
 
-    /// <summary>Download a backup file.</summary>
     [HttpGet("{fileName}/download")]
     public IActionResult Download(string fileName)
     {
@@ -48,7 +45,6 @@ public class BackupController : ControllerBase
         return File(stream, "application/gzip", fileName);
     }
 
-    /// <summary>Delete a backup file.</summary>
     [HttpDelete("{fileName}")]
     public IActionResult Delete(string fileName)
     {

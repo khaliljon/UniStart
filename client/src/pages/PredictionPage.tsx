@@ -56,7 +56,6 @@ function PredictionPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // What-if state
   const [whatIfTopic, setWhatIfTopic] = useState<number | null>(null);
   const [whatIfLevel, setWhatIfLevel] = useState(80);
   const [whatIfResult, setWhatIfResult] = useState<WhatIfResult | null>(null);
@@ -64,7 +63,6 @@ function PredictionPage() {
   const [whatIfError, setWhatIfError] = useState<string | null>(null);
   const [hasPredictionAccess, setHasPredictionAccess] = useState(true);
 
-  // Load exams on mount
   useEffect(() => {
     (async () => {
       try {
@@ -83,11 +81,8 @@ function PredictionPage() {
     subscriptionService.getStatus().then((s) => {
       setHasPredictionAccess(s.isPro || s.limits.realtimePrediction);
     }).catch(() => {});
-    // Mount-only: initial exam selection. userExams/t intentionally excluded.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Load prediction when exam changes
   const loadPrediction = useCallback(async () => {
     if (!selectedExam) return;
     try {
@@ -117,7 +112,6 @@ function PredictionPage() {
     loadPrediction();
   }, [loadPrediction]);
 
-  // What-if handler
   const handleWhatIf = async () => {
     if (!whatIfTopic || !selectedExam) return;
     try {
@@ -137,7 +131,6 @@ function PredictionPage() {
     }
   };
 
-  // ─── Loading / Error ────────────────────────────────────
 
   if (isLoading && !prediction) {
     return (
@@ -166,7 +159,6 @@ function PredictionPage() {
 
   return (
     <div className="animate-fade-in" style={{ padding: '1.5rem 0' }}>
-      {/* Header with exam selector */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
         <h1 style={{ margin: 0 }}>{t.prediction.title}</h1>
         <select
@@ -186,7 +178,6 @@ function PredictionPage() {
 
       {prediction && (
         <>
-          {/* ─── Section Filter (for multi-section exams) ─── */}
           {prediction.sections.length > 1 && (
             <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
               <button
@@ -215,7 +206,6 @@ function PredictionPage() {
             </div>
           )}
 
-          {/* ─── Main Score Card ─── */}
           {(() => {
             const filtered = selectedSectionIds.length > 0
               ? prediction.sections.filter((s) => selectedSectionIds.includes(s.sectionId))
@@ -243,23 +233,18 @@ function PredictionPage() {
             return <ScoreCard prediction={displayPrediction} />;
           })()}
 
-          {/* ─── Pro-only: detailed breakdown ─── */}
           <ProGate hasAccess={hasPredictionAccess} featureName={t.prediction.title}>
           <>
-          {/* ─── Section Breakdown ─── */}
           <div style={{ marginTop: '1rem' }}>
             <SectionsBarChart sections={prediction.sections} />
           </div>
 
-          {/* ─── Section Details ─── */}
           <SectionDetails sections={prediction.sections} strengthConfig={STRENGTH_CONFIG} />
 
-          {/* ─── Improvement Tips ─── */}
           {prediction.improvementTips.length > 0 && (
             <ImprovementTips tips={prediction.improvementTips} />
           )}
 
-          {/* ─── What-If Scenario ─── */}
           <WhatIfSection
             topics={topics}
             whatIfTopic={whatIfTopic}
@@ -282,9 +267,6 @@ function PredictionPage() {
   );
 }
 
-// ═══════════════════════════════════════════════════════════
-//  SCORE CARD
-// ═══════════════════════════════════════════════════════════
 
 function ScoreCard({ prediction }: { prediction: ScorePrediction }) {
   const { t } = useTranslation();
@@ -309,7 +291,6 @@ function ScoreCard({ prediction }: { prediction: ScorePrediction }) {
         </div>
       )}
       <div style={{ display: 'flex', alignItems: 'center', gap: '2rem', flexWrap: 'wrap' }}>
-        {/* Big Score */}
         <div style={{ textAlign: 'center', minWidth: '160px' }}>
           <div style={{
             fontSize: '3.5rem', fontWeight: 800, lineHeight: 1,
@@ -330,7 +311,6 @@ function ScoreCard({ prediction }: { prediction: ScorePrediction }) {
           </div>
         </div>
 
-        {/* Score Bar */}
         <div style={{ flex: 1, minWidth: '200px' }}>
           <div style={{
             display: 'flex', justifyContent: 'space-between', marginBottom: '0.3rem',
@@ -343,7 +323,6 @@ function ScoreCard({ prediction }: { prediction: ScorePrediction }) {
             background: 'var(--border-color)', borderRadius: '10px', height: '18px',
             overflow: 'hidden', position: 'relative',
           }}>
-            {/* Confidence interval band */}
             <div style={{
               position: 'absolute',
               left: `${((prediction.confidenceLow - prediction.minPossibleScore) / (prediction.maxPossibleScore - prediction.minPossibleScore)) * 100}%`,
@@ -353,13 +332,11 @@ function ScoreCard({ prediction }: { prediction: ScorePrediction }) {
               opacity: 0.2,
               borderRadius: '10px',
             }} />
-            {/* Score position */}
             <div style={{
               width: `${scorePercent}%`, height: '100%',
               background: 'var(--primary-color)', borderRadius: '10px',
               transition: 'width 1s ease',
             }} />
-            {/* Target marker */}
             {prediction.targetScore && (
               <div style={{
                 position: 'absolute', top: 0, bottom: 0,
@@ -377,7 +354,6 @@ function ScoreCard({ prediction }: { prediction: ScorePrediction }) {
           </div>
         </div>
 
-        {/* Target Gap */}
         {prediction.targetScore && prediction.gapToTarget != null && (
           <div style={{ textAlign: 'center', minWidth: '120px' }}>
             <div style={{
@@ -396,9 +372,6 @@ function ScoreCard({ prediction }: { prediction: ScorePrediction }) {
   );
 }
 
-// ═══════════════════════════════════════════════════════════
-//  SECTION CHARTS
-// ═══════════════════════════════════════════════════════════
 
 function SectionsBarChart({ sections }: { sections: SectionPrediction[] }) {
   const { t } = useTranslation();
@@ -412,7 +385,6 @@ function SectionsBarChart({ sections }: { sections: SectionPrediction[] }) {
     confHigh: s.confidenceHigh,
   }));
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const renderTooltip = ({ active, payload }: any) => {
     if (!active || !payload?.length) return null;
     const d = payload[0].payload;
@@ -447,9 +419,6 @@ function SectionsBarChart({ sections }: { sections: SectionPrediction[] }) {
   );
 }
 
-// ═══════════════════════════════════════════════════════════
-//  SECTION DETAIL CARDS
-// ═══════════════════════════════════════════════════════════
 
 function SectionDetails({ sections, strengthConfig }: { sections: SectionPrediction[]; strengthConfig: Record<string, { label: string; color: string }> }) {
   const { t } = useTranslation();
@@ -492,7 +461,6 @@ function SectionDetails({ sections, strengthConfig }: { sections: SectionPredict
                 </div>
               )}
 
-              {/* Mini progress bar */}
               <div style={{
                 marginTop: '0.5rem', background: 'var(--border-color)',
                 borderRadius: '6px', height: '6px', overflow: 'hidden',
@@ -517,9 +485,6 @@ function SectionDetails({ sections, strengthConfig }: { sections: SectionPredict
   );
 }
 
-// ═══════════════════════════════════════════════════════════
-//  IMPROVEMENT TIPS
-// ═══════════════════════════════════════════════════════════
 
 function ImprovementTips({ tips }: { tips: ScorePrediction['improvementTips'] }) {
   const navigate = useNavigate();
@@ -571,9 +536,6 @@ function ImprovementTips({ tips }: { tips: ScorePrediction['improvementTips'] })
   );
 }
 
-// ═══════════════════════════════════════════════════════════
-//  WHAT-IF SCENARIO
-// ═══════════════════════════════════════════════════════════
 
 function WhatIfSection({
   topics, whatIfTopic, whatIfLevel, whatIfResult, whatIfLoading, whatIfError,
@@ -653,7 +615,6 @@ function WhatIfSection({
         </div>
       )}
 
-      {/* Result */}
       {whatIfResult && (
         <div style={{
           marginTop: '1rem', padding: '1rem', borderRadius: '10px',
@@ -688,9 +649,6 @@ function WhatIfSection({
   );
 }
 
-// ═══════════════════════════════════════════════════════════
-//  HISTORY CHART
-// ═══════════════════════════════════════════════════════════
 
 function HistoryChart({ history, prediction }: { history: PredictionHistory[]; prediction: ScorePrediction }) {
   const { t, dateLocale } = useTranslation();
@@ -722,12 +680,9 @@ function HistoryChart({ history, prediction }: { history: PredictionHistory[]; p
               borderRadius: '8px', color: 'var(--text-primary)',
             }}
           />
-          {/* Confidence band */}
           <Area type="monotone" dataKey="high" stackId="ci" stroke="none" fill="#6366f1" fillOpacity={0.1} name={t.prediction.upperBound} />
           <Area type="monotone" dataKey="low" stackId="ci" stroke="none" fill="#fff" fillOpacity={0} name={t.prediction.lowerBound} />
-          {/* Main prediction line */}
           <Line type="monotone" dataKey="score" stroke="#6366f1" strokeWidth={2.5} dot={{ r: 3 }} name={t.prediction.predicted} />
-          {/* Target line */}
           {prediction.targetScore && (
             <Line type="monotone" dataKey="target" stroke="#ef4444" strokeWidth={1.5} strokeDasharray="5 5" dot={false} name={t.prediction.target} />
           )}

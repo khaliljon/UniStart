@@ -20,9 +20,6 @@ public class NotificationController : ControllerBase
         _notificationService = notificationService;
     }
 
-    /// <summary>
-    /// Get current user's notification preferences
-    /// </summary>
     [HttpGet("preferences")]
     public async Task<ActionResult<NotificationPreferencesDto>> GetPreferences()
     {
@@ -31,9 +28,6 @@ public class NotificationController : ControllerBase
         return Ok(prefs);
     }
 
-    /// <summary>
-    /// Update notification preferences
-    /// </summary>
     [HttpPut("preferences")]
     public async Task<ActionResult<NotificationPreferencesDto>> UpdatePreferences(
         [FromBody] UpdateNotificationPreferencesDto dto)

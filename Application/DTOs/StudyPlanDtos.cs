@@ -1,7 +1,5 @@
 namespace UniStart.Application.DTOs;
 
-// ─── Requests ────────────────────────────────────────────────
-
 public record CreateStudyGoalDto(
     string ExamTypeCode,
     DateTime TargetDate,
@@ -20,8 +18,6 @@ public record CompleteEntryDto(
     int QuestionsAnswered = 0,
     int CorrectAnswers = 0
 );
-
-// ─── Responses ───────────────────────────────────────────────
 
 public record StudyGoalDto(
     int Id,

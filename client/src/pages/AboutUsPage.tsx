@@ -18,7 +18,6 @@ function AboutUsPage() {
         <p className="csca-lead" style={{ textAlign: 'center', maxWidth: 760, margin: '0 auto' }}>{s.aboutUsMission}</p>
       </section>
 
-      {/* Goal highlight */}
       <section className="csca-wrap csca-section" style={{ paddingTop: '1rem' }}>
         <div className="csca-cta-band" style={{ textAlign: 'center' }}>
           <span className="csca-hanzi-bg csca-hanzi">一</span>
@@ -26,7 +25,6 @@ function AboutUsPage() {
         </div>
       </section>
 
-      {/* Closing CTA */}
       <section className="csca-wrap csca-section" style={{ paddingTop: 0 }}>
         <div style={{ textAlign: 'center', marginTop: '2rem' }}>
           <button className="csca-btn csca-btn-primary" onClick={() => navigate('/register')}>{s.ctaStart}</button>

@@ -21,11 +21,6 @@ public class MaterialsController : ControllerBase
         _upload = upload;
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    //  PUBLIC / USER ENDPOINTS
-    // ═══════════════════════════════════════════════════════════════
-
-    /// <summary>List all active study materials (public — shown on landing and dashboard).</summary>
     [HttpGet]
     public async Task<IActionResult> List()
     {
@@ -49,10 +44,6 @@ public class MaterialsController : ControllerBase
         }));
     }
 
-    /// <summary>
-    /// Returns the PDF download URL for a purchased material.
-    /// Requires the user to be authenticated and to own a Purchase for this specific material.
-    /// </summary>
     [HttpGet("{id:int}/download")]
     [Authorize]
     public async Task<IActionResult> Download(int id)
@@ -66,7 +57,6 @@ public class MaterialsController : ControllerBase
         if (material == null)
             return NotFound(new { error = "Материал не найден." });
 
-        // Check that the user has purchased THIS specific material (per-material ownership).
         var itemCode = id.ToString();
         var purchased = await _db.Purchases.AnyAsync(p =>
             p.UserId == userId &&
@@ -83,11 +73,6 @@ public class MaterialsController : ControllerBase
         return Ok(new { pdfUrl = material.PdfUrl });
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    //  ADMIN ENDPOINTS
-    // ═══════════════════════════════════════════════════════════════
-
-    /// <summary>List all materials (including inactive) — Admin only.</summary>
     [HttpGet("admin/all")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> AdminList()
@@ -105,7 +90,6 @@ public class MaterialsController : ControllerBase
         }));
     }
 
-    /// <summary>Create a new study material — Admin only.</summary>
     [HttpPost("admin")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Create([FromBody] SaveStudyMaterialDto dto)
@@ -131,7 +115,6 @@ public class MaterialsController : ControllerBase
         return Ok(new { item.Id, item.SubjectKey, item.Title, item.Price, item.IsActive });
     }
 
-    /// <summary>Update an existing study material — Admin only.</summary>
     [HttpPut("admin/{id:int}")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Update(int id, [FromBody] SaveStudyMaterialDto dto)
@@ -157,7 +140,6 @@ public class MaterialsController : ControllerBase
         return Ok(new { item.Id, item.SubjectKey, item.Title, item.Price, item.IsActive });
     }
 
-    /// <summary>Delete a study material — Admin only.</summary>
     [HttpDelete("admin/{id:int}")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(int id)
@@ -170,12 +152,6 @@ public class MaterialsController : ControllerBase
         return Ok(new { deleted = true });
     }
 
-    /// <summary>
-    /// Returns a short-lived presigned URL so the browser can upload a large PDF
-    /// directly to R2, bypassing the API server (no server memory/bandwidth used).
-    /// The client PUTs the file to <c>uploadUrl</c> with Content-Type: application/pdf,
-    /// then saves <c>publicUrl</c> on the material — Admin only.
-    /// </summary>
     [HttpPost("admin/presign-pdf")]
     [Authorize(Roles = "Admin")]
     public IActionResult PresignPdf()
@@ -200,7 +176,6 @@ public class MaterialsController : ControllerBase
     }
 }
 
-// ─── DTOs ────────────────────────────────────────────────
 public record SaveStudyMaterialDto(
     string SubjectKey,
     string Title,

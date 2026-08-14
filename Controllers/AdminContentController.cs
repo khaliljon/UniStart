@@ -19,9 +19,6 @@ public class AdminContentController : ControllerBase
         _db = db;
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    //  LESSONS
-    // ═══════════════════════════════════════════════════════════════
 
     [HttpGet("lessons")]
     public async Task<IActionResult> GetLessons([FromQuery] int? topicId)
@@ -87,9 +84,6 @@ public class AdminContentController : ControllerBase
         return Ok(new { deleted = true });
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    //  FLASHCARD DECKS
-    // ═══════════════════════════════════════════════════════════════
 
     [HttpGet("decks")]
     public async Task<IActionResult> GetDecks([FromQuery] string? examTypeCode)
@@ -153,7 +147,6 @@ public class AdminContentController : ControllerBase
         return Ok(new { deleted = true });
     }
 
-    // ─── Flashcards (inside a deck) ────────────────
 
     [HttpGet("decks/{deckId}/cards")]
     public async Task<IActionResult> GetCards(int deckId)
@@ -211,9 +204,6 @@ public class AdminContentController : ControllerBase
         return Ok(new { deleted = true });
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    //  FORMULA CARDS
-    // ═══════════════════════════════════════════════════════════════
 
     [HttpGet("formulas")]
     public async Task<IActionResult> GetFormulas([FromQuery] int? topicId)
@@ -279,9 +269,6 @@ public class AdminContentController : ControllerBase
         return Ok(new { deleted = true });
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    //  STRATEGY GUIDES
-    // ═══════════════════════════════════════════════════════════════
 
     [HttpGet("strategies")]
     public async Task<IActionResult> GetStrategies([FromQuery] string? examTypeCode)
@@ -355,9 +342,6 @@ public class AdminContentController : ControllerBase
         return Ok(new { deleted = true });
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    //  DRILL TEMPLATES
-    // ═══════════════════════════════════════════════════════════════
 
     [HttpGet("drills")]
     public async Task<IActionResult> GetDrills()

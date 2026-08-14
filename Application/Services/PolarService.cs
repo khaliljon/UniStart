@@ -10,12 +10,6 @@ using UniStart.Infrastructure.Data;
 
 namespace UniStart.Application.Services;
 
-/// <summary>
-/// Polar (Stripe-backed) payments. Prices live in our DB; we send an ad-hoc fixed
-/// price to Polar per checkout and carry a compact line encoding in metadata so the
-/// webhook can grant the right entitlements. Webhooks are verified with the
-/// Standard Webhooks HMAC scheme.
-/// </summary>
 public class PolarService : IPolarService
 {
     private readonly IEntitlementService _entitlements;
@@ -67,10 +61,8 @@ public class PolarService : IPolarService
             throw new InvalidOperationException("Polar is not configured (token/product id missing).");
         }
 
-        // Server-side price — never trust the client.
         var quote = await _entitlements.QuoteAsync(lines);
         var currency = quote.Currency.ToLowerInvariant();
-        // Zero-decimal currencies (KZT, JPY, KRW, …) are sent as-is; others in cents.
         var amountMinor = IsZeroDecimal(currency)
             ? (long)Math.Round(quote.Total)
             : (long)Math.Round(quote.Total * 100m);
@@ -124,16 +116,11 @@ public class PolarService : IPolarService
         var root = doc.RootElement;
         var type = root.TryGetProperty("type", out var t) ? t.GetString() : null;
 
-        // Grant on a paid order. Polar sends the paid transition as order.updated
-        // (and possibly order.paid); both carry the same order id, so the dedup key
-        // below prevents a double grant. We deliberately ignore checkout.updated —
-        // its data.id is the checkout id (a different dedup key), which would double-grant.
         if (type != "order.paid" && type != "order.updated" && type != "order.created")
-            return true; // acknowledged, nothing to do
+            return true;
 
         if (!root.TryGetProperty("data", out var data)) return true;
 
-        // Only act once payment actually succeeded.
         var paidFlag = data.TryGetProperty("paid", out var pd) && pd.ValueKind == JsonValueKind.True;
         var orderStatus = data.TryGetProperty("status", out var os) ? os.GetString() : null;
         if (!paidFlag && orderStatus != "paid") return true;
@@ -152,15 +139,11 @@ public class PolarService : IPolarService
 
         var amounts = ExtractAmounts(data);
 
-        // Idempotency applies ONLY to granting access. Polar sends several events per
-        // order (order.created/updated) and the platform fee is computed a moment after
-        // the first paid event — so we still refresh the financial metadata on later events.
         var dedupKey = $"polar:{orderId ?? webhookId}";
         var alreadyGranted = await _db.AppSettings.AnyAsync(s => s.Key == dedupKey);
 
         if (alreadyGranted)
         {
-            // Access was already granted; just fill in any newly-available amounts (e.g. fee).
             if (!string.IsNullOrEmpty(orderId))
                 await _entitlements.UpdatePurchaseAmountsAsync(orderId, amounts);
             return true;
@@ -172,7 +155,6 @@ public class PolarService : IPolarService
 
         _logger.LogInformation("Polar grant applied for user {UserId}, order {OrderId}", userId, orderId);
 
-        // Best-effort purchase receipt (never fail the webhook on email errors).
         try
         {
             var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId);
@@ -191,8 +173,6 @@ public class PolarService : IPolarService
         return true;
     }
 
-    // Zero-decimal currencies charged as whole units (Stripe's canonical list).
-    // NOTE: KZT is a 2-decimal currency in Stripe/Polar, so it is NOT here — it uses ×100.
     private static readonly HashSet<string> ZeroDecimal = new(StringComparer.OrdinalIgnoreCase)
     {
         "bif", "clp", "djf", "gnf", "jpy", "kmf", "krw", "mga",
@@ -201,7 +181,6 @@ public class PolarService : IPolarService
 
     private static bool IsZeroDecimal(string currency) => ZeroDecimal.Contains(currency);
 
-    // ── Standard Webhooks signature ────────────────────────
 
     private bool VerifySignature(string body, string? id, string? timestamp, string? signatureHeader)
     {
@@ -217,9 +196,6 @@ public class PolarService : IPolarService
             return false;
         }
 
-        // Polar deviates from Standard Webhooks: the HMAC key is the raw secret
-        // (including the "whsec_" prefix) as UTF-8 bytes. We also try the base64-
-        // decoded variants as a fallback for compatibility.
         var secretPart = _webhookSecret.StartsWith("whsec_") ? _webhookSecret["whsec_".Length..] : _webhookSecret;
         var keys = new List<byte[]> { Encoding.UTF8.GetBytes(_webhookSecret) };
         var decoded = DecodeBase64(secretPart);
@@ -249,7 +225,6 @@ public class PolarService : IPolarService
         return false;
     }
 
-    /// <summary>Base64 decode tolerant of missing padding and url-safe alphabet.</summary>
     private static byte[]? DecodeBase64(string s)
     {
         s = s.Trim().Replace('-', '+').Replace('_', '/');
@@ -273,11 +248,6 @@ public class PolarService : IPolarService
         return dict;
     }
 
-    /// <summary>
-    /// Reads the money breakdown from a Polar order payload. All amount fields arrive
-    /// as integer minor units (÷100); platform_fee_currency is a plain string. Missing
-    /// fields fall back to 0/null since not every event type carries every field.
-    /// </summary>
     private static PurchaseAmountsDto ExtractAmounts(JsonElement data)
     {
         decimal Amt(string prop) => data.TryGetProperty(prop, out var e) && e.ValueKind == JsonValueKind.Number
@@ -295,10 +265,6 @@ public class PolarService : IPolarService
             Amt("total_amount"));
     }
 
-    // ── Compact line encoding for metadata ─────────────────
-    //  mock:    "m:<mockId>:<runs>"
-    //  package: "p:<key>:<id,id,...>"
-    //  joined with ";"
 
     private static string EncodeLines(List<CheckoutLineDto> lines)
     {

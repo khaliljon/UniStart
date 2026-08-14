@@ -1,8 +1,5 @@
 namespace UniStart.Domain.Entities;
 
-/// <summary>
-/// User annotation on a mistake (wrong answer) with error classification and notes.
-/// </summary>
 public class UserMistakeNote : IAuditable
 {
     public int Id { get; set; }
@@ -13,7 +10,6 @@ public class UserMistakeNote : IAuditable
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
 
-    // Navigation
     public virtual User User { get; set; } = null!;
     public virtual UserAnswer UserAnswer { get; set; } = null!;
 }

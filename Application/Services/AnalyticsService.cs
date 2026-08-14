@@ -50,7 +50,6 @@ public class AnalyticsService : IAnalyticsService
 
         var existingSectionIds = profiles.Select(p => p.SectionId).ToHashSet();
 
-        // Include all sections (even unpracticed) so the dashboard shows the full picture
         var allSections = await _context.ExamSections.ToListAsync();
         var placeholders = allSections
             .Where(s => !existingSectionIds.Contains(s.Id))
@@ -81,7 +80,6 @@ public class AnalyticsService : IAnalyticsService
         return mapped.Concat(placeholders).OrderByDescending(p => p.Level);
     }
 
-    // ─── Stage 4: Enhanced Analytics ───────────────────────────────
 
     public async Task<DashboardDto> GetDashboardAsync(int userId)
     {
@@ -118,7 +116,6 @@ public class AnalyticsService : IAnalyticsService
 
     public async Task<IEnumerable<SkillHistoryPointDto>> GetSkillHistoryAsync(int userId, int days = 30)
     {
-        // Build skill level history from user answers chronologically
         var cutoff = DateTime.UtcNow.AddDays(-days);
         
         var answers = await _context.UserAnswers
@@ -133,20 +130,16 @@ public class AnalyticsService : IAnalyticsService
         if (!answers.Any())
             return Enumerable.Empty<SkillHistoryPointDto>();
 
-        // Reconstruct section levels over time by grouping per day per section
-        var skillLevels = new Dictionary<int, int>(); // sectionId → current level
+        var skillLevels = new Dictionary<int, int>();
         var currentProfiles = await _context.UserSkillProfiles
             .Where(p => p.UserId == userId)
             .ToListAsync();
         
-        // Start from current levels and work backwards isn't practical,
-        // so we approximate from the initial level (50) and replay
         foreach (var p in currentProfiles)
-            skillLevels[p.SectionId] = 50; // Start at default
+            skillLevels[p.SectionId] = 50;
 
         var history = new List<SkillHistoryPointDto>();
         
-        // Group by date and replay
         var dailyGroups = answers.GroupBy(a => a.AnsweredAt.Date).OrderBy(g => g.Key);
         
         foreach (var dayGroup in dailyGroups)
@@ -161,7 +154,6 @@ public class AnalyticsService : IAnalyticsService
                 skillLevels[skillId] = Math.Clamp(skillLevels[skillId] + change, 0, 100);
             }
 
-            // Emit one point per section per day
             foreach (var (skillId, level) in skillLevels)
             {
                 var section = answers.FirstOrDefault(a => a.Question.Topic.SectionId == skillId)?.Question.Topic.Section;
@@ -225,7 +217,6 @@ public class AnalyticsService : IAnalyticsService
         return stats;
     }
 
-    // ─── Test Sessions ─────────────────────────────────────────────
 
     public async Task<TestSessionSummaryDto> StartSessionAsync(int userId, string examTypeCode, string mode)
     {
@@ -337,7 +328,6 @@ public class AnalyticsService : IAnalyticsService
         );
     }
 
-    // ─── Private helpers ───────────────────────────────────────────
 
     private async Task<IEnumerable<SkillProgressDto>> GetRecentProgressAsync(int userId)
     {
@@ -378,7 +368,6 @@ public class AnalyticsService : IAnalyticsService
         var bestStreak = 0;
         var streak = 0;
         
-        // Check if today or yesterday is in the list to start current streak
         var startDate = activeDates.First();
         var isCurrentlyActive = (today - startDate).Days <= 1;
 

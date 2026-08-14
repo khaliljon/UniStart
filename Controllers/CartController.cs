@@ -7,7 +7,6 @@ using UniStart.Infrastructure.Data;
 
 namespace UniStart.Controllers;
 
-/// <summary>Server-side cart so it follows the user across devices.</summary>
 [ApiController]
 [Route("api/cart")]
 [Authorize]
@@ -27,7 +26,6 @@ public class CartController : ApiControllerBase
             : c.SelectedMockIds.Split(',', StringSplitOptions.RemoveEmptyEntries)
                 .Where(x => int.TryParse(x, out _)).Select(int.Parse).ToList());
 
-    /// <summary>Current user's cart.</summary>
     [HttpGet]
     public async Task<IActionResult> Get()
     {
@@ -39,7 +37,6 @@ public class CartController : ApiControllerBase
         return Ok(items.Select(ToDto));
     }
 
-    /// <summary>Add or replace a cart line (unique per type + code).</summary>
     [HttpPost]
     public async Task<IActionResult> Add([FromBody] CartItemDto dto)
     {
@@ -76,7 +73,6 @@ public class CartController : ApiControllerBase
         return Ok();
     }
 
-    /// <summary>Remove one line.</summary>
     [HttpDelete("item")]
     public async Task<IActionResult> RemoveItem([FromQuery] string itemType, [FromQuery] string itemCode)
     {
@@ -91,7 +87,6 @@ public class CartController : ApiControllerBase
         return NoContent();
     }
 
-    /// <summary>Empty the cart.</summary>
     [HttpDelete]
     public async Task<IActionResult> Clear()
     {

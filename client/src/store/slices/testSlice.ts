@@ -13,7 +13,7 @@ interface TestState {
   testCompleted: boolean;
   isLoading: boolean;
   error: string | null;
-  questionStartTime: number | null; // timestamp when question was shown
+  questionStartTime: number | null;
   testSessionId: number | null;
 }
 

@@ -21,9 +21,6 @@ public class ExamsController : ControllerBase
         _logger = logger;
     }
 
-    /// <summary>
-    /// Get all available exams
-    /// </summary>
     [HttpGet]
     [AllowAnonymous]
     [ProducesResponseType(typeof(IEnumerable<ExamTypeDto>), StatusCodes.Status200OK)]
@@ -33,9 +30,6 @@ public class ExamsController : ControllerBase
         return Ok(exams);
     }
 
-    /// <summary>
-    /// Get exam sections by exam code
-    /// </summary>
     [HttpGet("{id}/sections")]
     [ProducesResponseType(typeof(IEnumerable<ExamSectionDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

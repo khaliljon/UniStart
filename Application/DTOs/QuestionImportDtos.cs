@@ -1,6 +1,5 @@
 namespace UniStart.Application.DTOs;
 
-// ─── Question Import DTOs ────────────────────────────────────
 
 public record QuestionImportJobDto(
     int Id,

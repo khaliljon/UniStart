@@ -6,7 +6,6 @@ using UniStart.Application.Interfaces;
 
 namespace UniStart.Controllers;
 
-/// <summary>Polar checkout creation + webhook receiver.</summary>
 [ApiController]
 public class PaymentsController : ControllerBase
 {
@@ -25,7 +24,6 @@ public class PaymentsController : ControllerBase
         return int.TryParse(claim, out var id) && id > 0 ? id : 0;
     }
 
-    /// <summary>Create a Polar checkout for the cart; returns the hosted checkout URL.</summary>
     [HttpPost("api/payments/checkout")]
     [Authorize]
     public async Task<IActionResult> CreateCheckout([FromBody] RunCheckoutDto dto)
@@ -39,7 +37,6 @@ public class PaymentsController : ControllerBase
         catch (InvalidOperationException ex) { return StatusCode(502, new { error = ex.Message }); }
     }
 
-    /// <summary>Polar webhook. Verifies the Standard Webhooks signature, then grants runs.</summary>
     [HttpPost("api/webhooks/polar")]
     [AllowAnonymous]
     public async Task<IActionResult> PolarWebhook()

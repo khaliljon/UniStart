@@ -62,7 +62,6 @@ function AdminStatsPage() {
         {t.admin.stats.subtitle}
       </p>
 
-      {/* Top counters */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
         <StatCard label={t.admin.stats.totalQuestions} value={stats.totalQuestions} icon="" />
         <StatCard label={t.admin.stats.totalTopics} value={`${stats.topicsWithQuestions}/${stats.topicsWithQuestions + stats.topicsWithoutQuestions}`} icon="" />
@@ -80,7 +79,6 @@ function AdminStatsPage() {
         </div>
       </div>
 
-      {/* Uncovered topics list */}
       {showUncovered && stats.topicsWithoutQuestionsList.length > 0 && (
         <div className="card" style={{ padding: '1.25rem', marginBottom: '1rem' }}>
           <h3 style={{ marginBottom: '0.75rem' }}>{t.admin.stats.topicsNoQuestions} ({stats.topicsWithoutQuestionsList.length})</h3>
@@ -98,7 +96,6 @@ function AdminStatsPage() {
         </div>
       )}
 
-      {/* By exam */}
       <div className="card" style={{ padding: '1.25rem', marginBottom: '1rem' }}>
         <h3 style={{ marginBottom: '1rem' }}>{t.admin.stats.byExam}</h3>
         <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
@@ -115,7 +112,6 @@ function AdminStatsPage() {
         </div>
       </div>
 
-      {/* By difficulty */}
       <div className="card" style={{ padding: '1.25rem', marginBottom: '1rem' }}>
         <h3 style={{ marginBottom: '1rem' }}>{t.admin.stats.byDifficulty}</h3>
         <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
@@ -125,7 +121,6 @@ function AdminStatsPage() {
         </div>
       </div>
 
-      {/* By topic */}
       <div className="card" style={{ padding: '1.25rem' }}>
         <h3 style={{ marginBottom: '1rem' }}>{t.admin.stats.byTopic}</h3>
         {(() => {

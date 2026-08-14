@@ -12,7 +12,6 @@ public class LessonStep : IAuditable
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
 
-    // Navigation
     public virtual TopicLesson Lesson { get; set; } = null!;
     public virtual Question? QuizQuestion { get; set; }
     public virtual ICollection<UserLessonProgress> UserProgress { get; set; } = new List<UserLessonProgress>();

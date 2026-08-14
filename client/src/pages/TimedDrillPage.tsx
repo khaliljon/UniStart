@@ -27,7 +27,6 @@ function TimedDrillPage() {
       const data = await drillService.getTemplates();
       setTemplates(data);
     } catch {
-      // Fallback: use hardcoded defaults if API fails
       setTemplates([
         { id: 0, title: 'Speed Round', description: '10 questions, answer as fast as you can', drillType: 'Speed', examTypeCode: null, topicId: null, questionCount: 10, timeLimitMinutes: null, sortOrder: 1 },
         { id: 0, title: 'Marathon', description: `Answer as many questions as possible in 3 minutes`, drillType: 'Marathon', examTypeCode: null, topicId: null, questionCount: 100, timeLimitMinutes: 3, sortOrder: 2 },
@@ -60,7 +59,6 @@ function TimedDrillPage() {
     };
   }, []);
 
-  // Auto-complete marathon when time runs out
   const completeMarathon = useCallback(async () => {
     if (timerRef.current) clearInterval(timerRef.current);
     if (marathonTimerRef.current) clearInterval(marathonTimerRef.current);
@@ -87,7 +85,6 @@ function TimedDrillPage() {
       setActiveDrillType(drillType);
       activeDrillRef.current = result;
 
-      // Start marathon countdown
       if (drillType === 'Marathon') {
         const timeLimitSec = (template?.timeLimitMinutes ?? 3) * 60;
         setMarathonTimeLeft(timeLimitSec);
@@ -189,7 +186,6 @@ function TimedDrillPage() {
     }
   };
 
-  // Playing view
   if (view === 'playing' && question) {
     return (
       <div className="animate-fade-in">
@@ -273,7 +269,6 @@ function TimedDrillPage() {
     );
   }
 
-  // Result view
   if (view === 'result' && finalResult) {
     return (
       <div className="animate-fade-in" style={{ textAlign: 'center' }}>
@@ -300,7 +295,6 @@ function TimedDrillPage() {
     );
   }
 
-  // History view
   if (view === 'history') {
     return (
       <div className="animate-fade-in">
@@ -331,7 +325,6 @@ function TimedDrillPage() {
     );
   }
 
-  // Menu view — filter templates by selected exams
   const visibleTemplates = templates.filter(t =>
     !t.examTypeCode || selectedExams.includes(t.examTypeCode)
   );
@@ -343,7 +336,6 @@ function TimedDrillPage() {
         <button className="btn btn-secondary" onClick={loadHistory}>History</button>
       </div>
 
-      {/* Drill modes */}
       <div style={{ display: 'grid', gap: '0.75rem', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', marginBottom: '2rem' }}>
         {visibleTemplates.map(tmpl => (
           <div key={tmpl.id || tmpl.drillType} className="card" style={{ padding: '1.25rem' }}>
@@ -359,7 +351,6 @@ function TimedDrillPage() {
         ))}
       </div>
 
-      {/* Personal bests */}
       {personalBests.some(pb => pb.bestScore !== null) && (
         <>
           <h4 style={{ marginBottom: '0.75rem', color: 'var(--text-secondary)' }}>Personal Bests</h4>

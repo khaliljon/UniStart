@@ -8,7 +8,6 @@ public class StudyPlan
     public DateTime GeneratedAt { get; set; } = DateTime.UtcNow;
     public bool IsActive { get; set; } = true;
 
-    // Navigation properties
     public virtual User User { get; set; } = null!;
     public virtual StudyGoal Goal { get; set; } = null!;
     public virtual ICollection<StudyPlanEntry> Entries { get; set; } = new List<StudyPlanEntry>();

@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { examSittingsService, type ExamSitting } from '../services/examSittingsService';
 
-/** Admin CRUD for CSCA exam sitting dates (shown on the landing / About CSCA page). */
 function AdminExamDatesPage() {
   const [items, setItems] = useState<ExamSitting[]>([]);
   const [msg, setMsg] = useState('');

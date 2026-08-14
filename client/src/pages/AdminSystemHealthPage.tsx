@@ -53,7 +53,6 @@ export default function AdminSystemHealthPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  // Auto-refresh every 30 seconds
   useEffect(() => {
     const timer = setInterval(load, 30000);
     return () => clearInterval(timer);
@@ -91,7 +90,6 @@ export default function AdminSystemHealthPage() {
         }}>{t.admin.health.refreshBtn}</button>
       </div>
 
-      {/* Overall Status Banner */}
       <div style={{
         padding: '16px 24px', borderRadius: 12, marginBottom: 24,
         background: overallColor + '18', border: `2px solid ${overallColor}`,
@@ -110,7 +108,6 @@ export default function AdminSystemHealthPage() {
         </div>
       </div>
 
-      {/* Cards Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 24 }}>
         <StatCard label={t.admin.health.environment} value={data.system.environment} icon="" />
         <StatCard label={t.admin.health.uptime} value={formatUptime(data.system.uptime, { min: t.admin.health.min, hours: t.admin.health.hours, days: t.admin.health.days })} icon="" />
@@ -120,9 +117,7 @@ export default function AdminSystemHealthPage() {
         <StatCard label={t.admin.health.machine} value={data.system.machineName} icon="" />
       </div>
 
-      {/* Two-column layout */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 24 }}>
-        {/* Health Checks */}
         <div style={{ background: 'var(--bg-secondary)', borderRadius: 12, padding: 20 }}>
           <h3 style={{ margin: '0 0 16px' }}>Health Checks</h3>
           {data.healthChecks.length === 0 ? (
@@ -147,7 +142,6 @@ export default function AdminSystemHealthPage() {
           ))}
         </div>
 
-        {/* Database Stats */}
         <div style={{ background: 'var(--bg-secondary)', borderRadius: 12, padding: 20 }}>
           <h3 style={{ margin: '0 0 16px' }}>{t.admin.health.database}</h3>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -161,7 +155,6 @@ export default function AdminSystemHealthPage() {
         </div>
       </div>
 
-      {/* Recurring Jobs */}
       <div style={{ background: 'var(--bg-secondary)', borderRadius: 12, padding: 20 }}>
         <h3 style={{ margin: '0 0 16px' }}>{t.admin.health.backgroundJobs}</h3>
         {!data.recurringJobs || data.recurringJobs.length === 0 ? (

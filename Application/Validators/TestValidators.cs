@@ -3,9 +3,6 @@ using UniStart.Application.DTOs;
 
 namespace UniStart.Application.Validators;
 
-// ═══════════════════════════════════════════════════════════
-//  START TEST SESSION
-// ═══════════════════════════════════════════════════════════
 
 public class StartTestSessionDtoValidator : AbstractValidator<StartTestSessionDto>
 {
@@ -30,9 +27,6 @@ public class StartTestSessionDtoValidator : AbstractValidator<StartTestSessionDt
     }
 }
 
-// ═══════════════════════════════════════════════════════════
-//  CREATE STUDY GOAL
-// ═══════════════════════════════════════════════════════════
 
 public class CreateStudyGoalDtoValidator : AbstractValidator<CreateStudyGoalDto>
 {
@@ -52,9 +46,6 @@ public class CreateStudyGoalDtoValidator : AbstractValidator<CreateStudyGoalDto>
     }
 }
 
-// ═══════════════════════════════════════════════════════════
-//  UPDATE STUDY GOAL
-// ═══════════════════════════════════════════════════════════
 
 public class UpdateStudyGoalDtoValidator : AbstractValidator<UpdateStudyGoalDto>
 {
@@ -72,9 +63,6 @@ public class UpdateStudyGoalDtoValidator : AbstractValidator<UpdateStudyGoalDto>
     }
 }
 
-// ═══════════════════════════════════════════════════════════
-//  COMPLETE STUDY PLAN ENTRY
-// ═══════════════════════════════════════════════════════════
 
 public class CompleteEntryDtoValidator : AbstractValidator<CompleteEntryDto>
 {
@@ -90,9 +78,6 @@ public class CompleteEntryDtoValidator : AbstractValidator<CompleteEntryDto>
     }
 }
 
-// ═══════════════════════════════════════════════════════════
-//  MOCK EXAM — SUBMIT ANSWER
-// ═══════════════════════════════════════════════════════════
 
 public class MockExamSubmitAnswerDtoValidator : AbstractValidator<MockExamSubmitAnswerDto>
 {
@@ -112,9 +97,6 @@ public class MockExamSubmitAnswerDtoValidator : AbstractValidator<MockExamSubmit
     }
 }
 
-// ═══════════════════════════════════════════════════════════
-//  COMPLETE ONBOARDING
-// ═══════════════════════════════════════════════════════════
 
 public class CompleteOnboardingDtoValidator : AbstractValidator<CompleteOnboardingDto>
 {
@@ -134,9 +116,6 @@ public class CompleteOnboardingDtoValidator : AbstractValidator<CompleteOnboardi
     }
 }
 
-// ═══════════════════════════════════════════════════════════
-//  DIAGNOSTIC — ANSWER
-// ═══════════════════════════════════════════════════════════
 
 public class DiagnosticAnswerDtoValidator : AbstractValidator<DiagnosticAnswerDto>
 {
@@ -158,9 +137,6 @@ public class DiagnosticAnswerDtoValidator : AbstractValidator<DiagnosticAnswerDt
     }
 }
 
-// ═══════════════════════════════════════════════════════════
-//  START DIAGNOSTIC
-// ═══════════════════════════════════════════════════════════
 
 public class StartDiagnosticDtoValidator : AbstractValidator<StartDiagnosticDto>
 {
@@ -172,9 +148,6 @@ public class StartDiagnosticDtoValidator : AbstractValidator<StartDiagnosticDto>
     }
 }
 
-// ═══════════════════════════════════════════════════════════
-//  SUBSCRIPTION — UPGRADE
-// ═══════════════════════════════════════════════════════════
 
 public class UpgradeRequestDtoValidator : AbstractValidator<UpgradeRequestDto>
 {

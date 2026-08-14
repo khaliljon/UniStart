@@ -6,7 +6,6 @@ using UniStart.Infrastructure.Data;
 
 namespace UniStart.Controllers;
 
-/// <summary>Admin view of Telegram support tickets (read + optional reply from the panel).</summary>
 [ApiController]
 [Route("api/admin/support")]
 [Authorize(Roles = "Admin")]
@@ -21,7 +20,6 @@ public class SupportAdminController : ControllerBase
         _bot = bot;
     }
 
-    /// <summary>List tickets, newest activity first.</summary>
     [HttpGet("tickets")]
     public async Task<IActionResult> Tickets()
     {
@@ -42,7 +40,6 @@ public class SupportAdminController : ControllerBase
         return Ok(tickets);
     }
 
-    /// <summary>Full message thread of a ticket.</summary>
     [HttpGet("tickets/{id:int}")]
     public async Task<IActionResult> Ticket(int id)
     {
@@ -63,7 +60,6 @@ public class SupportAdminController : ControllerBase
         });
     }
 
-    /// <summary>Reply to the user from the admin panel (sent via the bot).</summary>
     [HttpPost("tickets/{id:int}/reply")]
     public async Task<IActionResult> Reply(int id, [FromBody] SupportReplyDto dto)
     {

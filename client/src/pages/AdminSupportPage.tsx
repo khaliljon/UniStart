@@ -49,7 +49,6 @@ function AdminSupportPage() {
       <h1 style={{ marginBottom: '1.25rem' }}>Поддержка (Telegram)</h1>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(240px, 320px) 1fr', gap: '1rem', alignItems: 'start' }}>
-        {/* Ticket list */}
         <div className="card" style={{ padding: '0.5rem' }}>
           {loading ? (
             <div className="loading"><div className="spinner" /></div>
@@ -76,7 +75,6 @@ function AdminSupportPage() {
           )}
         </div>
 
-        {/* Thread */}
         <div className="card" style={{ padding: '1rem', minHeight: 320 }}>
           {!active ? (
             <p style={{ color: 'var(--text-secondary)' }}>Выберите обращение слева.</p>

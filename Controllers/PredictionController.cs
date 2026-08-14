@@ -24,9 +24,6 @@ public class PredictionController : ControllerBase
         _logger = logger;
     }
 
-    /// <summary>
-    /// Прогноз результата по данному экзамену
-    /// </summary>
     [HttpGet("{examTypeCode}")]
     public async Task<ActionResult<ScorePredictionDto>> PredictScore(string examTypeCode)
     {
@@ -42,9 +39,6 @@ public class PredictionController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// What-if: что будет, если улучшить тему до заданного уровня?
-    /// </summary>
     [HttpPost("what-if")]
     public async Task<ActionResult<WhatIfResultDto>> WhatIf([FromBody] WhatIfRequest request)
     {
@@ -60,9 +54,6 @@ public class PredictionController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// История прогнозов за N дней
-    /// </summary>
     [HttpGet("history/{examTypeCode}")]
     public async Task<ActionResult<IEnumerable<PredictionHistoryDto>>> GetHistory(
         string examTypeCode, [FromQuery] int days = 30)
@@ -81,7 +72,4 @@ public class PredictionController : ControllerBase
     }
 }
 
-/// <summary>
-/// Запрос для what-if сценария 
-/// </summary>
 public record WhatIfRequest(string ExamTypeCode, int TopicId, int ImprovedLevel);

@@ -13,7 +13,7 @@ export interface SupportTicketSummary {
 
 export interface SupportMessage {
   id: number;
-  direction: string; // "In" | "Out"
+  direction: string;
   text: string;
   createdAt: string;
 }

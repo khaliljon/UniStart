@@ -7,17 +7,12 @@ using UniStart.Infrastructure.Data;
 
 namespace UniStart.Controllers;
 
-/// <summary>
-/// Global pricing settings. Prices are stored as admin-editable key/value
-/// settings so the frontend never hard-codes them.
-/// </summary>
 [ApiController]
 [Route("api")]
 public class PricingController : ControllerBase
 {
     private readonly UniStartDbContext _db;
 
-    // Defaults used until an admin sets values.
     private const decimal DefaultMockPrice = 990m;
     private const decimal DefaultMaterialPrice = 6990m;
     private const string DefaultCurrency = "KZT";
@@ -31,7 +26,6 @@ public class PricingController : ControllerBase
         _db = db;
     }
 
-    /// <summary>Current pricing. Public — used by landing and cart.</summary>
     [HttpGet("pricing")]
     [AllowAnonymous]
     public async Task<IActionResult> Get()
@@ -49,7 +43,6 @@ public class PricingController : ControllerBase
         return Ok(new PricingDto(mockPrice, materialPrice, currency));
     }
 
-    /// <summary>Update pricing (admin only).</summary>
     [HttpPut("admin/pricing")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Update([FromBody] UpdatePricingDto dto)

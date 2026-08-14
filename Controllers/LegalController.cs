@@ -6,9 +6,6 @@ using UniStart.Infrastructure.Data;
 
 namespace UniStart.Controllers;
 
-/// <summary>
-/// Public read access to legal documents + admin editing.
-/// </summary>
 [ApiController]
 [Route("api/legal")]
 public class LegalController : ControllerBase
@@ -20,7 +17,6 @@ public class LegalController : ControllerBase
         _db = db;
     }
 
-    // ── Public ──────────────────────────────────────
 
     [HttpGet]
     [AllowAnonymous]
@@ -48,7 +44,6 @@ public class LegalController : ControllerBase
         return Ok(doc);
     }
 
-    // ── Admin ───────────────────────────────────────
 
     [HttpPut("{slug}")]
     [Authorize(Roles = "Admin")]

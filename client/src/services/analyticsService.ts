@@ -12,7 +12,6 @@ export const analyticsService = {
     return response.data;
   },
 
-  // Stage 4: Enhanced analytics
   async getDashboard(): Promise<Dashboard> {
     const response = await api.get<Dashboard>('/analytics/dashboard');
     return response.data;
@@ -33,7 +32,6 @@ export const analyticsService = {
     return response.data;
   },
 
-  // Test sessions
   async startSession(examTypeCode: string, mode: string = 'practice'): Promise<TestSessionSummary> {
     const response = await api.post<TestSessionSummary>('/analytics/sessions', { examTypeCode, mode });
     return response.data;

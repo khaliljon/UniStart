@@ -13,7 +13,6 @@ public class SubscriptionService : ISubscriptionService
     private readonly IUnitOfWork _unitOfWork;
     private readonly IReferralService _referralService;
 
-    // ── Tier configuration ──
 
     private static readonly Dictionary<string, TierLimitsDto> TierConfigs = new()
     {
@@ -81,15 +80,11 @@ public class SubscriptionService : ISubscriptionService
 
         var todayUtc = DateTime.UtcNow.Date;
 
-        // Count answers today (excluding diagnostic placeholders with TimeSpentSeconds == -1)
         var questionsToday = await _context.UserAnswers
             .CountAsync(a => a.UserId == userId
                           && a.AnsweredAt >= todayUtc
                           && a.TimeSpentSeconds >= 0);
 
-        // Count unique lessons viewed today — approximate via UserAnswers on unique topics
-        // For a proper implementation we'd have a LessonView table, but for now use a simple count
-        var lessonsToday = 0; // TODO: implement when LessonView tracking exists
 
         var questionsRemaining = Math.Max(0, limits.QuestionsPerDay - questionsToday);
 
@@ -116,7 +111,7 @@ public class SubscriptionService : ISubscriptionService
 
         return feature.ToLower() switch
         {
-            "questions" => true,          // with daily limit
+            "questions" => true,
             "basic_analytics" => true,
             "weekly_prediction" => true,
             "study_plan_basic" => true,
@@ -153,7 +148,6 @@ public class SubscriptionService : ISubscriptionService
 
         var hasTutorDiscount = user.LinkedTutorId.HasValue;
 
-        // Stub: in production this would integrate with a payment provider (Kaspi, etc.)
         if (dto.Plan.Equals("Pro", StringComparison.OrdinalIgnoreCase))
         {
             user.SubscriptionTier = SubscriptionTier.Pro;
@@ -161,7 +155,6 @@ public class SubscriptionService : ISubscriptionService
             user.UpdatedAt = DateTime.UtcNow;
             await _unitOfWork.SaveChangesAsync();
 
-            // Grant referral reward to referrer
             await _referralService.GrantRewardForProUpgradeAsync(userId);
 
             var price = hasTutorDiscount ? "6 990 ₸" : "9 990 ₸";
@@ -182,7 +175,6 @@ public class SubscriptionService : ISubscriptionService
             user.UpdatedAt = DateTime.UtcNow;
             await _unitOfWork.SaveChangesAsync();
 
-            // Grant referral reward to referrer
             await _referralService.GrantRewardForProUpgradeAsync(userId);
 
             return new UpgradeResponseDto(
@@ -193,7 +185,6 @@ public class SubscriptionService : ISubscriptionService
             );
         }
 
-        // Downgrade to Free
         user.SubscriptionTier = SubscriptionTier.Free;
         user.SubscriptionExpiresAt = null;
         user.UpdatedAt = DateTime.UtcNow;

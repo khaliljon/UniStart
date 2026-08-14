@@ -62,7 +62,6 @@ public class QuestionImportService : IQuestionImportService
             job.Status = ImportJobStatus.Processing;
             await _db.SaveChangesAsync();
 
-            // Theory imports follow a different, direct-apply path.
             if (job.ContentType == ImportContentType.Theory)
             {
                 await ProcessTheoryAsync(job, fileStream);
@@ -71,7 +70,6 @@ public class QuestionImportService : IQuestionImportService
 
             List<ExtractedQuestion> extracted;
 
-            // Strict template: deterministic .docx table parser (no LLM).
             if (strictTemplate && job.FileType.ToUpper() == "DOCX")
             {
                 extracted = _strictParser.Parse(fileStream);
@@ -105,8 +103,6 @@ public class QuestionImportService : IQuestionImportService
                     throw new ArgumentException($"Unsupported file type: {job.FileType}");
             }
 
-            // Resolve the default topic for every extracted question.
-            // An explicitly chosen topic wins; otherwise fall back to the first topic of the section.
             int? defaultTopicId = null;
             if (job.TopicId.HasValue)
             {
@@ -122,7 +118,6 @@ public class QuestionImportService : IQuestionImportService
                 defaultTopicId = topic?.Id;
             }
 
-            // Save extracted questions as drafts
             foreach (var q in extracted)
             {
                 var difficulty = q.Difficulty switch
@@ -244,7 +239,6 @@ public class QuestionImportService : IQuestionImportService
         var draft = await _db.ImportedQuestionDrafts.FindAsync(draftId);
         if (draft == null || draft.Status != DraftStatus.Pending) return false;
 
-        // Create actual Question + AnswerOptions in the database
         var options = JsonSerializer.Deserialize<List<DraftOptionDto>>(draft.OptionsJson) ?? new();
 
         var question = new Question
@@ -257,7 +251,6 @@ public class QuestionImportService : IQuestionImportService
             DifficultyParam = draft.IrtB,
             DiscriminationParam = draft.IrtA,
             GuessParam = draft.IrtC,
-            // A question with more than one correct option is treated as multiple-choice.
             IsMultipleChoice = options.Count(o => o.IsCorrect) > 1,
         };
 
@@ -284,7 +277,6 @@ public class QuestionImportService : IQuestionImportService
         draft.ReviewedAt = DateTime.UtcNow;
         draft.ReviewedByUserId = reviewerUserId;
 
-        // Update job counters
         var job = await _db.QuestionImportJobs.FindAsync(draft.ImportJobId);
         if (job != null) job.TotalApproved++;
 
@@ -390,13 +382,9 @@ public class QuestionImportService : IQuestionImportService
         return jobs.Count;
     }
 
-    // ══════════════════════════════════════════════════════════
-    //  THEORY IMPORT (direct-apply: lessons, formulas, flashcards, strategies)
-    // ══════════════════════════════════════════════════════════
 
     private async Task ProcessTheoryAsync(QuestionImportJob job, Stream fileStream)
     {
-        // 1. Read raw text from a text-based file.
         var text = job.FileType.ToUpper() switch
         {
             "PDF" => _parser.ParsePdf(fileStream),
@@ -405,7 +393,6 @@ public class QuestionImportService : IQuestionImportService
             _ => throw new ArgumentException($"Theory import does not support file type: {job.FileType}. Use PDF, DOCX, MD or TXT.")
         };
 
-        // 2. Resolve the target topic (required for lessons/formulas/flashcards).
         int? topicId = null;
         string? topicName = null;
         if (job.TopicId.HasValue)
@@ -430,10 +417,8 @@ public class QuestionImportService : IQuestionImportService
             return;
         }
 
-        // 3. Extract structured theory via LLM.
         var theory = await _llm.ExtractTheoryAsync(text, job.Instructions);
 
-        // 4. Persist each content type under the resolved topic / exam.
         var lessonSort = await _db.TopicLessons.CountAsync(l => l.TopicId == topicId.Value);
         foreach (var l in theory.Lessons)
             _db.TopicLessons.Add(new TopicLesson { TopicId = topicId.Value, Title = l.Title, Content = l.Content, SortOrder = lessonSort++ });
@@ -445,7 +430,6 @@ public class QuestionImportService : IQuestionImportService
         var cardCount = 0;
         if (theory.Flashcards.Count > 0)
         {
-            // One system deck per topic — reuse if it already exists.
             var deck = await _db.FlashcardDecks.FirstOrDefaultAsync(d => d.TopicId == topicId.Value && d.IsSystem);
             if (deck == null)
             {
@@ -457,7 +441,7 @@ public class QuestionImportService : IQuestionImportService
                     IsSystem = true
                 };
                 _db.FlashcardDecks.Add(deck);
-                await _db.SaveChangesAsync(); // materialize deck.Id
+                await _db.SaveChangesAsync();
             }
             var cardSort = await _db.Flashcards.CountAsync(c => c.DeckId == deck.Id);
             foreach (var c in theory.Flashcards)
@@ -467,7 +451,6 @@ public class QuestionImportService : IQuestionImportService
             }
         }
 
-        // Strategies attach at exam level (StrategyGuide has no topic binding).
         var strategySort = await _db.StrategyGuides.CountAsync(s => s.ExamTypeCode == job.ExamTypeCode);
         foreach (var s in theory.Strategies)
         {
@@ -501,7 +484,6 @@ public class QuestionImportService : IQuestionImportService
         return reader.ReadToEnd();
     }
 
-    // ── Mapping helpers ──────────────────────────────────────
 
     private QuestionImportJobDto MapJob(QuestionImportJob j) => new(        j.Id, j.FileName, j.FileType, j.ExamTypeCode, j.SectionId, j.TopicId,
         j.Status.ToString(), j.CreatedAt, j.CompletedAt,
@@ -524,9 +506,6 @@ public class QuestionImportService : IQuestionImportService
         );
     }
 
-    // ══════════════════════════════════════════════════════════
-    //  MULTI-FILE IMPORT
-    // ══════════════════════════════════════════════════════════
     public async Task<QuestionImportJobDto> CreateMultiFileImportJobAsync(
         int adminUserId, string examTypeCode, int? sectionId, int? topicId, string? instructions)
     {
@@ -558,7 +537,6 @@ public class QuestionImportService : IQuestionImportService
             job.Status = ImportJobStatus.Processing;
             await _db.SaveChangesAsync();
 
-            // 1. Parse each file based on its role and collect results
             var allQuestions = new List<ExtractedQuestion>();
             var answerKeys = new Dictionary<int, string>();
             var topicSections = new List<(string Title, int StartQ, int EndQ)>();
@@ -567,7 +545,6 @@ public class QuestionImportService : IQuestionImportService
             int fileIndex = 0;
             foreach (var entry in files)
             {
-                // Save file metadata
                 var importFile = new ImportJobFile
                 {
                     ImportJobId = jobId,
@@ -579,7 +556,6 @@ public class QuestionImportService : IQuestionImportService
                 _db.ImportJobFiles.Add(importFile);
                 fileNames.Add(entry.FileName);
 
-                // Parse file content (per-file error handling)
                 string text;
                 List<Dictionary<string, string>>? rows = null;
 
@@ -618,10 +594,8 @@ public class QuestionImportService : IQuestionImportService
                         else
                         {
                             var regexQuestions = _extractor.ExtractFromText(text);
-                            // LLM fallback for individual files with poor regex results
                             allQuestions.AddRange(await MaybeUseLlmAsync(regexQuestions, text, job.Instructions));
                         }
-                        // Also try topic detection from question files
                         if (!string.IsNullOrEmpty(text))
                             topicSections.AddRange(_extractor.DetectTopicSections(text));
                         break;
@@ -633,7 +607,6 @@ public class QuestionImportService : IQuestionImportService
                             foreach (var kv in keys)
                                 answerKeys.TryAdd(kv.Key, kv.Value);
                         }
-                        // Also handle Excel answer keys
                         if (rows != null)
                         {
                             foreach (var row in rows)
@@ -649,7 +622,6 @@ public class QuestionImportService : IQuestionImportService
 
                     case FileRole.Mixed:
                     default:
-                        // Mixed: extract both questions and answers from the same file
                         if (rows != null)
                             allQuestions.AddRange(_extractor.ExtractFromRows(rows));
                         else
@@ -666,9 +638,8 @@ public class QuestionImportService : IQuestionImportService
                 }
             }
 
-            await _db.SaveChangesAsync(); // save ImportJobFiles
+            await _db.SaveChangesAsync();
 
-            // 2. Cross-match answer keys with questions (by order index = question number)
             if (answerKeys.Count > 0)
             {
                 _logger.LogInformation("Cross-matching {AnswerCount} answer keys with {QuestionCount} questions",
@@ -680,13 +651,11 @@ public class QuestionImportService : IQuestionImportService
                     if (!answerKeys.TryGetValue(questionNum, out var correctLetter)) continue;
 
                     var q = allQuestions[i];
-                    // Skip if already has a correct answer
                     if (q.Options.Any(o => o.IsCorrect)) continue;
 
                     var letterIndex = "ABCD".IndexOf(correctLetter);
                     if (letterIndex < 0 || letterIndex >= q.Options.Count) continue;
 
-                    // Rebuild options with the correct one marked
                     var updatedOptions = q.Options.Select((opt, idx) =>
                         new DraftOptionDto(opt.Text, idx == letterIndex)).ToList();
 
@@ -694,8 +663,7 @@ public class QuestionImportService : IQuestionImportService
                 }
             }
 
-            // 3. Auto-detect topics and create/find Topic entities
-            var topicMap = new Dictionary<int, int?>(); // questionNumber → topicId
+            var topicMap = new Dictionary<int, int?>();
             if (topicSections.Count > 0 && job.SectionId.HasValue)
             {
                 var existingTopics = await _db.Topics
@@ -704,7 +672,6 @@ public class QuestionImportService : IQuestionImportService
 
                 foreach (var section in topicSections)
                 {
-                    // Try to find existing topic by name similarity
                     var existingTopic = existingTopics.FirstOrDefault(t =>
                         t.Name.Contains(section.Title, StringComparison.OrdinalIgnoreCase) ||
                         section.Title.Contains(t.Name, StringComparison.OrdinalIgnoreCase));
@@ -713,7 +680,6 @@ public class QuestionImportService : IQuestionImportService
 
                     if (topicId == null && section.StartQ > 0)
                     {
-                        // Auto-create a new topic
                         var newTopic = new Topic
                         {
                             SectionId = job.SectionId.Value,
@@ -735,7 +701,6 @@ public class QuestionImportService : IQuestionImportService
                 }
             }
 
-            // 4. Fallback topic: explicit chosen topic, else first topic in the section
             int? defaultTopicId = null;
             if (job.TopicId.HasValue)
             {
@@ -751,7 +716,6 @@ public class QuestionImportService : IQuestionImportService
                 defaultTopicId = topic?.Id;
             }
 
-            // 5. Save extracted questions as drafts
             for (int i = 0; i < allQuestions.Count; i++)
             {
                 var q = allQuestions[i];
@@ -771,8 +735,6 @@ public class QuestionImportService : IQuestionImportService
                     _ => 0.0
                 };
 
-                // Determine topic for this question.
-                // An explicitly chosen topic forces every question into it; otherwise use auto-detected mapping with section fallback.
                 int? topicId = job.TopicId.HasValue && defaultTopicId == job.TopicId.Value
                     ? defaultTopicId
                     : topicMap.GetValueOrDefault(questionNum) ?? defaultTopicId;
@@ -795,7 +757,6 @@ public class QuestionImportService : IQuestionImportService
                 _db.ImportedQuestionDrafts.Add(draft);
             }
 
-            // Update file name to reflect all processed files
             job.FileName = string.Join(" + ", fileNames.Take(3));
             if (fileNames.Count > 3) job.FileName += $" (+{fileNames.Count - 3})";
 
@@ -818,15 +779,7 @@ public class QuestionImportService : IQuestionImportService
         }
     }
 
-    // ═══════════════════════════════════════════════════════
-    //  LLM QUALITY EVALUATION HELPERS
-    // ═══════════════════════════════════════════════════════
 
-    /// <summary>
-    /// Run the LLM extractor when it is likely to beat regex, or whenever the admin supplied
-    /// free-text instructions (an explicit signal they want AI-driven parsing). With instructions
-    /// present the LLM result is preferred outright; otherwise it only wins on quality score.
-    /// </summary>
     private async Task<List<ExtractedQuestion>> MaybeUseLlmAsync(List<ExtractedQuestion> regexResults, string text, string? instructions)
     {
         bool hasInstructions = !string.IsNullOrWhiteSpace(instructions);
@@ -838,11 +791,6 @@ public class QuestionImportService : IQuestionImportService
         var llmExtracted = await _llm.ExtractQuestionsAsync(text, instructions);
         if (llmExtracted.Count == 0) return regexResults;
 
-        // Use the LLM result only when it is genuinely better than what regex produced.
-        // Instructions decide whether to *run* the LLM, not to blindly trust it — otherwise a
-        // strong regex parse (which also carries per-question difficulty and the full question
-        // count) would be discarded in favour of an LLM pass that drops difficulty and may
-        // return fewer questions.
         if (QualityScore(llmExtracted) > QualityScore(regexResults))
         {
             _logger.LogInformation("Using LLM results: {LlmCount} questions (regex had {RegexCount})",
@@ -854,26 +802,19 @@ public class QuestionImportService : IQuestionImportService
         return regexResults;
     }
 
-    /// <summary>
-    /// Decide whether to try LLM extraction as a fallback.
-    /// Returns true when regex extraction quality appears poor (OCR-garbled text, many items without options).
-    /// </summary>
     private bool ShouldTryLlmExtraction(List<ExtractedQuestion> regexResults, string text)
     {
         if (!_llm.IsConfigured) return false;
         if (string.IsNullOrWhiteSpace(text) || text.Length < 100) return false;
 
-        // Check if text has significant CJK content (likely OCR from Chinese PDF)
         var cjkChars = text.Count(c => c >= '\u4e00' && c <= '\u9fff');
         var cjkRatio = (double)cjkChars / text.Length;
-        var isCjkText = cjkRatio > 0.05; // lower threshold — even 5% CJK triggers
+        var isCjkText = cjkRatio > 0.05;
 
-        // Count questions with actual MCQ options (≥2 options)
         var withOptions = regexResults.Count(q => q.Options.Count >= 2);
         var withFullOptions = regexResults.Count(q => q.Options.Count >= 4);
         var withCorrectAnswer = regexResults.Count(q => q.Options.Any(o => o.IsCorrect));
 
-        // ALWAYS use LLM for CJK/OCR text — regex can't handle OCR artifacts reliably
         if (isCjkText)
         {
             _logger.LogInformation("LLM trigger: CJK text detected ({CjkRatio:P1}), {WithOptions} MCQ / {Total} total",
@@ -881,7 +822,6 @@ public class QuestionImportService : IQuestionImportService
             return true;
         }
 
-        // Non-CJK: use LLM when regex quality is clearly poor
         if (text.Length > 5000 && regexResults.Count < 3)
         {
             _logger.LogInformation("LLM trigger: long text ({Length} chars) with only {Count} questions", text.Length, regexResults.Count);
@@ -894,7 +834,6 @@ public class QuestionImportService : IQuestionImportService
             return true;
         }
 
-        // Many questions but few with 4 options and few correct answers
         if (regexResults.Count > 5 && withFullOptions < 3 && withCorrectAnswer < 2)
         {
             _logger.LogInformation("LLM trigger: {FullOpts} with 4 options, {Correct} with correct answer — quality too low",
@@ -905,10 +844,6 @@ public class QuestionImportService : IQuestionImportService
         return false;
     }
 
-    /// <summary>
-    /// Compute a quality score for a set of extracted questions.
-    /// Higher is better. Prioritizes: number of MCQ questions, correct answers marked, reasonable option counts.
-    /// </summary>
     private static double QualityScore(List<ExtractedQuestion> questions)
     {
         if (questions.Count == 0) return 0;
@@ -916,23 +851,17 @@ public class QuestionImportService : IQuestionImportService
         double score = 0;
         foreach (var q in questions)
         {
-            // Base score for having a question with content
             score += 1;
 
-            // Bonus for having MCQ options
             if (q.Options.Count >= 2) score += 3;
             if (q.Options.Count >= 4) score += 1;
 
-            // Bonus for having a correct answer marked
             if (q.Options.Any(o => o.IsCorrect)) score += 2;
 
-            // Bonus for having explanation
             if (!string.IsNullOrWhiteSpace(q.Explanation)) score += 0.5;
 
-            // Penalty for very short question text (likely garbage)
             if (q.QuestionText.Length < 10) score -= 2;
 
-            // Penalty for very long question text (likely textbook paragraph)
             if (q.QuestionText.Length > 500) score -= 1;
         }
 

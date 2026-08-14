@@ -41,13 +41,11 @@ function AboutCscaPage() {
     <CscaPageShell>
       <CscaPageHero eyebrow={s.aboutLead} title={s.aboutTitle} />
 
-      {/* About body */}
       <section className="csca-wrap" style={{ paddingBottom: '1rem' }}>
         <BrushDivider className="csca-brush-divider" style={{ maxWidth: 220, margin: '0 auto 1.5rem' }} />
         <p className="csca-lead" style={{ textAlign: 'center', maxWidth: 760, margin: '0 auto' }}>{s.aboutBody}</p>
       </section>
 
-      {/* Subjects */}
       <section className="csca-section">
         <div className="csca-wrap">
           <div className="csca-section-head">
@@ -67,7 +65,6 @@ function AboutCscaPage() {
         </div>
       </section>
 
-      {/* Exam dates */}
       <section className="csca-section" style={{ background: 'rgba(255,255,255,0.5)' }}>
         <div className="csca-wrap">
           <div className="csca-section-head">
@@ -115,7 +112,6 @@ function AboutCscaPage() {
         </div>
       </section>
 
-      {/* CTA */}
       <section className="csca-wrap csca-section">
         <div className="csca-cta-band">
           <span className="csca-hanzi-bg csca-hanzi">越</span>

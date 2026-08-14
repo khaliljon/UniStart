@@ -29,7 +29,6 @@ export function Skeleton({
   return <>{skeletons}</>;
 }
 
-// Common skeleton patterns
 export function QuestionSkeleton() {
   return (
     <div className="card animate-fade-in">
@@ -63,7 +62,6 @@ export function TopicsSkeleton() {
 export function AnalyticsSkeleton() {
   return (
     <div className="animate-fade-in">
-      {/* Stats grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
         {[1, 2, 3].map(i => (
           <div key={i} className="card">
@@ -73,7 +71,6 @@ export function AnalyticsSkeleton() {
         ))}
       </div>
       
-      {/* Skills list */}
       <div className="card">
         <div className="skeleton skeleton-text" style={{ width: '30%', marginBottom: '1rem' }} />
         {[1, 2, 3].map(i => (

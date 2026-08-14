@@ -17,7 +17,6 @@ function ProfileDropdown() {
   const [cartCount, setCartCount] = useState(0);
   const ref = useRef<HTMLDivElement>(null);
 
-  // Keep the cart badge in sync
   useEffect(() => {
     const refresh = () => setCartCount(cartService.count());
     refresh();
@@ -25,7 +24,6 @@ function ProfileDropdown() {
     return () => window.removeEventListener(cartService.eventName, refresh);
   }, []);
 
-  // Close on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) {
@@ -53,7 +51,6 @@ function ProfileDropdown() {
 
   return (
     <div ref={ref} style={{ position: 'relative' }}>
-      {/* Trigger button */}
       <button
         onClick={() => setOpen(!open)}
         className="profile-trigger"
@@ -66,10 +63,8 @@ function ProfileDropdown() {
         <span style={{ fontSize: '0.6rem', marginLeft: '0.2rem', opacity: 0.6 }}>▼</span>
       </button>
 
-      {/* Dropdown */}
       {open && (
         <div className="profile-dropdown">
-          {/* User info header */}
           <div className="profile-dropdown-header">
             <span className="profile-avatar" style={{ width: '36px', height: '36px', fontSize: '0.85rem' }}>
               {initials}
@@ -82,7 +77,6 @@ function ProfileDropdown() {
 
           <div className="profile-dropdown-divider" />
 
-          {/* Menu items */}
           <button className="profile-dropdown-item" onClick={() => goTo('/purchases')}>
             {t.nav.myPurchases}
           </button>

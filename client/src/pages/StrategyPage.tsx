@@ -43,7 +43,6 @@ function StrategyPage() {
     return <div className="loading-container"><div className="loading-spinner" /></div>;
   }
 
-  // Guide detail view
   if (activeGuide) {
     return (
       <div className="animate-fade-in">
@@ -77,7 +76,6 @@ function StrategyPage() {
   const filtered = filterCategory === 'all' ? guides : guides.filter(g => g.category === filterCategory);
   const readCount = guides.filter(g => g.isRead).length;
 
-  // Group by exam → list
   const groupedByExam = filtered.reduce<Record<string, StrategyGuideSummary[]>>((acc, g) => {
     (acc[g.examTypeCode] ??= []).push(g);
     return acc;
@@ -86,7 +84,6 @@ function StrategyPage() {
   const examKeys = Object.keys(groupedByExam).sort();
   const hasMultipleExams = examKeys.length > 1;
 
-  // Guide list view
   return (
     <div className="animate-fade-in">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
@@ -96,7 +93,6 @@ function StrategyPage() {
         </span>
       </div>
 
-      {/* Category filter */}
       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
         {categories.map(cat => (
           <button

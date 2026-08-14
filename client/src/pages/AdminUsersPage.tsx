@@ -24,18 +24,15 @@ function AdminUsersPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // Tutor profile cache
   type TutorInfo = { averageRating: number; totalReviews: number; totalStudents: number; isVerified: boolean; specializations: string; hourlyRate: number | null };
   const [tutorCache, setTutorCache] = useState<Map<number, TutorInfo>>(new Map());
   const [tutorLoading, setTutorLoading] = useState(false);
 
-  // Filters
   const [filterRole, setFilterRole] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [showDeleted, setShowDeleted] = useState(false);
 
-  // Edit form state
   const [editMode, setEditMode] = useState(false);
   const [editData, setEditData] = useState({
     name: '',
@@ -45,9 +42,6 @@ function AdminUsersPage() {
     schoolId: null as number | null,
   });
 
-  // Schools list removed with tutor/school feature
-
-  // Pagination (OP-13)
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
@@ -78,7 +72,6 @@ function AdminUsersPage() {
       const s = await adminService.getUserStats();
       setStats(s);
     } catch {
-      // ignore
     }
   };
 
@@ -97,7 +90,6 @@ function AdminUsersPage() {
     setSuccess(null);
     setPurchases(null);
     adminService.getUserPurchases(user.id).then(setPurchases).catch(() => setPurchases([]));
-    // Load tutor data if user is a Tutor and not cached
     if (user.role === 'Tutor' && !tutorCache.has(user.id)) {
       setTutorLoading(true);
       adminService.getTutors().then(tutors => {
@@ -113,7 +105,7 @@ function AdminUsersPage() {
           });
         }
         setTutorCache(map);
-      }).catch(() => { /* ignore */ }).finally(() => setTutorLoading(false));
+      }).catch(() => {}).finally(() => setTutorLoading(false));
     }
   };
 
@@ -170,7 +162,6 @@ function AdminUsersPage() {
     }
   };
 
-  // Block / Unblock (OP-14)
   const blockUser = async (id: number) => {
     const reason = prompt(t.admin.users.blockReasonPrompt);
     try {
@@ -233,7 +224,6 @@ function AdminUsersPage() {
         {t.admin.users.exportCsv}
       </button>
 
-      {/* Stats Cards */}
       {stats && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '1rem' }}>
           <StatCard label={t.admin.common.total} value={stats.totalUsers} color="var(--primary-color)" />
@@ -246,7 +236,6 @@ function AdminUsersPage() {
       {error && <div className="alert alert-error">{error}</div>}
       {success && <div className="alert alert-success" style={{ background: 'var(--success-bg)', color: 'var(--success-color)', padding: '0.75rem 1rem', borderRadius: '8px' }}>{success}</div>}
 
-      {/* Filters */}
       <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
         <select
           value={filterRole}
@@ -281,9 +270,7 @@ function AdminUsersPage() {
         </label>
       </div>
 
-      {/* Main content */}
       <div style={{ display: 'grid', gridTemplateColumns: selected ? '1fr 1fr' : '1fr', gap: '1.5rem' }}>
-        {/* Users list */}
         <div className="card" style={{ padding: '1rem', overflow: 'auto', maxHeight: '70vh' }}>
           {isLoading ? (
             <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>{t.admin.common.loading}</div>
@@ -349,7 +336,6 @@ function AdminUsersPage() {
           <div style={{ marginTop: '0.75rem', textAlign: 'right', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
             {t.admin.users.found} {totalCount}
           </div>
-          {/* Pagination (OP-13) */}
           {totalPages > 1 && (
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 0 0' }}>
               <button className="btn btn-outline" disabled={page <= 1} onClick={() => setPage(1)} style={{ fontSize: '0.85rem' }}>«</button>
@@ -363,7 +349,6 @@ function AdminUsersPage() {
           )}
         </div>
 
-        {/* Detail panel */}
         {selected && (
           <div className="card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -374,7 +359,6 @@ function AdminUsersPage() {
             </div>
 
             {editMode ? (
-              /* Edit form */
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
                   {t.admin.users.nameLabel}
@@ -414,7 +398,6 @@ function AdminUsersPage() {
                 </div>
               </div>
             ) : (
-              /* View mode */
               <>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                   <InfoField label="ID" value={String(selected.id)} />
@@ -429,7 +412,6 @@ function AdminUsersPage() {
                   )}
                 </div>
 
-                {/* Block status (OP-14) */}
                 {selected.isBlocked && (
                   <div style={{ padding: '0.75rem', background: 'rgba(239,68,68,0.08)', borderRadius: '8px', border: '1px solid var(--error-color)' }}>
                     <div style={{ fontWeight: 600, color: 'var(--error-color)', fontSize: '0.9rem' }}>{t.admin.users.blockedLabel}</div>
@@ -438,7 +420,6 @@ function AdminUsersPage() {
                   </div>
                 )}
 
-                {/* Deleted status */}
                 {selected.isDeleted && (
                   <div style={{ padding: '0.75rem', background: 'rgba(107,114,128,0.08)', borderRadius: '8px', border: '1px solid var(--text-muted)' }}>
                     <div style={{ fontWeight: 600, color: 'var(--text-muted)', fontSize: '0.9rem' }}>{t.admin.users.deletedLabel}</div>
@@ -449,7 +430,6 @@ function AdminUsersPage() {
                 <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem' }}>
                   <h3 style={{ fontSize: '1rem', margin: '0 0 0.5rem' }}>{t.admin.users.statistics}</h3>
                   {selected.role === 'Tutor' ? (
-                    /* Tutor-specific stats */
                     tutorLoading ? (
                       <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{t.admin.common.loading}</div>
                     ) : (() => {
@@ -485,7 +465,6 @@ function AdminUsersPage() {
                       );
                     })()
                   ) : (
-                    /* Student / Admin stats */
                     <>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
                         <StatCard label={t.admin.users.answersCount} value={selected.totalAnswers} color="var(--primary-color)" small />
@@ -501,7 +480,6 @@ function AdminUsersPage() {
                   )}
                 </div>
 
-                {/* Purchases */}
                 <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem' }}>
                   <h3 style={{ fontSize: '1rem', margin: '0 0 0.5rem' }}>{t.admin.users.purchases}</h3>
                   {purchases === null ? (

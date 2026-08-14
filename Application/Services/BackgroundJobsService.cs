@@ -5,10 +5,6 @@ using UniStart.Infrastructure.Data;
 
 namespace UniStart.Application.Services;
 
-/// <summary>
-/// Hangfire-managed background jobs: streak reminders and weekly digests.
-/// Each method is called by Hangfire as a recurring job with automatic retry.
-/// </summary>
 public class BackgroundJobsService : IBackgroundJobsService
 {
     private readonly UniStartDbContext _context;
@@ -25,9 +21,6 @@ public class BackgroundJobsService : IBackgroundJobsService
         _logger = logger;
     }
 
-    // ───────────────────────────────────────────────────────
-    //  STREAK REMINDERS (every 6 hours)
-    // ───────────────────────────────────────────────────────
     public async Task ProcessStreakRemindersAsync()
     {
         _logger.LogInformation("Hangfire: Processing streak reminders...");
@@ -58,13 +51,11 @@ public class BackgroundJobsService : IBackgroundJobsService
                 .Select(a => a.AnsweredAt)
                 .FirstOrDefaultAsync();
 
-            // Skip users who have never studied — no point sending "0 days" reminders
             if (lastAnswerDate == default) continue;
 
             var streak = 0;
             if (lastAnswerDate != default)
             {
-                // Fetch all distinct study dates in one query to avoid N+1 and .Date comparison issues
                 var studyDates = await _context.UserAnswers
                     .Where(a => a.UserId == user.Id)
                     .Select(a => a.AnsweredAt.Date)
@@ -87,7 +78,6 @@ public class BackgroundJobsService : IBackgroundJobsService
                 }
             }
 
-            // Calculate actual days of inactivity
             var inactiveDays = (int)(DateTime.UtcNow.Date - lastAnswerDate.Date).TotalDays;
 
             try
@@ -106,9 +96,6 @@ public class BackgroundJobsService : IBackgroundJobsService
         _logger.LogInformation("Streak reminders sent to {Count} users.", sentCount);
     }
 
-    // ───────────────────────────────────────────────────────
-    //  WEEKLY DIGESTS (Mondays 08:00 UTC)
-    // ───────────────────────────────────────────────────────
     public async Task ProcessWeeklyDigestsAsync()
     {
         _logger.LogInformation("Hangfire: Processing weekly digests...");
@@ -142,7 +129,6 @@ public class BackgroundJobsService : IBackgroundJobsService
             var correctAnswers = weeklyAnswers.Count(a => a.AnswerOption.IsCorrect);
             var accuracy = totalQuestions > 0 ? (double)correctAnswers / totalQuestions * 100 : 0;
 
-            // Calculate streak
             var streak = 0;
             var checkDate = DateTime.UtcNow.Date.AddDays(-1);
             while (true)
@@ -156,7 +142,6 @@ public class BackgroundJobsService : IBackgroundJobsService
                 checkDate = checkDate.AddDays(-1);
             }
 
-            // Get exam type — the most used one
             var examTypeCode = await _context.UserAnswers
                 .Include(a => a.Question).ThenInclude(q => q.Topic).ThenInclude(t => t.Section)
                 .Where(a => a.UserId == user.Id && a.AnsweredAt > oneWeekAgo && a.TimeSpentSeconds != -1
@@ -169,7 +154,6 @@ public class BackgroundJobsService : IBackgroundJobsService
 
             var examType = await _context.ExamTypes.FindAsync(examTypeCode);
 
-            // Topic progress
             var topProgress = weeklyAnswers
                 .Where(a => a.Question?.Topic != null)
                 .GroupBy(a => a.Question.Topic.Name)
@@ -184,7 +168,6 @@ public class BackgroundJobsService : IBackgroundJobsService
                 .Take(5)
                 .ToList();
 
-            // Predicted score
             var predictedScore = 0;
             var maxScore = 1600;
             try
@@ -207,7 +190,7 @@ public class BackgroundJobsService : IBackgroundJobsService
                     predictedScore = (int)(minScore + probability * (maxScore - minScore));
                 }
             }
-            catch { /* fallback to 0 */ }
+            catch {}
 
             var recommendations = new List<string>();
             if (accuracy < 50)
@@ -248,9 +231,6 @@ public class BackgroundJobsService : IBackgroundJobsService
         _logger.LogInformation("Weekly digests sent to {Count} users.", sentCount);
     }
 
-    // ───────────────────────────────────────────────────────
-    //  SOFT-DELETE PURGE (daily at 02:00 UTC) — OP-9
-    // ───────────────────────────────────────────────────────
     public async Task PurgeSoftDeletedRecordsAsync()
     {
         _logger.LogInformation("Hangfire: Purging soft-deleted records older than 30 days...");
@@ -258,7 +238,6 @@ public class BackgroundJobsService : IBackgroundJobsService
         var cutoff = DateTime.UtcNow.AddDays(-30);
         var totalPurged = 0;
 
-        // Purge soft-deleted Questions (+ cascade to AnswerOptions via DB FK)
         var deletedQuestions = await _context.Questions
             .IgnoreQueryFilters()
             .Where(q => q.IsDeleted && q.DeletedAt != null && q.DeletedAt < cutoff)
@@ -271,7 +250,6 @@ public class BackgroundJobsService : IBackgroundJobsService
             _logger.LogInformation("Purging {Count} soft-deleted questions.", deletedQuestions.Count);
         }
 
-        // Purge soft-deleted Users (+ cascade to related records via DB FK)
         var deletedUsers = await _context.Users
             .IgnoreQueryFilters()
             .Where(u => u.IsDeleted && u.DeletedAt != null && u.DeletedAt < cutoff)
@@ -292,16 +270,6 @@ public class BackgroundJobsService : IBackgroundJobsService
         _logger.LogInformation("Soft-delete purge complete. {Count} records permanently removed.", totalPurged);
     }
 
-    // ───────────────────────────────────────────────────────
-    //  IRT AUTO-CALIBRATION (daily at 03:00 UTC)
-    // ───────────────────────────────────────────────────────
-    /// <summary>
-    /// Recalibrates b (difficulty) for every question that has accumulated 30+ real answers.
-    /// Method: proportion-correct p → b = logit(1-p) / 1.7  (approximation to 2PL)
-    /// Only overwrites b if the new estimate differs by more than 0.15 (avoids noise churn).
-    /// Leaves a and c unchanged (manual or seeded values are kept).
-    /// Marks UpdatedAt so admins can see which questions were auto-calibrated.
-    /// </summary>
     public async Task CalibrateIrtParametersAsync()
     {
         _logger.LogInformation("Hangfire: Starting IRT auto-calibration...");
@@ -309,7 +277,6 @@ public class BackgroundJobsService : IBackgroundJobsService
         const int MinAnswers = 30;
         const double MinDelta = 0.15;
 
-        // Aggregate answer counts per question
         var stats = await _context.UserAnswers
             .Where(ua => ua.AnswerOption != null)
             .GroupBy(ua => ua.QuestionId)
@@ -340,15 +307,10 @@ public class BackgroundJobsService : IBackgroundJobsService
             if (s.Total == 0) continue;
 
             double p = (double)s.Correct / s.Total;
-            // clamp to avoid log(0)
             p = Math.Clamp(p, 0.01, 0.99);
 
-            // Proportion-correct → b estimate (approximation):
-            // In the 1PL model P(θ) = sigmoid(θ - b), at the average student θ≈0:
-            //   b ≈ -logit(p) = log((1-p)/p)
             double bNew = Math.Log((1.0 - p) / p);
 
-            // Only update if estimate differs meaningfully
             if (Math.Abs(bNew - q.DifficultyParam) > MinDelta)
             {
                 q.DifficultyParam = Math.Round(Math.Clamp(bNew, -4.0, 4.0), 3);

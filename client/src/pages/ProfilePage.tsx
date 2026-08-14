@@ -24,15 +24,12 @@ function ProfilePage() {
   const [sub, setSub] = useState<SubscriptionStatus | null>(null);
   const [showPricing, setShowPricing] = useState(false);
   const [allSections, setAllSections] = useState<ExamSection[]>([]);
-  // Legacy sections (subscription / referral / exam-selection) are hidden for now.
   const SHOW_LEGACY: boolean = false;
 
-  // Referral program
   const [refStats, setRefStats] = useState<ReferralStats | null>(null);
   const [refActivating, setRefActivating] = useState(false);
   const [refCopied, setRefCopied] = useState(false);
 
-  // Password change
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -40,14 +37,12 @@ function ProfilePage() {
   const [pwdSuccess, setPwdSuccess] = useState<string | null>(null);
   const [pwdLoading, setPwdLoading] = useState(false);
 
-  // Name change
   const [editFirstName, setEditFirstName] = useState(user?.firstName || '');
   const [editLastName, setEditLastName] = useState(user?.lastName || '');
   const [nameError, setNameError] = useState<string | null>(null);
   const [nameSuccess, setNameSuccess] = useState<string | null>(null);
   const [nameLoading, setNameLoading] = useState(false);
 
-  // Phone change
   const [editPhone, setEditPhone] = useState(user?.phoneNumber || '');
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const [phoneSuccess, setPhoneSuccess] = useState<string | null>(null);
@@ -59,10 +54,7 @@ function ProfilePage() {
     referralService.getStats().then(setRefStats).catch(() => {});
   }, [dispatch]);
 
-  // Load sections for all selected exams that actually exist in the DB.
   useEffect(() => {
-    // Only fetch for exams present in the loaded (admin-managed) list — avoids
-    // 404s for stale codes that were removed from the admin panel.
     const active = selectedExams.filter(code => exams.some(e => e.code === code));
     if (active.length === 0) {
       setAllSections([]);
@@ -75,10 +67,8 @@ function ProfilePage() {
     ).then(results => {
       const flat = results.flat();
       setAllSections(flat);
-      // Auto-cleanup: keep only IDs that belong to current exams
       const validIds = new Set(flat.map(s => s.id));
       const cleaned = selectedSectionIds.filter(id => validIds.has(id));
-      // If user had no valid selections, auto-select all
       if (cleaned.length === 0 && flat.length > 0) {
         dispatch(setSelectedSectionIds(flat.map(s => s.id)));
       } else if (cleaned.length !== selectedSectionIds.length) {
@@ -91,7 +81,6 @@ function ProfilePage() {
     const next = selectedSectionIds.includes(sectionId)
       ? selectedSectionIds.filter(id => id !== sectionId)
       : [...selectedSectionIds, sectionId];
-    // Don't allow deselecting all sections for an exam
     if (next.length === 0) return;
     dispatch(setSelectedSectionIds(next));
   };
@@ -104,7 +93,7 @@ function ProfilePage() {
       const res = await referralService.activate();
       setRefStats(prev => prev ? { ...prev, code: res.code, isActive: true } : null);
       referralService.getStats().then(setRefStats).catch(() => {});
-    } catch { /* ignore */ } finally { setRefActivating(false); }
+    } catch {} finally { setRefActivating(false); }
   };
 
   const handleCopyReferral = () => {
@@ -143,7 +132,6 @@ function ProfilePage() {
       setNameLoading(true);
       await api.put(`/users/${user?.id}`, { firstName: editFirstName.trim(), lastName: editLastName.trim() });
       setNameSuccess(t.common.save + ' ✓');
-      // Update localStorage user
       if (user) {
         const updated = { ...user, firstName: editFirstName.trim(), lastName: editLastName.trim(), name: `${editFirstName.trim()} ${editLastName.trim()}`.trim() };
         localStorage.setItem('user', JSON.stringify(updated));
@@ -173,7 +161,6 @@ function ProfilePage() {
     <div className="animate-fade-in" style={{ maxWidth: '640px', margin: '0 auto', padding: '2rem 0' }}>
       <h1 style={{ marginBottom: '1.5rem' }}>{t.profilePage.title}</h1>
 
-      {/* ─── Support & socials ─── */}
       <div className="card" style={{ padding: '1.5rem', marginBottom: '1.25rem' }}>
         <h2 style={{ fontSize: '1.05rem', margin: '0 0 0.35rem' }}>{s.supportSocials}</h2>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', margin: '0 0 1rem' }}>
@@ -188,7 +175,6 @@ function ProfilePage() {
         </div>
       </div>
 
-      {/* ─── User Info Card ─── */}
       <div className="card" style={{ padding: '1.5rem', marginBottom: '1.25rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
           <div style={{
@@ -211,7 +197,6 @@ function ProfilePage() {
         </div>
       </div>
 
-      {/* ─── Edit Name ─── */}
       <div className="card" style={{ padding: '1.5rem', marginBottom: '1.25rem' }}>
         <h3 style={{ margin: '0 0 1rem', fontSize: '1rem' }}>{t.auth.firstName} / {t.auth.lastName}</h3>
         {nameError && <div style={{ color: 'var(--error-color)', marginBottom: '0.75rem', padding: '0.5rem 0.75rem', background: 'var(--error-bg)', borderRadius: '6px', fontSize: '0.85rem' }}>{nameError}</div>}
@@ -231,7 +216,6 @@ function ProfilePage() {
         </form>
       </div>
 
-      {/* ─── Edit Phone ─── */}
       <div className="card" style={{ padding: '1.5rem', marginBottom: '1.25rem' }}>
         <h3 style={{ margin: '0 0 1rem', fontSize: '1rem' }}>{t.auth.phone}</h3>
         {phoneError && <div style={{ color: 'var(--error-color)', marginBottom: '0.75rem', padding: '0.5rem 0.75rem', background: 'var(--error-bg)', borderRadius: '6px', fontSize: '0.85rem' }}>{phoneError}</div>}
@@ -247,7 +231,6 @@ function ProfilePage() {
         </form>
       </div>
 
-      {/* ─── Subscription (hidden) ─── */}
       {SHOW_LEGACY && (
       <div className="card" style={{ padding: '1.5rem', marginBottom: '1.25rem' }}>
         <h3 style={{ margin: '0 0 0.75rem', fontSize: '1rem' }}>{t.profilePage.subscription}</h3>
@@ -284,7 +267,6 @@ function ProfilePage() {
       )}
 
 
-      {/* ─── Referral Program (hidden) ─── */}
       {SHOW_LEGACY && (
       <div className="card" style={{ padding: '1.5rem', marginBottom: '1.25rem' }}>
         <h3 style={{ margin: '0 0 0.75rem', fontSize: '1rem' }}>{t.profilePage.referralTitle}</h3>
@@ -341,7 +323,6 @@ function ProfilePage() {
       </div>
       )}
 
-      {/* ─── Selected Exams (hidden — CSCA is default) ─── */}
       {SHOW_LEGACY && (<>
       <div className="card" style={{ padding: '1.5rem', marginBottom: '1.25rem' }}>
         <h3 style={{ margin: '0 0 0.75rem', fontSize: '1rem' }}>{t.profilePage.examPreferences}</h3>
@@ -372,7 +353,6 @@ function ProfilePage() {
         )}
       </div>
 
-      {/* ─── Section Preferences ─── */}
       {allSections.length > 0 && (
         <div className="card" style={{ padding: '1.5rem', marginBottom: '1.25rem' }}>
           <h3 style={{ margin: '0 0 0.75rem', fontSize: '1rem' }}>{t.profilePage.sectionPreferences}</h3>
@@ -416,7 +396,6 @@ function ProfilePage() {
       )}
       </>)}
 
-      {/* ─── Change Password ─── */}
       <div className="card" style={{ padding: '1.5rem', marginBottom: '1.25rem' }}>
         <h3 style={{ margin: '0 0 1rem', fontSize: '1rem' }}>{t.profilePage.changePassword}</h3>
         {pwdError && <div style={{ color: 'var(--error-color)', marginBottom: '0.75rem', padding: '0.5rem 0.75rem', background: 'var(--error-bg)', borderRadius: '6px', fontSize: '0.85rem' }}>{pwdError}</div>}

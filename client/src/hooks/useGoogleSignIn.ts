@@ -25,10 +25,6 @@ declare global {
   }
 }
 
-/**
- * Load the Google Sign-In SDK once and render a button into the given element.
- * Avoids duplicate script tags and duplicate initialize() calls.
- */
 export function useGoogleSignIn(buttonId: string, text: 'continue_with' | 'signup_with', enabled = true) {
   const dispatch = useAppDispatch();
   const clientIdRef = useRef<string | null>(null);
@@ -59,7 +55,6 @@ export function useGoogleSignIn(buttonId: string, text: 'continue_with' | 'signu
     };
 
     (async () => {
-      // Fetch client ID from backend (once per mount)
       try {
         const res = await api.get<{ clientId: string }>('/auth/google-client-id');
         if (cancelled || !res.data.clientId) return;
@@ -68,13 +63,11 @@ export function useGoogleSignIn(buttonId: string, text: 'continue_with' | 'signu
         return;
       }
 
-      // If GSI script was already loaded by another page, just re-initialize
       if (window.google) {
         initGsi();
         return;
       }
 
-      // Only inject the script tag once globally
       if (!window.__gsi_loaded) {
         window.__gsi_loaded = true;
         const script = document.createElement('script');
@@ -84,7 +77,6 @@ export function useGoogleSignIn(buttonId: string, text: 'continue_with' | 'signu
         script.onload = () => initGsi();
         document.head.appendChild(script);
       } else {
-        // Script tag exists but hasn't loaded yet — poll briefly
         const check = setInterval(() => {
           if (window.google) {
             clearInterval(check);

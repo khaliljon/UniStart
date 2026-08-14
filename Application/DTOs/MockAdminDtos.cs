@@ -1,6 +1,5 @@
 namespace UniStart.Application.DTOs;
 
-// DTOs for mock-exam authoring (used by SchoolAdmin / Admin)
 
 public record AdminMockSectionInputDto(
     int? ExamSectionId,

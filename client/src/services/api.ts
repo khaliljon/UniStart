@@ -7,7 +7,6 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  // Serialize arrays as 'key=value1&key=value2' for ASP.NET Core
   paramsSerializer: {
     serialize: (params) => {
       const parts: string[] = [];
@@ -24,7 +23,6 @@ const api = axios.create({
   },
 });
 
-// Track refresh state to avoid concurrent refreshes
 let isRefreshing = false;
 let refreshPromise: Promise<string | null> | null = null;
 
@@ -41,7 +39,6 @@ async function refreshToken(): Promise<string | null> {
     const { token, expiresAt } = response.data;
     localStorage.setItem('token', token);
     localStorage.setItem('tokenExpiresAt', expiresAt);
-    // Also update user data if returned
     const fullResp = response.data as Record<string, unknown>;
     if (fullResp.userId) {
       const user = {
@@ -64,9 +61,7 @@ async function refreshToken(): Promise<string | null> {
   }
 }
 
-// Add auth token to requests + proactive refresh if about to expire
 api.interceptors.request.use(async (config) => {
-  // Set Accept-Language from saved locale
   const locale = localStorage.getItem('unistart_locale') || 'ru';
   config.headers['Accept-Language'] = locale;
 
@@ -74,8 +69,6 @@ api.interceptors.request.use(async (config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
 
-    // Proactively refresh if token expires within 30 minutes
-    // (skip for the refresh endpoint itself to avoid loops)
     const expiresAt = localStorage.getItem('tokenExpiresAt');
     if (expiresAt && !config.url?.includes('/auth/refresh')) {
       const expiresTime = new Date(expiresAt).getTime();
@@ -100,7 +93,6 @@ api.interceptors.request.use(async (config) => {
   return config;
 });
 
-// Handle auth errors
 api.interceptors.response.use(
   (response) => response,
   (error) => {

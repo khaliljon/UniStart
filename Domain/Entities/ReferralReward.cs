@@ -7,8 +7,8 @@ public class ReferralReward
     public virtual User Owner { get; set; } = null!;
     public int ReferralUsageId { get; set; }
     public virtual ReferralUsage Usage { get; set; } = null!;
-    public string RewardType { get; set; } = "";   // "money" or "days"
-    public decimal Amount { get; set; }              // 500 (₸) or 5 (days)
+    public string RewardType { get; set; } = "";
+    public decimal Amount { get; set; }
     public bool IsPaidOut { get; set; }
     public DateTime GrantedAt { get; set; } = DateTime.UtcNow;
     public DateTime? PaidOutAt { get; set; }

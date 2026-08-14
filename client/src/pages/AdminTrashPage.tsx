@@ -121,7 +121,6 @@ function AdminTrashPage() {
         )}
       </div>
 
-      {/* Summary cards */}
       <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
         {[
           { label: t.admin.trash.totalLabel, count: items.length, color: 'var(--text-primary)' },
@@ -135,7 +134,6 @@ function AdminTrashPage() {
         ))}
       </div>
 
-      {/* Tab filters */}
       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
         {([
           ['all', t.admin.trash.filterAll],
@@ -160,7 +158,6 @@ function AdminTrashPage() {
         ))}
       </div>
 
-      {/* Table */}
       {loading ? (
         <div className="loading-skeleton" style={{ height: '400px', borderRadius: '12px' }} />
       ) : filtered.length === 0 ? (

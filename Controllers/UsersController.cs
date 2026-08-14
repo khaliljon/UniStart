@@ -25,9 +25,6 @@ public class UsersController : ControllerBase
         _logger = logger;
     }
 
-    /// <summary>
-    /// Get user by ID
-    /// </summary>
     [HttpGet("{id}")]
     [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -35,7 +32,6 @@ public class UsersController : ControllerBase
     {
         var currentUserId = GetCurrentUserId();
         
-        // Users can only access their own data (unless admin)
         if (currentUserId != id && !User.IsInRole("Admin"))
         {
             return Forbid();
@@ -50,9 +46,6 @@ public class UsersController : ControllerBase
         return Ok(user);
     }
 
-    /// <summary>
-    /// Update user
-    /// </summary>
     [HttpPut("{id}")]
     [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -82,9 +75,6 @@ public class UsersController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Get user online presence status
-    /// </summary>
     [HttpGet("{id}/presence")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -98,9 +88,6 @@ public class UsersController : ControllerBase
         return Ok(new { isOnline, lastSeenAt = user.LastSeenAt });
     }
 
-    /// <summary>
-    /// Get presence for multiple users at once
-    /// </summary>
     [HttpPost("presence/batch")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public IActionResult GetPresenceBatch([FromBody] int[] userIds)

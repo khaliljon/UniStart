@@ -16,7 +16,6 @@ function AdminMocksPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // Form states
   const [editingId, setEditingId] = useState<number | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
@@ -542,7 +541,6 @@ function AdminMocksPage() {
   );
 }
 
-// ─── Inline Styles ────────────────────────────────────────
 
 const thStyle: React.CSSProperties = {
   padding: '0.75rem 1rem',

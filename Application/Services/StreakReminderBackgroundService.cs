@@ -4,10 +4,6 @@ using UniStart.Infrastructure.Data;
 
 namespace UniStart.Application.Services;
 
-/// <summary>
-/// Background job: sends streak reminder emails to users who haven't studied for 2+ days.
-/// Runs every 6 hours.
-/// </summary>
 public class StreakReminderBackgroundService : BackgroundService
 {
     private readonly IServiceScopeFactory _scopeFactory;
@@ -26,7 +22,6 @@ public class StreakReminderBackgroundService : BackgroundService
     {
         _logger.LogInformation("StreakReminderBackgroundService started.");
 
-        // Wait 1 minute on startup so DB is ready
         await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
 
         while (!stoppingToken.IsCancellationRequested)
@@ -53,7 +48,6 @@ public class StreakReminderBackgroundService : BackgroundService
         var twoDaysAgo = DateTime.UtcNow.AddDays(-2);
         var oneDayAgo = DateTime.UtcNow.AddDays(-1);
 
-        // Get users with streak reminder enabled who haven't been reminded in the last 24h
         var users = await context.Users
             .Include(u => u.NotificationPreferences)
             .Where(u => u.NotificationPreferences != null
@@ -64,13 +58,11 @@ public class StreakReminderBackgroundService : BackgroundService
 
         foreach (var user in users)
         {
-            // Check if user has any answers in the last 2 days
             var hasRecentActivity = await context.UserAnswers
                 .AnyAsync(a => a.UserId == user.Id && a.AnsweredAt > twoDaysAgo, ct);
 
             if (hasRecentActivity) continue;
 
-            // Calculate their last streak
             var lastAnswerDate = await context.UserAnswers
                 .Where(a => a.UserId == user.Id)
                 .OrderByDescending(a => a.AnsweredAt)
@@ -80,7 +72,6 @@ public class StreakReminderBackgroundService : BackgroundService
             var streak = 0;
             if (lastAnswerDate != default)
             {
-                // Count consecutive days back from last answer
                 var checkDate = lastAnswerDate.Date;
                 while (true)
                 {
@@ -93,14 +84,12 @@ public class StreakReminderBackgroundService : BackgroundService
                 }
             }
 
-            // Calculate actual days of inactivity
             var inactiveDays = lastAnswerDate != default
                 ? (int)(DateTime.UtcNow.Date - lastAnswerDate.Date).TotalDays
-                : 2; // default if no activity ever
+                : 2;
 
             await emailService.SendStreakReminderAsync(user.Email, user.Name, streak, inactiveDays);
 
-            // Update last sent timestamp
             user.NotificationPreferences!.LastStreakReminderSentAt = DateTime.UtcNow;
         }
 

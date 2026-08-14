@@ -25,25 +25,21 @@ function redirectAfterAuth(response: AuthResponse): boolean {
     return encodeURIComponent(JSON.stringify({ token: response.token, expiresAt: response.expiresAt, user }));
   };
 
-  // On main domain → redirect school users to their subdomain
   if (isMainDomain && response.schoolSubdomain) {
     window.location.href = `https://${response.schoolSubdomain}.unistart.kz?authTransfer=${buildTransfer()}`;
     return true;
   }
 
-  // Admin must ALWAYS go to main domain, regardless of schoolSubdomain
   if (currentSubdomain && response.role === 'Admin') {
     window.location.href = `https://unistart.kz?authTransfer=${buildTransfer()}`;
     return true;
   }
 
-  // On subdomain → redirect non-school users to the main domain
   if (currentSubdomain && !response.schoolSubdomain) {
     window.location.href = `https://unistart.kz?authTransfer=${buildTransfer()}`;
     return true;
   }
 
-  // On subdomain → redirect user who belongs to a DIFFERENT school
   if (currentSubdomain && response.schoolSubdomain && response.schoolSubdomain !== currentSubdomain) {
     window.location.href = `https://${response.schoolSubdomain}.unistart.kz?authTransfer=${buildTransfer()}`;
     return true;
@@ -65,7 +61,6 @@ const storedUser = localStorage.getItem('user');
 const storedToken = localStorage.getItem('token');
 const storedExpiresAt = localStorage.getItem('tokenExpiresAt');
 
-// Check if the stored token is expired
 const isTokenValid = (() => {
   if (!storedToken || !storedExpiresAt) return false;
   try {
@@ -76,7 +71,6 @@ const isTokenValid = (() => {
   }
 })();
 
-// Clear stale auth data if token expired
 if (storedToken && !isTokenValid) {
   localStorage.removeItem('token');
   localStorage.removeItem('user');
@@ -98,7 +92,6 @@ export const login = createAsyncThunk(
     try {
       const response = await authService.login(data);
       if (redirectAfterAuth(response)) {
-        // Prevent Redux state update while page redirects
         await new Promise<never>(() => {});
       }
       return response;
@@ -179,10 +172,9 @@ const authSlice = createSlice({
       authService.removeToken();
       localStorage.removeItem('tokenExpiresAt');
       localStorage.removeItem('user');
-      // Tell Google Identity Services to forget the session
       try {
         window.google?.accounts.id.disableAutoSelect();
-      } catch { /* GSI not loaded — safe to ignore */ }
+      } catch {}
     },
     clearError: (state) => {
       state.error = null;
@@ -230,7 +222,6 @@ const authSlice = createSlice({
     };
 
     builder
-      // Login
       .addCase(login.pending, (state) => {
         state.isLoading = true;
         state.error = null;
@@ -242,26 +233,22 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload as string;
       })
-      // Register — sets pending verification instead of full login
       .addCase(register.pending, (state) => {
         state.isLoading = true;
         state.error = null;
       })
       .addCase(register.fulfilled, (state, action: PayloadAction<AuthResponse>) => {
         if (action.payload.emailVerified) {
-          // Already verified (e.g. restored account) — full login
           handleAuthFulfilled(state, action);
         } else {
           state.isLoading = false;
           state.pendingVerificationEmail = action.payload.email;
-          // Do NOT save token yet — only after email verification
         }
       })
       .addCase(register.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
       })
-      // Verify Email
       .addCase(verifyEmail.pending, (state) => {
         state.isLoading = true;
         state.error = null;
@@ -273,7 +260,6 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload as string;
       })
-      // Google Login
       .addCase(googleLogin.pending, (state) => {
         state.isLoading = true;
         state.error = null;
@@ -285,7 +271,6 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload as string;
       })
-      // Complete Profile (phone number) — refreshes token & user
       .addCase(completeProfile.pending, (state) => {
         state.isLoading = true;
         state.error = null;

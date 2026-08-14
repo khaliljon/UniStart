@@ -20,7 +20,6 @@ public class TimedDrillService : ITimedDrillService
         if (!Enum.TryParse<DrillType>(request.DrillType, true, out var drillType))
             throw new ArgumentException($"Invalid drill type: {request.DrillType}");
 
-        // Only store ExamTypeCode if it actually exists in the DB (FK constraint)
         var examTypeCode = request.ExamTypeCodes?.FirstOrDefault();
         if (examTypeCode != null && !await _context.ExamTypes.AnyAsync(e => e.Code == examTypeCode))
             examTypeCode = null;
@@ -46,7 +45,6 @@ public class TimedDrillService : ITimedDrillService
         if (drill == null || drill.CompletedAt != null)
             return null;
 
-        // Get IDs of questions already answered in this drill
         var answeredQuestionIds = await _context.UserAnswers
             .Where(a => a.UserId == drill.UserId
                 && a.AnsweredAt >= drill.StartedAt
@@ -55,7 +53,6 @@ public class TimedDrillService : ITimedDrillService
             .Distinct()
             .ToListAsync();
 
-        // Build query for available questions
         var query = _context.Questions
             .Include(q => q.AnswerOptions)
             .Include(q => q.Topic)
@@ -70,11 +67,9 @@ public class TimedDrillService : ITimedDrillService
             query = query.Where(q => q.Topic.Section!.ExamTypeCode == drill.ExamTypeCode);
         }
 
-        // Speed drills: limit to 10 questions
         if (drill.DrillType == DrillType.Speed && drill.QuestionsAnswered >= 10)
             return null;
 
-        // Pick a random question
         var count = await query.CountAsync();
         if (count == 0) return null;
 
@@ -110,7 +105,6 @@ public class TimedDrillService : ITimedDrillService
         var isCorrect = selectedOption?.IsCorrect ?? false;
         var correctOption = question.AnswerOptions.FirstOrDefault(o => o.IsCorrect);
 
-        // Save the answer
         var userAnswer = new UserAnswer
         {
             UserId = userId,
@@ -121,22 +115,18 @@ public class TimedDrillService : ITimedDrillService
         };
         _context.UserAnswers.Add(userAnswer);
 
-        // Update drill stats
         drill.QuestionsAnswered++;
         if (isCorrect) drill.CorrectAnswers++;
         drill.TotalTimeSeconds += request.TimeSpentSeconds;
         drill.AverageTimeSeconds = (double)drill.TotalTimeSeconds / drill.QuestionsAnswered;
 
-        // Track streak
         if (isCorrect)
         {
-            // Count current streak
             var currentStreak = await GetCurrentStreakAsync(drill) + 1;
             if (currentStreak > drill.BestStreak)
                 drill.BestStreak = currentStreak;
         }
 
-        // Check if drill should end
         var drillEnded = false;
         switch (drill.DrillType)
         {

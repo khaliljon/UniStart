@@ -39,13 +39,11 @@ function AdminQuestionImportPage({ embedded = false }: { embedded?: boolean } = 
   const [editMulti, setEditMulti] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Section / topic targeting
   const [sections, setSections] = useState<AdminSection[]>([]);
   const [topics, setTopics] = useState<AdminTopicSummary[]>([]);
   const [sectionId, setSectionId] = useState<number | ''>('');
   const [topicId, setTopicId] = useState<number | ''>('');
 
-  // Multi-file state
   const [batchFiles, setBatchFiles] = useState<BatchFileEntry[]>([]);
   const [instructions, setInstructions] = useState('');
   const batchInputRef = useRef<HTMLInputElement>(null);
@@ -72,13 +70,11 @@ function AdminQuestionImportPage({ embedded = false }: { embedded?: boolean } = 
     loadJobs();
   }, [loadJobs]);
 
-  // Load sections + topics once for the targeting dropdowns.
   useEffect(() => {
-    adminService.getSections().then(setSections).catch(() => { /* non-fatal */ });
-    adminService.getTopics().then(setTopics).catch(() => { /* non-fatal */ });
+    adminService.getSections().then(setSections).catch(() => {});
+    adminService.getTopics().then(setTopics).catch(() => {});
   }, []);
 
-  // Reset section/topic when exam changes.
   useEffect(() => {
     setSectionId('');
     setTopicId('');
@@ -94,7 +90,6 @@ function AdminQuestionImportPage({ embedded = false }: { embedded?: boolean } = 
     if (selectedJob) loadDrafts(selectedJob.id);
   }, [selectedJob, loadDrafts]);
 
-  // ── Single-file upload ──────────────────────────────────
   const handleUpload = async (file: File) => {
     setIsUploading(true);
     setError(null);
@@ -119,10 +114,8 @@ function AdminQuestionImportPage({ embedded = false }: { embedded?: boolean } = 
     }
   };
 
-  // ── Multi-file batch upload ─────────────────────────────
   const addBatchFiles = (fileList: FileList) => {
     const newEntries: BatchFileEntry[] = Array.from(fileList).map(f => {
-      // Auto-detect role from filename hints
       const lower = f.name.toLowerCase();
       let role: FileRole = 'Questions';
       if (lower.includes('answer') || lower.includes('ответ') || lower.includes('key') || lower.includes('ключ'))
@@ -244,7 +237,6 @@ function AdminQuestionImportPage({ embedded = false }: { embedded?: boolean } = 
     });
   };
 
-  // ─── Option editing (approve stage) ─────────────────────
   const setOptions = (opts: DraftOption[]) => setEditForm((f) => ({ ...f, options: opts }));
   const updateOptionText = (i: number, text: string) =>
     setOptions((editForm.options ?? []).map((o, j) => (j === i ? { ...o, text } : o)));
@@ -265,7 +257,6 @@ function AdminQuestionImportPage({ embedded = false }: { embedded?: boolean } = 
     }
   };
 
-  // ─── Drop zone handlers ─────────────────────────────────
   const [isDragOver, setIsDragOver] = useState(false);
   const [uploadMode, setUploadMode] = useState<'single' | 'multi'>('single');
 
@@ -295,7 +286,6 @@ function AdminQuestionImportPage({ embedded = false }: { embedded?: boolean } = 
         <div className="error-message" style={{ marginBottom: '1rem' }}>{error}</div>
       )}
 
-      {/* Upload Zone */}
       <div className="card" style={{ padding: '1.5rem', marginBottom: '2rem' }}>
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', flexWrap: 'wrap', marginBottom: '1rem' }}>
           <div>
@@ -425,7 +415,6 @@ function AdminQuestionImportPage({ embedded = false }: { embedded?: boolean } = 
           </div>
         </div>
 
-        {/* Shared context / prompt for the parser (applies to single and multi modes) */}
         <div style={{ marginBottom: '1rem' }}>
           <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.25rem' }}>
             {t.admin.questionImport.contextLabel}
@@ -448,7 +437,6 @@ function AdminQuestionImportPage({ embedded = false }: { embedded?: boolean } = 
         </div>
 
         {uploadMode === 'single' || contentType === 'theory' ? (
-          /* ── Single file drop zone ── */
           <div
             onDragOver={e => { e.preventDefault(); setIsDragOver(true); }}
             onDragLeave={() => setIsDragOver(false)}
@@ -489,7 +477,6 @@ function AdminQuestionImportPage({ embedded = false }: { embedded?: boolean } = 
             )}
           </div>
         ) : (
-          /* ── Multi-file mode ── */
           <div>
             <div
               onDragOver={e => { e.preventDefault(); setIsDragOver(true); }}
@@ -527,7 +514,6 @@ function AdminQuestionImportPage({ embedded = false }: { embedded?: boolean } = 
               </p>
             </div>
 
-            {/* File list with role selectors */}
             {batchFiles.length > 0 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
                 {batchFiles.map((entry, i) => (
@@ -575,7 +561,6 @@ function AdminQuestionImportPage({ embedded = false }: { embedded?: boolean } = 
               </div>
             )}
 
-            {/* Upload button */}
             <button
               className="btn btn-primary"
               disabled={batchFiles.length === 0 || isUploading}
@@ -588,7 +573,6 @@ function AdminQuestionImportPage({ embedded = false }: { embedded?: boolean } = 
         )}
       </div>
 
-      {/* Jobs List */}
       {jobs.length > 0 && (
         <div className="card" style={{ padding: '1.5rem', marginBottom: '2rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
@@ -664,7 +648,6 @@ function AdminQuestionImportPage({ embedded = false }: { embedded?: boolean } = 
         </div>
       )}
 
-      {/* Drafts Review */}
       {selectedJob && selectedJob.contentType === 'Theory' && (
         <div className="card" style={{ padding: '1.5rem', borderLeft: `3px solid var(--success-color)` }}>
           <h2 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '0.5rem' }}>
@@ -741,7 +724,6 @@ function AdminQuestionImportPage({ embedded = false }: { embedded?: boolean } = 
                         <p style={{ fontWeight: 500, margin: '0.25rem 0 0.5rem' }}>{draft.questionText}</p>
                       )}
 
-                      {/* Options */}
                       {editingDraft === draft.id ? (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', marginBottom: '0.5rem' }}>
                           <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', marginTop: '0.25rem' }}>
@@ -841,7 +823,6 @@ function AdminQuestionImportPage({ embedded = false }: { embedded?: boolean } = 
                       </div>
                     </div>
 
-                    {/* Actions */}
                     {draft.status === 'Pending' && (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', minWidth: '80px' }}>
                         {editingDraft === draft.id ? (

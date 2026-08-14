@@ -89,7 +89,6 @@ public class LessonService : ILessonService
         return question?.Hint;
     }
 
-    // ─── Step-based lessons (TH-1) ─────────────────────────
 
     public async Task<LessonWithStepsDto?> GetLessonWithStepsAsync(int userId, int lessonId)
     {

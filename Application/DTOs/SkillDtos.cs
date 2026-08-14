@@ -1,6 +1,5 @@
 namespace UniStart.Application.DTOs;
 
-// Skill & Analytics DTOs
 public record SkillDto(
     int Id,
     string Code,
@@ -44,11 +43,6 @@ public record TopicDto(
     string? SectionName
 );
 
-// Enhanced analytics DTOs for Stage 4
-
-/// <summary>
-/// Full dashboard data returned by GET /api/analytics/dashboard
-/// </summary>
 public record DashboardDto(
     int TotalQuestionsAnswered,
     int CorrectAnswers,
@@ -61,9 +55,6 @@ public record DashboardDto(
     IEnumerable<DifficultyStatsDto> DifficultyBreakdown
 );
 
-/// <summary>
-/// A single skill level data point over time (for line chart)
-/// </summary>
 public record SkillHistoryPointDto(
     string SkillName,
     string SkillCode,
@@ -71,18 +62,12 @@ public record SkillHistoryPointDto(
     DateTime Date
 );
 
-/// <summary>
-/// Daily activity for heatmap (GitHub-style contributions)
-/// </summary>
 public record DailyActivityDto(
     DateTime Date,
     int QuestionsAnswered,
     int CorrectCount
 );
 
-/// <summary>
-/// Accuracy broken down by difficulty level
-/// </summary>
 public record DifficultyStatsDto(
     string Difficulty,
     int TotalAnswered,
@@ -90,9 +75,6 @@ public record DifficultyStatsDto(
     double Accuracy
 );
 
-/// <summary>
-/// Test session summary for session history list
-/// </summary>
 public record TestSessionSummaryDto(
     int Id,
     string ExamTypeCode,
@@ -105,9 +87,6 @@ public record TestSessionSummaryDto(
     double? Score
 );
 
-/// <summary>
-/// Detailed test session with all answers
-/// </summary>
 public record TestSessionDetailDto(
     int Id,
     string ExamTypeCode,
@@ -121,9 +100,6 @@ public record TestSessionDetailDto(
     IEnumerable<SessionAnswerDto> Answers
 );
 
-/// <summary>
-/// Individual answer within a test session
-/// </summary>
 public record SessionAnswerDto(
     int QuestionId,
     string QuestionText,

@@ -22,9 +22,6 @@ public class AnalyticsController : ControllerBase
         _logger = logger;
     }
 
-    /// <summary>
-    /// Get user's skill analytics (legacy)
-    /// </summary>
     [HttpGet]
     [ProducesResponseType(typeof(SkillAnalyticsDto), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAnalytics()
@@ -34,9 +31,6 @@ public class AnalyticsController : ControllerBase
         return Ok(analytics);
     }
 
-    /// <summary>
-    /// Get full analytics dashboard data (charts, streaks, breakdowns)
-    /// </summary>
     [HttpGet("dashboard")]
     [ProducesResponseType(typeof(DashboardDto), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetDashboard()
@@ -46,9 +40,6 @@ public class AnalyticsController : ControllerBase
         return Ok(dashboard);
     }
 
-    /// <summary>
-    /// Get user's skills breakdown
-    /// </summary>
     [HttpGet("skills")]
     [ProducesResponseType(typeof(IEnumerable<UserSkillProfileDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetSkills()
@@ -58,9 +49,6 @@ public class AnalyticsController : ControllerBase
         return Ok(skills);
     }
 
-    /// <summary>
-    /// Get skill level history over time
-    /// </summary>
     [HttpGet("skill-history")]
     [ProducesResponseType(typeof(IEnumerable<SkillHistoryPointDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetSkillHistory([FromQuery] int days = 30)
@@ -70,9 +58,6 @@ public class AnalyticsController : ControllerBase
         return Ok(history);
     }
 
-    /// <summary>
-    /// Get daily activity heatmap data
-    /// </summary>
     [HttpGet("activity")]
     [ProducesResponseType(typeof(IEnumerable<DailyActivityDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetActivity([FromQuery] int days = 90)
@@ -82,9 +67,6 @@ public class AnalyticsController : ControllerBase
         return Ok(activity);
     }
 
-    /// <summary>
-    /// Get accuracy breakdown by difficulty level
-    /// </summary>
     [HttpGet("difficulty")]
     [ProducesResponseType(typeof(IEnumerable<DifficultyStatsDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetDifficultyBreakdown()
@@ -94,11 +76,6 @@ public class AnalyticsController : ControllerBase
         return Ok(breakdown);
     }
 
-    // ─── Test Sessions ───────────────────────────────────────────
-
-    /// <summary>
-    /// Start a new test session
-    /// </summary>
     [HttpPost("sessions")]
     [ProducesResponseType(typeof(TestSessionSummaryDto), StatusCodes.Status201Created)]
     public async Task<IActionResult> StartSession([FromBody] StartSessionRequest request)
@@ -108,9 +85,6 @@ public class AnalyticsController : ControllerBase
         return CreatedAtAction(nameof(GetSessionDetail), new { sessionId = session.Id }, session);
     }
 
-    /// <summary>
-    /// Complete (finish) a test session
-    /// </summary>
     [HttpPost("sessions/{sessionId}/complete")]
     [ProducesResponseType(typeof(TestSessionSummaryDto), StatusCodes.Status200OK)]
     public async Task<IActionResult> CompleteSession(int sessionId)
@@ -120,9 +94,6 @@ public class AnalyticsController : ControllerBase
         return Ok(session);
     }
 
-    /// <summary>
-    /// Get test session history with pagination
-    /// </summary>
     [HttpGet("sessions")]
     [ProducesResponseType(typeof(IEnumerable<TestSessionSummaryDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetSessions([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
@@ -132,9 +103,6 @@ public class AnalyticsController : ControllerBase
         return Ok(sessions);
     }
 
-    /// <summary>
-    /// Get detailed test session with all answers
-    /// </summary>
     [HttpGet("sessions/{sessionId}")]
     [ProducesResponseType(typeof(TestSessionDetailDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

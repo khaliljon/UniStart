@@ -46,7 +46,6 @@ function FormulaPage() {
     f.formula.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Group by exam → topic (two-level hierarchy)
   const groupedByExam = filtered.reduce<Record<string, Record<string, FormulaCard[]>>>((acc, f) => {
     const exam = f.examTypeCode || 'Other';
     const topic = f.topicName;
@@ -64,7 +63,6 @@ function FormulaPage() {
 
   return (
     <div className="animate-fade-in">
-      {/* Controls */}
       <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
         <input
           type="text"

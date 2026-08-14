@@ -2,7 +2,6 @@ using System.ComponentModel.DataAnnotations;
 
 namespace UniStart.Application.DTOs;
 
-/// <summary>A user's purchase record.</summary>
 public record PurchaseDto(
     int Id,
     string ItemType,
@@ -14,7 +13,6 @@ public record PurchaseDto(
     string Status,
     DateTime PurchasedAt);
 
-/// <summary>Purchase row for the admin sales monitor (includes buyer info).</summary>
 public record AdminPurchaseDto(
     int Id,
     int UserId,
@@ -35,7 +33,6 @@ public record AdminPurchaseDto(
     decimal NetAmount = 0,
     decimal TotalAmount = 0);
 
-/// <summary>Aggregated sales view for the admin panel.</summary>
 public record AdminSalesDto(
     int Count,
     decimal TotalRevenue,
@@ -43,7 +40,6 @@ public record AdminSalesDto(
     IEnumerable<AdminPurchaseDto> Items,
     decimal TotalNet = 0);
 
-/// <summary>Polar order money breakdown, taken from the webhook payload (already ÷100).</summary>
 public record PurchaseAmountsDto(
     decimal Gross,
     decimal Tax,

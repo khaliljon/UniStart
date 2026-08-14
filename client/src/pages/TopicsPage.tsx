@@ -23,7 +23,6 @@ export default function TopicsPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('topics');
   const [selectedSection, setSelectedSection] = useState<string | null>(null);
   
-  // Practice mode state
   const [currentTopic, setCurrentTopic] = useState<TopicProgress | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -34,7 +33,6 @@ export default function TopicsPage() {
   const [hintLoading, setHintLoading] = useState(false);
   const [showHint, setShowHint] = useState(false);
 
-  // Lesson mode state
   const [lessons, setLessons] = useState<TopicLesson[]>([]);
   const [currentLessonIndex, setCurrentLessonIndex] = useState(0);
   const [hasAccess, setHasAccess] = useState(true);
@@ -70,7 +68,6 @@ export default function TopicsPage() {
       setLoading(true);
       const data = await lessonService.getLessonsByTopic(topic.topicId);
       if (data.length === 0) {
-        // No lessons — go straight to practice
         startTopicPractice(topic);
         return;
       }
@@ -193,13 +190,11 @@ export default function TopicsPage() {
     );
   }
 
-  // ───────────── LESSON VIEW ─────────────
   if (viewMode === 'lesson' && lessons.length > 0) {
     const lesson = lessons[currentLessonIndex];
 
     return (
       <div className="animate-fade-in" style={{ maxWidth: '750px', margin: '0 auto' }}>
-        {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
           <span style={{ 
             padding: '0.375rem 0.75rem', 
@@ -216,7 +211,6 @@ export default function TopicsPage() {
           </button>
         </div>
 
-        {/* Lesson navigation */}
         {lessons.length > 1 && (
           <div className="card" style={{ padding: '0.75rem', marginBottom: '1rem' }}>
             <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
@@ -243,7 +237,6 @@ export default function TopicsPage() {
           </div>
         )}
 
-        {/* Lesson Content */}
         <div className="card animate-fade-in-up" style={{ padding: '2rem' }}>
           <h2 style={{ fontSize: '1.25rem', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '1rem' }}>
             {lesson.title}
@@ -252,7 +245,6 @@ export default function TopicsPage() {
           <ContentRenderer content={lesson.content} />
         </div>
 
-        {/* Bottom Actions */}
         <div style={{ marginTop: '1.5rem', display: 'flex', gap: '0.75rem' }}>
           {currentLessonIndex < lessons.length - 1 ? (
             <button
@@ -276,9 +268,7 @@ export default function TopicsPage() {
     );
   }
 
-  // ───────────── TOPICS LIST VIEW ─────────────
   if (viewMode === 'topics') {
-    // Group topics by section
     const sectionGroups: { sectionName: string; sectionId: number | null; topics: TopicProgress[] }[] = [];
     const sectionMap = new Map<string, TopicProgress[]>();
     const sectionIdMap = new Map<string, number | null>();
@@ -298,12 +288,10 @@ export default function TopicsPage() {
 
     const hasSections = sectionGroups.length > 1 || (sectionGroups.length === 1 && sectionGroups[0].sectionName !== t.topics.other);
 
-    // Find currently selected section group
     const activeSection = selectedSection ? sectionGroups.find(s => s.sectionName === selectedSection) : null;
 
     return (
       <div className="animate-fade-in" style={{ maxWidth: '800px', margin: '0 auto' }}>
-        {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
           <h1 style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-primary)' }}>{t.topics.learning}</h1>
           <button onClick={() => navigate('/test')} className="btn btn-outline">
@@ -311,7 +299,6 @@ export default function TopicsPage() {
           </button>
         </div>
 
-        {/* Selected Exams */}
         {selectedExams.length > 0 && (
           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
             {selectedExams.map(exam => (
@@ -329,7 +316,6 @@ export default function TopicsPage() {
           </div>
         )}
 
-        {/* Stats Summary */}
         <div className="card animate-fade-in-up" style={{ marginBottom: '1.5rem', padding: '1.5rem' }}>
           <div style={{ display: 'grid', gridTemplateColumns: hasSections ? 'repeat(4, 1fr)' : 'repeat(3, 1fr)', gap: '1rem', textAlign: 'center' }}>
             {hasSections && (
@@ -357,7 +343,6 @@ export default function TopicsPage() {
           </div>
         </div>
 
-        {/* Section Selection View (show sections as cards) */}
         {hasSections && !selectedSection && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             {sectionGroups.map((section, sIdx) => {
@@ -424,10 +409,8 @@ export default function TopicsPage() {
           </div>
         )}
 
-        {/* Topics inside selected section (or all topics if no sections) */}
         {(selectedSection && activeSection) || !hasSections ? (
           <div className="animate-fade-in">
-            {/* Back to sections button */}
             {hasSections && selectedSection && (
               <button
                 onClick={() => setSelectedSection(null)}
@@ -442,7 +425,6 @@ export default function TopicsPage() {
               </button>
             )}
 
-            {/* Section header when viewing a section */}
             {hasSections && activeSection && (() => {
               const sectionMastery = activeSection.topics.length > 0
                 ? Math.round(activeSection.topics.reduce((sum, t) => sum + t.masteryPercentage, 0) / activeSection.topics.length)
@@ -468,7 +450,6 @@ export default function TopicsPage() {
               );
             })()}
 
-            {/* Topic cards */}
             <ProGate hasAccess={hasAccess} featureName={t.topics.learning}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               {(activeSection ? activeSection.topics : sectionGroups.flatMap(s => s.topics)).map((topic, index) => (
@@ -502,7 +483,6 @@ export default function TopicsPage() {
                     </span>
                   </div>
 
-                  {/* Progress Bar */}
                   <div style={{ width: '100%', backgroundColor: 'var(--border-color)', borderRadius: '9999px', height: '0.5rem' }}>
                     <div style={{
                       width: `${Math.min(topic.masteryPercentage, 100)}%`,
@@ -516,7 +496,6 @@ export default function TopicsPage() {
                     <span>✕ {topic.incorrectAnswers} {t.topics.errors}</span>
                   </div>
 
-                  {/* Action Buttons */}
                   <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.5rem' }}>
                     {(topic.lessonCount ?? 0) > 0 && (
                       <button
@@ -551,7 +530,6 @@ export default function TopicsPage() {
     );
   }
 
-  // ───────────── PRACTICE VIEW ─────────────
   const currentQuestion = questions[currentIndex];
 
   if (!currentQuestion) {
@@ -587,7 +565,6 @@ export default function TopicsPage() {
 
   return (
     <div className="animate-fade-in" style={{ maxWidth: '700px', margin: '0 auto' }}>
-      {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
         <span style={{ 
           padding: '0.375rem 0.75rem', 
@@ -604,7 +581,6 @@ export default function TopicsPage() {
         </button>
       </div>
 
-      {/* Progress */}
       <div className="card" style={{ padding: '1rem', marginBottom: '1.5rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
           <span>{t.topics.questionOf.replace('{n}', String(currentIndex + 1)).replace('{total}', String(questions.length))}</span>
@@ -620,7 +596,6 @@ export default function TopicsPage() {
         </div>
       </div>
 
-      {/* Question Card */}
       <div className="card card-static animate-fade-in-up" key={currentQuestion.id}>
         <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ 
@@ -634,7 +609,6 @@ export default function TopicsPage() {
              currentQuestion.difficulty === 'Medium' ? t.practice.medium : t.practice.hard}
           </span>
 
-          {/* Hint Button */}
           {currentQuestion.hasHint && !answerResult && (
             <button
               onClick={handleRequestHint}
@@ -656,7 +630,6 @@ export default function TopicsPage() {
           )}
         </div>
 
-        {/* Hint Display */}
         {showHint && hintText && (
           <div className="animate-fade-in-up" style={{
             marginBottom: '1rem',
@@ -725,7 +698,6 @@ export default function TopicsPage() {
           })}
         </div>
 
-        {/* Result Feedback */}
         {answerResult && (
           <div className="animate-fade-in-up" style={{
             marginTop: '1.5rem',
@@ -759,7 +731,6 @@ export default function TopicsPage() {
           </div>
         )}
 
-        {/* Actions */}
         <div style={{ marginTop: '1.5rem' }}>
           {!answerResult ? (
             <button

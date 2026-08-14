@@ -1,6 +1,5 @@
 export type PluralLocale = 'ru' | 'kz' | 'en';
 
-/** Localized count of "mock" runs: RU declension, KZ invariant, EN plural. */
 export function moks(n: number, locale: PluralLocale = 'ru'): string {
   if (locale === 'en') return `${n} ${n === 1 ? 'mock' : 'mocks'}`;
   if (locale === 'kz') return `${n} мок`;

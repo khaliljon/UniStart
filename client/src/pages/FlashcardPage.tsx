@@ -20,7 +20,6 @@ function FlashcardPage() {
   const [ratingLoading, setRatingLoading] = useState(false);
   const [reviewError, setReviewError] = useState<string | null>(null);
 
-  // Create deck form
   const [newTitle, setNewTitle] = useState('');
   const [newDesc, setNewDesc] = useState('');
 
@@ -109,7 +108,6 @@ function FlashcardPage() {
     return <div className="loading-container"><div className="loading-spinner" /></div>;
   }
 
-  // Review mode
   if (view === 'review' && cards.length > 0) {
     const card = cards[cardIndex];
     return (
@@ -170,7 +168,6 @@ function FlashcardPage() {
     );
   }
 
-  // Create deck form
   if (view === 'create') {
     return (
       <div className="animate-fade-in">
@@ -195,7 +192,6 @@ function FlashcardPage() {
     );
   }
 
-  // Decks list
   return (
     <div className="animate-fade-in">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>

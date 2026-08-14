@@ -9,10 +9,6 @@ using UniStart.Infrastructure.Data;
 
 namespace UniStart.Controllers;
 
-/// <summary>
-/// Run-based mock storefront: public catalog, checkout (stub grant — Polar wires
-/// in later), and admin CRUD for price tiers and packages.
-/// </summary>
 [ApiController]
 [Route("api/mock-catalog")]
 public class MockCatalogController : ControllerBase
@@ -32,13 +28,11 @@ public class MockCatalogController : ControllerBase
         return int.TryParse(claim, out var id) && id > 0 ? id : 0;
     }
 
-    /// <summary>Public catalog. If authenticated, includes the user's run balances.</summary>
     [HttpGet]
     [AllowAnonymous]
     public async Task<IActionResult> GetCatalog()
         => Ok(await _entitlements.GetCatalogAsync(CurrentUserId()));
 
-    /// <summary>Price a cart without paying.</summary>
     [HttpPost("quote")]
     [Authorize]
     public async Task<IActionResult> Quote([FromBody] RunCheckoutDto dto)
@@ -47,7 +41,6 @@ public class MockCatalogController : ControllerBase
         catch (ArgumentException ex) { return BadRequest(new { error = ex.Message }); }
     }
 
-    // ── Admin: price tiers ─────────────────────────────────
 
     [HttpGet("admin/tiers")]
     [Authorize(Roles = "Admin")]
@@ -103,7 +96,6 @@ public class MockCatalogController : ControllerBase
         return NoContent();
     }
 
-    // ── Admin: packages ────────────────────────────────────
 
     [HttpGet("admin/packages")]
     [Authorize(Roles = "Admin")]

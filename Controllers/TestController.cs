@@ -24,9 +24,6 @@ public class TestController : ControllerBase
         _logger = logger;
     }
 
-    /// <summary>
-    /// Get next adaptive question based on user's skill level and exam selection
-    /// </summary>
     [HttpPost("next-question")]
     [ProducesResponseType(typeof(NextQuestionDto), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetNextQuestion([FromBody] StartTestSessionDto dto)
@@ -46,9 +43,6 @@ public class TestController : ControllerBase
         return Ok(new NextQuestionDto(question, false, answeredQuestions, totalQuestions, topicMastery, topicMastery >= 80));
     }
 
-    /// <summary>
-    /// Submit an answer and get result with skill adjustment
-    /// </summary>
     [HttpPost("submit-answer")]
     [ProducesResponseType(typeof(AnswerResultDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -56,7 +50,6 @@ public class TestController : ControllerBase
     {
         var userId = GetCurrentUserId();
 
-        // Server-side daily question limit enforcement
         if (!await _subscriptionService.CanAnswerQuestionAsync(userId))
             return StatusCode(429, new { error = "Дневной лимит вопросов исчерпан. Перейдите на Pro для безлимитного доступа." });
 
@@ -73,9 +66,6 @@ public class TestController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Get user's current skill profiles
-    /// </summary>
     [HttpGet("skill-profiles")]
     [ProducesResponseType(typeof(IEnumerable<UserSkillProfileDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetSkillProfiles()
@@ -85,9 +75,6 @@ public class TestController : ControllerBase
         return Ok(profiles);
     }
 
-    /// <summary>
-    /// Reset user's test progress (clear answers) to allow retaking the test
-    /// </summary>
     [HttpPost("reset")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> ResetTest()
@@ -97,9 +84,6 @@ public class TestController : ControllerBase
         return Ok(new { message = "Test progress reset successfully" });
     }
 
-    /// <summary>
-    /// Get questions answered incorrectly for review/practice
-    /// </summary>
     [HttpGet("weak-questions")]
     [ProducesResponseType(typeof(IEnumerable<QuestionDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetWeakQuestions([FromQuery] string[]? examTypeCodes = null, [FromQuery] int? count = null)
@@ -111,9 +95,6 @@ public class TestController : ControllerBase
         return Ok(questions);
     }
 
-    /// <summary>
-    /// Get topics with user progress statistics
-    /// </summary>
     [HttpGet("topics")]
     [ProducesResponseType(typeof(IEnumerable<TopicProgressDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetTopicsWithProgress([FromQuery] string[]? examTypeCodes = null, [FromQuery] int[]? sectionIds = null)
@@ -123,9 +104,6 @@ public class TestController : ControllerBase
         return Ok(topics);
     }
 
-    /// <summary>
-    /// Get all questions for a specific topic
-    /// </summary>
     [HttpGet("topics/{topicId}/questions")]
     [ProducesResponseType(typeof(IEnumerable<QuestionDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetQuestionsByTopic(int topicId)

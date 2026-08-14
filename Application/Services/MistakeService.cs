@@ -19,7 +19,6 @@ public class MistakeService : IMistakeService
         int userId, string? examTypeCode = null, int? topicId = null,
         string? errorType = null, int page = 1, int pageSize = 20)
     {
-        // Get wrong answers
         var query = _context.UserAnswers
             .Include(a => a.Question).ThenInclude(q => q.Topic)
             .Include(a => a.Question).ThenInclude(q => q.AnswerOptions)
@@ -43,7 +42,6 @@ public class MistakeService : IMistakeService
             .Where(n => n.UserId == userId && answerIds.Contains(n.UserAnswerId))
             .ToDictionaryAsync(n => n.UserAnswerId);
 
-        // Apply errorType filter after loading notes
         var entries = answers.Select(a =>
         {
             notes.TryGetValue(a.Id, out var note);
@@ -147,7 +145,6 @@ public class MistakeService : IMistakeService
             .Where(n => n.UserId == userId && answerIds.Contains(n.UserAnswerId))
             .ToListAsync();
 
-        // Error patterns
         var classified = notes.Where(n => n.ErrorType != null).ToList();
         var patterns = classified
             .GroupBy(n => n.ErrorType!.Value)
@@ -159,7 +156,6 @@ public class MistakeService : IMistakeService
             .OrderByDescending(p => p.Count)
             .ToList();
 
-        // Topic breakdown
         var topicBreakdown = answerList
             .GroupBy(a => new { a.Question.TopicId, TopicName = a.Question.Topic?.Name ?? "Unknown" })
             .Select(g => new TopicMistakeDto(g.Key.TopicId, g.Key.TopicName, g.Count()))

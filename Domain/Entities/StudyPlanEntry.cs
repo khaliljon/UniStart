@@ -2,10 +2,10 @@ namespace UniStart.Domain.Entities;
 
 public enum StudyEntryType
 {
-    New,        // Learning a topic for the first time
-    Review,     // Spaced repetition review
-    Practice,   // Reinforcement practice
-    Weakness    // Targeted weakness remediation
+    New,
+    Review,
+    Practice,
+    Weakness
 }
 
 public class StudyPlanEntry
@@ -22,7 +22,6 @@ public class StudyPlanEntry
     public int QuestionsAnswered { get; set; }
     public int CorrectAnswers { get; set; }
 
-    // Navigation properties
     public virtual StudyPlan Plan { get; set; } = null!;
     public virtual Topic Topic { get; set; } = null!;
 }

@@ -6,7 +6,6 @@ public class ImportedQuestionDraft
     public int ImportJobId { get; set; }
     public string QuestionText { get; set; } = string.Empty;
 
-    /// <summary>JSON array of answer options: [{"text":"...", "isCorrect": true/false}, ...]</summary>
     public string OptionsJson { get; set; } = "[]";
 
     public string? Explanation { get; set; }
@@ -14,7 +13,6 @@ public class ImportedQuestionDraft
     public int? TopicId { get; set; }
     public QuestionDifficulty Difficulty { get; set; } = QuestionDifficulty.Medium;
 
-    // IRT parameters (auto-assigned defaults)
     public double IrtA { get; set; } = 1.0;
     public double IrtB { get; set; } = 0.0;
     public double IrtC { get; set; } = 0.25;
@@ -26,7 +24,6 @@ public class ImportedQuestionDraft
     public DateTime? ReviewedAt { get; set; }
     public int? ReviewedByUserId { get; set; }
 
-    // Navigation properties
     public virtual QuestionImportJob ImportJob { get; set; } = null!;
     public virtual Topic? Topic { get; set; }
 }

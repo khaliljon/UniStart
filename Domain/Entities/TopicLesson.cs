@@ -9,7 +9,6 @@ public class TopicLesson
     public string? VideoUrl { get; set; }
     public int SortOrder { get; set; }
 
-    // Navigation
     public virtual Topic Topic { get; set; } = null!;
     public virtual ICollection<LessonStep> Steps { get; set; } = new List<LessonStep>();
 }

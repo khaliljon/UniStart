@@ -2,7 +2,6 @@ using System.ComponentModel.DataAnnotations;
 
 namespace UniStart.Application.DTOs;
 
-/// <summary>News article payload returned to clients.</summary>
 public record NewsArticleDto(
     int Id,
     string Title,
@@ -20,7 +19,6 @@ public record NewsArticleDto(
     string? BodyKz = null,
     string? BodyEn = null);
 
-/// <summary>Admin create/update payload for a news article.</summary>
 public class NewsUpsertDto
 {
     [Required, MaxLength(200)]

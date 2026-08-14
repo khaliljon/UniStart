@@ -22,7 +22,6 @@ function AdminPricingPage() {
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
-  // Price inputs keyed by `${mockId}:${runs}`
   const [priceInputs, setPriceInputs] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
@@ -77,7 +76,6 @@ function AdminPricingPage() {
     }
   };
 
-  // ── Packages ─────────────────────────────────────────
   const addPackage = () => {
     setPackages((prev) => [
       ...prev,
@@ -135,7 +133,6 @@ function AdminPricingPage() {
         <input value={currency} onChange={(e) => setCurrency(e.target.value.toUpperCase())} maxLength={8} style={{ ...input, width: 90 }} />
       </div>
 
-      {/* Tier matrix */}
       <div className="card" style={{ padding: '1.25rem', marginBottom: '2rem', overflow: 'auto' }}>
         <h2 style={{ fontSize: '1.15rem', marginTop: 0 }}>Цены моков (по предметам)</h2>
         <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: 0 }}>
@@ -173,7 +170,6 @@ function AdminPricingPage() {
         <button className="btn btn-primary" style={{ marginTop: '1rem' }} onClick={saveTiers}>Сохранить цены моков</button>
       </div>
 
-      {/* Packages */}
       <div className="card" style={{ padding: '1.25rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h2 style={{ fontSize: '1.15rem', margin: 0 }}>Пакеты со скидкой</h2>

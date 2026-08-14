@@ -6,16 +6,10 @@ import legalService, { type LegalDocument } from '../services/legalService';
 
 interface Props {
   slug: string;
-  /** Shown while the document is loading and as a fallback title. */
   fallbackTitle: string;
-  /** Optional link shown at the bottom of the page. */
   footerLink?: { to: string; label: string };
 }
 
-/**
- * Renders a legal document fetched from the backend (privacy / terms / referral).
- * Content is editable from the admin panel and rendered as preformatted text.
- */
 function LegalDocumentView({ slug, fallbackTitle, footerLink }: Props) {
   const { t, locale } = useTranslation();
   const [doc, setDoc] = useState<LegalDocument | null>(null);

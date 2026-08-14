@@ -20,9 +20,6 @@ public class MistakeController : ControllerBase
         _mistakeService = mistakeService;
     }
 
-    /// <summary>
-    /// Get paginated list of mistakes with optional filters
-    /// </summary>
     [HttpGet]
     [ProducesResponseType(typeof(IEnumerable<MistakeEntryDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetMistakes(
@@ -37,9 +34,6 @@ public class MistakeController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>
-    /// Set error type classification on a mistake
-    /// </summary>
     [HttpPost("error-type")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> SetErrorType([FromBody] SetErrorTypeRequest request)
@@ -49,9 +43,6 @@ public class MistakeController : ControllerBase
         return NoContent();
     }
 
-    /// <summary>
-    /// Set or update a note on a mistake
-    /// </summary>
     [HttpPost("note")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> SetNote([FromBody] SetMistakeNoteRequest request)
@@ -61,9 +52,6 @@ public class MistakeController : ControllerBase
         return NoContent();
     }
 
-    /// <summary>
-    /// Get mistake analysis with error patterns and topic breakdown
-    /// </summary>
     [HttpGet("analysis")]
     [ProducesResponseType(typeof(MistakeAnalysisDto), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAnalysis([FromQuery] string? examTypeCode = null)
@@ -73,9 +61,6 @@ public class MistakeController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>
-    /// Get total mistake count
-    /// </summary>
     [HttpGet("count")]
     [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetMistakeCount()

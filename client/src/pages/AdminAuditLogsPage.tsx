@@ -46,13 +46,11 @@ function AdminAuditLogsPage() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
 
-  // Filters
   const [action, setAction] = useState('');
   const [entityType, setEntityType] = useState('');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
 
-  // Expanded row
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
   const pageSize = 30;
@@ -107,7 +105,6 @@ function AdminAuditLogsPage() {
     <div>
       <h1 style={{ marginBottom: '1.5rem' }}>{t.admin.audit.title}</h1>
 
-      {/* Filters */}
       <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap', alignItems: 'end' }}>
         <div>
           <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>{t.admin.audit.actionFilter}</label>
@@ -172,7 +169,6 @@ function AdminAuditLogsPage() {
         </div>
       </div>
 
-      {/* Table */}
       {loading ? (
         <div className="loading-skeleton" style={{ height: '400px', borderRadius: '12px' }} />
       ) : logs.length === 0 ? (
@@ -262,7 +258,6 @@ function AdminAuditLogsPage() {
         </div>
       )}
 
-      {/* Pagination */}
       {totalPages > 1 && (
         <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', marginTop: '1.5rem', alignItems: 'center' }}>
           <button

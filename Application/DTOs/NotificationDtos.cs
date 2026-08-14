@@ -1,6 +1,5 @@
 namespace UniStart.Application.DTOs;
 
-// ─── Notification Preferences ───────────────────────────
 
 public record NotificationPreferencesDto(
     bool WelcomeEmail,
@@ -18,7 +17,6 @@ public record UpdateNotificationPreferencesDto(
     bool? AchievementNotification
 );
 
-// ─── Email Log ──────────────────────────────────────────
 
 public record EmailLogDto(
     string Type,
@@ -27,7 +25,6 @@ public record EmailLogDto(
     bool Success
 );
 
-// ─── Weekly Digest Content ──────────────────────────────
 
 public record WeeklyDigestDataDto(
     string UserName,
@@ -46,5 +43,5 @@ public record WeeklyTopicProgressDto(
     string TopicName,
     int QuestionsAnswered,
     double Accuracy,
-    string Trend // "improving", "stable", "declining"
+    string Trend
 );

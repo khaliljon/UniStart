@@ -114,7 +114,7 @@ function LoginPage() {
           <button
             type="button"
             onClick={() => {
-              if (window.google) return; // Google SDK will handle it
+              if (window.google) return;
               alert('Google Sign-In is not configured yet');
             }}
             style={{

@@ -2,7 +2,6 @@ using System.ComponentModel.DataAnnotations;
 
 namespace UniStart.Application.DTOs;
 
-// ─── Requests ────────────────────────────────────────────────
 
 public record CompleteOnboardingDto(
     [Required] string ExamTypeCode,
@@ -10,7 +9,6 @@ public record CompleteOnboardingDto(
     [Required][Range(1, 2400)] int TargetScore
 );
 
-// ─── Responses ───────────────────────────────────────────────
 
 public record OnboardingStatusDto(
     bool HasCompletedOnboarding,

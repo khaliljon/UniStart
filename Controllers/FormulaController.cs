@@ -20,9 +20,6 @@ public class FormulaController : ControllerBase
         _formulaService = formulaService;
     }
 
-    /// <summary>
-    /// Get formula cards filtered by exam type
-    /// </summary>
     [HttpGet]
     [ProducesResponseType(typeof(IEnumerable<FormulaCardDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetFormulas([FromQuery] string[]? examTypeCodes = null)
@@ -32,9 +29,6 @@ public class FormulaController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>
-    /// Get user's bookmarked formulas
-    /// </summary>
     [HttpGet("bookmarks")]
     [ProducesResponseType(typeof(IEnumerable<FormulaCardDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetBookmarks()
@@ -44,9 +38,6 @@ public class FormulaController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>
-    /// Toggle bookmark on a formula card
-    /// </summary>
     [HttpPost("{formulaId}/bookmark")]
     [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
     public async Task<IActionResult> ToggleBookmark(int formulaId)

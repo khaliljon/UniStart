@@ -14,9 +14,6 @@ public class SeoController : ControllerBase
         _db = db;
     }
 
-    /// <summary>
-    /// Dynamic robots.txt — returns correct Sitemap URL based on Host header
-    /// </summary>
     [HttpGet("/robots.txt")]
     [ResponseCache(Duration = 3600)]
     public IActionResult Robots()
@@ -31,7 +28,6 @@ public class SeoController : ControllerBase
         string content;
         if (isSubdomain)
         {
-            // Subdomain: allow only public pages, point sitemap to this subdomain
             content = $"""
                 User-agent: *
                 Allow: /
@@ -46,7 +42,6 @@ public class SeoController : ControllerBase
         }
         else
         {
-            // Main domain: full robots.txt
             content = $"""
                 User-agent: *
                 Allow: /
@@ -75,11 +70,6 @@ public class SeoController : ControllerBase
         return Content(content.TrimStart(), "text/plain");
     }
 
-    /// <summary>
-    /// Dynamic sitemap.xml — generates correct URLs based on Host header.
-    /// For subdomains: just the landing page.
-    /// For main domain: public pages + all active school subdomains.
-    /// </summary>
     [HttpGet("/sitemap.xml")]
     [ResponseCache(Duration = 3600)]
     public async Task<IActionResult> Sitemap()
@@ -100,7 +90,6 @@ public class SeoController : ControllerBase
         }
         else
         {
-            // Main domain pages
             urls.Add(($"{origin}/", "weekly", "1.0"));
             urls.Add(($"{origin}/landing", "weekly", "0.9"));
             urls.Add(($"{origin}/privacy", "monthly", "0.3"));
@@ -125,10 +114,6 @@ public class SeoController : ControllerBase
         return Content(xml.TrimStart(), "application/xml");
     }
 
-    /// <summary>
-    /// Returns a minimal HTML page with dynamic OG meta tags for social media crawlers.
-    /// Nginx routes bot user-agents here for subdomain requests.
-    /// </summary>
     [HttpGet("/og")]
     [ResponseCache(Duration = 600)]
     public async Task<IActionResult> OpenGraph()

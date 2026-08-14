@@ -26,9 +26,6 @@ public class AuthController : ControllerBase
         _logger = logger;
     }
 
-    /// <summary>
-    /// Register a new user
-    /// </summary>
     [HttpPost("register")]
     [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -51,9 +48,6 @@ public class AuthController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Login user
-    /// </summary>
     [HttpPost("login")]
     [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -76,10 +70,6 @@ public class AuthController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Refresh JWT token for authenticated user.
-    /// Call this when the current token is about to expire.
-    /// </summary>
     [HttpPost("refresh")]
     [Authorize]
     [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
@@ -102,9 +92,6 @@ public class AuthController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Verify email with 6-digit code
-    /// </summary>
     [HttpPost("verify-email")]
     [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -125,9 +112,6 @@ public class AuthController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Resend verification code to email
-    /// </summary>
     [HttpPost("resend-code")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -148,9 +132,6 @@ public class AuthController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Login or register via Google OAuth
-    /// </summary>
     [HttpPost("google")]
     [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -168,9 +149,6 @@ public class AuthController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Get Google OAuth Client ID for frontend initialization
-    /// </summary>
     [HttpGet("google-client-id")]
     [AllowAnonymous]
     [DisableRateLimiting]
@@ -181,9 +159,6 @@ public class AuthController : ControllerBase
         return Ok(new { clientId });
     }
 
-    /// <summary>
-    /// Request password reset code
-    /// </summary>
     [HttpPost("forgot-password")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto dto)
@@ -195,8 +170,6 @@ public class AuthController : ControllerBase
         }
         catch (EmailDeliveryException ex)
         {
-            // The code was saved but the email could not be delivered (SMTP/config
-            // issue). Tell the user so they can retry instead of waiting forever.
             _logger.LogError(ex, "Failed to deliver password reset code to {Email}", dto.Email);
             return StatusCode(StatusCodes.Status502BadGateway,
                 new { error = "Не удалось отправить код на почту. Попробуйте позже." });
@@ -208,9 +181,6 @@ public class AuthController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Reset password with code
-    /// </summary>
     [HttpPost("reset-password")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -231,9 +201,6 @@ public class AuthController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Change password for authenticated user
-    /// </summary>
     [HttpPost("change-password")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -264,9 +231,6 @@ public class AuthController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Change email for authenticated user
-    /// </summary>
     [HttpPost("change-email")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -297,11 +261,6 @@ public class AuthController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Set / update the phone number for the authenticated user.
-    /// Used both at registration and by the profile-completion gate for legacy users.
-    /// Returns a fresh auth payload so the client can clear the gate immediately.
-    /// </summary>
     [HttpPost("complete-profile")]
     [Authorize]
     [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]

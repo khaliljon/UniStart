@@ -11,14 +11,11 @@ interface Props {
   readLess?: string;
   emptyText: string;
   limit?: number;
-  /** Wrap in the marketing section chrome (used on the landing). */
   section?: boolean;
-  /** Use theme-aware colors (for the in-app dashboard, which supports dark mode). */
   appTheme?: boolean;
   id?: string;
 }
 
-/** Renders published CSCA news. Used on the landing and the student dashboard. */
 export default function CscaNewsSection({ title, lead, readMore, readLess, emptyText, limit = 6, section = false, appTheme = false, id }: Props) {
   const { locale } = useTranslation();
   const [items, setItems] = useState<NewsItem[] | null>(null);

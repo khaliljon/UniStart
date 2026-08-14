@@ -8,20 +8,6 @@ using UniStart.Application.Interfaces;
 
 namespace UniStart.Application.Services;
 
-/// <summary>
-/// LLM-based parser that turns a raw study-pack file (markdown/plain text) into the
-/// normalized <see cref="IngestContentDto"/> (Variant B: Topic = concept).
-///
-/// The whole pedagogical mapping lives in the system prompt:
-///   - Skill   = file title
-///   - Topic   = ONE concept (PART-1 numbered concept). "PART 1/2" is NOT a level.
-///   - Lesson  = PART-1 theory of that concept (markdown, tables allowed)
-///   - Formulas= KaTeX formulas of that concept
-///   - Questions = PART-2 + NUET-level questions CLASSIFIED onto the concept they test
-///
-/// Reuses the same DeepSeek/OpenAI-compatible config as LlmExtractionService
-/// ("LlmExtraction" section in appsettings.json).
-/// </summary>
 public class StudyPackParserService : IStudyPackParserService
 {
     private readonly HttpClient _httpClient;
@@ -45,10 +31,6 @@ public class StudyPackParserService : IStudyPackParserService
         _maxTokens = int.TryParse(section["MaxTokens"], out var mt) && mt > 0 ? mt : 8192;
     }
 
-    // A study-pack chunk above this size risks the model's JSON output being truncated at
-    // max_tokens (the JSON is usually larger than the source). We split the file on markdown
-    // headers and parse each chunk separately, then merge — this makes ingestion robust to
-    // arbitrarily large files instead of failing on a single truncated response.
     private const int MaxChunkChars = 14_000;
     private const int MaxTotalChars = 300_000;
 
@@ -75,8 +57,6 @@ public class StudyPackParserService : IStudyPackParserService
             return await ParseChunkAsync(systemPrompt, chunks[0], examTypeCode, examSectionName, ct);
         }
 
-        // Large file: parse each chunk independently and merge the topics. A single chunk
-        // failing is logged and skipped rather than aborting the whole file.
         _logger.LogInformation("Parsing study-pack ({Length} chars) in {N} chunks with {Model}",
             text.Length, chunks.Count, _model);
 
@@ -104,10 +84,6 @@ public class StudyPackParserService : IStudyPackParserService
         return new IngestContentDto(examTypeCode, examSectionName, skillName ?? examSectionName, MergeChunkTopics(mergedTopics));
     }
 
-    /// <summary>
-    /// Parse a single chunk: one LLM call + JSON parse, with ONE automatic repair retry if
-    /// the model returns malformed/truncated JSON.
-    /// </summary>
     private async Task<IngestContentDto> ParseChunkAsync(
         string systemPrompt, string chunkText, string examTypeCode, string examSectionName, CancellationToken ct)
     {
@@ -119,7 +95,6 @@ public class StudyPackParserService : IStudyPackParserService
         }
         catch (InvalidOperationException)
         {
-            // Malformed JSON — ask the model to repair it once before giving up.
             _logger.LogWarning("Chunk JSON invalid; attempting a single repair pass.");
             var repaired = await CallLlmAsync(
                 "You fix malformed JSON. Return ONLY one valid JSON object matching the requested schema — no prose, no markdown fences.",
@@ -142,16 +117,10 @@ public class StudyPackParserService : IStudyPackParserService
         return sb.ToString();
     }
 
-    /// <summary>
-    /// Split markdown into chunks no larger than <paramref name="maxChars"/>, breaking only on
-    /// header lines (starting with '#') so concepts/questions stay intact. A single section
-    /// larger than the limit is hard-split on paragraph boundaries as a fallback.
-    /// </summary>
     internal static List<string> SplitIntoChunks(string text, int maxChars)
     {
         if (text.Length <= maxChars) return new List<string> { text };
 
-        // Break into header-delimited sections (each header line stays with its body).
         var lines = text.Replace("\r\n", "\n").Split('\n');
         var sections = new List<string>();
         var current = new StringBuilder();
@@ -166,7 +135,6 @@ public class StudyPackParserService : IStudyPackParserService
         }
         if (current.Length > 0) sections.Add(current.ToString());
 
-        // Greedily pack sections into chunks under the size budget.
         var chunks = new List<string>();
         var buf = new StringBuilder();
         foreach (var section in sections)
@@ -190,7 +158,6 @@ public class StudyPackParserService : IStudyPackParserService
 
     private static IEnumerable<string> HardSplit(string section, int maxChars)
     {
-        // Fallback for one oversized section: split on blank lines, then by raw length.
         var paragraphs = section.Split("\n\n");
         var buf = new StringBuilder();
         foreach (var p in paragraphs)
@@ -213,10 +180,6 @@ public class StudyPackParserService : IStudyPackParserService
         if (buf.Length > 0) yield return buf.ToString();
     }
 
-    /// <summary>
-    /// Merge topics that share a name (case-insensitive) across chunks: keep the first
-    /// lesson/formulas, concatenate questions, and renumber sortOrder sequentially.
-    /// </summary>
     private static List<IngestTopicDto> MergeChunkTopics(List<IngestTopicDto> topics)
     {
         var byName = new Dictionary<string, IngestTopicDto>(StringComparer.OrdinalIgnoreCase);
@@ -260,7 +223,6 @@ public class StudyPackParserService : IStudyPackParserService
         if (string.IsNullOrWhiteSpace(questionsText))
             throw new ArgumentException("Empty TSA questions text.", nameof(questionsText));
 
-        // Cap each side so the combined prompt stays within budget.
         const int maxChars = 150_000;
         if (questionsText.Length > maxChars) questionsText = questionsText[..maxChars];
         if (answersText.Length > maxChars) answersText = answersText[..maxChars];
@@ -289,10 +251,6 @@ public class StudyPackParserService : IStudyPackParserService
         return ParseTsaResponse(messageContent, examTypeCode, examSectionName, units);
     }
 
-    /// <summary>
-    /// Single OpenAI/DeepSeek-compatible chat completion call returning the message
-    /// content. Surfaces a 402 balance error as <see cref="LlmPaymentRequiredException"/>.
-    /// </summary>
     private async Task<string> CallLlmAsync(string systemPrompt, string userContent, CancellationToken ct)
     {
         var requestBody = new
@@ -323,9 +281,6 @@ public class StudyPackParserService : IStudyPackParserService
         {
             var snippet = responseBody[..Math.Min(500, responseBody.Length)];
             _logger.LogError("LLM API {Status}: {Body}", response.StatusCode, snippet);
-            // 402 Payment Required ("Insufficient Balance") is fatal for a batch:
-            // surface it as a distinct type so a Drive sync can stop immediately
-            // instead of failing every remaining file the same way.
             if ((int)response.StatusCode == 402)
                 throw new LlmPaymentRequiredException(
                     $"LLM API returned 402 Payment Required (insufficient balance): {snippet}");
@@ -338,9 +293,6 @@ public class StudyPackParserService : IStudyPackParserService
         if (string.IsNullOrWhiteSpace(messageContent))
             throw new InvalidOperationException("LLM returned empty content.");
 
-        // finish_reason == "length" means the model hit max_tokens and the JSON is
-        // almost certainly truncated (→ malformed). Surface a clear, actionable error
-        // instead of a generic "malformed JSON".
         if (string.Equals(choice?.FinishReason, "length", StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException(
                 $"LLM output was truncated at max_tokens ({_maxTokens}); the file is too large to parse in one pass. " +
@@ -408,7 +360,6 @@ Return ONLY valid JSON.";
     private IngestContentDto ParseResponse(string responseContent, string examTypeCode, string examSectionName)
     {
         var trimmed = responseContent.Trim();
-        // Strip ```json fences if the model added them despite json_object mode.
         if (trimmed.StartsWith("```"))
         {
             var firstNl = trimmed.IndexOf('\n');
@@ -431,7 +382,6 @@ Return ONLY valid JSON.";
         if (dto == null)
             throw new InvalidOperationException("LLM returned null payload.");
 
-        // Trust our own exam context over whatever the model echoed back.
         var topics = dto.Topics ?? new List<IngestTopicDto>();
         return dto with
         {
@@ -447,8 +397,6 @@ Return ONLY valid JSON.";
     {
         var unitList = string.Join(", ", units.Select(u => $"\"{u}\""));
 
-        // Optional glossary: 1–2 line description of each unit so the classifier knows
-        // what each unit actually tests (names alone are often ambiguous).
         var glossaryBlock = string.Empty;
         if (unitGlossary is { Count: > 0 })
         {
@@ -536,8 +484,6 @@ Return ONLY valid JSON.";
         if (env?.Units == null || env.Units.Count == 0)
             throw new InvalidOperationException("LLM returned no units for TSA pair.");
 
-        // Map the LLM's free-form skillName back onto an allowed unit name (defensive:
-        // accept exact match first, then a case-insensitive / trailing-number match).
         var payloads = new List<IngestContentDto>();
         foreach (var u in env.Units)
         {
@@ -559,7 +505,6 @@ Return ONLY valid JSON.";
         var match = allowed.FirstOrDefault(a => a.Equals(raw, StringComparison.OrdinalIgnoreCase));
         if (match != null) return match;
 
-        // Compare by trailing number, e.g. "unit 3" vs "Unit 3".
         var rawNum = System.Text.RegularExpressions.Regex.Match(raw, @"(\d+)").Value;
         if (!string.IsNullOrEmpty(rawNum))
         {
@@ -590,14 +535,10 @@ Return ONLY valid JSON.";
         PropertyNameCaseInsensitive = true,
         ReadCommentHandling = JsonCommentHandling.Skip,
         AllowTrailingCommas = true,
-        // LLMs frequently emit numbers as strings ("sortOrder": "1") and booleans as
-        // strings ("isCorrect": "true"). Tolerate both so a single bad field doesn't
-        // fail the whole parse.
         NumberHandling = JsonNumberHandling.AllowReadingFromString,
         Converters = { new FlexibleBoolConverter() },
     };
 
-    /// <summary>Reads bool from real JSON booleans AND string/number forms ("true"/"1"/"yes").</summary>
     private sealed class FlexibleBoolConverter : JsonConverter<bool>
     {
         public override bool Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)

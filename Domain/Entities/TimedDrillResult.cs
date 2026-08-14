@@ -1,8 +1,5 @@
 namespace UniStart.Domain.Entities;
 
-/// <summary>
-/// Records results from timed drill sessions (speed round, marathon, streak challenge).
-/// </summary>
 public class TimedDrillResult : IAuditable
 {
     public int Id { get; set; }
@@ -20,7 +17,6 @@ public class TimedDrillResult : IAuditable
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
 
-    // Navigation
     public virtual User User { get; set; } = null!;
     public virtual ExamType? ExamType { get; set; }
     public virtual Topic? Topic { get; set; }
@@ -28,7 +24,7 @@ public class TimedDrillResult : IAuditable
 
 public enum DrillType
 {
-    Speed = 1,      // 10 questions, 60s each
-    Marathon = 2,   // max questions in X minutes
-    Streak = 3      // answer correctly until you miss
+    Speed = 1,
+    Marathon = 2,
+    Streak = 3
 }

@@ -33,7 +33,6 @@ export interface NewsUpsert {
 }
 
 export const newsService = {
-  /** Public: published news, newest first. */
   async listPublished(limit?: number): Promise<NewsItem[]> {
     const res = await api.get<NewsItem[]>('/news', { params: limit ? { limit } : undefined });
     return res.data;
@@ -44,7 +43,6 @@ export const newsService = {
     return res.data;
   },
 
-  // ─── Admin ───────────────────────────────────────────────
   async listAll(): Promise<NewsItem[]> {
     const res = await api.get<NewsItem[]>('/news/all');
     return res.data;

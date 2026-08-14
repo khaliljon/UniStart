@@ -17,26 +17,21 @@ export const CSCA_EXAM_SITTINGS: CscaExamSitting[] = [
   { date: '2026-11-21', monthKey: 'november' },
 ];
 
-/** When registration for the next sitting opens (ISO date). */
 export const CSCA_REGISTRATION_OPENS = '2026-05-01';
 
-/** Returns the next upcoming sitting relative to `now`, or the last one if all passed. */
 export function getNextSitting(now: Date = new Date()): CscaExamSitting {
   const upcoming = CSCA_EXAM_SITTINGS.find((s) => new Date(s.date).getTime() >= now.getTime());
   return upcoming ?? CSCA_EXAM_SITTINGS[CSCA_EXAM_SITTINGS.length - 1];
 }
 
-/** Whole days between now and a target ISO date (never negative). */
 export function daysUntil(isoDate: string, now: Date = new Date()): number {
   const ms = new Date(isoDate).getTime() - now.getTime();
   return Math.max(0, Math.ceil(ms / 86_400_000));
 }
 
-/** The CSCA subjects. `hanzi` shows the Chinese subject name. */
 export interface CscaSubject {
   key: 'chineseTech' | 'chineseHum' | 'math' | 'physics' | 'chemistry';
   hanzi: string;
-  /** Tailwind-free gradient used for the book cover. */
   cover: string;
   required?: boolean;
 }
@@ -49,7 +44,6 @@ export const CSCA_SUBJECTS: CscaSubject[] = [
   { key: 'chineseHum', hanzi: '文科汉语', cover: 'linear-gradient(160deg,#4a2a5b,#8a4fa3)' },
 ];
 
-/** Mock-test packages (prices in ₸, from the technical specification). */
 export interface CscaPackage {
   key: 'start' | 'standard' | 'advanced' | 'full';
   price: number;
@@ -64,10 +58,8 @@ export const CSCA_PACKAGES: CscaPackage[] = [
   { key: 'full', price: 7990, subjects: 'all' },
 ];
 
-/** Price of a single printed study book (₸). */
 export const CSCA_BOOK_PRICE = 6990;
 
-/** Landing hero stats. */
 export const CSCA_STATS: { value: string; key: 'students' | 'questions' | 'answered' | 'success' }[] = [
   { value: '10 000+', key: 'students' },
   { value: '50+', key: 'questions' },

@@ -9,7 +9,6 @@ function Layout() {
   const { t } = useTranslation();
   const [menuOpen, setMenuOpen] = useState(false);
 
-  // Pull the server-side cart so it follows the user across devices.
   useEffect(() => { cartService.sync(); }, []);
 
   return (

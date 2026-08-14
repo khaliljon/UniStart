@@ -34,14 +34,12 @@ export default function AdminContentPage() {
   const [success, setSuccess] = useState<string | null>(null);
   const [filterExam, setFilterExam] = useState<string>('all');
 
-  // Lessons
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [lessonsLoading, setLessonsLoading] = useState(false);
   const [showLessonForm, setShowLessonForm] = useState(false);
   const [lessonForm, setLessonForm] = useState({ topicId: 0, title: '', content: '', videoUrl: '' });
   const [editingLessonId, setEditingLessonId] = useState<number | null>(null);
 
-  // Flashcards
   const [decks, setDecks] = useState<Deck[]>([]);
   const [decksLoading, setDecksLoading] = useState(false);
   const [showDeckForm, setShowDeckForm] = useState(false);
@@ -53,28 +51,24 @@ export default function AdminContentPage() {
   const [cardForm, setCardForm] = useState({ front: '', back: '' });
   const [editingCardId, setEditingCardId] = useState<number | null>(null);
 
-  // Formulas
   const [formulas, setFormulas] = useState<Formula[]>([]);
   const [formulasLoading, setFormulasLoading] = useState(false);
   const [showFormulaForm, setShowFormulaForm] = useState(false);
   const [formulaForm, setFormulaForm] = useState({ topicId: 0, title: '', formula: '', description: '' });
   const [editingFormulaId, setEditingFormulaId] = useState<number | null>(null);
 
-  // Strategies
   const [strategies, setStrategies] = useState<Strategy[]>([]);
   const [strategiesLoading, setStrategiesLoading] = useState(false);
   const [showStrategyForm, setShowStrategyForm] = useState(false);
   const [strategyForm, setStrategyForm] = useState({ examTypeCode: '', title: '', summary: '', content: '', category: 'test-taking', estimatedReadMinutes: 5 });
   const [editingStrategyId, setEditingStrategyId] = useState<number | null>(null);
 
-  // Drills
   const [drills, setDrills] = useState<DrillTemplate[]>([]);
   const [drillsLoading, setDrillsLoading] = useState(false);
   const [showDrillForm, setShowDrillForm] = useState(false);
   const [drillForm, setDrillForm] = useState({ title: '', description: '', drillType: 'Speed', examTypeCode: '', topicId: 0, questionCount: 10, timeLimitMinutes: 0, isActive: true, sortOrder: 0 });
   const [editingDrillId, setEditingDrillId] = useState<number | null>(null);
 
-  // Materials
   const [materials, setMaterials] = useState<StudyMaterialAdmin[]>([]);
   const [materialsLoading, setMaterialsLoading] = useState(false);
   const [showMaterialForm, setShowMaterialForm] = useState(false);
@@ -83,7 +77,6 @@ export default function AdminContentPage() {
   const [uploadingPdf, setUploadingPdf] = useState(false);
   const [uploadPdfPct, setUploadPdfPct] = useState(0);
 
-  // Bulk selection
   const [selectedLessons, setSelectedLessons] = useState<Set<number>>(new Set());
   const [selectedFormulas, setSelectedFormulas] = useState<Set<number>>(new Set());
   const [selectedStrategies, setSelectedStrategies] = useState<Set<number>>(new Set());
@@ -92,16 +85,13 @@ export default function AdminContentPage() {
   const [selectedMaterials, setSelectedMaterials] = useState<Set<number>>(new Set());
   const [selectionMode, setSelectionMode] = useState(false);
 
-  // Exam types (for dropdowns)
   const [examTypeOptions, setExamTypeOptions] = useState<{ code: string; name: string }[]>([]);
 
-  // Load topics on mount
   useEffect(() => {
     adminService.getTopics().then(setTopics).catch(() => {});
     adminService.getExamTypes().then(setExamTypeOptions).catch(() => {});
   }, []);
 
-  // Load data on tab change
   const loadLessons = useCallback(async () => {
     setLessonsLoading(true);
     try { setLessons(await adminService.getLessons()); } catch { setError(t.admin.common.loadError); }
@@ -156,7 +146,6 @@ export default function AdminContentPage() {
     else if (tab === 'materials') loadMaterials();
   }, [tab, loadLessons, loadDecks, loadFormulas, loadStrategies, loadDrills, loadMaterials]);
 
-  // ─── Lesson actions ──────────────────────
   const openLessonCreate = () => {
     setEditingLessonId(null);
     setLessonForm({ topicId: topics[0]?.id || 0, title: '', content: '', videoUrl: '' });
@@ -200,7 +189,6 @@ export default function AdminContentPage() {
     catch { setError(t.admin.common.deleteError); }
   };
 
-  // ─── Deck actions ────────────────────────
   const openDeckCreate = () => {
     setEditingDeckId(null);
     setDeckForm({ title: '', description: '', examTypeCode: '' });
@@ -282,7 +270,6 @@ export default function AdminContentPage() {
     } catch { setError(t.admin.common.deleteError); }
   };
 
-  // ─── Formula actions ─────────────────────
   const openFormulaCreate = () => {
     setEditingFormulaId(null);
     setFormulaForm({ topicId: topics[0]?.id || 0, title: '', formula: '', description: '' });
@@ -320,7 +307,6 @@ export default function AdminContentPage() {
     catch { setError(t.admin.common.deleteError); }
   };
 
-  // ─── Strategy actions ────────────────────
   const openStrategyCreate = () => {
     setEditingStrategyId(null);
     setStrategyForm({ examTypeCode: examTypeOptions[0]?.code || '', title: '', summary: '', content: '', category: 'test-taking', estimatedReadMinutes: 5 });
@@ -363,7 +349,6 @@ export default function AdminContentPage() {
     catch { setError(t.admin.common.deleteError); }
   };
 
-  // ─── Drill actions ───────────────────────
   const openDrillCreate = () => {
     setEditingDrillId(null);
     setDrillForm({ title: '', description: '', drillType: 'Speed', examTypeCode: '', topicId: 0, questionCount: 10, timeLimitMinutes: 0, isActive: true, sortOrder: 0 });
@@ -421,7 +406,6 @@ export default function AdminContentPage() {
     catch { setError(t.admin.common.deleteError); }
   };
 
-  // ─── Bulk delete actions ─────────────────
   const bulkDeleteLessons = async () => {
     const ids = [...selectedLessons];
     if (!ids.length || !confirm(`Удалить ${ids.length} уроков?`)) return;
@@ -457,7 +441,6 @@ export default function AdminContentPage() {
     catch { setError(t.admin.common.deleteError); }
   };
 
-  // ─── StudyMaterial actions ────────────────
   const openMaterialCreate = () => {
     setEditingMaterialId(null);
     setMaterialForm({ subjectKey: 'math', title: '', titleKz: '', titleEn: '', description: '', descriptionKz: '', descriptionEn: '', pdfUrl: '', price: 6990, isActive: true });
@@ -555,7 +538,6 @@ export default function AdminContentPage() {
     }
   };
 
-  // ─── Exam filter logic ────────────────
   const examCodes = [...new Set(topics.map(tp => tp.examTypeCode))].sort();
   const topicExamMap = new Map(topics.map(tp => [tp.id, tp.examTypeCode]));
 
@@ -564,9 +546,8 @@ export default function AdminContentPage() {
   const filteredStrategies = filterExam === 'all' ? strategies : strategies.filter(s => s.examTypeCode === filterExam);
   const filteredDecks = filterExam === 'all' ? decks : decks.filter(d => d.examTypeCode === filterExam);
   const filteredDrills = filterExam === 'all' ? drills : drills.filter(d => d.examTypeCode === filterExam);
-  const filteredMaterials = materials; // study materials are not tied to legacy SAT/NUET codes directly
+  const filteredMaterials = materials;
 
-  // ─── Common styles ───────────────────────
   const formRow: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '0.75rem' };
   const label: React.CSSProperties = { fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-secondary)' };
   const editBtn: React.CSSProperties = { fontSize: '0.75rem', padding: '0.25rem 0.5rem', cursor: 'pointer' };
@@ -588,7 +569,6 @@ export default function AdminContentPage() {
         </div>
       )}
 
-      {/* Tabs */}
       <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-color)', width: 'fit-content' }}>
           {TABS.map((tabKey, i) => (
@@ -616,7 +596,6 @@ export default function AdminContentPage() {
         </select>
       </div>
 
-      {/* ═══════ LESSONS TAB ═══════ */}
       {tab === 'lessons' && (
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
@@ -709,7 +688,6 @@ export default function AdminContentPage() {
         </div>
       )}
 
-      {/* ═══════ FLASHCARDS TAB ═══════ */}
       {tab === 'flashcards' && (
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
@@ -832,7 +810,6 @@ export default function AdminContentPage() {
         </div>
       )}
 
-      {/* ═══════ FORMULAS TAB ═══════ */}
       {tab === 'formulas' && (
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
@@ -927,7 +904,6 @@ export default function AdminContentPage() {
         </div>
       )}
 
-      {/* ═══════ STRATEGIES TAB ═══════ */}
       {tab === 'strategies' && (
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
@@ -1034,7 +1010,6 @@ export default function AdminContentPage() {
         </div>
       )}
 
-      {/* ═══════ DRILLS TAB ═══════ */}
       {tab === 'drills' && (
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
@@ -1164,7 +1139,6 @@ export default function AdminContentPage() {
         </div>
       )}
 
-      {/* ═══════ MATERIALS TAB ═══════ */}
       {tab === 'materials' && (
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>

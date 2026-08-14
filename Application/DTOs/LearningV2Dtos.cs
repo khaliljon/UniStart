@@ -1,13 +1,12 @@
 namespace UniStart.Application.DTOs;
 
-// ─── Lesson Steps (TH-1) ───────────────────────────────
 
 public record LessonStepDto(
     int Id,
     int LessonId,
     string Title,
     string Content,
-    string StepType,   // Theory, Example, Quiz, Summary
+    string StepType,
     int? QuizQuestionId,
     int SortOrder
 );
@@ -23,7 +22,6 @@ public record LessonWithStepsDto(
     int TotalSteps
 );
 
-// ─── Formula Cards (TH-2) ──────────────────────────────
 
 public record FormulaCardDto(
     int Id,
@@ -36,7 +34,6 @@ public record FormulaCardDto(
     bool IsBookmarked
 );
 
-// ─── Flashcards (TH-3) ─────────────────────────────────
 
 public record FlashcardDeckDto(
     int Id,
@@ -68,7 +65,7 @@ public record FlashcardReviewDto(
 
 public record ReviewFlashcardRequest(
     int FlashcardId,
-    int Quality    // 0-5: 0=forgot, 3=hard, 4=good, 5=easy
+    int Quality
 );
 
 public record CreateDeckRequest(
@@ -84,13 +81,12 @@ public record CreateFlashcardRequest(
     string Back
 );
 
-// ─── Timed Drills (TH-4) ───────────────────────────────
 
 public record StartDrillRequest(
-    string DrillType,        // Speed, Marathon, Streak
+    string DrillType,
     string[]? ExamTypeCodes,
     int? TopicId,
-    int? TimeLimitMinutes    // for Marathon mode
+    int? TimeLimitMinutes
 );
 
 public record DrillQuestionDto(
@@ -143,7 +139,6 @@ public record PersonalBestDto(
     DateTime? AchievedAt
 );
 
-// ─── Strategy Guides (TH-5) ────────────────────────────
 
 public record StrategyGuideDto(
     int Id,
@@ -166,7 +161,6 @@ public record StrategyGuideSummaryDto(
     bool IsRead
 );
 
-// ─── Mistake Journal (TH-6) ────────────────────────────
 
 public record MistakeEntryDto(
     int UserAnswerId,

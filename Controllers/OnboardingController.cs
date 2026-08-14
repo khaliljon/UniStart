@@ -30,9 +30,6 @@ public class OnboardingController : ControllerBase
         throw new UnauthorizedAccessException("Invalid user identity");
     }
 
-    /// <summary>
-    /// Get onboarding status for the current user
-    /// </summary>
     [HttpGet("status")]
     [ProducesResponseType(typeof(OnboardingStatusDto), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetStatus()
@@ -41,9 +38,6 @@ public class OnboardingController : ControllerBase
         return Ok(status);
     }
 
-    /// <summary>
-    /// Get available exam types with score ranges and descriptions
-    /// </summary>
     [HttpGet("exam-types")]
     [ProducesResponseType(typeof(IEnumerable<ExamTypeInfoDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetExamTypes()
@@ -54,9 +48,6 @@ public class OnboardingController : ControllerBase
         return Ok(examTypes);
     }
 
-    /// <summary>
-    /// Complete onboarding — creates study goal and generates study plan
-    /// </summary>
     [HttpPost("complete")]
     [ProducesResponseType(typeof(OnboardingStatusDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

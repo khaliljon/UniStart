@@ -10,7 +10,6 @@ public class UserAnswer
     public int? TimeSpentSeconds { get; set; }
     public int? TestSessionId { get; set; }
 
-    // Navigation properties
     public virtual User User { get; set; } = null!;
     public virtual Question Question { get; set; } = null!;
     public virtual AnswerOption AnswerOption { get; set; } = null!;

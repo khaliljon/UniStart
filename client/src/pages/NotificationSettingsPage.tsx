@@ -143,7 +143,6 @@ function NotificationSettingsPage() {
         </div>
       )}
 
-      {/* Bulk toggle */}
       <div
         style={{
           display: 'flex',
@@ -169,7 +168,6 @@ function NotificationSettingsPage() {
         </button>
       </div>
 
-      {/* Notification items */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
         {NOTIFICATION_ITEMS.map((item) => {
           const enabled = preferences ? preferences[item.key] : false;
@@ -239,7 +237,6 @@ function NotificationSettingsPage() {
         })}
       </div>
 
-      {/* Info box */}
       <div
         className="card"
         style={{
