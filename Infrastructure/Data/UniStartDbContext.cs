@@ -933,6 +933,7 @@ public class UniStartDbContext : DbContext
             entity.HasOne(e => e.User).WithMany().HasForeignKey(e => e.UserId).OnDelete(DeleteBehavior.Cascade);
             entity.HasIndex(e => new { e.UserId, e.ItemType, e.ItemCode }).IsUnique();
         });
+    }
 
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
