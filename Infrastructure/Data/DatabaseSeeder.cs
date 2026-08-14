@@ -189,29 +189,11 @@ public class DatabaseSeeder
             .Select(d => d.Slug)
             .ToListAsync();
 
+        // Placeholder rows only — the real content is edited from the admin panel.
         var docs = new[]
         {
-            new LegalDocument
-            {
-                Slug = LegalDocumentSeedData.PrivacySlug,
-                Title = LegalDocumentSeedData.PrivacyTitle,
-                LastUpdatedLabel = LegalDocumentSeedData.PrivacyLastUpdated,
-                Content = LegalDocumentSeedData.PrivacyContent,
-            },
-            new LegalDocument
-            {
-                Slug = LegalDocumentSeedData.TermsSlug,
-                Title = LegalDocumentSeedData.TermsTitle,
-                LastUpdatedLabel = LegalDocumentSeedData.TermsLastUpdated,
-                Content = LegalDocumentSeedData.TermsContent,
-            },
-            new LegalDocument
-            {
-                Slug = LegalDocumentSeedData.ReferralSlug,
-                Title = LegalDocumentSeedData.ReferralTitle,
-                LastUpdatedLabel = LegalDocumentSeedData.ReferralLastUpdated,
-                Content = LegalDocumentSeedData.ReferralContent,
-            },
+            new LegalDocument { Slug = "privacy", Title = "Политика конфиденциальности", LastUpdatedLabel = "", Content = "" },
+            new LegalDocument { Slug = "terms", Title = "Пользовательское соглашение", LastUpdatedLabel = "", Content = "" },
         };
 
         var toAdd = docs.Where(d => !existing.Contains(d.Slug)).ToList();
