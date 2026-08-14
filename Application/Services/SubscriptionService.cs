@@ -85,7 +85,6 @@ public class SubscriptionService : ISubscriptionService
                           && a.AnsweredAt >= todayUtc
                           && a.TimeSpentSeconds >= 0);
 
-        // Lesson tracking was removed in the CSCA rework; kept at 0 for the DTO shape.
         var lessonsToday = 0;
 
         var questionsRemaining = Math.Max(0, limits.QuestionsPerDay - questionsToday);

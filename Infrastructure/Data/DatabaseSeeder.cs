@@ -189,7 +189,6 @@ public class DatabaseSeeder
             .Select(d => d.Slug)
             .ToListAsync();
 
-        // Placeholder rows only — the real content is edited from the admin panel.
         var docs = new[]
         {
             new LegalDocument { Slug = "privacy", Title = "Политика конфиденциальности", LastUpdatedLabel = "", Content = "" },
