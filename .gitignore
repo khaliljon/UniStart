@@ -2,6 +2,7 @@ appsettings.*.local.json
 appsettings.Production.json
 secrets/
 logs/
+email-previews/
 
 *.rsuser
 *.suo
