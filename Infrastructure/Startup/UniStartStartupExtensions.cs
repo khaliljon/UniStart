@@ -42,6 +42,12 @@ public static class UniStartStartupExtensions
     {
         services.AddHttpContextAccessor();
 
+        // ── Data Protection ──────────────────────────────────
+        // Persist keys to a stable location so they survive container
+        // restarts/rebuilds. Without this, ASP.NET regenerates the key ring on
+        // every start (ephemeral container FS), which invalidates antiforgery
+        // tokens and anything encrypted via the Data Protection API, and floods
+        // the logs with "No XML encryptor configured" / key-not-found warnings.
         var dpBuilder = services.AddDataProtection().SetApplicationName("UniStart");
         var keysPath = Environment.GetEnvironmentVariable("DATA_PROTECTION_KEYS_DIR");
         if (!string.IsNullOrWhiteSpace(keysPath))
@@ -500,5 +506,31 @@ public static class UniStartStartupExtensions
 
         var seeder = new DatabaseSeeder(dbContext);
         await seeder.SeedAsync();
+    }
+
+    public static async Task RenderEmailPreviewsAsync(this WebApplication app)
+    {
+        using var scope = app.Services.CreateScope();
+        var email = (EmailService)scope.ServiceProvider.GetRequiredService<IEmailService>();
+
+        var dir = Path.Combine(app.Environment.ContentRootPath, "email-previews");
+        Directory.CreateDirectory(dir);
+
+        var links = new StringBuilder();
+        foreach (var (key, label) in EmailService.PreviewKeys)
+        {
+            var html = email.RenderPreview(key);
+            await File.WriteAllTextAsync(Path.Combine(dir, $"{key}.html"), html);
+            links.Append($"<li style=\"margin:8px 0\"><a href=\"{key}.html\">{label}</a> <span style=\"color:#999\">({key})</span></li>");
+        }
+
+        var index = $"<!DOCTYPE html><html lang=\"ru\"><head><meta charset=\"UTF-8\"><title>Email previews</title></head>"
+                  + "<body style=\"font-family:'Segoe UI',sans-serif;background:#f4f6f9;padding:32px\">"
+                  + "<div style=\"max-width:600px;margin:0 auto;background:#fff;border-radius:12px;padding:32px\">"
+                  + "<h1 style=\"margin:0 0 16px\">Предпросмотр писем</h1>"
+                  + $"<ul style=\"list-style:none;padding:0\">{links}</ul></div></body></html>";
+        await File.WriteAllTextAsync(Path.Combine(dir, "index.html"), index);
+
+        Console.WriteLine($"Email previews written to: {Path.Combine(dir, "index.html")}");
     }
 }

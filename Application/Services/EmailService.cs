@@ -1,4 +1,4 @@
-﻿using MailKit.Net.Smtp;
+using MailKit.Net.Smtp;
 using MailKit.Security;
 using MimeKit;
 using UniStart.Application.DTOs;
@@ -34,16 +34,8 @@ public class EmailService : IEmailService
 
     public async Task SendPurchaseReceiptAsync(string toEmail, string userName, decimal total, string currency)
     {
-        var name = System.Net.WebUtility.HtmlEncode(userName ?? "");
-        var cur = System.Net.WebUtility.HtmlEncode(currency ?? "");
-        var totalStr = total.ToString("N0", System.Globalization.CultureInfo.InvariantCulture);
         var subject = "Спасибо за покупку — UniStart";
-        var body = "<div style=\"font-family:Arial,sans-serif;max-width:520px;margin:0 auto;color:#111\">"
-            + "<h2 style=\"color:#C8102E\">Спасибо за покупку, " + name + "!</h2>"
-            + "<p>Ваш заказ оплачен, доступ уже начислен.</p>"
-            + "<p style=\"font-size:1.15rem\"><b>Итого: " + totalStr + " " + cur + "</b></p>"
-            + "<p>Пробники — во вкладке «Пробные экзамены», учебники — в разделе «Материалы».</p>"
-            + "</div>";
+        var body = GetPurchaseReceiptTemplate(userName, total, currency);
         await SendEmailAsync(toEmail, subject, body);
     }
 
@@ -102,14 +94,36 @@ public class EmailService : IEmailService
     public async Task SendVerificationRequestNotificationAsync(string adminEmail, string tutorName, string tutorEmail)
     {
         var subject = $"Запрос верификации тьютора: {tutorName} — UniStart";
-        var body = $"<h2>Новый запрос верификации</h2><p>Тьютор <strong>{tutorName}</strong> ({tutorEmail}) запросил верификацию.</p><p>Перейдите в панель администратора для проверки.</p>";
+        var name = System.Net.WebUtility.HtmlEncode(tutorName);
+        var mail = System.Net.WebUtility.HtmlEncode(tutorEmail);
+        var content = $@"
+      <h2 style=""color:#1a1a2e;margin:0 0 16px;"">Новый запрос верификации</h2>
+      <p style=""font-size:16px;line-height:1.6;color:#555;"">
+        Тьютор запросил верификацию. Перейдите в панель администратора для проверки.
+      </p>
+      <div style=""background:#f0f4ff;border-radius:8px;padding:20px;margin:24px 0;border-left:4px solid #6c5ce7;"">
+        <p style=""margin:0 0 8px;font-size:15px;color:#333;""><strong>Тьютор:</strong> {name}</p>
+        <p style=""margin:0;font-size:15px;color:#333;""><strong>Email:</strong> {mail}</p>
+      </div>";
+        var body = WrapInLayout("Запрос верификации тьютора — UniStart", content, showNotificationSettings: false);
         await SendEmailAsync(adminEmail, subject, body);
     }
 
     public async Task SendContactFormAsync(string adminEmail, string senderName, string senderEmail, string message)
     {
         var subject = $"Обратная связь от {senderName} — UniStart";
-        var body = $"<h2>Обратная связь</h2><p><strong>Имя:</strong> {System.Net.WebUtility.HtmlEncode(senderName)}</p><p><strong>Email:</strong> {System.Net.WebUtility.HtmlEncode(senderEmail)}</p><p><strong>Сообщение:</strong></p><p>{System.Net.WebUtility.HtmlEncode(message)}</p>";
+        var name = System.Net.WebUtility.HtmlEncode(senderName);
+        var mail = System.Net.WebUtility.HtmlEncode(senderEmail);
+        var msg = System.Net.WebUtility.HtmlEncode(message).Replace("\n", "<br>");
+        var content = $@"
+      <h2 style=""color:#1a1a2e;margin:0 0 16px;"">Обратная связь</h2>
+      <div style=""background:#f0f4ff;border-radius:8px;padding:20px;margin:24px 0;border-left:4px solid #6c5ce7;"">
+        <p style=""margin:0 0 8px;font-size:15px;color:#333;""><strong>Имя:</strong> {name}</p>
+        <p style=""margin:0 0 8px;font-size:15px;color:#333;""><strong>Email:</strong> {mail}</p>
+      </div>
+      <p style=""font-size:15px;line-height:1.6;color:#555;""><strong>Сообщение:</strong></p>
+      <p style=""font-size:15px;line-height:1.6;color:#333;"">{msg}</p>";
+        var body = WrapInLayout("Обратная связь — UniStart", content, showNotificationSettings: false);
         await SendEmailAsync(adminEmail, subject, body);
     }
 
@@ -194,7 +208,7 @@ public class EmailService : IEmailService
     <!-- Header -->
     <div style=""background:linear-gradient(135deg,#6c5ce7,#a855f7);padding:32px 24px;text-align:center;"">
       <h1 style=""margin:0;color:#fff;font-size:28px;font-weight:700;"">UniStart</h1>
-      <p style=""margin:8px 0 0;color:rgba(255,255,255,0.85);font-size:14px;"">Adaptive SAT / NUET Preparation</p>
+      <p style=""margin:8px 0 0;color:rgba(255,255,255,0.85);font-size:14px;"">Подготовка к CSCA</p>
     </div>
     <!-- Content -->
     <div style=""padding:32px 24px;"">
@@ -268,6 +282,34 @@ public class EmailService : IEmailService
       </p>";
 
         return WrapInLayout("Восстановление пароля — UniStart", content, showNotificationSettings: false);
+    }
+
+    private string GetPurchaseReceiptTemplate(string userName, decimal total, string currency)
+    {
+        var baseUrl = GetBaseUrl();
+        var name = System.Net.WebUtility.HtmlEncode(userName);
+        var cur = System.Net.WebUtility.HtmlEncode(currency);
+        var totalStr = total.ToString("N0", System.Globalization.CultureInfo.InvariantCulture);
+        var content = $@"
+      <h2 style=""color:#1a1a2e;margin:0 0 16px;"">Спасибо за покупку, {name}!</h2>
+      <p style=""font-size:16px;line-height:1.6;color:#555;"">
+        Ваш заказ оплачен, доступ уже начислен.
+      </p>
+      <div style=""background:#f0f4ff;border-radius:12px;padding:24px;margin:24px 0;text-align:center;"">
+        <div style=""font-size:14px;color:#666;margin-bottom:4px;"">Итого</div>
+        <div style=""font-size:32px;font-weight:800;color:#6c5ce7;"">{totalStr} {cur}</div>
+      </div>
+      <p style=""font-size:15px;line-height:1.6;color:#555;"">
+        Запуски пробников доступны во вкладке «Пробные экзамены», учебники — в разделе «Материалы».
+      </p>
+      <div style=""text-align:center;margin:32px 0;"">
+        <a href=""{baseUrl}/mocks"" style=""display:inline-block;background:linear-gradient(135deg,#6c5ce7,#a855f7);color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:16px;"">
+          Перейти к пробникам →
+        </a>
+      </div>
+      <p style=""font-size:14px;color:#999;text-align:center;"">Если это были не вы — напишите в поддержку.</p>";
+
+        return WrapInLayout("Спасибо за покупку — UniStart", content, showNotificationSettings: false);
     }
 
     private string GetStreakReminderTemplate(string userName, int lastStreak, int inactiveDays)
@@ -492,5 +534,89 @@ public class EmailService : IEmailService
         if (lastDigit is 1) return "день";
         if (lastDigit is >= 2 and <= 4) return "дня";
         return "дней";
+    }
+
+
+    public static readonly IReadOnlyList<(string Key, string Label)> PreviewKeys = new List<(string Key, string Label)>
+    {
+        ("verification", "Код подтверждения"),
+        ("welcome", "Добро пожаловать"),
+        ("password-reset", "Восстановление пароля"),
+        ("purchase", "Чек об оплате"),
+        ("streak", "Напоминание о серии"),
+        ("digest", "Еженедельный отчёт"),
+        ("study-plan", "План на сегодня"),
+        ("achievement", "Новое достижение"),
+        ("verification-request", "Запрос верификации (админу)"),
+        ("contact-form", "Обратная связь (админу)"),
+        ("school-application", "Заявка от школы (админу)"),
+        ("school-approved", "Заявка одобрена"),
+        ("school-rejected", "Заявка отклонена"),
+    };
+
+    public string RenderPreview(string key) => key switch
+    {
+        "verification" => GetVerificationCodeTemplate("Халыч Каландаров", "605372"),
+        "welcome" => GetWelcomeTemplate("Халыч Каландаров"),
+        "password-reset" => GetPasswordResetTemplate("Халыч Каландаров", "605372"),
+        "purchase" => GetPurchaseReceiptTemplate("Халыч Каландаров", 25000m, "KZT"),
+        "streak" => GetStreakReminderTemplate("Халыч Каландаров", 7, 3),
+        "digest" => GetWeeklyDigestTemplate(SampleDigest()),
+        "study-plan" => GetStudyPlanReminderTemplate("Халыч Каландаров", "3 темы · 20 вопросов · 1 пробный экзамен"),
+        "achievement" => GetAchievementTemplate("Халыч Каландаров", "Первые 100 вопросов", "🏆"),
+        "verification-request" => VerificationRequestPreview(),
+        "contact-form" => ContactFormPreview(),
+        "school-application" => GetNewSchoolApplicationTemplate("Лицей №1", "Айгуль Смагулова", "school@example.kz"),
+        "school-approved" => GetSchoolApplicationStatusTemplate("Айгуль Смагулова", "Лицей №1", approved: true),
+        "school-rejected" => GetSchoolApplicationStatusTemplate("Айгуль Смагулова", "Лицей №1", approved: false),
+        _ => throw new ArgumentException($"Unknown preview key: {key}", nameof(key)),
+    };
+
+    private static WeeklyDigestDataDto SampleDigest() => new(
+        UserName: "Халыч Каландаров",
+        QuestionsAnswered: 142,
+        CorrectAnswers: 118,
+        Accuracy: 83.1,
+        CurrentStreak: 7,
+        PredictedScore: 82,
+        MaxPossibleScore: 100,
+        ExamName: "CSCA",
+        TopProgress: new List<WeeklyTopicProgressDto>
+        {
+            new("Алгебра", 48, 88, "improving"),
+            new("Геометрия", 32, 72, "declining"),
+            new("Механика", 26, 80, "flat"),
+        },
+        Recommendations: new List<string>
+        {
+            "Повторите тему «Геометрия» — точность ниже целевой.",
+            "Пройдите один пробный экзамен на этой неделе.",
+        });
+
+    private string VerificationRequestPreview()
+    {
+        var content = $@"
+      <h2 style=""color:#1a1a2e;margin:0 0 16px;"">Новый запрос верификации</h2>
+      <p style=""font-size:16px;line-height:1.6;color:#555;"">
+        Тьютор запросил верификацию. Перейдите в панель администратора для проверки.
+      </p>
+      <div style=""background:#f0f4ff;border-radius:8px;padding:20px;margin:24px 0;border-left:4px solid #6c5ce7;"">
+        <p style=""margin:0 0 8px;font-size:15px;color:#333;""><strong>Тьютор:</strong> Данияр Оспанов</p>
+        <p style=""margin:0;font-size:15px;color:#333;""><strong>Email:</strong> tutor@example.kz</p>
+      </div>";
+        return WrapInLayout("Запрос верификации тьютора — UniStart", content, showNotificationSettings: false);
+    }
+
+    private string ContactFormPreview()
+    {
+        var content = $@"
+      <h2 style=""color:#1a1a2e;margin:0 0 16px;"">Обратная связь</h2>
+      <div style=""background:#f0f4ff;border-radius:8px;padding:20px;margin:24px 0;border-left:4px solid #6c5ce7;"">
+        <p style=""margin:0 0 8px;font-size:15px;color:#333;""><strong>Имя:</strong> Айгерим Нурланова</p>
+        <p style=""margin:0;font-size:15px;color:#333;""><strong>Email:</strong> user@example.kz</p>
+      </div>
+      <p style=""font-size:15px;line-height:1.6;color:#555;""><strong>Сообщение:</strong></p>
+      <p style=""font-size:15px;line-height:1.6;color:#333;"">Здравствуйте! Подскажите, как получить доступ к пробным экзаменам?</p>";
+        return WrapInLayout("Обратная связь — UniStart", content, showNotificationSettings: false);
     }
 }

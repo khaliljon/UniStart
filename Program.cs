@@ -59,6 +59,12 @@ try
 
     var app = builder.Build();
 
+    if (args.Contains("--email-preview"))
+    {
+        await app.RenderEmailPreviewsAsync();
+        return;
+    }
+
     using (var startupScope = app.Services.CreateScope())
     {
         var llm = startupScope.ServiceProvider.GetRequiredService<ILlmExtractionService>();
