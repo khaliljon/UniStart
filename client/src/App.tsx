@@ -81,7 +81,6 @@ function StudentRoutes() {
       <Route path="history" element={<Navigate to="/progress?tab=history" replace />} />
       <Route path="study-plan" element={<Navigate to="/plan" replace />} />
       <Route path="recommendations" element={<Navigate to="/" replace />} />
-      <Route path="notifications" element={<Navigate to="/" replace />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Route>
   )

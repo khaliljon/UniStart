@@ -16,16 +16,14 @@ public class AuthService : IAuthService
     private readonly IJwtService _jwtService;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IEmailService _emailService;
-    private readonly INotificationService _notificationService;
 
     public AuthService(UniStartDbContext context, IJwtService jwtService, IUnitOfWork unitOfWork,
-        IEmailService emailService, INotificationService notificationService)
+        IEmailService emailService)
     {
         _context = context;
         _jwtService = jwtService;
         _unitOfWork = unitOfWork;
         _emailService = emailService;
-        _notificationService = notificationService;
     }
 
     public async Task<AuthResponseDto> RegisterAsync(RegisterDto dto)
@@ -169,7 +167,6 @@ public class AuthService : IAuthService
 
         await _unitOfWork.SaveChangesAsync();
 
-        await _notificationService.EnsurePreferencesExistAsync(user.Id);
         _ = Task.Run(async () =>
         {
             try { await _emailService.SendVerificationCodeAsync(user.Email, user.Name, code); }
@@ -384,8 +381,6 @@ public class AuthService : IAuthService
             _context.Users.Add(user);
             await _unitOfWork.SaveChangesAsync();
 
-            await _notificationService.EnsurePreferencesExistAsync(user.Id);
-
             _ = Task.Run(async () =>
             {
                 try { await _emailService.SendWelcomeEmailAsync(user.Email, user.Name); }
@@ -475,7 +470,7 @@ public class AuthService : IAuthService
             throw new InvalidOperationException($"{fieldName} must not contain digits");
     }
 
-    private static async Task ValidateEmailDomainAsync(string email)
+    protected virtual async Task ValidateEmailDomainAsync(string email)
     {
         var parts = email.Split('@');
         if (parts.Length != 2 || string.IsNullOrWhiteSpace(parts[1]))

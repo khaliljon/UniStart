@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using UniStart.Infrastructure.Data;
@@ -11,9 +12,11 @@ using UniStart.Infrastructure.Data;
 namespace UniStart.Migrations
 {
     [DbContext(typeof(UniStartDbContext))]
-    partial class UniStartDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260817103405_DropStudyPlanAchievementPrefs")]
+    partial class DropStudyPlanAchievementPrefs
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -996,6 +999,36 @@ namespace UniStart.Migrations
                         .HasDatabaseName("IX_NewsArticles_Published");
 
                     b.ToTable("NewsArticles", (string)null);
+                });
+
+            modelBuilder.Entity("UniStart.Domain.Entities.NotificationPreferences", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("WelcomeEmail")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("NotificationPreferences", (string)null);
                 });
 
             modelBuilder.Entity("UniStart.Domain.Entities.Purchase", b =>
@@ -2751,6 +2784,17 @@ namespace UniStart.Migrations
                     b.Navigation("MockExam");
                 });
 
+            modelBuilder.Entity("UniStart.Domain.Entities.NotificationPreferences", b =>
+                {
+                    b.HasOne("UniStart.Domain.Entities.User", "User")
+                        .WithOne("NotificationPreferences")
+                        .HasForeignKey("UniStart.Domain.Entities.NotificationPreferences", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("UniStart.Domain.Entities.Purchase", b =>
                 {
                     b.HasOne("UniStart.Domain.Entities.User", "User")
@@ -3334,6 +3378,8 @@ namespace UniStart.Migrations
 
             modelBuilder.Entity("UniStart.Domain.Entities.User", b =>
                 {
+                    b.Navigation("NotificationPreferences");
+
                     b.Navigation("SkillProfiles");
 
                     b.Navigation("TestSessions");

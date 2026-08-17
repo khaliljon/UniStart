@@ -80,7 +80,6 @@ public static class UniStartStartupExtensions
         services.AddScoped<IDiagnosticService, DiagnosticService>();
         services.AddScoped<ISubscriptionService, SubscriptionService>();
         services.AddScoped<IEmailService, EmailService>();
-        services.AddScoped<INotificationService, NotificationService>();
         services.AddScoped<IAuditService, AuditService>();
         services.AddScoped<IBackgroundJobsService, BackgroundJobsService>();
         services.AddScoped<IBackupService, BackupService>();

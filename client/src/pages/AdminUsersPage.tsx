@@ -24,10 +24,6 @@ function AdminUsersPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  type TutorInfo = { averageRating: number; totalReviews: number; totalStudents: number; isVerified: boolean; specializations: string; hourlyRate: number | null };
-  const [tutorCache, setTutorCache] = useState<Map<number, TutorInfo>>(new Map());
-  const [tutorLoading, setTutorLoading] = useState(false);
-
   const [filterRole, setFilterRole] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchInput, setSearchInput] = useState('');
@@ -41,6 +37,7 @@ function AdminUsersPage() {
     subscriptionTier: '',
     schoolId: null as number | null,
   });
+
 
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -90,23 +87,6 @@ function AdminUsersPage() {
     setSuccess(null);
     setPurchases(null);
     adminService.getUserPurchases(user.id).then(setPurchases).catch(() => setPurchases([]));
-    if (user.role === 'Tutor' && !tutorCache.has(user.id)) {
-      setTutorLoading(true);
-      adminService.getTutors().then(tutors => {
-        const map = new Map(tutorCache);
-        for (const u of tutors) {
-          map.set(u.userId, {
-            averageRating: u.averageRating,
-            totalReviews: u.totalReviews,
-            totalStudents: u.totalStudents,
-            isVerified: u.isVerified,
-            specializations: u.specializations,
-            hourlyRate: u.hourlyRate,
-          });
-        }
-        setTutorCache(map);
-      }).catch(() => {}).finally(() => setTutorLoading(false));
-    }
   };
 
   const startEdit = () => {
@@ -429,54 +409,15 @@ function AdminUsersPage() {
 
                 <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem' }}>
                   <h3 style={{ fontSize: '1rem', margin: '0 0 0.5rem' }}>{t.admin.users.statistics}</h3>
-                  {selected.role === 'Tutor' ? (
-                    tutorLoading ? (
-                      <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{t.admin.common.loading}</div>
-                    ) : (() => {
-                      const tutor = tutorCache.get(selected.id);
-                      if (!tutor) return <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{t.admin.users.noTutorProfile}</div>;
-                      return (
-                        <>
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
-                            <StatCard label={t.admin.users.studentsCount} value={tutor.totalStudents} color="var(--primary-color)" small />
-                            <StatCard label={t.admin.users.reviewsCount} value={tutor.totalReviews} color="var(--warning-color)" small />
-                            <StatCard label={t.admin.users.ratingLabel} value={tutor.averageRating} color="var(--success-color)" small />
-                          </div>
-                          <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
-                            <span style={{
-                              padding: '0.2rem 0.6rem', borderRadius: '999px', fontSize: '0.75rem', fontWeight: 600,
-                              background: tutor.isVerified ? 'var(--success-color)' : 'var(--text-muted)',
-                              color: '#fff',
-                            }}>
-                              {tutor.isVerified ? t.admin.users.verifiedLabel : t.admin.users.notVerified}
-                            </span>
-                            {tutor.hourlyRate != null && (
-                              <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                                {tutor.hourlyRate} ₸/час
-                              </span>
-                            )}
-                          </div>
-                          {tutor.specializations && (
-                            <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                              {t.admin.users.specializations} {tutor.specializations}
-                            </div>
-                          )}
-                        </>
-                      );
-                    })()
-                  ) : (
-                    <>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
-                        <StatCard label={t.admin.users.answersCount} value={selected.totalAnswers} color="var(--primary-color)" small />
-                        <StatCard label={t.admin.users.correctCount} value={selected.correctAnswers} color="var(--success-color)" small />
-                        <StatCard label={t.admin.users.sessionsCount} value={selected.testSessions} color="var(--info-color, #3b82f6)" small />
-                      </div>
-                      {selected.totalAnswers > 0 && (
-                        <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                          {t.admin.users.accuracyLabel} {Math.round((selected.correctAnswers / selected.totalAnswers) * 100)}%
-                        </div>
-                      )}
-                    </>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
+                    <StatCard label={t.admin.users.answersCount} value={selected.totalAnswers} color="var(--primary-color)" small />
+                    <StatCard label={t.admin.users.correctCount} value={selected.correctAnswers} color="var(--success-color)" small />
+                    <StatCard label={t.admin.users.sessionsCount} value={selected.testSessions} color="var(--info-color, #3b82f6)" small />
+                  </div>
+                  {selected.totalAnswers > 0 && (
+                    <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                      {t.admin.users.accuracyLabel} {Math.round((selected.correctAnswers / selected.totalAnswers) * 100)}%
+                    </div>
                   )}
                 </div>
 

@@ -4,4 +4,5 @@ export const SOCIAL_LINKS = {
   instagram: 'https://www.instagram.com/unistartkz/',
   tiktok: 'https://www.tiktok.com/@unistartkz',
   email: 'unistart.kz@gmail.com',
+  emailCompose: 'https://mail.google.com/mail/?view=cm&fs=1&to=unistart.kz@gmail.com',
 } as const;

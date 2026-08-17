@@ -30,7 +30,6 @@ public class UniStartDbContext : DbContext
     public DbSet<MockExamAttempt> MockExamAttempts => Set<MockExamAttempt>();
     public DbSet<MockExamAnswer> MockExamAnswers => Set<MockExamAnswer>();
     public DbSet<MockExamAnswerOption> MockExamAnswerOptions => Set<MockExamAnswerOption>();
-    public DbSet<NotificationPreferences> NotificationPreferences => Set<NotificationPreferences>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
     public DbSet<LessonStep> LessonSteps => Set<LessonStep>();
@@ -421,23 +420,6 @@ public class UniStartDbContext : DbContext
             entity.HasOne(e => e.Answer).WithMany(a => a.SelectedOptions).HasForeignKey(e => e.MockExamAnswerId).OnDelete(DeleteBehavior.Cascade);
             entity.HasOne(e => e.Option).WithMany().HasForeignKey(e => e.AnswerOptionId).OnDelete(DeleteBehavior.Cascade);
         });
-
-        modelBuilder.Entity<NotificationPreferences>(entity =>
-        {
-            entity.ToTable("NotificationPreferences");
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.WelcomeEmail).HasDefaultValue(true);
-            entity.Property(e => e.StreakReminder).HasDefaultValue(true);
-            entity.Property(e => e.WeeklyDigest).HasDefaultValue(true);
-            entity.Property(e => e.StudyPlanReminder).HasDefaultValue(true);
-            entity.Property(e => e.AchievementNotification).HasDefaultValue(true);
-            entity.HasOne(e => e.User)
-                  .WithOne(u => u.NotificationPreferences)
-                  .HasForeignKey<NotificationPreferences>(e => e.UserId)
-                  .OnDelete(DeleteBehavior.Cascade);
-            entity.HasIndex(e => e.UserId).IsUnique();
-        });
-
         modelBuilder.Entity<AuditLog>(entity =>
         {
             entity.ToTable("AuditLogs");

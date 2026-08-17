@@ -16,6 +16,10 @@ public class MockExamService : IMockExamService
         _context = context;
     }
 
+    /// <summary>
+    /// Returns the effective sections for an attempt, respecting SelectedSectionIdsJson.
+    /// If null/empty, returns all sections ordered by SortOrder.
+    /// </summary>
     private static List<MockExamSection> GetEffectiveSections(MockExamAttempt attempt)
     {
         var all = attempt.MockExam.Sections.OrderBy(s => s.SortOrder).ToList();
@@ -39,6 +43,8 @@ public class MockExamService : IMockExamService
             .Where(a => a.UserId == userId)
             .ToListAsync();
 
+        // Run-based access: paid runs left per template, and whether the
+        // one-time free run is still available.
         var runsByMock = await _context.UserMockRuns
             .Where(r => r.UserId == userId)
             .ToDictionaryAsync(r => r.MockExamId, r => r.RunsRemaining);
@@ -121,6 +127,9 @@ public class MockExamService : IMockExamService
             .FirstOrDefaultAsync(m => m.Id == mockExamId && m.IsActive)
             ?? throw new ArgumentException("Mock exam not found or inactive");
 
+        // ── Run-based access gate ──────────────────────────────
+        // A start consumes one paid run for this template; if none, it consumes
+        // the user's one-time free run (any subject). Otherwise it's locked.
         var runs = await _context.UserMockRuns
             .FirstOrDefaultAsync(r => r.UserId == userId && r.MockExamId == mockExamId);
         if (runs != null && runs.RunsRemaining > 0)
@@ -132,7 +141,7 @@ public class MockExamService : IMockExamService
             var accessUser = await _context.Users.FindAsync(userId);
             if (accessUser != null && !accessUser.FreeMockUsed)
             {
-                accessUser.FreeMockUsed = true;
+                accessUser.FreeMockUsed = true; // consume the one free run
             }
             else
             {
@@ -140,6 +149,7 @@ public class MockExamService : IMockExamService
             }
         }
 
+        // Abandon any in-progress attempts for this mock exam
         var inProgress = await _context.MockExamAttempts
             .Where(a => a.UserId == userId && a.MockExamId == mockExamId && a.Status == "in_progress")
             .ToListAsync();
@@ -149,6 +159,7 @@ public class MockExamService : IMockExamService
             old.CompletedAt = DateTime.UtcNow;
         }
 
+        // Filter sections if selectedSectionIds provided (used for configurable mock exam sections)
         var allSections = exam.Sections.OrderBy(s => s.SortOrder).ToList();
         var sections = selectedSectionIds != null && selectedSectionIds.Count > 0
             ? allSections.Where(s => selectedSectionIds.Contains(s.Id)).OrderBy(s => s.SortOrder).ToList()
@@ -171,12 +182,16 @@ public class MockExamService : IMockExamService
 
         _context.MockExamAttempts.Add(attempt);
 
+        // Anti-repeat: question ids this user already saw in prior sessions of this
+        // template. We prefer unseen questions and only fall back to seen ones if
+        // the pool is too small (per the agreed algorithm).
         var seenSet = (await _context.MockExamAnswers
             .Where(a => a.Attempt.UserId == userId && a.Attempt.MockExamId == mockExamId)
             .Select(a => a.QuestionId)
             .Distinct()
             .ToListAsync()).ToHashSet();
 
+        // Pre-populate answers for selected sections only
         var rng = Random.Shared;
         for (int si = 0; si < sections.Count; si++)
         {
@@ -187,16 +202,20 @@ public class MockExamService : IMockExamService
                 .Where(q => q.Topic.SectionId == section.ExamSectionId.Value)
                 .ToListAsync();
 
+            // Shuffle questions randomly (Fisher-Yates)
             for (int i = questions.Count - 1; i > 0; i--)
             {
                 int j = rng.Next(i + 1);
                 (questions[i], questions[j]) = (questions[j], questions[i]);
             }
 
+            // Anti-repeat: unseen questions first, then seen ones (both already
+            // shuffled), so a fresh session avoids repeats while the pool allows.
             questions = questions.Where(q => !seenSet.Contains(q.Id))
                 .Concat(questions.Where(q => seenSet.Contains(q.Id)))
                 .ToList();
 
+            // Limit to regulation question count if set
             var count = section.QuestionCount > 0 && section.QuestionCount < questions.Count
                 ? section.QuestionCount
                 : questions.Count;
@@ -238,13 +257,14 @@ public class MockExamService : IMockExamService
 
         if (attempt == null || attempt.Status != "in_progress") return null;
 
+        // Server-side timer enforcement: auto-complete if total exam time expired
         var effectiveSections = GetEffectiveSections(attempt);
         var totalTimeLimit = effectiveSections.Sum(s => s.TimeLimitMinutes);
         if (totalTimeLimit > 0 && DateTime.UtcNow > attempt.StartedAt.AddMinutes(totalTimeLimit))
         {
             await CompleteExamInternalAsync(attempt);
             await _context.SaveChangesAsync();
-            return null;
+            return null; // Exam auto-completed, no more sections
         }
 
         return await GetSectionStateAsync(attempt, attempt.CurrentSectionIndex);
@@ -268,6 +288,7 @@ public class MockExamService : IMockExamService
 
         var section = sections[sectionIndex];
 
+        // Get the answers for this section (with question data)
         var answers = await _context.MockExamAnswers
             .Include(a => a.Question).ThenInclude(q => q.AnswerOptions)
             .Include(a => a.Question).ThenInclude(q => q.Topic)
@@ -279,6 +300,7 @@ public class MockExamService : IMockExamService
 
         var questionDtos = answers.Select(a =>
         {
+            // Deterministic shuffle of answer options per attempt+question
             var optionsList = a.Question.AnswerOptions.ToList();
             var seed = unchecked(attempt.Id * 31 + a.QuestionId);
             var optRng = new Random(seed);
@@ -322,10 +344,12 @@ public class MockExamService : IMockExamService
             .FirstOrDefaultAsync(a => a.Id == attemptId && a.UserId == userId && a.Status == "in_progress");
         if (attempt == null) return false;
 
+        // Server-side timer enforcement: reject answers after total exam time expires
         var effectiveSections = GetEffectiveSections(attempt);
         var totalTimeLimit = effectiveSections.Sum(s => s.TimeLimitMinutes);
         if (totalTimeLimit > 0 && DateTime.UtcNow > attempt.StartedAt.AddMinutes(totalTimeLimit))
         {
+            // Auto-complete the exam since time expired
             await CompleteExamInternalAsync(attempt);
             await _context.SaveChangesAsync();
             return false;
@@ -337,12 +361,15 @@ public class MockExamService : IMockExamService
             .FirstOrDefaultAsync(a => a.AttemptId == attemptId && a.QuestionId == dto.QuestionId);
         if (answer == null) return false;
 
+        // Resolve the selected option id(s): prefer the multi-select list, fall back
+        // to the single legacy id. Keep only ids that belong to this question.
         var validIds = answer.Question.AnswerOptions.Select(o => o.Id).ToHashSet();
         var ids = ((dto.SelectedOptionIds != null && dto.SelectedOptionIds.Count > 0)
                 ? dto.SelectedOptionIds
                 : (dto.SelectedOptionId > 0 ? new List<int> { dto.SelectedOptionId } : new List<int>()))
             .Where(validIds.Contains).Distinct().ToList();
 
+        // Replace the stored selection set.
         if (answer.SelectedOptions.Count > 0)
             _context.MockExamAnswerOptions.RemoveRange(answer.SelectedOptions.ToList());
         answer.SelectedOptions.Clear();
@@ -370,6 +397,7 @@ public class MockExamService : IMockExamService
 
         var sections = GetEffectiveSections(attempt);
 
+        // Server-side timer enforcement: auto-complete if total exam time expired
         var totalTimeLimit = sections.Sum(s => s.TimeLimitMinutes);
         if (totalTimeLimit > 0 && DateTime.UtcNow > attempt.StartedAt.AddMinutes(totalTimeLimit))
         {
@@ -388,6 +416,7 @@ public class MockExamService : IMockExamService
 
         if (nextIndex >= sections.Count)
         {
+            // Last section — complete the exam
             await CompleteExamInternalAsync(attempt);
         }
         else
@@ -420,6 +449,7 @@ public class MockExamService : IMockExamService
         var sections = GetEffectiveSections(attempt);
         await CompleteExamInternalAsync(attempt);
 
+        // Free-mock consumption is handled at start time (piecewise access gate).
         await _context.SaveChangesAsync();
 
         return new MockExamAttemptDto(
@@ -444,6 +474,7 @@ public class MockExamService : IMockExamService
             .Where(a => a.AttemptId == attempt.Id)
             .ToListAsync();
 
+        // Load sections if not already loaded
         if (attempt.MockExam?.Sections == null || !attempt.MockExam.Sections.Any())
         {
             await _context.Entry(attempt).Reference(a => a.MockExam).Query()
@@ -486,6 +517,7 @@ public class MockExamService : IMockExamService
         return await BuildResultsAsync(attempt);
     }
 
+    /// <summary>Admin-only: results for any completed attempt (no ownership check).</summary>
     public async Task<MockExamResultDto?> GetResultsForAdminAsync(int attemptId)
     {
         var attempt = await _context.MockExamAttempts
@@ -510,6 +542,9 @@ public class MockExamService : IMockExamService
 
         var sections = GetEffectiveSections(attempt);
 
+        // Correctness is re-derived from the CURRENT question (correct option + the
+        // user's stored selection), so edits to a question/options are reflected in
+        // old reviews instead of showing stale results.
         static (bool answered, bool correct) Evaluate(MockExamAnswer a)
         {
             var correctIds = a.Question.AnswerOptions.Where(o => o.IsCorrect).Select(o => o.Id).OrderBy(x => x).ToList();
@@ -524,6 +559,7 @@ public class MockExamService : IMockExamService
             return (answered, correct);
         }
 
+        // Section results
         var sectionResults = new List<MockExamSectionResultDto>();
         for (int si = 0; si < sections.Count; si++)
         {
@@ -541,6 +577,7 @@ public class MockExamService : IMockExamService
             ));
         }
 
+        // Answer review
         var answerReview = allAnswers.Select(a =>
         {
             var correctOption = a.Question.AnswerOptions.FirstOrDefault(o => o.IsCorrect);
@@ -634,13 +671,14 @@ public class MockExamService : IMockExamService
 
         if (attempt == null) return null;
 
+        // Auto-complete if total exam time expired
         var effectiveSections = GetEffectiveSections(attempt);
         var totalTimeLimit = effectiveSections.Sum(s => s.TimeLimitMinutes);
         if (totalTimeLimit > 0 && DateTime.UtcNow > attempt.StartedAt.AddMinutes(totalTimeLimit))
         {
             await CompleteExamInternalAsync(attempt);
             await _context.SaveChangesAsync();
-            return null;
+            return null; // No longer active
         }
 
         return new MockExamAttemptDto(

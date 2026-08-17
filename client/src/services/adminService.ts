@@ -38,6 +38,7 @@ export interface AdminCreateSchool {
 export type AdminUpdateSchoolBranding = Omit<AdminSchoolBranding, 'id' | 'slug' | 'isActive' | 'isApproved' | 'ownerUserId'>;
 
 const adminService = {
+  // ─── Questions ───────────────────────────────────────────
   getQuestions: (examTypeCode?: string, topic?: string, difficulty?: string, page: number = 1, pageSize: number = 50, section?: string, search?: string) => {
     const params = new URLSearchParams();
     if (examTypeCode) params.set('examTypeCode', examTypeCode);
@@ -101,6 +102,7 @@ const adminService = {
   getStats: () =>
     api.get<QuestionStats>('/admin/stats').then(r => r.data),
 
+  // ─── Users ───────────────────────────────────────────────
   getUsers: (role?: string, search?: string, page: number = 1, pageSize: number = 50, includeDeleted: boolean = false) => {
     const params = new URLSearchParams();
     if (role) params.set('role', role);
@@ -131,6 +133,7 @@ const adminService = {
   getUserStats: () =>
     api.get<AdminUserStats>('/admin/users/stats').then(r => r.data),
 
+  // ─── Dashboard & Topics ──────────────────────────────────
   getDashboard: () =>
     api.get<AdminDashboard>('/admin/dashboard').then(r => r.data),
 
@@ -161,6 +164,7 @@ const adminService = {
   deleteSection: (id: number) =>
     api.delete(`/admin/sections/${id}`),
 
+  // ─── Exam Types ──────────────────────────────────────────
   getExamTypes: () =>
     api.get<{ code: string; name: string }[]>('/admin/exam-types').then(r => r.data),
 
@@ -173,6 +177,7 @@ const adminService = {
   deleteExamType: (code: string) =>
     api.delete(`/admin/exam-types/${code}`),
 
+  // ─── Block / Unblock (OP-14) ─────────────────────────────
   blockUser: (id: number, reason?: string) =>
     api.post<AdminUser>(`/admin/users/${id}/block`, { reason }).then(r => r.data),
 
@@ -182,11 +187,13 @@ const adminService = {
   resetFreeMock: (id: number) =>
     api.post<AdminUser>(`/admin/users/${id}/reset-free-mock`).then(r => r.data),
 
+  // ─── Restore (OP-9) ──────────────────────────────────────
   restoreQuestion: (id: number) =>
     api.post(`/admin/questions/${id}/restore`).then(r => r.data),
 
   restoreUser: (id: number) =>
     api.post(`/admin/users/${id}/restore`).then(r => r.data),
+  // ─── CSV Export (OP-18) ─────────────────────────────────────────
   exportQuestionsCsv: (examTypeCode?: string, difficulty?: string) => {
     const params = new URLSearchParams();
     if (examTypeCode) params.set('examTypeCode', examTypeCode);
@@ -212,6 +219,7 @@ const adminService = {
     });
   },
 
+  // ─── Audit Logs (OP-7 / OP-23) ───────────────────────────
   getAuditLogs: (filters: {
     action?: string;
     entityType?: string;
@@ -250,6 +258,7 @@ const adminService = {
     }>(`/admin/audit-logs?${qs}`).then(r => r.data);
   },
 
+  // ─── System Health (OP-23) ────────────────────
   getSystemHealth: () =>
     api.get<{
       status: string;
@@ -285,6 +294,7 @@ const adminService = {
       };
     }>('/admin/system/health').then(r => r.data),
 
+  // ─── Jobs (OP-12) ────────────────────
   getJobsStatus: () =>
     api.get<{ jobs: Array<{
       id: string; cron: string; queue: string;
@@ -296,6 +306,7 @@ const adminService = {
   triggerJob: (jobId: string) =>
     api.post<{ message: string }>(`/admin/jobs/${jobId}/trigger`).then(r => r.data),
 
+  // ─── User Activity (OP-23) ────────────────────
   getUserActivity: (userId: number, page = 1, pageSize = 30) =>
     api.get<{
       user: {
@@ -332,6 +343,7 @@ const adminService = {
       amount: number; currency: string; status: string; purchasedAt: string;
     }>>(`/admin/users/${userId}/purchases`).then(r => r.data),
 
+  // ─── Tutor Moderation (T-10) ──────────────────────────────
   getTutors: () =>
     api.get<Array<{
       tutorProfileId: number;
@@ -368,6 +380,7 @@ const adminService = {
     api.post<{ hasPaidSubscription: boolean; subscriptionExpiresAt: string | null; tutorProfileId: number }>(
       `/admin/tutors/${tutorProfileId}/toggle-subscription`).then(r => r.data),
 
+  // ─── Schools (all) ───────────────────────────────────
   getAllSchools: () =>
     api.get<Array<{
       id: number; name: string; slug: string; logoUrl: string | null;
@@ -388,6 +401,7 @@ const adminService = {
   deleteSchool: (schoolId: number) =>
     api.delete(`/admin/schools/${schoolId}`).then(r => r.data),
 
+  // ─── School branding / white-label editor (admin) ────
   getSchoolBranding: (schoolId: number) =>
     api.get<AdminSchoolBranding>(`/admin/schools/${schoolId}/branding`).then(r => r.data),
 
@@ -397,6 +411,7 @@ const adminService = {
   updateSchoolBranding: (schoolId: number, data: Partial<AdminUpdateSchoolBranding>) =>
     api.put<{ updated: boolean; schoolId: number }>(`/admin/schools/${schoolId}/branding`, data).then(r => r.data),
 
+  // ─── Pending Schools (approval flow) ─────────────────
   getPendingSchools: () =>
     api.get<Array<{ id: number; name: string; slug: string; ownerName: string; ownerEmail: string; createdAt: string }>>('/admin/schools/pending').then(r => r.data),
 
@@ -415,7 +430,9 @@ const adminService = {
   getPendingCounts: () =>
     api.get<{ pendingSchools: number; pendingVerifications: number; total: number }>('/admin/pending-counts').then(r => r.data),
 
+  // ─── Content Management ──────────────────────────────
 
+  // Lessons
   getLessons: (topicId?: number) =>
     api.get<Array<{ id: number; topicId: number; topicName: string; title: string; videoUrl: string | null; sortOrder: number; stepCount: number }>>('/admin/content/lessons', { params: topicId ? { topicId } : {} }).then(r => r.data),
   createLesson: (data: { topicId: number; title: string; content: string; videoUrl?: string; sortOrder?: number }) =>
@@ -425,6 +442,7 @@ const adminService = {
   deleteLesson: (id: number) =>
     api.delete(`/admin/content/lessons/${id}`).then(r => r.data),
 
+  // Flashcard Decks
   getDecks: (examTypeCode?: string) =>
     api.get<Array<{ id: number; title: string; description: string | null; examTypeCode: string | null; topicId: number | null; topicName: string | null; isSystem: boolean; cardCount: number; createdAt: string }>>('/admin/content/decks', { params: examTypeCode ? { examTypeCode } : {} }).then(r => r.data),
   createDeck: (data: { title: string; description?: string; examTypeCode?: string; topicId?: number }) =>
@@ -434,6 +452,7 @@ const adminService = {
   deleteDeck: (id: number) =>
     api.delete(`/admin/content/decks/${id}`).then(r => r.data),
 
+  // Flashcards
   getCards: (deckId: number) =>
     api.get<Array<{ id: number; deckId: number; front: string; back: string; sortOrder: number }>>(`/admin/content/decks/${deckId}/cards`).then(r => r.data),
   createCard: (data: { deckId: number; front: string; back: string; sortOrder?: number }) =>
@@ -443,6 +462,7 @@ const adminService = {
   deleteCard: (id: number) =>
     api.delete(`/admin/content/cards/${id}`).then(r => r.data),
 
+  // Formulas
   getFormulas: (topicId?: number) =>
     api.get<Array<{ id: number; topicId: number; topicName: string; title: string; formula: string; description: string | null; sortOrder: number }>>('/admin/content/formulas', { params: topicId ? { topicId } : {} }).then(r => r.data),
   createFormula: (data: { topicId: number; title: string; formula: string; description?: string; sortOrder?: number }) =>
@@ -452,6 +472,7 @@ const adminService = {
   deleteFormula: (id: number) =>
     api.delete(`/admin/content/formulas/${id}`).then(r => r.data),
 
+  // Strategies
   getStrategies: (examTypeCode?: string) =>
     api.get<Array<{ id: number; examTypeCode: string; title: string; summary: string; category: string; estimatedReadMinutes: number; sortOrder: number }>>('/admin/content/strategies', { params: examTypeCode ? { examTypeCode } : {} }).then(r => r.data),
   getStrategy: (id: number) =>
@@ -463,6 +484,7 @@ const adminService = {
   deleteStrategy: (id: number) =>
     api.delete(`/admin/content/strategies/${id}`).then(r => r.data),
 
+  // Drill Templates
   getDrills: () =>
     api.get<Array<{ id: number; title: string; description: string | null; drillType: string; examTypeCode: string | null; topicId: number | null; topicName: string | null; questionCount: number; timeLimitMinutes: number | null; isActive: boolean; sortOrder: number }>>('/admin/content/drills').then(r => r.data),
   createDrill: (data: { title: string; description?: string; drillType: string; examTypeCode?: string; topicId?: number; questionCount?: number; timeLimitMinutes?: number; isActive?: boolean; sortOrder?: number }) =>
@@ -472,6 +494,7 @@ const adminService = {
   deleteDrill: (id: number) =>
     api.delete(`/admin/content/drills/${id}`).then(r => r.data),
 
+  // ─── Trash / Recycle Bin ─────────────────────────────────
   getTrash: () =>
     api.get<TrashSummary>('/admin/trash').then(r => r.data),
 
@@ -487,6 +510,7 @@ const adminService = {
   getTutorContent: (params: { tutorId?: number; page?: number; pageSize?: number } = {}) =>
     api.get('/admin/content/tutor-content', { params }).then(r => r.data),
 
+  // ─── Database Backups ────────────────────────────────────
   listBackups: () =>
     api.get<Array<{ fileName: string; sizeBytes: number; createdAtUtc: string }>>('/admin/backups').then(r => r.data),
   createBackup: () =>

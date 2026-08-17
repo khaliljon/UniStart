@@ -876,22 +876,6 @@ export interface UpgradeResponse {
   message: string;
 }
 
-export interface NotificationPreferences {
-  welcomeEmail: boolean;
-  streakReminder: boolean;
-  weeklyDigest: boolean;
-  studyPlanReminder: boolean;
-  achievementNotification: boolean;
-}
-
-export interface UpdateNotificationPreferences {
-  welcomeEmail?: boolean;
-  streakReminder?: boolean;
-  weeklyDigest?: boolean;
-  studyPlanReminder?: boolean;
-  achievementNotification?: boolean;
-}
-
 export interface TutorCard {
   userId: number;
   name: string;

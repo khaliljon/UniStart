@@ -673,7 +673,6 @@ public class AdminController : ControllerBase
     {
         var user = await _db.Users
             .AsNoTracking()
-            .Include(u => u.NotificationPreferences)
             .FirstOrDefaultAsync(u => u.Id == id);
         if (user == null) return NotFound(new { error = "User not found" });
 

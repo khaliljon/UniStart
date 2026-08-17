@@ -8,7 +8,7 @@ function ContactsPage() {
   const s = cscaStrings[locale];
 
   const contacts = [
-    { label: 'Email', value: SOCIAL_LINKS.email, href: `mailto:${SOCIAL_LINKS.email}`, hanzi: '邮' },
+    { label: 'Email', value: SOCIAL_LINKS.email, href: SOCIAL_LINKS.emailCompose, hanzi: '邮' },
     { label: s.socialSupportBot, value: '@unistart_support_bot', href: SOCIAL_LINKS.supportBot, hanzi: '助' },
     { label: s.socialTelegram, value: '@unistart_csca', href: SOCIAL_LINKS.telegramChannel, hanzi: '电' },
     { label: 'Instagram', value: '@unistartkz', href: SOCIAL_LINKS.instagram, hanzi: '图' },
