@@ -109,6 +109,7 @@ export interface CscaStrings {
   questionsCount: string;
   supportSocials: string;
   supportSocialsDesc: string;
+  // exam dates (About page)
   examDatesTitle: string;
   examDatesLead: string;
   regOpensLabel: string;
