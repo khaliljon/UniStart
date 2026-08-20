@@ -201,31 +201,51 @@ public class MockExamService : IMockExamService
             var questions = await _context.Questions
                 .Where(q => q.Topic.SectionId == section.ExamSectionId.Value)
                 .ToListAsync();
+            if (questions.Count == 0) continue;
 
-            // Shuffle questions randomly (Fisher-Yates)
-            for (int i = questions.Count - 1; i > 0; i--)
-            {
-                int j = rng.Next(i + 1);
-                (questions[i], questions[j]) = (questions[j], questions[i]);
-            }
+            Shuffle(questions, rng);
 
-            // Anti-repeat: unseen questions first, then seen ones (both already
-            // shuffled), so a fresh session avoids repeats while the pool allows.
-            questions = questions.Where(q => !seenSet.Contains(q.Id))
-                .Concat(questions.Where(q => seenSet.Contains(q.Id)))
-                .ToList();
+            // Anti-repeat: prefer questions the user hasn't seen in prior sessions.
+            List<Question> AntiRepeat(IEnumerable<Question> qs) =>
+                qs.Where(q => !seenSet.Contains(q.Id))
+                  .Concat(qs.Where(q => seenSet.Contains(q.Id)))
+                  .ToList();
 
             // Limit to regulation question count if set
             var count = section.QuestionCount > 0 && section.QuestionCount < questions.Count
                 ? section.QuestionCount
                 : questions.Count;
 
-            for (int qi = 0; qi < count; qi++)
+            // Guarantee at least one question per non-empty topic of the section,
+            // then fill the rest (anti-repeat aware) up to the count.
+            var byTopic = questions.GroupBy(q => q.TopicId).Select(g => AntiRepeat(g)).ToList();
+            Shuffle(byTopic, rng);
+
+            var selected = new List<Question>();
+            var usedIds = new HashSet<int>();
+            foreach (var topicQuestions in byTopic)
+            {
+                if (selected.Count >= count) break;
+                selected.Add(topicQuestions[0]);
+                usedIds.Add(topicQuestions[0].Id);
+            }
+            if (selected.Count < count)
+            {
+                foreach (var q in AntiRepeat(questions.Where(q => !usedIds.Contains(q.Id))))
+                {
+                    if (selected.Count >= count) break;
+                    selected.Add(q);
+                    usedIds.Add(q.Id);
+                }
+            }
+            Shuffle(selected, rng);
+
+            for (int qi = 0; qi < selected.Count; qi++)
             {
                 _context.MockExamAnswers.Add(new MockExamAnswer
                 {
                     Attempt = attempt,
-                    QuestionId = questions[qi].Id,
+                    QuestionId = selected[qi].Id,
                     SectionIndex = si,
                     SortOrder = qi,
                     SelectedOptionId = null,
@@ -247,6 +267,15 @@ public class MockExamService : IMockExamService
             sections.Sum(s => s.TimeLimitMinutes),
             sections.Select(s => s.Name)
         );
+    }
+
+    private static void Shuffle<T>(IList<T> list, Random rng)
+    {
+        for (int i = list.Count - 1; i > 0; i--)
+        {
+            int j = rng.Next(i + 1);
+            (list[i], list[j]) = (list[j], list[i]);
+        }
     }
 
     public async Task<MockExamSectionStateDto?> GetCurrentSectionAsync(int userId, int attemptId)
