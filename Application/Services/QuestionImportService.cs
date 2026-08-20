@@ -14,6 +14,7 @@ public class QuestionImportService : IQuestionImportService
     private readonly IQuestionExtractorService _extractor;
     private readonly IStrictDocxParserService _strictParser;
     private readonly ILlmExtractionService _llm;
+    private readonly IImageUploadService _imageUpload;
     private readonly ILogger<QuestionImportService> _logger;
 
     public QuestionImportService(
@@ -22,6 +23,7 @@ public class QuestionImportService : IQuestionImportService
         IQuestionExtractorService extractor,
         IStrictDocxParserService strictParser,
         ILlmExtractionService llm,
+        IImageUploadService imageUpload,
         ILogger<QuestionImportService> logger)
     {
         _db = db;
@@ -29,7 +31,22 @@ public class QuestionImportService : IQuestionImportService
         _extractor = extractor;
         _strictParser = strictParser;
         _llm = llm;
+        _imageUpload = imageUpload;
         _logger = logger;
+    }
+
+    private async Task<string?> TryUploadImageAsync(ExtractedQuestion q)
+    {
+        if (q.ImageData is not { Length: > 0 }) return null;
+        try
+        {
+            return await _imageUpload.UploadBytesAsync(q.ImageData, q.ImageContentType ?? "image/png");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Skipped embedded question image ({ContentType})", q.ImageContentType);
+            return null;
+        }
     }
 
     public async Task<QuestionImportJobDto> CreateImportJobAsync(
@@ -134,6 +151,7 @@ public class QuestionImportService : IQuestionImportService
                     _ => 0.0
                 };
 
+                var imageUrl = await TryUploadImageAsync(q);
                 var draft = new ImportedQuestionDraft
                 {
                     ImportJobId = jobId,
@@ -141,6 +159,7 @@ public class QuestionImportService : IQuestionImportService
                     OptionsJson = JsonSerializer.Serialize(q.Options),
                     Explanation = q.Explanation,
                     Hint = q.Hint,
+                    ImageUrl = imageUrl,
                     TopicId = defaultTopicId,
                     Difficulty = difficulty,
                     IrtA = 1.0,
@@ -229,6 +248,7 @@ public class QuestionImportService : IQuestionImportService
         if (dto.IrtA.HasValue) draft.IrtA = dto.IrtA.Value;
         if (dto.IrtB.HasValue) draft.IrtB = dto.IrtB.Value;
         if (dto.IrtC.HasValue) draft.IrtC = dto.IrtC.Value;
+        if (dto.ImageUrl != null) draft.ImageUrl = dto.ImageUrl == string.Empty ? null : dto.ImageUrl;
 
         await _db.SaveChangesAsync();
         return MapDraft(draft);
@@ -248,6 +268,7 @@ public class QuestionImportService : IQuestionImportService
             Difficulty = draft.Difficulty,
             Explanation = draft.Explanation,
             Hint = draft.Hint,
+            ImageUrl = draft.ImageUrl,
             DifficultyParam = draft.IrtB,
             DiscriminationParam = draft.IrtA,
             GuessParam = draft.IrtC,
@@ -320,6 +341,7 @@ public class QuestionImportService : IQuestionImportService
                 Difficulty = draft.Difficulty,
                 Explanation = draft.Explanation,
                 Hint = draft.Hint,
+                ImageUrl = draft.ImageUrl,
                 DifficultyParam = draft.IrtB,
                 DiscriminationParam = draft.IrtA,
                 GuessParam = draft.IrtC,
@@ -502,7 +524,7 @@ public class QuestionImportService : IQuestionImportService
             d.Explanation, d.Hint, d.TopicId, d.Topic?.Name,
             d.Difficulty.ToString(), d.IrtA, d.IrtB, d.IrtC,
             d.Status.ToString(), d.Source.ToString(),
-            d.CreatedAt, d.ReviewedAt
+            d.CreatedAt, d.ReviewedAt, d.ImageUrl
         );
     }
 
@@ -739,6 +761,7 @@ public class QuestionImportService : IQuestionImportService
                     ? defaultTopicId
                     : topicMap.GetValueOrDefault(questionNum) ?? defaultTopicId;
 
+                var imageUrl = await TryUploadImageAsync(q);
                 var draft = new ImportedQuestionDraft
                 {
                     ImportJobId = jobId,
@@ -746,6 +769,7 @@ public class QuestionImportService : IQuestionImportService
                     OptionsJson = JsonSerializer.Serialize(q.Options),
                     Explanation = q.Explanation,
                     Hint = q.Hint,
+                    ImageUrl = imageUrl,
                     TopicId = topicId,
                     Difficulty = difficulty,
                     IrtA = 1.0,

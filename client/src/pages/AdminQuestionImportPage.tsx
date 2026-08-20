@@ -226,6 +226,18 @@ function AdminQuestionImportPage({ embedded = false }: { embedded?: boolean } = 
     }
   };
 
+  const handleDraftImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const url = await adminService.uploadImage(file);
+      setEditForm((f) => ({ ...f, imageUrl: url }));
+    } catch {
+      setError('Failed to upload image');
+    }
+    e.target.value = '';
+  };
+
   const startEdit = (draft: ImportedQuestionDraft) => {
     setEditingDraft(draft.id);
     setEditMulti(draft.options.filter((o) => o.isCorrect).length > 1);
@@ -233,6 +245,7 @@ function AdminQuestionImportPage({ embedded = false }: { embedded?: boolean } = 
       questionText: draft.questionText,
       explanation: draft.explanation ?? '',
       difficulty: draft.difficulty,
+      imageUrl: draft.imageUrl ?? '',
       options: draft.options.map((o) => ({ text: o.text, isCorrect: o.isCorrect })),
     });
   };
@@ -722,6 +735,29 @@ function AdminQuestionImportPage({ embedded = false }: { embedded?: boolean } = 
                         />
                       ) : (
                         <p style={{ fontWeight: 500, margin: '0.25rem 0 0.5rem' }}>{draft.questionText}</p>
+                      )}
+
+                      {editingDraft === draft.id ? (
+                        <div style={{ margin: '0 0 0.5rem' }}>
+                          {editForm.imageUrl ? (
+                            <div style={{ position: 'relative', display: 'inline-block' }}>
+                              <img src={editForm.imageUrl} alt="" style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 6, display: 'block' }} />
+                              <button
+                                onClick={() => setEditForm({ ...editForm, imageUrl: '' })}
+                                title="Удалить изображение"
+                                style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(0,0,0,0.55)', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: '0.8rem', lineHeight: 1, padding: '0.15rem 0.35rem' }}
+                              >✕</button>
+                            </div>
+                          ) : null}
+                          <label className="btn btn-secondary" style={{ fontSize: '0.72rem', padding: '0.2rem 0.55rem', cursor: 'pointer', marginTop: '0.35rem', display: 'inline-block' }}>
+                            {editForm.imageUrl ? 'Заменить изображение' : 'Добавить изображение'}
+                            <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleDraftImageUpload} />
+                          </label>
+                        </div>
+                      ) : (
+                        draft.imageUrl && (
+                          <img src={draft.imageUrl} alt="" style={{ maxWidth: '100%', maxHeight: 260, borderRadius: 6, margin: '0.25rem 0 0.5rem', display: 'block' }} />
+                        )
                       )}
 
                       {editingDraft === draft.id ? (

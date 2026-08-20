@@ -44,7 +44,8 @@ public record ImportedQuestionDraftDto(
     string Status,
     string Source,
     DateTime CreatedAt,
-    DateTime? ReviewedAt
+    DateTime? ReviewedAt,
+    string? ImageUrl
 );
 
 public record DraftOptionDto(
@@ -61,7 +62,8 @@ public record UpdateDraftDto(
     string? Difficulty,
     double? IrtA,
     double? IrtB,
-    double? IrtC
+    double? IrtC,
+    string? ImageUrl = null
 );
 
 /// <summary>Extracted raw question from a file (before saving to DB)</summary>
@@ -70,7 +72,9 @@ public record ExtractedQuestion(
     List<DraftOptionDto> Options,
     string? Explanation,
     string? Hint,
-    string? Difficulty
+    string? Difficulty,
+    byte[]? ImageData = null,
+    string? ImageContentType = null
 );
 
 // ─── Theory Import DTOs ──────────────────────────────────────

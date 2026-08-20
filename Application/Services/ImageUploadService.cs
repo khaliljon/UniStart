@@ -111,6 +111,55 @@ public class ImageUploadService : IImageUploadService, IDisposable
         return $"{_publicUrl}/{key}";
     }
 
+    public async Task<string> UploadBytesAsync(byte[] data, string contentType, CancellationToken ct = default)
+    {
+        if (data is null || data.Length == 0)
+            throw new ArgumentException("Image data is empty.");
+
+        var ext = contentType?.ToLowerInvariant() switch
+        {
+            "image/jpeg" or "image/jpg" => ".jpg",
+            "image/png" => ".png",
+            "image/webp" => ".webp",
+            "image/gif" => ".gif",
+            "image/bmp" or "image/x-ms-bmp" => ".bmp",
+            _ => null,
+        };
+        // EMF/WMF/TIFF are not renderable by browsers; caller skips these.
+        if (ext is null)
+            throw new NotSupportedException($"Unsupported image type: {contentType}");
+
+        if (data.Length > MaxBytes)
+            throw new ArgumentException("Image exceeds maximum allowed size of 5 MB.");
+
+        if (string.IsNullOrWhiteSpace(_publicUrl))
+            throw new InvalidOperationException("R2:PublicUrl is not configured. Set R2__PublicUrl environment variable.");
+
+        var client = GetClient();
+        var key = $"questions/{Guid.NewGuid():N}{ext}";
+
+        using var stream = new MemoryStream(data, writable: false);
+        var request = new PutObjectRequest
+        {
+            BucketName            = _bucket,
+            Key                   = key,
+            InputStream           = stream,
+            ContentType           = contentType,
+            DisablePayloadSigning = true,
+        };
+
+        try
+        {
+            await client.PutObjectAsync(request, ct);
+        }
+        catch (Amazon.S3.AmazonS3Exception ex)
+        {
+            throw new InvalidOperationException($"R2 upload failed ({(int)ex.StatusCode}): {ex.Message}", ex);
+        }
+
+        return $"{_publicUrl}/{key}";
+    }
+
     public PdfUploadTarget CreatePdfUploadTarget()
     {
         if (string.IsNullOrWhiteSpace(_publicUrl))

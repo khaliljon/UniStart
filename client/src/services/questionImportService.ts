@@ -57,6 +57,7 @@ export interface ImportedQuestionDraft {
   source: string;
   createdAt: string;
   reviewedAt: string | null;
+  imageUrl: string | null;
 }
 
 export interface UpdateDraftPayload {
@@ -69,6 +70,7 @@ export interface UpdateDraftPayload {
   irtA?: number;
   irtB?: number;
   irtC?: number;
+  imageUrl?: string;
 }
 
 

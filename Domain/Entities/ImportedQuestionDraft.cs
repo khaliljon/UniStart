@@ -10,6 +10,7 @@ public class ImportedQuestionDraft
 
     public string? Explanation { get; set; }
     public string? Hint { get; set; }
+    public string? ImageUrl { get; set; }
     public int? TopicId { get; set; }
     public QuestionDifficulty Difficulty { get; set; } = QuestionDifficulty.Medium;
 

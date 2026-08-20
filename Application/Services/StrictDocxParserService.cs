@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.RegularExpressions;
+using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 using UniStart.Application.DTOs;
@@ -22,7 +23,7 @@ public class StrictDocxParserService : IStrictDocxParserService
 
     public List<ExtractedQuestion> Parse(Stream docxStream)
     {
-        var lines = FlattenToLines(docxStream);
+        var blocks = FlattenToBlocks(docxStream);
         var result = new List<ExtractedQuestion>();
 
         Builder? cur = null;
@@ -40,13 +41,26 @@ public class StrictDocxParserService : IStrictDocxParserService
                     cur.Options,
                     expl.Length > 0 ? expl : null,
                     null,
-                    cur.Difficulty));
+                    cur.Difficulty,
+                    cur.ImageData,
+                    cur.ImageContentType));
             }
             cur = null;
         }
 
-        foreach (var raw in lines)
+        foreach (var block in blocks)
         {
+            if (block is ImageBlock imageBlock)
+            {
+                if (cur != null && cur.ImageData == null)
+                {
+                    cur.ImageData = imageBlock.Data;
+                    cur.ImageContentType = imageBlock.ContentType;
+                }
+                continue;
+            }
+
+            var raw = ((TextLine)block).Text;
             var line = raw.Trim();
             if (line.Length == 0) continue;
 
@@ -102,30 +116,70 @@ public class StrictDocxParserService : IStrictDocxParserService
     private static string Capitalize(string s) =>
         string.IsNullOrEmpty(s) ? s : char.ToUpper(s[0]) + s.Substring(1).ToLowerInvariant();
 
-    private static List<string> FlattenToLines(Stream stream)
+    private abstract record DocxBlock;
+    private sealed record TextLine(string Text) : DocxBlock;
+    private sealed record ImageBlock(byte[] Data, string ContentType) : DocxBlock;
+
+    private static List<DocxBlock> FlattenToBlocks(Stream stream)
     {
-        var lines = new List<string>();
+        var blocks = new List<DocxBlock>();
         using var doc = WordprocessingDocument.Open(stream, false);
-        var body = doc.MainDocumentPart?.Document?.Body;
-        if (body == null) return lines;
+        var mainPart = doc.MainDocumentPart;
+        var body = mainPart?.Document?.Body;
+        if (mainPart == null || body == null) return blocks;
 
         foreach (var el in body.ChildElements)
         {
             switch (el)
             {
                 case Paragraph p:
-                    lines.Add(p.InnerText);
+                    blocks.Add(new TextLine(p.InnerText));
+                    blocks.AddRange(ExtractImages(p, mainPart));
                     break;
                 case Table t:
                     foreach (var row in t.Elements<TableRow>())
                     {
                         var cells = row.Elements<TableCell>().Select(c => c.InnerText.Trim()).ToList();
-                        lines.Add(string.Join("\t", cells));
+                        blocks.Add(new TextLine(string.Join("\t", cells)));
+                        blocks.AddRange(ExtractImages(row, mainPart));
                     }
                     break;
             }
         }
-        return lines;
+        return blocks;
+    }
+
+    private static IEnumerable<ImageBlock> ExtractImages(OpenXmlElement container, MainDocumentPart mainPart)
+    {
+        var result = new List<ImageBlock>();
+
+        foreach (var blip in container.Descendants<DocumentFormat.OpenXml.Drawing.Blip>())
+        {
+            var rId = blip.Embed?.Value;
+            if (!string.IsNullOrEmpty(rId)) AddImage(result, mainPart, rId);
+        }
+        foreach (var imageData in container.Descendants<DocumentFormat.OpenXml.Vml.ImageData>())
+        {
+            var rId = imageData.RelationshipId?.Value;
+            if (!string.IsNullOrEmpty(rId)) AddImage(result, mainPart, rId);
+        }
+        return result;
+    }
+
+    private static void AddImage(List<ImageBlock> result, MainDocumentPart mainPart, string rId)
+    {
+        try
+        {
+            if (mainPart.GetPartById(rId) is not ImagePart imagePart) return;
+            using var s = imagePart.GetStream();
+            using var ms = new MemoryStream();
+            s.CopyTo(ms);
+            var bytes = ms.ToArray();
+            if (bytes.Length > 0) result.Add(new ImageBlock(bytes, imagePart.ContentType));
+        }
+        catch
+        {
+        }
     }
 
     private enum Stage { Text, Options, Explanation }
@@ -137,5 +191,7 @@ public class StrictDocxParserService : IStrictDocxParserService
         public readonly StringBuilder Explanation = new();
         public string Difficulty = "Medium";
         public Stage Stage = Stage.Text;
+        public byte[]? ImageData;
+        public string? ImageContentType;
     }
 }
