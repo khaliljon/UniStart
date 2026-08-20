@@ -606,7 +606,8 @@ public class MockExamService : IMockExamService
                 a.Question.Explanation,
                 a.Question.IsMultipleChoice,
                 selectedIds,
-                correctIds
+                correctIds,
+                a.Question.ImageUrl
             );
         }).ToList();
 

@@ -726,6 +726,7 @@ export interface MockExamAnswerReview {
   isCorrect: boolean;
   isUnanswered: boolean;
   explanation: string | null;
+  imageUrl: string | null;
   isMultipleChoice: boolean;
   selectedOptionIds: number[];
   correctOptionIds: number[];

@@ -132,7 +132,8 @@ public record MockExamAnswerReviewDto(
     string? Explanation,
     bool IsMultipleChoice = false,
     IEnumerable<int>? SelectedOptionIds = null,
-    IEnumerable<int>? CorrectOptionIds = null
+    IEnumerable<int>? CorrectOptionIds = null,
+    string? ImageUrl = null
 );
 
 public record MockExamHistoryDto(

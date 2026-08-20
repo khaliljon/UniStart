@@ -775,6 +775,9 @@ function MockExamPage() {
                   <p style={{ fontWeight: 500, marginBottom: '0.5rem', fontSize: '0.9rem' }}>
                     {results.answerReview.indexOf(a) + 1}. {a.questionText}
                   </p>
+                  {a.imageUrl && (
+                    <img src={a.imageUrl} alt="" style={{ maxWidth: '100%', maxHeight: 280, objectFit: 'contain', borderRadius: 8, margin: '0 0 0.5rem', display: 'block' }} />
+                  )}
                   {!a.isUnanswered && !a.isCorrect && (
                     <p style={{ color: 'var(--error-color)', fontSize: '0.85rem', margin: '0.25rem 0' }}>
                       Your answer: {a.selectedOptionText}

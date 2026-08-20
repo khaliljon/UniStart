@@ -16,6 +16,7 @@ interface MockReviewAnswer {
   isCorrect: boolean;
   isUnanswered: boolean;
   explanation: string | null;
+  imageUrl: string | null;
 }
 interface MockReview {
   examTitle: string;
@@ -221,6 +222,9 @@ export default function AdminUserActivityPage() {
                         {i + 1}. {a.sectionName} • {a.topicName} — {a.isCorrect ? '✓' : a.isUnanswered ? '—' : '✕'}
                       </div>
                       <p style={{ fontWeight: 500, margin: '0 0 0.5rem', fontSize: '0.9rem' }}>{a.questionText}</p>
+                      {a.imageUrl && (
+                        <img src={a.imageUrl} alt="" style={{ maxWidth: '100%', maxHeight: 240, objectFit: 'contain', borderRadius: 8, margin: '0 0 0.5rem', display: 'block' }} />
+                      )}
                       {!a.isUnanswered && !a.isCorrect && (
                         <p style={{ color: 'var(--error-color)', fontSize: '0.85rem', margin: '0.15rem 0' }}>{a.selectedOptionText}</p>
                       )}
