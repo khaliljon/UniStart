@@ -354,7 +354,7 @@ function AdminQuestionsPage() {
         text: form.text,
         difficulty: form.difficulty,
         explanation: form.explanation || undefined,
-        imageUrl: form.imageUrl || undefined,
+        imageUrl: form.imageUrl,
         difficultyParam: showIrtParams ? form.difficultyParam ?? undefined : undefined,
         discriminationParam: showIrtParams ? form.discriminationParam ?? undefined : undefined,
         guessParam: showIrtParams ? form.guessParam ?? undefined : undefined,
@@ -1089,6 +1089,10 @@ function AdminQuestionsPage() {
                   {selected.text}
                 </div>
 
+                {selected.imageUrl && (
+                  <img src={selected.imageUrl} alt="" style={{ maxWidth: '100%', maxHeight: 280, objectFit: 'contain', borderRadius: 8, marginBottom: '1rem', display: 'block' }} />
+                )}
+
                 <div style={{ marginBottom: '1rem' }}>
                   {selected.answerOptions.map((opt, i) => (
                     <div key={opt.id} style={{
@@ -1398,7 +1402,15 @@ function AdminQuestionsPage() {
                       </label>
                     </div>
                     {form.imageUrl && (
-                      <img src={form.imageUrl} alt="preview" style={{ marginTop: '0.5rem', maxWidth: '100%', maxHeight: '200px', borderRadius: '0.5rem', objectFit: 'contain' }} />
+                      <div style={{ marginTop: '0.5rem', position: 'relative', display: 'inline-block' }}>
+                        <img src={form.imageUrl} alt="preview" style={{ maxWidth: '100%', maxHeight: '200px', borderRadius: '0.5rem', objectFit: 'contain', display: 'block' }} />
+                        <button
+                          type="button"
+                          onClick={() => setForm(f => ({ ...f, imageUrl: '' }))}
+                          title="Убрать изображение"
+                          style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(0,0,0,0.55)', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: '0.8rem', lineHeight: 1, padding: '0.15rem 0.4rem' }}
+                        >✕</button>
+                      </div>
                     )}
                   </FormField>
 
