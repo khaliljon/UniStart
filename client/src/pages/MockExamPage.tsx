@@ -51,6 +51,7 @@ function MockExamPage() {
   const [results, setResults] = useState<MockExamResult | null>(null);
   const [showReview, setShowReview] = useState(false);
   const [reviewFilter, setReviewFilter] = useState<'all' | 'correct' | 'incorrect' | 'unanswered'>('all');
+  const [showFinishConfirm, setShowFinishConfirm] = useState(false);
 
   const loadExams = useCallback(async () => {
     setLoading(true);
@@ -539,11 +540,7 @@ function MockExamPage() {
             <button
               className="btn btn-primary"
               style={{ background: 'var(--success-color)', fontSize: '0.8rem', padding: '6px 16px' }}
-              onClick={() => {
-                if (window.confirm('Finish the exam? Unanswered questions will count as skipped.')) {
-                  handleCompleteSection();
-                }
-              }}
+              onClick={() => setShowFinishConfirm(true)}
             >
               Finish Exam
             </button>
@@ -552,6 +549,28 @@ function MockExamPage() {
             </div>
           </div>
         </div>
+
+        {showFinishConfirm && (
+          <div
+            onClick={() => setShowFinishConfirm(false)}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000, padding: '1rem' }}
+          >
+            <div onClick={e => e.stopPropagation()} style={{ background: 'var(--card-background)', borderRadius: 12, padding: '1.5rem', maxWidth: 360, width: '100%', boxShadow: '0 10px 40px rgba(0,0,0,0.3)' }}>
+              <h3 style={{ margin: '0 0 0.5rem' }}>Finish the exam?</h3>
+              <p style={{ margin: '0 0 1.25rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Unanswered questions will count as skipped.</p>
+              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+                <button className="btn btn-secondary" onClick={() => setShowFinishConfirm(false)}>Cancel</button>
+                <button
+                  className="btn btn-primary"
+                  style={{ background: 'var(--success-color)' }}
+                  onClick={() => { setShowFinishConfirm(false); handleCompleteSection(); }}
+                >
+                  Finish Exam
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: '1rem' }}>
           {questions.map((q, i) => (
