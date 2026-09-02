@@ -7,7 +7,8 @@ public record AdminMockSectionInputDto(
     int TimeLimitMinutes,
     int QuestionCount,
     int SortOrder,
-    string? Instructions
+    string? Instructions,
+    List<int>? TopicOrder = null
 );
 
 public record AdminMockSectionDto(
@@ -17,7 +18,8 @@ public record AdminMockSectionDto(
     int TimeLimitMinutes,
     int QuestionCount,
     int SortOrder,
-    string? Instructions
+    string? Instructions,
+    List<int>? TopicOrder = null
 );
 
 public record AdminMockExamListItemDto(

@@ -4,6 +4,7 @@ import mockAdminService, {
   type MockSectionInput,
   type ExamTypeOption,
   type ExamSectionOption,
+  type SectionTopicOption,
 } from '../services/mockAdminService';
 import { useTranslation } from '../hooks/useTranslation';
 
@@ -12,6 +13,7 @@ function AdminMocksPage() {
   const [exams, setExams] = useState<MockExamListItem[]>([]);
   const [examTypes, setExamTypes] = useState<ExamTypeOption[]>([]);
   const [examSections, setExamSections] = useState<ExamSectionOption[]>([]);
+  const [topicsBySection, setTopicsBySection] = useState<Record<number, SectionTopicOption[]>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -57,6 +59,18 @@ function AdminMocksPage() {
     }
   }, [form.examTypeCode]);
 
+  useEffect(() => {
+    const ids = Array.from(
+      new Set(form.sections.map((s) => s.examSectionId).filter((v): v is number => !!v))
+    );
+    ids.forEach((id) => {
+      if (topicsBySection[id]) return;
+      mockAdminService.getSectionTopics(id)
+        .then((topics) => setTopicsBySection((prev) => ({ ...prev, [id]: topics })))
+        .catch(() => {});
+    });
+  }, [form.sections, topicsBySection]);
+
   const openCreate = () => {
     setEditingId(null);
     setForm({
@@ -99,6 +113,7 @@ function AdminMocksPage() {
           questionCount: s.questionCount,
           sortOrder: s.sortOrder,
           instructions: s.instructions,
+          topicOrder: s.topicOrder ?? null,
         })),
       });
       setShowForm(true);
@@ -163,6 +178,14 @@ function AdminMocksPage() {
       ...prev,
       sections: prev.sections.map((sec, i) => (i === index ? { ...sec, ...fields } : sec)),
     }));
+  };
+
+  const moveTopic = (index: number, order: number[], from: number, to: number) => {
+    if (to < 0 || to >= order.length) return;
+    const next = [...order];
+    const [m] = next.splice(from, 1);
+    next.splice(to, 0, m);
+    updateSection(index, { topicOrder: next });
   };
 
   const save = async () => {
@@ -443,6 +466,78 @@ function AdminMocksPage() {
                     placeholder="Инструкции перед стартом этой секции..."
                   />
                 </label>
+
+                {sec.examSectionId && topicsBySection[sec.examSectionId] && (() => {
+                  const topics = topicsBySection[sec.examSectionId!];
+                  const order = sec.topicOrder && sec.topicOrder.length > 0
+                    ? [
+                        ...sec.topicOrder.filter((tid) => topics.some((t) => t.id === tid)),
+                        ...topics.filter((t) => !sec.topicOrder!.includes(t.id)).map((t) => t.id),
+                      ]
+                    : null;
+                  return (
+                    <div style={{ borderTop: '1px dashed var(--border-color)', paddingTop: '0.6rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+                        <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>Порядок тем</span>
+                        {order ? (
+                          <button
+                            className="btn btn-outline"
+                            style={{ padding: '0.15rem 0.5rem', fontSize: '0.72rem' }}
+                            onClick={() => updateSection(i, { topicOrder: null })}
+                          >
+                            Сбросить (случайно)
+                          </button>
+                        ) : (
+                          <button
+                            className="btn btn-outline"
+                            style={{ padding: '0.15rem 0.5rem', fontSize: '0.72rem' }}
+                            onClick={() => updateSection(i, { topicOrder: topics.map((t) => t.id) })}
+                          >
+                            Задать порядок
+                          </button>
+                        )}
+                      </div>
+                      {!order ? (
+                        <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+                          Темы идут в случайном порядке. Нажмите «Задать порядок», чтобы зафиксировать очерёдность.
+                        </span>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                          {order.map((tid, pos) => {
+                            const t = topics.find((x) => x.id === tid);
+                            if (!t) return null;
+                            return (
+                              <div
+                                key={tid}
+                                style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.78rem', background: 'var(--bg-secondary, #f8f8f8)', borderRadius: 6, padding: '0.25rem 0.5rem' }}
+                              >
+                                <span style={{ color: 'var(--text-secondary)', minWidth: '1.2rem' }}>{pos + 1}.</span>
+                                <span style={{ flex: 1 }}>{t.name}</span>
+                                <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>{t.availableQuestions} вопр.</span>
+                                <button
+                                  className="btn btn-outline"
+                                  style={{ padding: '0 0.4rem', fontSize: '0.75rem' }}
+                                  disabled={pos === 0}
+                                  onClick={() => moveTopic(i, order, pos, pos - 1)}
+                                >
+                                  ↑
+                                </button>
+                                <button
+                                  className="btn btn-outline"
+                                  style={{ padding: '0 0.4rem', fontSize: '0.75rem' }}
+                                  disabled={pos === order.length - 1}
+                                  onClick={() => moveTopic(i, order, pos, pos + 1)}
+                                >
+                                  ↓
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             ))}
           </div>

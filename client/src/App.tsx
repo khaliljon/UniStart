@@ -116,7 +116,6 @@ function AdminRoutes() {
 function App() {
   const { isAuthenticated, user } = useAppSelector((state) => state.auth)
   const isAdmin = user?.role === 'Admin'
-  const needsPhone = isAuthenticated && !user?.phoneNumber
 
   return (
     <ToastProvider>
@@ -124,8 +123,8 @@ function App() {
     <Suspense fallback={<PageLoader />}>
     <Routes>
       <Route path="/landing" element={!isAuthenticated ? <LandingPage /> : <Navigate to="/" replace />} />
-      <Route path="/login" element={!isAuthenticated ? <LoginPage /> : <Navigate to={needsPhone ? '/complete-profile' : '/'} />} />
-      <Route path="/register" element={!isAuthenticated ? <RegisterPage /> : <Navigate to={needsPhone ? '/complete-profile' : '/'} />} />
+      <Route path="/login" element={!isAuthenticated ? <LoginPage /> : <Navigate to="/" />} />
+      <Route path="/register" element={!isAuthenticated ? <RegisterPage /> : <Navigate to="/" />} />
       <Route path="/forgot-password" element={!isAuthenticated ? <ForgotPasswordPage /> : <Navigate to="/" replace />} />
       <Route path="/privacy" element={<PrivacyPage />} />
       <Route path="/terms" element={<TermsPage />} />
@@ -137,14 +136,10 @@ function App() {
       <Route path="/csca/mocks" element={<CscaMocksPage />} />
       <Route path="/csca/about-us" element={<AboutUsPage />} />
       <Route path="/csca/contacts" element={<ContactsPage />} />
-      <Route path="/complete-profile" element={needsPhone ? <CompleteProfilePage /> : <Navigate to="/" replace />} />
+      <Route path="/complete-profile" element={isAuthenticated ? <CompleteProfilePage /> : <Navigate to="/" replace />} />
 
       {isAuthenticated ? (
-        needsPhone ? (
-          <Route path="*" element={<Navigate to="/complete-profile" />} />
-        ) : (
-          isAdmin ? AdminRoutes() : StudentRoutes()
-        )
+        isAdmin ? AdminRoutes() : StudentRoutes()
       ) : (
         <Route path="*" element={<Navigate to="/landing" />} />
       )}

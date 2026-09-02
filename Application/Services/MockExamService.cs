@@ -238,7 +238,22 @@ public class MockExamService : IMockExamService
                     usedIds.Add(q.Id);
                 }
             }
-            Shuffle(selected, rng);
+            var topicOrder = string.IsNullOrEmpty(section.TopicOrderJson)
+                ? null
+                : JsonSerializer.Deserialize<List<int>>(section.TopicOrderJson);
+            if (topicOrder is { Count: > 0 })
+            {
+                var orderIndex = new Dictionary<int, int>();
+                for (int oi = 0; oi < topicOrder.Count; oi++) orderIndex[topicOrder[oi]] = oi;
+                selected = selected
+                    .OrderBy(q => orderIndex.TryGetValue(q.TopicId, out var idx) ? idx : int.MaxValue)
+                    .ThenBy(_ => rng.Next())
+                    .ToList();
+            }
+            else
+            {
+                Shuffle(selected, rng);
+            }
 
             for (int qi = 0; qi < selected.Count; qi++)
             {

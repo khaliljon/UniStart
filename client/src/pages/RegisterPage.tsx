@@ -6,8 +6,6 @@ import { useTranslation } from '../hooks/useTranslation';
 import { useGoogleSignIn } from '../hooks/useGoogleSignIn';
 import { register, verifyEmail, clearError } from '../store/slices/authSlice';
 import { authService } from '../services/authService';
-import PhoneField from '../components/PhoneField';
-import { splitPhone, isValidPhone } from '../utils/countries';
 
 function RegisterPage() {
   const dispatch = useAppDispatch();
@@ -18,7 +16,6 @@ function RegisterPage() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const role = 'Student' as const;
@@ -69,12 +66,6 @@ function RegisterPage() {
       return;
     }
 
-    const { country, national } = splitPhone(phoneNumber);
-    if (!isValidPhone(country, national)) {
-      setValidationError(t.auth.phoneInvalid);
-      return;
-    }
-
     if (password.length < 10) {
       setValidationError('Password must be at least 10 characters');
       return;
@@ -96,7 +87,7 @@ function RegisterPage() {
       return;
     }
 
-    dispatch(register({ firstName: firstName.trim(), lastName: lastName.trim(), email, password, phoneNumber, role, referralCode: searchParams.get('ref') || undefined }));
+    dispatch(register({ firstName: firstName.trim(), lastName: lastName.trim(), email, password, role, referralCode: searchParams.get('ref') || undefined }));
   };
 
   const handleVerify = async (e: FormEvent) => {
@@ -251,17 +242,6 @@ function RegisterPage() {
               }}
               placeholder="Enter your email"
               required
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="phoneNumber" className="form-label">
-              {t.auth.phone}
-            </label>
-            <PhoneField
-              id="phoneNumber"
-              value={phoneNumber}
-              onChange={(v) => { setPhoneNumber(v); handleInputChange(); }}
             />
           </div>
 

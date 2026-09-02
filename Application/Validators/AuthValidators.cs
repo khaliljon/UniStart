@@ -35,8 +35,8 @@ public class RegisterDtoValidator : AbstractValidator<RegisterDto>
             .Matches("[^a-zA-Z0-9]").WithMessage("Password must contain at least one special character.");
 
         RuleFor(x => x.PhoneNumber)
-            .NotEmpty().WithMessage("Phone number is required.")
-            .Matches(@"^\+\d{7,15}$").WithMessage("Enter a valid phone number in international format (+...).");
+            .Matches(@"^\+\d{7,15}$").WithMessage("Enter a valid phone number in international format (+...).")
+            .When(x => !string.IsNullOrWhiteSpace(x.PhoneNumber));
     }
 }
 

@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -18,6 +19,15 @@ public class SchoolAdminMocksController : ControllerBase
     {
         _db = db;
     }
+
+    private static AdminMockSectionDto MapSection(MockExamSection s) =>
+        new(s.Id, s.ExamSectionId, s.Name, s.TimeLimitMinutes, s.QuestionCount, s.SortOrder, s.Instructions, ParseTopicOrder(s.TopicOrderJson));
+
+    private static string? SerializeTopicOrder(List<int>? order) =>
+        order is { Count: > 0 } ? JsonSerializer.Serialize(order) : null;
+
+    private static List<int>? ParseTopicOrder(string? json) =>
+        string.IsNullOrEmpty(json) ? null : JsonSerializer.Deserialize<List<int>>(json);
 
     [HttpGet("exam-types")]
     public async Task<IActionResult> GetExamTypes()
@@ -43,6 +53,23 @@ public class SchoolAdminMocksController : ControllerBase
             })
             .ToListAsync();
         return Ok(sections);
+    }
+
+    [HttpGet("exam-sections/{sectionId:int}/topics")]
+    public async Task<IActionResult> GetSectionTopics(int sectionId)
+    {
+        var topics = await _db.Topics
+            .Where(t => t.SectionId == sectionId)
+            .OrderBy(t => t.SortOrder)
+            .AsNoTracking()
+            .Select(t => new
+            {
+                id = t.Id,
+                name = t.Name,
+                availableQuestions = _db.Questions.Count(q => q.TopicId == t.Id),
+            })
+            .ToListAsync();
+        return Ok(topics);
     }
 
     [HttpGet]
@@ -90,15 +117,7 @@ public class SchoolAdminMocksController : ControllerBase
             exam.Description,
             exam.TotalTimeMinutes,
             exam.IsActive,
-            exam.Sections.OrderBy(s => s.SortOrder).Select(s => new AdminMockSectionDto(
-                s.Id,
-                s.ExamSectionId,
-                s.Name,
-                s.TimeLimitMinutes,
-                s.QuestionCount,
-                s.SortOrder,
-                s.Instructions
-            )),
+            exam.Sections.OrderBy(s => s.SortOrder).Select(MapSection),
             exam.TitleKz,
             exam.TitleEn,
             exam.DescriptionKz,
@@ -133,7 +152,8 @@ public class SchoolAdminMocksController : ControllerBase
                 TimeLimitMinutes = s.TimeLimitMinutes,
                 QuestionCount = s.QuestionCount,
                 SortOrder = s.SortOrder,
-                Instructions = s.Instructions
+                Instructions = s.Instructions,
+                TopicOrderJson = SerializeTopicOrder(s.TopicOrder)
             });
         }
 
@@ -147,15 +167,7 @@ public class SchoolAdminMocksController : ControllerBase
             exam.Description,
             exam.TotalTimeMinutes,
             exam.IsActive,
-            exam.Sections.Select(s => new AdminMockSectionDto(
-                s.Id,
-                s.ExamSectionId,
-                s.Name,
-                s.TimeLimitMinutes,
-                s.QuestionCount,
-                s.SortOrder,
-                s.Instructions
-            )),
+            exam.Sections.Select(MapSection),
             exam.TitleKz,
             exam.TitleEn,
             exam.DescriptionKz,
@@ -194,7 +206,8 @@ public class SchoolAdminMocksController : ControllerBase
                 TimeLimitMinutes = s.TimeLimitMinutes,
                 QuestionCount = s.QuestionCount,
                 SortOrder = s.SortOrder,
-                Instructions = s.Instructions
+                Instructions = s.Instructions,
+                TopicOrderJson = SerializeTopicOrder(s.TopicOrder)
             });
         }
 
@@ -207,15 +220,7 @@ public class SchoolAdminMocksController : ControllerBase
             exam.Description,
             exam.TotalTimeMinutes,
             exam.IsActive,
-            exam.Sections.Select(s => new AdminMockSectionDto(
-                s.Id,
-                s.ExamSectionId,
-                s.Name,
-                s.TimeLimitMinutes,
-                s.QuestionCount,
-                s.SortOrder,
-                s.Instructions
-            )),
+            exam.Sections.Select(MapSection),
             exam.TitleKz,
             exam.TitleEn,
             exam.DescriptionKz,

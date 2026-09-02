@@ -10,6 +10,7 @@ public class MockExamSection
     public int QuestionCount { get; set; }
     public int SortOrder { get; set; }
     public string? Instructions { get; set; }
+    public string? TopicOrderJson { get; set; }
 
     public virtual MockExam MockExam { get; set; } = null!;
     public virtual ExamSection? ExamSection { get; set; }

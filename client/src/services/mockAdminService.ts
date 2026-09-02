@@ -8,6 +8,7 @@ export interface MockSectionInput {
   questionCount: number;
   sortOrder: number;
   instructions: string | null;
+  topicOrder?: number[] | null;
 }
 
 export interface MockExamListItem {
@@ -45,6 +46,7 @@ export interface MockExamDetail {
     questionCount: number;
     sortOrder: number;
     instructions: string | null;
+    topicOrder?: number[] | null;
   }>;
 }
 
@@ -72,12 +74,21 @@ export interface ExamSectionOption {
   availableQuestions?: number;
 }
 
+export interface SectionTopicOption {
+  id: number;
+  name: string;
+  availableQuestions: number;
+}
+
 const mockAdminService = {
   getExamTypes: () =>
     api.get<ExamTypeOption[]>('/school-admin/mocks/exam-types').then((r) => r.data),
 
   getExamSections: (code: string) =>
     api.get<ExamSectionOption[]>(`/school-admin/mocks/exam-types/${encodeURIComponent(code)}/sections`).then((r) => r.data),
+
+  getSectionTopics: (sectionId: number) =>
+    api.get<SectionTopicOption[]>(`/school-admin/mocks/exam-sections/${sectionId}/topics`).then((r) => r.data),
 
   list: () =>
     api.get<MockExamListItem[]>('/school-admin/mocks').then((r) => r.data),
