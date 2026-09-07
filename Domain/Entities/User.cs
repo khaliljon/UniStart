@@ -15,6 +15,7 @@ public class User : ISoftDeletable, IAuditable
     public SubscriptionTier SubscriptionTier { get; set; } = SubscriptionTier.Free;
     public DateTime? SubscriptionExpiresAt { get; set; }
     public bool FreeMockUsed { get; set; } = false;
+    public bool HasFullAccess { get; set; } = false;
 
     public int? LinkedTutorId { get; set; }
 

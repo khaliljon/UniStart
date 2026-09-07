@@ -430,7 +430,8 @@ public class AdminService : IAdminService
                 SchoolId: u.SchoolId,
                 SchoolName: sName,
                 PhoneNumber: u.PhoneNumber,
-                FreeMockUsed: u.FreeMockUsed
+                FreeMockUsed: u.FreeMockUsed,
+                HasFullAccess: u.HasFullAccess
             );
         }).ToList();
 
@@ -476,7 +477,8 @@ public class AdminService : IAdminService
             SchoolId: user.SchoolId,
             SchoolName: schoolName,
             PhoneNumber: user.PhoneNumber,
-            FreeMockUsed: user.FreeMockUsed
+            FreeMockUsed: user.FreeMockUsed,
+            HasFullAccess: user.HasFullAccess
         );
     }
 
@@ -1067,6 +1069,32 @@ public class AdminService : IAdminService
         await _db.SaveChangesAsync();
 
         _logger.LogInformation("Reset free mock for user {UserId} ({Email})", id, user.Email);
+        return await GetUserByIdAsync(id);
+    }
+
+    public async Task<AdminUserDto?> GrantFullAccessAsync(int id)
+    {
+        var user = await _db.Users.FindAsync(id);
+        if (user == null) return null;
+
+        user.HasFullAccess = true;
+        user.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+
+        _logger.LogInformation("Granted full access to user {UserId} ({Email})", id, user.Email);
+        return await GetUserByIdAsync(id);
+    }
+
+    public async Task<AdminUserDto?> RevokeFullAccessAsync(int id)
+    {
+        var user = await _db.Users.FindAsync(id);
+        if (user == null) return null;
+
+        user.HasFullAccess = false;
+        user.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+
+        _logger.LogInformation("Revoked full access from user {UserId} ({Email})", id, user.Email);
         return await GetUserByIdAsync(id);
     }
 

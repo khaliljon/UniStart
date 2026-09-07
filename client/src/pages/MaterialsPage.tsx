@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { materialsService, type StudyMaterial } from '../services/materialsService';
 import { purchaseService } from '../services/purchaseService';
+import { useAppSelector } from '../hooks/useAppSelector';
 import { useTranslation } from '../i18n';
 import { cscaStrings } from '../i18n/csca';
 import { pickLocalized } from '../utils/localize';
@@ -10,6 +11,7 @@ function MaterialsPage() {
   const navigate = useNavigate();
   const { locale } = useTranslation();
   const s = cscaStrings[locale];
+  const hasFullAccess = useAppSelector((st) => st.auth.user?.hasFullAccess ?? false);
   const [materials, setMaterials] = useState<StudyMaterial[] | null>(null);
   const [ownedIds, setOwnedIds] = useState<Set<string>>(new Set());
   const [downloading, setDownloading] = useState<number | null>(null);
@@ -50,7 +52,7 @@ function MaterialsPage() {
       {materials === null ? (
         <div className="loading"><div className="spinner" /></div>
       ) : (() => {
-        const owned = materials.filter((m) => ownedIds.has(String(m.id)));
+        const owned = hasFullAccess ? materials : materials.filter((m) => ownedIds.has(String(m.id)));
         if (owned.length === 0) {
           return (
             <div className="card" style={{ textAlign: 'center', padding: '2rem' }}>

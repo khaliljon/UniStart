@@ -21,6 +21,8 @@ public interface IAdminService
     Task<AdminUserDto?> BlockUserAsync(int id, string? reason = null);
     Task<AdminUserDto?> UnblockUserAsync(int id);
     Task<AdminUserDto?> ResetFreeMockAsync(int id);
+    Task<AdminUserDto?> GrantFullAccessAsync(int id);
+    Task<AdminUserDto?> RevokeFullAccessAsync(int id);
 
     Task<AdminDashboardDto> GetDashboardAsync();
     Task<List<AdminTopicSummaryDto>> GetTopicsAsync();

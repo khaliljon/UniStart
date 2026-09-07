@@ -131,16 +131,16 @@ public class MockExamService : IMockExamService
         // ── Run-based access gate ──────────────────────────────
         // A start consumes one paid run for this template; if none, it consumes
         // the user's one-time free run (any subject). Otherwise it's locked.
-        var runs = await _context.UserMockRuns
-            .FirstOrDefaultAsync(r => r.UserId == userId && r.MockExamId == mockExamId && r.Language == language);
-        if (runs != null && runs.RunsRemaining > 0)
+        var accessUser = await _context.Users.FindAsync(userId);
+        if (accessUser == null || !accessUser.HasFullAccess)
         {
-            runs.RunsRemaining--;
-        }
-        else
-        {
-            var accessUser = await _context.Users.FindAsync(userId);
-            if (accessUser != null && !accessUser.FreeMockUsed)
+            var runs = await _context.UserMockRuns
+                .FirstOrDefaultAsync(r => r.UserId == userId && r.MockExamId == mockExamId && r.Language == language);
+            if (runs != null && runs.RunsRemaining > 0)
+            {
+                runs.RunsRemaining--;
+            }
+            else if (accessUser != null && !accessUser.FreeMockUsed)
             {
                 accessUser.FreeMockUsed = true; // consume the one free run
             }

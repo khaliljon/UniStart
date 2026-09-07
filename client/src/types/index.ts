@@ -10,6 +10,7 @@ export interface User {
   subscriptionExpiresAt: string | null;
   emailVerified: boolean;
   phoneNumber?: string | null;
+  hasFullAccess?: boolean;
   createdAt: string;
 }
 
@@ -28,6 +29,7 @@ export interface AuthResponse {
   expiresAt: string;
   schoolSubdomain: string | null;
   phoneNumber?: string | null;
+  hasFullAccess?: boolean;
 }
 
 export interface LoginRequest {
@@ -523,6 +525,7 @@ export interface AdminUser {
   schoolName: string | null;
   phoneNumber: string | null;
   freeMockUsed: boolean;
+  hasFullAccess: boolean;
 }
 
 export interface AdminUserStats {

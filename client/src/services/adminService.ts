@@ -187,6 +187,12 @@ const adminService = {
   resetFreeMock: (id: number) =>
     api.post<AdminUser>(`/admin/users/${id}/reset-free-mock`).then(r => r.data),
 
+  grantFullAccess: (id: number) =>
+    api.post<AdminUser>(`/admin/users/${id}/grant-full-access`).then(r => r.data),
+
+  revokeFullAccess: (id: number) =>
+    api.post<AdminUser>(`/admin/users/${id}/revoke-full-access`).then(r => r.data),
+
   // ─── Restore (OP-9) ──────────────────────────────────────
   restoreQuestion: (id: number) =>
     api.post(`/admin/questions/${id}/restore`).then(r => r.data),

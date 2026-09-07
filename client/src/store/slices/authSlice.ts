@@ -20,6 +20,7 @@ function redirectAfterAuth(response: AuthResponse): boolean {
       subscriptionTier: response.subscriptionTier || 'Free',
       subscriptionExpiresAt: response.subscriptionExpiresAt || null,
       emailVerified: response.emailVerified, phoneNumber: response.phoneNumber ?? null,
+      hasFullAccess: response.hasFullAccess ?? false,
       createdAt: new Date().toISOString(),
     };
     return encodeURIComponent(JSON.stringify({ token: response.token, expiresAt: response.expiresAt, user }));
@@ -211,6 +212,7 @@ const authSlice = createSlice({
         subscriptionExpiresAt: action.payload.subscriptionExpiresAt || null,
         emailVerified: action.payload.emailVerified,
         phoneNumber: action.payload.phoneNumber ?? null,
+        hasFullAccess: action.payload.hasFullAccess ?? false,
         createdAt: new Date().toISOString(),
       };
       state.token = action.payload.token;

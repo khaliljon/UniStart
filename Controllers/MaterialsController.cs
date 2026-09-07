@@ -58,7 +58,8 @@ public class MaterialsController : ControllerBase
             return NotFound(new { error = "Материал не найден." });
 
         var itemCode = id.ToString();
-        var purchased = await _db.Purchases.AnyAsync(p =>
+        var hasFullAccess = await _db.Users.AnyAsync(u => u.Id == userId && u.HasFullAccess);
+        var purchased = hasFullAccess || await _db.Purchases.AnyAsync(p =>
             p.UserId == userId &&
             p.ItemType == "book" &&
             p.ItemCode == itemCode &&

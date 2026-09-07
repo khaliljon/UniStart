@@ -182,6 +182,32 @@ function AdminUsersPage() {
     }
   };
 
+  const grantFullAccess = async (id: number) => {
+    try {
+      setError(null);
+      const updated = await adminService.grantFullAccess(id);
+      setSelected(updated);
+      setSuccess(t.admin.users.fullAccessGrantedOk);
+      loadUsers();
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || t.admin.users.userUpdateError;
+      setError(msg);
+    }
+  };
+
+  const revokeFullAccess = async (id: number) => {
+    try {
+      setError(null);
+      const updated = await adminService.revokeFullAccess(id);
+      setSelected(updated);
+      setSuccess(t.admin.users.fullAccessRevokedOk);
+      loadUsers();
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || t.admin.users.userUpdateError;
+      setError(msg);
+    }
+  };
+
   const restoreUser = async (id: number) => {
     if (!confirm(t.admin.users.restoreConfirm)) return;
     try {
@@ -385,6 +411,7 @@ function AdminUsersPage() {
                   <InfoField label={t.admin.users.emailLabel} value={selected.email} />
                   <InfoField label={t.admin.users.roleLabel} value={selected.role} color={ROLE_COLORS[selected.role]} />
                   <InfoField label={t.admin.users.freeMock} value={selected.freeMockUsed ? t.admin.users.freeMockUsedLabel : t.admin.users.freeMockAvailableLabel} color={selected.freeMockUsed ? undefined : 'var(--success-color)'} />
+                  <InfoField label={t.admin.users.fullAccess} value={selected.hasFullAccess ? t.admin.users.fullAccessYes : t.admin.users.fullAccessNo} color={selected.hasFullAccess ? 'var(--success-color)' : undefined} />
                   <InfoField label={t.admin.users.registeredAt} value={new Date(selected.createdAt).toLocaleDateString(getDateLocale())} />
                   <InfoField label={t.admin.users.updatedAt} value={selected.updatedAt ? new Date(selected.updatedAt).toLocaleDateString(getDateLocale()) : '—'} />
                   {selected.schoolName && (
@@ -463,6 +490,15 @@ function AdminUsersPage() {
                       style={{ flex: 1 }}
                     >
                       {t.admin.users.resetFreeMockBtn}
+                    </button>
+                  )}
+                  {selected.role !== 'Admin' && (
+                    <button
+                      className="btn btn-outline"
+                      onClick={() => (selected.hasFullAccess ? revokeFullAccess(selected.id) : grantFullAccess(selected.id))}
+                      style={{ flex: 1, borderColor: selected.hasFullAccess ? 'var(--warning-color)' : 'var(--success-color)', color: selected.hasFullAccess ? 'var(--warning-color)' : 'var(--success-color)' }}
+                    >
+                      {selected.hasFullAccess ? t.admin.users.revokeFullAccessBtn : t.admin.users.grantFullAccessBtn}
                     </button>
                   )}
                   {selected.role !== 'Admin' && (

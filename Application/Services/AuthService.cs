@@ -80,7 +80,8 @@ public class AuthService : IAuthService
                     restoredToken,
                     restoredExpiresAt,
                     restoredSub,
-                    existingUser.PhoneNumber
+                    existingUser.PhoneNumber,
+                    existingUser.HasFullAccess
                 );
             }
 
@@ -118,7 +119,8 @@ public class AuthService : IAuthService
                     reToken,
                     reExpiresAt,
                     reSub,
-                    existingUser.PhoneNumber
+                    existingUser.PhoneNumber,
+                    existingUser.HasFullAccess
                 );
             }
 
@@ -191,7 +193,8 @@ public class AuthService : IAuthService
             token,
             expiresAt,
             subdomain,
-            user.PhoneNumber
+            user.PhoneNumber,
+            user.HasFullAccess
         );
     }
 
@@ -248,7 +251,8 @@ public class AuthService : IAuthService
             token,
             expiresAt,
             loginSub,
-            user.PhoneNumber
+            user.PhoneNumber,
+            user.HasFullAccess
         );
     }
 
@@ -277,7 +281,8 @@ public class AuthService : IAuthService
             token,
             expiresAt,
             refreshSub,
-            user.PhoneNumber
+            user.PhoneNumber,
+            user.HasFullAccess
         );
     }
 
@@ -330,7 +335,8 @@ public class AuthService : IAuthService
             user.HasCompletedOnboarding, user.SubscriptionTier.ToString(),
             user.SubscriptionExpiresAt, user.EmailVerified, token, expiresAt,
             verifySub,
-            user.PhoneNumber
+            user.PhoneNumber,
+            user.HasFullAccess
         );
     }
 
@@ -410,7 +416,8 @@ public class AuthService : IAuthService
             user.HasCompletedOnboarding, user.SubscriptionTier.ToString(),
             user.SubscriptionExpiresAt, user.EmailVerified, token, expiresAt,
             googleSub,
-            user.PhoneNumber
+            user.PhoneNumber,
+            user.HasFullAccess
         );
     }
 
@@ -434,7 +441,8 @@ public class AuthService : IAuthService
             user.HasCompletedOnboarding, user.SubscriptionTier.ToString(),
             user.SubscriptionExpiresAt, user.EmailVerified, token, expiresAt,
             phoneSub,
-            user.PhoneNumber
+            user.PhoneNumber,
+            user.HasFullAccess
         );
     }
 

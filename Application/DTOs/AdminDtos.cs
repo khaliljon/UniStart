@@ -116,7 +116,8 @@ public record AdminUserDto(
     int? SchoolId = null,
     string? SchoolName = null,
     string? PhoneNumber = null,
-    bool FreeMockUsed = false
+    bool FreeMockUsed = false,
+    bool HasFullAccess = false
 );
 
 public record AdminUpdateUserDto(

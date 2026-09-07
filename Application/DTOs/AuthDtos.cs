@@ -36,7 +36,8 @@ public record AuthResponseDto(
     string Token,
     DateTime ExpiresAt,
     string? SchoolSubdomain = null,
-    string? PhoneNumber = null
+    string? PhoneNumber = null,
+    bool HasFullAccess = false
 );
 
 public record VerifyEmailDto(

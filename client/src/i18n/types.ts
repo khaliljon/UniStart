@@ -725,6 +725,9 @@ export interface Translations {
       restoreConfirm: string; userRestored: string; restoreError: string;
       freeMock: string; freeMockUsedLabel: string; freeMockAvailableLabel: string;
       resetFreeMockBtn: string; freeMockResetOk: string;
+      fullAccess: string; fullAccessYes: string; fullAccessNo: string;
+      grantFullAccessBtn: string; revokeFullAccessBtn: string;
+      fullAccessGrantedOk: string; fullAccessRevokedOk: string;
       purchases: string; noPurchases: string;
     };
     tutors: {

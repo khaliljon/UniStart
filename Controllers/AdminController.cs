@@ -419,6 +419,26 @@ public class AdminController : ControllerBase
         return Ok(result);
     }
 
+    [HttpPost("users/{id:int}/grant-full-access")]
+    public async Task<IActionResult> GrantFullAccess(int id)
+    {
+        var result = await _svc.GrantFullAccessAsync(id);
+        if (result == null) return NotFound();
+        var (adminId, email) = GetCurrentAdmin();
+        await _audit.LogAsync(adminId, email, "GrantFullAccess", "User", id.ToString(), ipAddress: GetClientIp());
+        return Ok(result);
+    }
+
+    [HttpPost("users/{id:int}/revoke-full-access")]
+    public async Task<IActionResult> RevokeFullAccess(int id)
+    {
+        var result = await _svc.RevokeFullAccessAsync(id);
+        if (result == null) return NotFound();
+        var (adminId, email) = GetCurrentAdmin();
+        await _audit.LogAsync(adminId, email, "RevokeFullAccess", "User", id.ToString(), ipAddress: GetClientIp());
+        return Ok(result);
+    }
+
     [HttpGet("audit-logs")]
     public async Task<IActionResult> GetAuditLogs(
         [FromQuery] string? action = null,
