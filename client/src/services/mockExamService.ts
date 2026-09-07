@@ -19,8 +19,8 @@ export const mockExamService = {
     return response.data;
   },
 
-  async startMockExam(id: number, selectedSectionIds?: number[]): Promise<MockExamAttempt> {
-    const body = selectedSectionIds ? { selectedSectionIds } : undefined;
+  async startMockExam(id: number, selectedSectionIds?: number[], language?: string): Promise<MockExamAttempt> {
+    const body = (selectedSectionIds || language) ? { selectedSectionIds, language } : undefined;
     const response = await api.post<MockExamAttempt>(`/mock-exams/${id}/start`, body);
     return response.data;
   },

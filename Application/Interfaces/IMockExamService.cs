@@ -8,7 +8,7 @@ public interface IMockExamService
 
     Task<MockExamDetailDto?> GetMockExamDetailAsync(int mockExamId);
 
-    Task<MockExamAttemptDto> StartMockExamAsync(int userId, int mockExamId, List<int>? selectedSectionIds = null);
+    Task<MockExamAttemptDto> StartMockExamAsync(int userId, int mockExamId, List<int>? selectedSectionIds = null, string language = "en");
 
     Task<MockExamSectionStateDto?> GetCurrentSectionAsync(int userId, int attemptId);
 

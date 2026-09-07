@@ -38,6 +38,7 @@ function MockExamPage() {
   const [loading, setLoading] = useState(true);
 
   const [examDetail, setExamDetail] = useState<MockExamDetail | null>(null);
+  const [startLang, setStartLang] = useState<'en' | 'zh'>('en');
 
   const [attempt, setAttempt] = useState<MockExamAttempt | null>(null);
   const [sectionState, setSectionState] = useState<MockExamSectionState | null>(null);
@@ -141,7 +142,7 @@ function MockExamPage() {
     if (!examDetail) return;
     setLoading(true);
     try {
-      const att = await mockExamService.startMockExam(examDetail.id);
+      const att = await mockExamService.startMockExam(examDetail.id, undefined, startLang);
       setAttempt(att);
       const section = await mockExamService.getCurrentSection(att.attemptId);
       setSectionState(section);
@@ -443,6 +444,18 @@ function MockExamPage() {
         ))}
 
         <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', marginBottom: '0.85rem' }}>
+            <button
+              className={`btn ${startLang === 'en' ? 'btn-primary' : 'btn-outline'}`}
+              style={{ padding: '0.4rem 1rem', fontSize: '0.85rem' }}
+              onClick={() => setStartLang('en')}
+            >English</button>
+            <button
+              className={`btn ${startLang === 'zh' ? 'btn-primary' : 'btn-outline'}`}
+              style={{ padding: '0.4rem 1rem', fontSize: '0.85rem' }}
+              onClick={() => setStartLang('zh')}
+            >中文</button>
+          </div>
           <button
             className="btn btn-primary"
             style={{ padding: '0.75rem 2rem', fontSize: '1rem', width: '100%', maxWidth: '320px' }}

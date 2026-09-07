@@ -31,6 +31,7 @@ function AdminQuestionImportPage({ embedded = false }: { embedded?: boolean } = 
   const [draftFilter, setDraftFilter] = useState<string>('');
   const [isUploading, setIsUploading] = useState(false);
   const [examTypeCode, setExamTypeCode] = useState('CSCA');
+  const [language, setLanguage] = useState<'en' | 'zh'>('en');
   const [contentType, setContentType] = useState<'questions' | 'theory'>('questions');
   const [mode, setMode] = useState<'ai' | 'strict'>('ai');
   const [error, setError] = useState<string | null>(null);
@@ -102,6 +103,7 @@ function AdminQuestionImportPage({ embedded = false }: { embedded?: boolean } = 
         instructions || undefined,
         contentType,
         contentType === 'theory' ? undefined : mode,
+        language,
       );
       await loadJobs();
       setSelectedJob(job);
@@ -144,6 +146,7 @@ function AdminQuestionImportPage({ embedded = false }: { embedded?: boolean } = 
         sectionId === '' ? undefined : sectionId,
         topicId === '' ? undefined : topicId,
         instructions || undefined,
+        language,
       );
       await loadJobs();
       setSelectedJob(job);
@@ -363,6 +366,23 @@ function AdminQuestionImportPage({ embedded = false }: { embedded?: boolean } = 
               {EXAM_TYPES.map(code => (
                 <option key={code} value={code}>{code}</option>
               ))}
+            </select>
+          </div>
+          <div>
+            <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.25rem' }}>
+              Язык вопросов
+            </label>
+            <select
+              value={language}
+              onChange={e => setLanguage(e.target.value as 'en' | 'zh')}
+              style={{
+                padding: '0.5rem 0.75rem', borderRadius: '0.5rem',
+                border: '1px solid var(--border-color)', background: 'var(--card-background)',
+                color: 'var(--text-primary)', fontSize: '0.9rem'
+              }}
+            >
+              <option value="en">English (en)</option>
+              <option value="zh">中文 (zh)</option>
             </select>
           </div>
           <div>

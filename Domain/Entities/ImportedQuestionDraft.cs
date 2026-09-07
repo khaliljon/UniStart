@@ -12,6 +12,7 @@ public class ImportedQuestionDraft
     public string? Hint { get; set; }
     public string? ImageUrl { get; set; }
     public int? TopicId { get; set; }
+    public string Language { get; set; } = "en";
     public QuestionDifficulty Difficulty { get; set; } = QuestionDifficulty.Medium;
 
     public double IrtA { get; set; } = 1.0;

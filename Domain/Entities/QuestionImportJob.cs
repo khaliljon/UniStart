@@ -11,6 +11,8 @@ public class QuestionImportJob
 
     public int? TopicId { get; set; }
 
+    public string Language { get; set; } = "en";
+
     public ImportContentType ContentType { get; set; } = ImportContentType.Questions;
 
     public string? ResultSummary { get; set; }

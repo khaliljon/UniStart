@@ -14,6 +14,7 @@ export interface MockTemplate {
   totalQuestions: number;
   totalTimeMinutes: number;
   runsRemaining: number;
+  runsByLanguage?: Record<string, number> | null;
   tiers: MockTier[];
   titleKz?: string | null;
   titleEn?: string | null;
@@ -48,6 +49,7 @@ export interface CheckoutLine {
   packageKey?: string;
   selectedMockIds?: number[];
   bookMaterialId?: number;
+  language?: string;
 }
 
 export interface CheckoutQuote {

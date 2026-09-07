@@ -26,11 +26,17 @@ public class EntitlementService : IEntitlementService
             .Where(t => t.IsActive)
             .ToListAsync();
 
-        var runsByMock = userId > 0
-            ? await _db.UserMockRuns
-                .Where(r => r.UserId == userId)
-                .ToDictionaryAsync(r => r.MockExamId, r => r.RunsRemaining)
-            : new Dictionary<int, int>();
+        var runsRows = userId > 0
+            ? await _db.UserMockRuns.Where(r => r.UserId == userId).ToListAsync()
+            : new List<UserMockRuns>();
+        var runsByMock = runsRows
+            .GroupBy(r => r.MockExamId)
+            .ToDictionary(g => g.Key, g => g.Sum(r => r.RunsRemaining));
+        var runsByMockLang = runsRows
+            .GroupBy(r => r.MockExamId)
+            .ToDictionary(
+                g => g.Key,
+                g => g.GroupBy(r => r.Language).ToDictionary(x => x.Key, x => x.Sum(r => r.RunsRemaining)));
 
         var packages = await _db.MockPackages
             .Where(p => p.IsActive)
@@ -58,7 +64,8 @@ public class EntitlementService : IEntitlementService
                 m.TitleEn,
                 m.Description,
                 m.DescriptionKz,
-                m.DescriptionEn))
+                m.DescriptionEn,
+                runsByMockLang.TryGetValue(m.Id, out var rbl) ? rbl : null))
             .ToList();
 
         return new MockCatalogDto(freeAvailable, templates, packages);
@@ -80,10 +87,10 @@ public class EntitlementService : IEntitlementService
             foreach (var (mockExamId, runs) in line.Grants)
             {
                 var balance = await _db.UserMockRuns
-                    .FirstOrDefaultAsync(r => r.UserId == userId && r.MockExamId == mockExamId);
+                    .FirstOrDefaultAsync(r => r.UserId == userId && r.MockExamId == mockExamId && r.Language == line.Language);
                 if (balance == null)
                 {
-                    _db.UserMockRuns.Add(new UserMockRuns { UserId = userId, MockExamId = mockExamId, RunsRemaining = runs });
+                    _db.UserMockRuns.Add(new UserMockRuns { UserId = userId, MockExamId = mockExamId, RunsRemaining = runs, Language = line.Language });
                 }
                 else
                 {
@@ -169,6 +176,7 @@ public class EntitlementService : IEntitlementService
         string Title,
         string? Subjects,
         decimal Price,
+        string Language,
         List<(int MockExamId, int Runs)> Grants);
 
     private async Task<(decimal Total, string Currency, List<ResolvedLine> Lines)> ResolveAsync(List<CheckoutLineDto> lines)
@@ -194,6 +202,7 @@ public class EntitlementService : IEntitlementService
                     .FirstOrDefaultAsync(t => t.IsActive && t.MockExamId == mockId && t.Runs == line.Runs)
                     ?? throw new ArgumentException("Invalid run tier");
 
+                var lang = line.Language == "zh" ? "zh" : "en";
                 currency = tier.Currency;
                 total += tier.Price;
                 resolved.Add(new ResolvedLine(
@@ -202,6 +211,7 @@ public class EntitlementService : IEntitlementService
                     $"{mock.Title} · {MoksLabel(tier.Runs)}",
                     mock.ExamTypeCode,
                     tier.Price,
+                    lang,
                     new List<(int, int)> { (mockId, tier.Runs) }));
             }
             else if (line.Kind == "package")
@@ -222,6 +232,7 @@ public class EntitlementService : IEntitlementService
                         throw new ArgumentException($"Package requires exactly {pkg.PickCount} valid subjects");
                 }
 
+                var lang = line.Language == "zh" ? "zh" : "en";
                 currency = pkg.Currency;
                 total += pkg.Price;
                 resolved.Add(new ResolvedLine(
@@ -230,6 +241,7 @@ public class EntitlementService : IEntitlementService
                     pkg.Name,
                     string.Join(",", chosen),
                     pkg.Price,
+                    lang,
                     chosen.Select(id => (id, pkg.RunsEach)).ToList()));
             }
             else if (line.Kind == "book")
@@ -245,6 +257,7 @@ public class EntitlementService : IEntitlementService
                     material.Title,
                     material.SubjectKey,
                     material.Price,
+                    "en",
                     new List<(int, int)>()));
             }
             else

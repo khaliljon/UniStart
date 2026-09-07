@@ -92,6 +92,9 @@ export interface CscaStrings {
   materialsLead: string;
   bookLabel: string;
   addToCart: string;
+  chooseLanguage: string;
+  chooseLanguageHint: string;
+  cancel: string;
   freePdfTitle: string;
   freePdfDesc: string;
   ctaBandTitle: string;
@@ -241,6 +244,7 @@ const ru: CscaStrings = {
   pkgFeatAi: 'ИИ-объяснения к заданиям', pkgFeatAnalytics: 'Дешборд аналитики', pkgFeatFull: 'Доступ ко всем пробникам предмета',
   materialsTitle: 'Официальные учебные материалы', materialsLead: 'Учебники разработаны с учётом актуального формата экзамена CSCA.',
   bookLabel: 'Учебник для подготовки к CSCA', addToCart: 'В корзину',
+  chooseLanguage: 'Язык пробника', chooseLanguageHint: 'Выберите язык, на котором будут вопросы.', cancel: 'Отмена',
   freePdfTitle: 'Забери наши полезные материалы по подготовке к CSCA абсолютно бесплатно!', freePdfDesc: 'PDF по всем предметам — доступны сразу после регистрации.',
   ctaBandTitle: 'Готов начать подготовку к CSCA?', ctaBandDesc: 'Создай аккаунт и получай больше бесплатных материалов.',
   ctaBandBtn: 'Создать аккаунт бесплатно',
@@ -376,6 +380,7 @@ const en: CscaStrings = {
   pkgFeatAi: 'AI explanations for questions', pkgFeatAnalytics: 'Analytics dashboard', pkgFeatFull: 'Access to all subject mocks',
   materialsTitle: 'Official study materials', materialsLead: 'Textbooks designed for the current CSCA exam format.',
   bookLabel: 'CSCA preparation textbook', addToCart: 'Add to cart',
+  chooseLanguage: 'Mock language', chooseLanguageHint: 'Choose the language of the questions.', cancel: 'Cancel',
   freePdfTitle: 'Grab our helpful CSCA prep materials — absolutely free!', freePdfDesc: 'PDFs for all subjects — available right after registration.',
   ctaBandTitle: 'Ready to start preparing for CSCA?', ctaBandDesc: 'Create an account and get more free materials.',
   ctaBandBtn: 'Create a free account',
@@ -511,6 +516,7 @@ const kz: CscaStrings = {
   pkgFeatAi: 'Тапсырмаларға ЖИ түсіндірмелері', pkgFeatAnalytics: 'Аналитика тақтасы', pkgFeatFull: 'Пәннің барлық сынақтарына қолжетімділік',
   materialsTitle: 'Ресми оқу материалдары', materialsLead: 'Оқулықтар CSCA емтиханының өзекті форматына сай әзірленген.',
   bookLabel: 'CSCA-ға дайындық оқулығы', addToCart: 'Себетке',
+  chooseLanguage: 'Сынақ тілі', chooseLanguageHint: 'Сұрақтар тілін таңдаңыз.', cancel: 'Болдырмау',
   freePdfTitle: 'CSCA-ға дайындық материалдарымызды тап-такыр тегін алыңыз!', freePdfDesc: 'Барлық пәндер бойынша PDF — тіркелгеннен кейін бірден қолжетімді.',
   ctaBandTitle: 'CSCA-ға дайындықты бастауға дайынсыз ба?', ctaBandDesc: 'Аккаунт ашып, көбірек тегін материалдар алыңыз.',
   ctaBandBtn: 'Тегін аккаунт ашу',

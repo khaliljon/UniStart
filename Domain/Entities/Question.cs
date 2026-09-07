@@ -11,6 +11,7 @@ public class Question : ISoftDeletable, IAuditable
     public string? Hint { get; set; }
     public string? VideoUrl { get; set; }
     public string? ImageUrl { get; set; }
+    public string Language { get; set; } = "en";
     public int? ReadingPassageId { get; set; }
     public int SortOrder { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

@@ -8,6 +8,8 @@ public class UserMockRuns : IAuditable
 
     public int MockExamId { get; set; }
 
+    public string Language { get; set; } = "en";
+
     public int RunsRemaining { get; set; }
 
     public DateTime CreatedAt { get; set; }

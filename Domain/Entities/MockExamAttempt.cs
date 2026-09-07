@@ -12,6 +12,7 @@ public class MockExamAttempt
     public double? TotalScore { get; set; }
     public string? SectionScoresJson { get; set; }
     public string? SelectedSectionIdsJson { get; set; }
+    public string Language { get; set; } = "en";
 
     public virtual User User { get; set; } = null!;
     public virtual MockExam MockExam { get; set; } = null!;

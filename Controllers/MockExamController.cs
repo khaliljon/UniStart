@@ -53,7 +53,7 @@ public class MockExamController : ControllerBase
         try
         {
             var userId = GetUserId();
-            var attempt = await _mockExamService.StartMockExamAsync(userId, id, request?.SelectedSectionIds);
+            var attempt = await _mockExamService.StartMockExamAsync(userId, id, request?.SelectedSectionIds, request?.Language ?? "en");
             return Ok(attempt);
         }
         catch (InvalidOperationException ex) when (ex.Message == "MOCK_LOCKED")
@@ -69,6 +69,7 @@ public class MockExamController : ControllerBase
     public class StartMockExamRequest
     {
         public List<int>? SelectedSectionIds { get; set; }
+        public string? Language { get; set; }
     }
 
     [HttpGet("attempts/{attemptId}/current-section")]

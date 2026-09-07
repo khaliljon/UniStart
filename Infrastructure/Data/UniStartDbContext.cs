@@ -137,6 +137,7 @@ public class UniStartDbContext : DbContext
             entity.Property(e => e.GuessParam).HasDefaultValue(0.25);
             entity.Property(e => e.ResponseCount).HasDefaultValue(0);
             entity.Property(e => e.IsCalibrated).HasDefaultValue(false);
+            entity.Property(e => e.Language).HasMaxLength(8).HasDefaultValue("en");
             entity.HasOne(e => e.Topic)
                   .WithMany(t => t.Questions)
                   .HasForeignKey(e => e.TopicId)
@@ -383,6 +384,7 @@ public class UniStartDbContext : DbContext
             entity.ToTable("MockExamAttempts");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Status).IsRequired().HasMaxLength(20);
+            entity.Property(e => e.Language).HasMaxLength(8).HasDefaultValue("en");
             entity.HasOne(e => e.User)
                   .WithMany()
                   .HasForeignKey(e => e.UserId)
@@ -659,6 +661,7 @@ public class UniStartDbContext : DbContext
             entity.Property(e => e.ExamTypeCode).HasMaxLength(20).IsRequired();
             entity.Property(e => e.Status).HasConversion<int>();
             entity.Property(e => e.Instructions).HasMaxLength(2000);
+            entity.Property(e => e.Language).HasMaxLength(8).HasDefaultValue("en");
             entity.HasOne(e => e.AdminUser)
                   .WithMany()
                   .HasForeignKey(e => e.AdminUserId)
@@ -689,6 +692,7 @@ public class UniStartDbContext : DbContext
             entity.Property(e => e.Status).HasConversion<int>();
             entity.Property(e => e.Source).HasConversion<int>();
             entity.Property(e => e.Difficulty).HasConversion<int>();
+            entity.Property(e => e.Language).HasMaxLength(8).HasDefaultValue("en");
             entity.HasOne(e => e.Topic)
                   .WithMany()
                   .HasForeignKey(e => e.TopicId)
@@ -898,7 +902,8 @@ public class UniStartDbContext : DbContext
                   .WithMany()
                   .HasForeignKey(e => e.MockExamId)
                   .OnDelete(DeleteBehavior.Cascade);
-            entity.HasIndex(e => new { e.UserId, e.MockExamId }).IsUnique();
+            entity.Property(e => e.Language).HasMaxLength(8).HasDefaultValue("en");
+            entity.HasIndex(e => new { e.UserId, e.MockExamId, e.Language }).IsUnique();
         });
 
         modelBuilder.Entity<UserCartItem>(entity =>
@@ -912,8 +917,9 @@ public class UniStartDbContext : DbContext
             entity.Property(e => e.Amount).HasColumnType("numeric(12,2)");
             entity.Property(e => e.Currency).IsRequired().HasMaxLength(8).HasDefaultValue("KZT");
             entity.Property(e => e.SelectedMockIds).HasMaxLength(200);
+            entity.Property(e => e.Language).HasMaxLength(8);
             entity.HasOne(e => e.User).WithMany().HasForeignKey(e => e.UserId).OnDelete(DeleteBehavior.Cascade);
-            entity.HasIndex(e => new { e.UserId, e.ItemType, e.ItemCode }).IsUnique();
+            entity.HasIndex(e => new { e.UserId, e.ItemType, e.ItemCode, e.Language }).IsUnique();
         });
     }
 

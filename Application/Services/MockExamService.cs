@@ -120,8 +120,9 @@ public class MockExamService : IMockExamService
         );
     }
 
-    public async Task<MockExamAttemptDto> StartMockExamAsync(int userId, int mockExamId, List<int>? selectedSectionIds = null)
+    public async Task<MockExamAttemptDto> StartMockExamAsync(int userId, int mockExamId, List<int>? selectedSectionIds = null, string language = "en")
     {
+        language = language == "zh" ? "zh" : "en";
         var exam = await _context.MockExams
             .Include(m => m.Sections)
             .FirstOrDefaultAsync(m => m.Id == mockExamId && m.IsActive)
@@ -131,7 +132,7 @@ public class MockExamService : IMockExamService
         // A start consumes one paid run for this template; if none, it consumes
         // the user's one-time free run (any subject). Otherwise it's locked.
         var runs = await _context.UserMockRuns
-            .FirstOrDefaultAsync(r => r.UserId == userId && r.MockExamId == mockExamId);
+            .FirstOrDefaultAsync(r => r.UserId == userId && r.MockExamId == mockExamId && r.Language == language);
         if (runs != null && runs.RunsRemaining > 0)
         {
             runs.RunsRemaining--;
@@ -177,7 +178,8 @@ public class MockExamService : IMockExamService
             CurrentSectionIndex = 0,
             SelectedSectionIdsJson = selectedSectionIds != null && selectedSectionIds.Count > 0
                 ? JsonSerializer.Serialize(selectedSectionIds)
-                : null
+                : null,
+            Language = language
         };
 
         _context.MockExamAttempts.Add(attempt);
@@ -199,7 +201,7 @@ public class MockExamService : IMockExamService
             if (!section.ExamSectionId.HasValue) continue;
 
             var questions = await _context.Questions
-                .Where(q => q.Topic.SectionId == section.ExamSectionId.Value)
+                .Where(q => q.Topic.SectionId == section.ExamSectionId.Value && q.Language == language)
                 .ToListAsync();
             if (questions.Count == 0) continue;
 

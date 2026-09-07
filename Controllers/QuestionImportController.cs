@@ -32,7 +32,8 @@ public class QuestionImportController : ControllerBase
         [FromForm] int? topicId = null,
         [FromForm] string? instructions = null,
         [FromForm] string? contentType = null,
-        [FromForm] string? mode = null)
+        [FromForm] string? mode = null,
+        [FromForm] string? language = null)
     {
         if (file == null || file.Length == 0)
             return BadRequest(new { error = "No file uploaded" });
@@ -61,7 +62,8 @@ public class QuestionImportController : ControllerBase
             return BadRequest(new { error = "Theory import supports text files only: PDF, DOCX, MD, TXT." });
 
         var adminId = GetAdminId();
-        var job = await _importService.CreateImportJobAsync(adminId, file.FileName, fileType, examTypeCode, sectionId, topicId, instructions, importContentType);
+        var lang = string.Equals(language, "zh", StringComparison.OrdinalIgnoreCase) ? "zh" : "en";
+        var job = await _importService.CreateImportJobAsync(adminId, file.FileName, fileType, examTypeCode, sectionId, topicId, instructions, importContentType, lang);
 
         using var stream = file.OpenReadStream();
         var strictTemplate = string.Equals(mode, "strict", StringComparison.OrdinalIgnoreCase);
@@ -79,7 +81,8 @@ public class QuestionImportController : ControllerBase
         [FromForm] string fileRoles,
         [FromForm] int? sectionId = null,
         [FromForm] int? topicId = null,
-        [FromForm] string? instructions = null)
+        [FromForm] string? instructions = null,
+        [FromForm] string? language = null)
     {
         if (files == null || files.Count == 0)
             return BadRequest(new { error = "No files uploaded" });
@@ -97,7 +100,8 @@ public class QuestionImportController : ControllerBase
         }
 
         var adminId = GetAdminId();
-        var job = await _importService.CreateMultiFileImportJobAsync(adminId, examTypeCode, sectionId, topicId, instructions);
+        var lang = string.Equals(language, "zh", StringComparison.OrdinalIgnoreCase) ? "zh" : "en";
+        var job = await _importService.CreateMultiFileImportJobAsync(adminId, examTypeCode, sectionId, topicId, instructions, lang);
 
         var entries = new List<ImportFileEntry>();
         var streams = new List<Stream>();

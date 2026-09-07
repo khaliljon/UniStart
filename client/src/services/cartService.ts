@@ -9,6 +9,7 @@ export interface CartItem {
   currency: string;
   runs?: number;
   selectedMockIds?: number[];
+  language?: string;
 }
 
 const KEY = 'cart';
@@ -46,15 +47,15 @@ export const cartService = {
   },
 
   add(item: CartItem): void {
-    const items = read().filter((i) => !(i.itemType === item.itemType && i.itemCode === item.itemCode));
+    const items = read().filter((i) => !(i.itemType === item.itemType && i.itemCode === item.itemCode && (i.language ?? null) === (item.language ?? null)));
     items.push(item);
     write(items);
     api.post('/cart', item).catch(() => {});
   },
 
-  remove(itemType: string, itemCode: string): void {
-    write(read().filter((i) => !(i.itemType === itemType && i.itemCode === itemCode)));
-    api.delete('/cart/item', { params: { itemType, itemCode } }).catch(() => {});
+  remove(itemType: string, itemCode: string, language?: string): void {
+    write(read().filter((i) => !(i.itemType === itemType && i.itemCode === itemCode && (i.language ?? null) === (language ?? null))));
+    api.delete('/cart/item', { params: { itemType, itemCode, language } }).catch(() => {});
   },
 
   clear(): void {

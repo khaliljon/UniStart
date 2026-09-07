@@ -24,7 +24,8 @@ public class CartController : ApiControllerBase
         string.IsNullOrWhiteSpace(c.SelectedMockIds)
             ? new List<int>()
             : c.SelectedMockIds.Split(',', StringSplitOptions.RemoveEmptyEntries)
-                .Where(x => int.TryParse(x, out _)).Select(int.Parse).ToList());
+                .Where(x => int.TryParse(x, out _)).Select(int.Parse).ToList(),
+        c.Language);
 
     [HttpGet]
     public async Task<IActionResult> Get()
@@ -42,7 +43,7 @@ public class CartController : ApiControllerBase
     {
         var userId = GetCurrentUserId();
         var existing = await _db.UserCartItems
-            .FirstOrDefaultAsync(c => c.UserId == userId && c.ItemType == dto.ItemType && c.ItemCode == dto.ItemCode);
+            .FirstOrDefaultAsync(c => c.UserId == userId && c.ItemType == dto.ItemType && c.ItemCode == dto.ItemCode && c.Language == dto.Language);
 
         var selected = dto.SelectedMockIds != null ? string.Join(",", dto.SelectedMockIds) : null;
         if (existing == null)
@@ -58,6 +59,7 @@ public class CartController : ApiControllerBase
                 Currency = string.IsNullOrWhiteSpace(dto.Currency) ? "KZT" : dto.Currency.Trim(),
                 Runs = dto.Runs,
                 SelectedMockIds = selected,
+                Language = dto.Language,
             });
         }
         else
@@ -68,17 +70,19 @@ public class CartController : ApiControllerBase
             existing.Currency = string.IsNullOrWhiteSpace(dto.Currency) ? "KZT" : dto.Currency.Trim();
             existing.Runs = dto.Runs;
             existing.SelectedMockIds = selected;
+            existing.Language = dto.Language;
         }
         await _db.SaveChangesAsync();
         return Ok();
     }
 
     [HttpDelete("item")]
-    public async Task<IActionResult> RemoveItem([FromQuery] string itemType, [FromQuery] string itemCode)
+    public async Task<IActionResult> RemoveItem([FromQuery] string itemType, [FromQuery] string itemCode, [FromQuery] string? language = null)
     {
         var userId = GetCurrentUserId();
         var item = await _db.UserCartItems
-            .FirstOrDefaultAsync(c => c.UserId == userId && c.ItemType == itemType && c.ItemCode == itemCode);
+            .FirstOrDefaultAsync(c => c.UserId == userId && c.ItemType == itemType && c.ItemCode == itemCode
+                && (language == null || c.Language == language));
         if (item != null)
         {
             _db.UserCartItems.Remove(item);
@@ -106,4 +110,5 @@ public record CartItemDto(
     decimal Amount,
     string Currency,
     int? Runs,
-    List<int>? SelectedMockIds);
+    List<int>? SelectedMockIds,
+    string? Language = null);

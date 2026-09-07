@@ -54,12 +54,13 @@ function CartPage() {
   const chipLabel = (sub: string) => nameById.get(sub) ?? subjectName[sub] ?? sub;
 
   const displayTitle = (item: CartItem): string => {
+    const langSuffix = item.language ? ` · ${item.language.toUpperCase()}` : '';
     if (item.itemType === 'mock') {
       const tpl = templates.find((t) => String(t.mockExamId) === item.itemCode);
-      if (tpl) return `${pickLocalized(tpl.title, tpl.titleKz, tpl.titleEn, locale)} · ${moks(item.runs ?? 1, locale)}`;
+      if (tpl) return `${pickLocalized(tpl.title, tpl.titleKz, tpl.titleEn, locale)} · ${moks(item.runs ?? 1, locale)}${langSuffix}`;
     } else if (item.itemType === 'package') {
       const pkg = packages.find((p) => p.key === item.itemCode);
-      if (pkg) return pickLocalized(pkg.name, pkg.nameKz, pkg.nameEn, locale);
+      if (pkg) return `${pickLocalized(pkg.name, pkg.nameKz, pkg.nameEn, locale)}${langSuffix}`;
     } else if (item.itemType === 'book') {
       const mat = materials.find((m) => String(m.id) === item.itemCode);
       if (mat) return pickLocalized(mat.title, mat.titleKz, mat.titleEn, locale);
@@ -70,7 +71,7 @@ function CartPage() {
   const total = items.reduce((sum, i) => sum + i.amount, 0);
   const currency = items[0]?.currency ?? s.currency;
 
-  const remove = (item: CartItem) => cartService.remove(item.itemType, item.itemCode);
+  const remove = (item: CartItem) => cartService.remove(item.itemType, item.itemCode, item.language);
 
   const checkout = async () => {
     if (items.length === 0) return;
@@ -78,8 +79,8 @@ function CartPage() {
     setError(null);
     try {
       const lines: CheckoutLine[] = items.map((i) => {
-        if (i.itemType === 'mock') return { kind: 'mock', mockExamId: Number(i.itemCode), runs: i.runs ?? 1 };
-        if (i.itemType === 'package') return { kind: 'package', packageKey: i.itemCode, selectedMockIds: i.selectedMockIds ?? [] };
+        if (i.itemType === 'mock') return { kind: 'mock', mockExamId: Number(i.itemCode), runs: i.runs ?? 1, language: i.language };
+        if (i.itemType === 'package') return { kind: 'package', packageKey: i.itemCode, selectedMockIds: i.selectedMockIds ?? [], language: i.language };
         return { kind: 'book', bookMaterialId: Number(i.itemCode) };
       });
 
@@ -104,7 +105,7 @@ function CartPage() {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
           {items.map((item) => (
-            <div key={`${item.itemType}:${item.itemCode}`} className="csca-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
+            <div key={`${item.itemType}:${item.itemCode}:${item.language ?? ''}`} className="csca-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
               <div>
                 <div style={{ fontWeight: 700 }}>{displayTitle(item)}</div>
                 {item.subjects && (

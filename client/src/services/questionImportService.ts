@@ -75,7 +75,7 @@ export interface UpdateDraftPayload {
 
 
 export const questionImportService = {
-  async upload(file: File, examTypeCode: string, sectionId?: number, topicId?: number, instructions?: string, contentType?: 'questions' | 'theory', mode?: 'ai' | 'strict'): Promise<QuestionImportJob> {
+  async upload(file: File, examTypeCode: string, sectionId?: number, topicId?: number, instructions?: string, contentType?: 'questions' | 'theory', mode?: 'ai' | 'strict', language?: string): Promise<QuestionImportJob> {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('examTypeCode', examTypeCode);
@@ -84,6 +84,7 @@ export const questionImportService = {
     if (instructions) formData.append('instructions', instructions);
     if (contentType) formData.append('contentType', contentType);
     if (mode) formData.append('mode', mode);
+    if (language) formData.append('language', language);
     const resp = await api.post<QuestionImportJob>('/admin/question-import/upload', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
       timeout: 600000,
@@ -97,6 +98,7 @@ export const questionImportService = {
     sectionId?: number,
     topicId?: number,
     instructions?: string,
+    language?: string,
   ): Promise<QuestionImportJob> {
     const formData = new FormData();
     for (const entry of entries) {
@@ -107,6 +109,7 @@ export const questionImportService = {
     if (sectionId != null) formData.append('sectionId', String(sectionId));
     if (topicId != null) formData.append('topicId', String(topicId));
     if (instructions) formData.append('instructions', instructions);
+    if (language) formData.append('language', language);
     const resp = await api.post<QuestionImportJob>('/admin/question-import/upload-batch', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
       timeout: 600000,

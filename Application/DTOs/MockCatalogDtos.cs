@@ -14,7 +14,8 @@ public record MockTemplateDto(
     string? TitleEn = null,
     string? Description = null,
     string? DescriptionKz = null,
-    string? DescriptionEn = null);
+    string? DescriptionEn = null,
+    Dictionary<string, int>? RunsByLanguage = null);
 
 public record MockPackageDto(
     int Id,
@@ -44,6 +45,8 @@ public class CheckoutLineDto
     public List<int>? SelectedMockIds { get; set; }
 
     public int? BookMaterialId { get; set; }
+
+    public string? Language { get; set; }
 }
 
 public class RunCheckoutDto

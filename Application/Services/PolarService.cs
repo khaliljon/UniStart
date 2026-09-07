@@ -272,9 +272,9 @@ public class PolarService : IPolarService
         foreach (var l in lines)
         {
             if (l.Kind == "mock")
-                parts.Add($"m:{l.MockExamId}:{l.Runs}");
+                parts.Add($"m:{l.MockExamId}:{l.Runs}:{l.Language ?? "en"}");
             else if (l.Kind == "package")
-                parts.Add($"p:{l.PackageKey}:{string.Join(",", l.SelectedMockIds ?? new List<int>())}");
+                parts.Add($"p:{l.PackageKey}:{string.Join(",", l.SelectedMockIds ?? new List<int>())}:{l.Language ?? "en"}");
             else if (l.Kind == "book")
                 parts.Add($"b:{l.BookMaterialId}");
         }
@@ -288,17 +288,19 @@ public class PolarService : IPolarService
         {
             var seg = token.Split(':');
             if (seg.Length < 2) continue;
-            if (seg[0] == "m" && seg.Length == 3
+            if (seg[0] == "m" && seg.Length >= 3
                 && int.TryParse(seg[1], out var mockId) && int.TryParse(seg[2], out var runs))
             {
-                result.Add(new CheckoutLineDto { Kind = "mock", MockExamId = mockId, Runs = runs });
+                var lang = seg.Length >= 4 ? (seg[3] == "zh" ? "zh" : "en") : "en";
+                result.Add(new CheckoutLineDto { Kind = "mock", MockExamId = mockId, Runs = runs, Language = lang });
             }
             else if (seg[0] == "p" && seg.Length >= 2)
             {
                 var ids = seg.Length >= 3 && seg[2].Length > 0
                     ? seg[2].Split(',').Where(x => int.TryParse(x, out _)).Select(int.Parse).ToList()
                     : new List<int>();
-                result.Add(new CheckoutLineDto { Kind = "package", PackageKey = seg[1], SelectedMockIds = ids });
+                var lang = seg.Length >= 4 ? (seg[3] == "zh" ? "zh" : "en") : "en";
+                result.Add(new CheckoutLineDto { Kind = "package", PackageKey = seg[1], SelectedMockIds = ids, Language = lang });
             }
             else if (seg[0] == "b" && seg.Length >= 2 && int.TryParse(seg[1], out var bookId))
             {

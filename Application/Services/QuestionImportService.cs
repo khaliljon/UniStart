@@ -50,7 +50,7 @@ public class QuestionImportService : IQuestionImportService
     }
 
     public async Task<QuestionImportJobDto> CreateImportJobAsync(
-        int adminUserId, string fileName, string fileType, string examTypeCode, int? sectionId, int? topicId, string? instructions, ImportContentType contentType = ImportContentType.Questions)
+        int adminUserId, string fileName, string fileType, string examTypeCode, int? sectionId, int? topicId, string? instructions, ImportContentType contentType = ImportContentType.Questions, string language = "en")
     {
         var job = new QuestionImportJob
         {
@@ -62,6 +62,7 @@ public class QuestionImportService : IQuestionImportService
             TopicId = topicId,
             Instructions = instructions,
             ContentType = contentType,
+            Language = language,
             Status = ImportJobStatus.Pending
         };
         _db.QuestionImportJobs.Add(job);
@@ -161,6 +162,7 @@ public class QuestionImportService : IQuestionImportService
                     Hint = q.Hint,
                     ImageUrl = imageUrl,
                     TopicId = defaultTopicId,
+                    Language = job.Language,
                     Difficulty = difficulty,
                     IrtA = 1.0,
                     IrtB = irtB,
@@ -264,6 +266,7 @@ public class QuestionImportService : IQuestionImportService
         var question = new Question
         {
             TopicId = draft.TopicId ?? 0,
+            Language = draft.Language,
             Text = draft.QuestionText,
             Difficulty = draft.Difficulty,
             Explanation = draft.Explanation,
@@ -337,6 +340,7 @@ public class QuestionImportService : IQuestionImportService
             var question = new Question
             {
                 TopicId = draft.TopicId.Value,
+                Language = draft.Language,
                 Text = draft.QuestionText,
                 Difficulty = draft.Difficulty,
                 Explanation = draft.Explanation,
@@ -529,7 +533,7 @@ public class QuestionImportService : IQuestionImportService
     }
 
     public async Task<QuestionImportJobDto> CreateMultiFileImportJobAsync(
-        int adminUserId, string examTypeCode, int? sectionId, int? topicId, string? instructions)
+        int adminUserId, string examTypeCode, int? sectionId, int? topicId, string? instructions, string language = "en")
     {
         var job = new QuestionImportJob
         {
@@ -540,6 +544,7 @@ public class QuestionImportService : IQuestionImportService
             SectionId = sectionId,
             TopicId = topicId,
             Instructions = instructions,
+            Language = language,
             Status = ImportJobStatus.Pending
         };
         _db.QuestionImportJobs.Add(job);
@@ -771,6 +776,7 @@ public class QuestionImportService : IQuestionImportService
                     Hint = q.Hint,
                     ImageUrl = imageUrl,
                     TopicId = topicId,
+                    Language = job.Language,
                     Difficulty = difficulty,
                     IrtA = 1.0,
                     IrtB = irtB,

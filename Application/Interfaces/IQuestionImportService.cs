@@ -27,10 +27,10 @@ public record ImportFileEntry(Stream Stream, string FileName, string FileType, s
 
 public interface IQuestionImportService
 {
-    Task<QuestionImportJobDto> CreateImportJobAsync(int adminUserId, string fileName, string fileType, string examTypeCode, int? sectionId, int? topicId, string? instructions, ImportContentType contentType = ImportContentType.Questions);
+    Task<QuestionImportJobDto> CreateImportJobAsync(int adminUserId, string fileName, string fileType, string examTypeCode, int? sectionId, int? topicId, string? instructions, ImportContentType contentType = ImportContentType.Questions, string language = "en");
     Task ProcessImportJobAsync(int jobId, Stream fileStream, bool strictTemplate = false);
 
-    Task<QuestionImportJobDto> CreateMultiFileImportJobAsync(int adminUserId, string examTypeCode, int? sectionId, int? topicId, string? instructions);
+    Task<QuestionImportJobDto> CreateMultiFileImportJobAsync(int adminUserId, string examTypeCode, int? sectionId, int? topicId, string? instructions, string language = "en");
 
     Task ProcessMultiFileImportAsync(int jobId, List<ImportFileEntry> files);
 

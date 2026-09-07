@@ -14,37 +14,52 @@ function MockShop() {
   const [catalog, setCatalog] = useState<MockCatalog | null>(null);
   const [pkgPicker, setPkgPicker] = useState<string | null>(null);
   const [pkgChosen, setPkgChosen] = useState<number[]>([]);
+  const [pendingLang, setPendingLang] = useState<
+    | { type: 'tier'; tpl: MockTemplate; runs: number; price: number; currency: string }
+    | { type: 'pkg'; key: string; name: string; price: number; currency: string; chosen: number[] }
+    | null
+  >(null);
   const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   useEffect(() => {
     mockCatalogService.getCatalog().then(setCatalog).catch(() => {});
   }, []);
 
-  const addTierToCart = (tpl: MockTemplate, runs: number, price: number, currency: string) => {
+  const addTierToCart = (tpl: MockTemplate, runs: number, price: number, currency: string, language: string) => {
     cartService.add({
       itemType: 'mock',
       itemCode: String(tpl.mockExamId),
-      title: `${pickLocalized(tpl.title, tpl.titleKz, tpl.titleEn, locale)} · ${moks(runs, locale)}`,
+      title: `${pickLocalized(tpl.title, tpl.titleKz, tpl.titleEn, locale)} · ${moks(runs, locale)} · ${language.toUpperCase()}`,
       amount: price,
       currency,
       runs,
+      language,
     });
     navigate('/cart');
   };
 
-  const addPackageToCart = (key: string, name: string, price: number, currency: string, selectedMockIds: number[]) => {
+  const addPackageToCart = (key: string, name: string, price: number, currency: string, selectedMockIds: number[], language: string) => {
     cartService.add({
       itemType: 'package',
       itemCode: key,
-      title: name,
+      title: `${name} · ${language.toUpperCase()}`,
       amount: price,
       currency,
       selectedMockIds,
       subjects: selectedMockIds.join(','),
+      language,
     });
     setPkgPicker(null);
     setPkgChosen([]);
     navigate('/cart');
+  };
+
+  const confirmLang = (language: string) => {
+    const p = pendingLang;
+    setPendingLang(null);
+    if (!p) return;
+    if (p.type === 'tier') addTierToCart(p.tpl, p.runs, p.price, p.currency, language);
+    else addPackageToCart(p.key, p.name, p.price, p.currency, p.chosen, language);
   };
 
   const [highlight, setHighlight] = useState<string | null>(null);
@@ -105,11 +120,17 @@ function MockShop() {
           <div key={tpl.mockExamId} ref={(el) => { cardRefs.current[`mock:${tpl.mockExamId}`] = el; }} className="card" style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', outline: highlight === `mock:${tpl.mockExamId}` ? '2px solid var(--primary-color)' : 'none', outlineOffset: 2, transition: 'outline-color 0.3s' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
               <div style={{ fontWeight: 700 }}>{pickLocalized(tpl.title, tpl.titleKz, tpl.titleEn, locale)}</div>
-              {tpl.runsRemaining > 0 && (
-                <span style={{ background: 'rgba(16,185,129,0.12)', color: '#10b981', padding: '1px 7px', borderRadius: 10, fontSize: '0.7rem', fontWeight: 700 }}>
-                  {s.mockRemaining}: {moks(tpl.runsRemaining, locale)}
-                </span>
-              )}
+              {tpl.runsByLanguage
+                ? Object.entries(tpl.runsByLanguage).filter(([, n]) => n > 0).map(([lng, n]) => (
+                    <span key={lng} style={{ background: 'rgba(16,185,129,0.12)', color: '#10b981', padding: '1px 7px', borderRadius: 10, fontSize: '0.7rem', fontWeight: 700 }}>
+                      {s.mockRemaining}: {moks(n, locale)} · {lng.toUpperCase()}
+                    </span>
+                  ))
+                : tpl.runsRemaining > 0 && (
+                    <span style={{ background: 'rgba(16,185,129,0.12)', color: '#10b981', padding: '1px 7px', borderRadius: 10, fontSize: '0.7rem', fontWeight: 700 }}>
+                      {s.mockRemaining}: {moks(tpl.runsRemaining, locale)}
+                    </span>
+                  )}
             </div>
             {pickLocalized(tpl.description ?? '', tpl.descriptionKz, tpl.descriptionEn, locale) && (
               <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>{pickLocalized(tpl.description ?? '', tpl.descriptionKz, tpl.descriptionEn, locale)}</div>
@@ -122,7 +143,7 @@ function MockShop() {
                 <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>Цены не заданы</span>
               ) : tpl.tiers.map((tier) => (
                 <button key={tier.id} className="btn btn-outline" style={{ fontSize: '0.85rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', padding: '0.55rem 0.9rem' }}
-                        onClick={() => addTierToCart(tpl, tier.runs, tier.price, tier.currency)}>
+                        onClick={() => setPendingLang({ type: 'tier', tpl, runs: tier.runs, price: tier.price, currency: tier.currency })}>
                   <span style={{ fontWeight: 700 }}>{moks(tier.runs, locale)}</span>
                   <span style={{ color: 'var(--primary-color)', fontWeight: 800, whiteSpace: 'nowrap' }}>{tier.price.toLocaleString('ru-RU')} {tier.currency}</span>
                 </button>
@@ -189,13 +210,13 @@ function MockShop() {
 
                   {allSubjects ? (
                     <button className={`btn ${featured ? 'btn-primary' : 'btn-outline'}`} style={{ marginTop: 'auto', width: '100%' }}
-                            onClick={() => addPackageToCart(pkg.key, pkg.name, pkg.price, pkg.currency, [])}>
+                            onClick={() => setPendingLang({ type: 'pkg', key: pkg.key, name: pkg.name, price: pkg.price, currency: pkg.currency, chosen: [] })}>
                       {s.addToCart}
                     </button>
                   ) : picking ? (
                     <button className="btn btn-primary" style={{ marginTop: 'auto', width: '100%' }}
                             disabled={pkgChosen.length !== pkg.pickCount}
-                            onClick={() => addPackageToCart(pkg.key, pkg.name, pkg.price, pkg.currency, pkgChosen)}>
+                            onClick={() => setPendingLang({ type: 'pkg', key: pkg.key, name: pkg.name, price: pkg.price, currency: pkg.currency, chosen: pkgChosen })}>
                       {s.addToCart} ({pkgChosen.length}/{pkg.pickCount})
                     </button>
                   ) : (
@@ -209,6 +230,22 @@ function MockShop() {
             })}
           </div>
         </>
+      )}
+
+      {pendingLang && (
+        <div onClick={() => setPendingLang(null)}
+             style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
+          <div onClick={(e) => e.stopPropagation()} className="card"
+               style={{ maxWidth: 340, width: '100%', display: 'flex', flexDirection: 'column', gap: '0.85rem', padding: '1.25rem' }}>
+            <div style={{ fontWeight: 700, fontSize: '1.05rem' }}>{s.chooseLanguage}</div>
+            <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{s.chooseLanguageHint}</div>
+            <div style={{ display: 'flex', gap: '0.6rem' }}>
+              <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => confirmLang('en')}>English</button>
+              <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => confirmLang('zh')}>中文</button>
+            </div>
+            <button className="btn btn-ghost" style={{ fontSize: '0.82rem' }} onClick={() => setPendingLang(null)}>{s.cancel}</button>
+          </div>
+        </div>
       )}
     </div>
   );
