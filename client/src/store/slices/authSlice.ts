@@ -110,6 +110,11 @@ export const register = createAsyncThunk(
   async (data: RegisterRequest, { rejectWithValue }) => {
     try {
       const response = await authService.register(data);
+      // Only the auto-login path (account already active) is a completed auth here;
+      // the normal flow fires sign_up later at email verification.
+      if (response.emailVerified) {
+        trackEvent(response.isNewUser ? 'sign_up' : 'login', { method: 'email' });
+      }
       return response;
     } catch (error: unknown) {
       const err = error as { response?: { data?: { error?: string } } };

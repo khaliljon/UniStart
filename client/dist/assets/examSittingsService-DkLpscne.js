@@ -1,0 +1,1 @@
+import{g as a}from"./index-BJETfc8r.js";const s={list:()=>a.get("/exam-sittings").then(t=>t.data),adminList:()=>a.get("/exam-sittings/admin/all").then(t=>t.data),create:t=>a.post("/exam-sittings/admin",t).then(e=>e.data),update:(t,e)=>a.put(`/exam-sittings/admin/${t}`,e).then(i=>i.data),remove:t=>a.delete(`/exam-sittings/admin/${t}`).then(()=>{})};export{s as e};

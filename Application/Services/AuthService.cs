@@ -194,7 +194,8 @@ public class AuthService : IAuthService
             expiresAt,
             subdomain,
             user.PhoneNumber,
-            user.HasFullAccess
+            user.HasFullAccess,
+            true
         );
     }
 
@@ -356,12 +357,15 @@ public class AuthService : IAuthService
         await _emailService.SendVerificationCodeAsync(user.Email, user.Name, code);
     }
 
+    protected virtual async Task<(string Email, string Name, string Subject)> ValidateGoogleTokenAsync(string idToken)
+    {
+        var payload = await Google.Apis.Auth.GoogleJsonWebSignature.ValidateAsync(idToken);
+        return (payload.Email, payload.Name ?? payload.Email.Split('@')[0], payload.Subject);
+    }
+
     public async Task<AuthResponseDto> GoogleLoginAsync(GoogleLoginDto dto)
     {
-        var payload = await Google.Apis.Auth.GoogleJsonWebSignature.ValidateAsync(dto.IdToken);
-        var email = payload.Email;
-        var fullName = payload.Name ?? email.Split('@')[0];
-        var googleId = payload.Subject;
+        var (email, fullName, googleId) = await ValidateGoogleTokenAsync(dto.IdToken);
         var nameParts = fullName.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
         var gFirstName = InputSanitizer.Sanitize(nameParts[0]) ?? "";
         var gLastName = nameParts.Length > 1 ? (InputSanitizer.Sanitize(nameParts[1]) ?? "") : "";
