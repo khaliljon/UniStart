@@ -70,6 +70,11 @@ function MockExamPage() {
     }
   }, [phase, results]);
 
+  const localizedMockTitle = (mockExamId: number, fallback: string) => {
+    const m = mockExams.find((x) => x.id === mockExamId);
+    return m ? pickLocalized(m.title, m.titleKz, m.titleEn, locale) : fallback;
+  };
+
   const loadExams = useCallback(async () => {
     setLoading(true);
     try {
@@ -398,7 +403,7 @@ function MockExamPage() {
                         <span style={{ background: examBadgeColor(h.examTypeCode), color: '#fff', padding: '1px 8px', borderRadius: 10, fontSize: '0.7rem', marginRight: 6 }}>
                           {h.examTypeCode}
                         </span>
-                        {h.examTitle}
+                        {localizedMockTitle(h.mockExamId, h.examTitle)}
                       </td>
                       <td style={{ padding: '0.5rem', fontWeight: 600 }}>
                         {h.totalScore !== null ? `${h.totalScore}%` : '—'}
