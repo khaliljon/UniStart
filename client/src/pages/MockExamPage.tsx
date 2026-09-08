@@ -5,6 +5,7 @@ import { useAppSelector } from '../hooks/useAppSelector';
 import { useTranslation } from '../hooks/useTranslation';
 import { pickLocalized } from '../utils/localize';
 import { moks } from '../utils/plural';
+import { isChineseOnlySubject } from '../utils/subject';
 import { cscaStrings } from '../i18n/csca';
 import { shortDateLocalized } from '../utils/dates';
 import type {
@@ -127,6 +128,12 @@ function MockExamPage() {
     } catch (e) { console.error(e); }
     setLoading(false);
   };
+
+  useEffect(() => {
+    if (examDetail && isChineseOnlySubject(examDetail.title, examDetail.titleEn, examDetail.titleKz, ...examDetail.sections.map((s) => s.name))) {
+      setStartLang('zh');
+    }
+  }, [examDetail]);
 
   const handleSelectExam = async (examId: number) => {
     setLoading(true);
@@ -402,6 +409,7 @@ function MockExamPage() {
   if (phase === 'detail' && examDetail) {
     const totalTime = examDetail.sections.reduce((sum, s) => sum + s.timeLimitMinutes, 0);
     const totalQuestions = examDetail.sections.reduce((sum, s) => sum + s.questionCount, 0);
+    const chineseOnly = isChineseOnlySubject(examDetail.title, examDetail.titleEn, examDetail.titleKz, ...examDetail.sections.map((s) => s.name));
 
     return (
       <div style={{ maxWidth: 700, margin: '0 auto' }}>
@@ -444,18 +452,20 @@ function MockExamPage() {
         ))}
 
         <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', marginBottom: '0.85rem' }}>
-            <button
-              className={`btn ${startLang === 'en' ? 'btn-primary' : 'btn-outline'}`}
-              style={{ padding: '0.4rem 1rem', fontSize: '0.85rem' }}
-              onClick={() => setStartLang('en')}
-            >English</button>
-            <button
-              className={`btn ${startLang === 'zh' ? 'btn-primary' : 'btn-outline'}`}
-              style={{ padding: '0.4rem 1rem', fontSize: '0.85rem' }}
-              onClick={() => setStartLang('zh')}
-            >中文</button>
-          </div>
+          {!chineseOnly && (
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', marginBottom: '0.85rem' }}>
+              <button
+                className={`btn ${startLang === 'en' ? 'btn-primary' : 'btn-outline'}`}
+                style={{ padding: '0.4rem 1rem', fontSize: '0.85rem' }}
+                onClick={() => setStartLang('en')}
+              >English</button>
+              <button
+                className={`btn ${startLang === 'zh' ? 'btn-primary' : 'btn-outline'}`}
+                style={{ padding: '0.4rem 1rem', fontSize: '0.85rem' }}
+                onClick={() => setStartLang('zh')}
+              >中文</button>
+            </div>
+          )}
           <button
             className="btn btn-primary"
             style={{ padding: '0.75rem 2rem', fontSize: '1rem', width: '100%', maxWidth: '320px' }}

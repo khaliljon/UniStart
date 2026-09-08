@@ -4,6 +4,7 @@ import { mockCatalogService, type MockCatalog, type MockTemplate } from '../serv
 import { cartService } from '../services/cartService';
 import { moks } from '../utils/plural';
 import { pickLocalized } from '../utils/localize';
+import { isChineseOnlySubject } from '../utils/subject';
 import { useTranslation } from '../hooks/useTranslation';
 import { cscaStrings } from '../i18n/csca';
 
@@ -143,7 +144,9 @@ function MockShop() {
                 <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>Цены не заданы</span>
               ) : tpl.tiers.map((tier) => (
                 <button key={tier.id} className="btn btn-outline" style={{ fontSize: '0.85rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', padding: '0.55rem 0.9rem' }}
-                        onClick={() => setPendingLang({ type: 'tier', tpl, runs: tier.runs, price: tier.price, currency: tier.currency })}>
+                        onClick={() => isChineseOnlySubject(tpl.title, tpl.titleEn, tpl.titleKz)
+                          ? addTierToCart(tpl, tier.runs, tier.price, tier.currency, 'zh')
+                          : setPendingLang({ type: 'tier', tpl, runs: tier.runs, price: tier.price, currency: tier.currency })}>
                   <span style={{ fontWeight: 700 }}>{moks(tier.runs, locale)}</span>
                   <span style={{ color: 'var(--primary-color)', fontWeight: 800, whiteSpace: 'nowrap' }}>{tier.price.toLocaleString('ru-RU')} {tier.currency}</span>
                 </button>
@@ -216,7 +219,14 @@ function MockShop() {
                   ) : picking ? (
                     <button className="btn btn-primary" style={{ marginTop: 'auto', width: '100%' }}
                             disabled={pkgChosen.length !== pkg.pickCount}
-                            onClick={() => setPendingLang({ type: 'pkg', key: pkg.key, name: pkg.name, price: pkg.price, currency: pkg.currency, chosen: pkgChosen })}>
+                            onClick={() => {
+                              const allZh = pkgChosen.length > 0 && pkgChosen.every((id) => {
+                                const t = catalog.templates.find((x) => x.mockExamId === id);
+                                return !!t && isChineseOnlySubject(t.title, t.titleEn, t.titleKz);
+                              });
+                              if (allZh) addPackageToCart(pkg.key, pkg.name, pkg.price, pkg.currency, pkgChosen, 'zh');
+                              else setPendingLang({ type: 'pkg', key: pkg.key, name: pkg.name, price: pkg.price, currency: pkg.currency, chosen: pkgChosen });
+                            }}>
                       {s.addToCart} ({pkgChosen.length}/{pkg.pickCount})
                     </button>
                   ) : (

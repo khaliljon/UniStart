@@ -3,6 +3,7 @@ import { questionImportService } from '../services/questionImportService';
 import type { QuestionImportJob, ImportedQuestionDraft, UpdateDraftPayload, FileRole, BatchFileEntry, DraftOption } from '../services/questionImportService';
 import adminService from '../services/adminService';
 import type { AdminSection, AdminTopicSummary } from '../types';
+import { isChineseOnlySubject } from '../utils/subject';
 import { useTranslation } from '../hooks/useTranslation';
 
 const EXAM_TYPES = ['CSCA'];
@@ -83,9 +84,14 @@ function AdminQuestionImportPage({ embedded = false }: { embedded?: boolean } = 
 
   const sectionsForExam = sections.filter(s => s.examTypeCode === examTypeCode);
   const selectedSection = sections.find(s => s.id === sectionId);
+  const chineseOnly = isChineseOnlySubject(selectedSection?.name);
   const topicsForSection = selectedSection
     ? topics.filter(tp => tp.examTypeCode === examTypeCode && tp.sectionName === selectedSection.name)
     : [];
+
+  useEffect(() => {
+    if (chineseOnly) setLanguage('zh');
+  }, [chineseOnly]);
 
   useEffect(() => {
     if (selectedJob) loadDrafts(selectedJob.id);
@@ -372,18 +378,26 @@ function AdminQuestionImportPage({ embedded = false }: { embedded?: boolean } = 
             <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.25rem' }}>
               Язык вопросов
             </label>
-            <select
-              value={language}
-              onChange={e => setLanguage(e.target.value as 'en' | 'zh')}
-              style={{
+            {chineseOnly ? (
+              <div style={{
                 padding: '0.5rem 0.75rem', borderRadius: '0.5rem',
-                border: '1px solid var(--border-color)', background: 'var(--card-background)',
-                color: 'var(--text-primary)', fontSize: '0.9rem'
-              }}
-            >
-              <option value="en">English (en)</option>
-              <option value="zh">中文 (zh)</option>
-            </select>
+                border: '1px solid var(--border-color)', background: 'var(--bg-secondary, #f3f4f6)',
+                color: 'var(--text-secondary)', fontSize: '0.9rem'
+              }}>中文 (zh)</div>
+            ) : (
+              <select
+                value={language}
+                onChange={e => setLanguage(e.target.value as 'en' | 'zh')}
+                style={{
+                  padding: '0.5rem 0.75rem', borderRadius: '0.5rem',
+                  border: '1px solid var(--border-color)', background: 'var(--card-background)',
+                  color: 'var(--text-primary)', fontSize: '0.9rem'
+                }}
+              >
+                <option value="en">English (en)</option>
+                <option value="zh">中文 (zh)</option>
+              </select>
+            )}
           </div>
           <div>
             <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.25rem' }}>
