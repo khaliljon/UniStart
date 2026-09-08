@@ -52,7 +52,7 @@ public record MockExamAttemptDto(
     DateTime StartedAt,
     int TotalTimeMinutes,
     IEnumerable<string>? SectionNames = null,
-    bool IsFree = false
+    string? AccessType = null
 );
 
 public record MockExamSectionStateDto(
@@ -116,7 +116,7 @@ public record MockExamResultDto(
     DateTime? CompletedAt,
     IEnumerable<MockExamSectionResultDto> SectionResults,
     IEnumerable<MockExamAnswerReviewDto> AnswerReview,
-    bool IsFree = false
+    string? AccessType = null
 );
 
 public record MockExamAnswerReviewDto(

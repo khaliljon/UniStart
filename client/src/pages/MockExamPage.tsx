@@ -57,7 +57,7 @@ function MockExamPage() {
   const [showFinishConfirm, setShowFinishConfirm] = useState(false);
 
   // Analytics state (best-effort; never affects exam flow).
-  const mockMetaRef = useRef<{ mockId: number; subject: string; isFree: boolean } | null>(null);
+  const mockMetaRef = useRef<{ mockId: number; subject: string; accessType?: 'free' | 'purchased' | 'full_access' } | null>(null);
   const completeTrackedRef = useRef<Set<number>>(new Set());
   const viewedResultsRef = useRef<number | null>(null);
 
@@ -167,8 +167,9 @@ function MockExamPage() {
       const att = await mockExamService.startMockExam(examDetail.id, undefined, startLang);
       setAttempt(att);
       const subject = subjectSlug(examDetail.titleEn, examDetail.title, examDetail.titleKz, ...examDetail.sections.map((sec) => sec.name));
-      mockMetaRef.current = { mockId: examDetail.id, subject, isFree: att.isFree ?? false };
-      trackEvent('mock_start', { subject, mock_id: examDetail.id, is_free: att.isFree ?? false });
+      const accessType = att.accessType;
+      mockMetaRef.current = { mockId: examDetail.id, subject, accessType };
+      trackEvent('mock_start', { subject, mock_id: examDetail.id, ...(accessType ? { access_type: accessType } : {}) });
       const section = await mockExamService.getCurrentSection(att.attemptId);
       setSectionState(section);
       setCurrentQIndex(0);
@@ -243,7 +244,8 @@ function MockExamPage() {
         const duration = res.completedAt
           ? Math.max(0, Math.round((new Date(res.completedAt).getTime() - new Date(res.startedAt).getTime()) / 1000))
           : 0;
-        trackEvent('mock_complete', { subject, mock_id: res.mockExamId, score, duration_seconds: duration, is_free: res.isFree ?? meta?.isFree ?? false });
+        const accessType = res.accessType ?? meta?.accessType;
+        trackEvent('mock_complete', { subject, mock_id: res.mockExamId, score, duration_seconds: duration, ...(accessType ? { access_type: accessType } : {}) });
       }
       setPhase('results');
     } catch (e) { console.error(e); }

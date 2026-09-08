@@ -23,8 +23,8 @@ export interface AnalyticsEventMap {
   sign_up: { method: 'email' | 'google' };
   login: { method: 'email' | 'google' };
   select_subject: { subject: string };
-  mock_start: { subject: string; mock_id: number; is_free: boolean };
-  mock_complete: { subject: string; mock_id: number; score: number; duration_seconds: number; is_free: boolean };
+  mock_start: { subject: string; mock_id: number; access_type?: 'free' | 'purchased' | 'full_access' };
+  mock_complete: { subject: string; mock_id: number; score: number; duration_seconds: number; access_type?: 'free' | 'purchased' | 'full_access' };
   view_results: { subject: string; mock_id: number; score: number };
   view_explanation: { subject: string; topic: string; question_id: number };
   begin_checkout: { currency: string; value: number; items: AnalyticsItem[] };

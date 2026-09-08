@@ -14,6 +14,7 @@ public class MockExamAttempt
     public string? SelectedSectionIdsJson { get; set; }
     public string Language { get; set; } = "en";
     public bool IsFree { get; set; }
+    public string? AccessType { get; set; }
 
     public virtual User User { get; set; } = null!;
     public virtual MockExam MockExam { get; set; } = null!;

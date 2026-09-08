@@ -659,7 +659,7 @@ export interface MockExamAttempt {
   startedAt: string;
   totalTimeMinutes: number;
   sectionNames?: string[];
-  isFree?: boolean;
+  accessType?: 'free' | 'purchased' | 'full_access';
 }
 
 export interface MockExamSectionState {
@@ -716,7 +716,7 @@ export interface MockExamResult {
   completedAt: string | null;
   sectionResults: MockExamSectionResult[];
   answerReview: MockExamAnswerReview[];
-  isFree?: boolean;
+  accessType?: 'free' | 'purchased' | 'full_access';
 }
 
 export interface MockExamAnswerReview {

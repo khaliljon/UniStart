@@ -133,6 +133,7 @@ public class MockExamService : IMockExamService
         // the user's one-time free run (any subject). Otherwise it's locked.
         var accessUser = await _context.Users.FindAsync(userId);
         var consumedFree = false;
+        var accessType = "full_access";
         if (accessUser == null || !accessUser.HasFullAccess)
         {
             var runs = await _context.UserMockRuns
@@ -140,11 +141,13 @@ public class MockExamService : IMockExamService
             if (runs != null && runs.RunsRemaining > 0)
             {
                 runs.RunsRemaining--;
+                accessType = "purchased";
             }
             else if (accessUser != null && !accessUser.FreeMockUsed)
             {
                 accessUser.FreeMockUsed = true; // consume the one free run
                 consumedFree = true;
+                accessType = "free";
             }
             else
             {
@@ -182,7 +185,8 @@ public class MockExamService : IMockExamService
                 ? JsonSerializer.Serialize(selectedSectionIds)
                 : null,
             Language = language,
-            IsFree = consumedFree
+            IsFree = consumedFree,
+            AccessType = accessType
         };
 
         _context.MockExamAttempts.Add(attempt);
@@ -286,7 +290,7 @@ public class MockExamService : IMockExamService
             attempt.StartedAt,
             sections.Sum(s => s.TimeLimitMinutes),
             sections.Select(s => s.Name),
-            consumedFree
+            accessType
         );
     }
 
@@ -678,7 +682,7 @@ public class MockExamService : IMockExamService
             attempt.CompletedAt,
             sectionResults,
             answerReview,
-            attempt.IsFree
+            attempt.AccessType
         );
     }
 
