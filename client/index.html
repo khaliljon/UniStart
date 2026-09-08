@@ -40,6 +40,21 @@
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       (function(){
+        // Move authTransfer (carries auth token + user data) out of the URL BEFORE
+        // any analytics/history sees it. The app reads it from sessionStorage.
+        // Other params are left intact (none of the app's flows put secrets in the
+        // URL) — analytics itself only forwards an allowlist of marketing params.
+        try {
+          var loc = window.location;
+          var params = new URLSearchParams(loc.search);
+          if (params.has('authTransfer')) {
+            try { sessionStorage.setItem('authTransfer', params.get('authTransfer')); } catch(e){}
+            params.delete('authTransfer');
+            var qs = params.toString();
+            window.history.replaceState(null, '', loc.pathname + (qs ? '?' + qs : '') + loc.hash);
+          }
+        } catch(e){}
+
         var h = location.hostname;
         if (h !== 'unistart.kz' && h !== 'www.unistart.kz') return;
         var g = document.createElement('script');
@@ -47,7 +62,8 @@
         g.src = 'https://www.googletagmanager.com/gtag/js?id=G-WB3JWSKSTF';
         document.head.appendChild(g);
         gtag('js', new Date());
-        gtag('config', 'G-WB3JWSKSTF');
+        // Manual, deterministic page_view is sent from the SPA (Analytics.tsx).
+        gtag('config', 'G-WB3JWSKSTF', { send_page_view: false });
         (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
         m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
         (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");

@@ -67,6 +67,11 @@ public class PolarService : IPolarService
             ? (long)Math.Round(quote.Total)
             : (long)Math.Round(quote.Total * 100m);
 
+        // Own correlation id so the success page can match this exact checkout to
+        // its backend-confirmed Purchase (independent of Polar-internal ids).
+        var cref = Guid.NewGuid().ToString("N");
+        var successUrl = _successUrl + (_successUrl.Contains('?') ? "&" : "?") + "cref=" + cref;
+
         var payload = new
         {
             products = new[] { _productId },
@@ -78,12 +83,13 @@ public class PolarService : IPolarService
                 }
             },
             currency,
-            success_url = _successUrl,
+            success_url = successUrl,
             external_customer_id = userId.ToString(),
             metadata = new Dictionary<string, string>
             {
                 ["userId"] = userId.ToString(),
                 ["lines"] = EncodeLines(lines),
+                ["cref"] = cref,
             },
         };
 
@@ -149,7 +155,7 @@ public class PolarService : IPolarService
             return true;
         }
 
-        await _entitlements.GrantAsync(userId, lines, amounts, orderId);
+        await _entitlements.GrantAsync(userId, lines, amounts, orderId, metadata.TryGetValue("cref", out var crefVal) ? crefVal : null);
         _db.AppSettings.Add(new AppSetting { Key = dedupKey, Value = DateTime.UtcNow.ToString("o") });
         await _db.SaveChangesAsync();
 

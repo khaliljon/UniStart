@@ -77,7 +77,7 @@ public class EntitlementService : IEntitlementService
         return new CheckoutQuoteDto(total, currency);
     }
 
-    public async Task<CheckoutQuoteDto> GrantAsync(int userId, List<CheckoutLineDto> lines, PurchaseAmountsDto? amounts = null, string? polarOrderId = null)
+    public async Task<CheckoutQuoteDto> GrantAsync(int userId, List<CheckoutLineDto> lines, PurchaseAmountsDto? amounts = null, string? polarOrderId = null, string? checkoutRef = null)
     {
         var (total, currency, resolved) = await ResolveAsync(lines);
         var totalLinePrice = resolved.Sum(l => l.Price);
@@ -120,6 +120,7 @@ public class EntitlementService : IEntitlementService
                 NetAmount = amounts != null ? Math.Round(amounts.Net * share, 2) : 0m,
                 TotalAmount = amounts != null ? Math.Round(amounts.Total * share, 2) : 0m,
                 PolarOrderId = polarOrderId,
+                CheckoutRef = checkoutRef,
             });
         }
 

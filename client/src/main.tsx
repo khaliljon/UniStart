@@ -8,7 +8,13 @@ import App from './App'
 import ErrorBoundary from './components/ErrorBoundary'
 import './index.css'
 
-const _atParam = new URLSearchParams(window.location.search).get('authTransfer');
+const _atParam = (() => {
+  try {
+    const fromSession = sessionStorage.getItem('authTransfer');
+    if (fromSession) { sessionStorage.removeItem('authTransfer'); return fromSession; }
+  } catch { /* ignore */ }
+  return new URLSearchParams(window.location.search).get('authTransfer');
+})();
 if (_atParam) {
   try {
     const data = JSON.parse(_atParam);

@@ -370,6 +370,8 @@ public class AuthService : IAuthService
             .IgnoreQueryFilters()
             .FirstOrDefaultAsync(u => u.Email == email);
 
+        var isNew = user == null;
+
         if (user == null)
         {
             user = new User
@@ -417,7 +419,8 @@ public class AuthService : IAuthService
             user.SubscriptionExpiresAt, user.EmailVerified, token, expiresAt,
             googleSub,
             user.PhoneNumber,
-            user.HasFullAccess
+            user.HasFullAccess,
+            isNew
         );
     }
 

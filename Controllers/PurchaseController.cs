@@ -24,7 +24,7 @@ public class PurchaseController : ApiControllerBase
 
     private static PurchaseDto ToDto(Purchase p) => new(
         p.Id, p.ItemType, p.ItemCode, p.Title, p.Subjects,
-        p.Amount, p.Currency, p.Status, p.PurchasedAt);
+        p.Amount, p.Currency, p.Status, p.PurchasedAt, p.PolarOrderId, p.CheckoutRef);
 
     [HttpGet]
     public async Task<IActionResult> List()

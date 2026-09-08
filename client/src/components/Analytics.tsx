@@ -1,31 +1,30 @@
 import { useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
-
-const YM_ID = 11074859;
-
-declare global {
-  interface Window {
-    gtag?: (...args: unknown[]) => void;
-    ym?: (...args: unknown[]) => void;
-  }
-}
+import { trackPageView, sanitizePathSearch, setUserProperties } from '../utils/analytics';
+import { captureFirstTouch, getFirstTouch } from '../utils/attribution';
 
 export default function Analytics() {
   const location = useLocation();
-  const first = useRef(true);
+  const isFirst = useRef(true);
 
+  // First-touch attribution + GA4 user properties (once per app load).
   useEffect(() => {
-    if (first.current) {
-      first.current = false;
-      return;
+    captureFirstTouch();
+    const ft = getFirstTouch();
+    if (ft) {
+      const props: Record<string, string> = {};
+      if (ft.source) props.first_source = ft.source;
+      if (ft.medium) props.first_medium = ft.medium;
+      if (ft.campaign) props.first_campaign = ft.campaign;
+      if (Object.keys(props).length > 0) setUserProperties(props);
     }
-    const url = location.pathname + location.search;
-    window.gtag?.('event', 'page_view', {
-      page_path: url,
-      page_location: window.location.href,
-      page_title: document.title,
-    });
-    window.ym?.(YM_ID, 'hit', url);
+  }, []);
+
+  // Exactly one page_view per real navigation (initial + SPA), sanitized URL.
+  useEffect(() => {
+    const url = sanitizePathSearch(location.pathname, location.search);
+    trackPageView(url, isFirst.current);
+    isFirst.current = false;
   }, [location]);
 
   return null;

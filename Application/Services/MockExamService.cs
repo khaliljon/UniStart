@@ -132,6 +132,7 @@ public class MockExamService : IMockExamService
         // A start consumes one paid run for this template; if none, it consumes
         // the user's one-time free run (any subject). Otherwise it's locked.
         var accessUser = await _context.Users.FindAsync(userId);
+        var consumedFree = false;
         if (accessUser == null || !accessUser.HasFullAccess)
         {
             var runs = await _context.UserMockRuns
@@ -143,6 +144,7 @@ public class MockExamService : IMockExamService
             else if (accessUser != null && !accessUser.FreeMockUsed)
             {
                 accessUser.FreeMockUsed = true; // consume the one free run
+                consumedFree = true;
             }
             else
             {
@@ -179,7 +181,8 @@ public class MockExamService : IMockExamService
             SelectedSectionIdsJson = selectedSectionIds != null && selectedSectionIds.Count > 0
                 ? JsonSerializer.Serialize(selectedSectionIds)
                 : null,
-            Language = language
+            Language = language,
+            IsFree = consumedFree
         };
 
         _context.MockExamAttempts.Add(attempt);
@@ -282,7 +285,8 @@ public class MockExamService : IMockExamService
             sections.Count,
             attempt.StartedAt,
             sections.Sum(s => s.TimeLimitMinutes),
-            sections.Select(s => s.Name)
+            sections.Select(s => s.Name),
+            consumedFree
         );
     }
 
@@ -673,7 +677,8 @@ public class MockExamService : IMockExamService
             attempt.StartedAt,
             attempt.CompletedAt,
             sectionResults,
-            answerReview
+            answerReview,
+            attempt.IsFree
         );
     }
 

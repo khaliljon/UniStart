@@ -5,7 +5,8 @@ import { useAppSelector } from '../hooks/useAppSelector';
 import { useTranslation } from '../hooks/useTranslation';
 import { pickLocalized } from '../utils/localize';
 import { moks } from '../utils/plural';
-import { isChineseOnlySubject } from '../utils/subject';
+import { isChineseOnlySubject, subjectSlug } from '../utils/subject';
+import { trackEvent } from '../utils/analytics';
 import { cscaStrings } from '../i18n/csca';
 import { shortDateLocalized } from '../utils/dates';
 import type {
@@ -54,6 +55,20 @@ function MockExamPage() {
   const [showReview, setShowReview] = useState(false);
   const [reviewFilter, setReviewFilter] = useState<'all' | 'correct' | 'incorrect' | 'unanswered'>('all');
   const [showFinishConfirm, setShowFinishConfirm] = useState(false);
+
+  // Analytics state (best-effort; never affects exam flow).
+  const mockMetaRef = useRef<{ mockId: number; subject: string; isFree: boolean } | null>(null);
+  const completeTrackedRef = useRef<Set<number>>(new Set());
+  const viewedResultsRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (phase === 'results' && results && viewedResultsRef.current !== results.attemptId) {
+      viewedResultsRef.current = results.attemptId;
+      const subject = mockMetaRef.current?.subject ?? subjectSlug(results.examTitle);
+      const score = results.totalQuestions > 0 ? Math.round((results.totalCorrect / results.totalQuestions) * 100) : 0;
+      trackEvent('view_results', { subject, mock_id: results.mockExamId, score });
+    }
+  }, [phase, results]);
 
   const loadExams = useCallback(async () => {
     setLoading(true);
@@ -151,6 +166,9 @@ function MockExamPage() {
     try {
       const att = await mockExamService.startMockExam(examDetail.id, undefined, startLang);
       setAttempt(att);
+      const subject = subjectSlug(examDetail.titleEn, examDetail.title, examDetail.titleKz, ...examDetail.sections.map((sec) => sec.name));
+      mockMetaRef.current = { mockId: examDetail.id, subject, isFree: att.isFree ?? false };
+      trackEvent('mock_start', { subject, mock_id: examDetail.id, is_free: att.isFree ?? false });
       const section = await mockExamService.getCurrentSection(att.attemptId);
       setSectionState(section);
       setCurrentQIndex(0);
@@ -217,6 +235,16 @@ function MockExamPage() {
       setAttempt(updated);
       const res = await mockExamService.getResults(updated.attemptId);
       setResults(res);
+      if (!completeTrackedRef.current.has(res.attemptId)) {
+        completeTrackedRef.current.add(res.attemptId);
+        const meta = mockMetaRef.current;
+        const subject = meta?.subject ?? subjectSlug(res.examTitle);
+        const score = res.totalQuestions > 0 ? Math.round((res.totalCorrect / res.totalQuestions) * 100) : 0;
+        const duration = res.completedAt
+          ? Math.max(0, Math.round((new Date(res.completedAt).getTime() - new Date(res.startedAt).getTime()) / 1000))
+          : 0;
+        trackEvent('mock_complete', { subject, mock_id: res.mockExamId, score, duration_seconds: duration, is_free: res.isFree ?? meta?.isFree ?? false });
+      }
       setPhase('results');
     } catch (e) { console.error(e); }
     setLoading(false);

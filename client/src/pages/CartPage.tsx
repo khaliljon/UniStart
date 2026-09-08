@@ -7,6 +7,7 @@ import { mockCatalogService, type CheckoutLine, type MockTemplate, type MockPack
 import { materialsService, type StudyMaterial } from '../services/materialsService';
 import { purchaseService } from '../services/purchaseService';
 import { paymentsService } from '../services/paymentsService';
+import { trackEvent } from '../utils/analytics';
 import { pickLocalized } from '../utils/localize';
 import { moks } from '../utils/plural';
 
@@ -85,6 +86,18 @@ function CartPage() {
       });
 
       const { url } = await paymentsService.createCheckout(lines);
+      trackEvent('begin_checkout', {
+        currency,
+        value: total,
+        items: items.map((i) => ({
+          item_id: i.itemCode,
+          item_name: displayTitle(i),
+          item_category: i.itemType,
+          item_variant: i.language ?? undefined,
+          price: i.amount,
+          quantity: 1,
+        })),
+      });
       window.location.href = url;
     } catch {
       setError(s.checkoutError);

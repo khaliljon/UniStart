@@ -26,6 +26,7 @@ public class Purchase : IAuditable
     public decimal TotalAmount { get; set; }
 
     public string? PolarOrderId { get; set; }
+    public string? CheckoutRef { get; set; }
 
     public string Status { get; set; } = "Paid";
 

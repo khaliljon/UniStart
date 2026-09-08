@@ -11,7 +11,9 @@ public record PurchaseDto(
     decimal Amount,
     string Currency,
     string Status,
-    DateTime PurchasedAt);
+    DateTime PurchasedAt,
+    string? PolarOrderId = null,
+    string? CheckoutRef = null);
 
 public record AdminPurchaseDto(
     int Id,

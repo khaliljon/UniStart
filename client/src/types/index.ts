@@ -30,6 +30,7 @@ export interface AuthResponse {
   schoolSubdomain: string | null;
   phoneNumber?: string | null;
   hasFullAccess?: boolean;
+  isNewUser?: boolean;
 }
 
 export interface LoginRequest {
@@ -658,6 +659,7 @@ export interface MockExamAttempt {
   startedAt: string;
   totalTimeMinutes: number;
   sectionNames?: string[];
+  isFree?: boolean;
 }
 
 export interface MockExamSectionState {
@@ -714,6 +716,7 @@ export interface MockExamResult {
   completedAt: string | null;
   sectionResults: MockExamSectionResult[];
   answerReview: MockExamAnswerReview[];
+  isFree?: boolean;
 }
 
 export interface MockExamAnswerReview {

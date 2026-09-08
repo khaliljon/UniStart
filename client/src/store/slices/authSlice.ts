@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { authService } from '../../services/authService';
+import { trackEvent } from '../../utils/analytics';
 import type { User, LoginRequest, RegisterRequest, AuthResponse, VerifyEmailRequest, GoogleLoginRequest } from '../../types';
 
 function getSubdomain(): string | null {
@@ -92,6 +93,7 @@ export const login = createAsyncThunk(
   async (data: LoginRequest, { rejectWithValue }) => {
     try {
       const response = await authService.login(data);
+      trackEvent('login', { method: 'email' });
       if (redirectAfterAuth(response)) {
         await new Promise<never>(() => {});
       }
@@ -121,6 +123,7 @@ export const verifyEmail = createAsyncThunk(
   async (data: VerifyEmailRequest, { rejectWithValue }) => {
     try {
       const response = await authService.verifyEmail(data);
+      trackEvent('sign_up', { method: 'email' });
       if (redirectAfterAuth(response)) {
         await new Promise<never>(() => {});
       }
@@ -137,6 +140,7 @@ export const googleLogin = createAsyncThunk(
   async (data: GoogleLoginRequest, { rejectWithValue }) => {
     try {
       const response = await authService.googleLogin(data);
+      trackEvent(response.isNewUser ? 'sign_up' : 'login', { method: 'google' });
       if (redirectAfterAuth(response)) {
         await new Promise<never>(() => {});
       }

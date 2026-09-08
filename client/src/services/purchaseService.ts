@@ -10,6 +10,8 @@ export interface Purchase {
   currency: string;
   status: string;
   purchasedAt: string;
+  polarOrderId?: string | null;
+  checkoutRef?: string | null;
 }
 
 export interface AdminPurchase extends Purchase {

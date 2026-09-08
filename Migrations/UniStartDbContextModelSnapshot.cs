@@ -765,6 +765,9 @@ namespace UniStart.Migrations
                     b.Property<int>("CurrentSectionIndex")
                         .HasColumnType("integer");
 
+                    b.Property<bool>("IsFree")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("Language")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
@@ -1028,6 +1031,9 @@ namespace UniStart.Migrations
 
                     b.Property<decimal>("Amount")
                         .HasColumnType("numeric(12,2)");
+
+                    b.Property<string>("CheckoutRef")
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");

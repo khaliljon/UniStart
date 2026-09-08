@@ -7,9 +7,42 @@ import { mockCatalogService, type MockTemplate } from '../services/mockCatalogSe
 import { mockExamService } from '../services/mockExamService';
 import type { MockExamHistoryItem } from '../types';
 import { cartService } from '../services/cartService';
+import { trackEvent } from '../utils/analytics';
 import { moks } from '../utils/plural';
 import { fullDateLocalized, shortDateLocalized } from '../utils/dates';
 import { pickLocalized } from '../utils/localize';
+
+// Fire GA4 `purchase` only for the backend-confirmed (Paid) purchase matching the
+// checkout correlation id (cref) returned on the success URL. transaction_id is the
+// stable Polar order id. localStorage only prevents a repeat analytics send.
+const SENT_ORDERS_KEY = 'ga_purchased_orders';
+
+function reportPurchase(list: Purchase[], cref: string): boolean {
+  try {
+    const matched = list.filter((p) => p.status === 'Paid' && p.checkoutRef === cref);
+    if (matched.length === 0) return false; // backend not confirmed yet
+    const orderId = matched.find((p) => p.polarOrderId)?.polarOrderId ?? cref;
+    const sent = new Set<string>(JSON.parse(localStorage.getItem(SENT_ORDERS_KEY) || '[]'));
+    if (sent.has(orderId)) return true;
+    trackEvent('purchase', {
+      transaction_id: orderId,
+      currency: matched[0].currency,
+      value: matched.reduce((sum, x) => sum + x.amount, 0),
+      items: matched.map((x) => ({
+        item_id: x.itemCode,
+        item_name: x.title,
+        item_category: x.itemType,
+        price: x.amount,
+        quantity: 1,
+      })),
+    });
+    sent.add(orderId);
+    localStorage.setItem(SENT_ORDERS_KEY, JSON.stringify(Array.from(sent)));
+    return true;
+  } catch {
+    return true;
+  }
+}
 
 function PurchasesPage() {
   const navigate = useNavigate();
@@ -22,11 +55,32 @@ function PurchasesPage() {
   const [paid, setPaid] = useState(false);
 
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).get('paid') === '1') {
+    const params = new URLSearchParams(window.location.search);
+    const isPaidReturn = params.get('paid') === '1';
+    const cref = params.get('cref');
+    if (isPaidReturn) {
       cartService.clear();
       setPaid(true);
+      // Remove flags so refresh / back-forward cannot re-trigger tracking.
+      try { window.history.replaceState({}, '', window.location.pathname); } catch { /* ignore */ }
     }
-    purchaseService.list().then(setItems).catch(() => setItems([]));
+    const reportWithRetry = (list: Purchase[], attemptsLeft: number) => {
+      if (!cref) return;
+      if (reportPurchase(list, cref)) return;
+      if (attemptsLeft <= 0) return;
+      // Webhook may lag slightly behind the redirect — retry once or twice.
+      setTimeout(() => {
+        purchaseService.list()
+          .then((l2) => { setItems(l2); reportWithRetry(l2, attemptsLeft - 1); })
+          .catch(() => {});
+      }, 2500);
+    };
+    purchaseService.list()
+      .then((list) => {
+        setItems(list);
+        if (isPaidReturn) reportWithRetry(list, 3);
+      })
+      .catch(() => setItems([]));
     mockCatalogService.getCatalog()
       .then((c) => { setRuns(c.templates.filter((t) => t.runsRemaining > 0)); setAllTemplates(c.templates); })
       .catch(() => {});

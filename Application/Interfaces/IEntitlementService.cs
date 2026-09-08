@@ -8,7 +8,7 @@ public interface IEntitlementService
 
     Task<CheckoutQuoteDto> QuoteAsync(List<CheckoutLineDto> lines);
 
-    Task<CheckoutQuoteDto> GrantAsync(int userId, List<CheckoutLineDto> lines, PurchaseAmountsDto? amounts = null, string? polarOrderId = null);
+    Task<CheckoutQuoteDto> GrantAsync(int userId, List<CheckoutLineDto> lines, PurchaseAmountsDto? amounts = null, string? polarOrderId = null, string? checkoutRef = null);
 
     Task UpdatePurchaseAmountsAsync(string polarOrderId, PurchaseAmountsDto amounts);
 }

@@ -1,0 +1,1 @@
+const t={telegramChannel:"https://t.me/unistart_csca",supportBot:"https://t.me/unistart_support_bot",instagram:"https://www.instagram.com/unistart_kz/",tiktok:"https://www.tiktok.com/@unistartkz",email:"unistart.kz@gmail.com",emailCompose:"https://mail.google.com/mail/?view=cm&fs=1&to=unistart.kz@gmail.com"};export{t as S};
