@@ -10,8 +10,9 @@ namespace UniStart.Controllers;
 public class SocialRedirectController : ControllerBase
 {
     private const string Threads = "https://unistart.kz/?utm_source=threads&utm_medium=social&utm_campaign=khalil_personal&utm_content=link_in_bio";
-    private const string Instagram = "https://unistart.kz/landing?utm_source=instagram&utm_medium=social&utm_campaign=unistart_kz&utm_content=link_in_bio";
-    private const string TikTok = "https://unistart.kz/landing?utm_source=tiktok&utm_medium=social&utm_campaign=unistart_kz&utm_content=link_in_bio";
+    private const string Instagram = "https://unistart.kz/landing?utm_source=instagram&utm_medium=social&utm_campaign=unistart&utm_content=link_in_bio";
+    private const string TikTok = "https://unistart.kz/landing?utm_source=tiktok&utm_medium=social&utm_campaign=unistart&utm_content=link_in_bio";
+    private const string Telegram = "https://unistart.kz/landing?utm_source=telegram&utm_medium=social&utm_campaign=unistart&utm_content=link_in_bio";
 
     [HttpGet("/threads")]
     public IActionResult ThreadsRedirect() => Redirect(Threads);
@@ -21,4 +22,7 @@ public class SocialRedirectController : ControllerBase
 
     [HttpGet("/tiktok")]
     public IActionResult TikTokRedirect() => Redirect(TikTok);
+
+    [HttpGet("/telegram")]
+    public IActionResult TelegramRedirect() => Redirect(Telegram);
 }
