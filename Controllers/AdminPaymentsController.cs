@@ -85,6 +85,8 @@ public class AdminPaymentsController : ControllerBase
             {
                 o.OrderCode,
                 o.UserId,
+                UserName = o.User.Name,
+                Email = o.User.Email,
                 o.Amount,
                 o.Currency,
                 o.Status,

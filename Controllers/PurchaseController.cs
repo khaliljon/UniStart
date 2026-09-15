@@ -14,12 +14,10 @@ namespace UniStart.Controllers;
 public class PurchaseController : ApiControllerBase
 {
     private readonly UniStartDbContext _db;
-    private readonly IExchangeRateService _fx;
 
-    public PurchaseController(UniStartDbContext db, IExchangeRateService fx)
+    public PurchaseController(UniStartDbContext db)
     {
         _db = db;
-        _fx = fx;
     }
 
     private static PurchaseDto ToDto(Purchase p, string? orderCode = null) => new(
@@ -50,30 +48,49 @@ public class PurchaseController : ApiControllerBase
     [HttpGet("admin/all")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> AdminList([FromQuery] string? status, [FromQuery] string? itemType,
-        [FromQuery] DateTime? from, [FromQuery] DateTime? to)
+        [FromQuery] string? provider, [FromQuery] DateTime? from, [FromQuery] DateTime? to)
     {
-        var rows = await FilteredRowsAsync(status, itemType, from, to);
-        var currency = rows.FirstOrDefault()?.Currency ?? "KZT";
+        var rows = await FilteredRowsAsync(status, itemType, provider, from, to);
         var paid = rows.Where(r => r.Status == "Paid").ToList();
+        var currency = paid.FirstOrDefault()?.Currency ?? rows.FirstOrDefault()?.Currency ?? "KZT";
         var revenue = paid.Sum(r => r.Amount);
 
-        var usdRate = await _fx.GetUsdToKztAsync();
-        var feeInLocal = paid.Sum(r =>
-            r.PlatformFeeCurrency != null && !string.Equals(r.PlatformFeeCurrency, currency, StringComparison.OrdinalIgnoreCase)
-                ? r.PlatformFeeAmount * usdRate
-                : r.PlatformFeeAmount);
-        var net = Math.Round(revenue - feeInLocal, 2);
-        return Ok(new AdminSalesDto(rows.Count, revenue, currency, rows, net));
+        // One order = one PaymentOrder (OrderCode); legacy Polar groups by PolarOrderId/CheckoutRef.
+        // A single checkout that produced several Purchase rows counts once.
+        var paidOrders = paid.Select(OrderKey).Distinct().Count();
+
+        var fees = new List<SalesFeeDto>();
+        // Polar: real stored platform fee, grouped by its own currency (often USD).
+        foreach (var g in paid.Where(r => EffectiveProvider(r) == "Polar" && r.PlatformFeeAmount > 0)
+                              .GroupBy(r => (r.PlatformFeeCurrency ?? currency).ToUpperInvariant()))
+            fees.Add(new SalesFeeDto("Polar", g.Key, Math.Round(g.Sum(r => r.PlatformFeeAmount), 2)));
+        // Kaspi: provider-specific 0.95% of the accepted amount (not stored), per currency.
+        foreach (var g in paid.Where(r => EffectiveProvider(r) == "Kaspi")
+                              .GroupBy(r => r.Currency.ToUpperInvariant()))
+            fees.Add(new SalesFeeDto("Kaspi", g.Key, Math.Round(g.Sum(r => r.Amount) * 0.0095m, 2)));
+
+        return Ok(new AdminSalesDto(revenue, currency, paidOrders, fees, rows));
     }
+
+    private const decimal KaspiFeeRate = 0.0095m;
+
+    private static string EffectiveProvider(AdminPurchaseDto r) =>
+        r.PaymentProvider ?? (r.PolarOrderId != null ? "Polar" : "—");
+
+    private static string OrderKey(AdminPurchaseDto r) =>
+        r.OrderCode != null ? "oc:" + r.OrderCode
+        : r.PolarOrderId != null ? "po:" + r.PolarOrderId
+        : r.CheckoutRef != null ? "cr:" + r.CheckoutRef
+        : "id:" + r.Id;
 
     [HttpGet("admin/export.csv")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> ExportCsv([FromQuery] string? status, [FromQuery] string? itemType,
-        [FromQuery] DateTime? from, [FromQuery] DateTime? to)
+        [FromQuery] string? provider, [FromQuery] DateTime? from, [FromQuery] DateTime? to)
     {
-        var rows = await FilteredRowsAsync(status, itemType, from, to);
+        var rows = await FilteredRowsAsync(status, itemType, provider, from, to);
         var sb = new System.Text.StringBuilder();
-        sb.AppendLine("Date,User,Email,Type,Code,Title,Subjects,Amount,Currency,Status,Gross,Tax,Fee,FeeCurrency,Net,Total");
+        sb.AppendLine("Date,User,Email,Type,Code,Title,Subjects,Amount,Currency,Status,Gross,Tax,Fee,FeeCurrency,Net,Total,Provider,ExternalPaymentId,OrderCode");
         foreach (var r in rows)
         {
             var inv = System.Globalization.CultureInfo.InvariantCulture;
@@ -85,13 +102,14 @@ public class PurchaseController : ApiControllerBase
                 Csv(r.Currency), Csv(r.Status),
                 Csv(r.GrossAmount.ToString(inv)), Csv(r.TaxAmount.ToString(inv)),
                 Csv(r.PlatformFeeAmount.ToString(inv)), Csv(r.PlatformFeeCurrency ?? ""),
-                Csv(r.NetAmount.ToString(inv)), Csv(r.TotalAmount.ToString(inv))));
+                Csv(r.NetAmount.ToString(inv)), Csv(r.TotalAmount.ToString(inv)),
+                Csv(EffectiveProvider(r)), Csv(r.ExternalPaymentId ?? ""), Csv(r.OrderCode ?? "")));
         }
         var bytes = System.Text.Encoding.UTF8.GetPreamble().Concat(System.Text.Encoding.UTF8.GetBytes(sb.ToString())).ToArray();
         return File(bytes, "text/csv", $"sales-{DateTime.UtcNow:yyyyMMdd}.csv");
     }
 
-    private async Task<List<AdminPurchaseDto>> FilteredRowsAsync(string? status, string? itemType, DateTime? from, DateTime? to)
+    private async Task<List<AdminPurchaseDto>> FilteredRowsAsync(string? status, string? itemType, string? provider, DateTime? from, DateTime? to)
     {
         var query = _db.Purchases.Include(p => p.User).AsQueryable();
 
@@ -103,14 +121,28 @@ public class PurchaseController : ApiControllerBase
             query = query.Where(p => p.PurchasedAt >= from.Value.ToUniversalTime());
         if (to.HasValue)
             query = query.Where(p => p.PurchasedAt < to.Value.ToUniversalTime().AddDays(1));
+        if (!string.IsNullOrWhiteSpace(provider))
+        {
+            if (provider.Equals("polar", StringComparison.OrdinalIgnoreCase))
+                query = query.Where(p => p.PaymentProvider == "Polar" || (p.PaymentProvider == null && p.PolarOrderId != null));
+            else if (provider.Equals("kaspi", StringComparison.OrdinalIgnoreCase))
+                query = query.Where(p => p.PaymentProvider == "Kaspi");
+        }
 
-        return await query
-            .OrderByDescending(p => p.PurchasedAt)
-            .Select(p => new AdminPurchaseDto(
-                p.Id, p.UserId, p.User.Name, p.User.Email, p.ItemType, p.ItemCode,
-                p.Title, p.Subjects, p.Amount, p.Currency, p.Status, p.PurchasedAt,
-                p.GrossAmount, p.TaxAmount, p.PlatformFeeAmount, p.PlatformFeeCurrency, p.NetAmount, p.TotalAmount))
-            .ToListAsync();
+        var rows = await query.OrderByDescending(p => p.PurchasedAt).ToListAsync();
+
+        var orderIds = rows.Where(p => p.PaymentOrderId != null).Select(p => p.PaymentOrderId!.Value).Distinct().ToList();
+        var codeByOrderId = orderIds.Count == 0
+            ? new Dictionary<int, string>()
+            : await _db.PaymentOrders.Where(o => orderIds.Contains(o.Id)).ToDictionaryAsync(o => o.Id, o => o.OrderCode);
+
+        return rows.Select(p => new AdminPurchaseDto(
+            p.Id, p.UserId, p.User.Name, p.User.Email, p.ItemType, p.ItemCode,
+            p.Title, p.Subjects, p.Amount, p.Currency, p.Status, p.PurchasedAt,
+            p.GrossAmount, p.TaxAmount, p.PlatformFeeAmount, p.PlatformFeeCurrency, p.NetAmount, p.TotalAmount,
+            p.PaymentProvider, p.ExternalPaymentId,
+            p.PaymentOrderId != null && codeByOrderId.TryGetValue(p.PaymentOrderId.Value, out var c) ? c : null,
+            p.PolarOrderId, p.CheckoutRef)).ToList();
     }
 
     private static string Csv(string value)

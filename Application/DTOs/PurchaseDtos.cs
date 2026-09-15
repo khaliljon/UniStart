@@ -42,14 +42,22 @@ public record AdminPurchaseDto(
     decimal PlatformFeeAmount = 0,
     string? PlatformFeeCurrency = null,
     decimal NetAmount = 0,
-    decimal TotalAmount = 0);
+    decimal TotalAmount = 0,
+    string? PaymentProvider = null,
+    string? ExternalPaymentId = null,
+    string? OrderCode = null,
+    string? PolarOrderId = null,
+    string? CheckoutRef = null);
+
+/// <summary>A payment-provider fee aggregate, kept per currency (never mix currencies).</summary>
+public record SalesFeeDto(string Provider, string Currency, decimal Amount);
 
 public record AdminSalesDto(
-    int Count,
     decimal TotalRevenue,
     string Currency,
-    IEnumerable<AdminPurchaseDto> Items,
-    decimal TotalNet = 0);
+    int PaidOrders,
+    IEnumerable<SalesFeeDto> Fees,
+    IEnumerable<AdminPurchaseDto> Items);
 
 public record PurchaseAmountsDto(
     decimal Gross,

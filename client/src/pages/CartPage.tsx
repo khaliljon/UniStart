@@ -11,17 +11,42 @@ import { trackEvent } from '../utils/analytics';
 import { pickLocalized } from '../utils/localize';
 import { moks } from '../utils/plural';
 
+// Signature of the cart contents; when it changes, a cached Kaspi order is invalidated.
+const cartSignature = (list: CartItem[]) =>
+  JSON.stringify(list.map((i) => [i.itemType, i.itemCode, i.language ?? '', i.runs ?? 0, i.amount, (i.selectedMockIds ?? []).join('|')]));
+
+// Kaspi checkout is cached for the current browser session only (survives refresh, not a new session).
+const KASPI_CHECKOUT_KEY = 'kaspi_checkout';
+type StoredKaspiOrder = KaspiCheckoutResponse & { sig: string };
+
+const loadStoredKaspi = (): StoredKaspiOrder | null => {
+  try {
+    const raw = sessionStorage.getItem(KASPI_CHECKOUT_KEY);
+    if (!raw) return null;
+    const o = JSON.parse(raw);
+    if (o && o.provider === 'kaspi' && typeof o.orderCode === 'string' && typeof o.paymentUrl === 'string'
+        && typeof o.amount === 'number' && typeof o.currency === 'string' && typeof o.sig === 'string') {
+      return o as StoredKaspiOrder;
+    }
+    sessionStorage.removeItem(KASPI_CHECKOUT_KEY); // corrupt / incomplete
+    return null;
+  } catch {
+    sessionStorage.removeItem(KASPI_CHECKOUT_KEY);
+    return null;
+  }
+};
+
 function CartPage() {
   const navigate = useNavigate();
   const { locale } = useTranslation();
   const s = cscaStrings[locale];
-  const [items, setItems] = useState<CartItem[]>([]);
+  const [items, setItems] = useState<CartItem[]>(() => cartService.list());
   const [templates, setTemplates] = useState<MockTemplate[]>([]);
   const [packages, setPackages] = useState<MockPackage[]>([]);
   const [materials, setMaterials] = useState<StudyMaterial[]>([]);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [kaspiOrder, setKaspiOrder] = useState<KaspiCheckoutResponse | null>(null);
+  const [kaspiOrder, setKaspiOrder] = useState<StoredKaspiOrder | null>(() => loadStoredKaspi());
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -38,6 +63,17 @@ function CartPage() {
       .catch(() => {});
     return () => window.removeEventListener(cartService.eventName, refresh);
   }, []);
+
+  // Invalidate a cached Kaspi checkout when the cart contents change.
+  useEffect(() => {
+    setKaspiOrder((cur) => (cur && cur.sig !== cartSignature(items) ? null : cur));
+  }, [items]);
+
+  // Keep the session-scoped Kaspi checkout in sync with state (save on create, clear on reset).
+  useEffect(() => {
+    if (kaspiOrder) sessionStorage.setItem(KASPI_CHECKOUT_KEY, JSON.stringify(kaspiOrder));
+    else sessionStorage.removeItem(KASPI_CHECKOUT_KEY);
+  }, [kaspiOrder]);
 
   useEffect(() => {
     mockCatalogService.getCatalog().then((c) => { setTemplates(c.templates); setPackages(c.packages); }).catch(() => {});
@@ -103,8 +139,9 @@ function CartPage() {
 
       if (res.provider === 'kaspi') {
         // Do NOT clear the cart or mark as paid — access is granted only after
-        // an admin confirms the Kaspi payment.
-        setKaspiOrder(res);
+        // an admin confirms the Kaspi payment. Cache the order so re-clicking just
+        // reopens the same paymentUrl instead of creating a new PaymentOrder.
+        setKaspiOrder({ ...res, sig: cartSignature(items) });
       } else {
         window.location.href = res.url;
       }
@@ -211,12 +248,21 @@ function CartPage() {
           ) : (
             <>
               <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>{s.choosePaymentMethod}</div>
-              <button className="btn btn-primary" style={{ padding: '0.75rem', background: '#F14635', borderColor: '#F14635' }} onClick={() => checkout('kaspi')} disabled={processing}>
-                {processing ? '…' : s.payWithKaspi}
-              </button>
-              <button className="btn btn-outline" style={{ padding: '0.75rem' }} onClick={() => checkout('polar')} disabled={processing}>
-                {processing ? '…' : s.payWithPolar}
-              </button>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{s.kaspiRecommendedNote}</div>
+                <button className="btn btn-primary" style={{ padding: '0.75rem', background: '#F14635', borderColor: '#F14635' }} onClick={() => checkout('kaspi')} disabled={processing}>
+                  {processing ? '…' : s.payWithKaspi}
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{s.polarInternationalNote}</div>
+                <button className="btn btn-outline" style={{ padding: '0.75rem' }} onClick={() => checkout('polar')} disabled={processing}>
+                  {processing ? '…' : s.payWithPolar}
+                </button>
+              </div>
+
               <button className="btn btn-outline" style={{ padding: '0.75rem' }} onClick={() => navigate('/')}>
                 {s.continueShopping}
               </button>

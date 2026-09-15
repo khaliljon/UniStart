@@ -201,6 +201,8 @@ export interface CscaStrings {
   choosePaymentMethod: string;
   payWithKaspi: string;
   payWithPolar: string;
+  kaspiRecommendedNote: string;
+  polarInternationalNote: string;
   kaspiTitle: string;
   kaspiOrderCodeHint: string;
   kaspiCourseFieldName: string;
@@ -347,7 +349,9 @@ const ru: CscaStrings = {
   addedToCart: 'Добавлено в корзину',
   choosePaymentMethod: 'Выберите способ оплаты',
   payWithKaspi: 'Оплатить через Kaspi',
-  payWithPolar: 'Оплатить картой (Polar)',
+  payWithPolar: 'Оплатить картой через Polar',
+  kaspiRecommendedNote: 'Рекомендуется для пользователей из Казахстана',
+  polarInternationalNote: 'Для оплаты международной банковской картой',
   kaspiTitle: 'Оплата через Kaspi',
   kaspiOrderCodeHint: 'Скопируйте код заказа и вставьте его в поле «Название курса» в форме Kaspi.',
   kaspiCourseFieldName: 'Название курса',
@@ -494,7 +498,9 @@ const en: CscaStrings = {
   addedToCart: 'Added to cart',
   choosePaymentMethod: 'Choose a payment method',
   payWithKaspi: 'Pay via Kaspi',
-  payWithPolar: 'Pay by card (Polar)',
+  payWithPolar: 'Pay by card via Polar',
+  kaspiRecommendedNote: 'Recommended for users in Kazakhstan',
+  polarInternationalNote: 'For payment with an international bank card',
   kaspiTitle: 'Pay via Kaspi',
   kaspiOrderCodeHint: 'Copy the order code and paste it into the "Course name" field in the Kaspi form.',
   kaspiCourseFieldName: 'Course name',
@@ -639,7 +645,9 @@ const kz: CscaStrings = {
   addedToCart: 'Себетке қосылды',
   choosePaymentMethod: 'Төлем әдісін таңдаңыз',
   payWithKaspi: 'Kaspi арқылы төлеу',
-  payWithPolar: 'Картамен төлеу (Polar)',
+  payWithPolar: 'Polar арқылы картамен төлеу',
+  kaspiRecommendedNote: 'Қазақстандағы қолданушыларға ұсынылады',
+  polarInternationalNote: 'Халықаралық банк картасымен төлеу ҳшін',
   kaspiTitle: 'Kaspi арқылы төлеу',
   kaspiOrderCodeHint: 'Тапсырыс кодын көшіріп, оны Kaspi формасындағы «Курс атауы» өрісіне қойыңыз.',
   kaspiCourseFieldName: 'Курс атауы',

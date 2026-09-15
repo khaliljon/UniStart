@@ -29,13 +29,21 @@ export interface AdminPurchase extends Purchase {
   totalAmount: number;
 }
 
+export interface SalesFee {
+  provider: string;
+  currency: string;
+  amount: number;
+}
+
 export interface AdminSales {
-  count: number;
   totalRevenue: number;
   currency: string;
+  paidOrders: number;
+  fees: SalesFee[];
   items: AdminPurchase[];
-  totalNet: number;
 }
+
+export type SalesFilters = { status?: string; itemType?: string; provider?: string; from?: string; to?: string };
 
 export const purchaseService = {
   async list(): Promise<Purchase[]> {
@@ -43,12 +51,12 @@ export const purchaseService = {
     return res.data;
   },
 
-  async adminList(params?: { status?: string; itemType?: string; from?: string; to?: string }): Promise<AdminSales> {
+  async adminList(params?: SalesFilters): Promise<AdminSales> {
     const res = await api.get<AdminSales>('/purchases/admin/all', { params });
     return res.data;
   },
 
-  async adminExportCsv(params?: { status?: string; itemType?: string; from?: string; to?: string }): Promise<Blob> {
+  async adminExportCsv(params?: SalesFilters): Promise<Blob> {
     const res = await api.get('/purchases/admin/export.csv', { params, responseType: 'blob' });
     return res.data as Blob;
   },
