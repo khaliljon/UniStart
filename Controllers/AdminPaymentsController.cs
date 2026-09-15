@@ -15,12 +15,14 @@ public class AdminPaymentsController : ControllerBase
 {
     private readonly UniStartDbContext _db;
     private readonly IPaymentOrderService _orders;
+    private readonly IKaspiPaymentEvidenceService _evidence;
     private readonly ILogger<AdminPaymentsController> _logger;
 
-    public AdminPaymentsController(UniStartDbContext db, IPaymentOrderService orders, ILogger<AdminPaymentsController> logger)
+    public AdminPaymentsController(UniStartDbContext db, IPaymentOrderService orders, IKaspiPaymentEvidenceService evidence, ILogger<AdminPaymentsController> logger)
     {
         _db = db;
         _orders = orders;
+        _evidence = evidence;
         _logger = logger;
     }
 
@@ -97,5 +99,40 @@ public class AdminPaymentsController : ControllerBase
             .ToListAsync();
 
         return Ok(rows);
+    }
+
+    /// <summary>
+    /// Discovered Kaspi payments from email notifications that need admin attention.
+    /// Defaults to Matched + RequiresReview (the primary reconciliation queue).
+    /// </summary>
+    [HttpGet("kaspi/notifications")]
+    public async Task<IActionResult> ListKaspiNotifications([FromQuery] string? status)
+    {
+        var statuses = string.IsNullOrWhiteSpace(status)
+            ? new[] { KaspiNotificationStatuses.Matched, KaspiNotificationStatuses.RequiresReview }
+            : status.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+        var rows = await _evidence.ListAsync(statuses);
+        return Ok(rows);
+    }
+
+    /// <summary>
+    /// Confirms a Matched Kaspi notification and grants access via the single grant gate
+    /// (PaymentOrderService.ConfirmAndGrantAsync). RequiresReview cannot be confirmed here.
+    /// </summary>
+    [HttpPost("kaspi/notifications/{id:int}/confirm")]
+    public async Task<IActionResult> ConfirmKaspiNotification(int id)
+    {
+        var result = await _evidence.ConfirmAsync(id);
+        return result switch
+        {
+            NotificationConfirmResult.Granted => Ok(new { status = "granted" }),
+            NotificationConfirmResult.AlreadyProcessed => Conflict(new { error = "Notification was already processed." }),
+            NotificationConfirmResult.NotFound => NotFound(new { error = "Notification not found." }),
+            NotificationConfirmResult.NotMatched => BadRequest(new { error = "Only a matched notification can be confirmed. Review it manually." }),
+            NotificationConfirmResult.DuplicatePaymentId => Conflict(new { error = "This Kaspi payment id is already used for another order." }),
+            NotificationConfirmResult.OrderMissing => BadRequest(new { error = "Linked order is missing or incomplete." }),
+            _ => StatusCode(500, new { error = "Unexpected confirmation result." }),
+        };
     }
 }

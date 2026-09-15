@@ -64,6 +64,8 @@ public class UniStartDbContext : DbContext
 
     public DbSet<PaymentOrder> PaymentOrders => Set<PaymentOrder>();
 
+    public DbSet<KaspiPaymentNotification> KaspiPaymentNotifications => Set<KaspiPaymentNotification>();
+
     public DbSet<StudyMaterial> StudyMaterials => Set<StudyMaterial>();
 
     public DbSet<SupportTicket> SupportTickets => Set<SupportTicket>();
@@ -837,6 +839,37 @@ public class UniStartDbContext : DbContext
                   .HasDatabaseName("IX_PaymentOrders_Provider_ExternalPaymentId")
                   .HasFilter("\"ExternalPaymentId\" IS NOT NULL");
             entity.HasIndex(e => e.UserId).HasDatabaseName("IX_PaymentOrders_UserId");
+        });
+
+        modelBuilder.Entity<KaspiPaymentNotification>(entity =>
+        {
+            entity.ToTable("KaspiPaymentNotifications");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Source).IsRequired().HasMaxLength(20).HasDefaultValue(KaspiPaymentSources.Gmail);
+            entity.Property(e => e.SourceEventId).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.KaspiPaymentId).HasMaxLength(100);
+            entity.Property(e => e.OrderCode).HasMaxLength(32);
+            entity.Property(e => e.Amount).HasColumnType("numeric(12,2)");
+            entity.Property(e => e.Currency).IsRequired().HasMaxLength(8).HasDefaultValue("KZT");
+            entity.Property(e => e.Status).IsRequired().HasMaxLength(20).HasDefaultValue(KaspiNotificationStatuses.Detected);
+            entity.Property(e => e.ErrorMessage).HasMaxLength(500);
+            // Never cascade-delete financial history when an order is removed.
+            entity.HasOne(e => e.PaymentOrder)
+                  .WithMany()
+                  .HasForeignKey(e => e.PaymentOrderId)
+                  .OnDelete(DeleteBehavior.SetNull);
+            // One source event = one record (Gmail message id / Kaspi callback id).
+            entity.HasIndex(e => new { e.Source, e.SourceEventId })
+                  .IsUnique()
+                  .HasDatabaseName("IX_KaspiPaymentNotifications_Source_SourceEventId");
+            // Final DB guard against concurrent duplicates: a payment id may back at most one
+            // trusted (Matched/Processed) record. RequiresReview/Rejected never reserve it.
+            entity.HasIndex(e => e.KaspiPaymentId)
+                  .IsUnique()
+                  .HasDatabaseName("IX_KaspiPaymentNotifications_KaspiPaymentId_Trusted")
+                  .HasFilter("\"KaspiPaymentId\" IS NOT NULL AND \"Status\" IN ('Matched', 'Processed')");
+            entity.HasIndex(e => e.OrderCode).HasDatabaseName("IX_KaspiPaymentNotifications_OrderCode");
+            entity.HasIndex(e => e.Status).HasDatabaseName("IX_KaspiPaymentNotifications_Status");
         });
 
         modelBuilder.Entity<ExamSitting>(entity =>

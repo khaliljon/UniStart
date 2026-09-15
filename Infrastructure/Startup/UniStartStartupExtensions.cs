@@ -28,6 +28,7 @@ using FluentValidation.AspNetCore;
 using Microsoft.FeatureManagement;
 using UniStart.Application.Interfaces;
 using UniStart.Application.Services;
+using UniStart.Application.Services.Kaspi;
 using UniStart.Application.Validators;
 using UniStart.Domain.Interfaces;
 using UniStart.Infrastructure.Data;
@@ -78,6 +79,8 @@ public static class UniStartStartupExtensions
         services.AddScoped<IPolarService, PolarService>();
         services.AddScoped<IPaymentOrderService, PaymentOrderService>();
         services.AddScoped<IKaspiService, KaspiService>();
+        services.AddScoped<IPaymentEvidenceSource, GmailKaspiEvidenceSource>();
+        services.AddScoped<IKaspiPaymentEvidenceService, KaspiPaymentEvidenceService>();
         services.AddScoped<IOnboardingService, OnboardingService>();
         services.AddScoped<IDiagnosticService, DiagnosticService>();
         services.AddScoped<ISubscriptionService, SubscriptionService>();
@@ -495,6 +498,19 @@ public static class UniStartStartupExtensions
             "fx-usd-kzt-refresh",
             service => service.RefreshAsync(),
             "0 6 * * *");
+
+        // Poll Gmail for Kaspi payment notifications (read-only evidence). Off unless configured.
+        if (app.Configuration.GetValue<bool>("GMAIL_KASPI_ENABLED"))
+        {
+            RecurringJob.AddOrUpdate<IKaspiPaymentEvidenceService>(
+                "kaspi-gmail-poll",
+                service => service.PollAsync(),
+                "*/2 * * * *");
+        }
+        else
+        {
+            RecurringJob.RemoveIfExists("kaspi-gmail-poll");
+        }
 
         return app;
     }

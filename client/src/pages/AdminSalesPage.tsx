@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useState } from 'react';
 import { purchaseService, type AdminSales, type AdminPurchase } from '../services/purchaseService';
-import { adminPaymentsService, type KaspiPendingOrder } from '../services/adminPaymentsService';
+import { adminPaymentsService, type KaspiPendingOrder, type KaspiNotification } from '../services/adminPaymentsService';
 
 const KASPI_FEE_RATE = 0.0095;
 
@@ -15,9 +15,12 @@ function AdminSalesPage() {
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
 
   const [pending, setPending] = useState<KaspiPendingOrder[]>([]);
+  const [notifications, setNotifications] = useState<KaspiNotification[]>([]);
   const [confirmInputs, setConfirmInputs] = useState<Record<string, { paymentId: string; amount: string }>>({});
   const [confirming, setConfirming] = useState<string | null>(null);
   const [confirmError, setConfirmError] = useState<Record<string, string>>({});
+  const [confirmingNotif, setConfirmingNotif] = useState<number | null>(null);
+  const [notifError, setNotifError] = useState<Record<number, string>>({});
 
   const params = {
     status: status || undefined,
@@ -40,8 +43,13 @@ function AdminSalesPage() {
     adminPaymentsService.listKaspiPending().then(setPending).catch(() => setPending([]));
   };
 
+  const loadNotifications = () => {
+    adminPaymentsService.listKaspiNotifications().then(setNotifications).catch(() => setNotifications([]));
+  };
+
   useEffect(loadSales, [status, itemType, provider, from, to]);
   useEffect(loadPending, []);
+  useEffect(loadNotifications, []);
 
   const exportCsv = async () => {
     try {
@@ -101,31 +109,50 @@ function AdminSalesPage() {
       return { ...prev, [code]: { ...cur, [field]: value } };
     });
 
-  const submitConfirm = async (o: KaspiPendingOrder) => {
-    const input = confirmInputs[o.orderCode] ?? { paymentId: '', amount: '' };
+  // Manual fallback (used for RequiresReview notifications): confirm by order code.
+  const submitConfirm = async (orderCode: string, currency: string) => {
+    const input = confirmInputs[orderCode] ?? { paymentId: '', amount: '' };
     const paymentId = input.paymentId.trim();
     const paidAmount = Number(input.amount);
     if (!paymentId) {
-      setConfirmError((p) => ({ ...p, [o.orderCode]: 'Укажите Kaspi payment id.' }));
+      setConfirmError((p) => ({ ...p, [orderCode]: 'Укажите Kaspi payment id.' }));
       return;
     }
     if (!Number.isFinite(paidAmount) || paidAmount <= 0) {
-      setConfirmError((p) => ({ ...p, [o.orderCode]: 'Укажите корректную оплаченную сумму.' }));
+      setConfirmError((p) => ({ ...p, [orderCode]: 'Укажите корректную оплаченную сумму.' }));
       return;
     }
-    if (!window.confirm(`Подтвердить оплату заказа ${o.orderCode} на сумму ${paidAmount.toLocaleString('ru-RU')} ${o.currency}?`)) return;
+    if (!window.confirm(`Подтвердить оплату заказа ${orderCode} на сумму ${paidAmount.toLocaleString('ru-RU')} ${currency}?`)) return;
 
-    setConfirming(o.orderCode);
-    setConfirmError((p) => ({ ...p, [o.orderCode]: '' }));
+    setConfirming(orderCode);
+    setConfirmError((p) => ({ ...p, [orderCode]: '' }));
     try {
-      await adminPaymentsService.confirmKaspi(o.orderCode, { kaspiPaymentId: paymentId, paidAmount });
+      await adminPaymentsService.confirmKaspi(orderCode, { kaspiPaymentId: paymentId, paidAmount });
+      loadPending();
+      loadNotifications();
+      loadSales();
+    } catch (e: unknown) {
+      const err = e as { response?: { data?: { error?: string } } };
+      setConfirmError((p) => ({ ...p, [orderCode]: err.response?.data?.error ?? 'Не удалось подтвердить оплату.' }));
+    } finally {
+      setConfirming(null);
+    }
+  };
+
+  const confirmNotification = async (n: KaspiNotification) => {
+    if (!window.confirm(`Подтвердить платёж по заказу ${n.orderCode ?? '—'} и выдать доступ?`)) return;
+    setConfirmingNotif(n.id);
+    setNotifError((p) => ({ ...p, [n.id]: '' }));
+    try {
+      await adminPaymentsService.confirmKaspiNotification(n.id);
+      loadNotifications();
       loadPending();
       loadSales();
     } catch (e: unknown) {
       const err = e as { response?: { data?: { error?: string } } };
-      setConfirmError((p) => ({ ...p, [o.orderCode]: err.response?.data?.error ?? 'Не удалось подтвердить оплату.' }));
+      setNotifError((p) => ({ ...p, [n.id]: err.response?.data?.error ?? 'Не удалось подтвердить платёж.' }));
     } finally {
-      setConfirming(null);
+      setConfirmingNotif(null);
     }
   };
 
@@ -263,54 +290,123 @@ function AdminSalesPage() {
       )}
 
       <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: '2rem 0 0.75rem' }}>
-        Ожидают подтверждения Kaspi {pending.length > 0 && <span style={{ color: 'var(--csca-red, #C8102E)' }}>({pending.length})</span>}
+        Обнаруженные платежи Kaspi {notifications.length > 0 && <span style={{ color: 'var(--csca-red, #C8102E)' }}>({notifications.length})</span>}
       </h2>
-      {pending.length === 0 ? (
+      {notifications.length === 0 ? (
         <div className="card" style={{ textAlign: 'center', padding: '1.5rem', color: 'var(--text-secondary)' }}>
-          Нет заказов, ожидающих подтверждения.
+          Нет обнаруженных платежей, требующих внимания.
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          {pending.map((o) => {
-            const input = confirmInputs[o.orderCode] ?? { paymentId: '', amount: '' };
+          {notifications.map((n) => {
+            const matched = n.status === 'Matched';
+            const input = confirmInputs[n.orderCode ?? ''] ?? { paymentId: '', amount: '' };
             return (
-              <div key={o.orderCode} className="card" style={{ padding: '1rem 1.25rem', display: 'flex', flexDirection: 'column', gap: '0.6rem', border: '1px solid #F14635' }}>
+              <div key={n.id} className="card" style={{ padding: '1rem 1.25rem', display: 'flex', flexDirection: 'column', gap: '0.6rem', border: `1px solid ${matched ? '#10b981' : '#f59e0b'}` }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
                   <div>
-                    <div style={{ fontWeight: 800, fontSize: '1.05rem', letterSpacing: '0.03em' }}>{o.orderCode}</div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{o.userName} · {o.email}</div>
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontWeight: 800 }}>{o.amount.toLocaleString('ru-RU')} {o.currency}</div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                      создан {fmt(o.createdAt)} · в ожидании {ageLabel(o.createdAt)}
+                    <div style={{ fontWeight: 800, fontSize: '1.05rem', letterSpacing: '0.03em' }}>
+                      {n.orderCode ?? '—'}{' '}
+                      <span style={{ fontSize: '0.72rem', fontWeight: 700, color: matched ? '#10b981' : '#b45309', padding: '0.1rem 0.45rem', borderRadius: '999px', background: matched ? 'rgba(16,185,129,0.12)' : 'rgba(245,158,11,0.15)' }}>
+                        {matched ? 'Совпадение' : 'Требует проверки'}
+                      </span>
                     </div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                      {n.userName ? `${n.userName} · ${n.userEmail}` : 'Заказ не сопоставлен'}
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'right', fontSize: '0.8rem' }}>
+                    <div style={{ fontWeight: 800, fontSize: '1rem' }}>
+                      {n.amount != null ? `${n.amount.toLocaleString('ru-RU')} ${n.currency}` : '—'}
+                    </div>
+                    {n.expectedAmount != null && (
+                      <div style={{ color: 'var(--text-secondary)' }}>ожидалось {n.expectedAmount.toLocaleString('ru-RU')} {n.currency}</div>
+                    )}
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem', alignItems: 'flex-end' }}>
-                  <label style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                    Kaspi payment id
-                    <input value={input.paymentId} onChange={(e) => setConfirmField(o.orderCode, 'paymentId', e.target.value)}
-                           style={{ padding: '0.4rem 0.6rem', border: '1px solid var(--border-color)', borderRadius: '6px', minWidth: 200 }} />
-                  </label>
-                  <label style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                    Фактически оплачено ({o.currency})
-                    <input type="number" value={input.amount} onChange={(e) => setConfirmField(o.orderCode, 'amount', e.target.value)}
-                           placeholder={String(o.amount)}
-                           style={{ padding: '0.4rem 0.6rem', border: '1px solid var(--border-color)', borderRadius: '6px', minWidth: 160 }} />
-                  </label>
-                  <button className="btn btn-primary" style={{ background: '#F14635', borderColor: '#F14635' }}
-                          onClick={() => submitConfirm(o)} disabled={confirming === o.orderCode}>
-                    {confirming === o.orderCode ? '…' : 'Подтвердить оплату'}
-                  </button>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                  <span>Kaspi id: {n.kaspiPaymentId ?? '—'}</span>
+                  <span>оплата: {n.paidAt ? fmt(n.paidAt) : '—'}</span>
+                  <span>письмо: {fmt(n.receivedAt)}</span>
                 </div>
-                {confirmError[o.orderCode] && (
-                  <div style={{ color: 'var(--error-color, #ef4444)', fontSize: '0.8rem' }}>{confirmError[o.orderCode]}</div>
+
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', fontSize: '0.8rem' }}>
+                  <span style={{ color: n.orderFound ? '#10b981' : '#ef4444' }}>{n.orderFound ? '✓' : '✕'} заказ найден</span>
+                  <span style={{ color: n.amountMatches ? '#10b981' : '#ef4444' }}>{n.amountMatches ? '✓' : '✕'} сумма совпадает</span>
+                  <span style={{ color: n.paymentIdUnique ? '#10b981' : '#ef4444' }}>{n.paymentIdUnique ? '✓' : '✕'} payment id уникален</span>
+                </div>
+
+                {matched ? (
+                  <div>
+                    <button className="btn btn-primary" style={{ background: '#10b981', borderColor: '#10b981' }}
+                            onClick={() => confirmNotification(n)} disabled={confirmingNotif === n.id}>
+                      {confirmingNotif === n.id ? '…' : 'Подтвердить и выдать доступ'}
+                    </button>
+                    {notifError[n.id] && (
+                      <div style={{ color: 'var(--error-color, #ef4444)', fontSize: '0.8rem', marginTop: '0.4rem' }}>{notifError[n.id]}</div>
+                    )}
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <div style={{ fontSize: '0.82rem', color: '#b45309' }}>
+                      Причина: {n.errorMessage ?? 'не удалось сопоставить автоматически'}
+                    </div>
+                    {n.orderCode && (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem', alignItems: 'flex-end' }}>
+                        <label style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                          Kaspi payment id
+                          <input value={input.paymentId} onChange={(e) => setConfirmField(n.orderCode!, 'paymentId', e.target.value)}
+                                 style={{ padding: '0.4rem 0.6rem', border: '1px solid var(--border-color)', borderRadius: '6px', minWidth: 200 }} />
+                        </label>
+                        <label style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                          Фактически оплачено ({n.currency})
+                          <input type="number" value={input.amount} onChange={(e) => setConfirmField(n.orderCode!, 'amount', e.target.value)}
+                                 placeholder={n.expectedAmount != null ? String(n.expectedAmount) : ''}
+                                 style={{ padding: '0.4rem 0.6rem', border: '1px solid var(--border-color)', borderRadius: '6px', minWidth: 160 }} />
+                        </label>
+                        <button className="btn btn-outline" onClick={() => submitConfirm(n.orderCode!, n.currency)} disabled={confirming === n.orderCode}>
+                          {confirming === n.orderCode ? '…' : 'Проверено вручную — подтвердить'}
+                        </button>
+                      </div>
+                    )}
+                    {n.orderCode && confirmError[n.orderCode] && (
+                      <div style={{ color: 'var(--error-color, #ef4444)', fontSize: '0.8rem' }}>{confirmError[n.orderCode]}</div>
+                    )}
+                  </div>
                 )}
               </div>
             );
           })}
+        </div>
+      )}
+
+      <h2 style={{ fontSize: '1.1rem', fontWeight: 700, margin: '2rem 0 0.5rem', color: 'var(--text-secondary)' }}>
+        Созданные Kaspi-заказы {pending.length > 0 && <span>({pending.length})</span>}
+      </h2>
+      <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.6rem' }}>
+        Технические попытки checkout. Создание заказа не является подтверждением оплаты.
+      </div>
+      {pending.length === 0 ? (
+        <div className="card" style={{ textAlign: 'center', padding: '1.25rem', color: 'var(--text-secondary)' }}>
+          Нет созданных Kaspi-заказов.
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          {pending.map((o) => (
+            <div key={o.orderCode} className="card" style={{ padding: '0.75rem 1rem', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
+              <div>
+                <div style={{ fontWeight: 700, letterSpacing: '0.03em' }}>{o.orderCode}</div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>{o.userName} · {o.email}</div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontWeight: 700 }}>{o.amount.toLocaleString('ru-RU')} {o.currency}</div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+                  {fmt(o.createdAt)} · {ageLabel(o.createdAt)} · Оплата не подтверждена
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
