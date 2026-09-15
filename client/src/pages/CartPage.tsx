@@ -6,7 +6,7 @@ import { cartService, type CartItem } from '../services/cartService';
 import { mockCatalogService, type CheckoutLine, type MockTemplate, type MockPackage } from '../services/mockCatalogService';
 import { materialsService, type StudyMaterial } from '../services/materialsService';
 import { purchaseService } from '../services/purchaseService';
-import { paymentsService } from '../services/paymentsService';
+import { paymentsService, type CheckoutProvider, type KaspiCheckoutResponse } from '../services/paymentsService';
 import { trackEvent } from '../utils/analytics';
 import { pickLocalized } from '../utils/localize';
 import { moks } from '../utils/plural';
@@ -21,6 +21,8 @@ function CartPage() {
   const [materials, setMaterials] = useState<StudyMaterial[]>([]);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [kaspiOrder, setKaspiOrder] = useState<KaspiCheckoutResponse | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     const refresh = () => setItems(cartService.list());
@@ -74,7 +76,7 @@ function CartPage() {
 
   const remove = (item: CartItem) => cartService.remove(item.itemType, item.itemCode, item.language);
 
-  const checkout = async () => {
+  const checkout = async (provider: CheckoutProvider) => {
     if (items.length === 0) return;
     setProcessing(true);
     setError(null);
@@ -85,7 +87,7 @@ function CartPage() {
         return { kind: 'book', bookMaterialId: Number(i.itemCode) };
       });
 
-      const { url } = await paymentsService.createCheckout(lines);
+      const res = await paymentsService.createCheckout(lines, provider);
       trackEvent('begin_checkout', {
         currency,
         value: total,
@@ -98,12 +100,28 @@ function CartPage() {
           quantity: 1,
         })),
       });
-      window.location.href = url;
+
+      if (res.provider === 'kaspi') {
+        // Do NOT clear the cart or mark as paid — access is granted only after
+        // an admin confirms the Kaspi payment.
+        setKaspiOrder(res);
+      } else {
+        window.location.href = res.url;
+      }
     } catch {
       setError(s.checkoutError);
     } finally {
       setProcessing(false);
     }
+  };
+
+  const copyOrderCode = async () => {
+    if (!kaspiOrder) return;
+    try {
+      await navigator.clipboard.writeText(kaspiOrder.orderCode);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch { /* clipboard unavailable */ }
   };
 
   return (
@@ -155,12 +173,55 @@ function CartPage() {
             <div style={{ color: 'var(--error-color, #ef4444)', fontSize: '0.9rem' }}>{error}</div>
           )}
 
-          <button className="btn btn-primary" style={{ padding: '0.75rem' }} onClick={checkout} disabled={processing}>
-            {processing ? '…' : s.cartCheckout}
-          </button>
-          <button className="btn btn-outline" style={{ padding: '0.75rem' }} onClick={() => navigate('/')}>
-            {s.continueShopping}
-          </button>
+          {kaspiOrder ? (
+            <div className="csca-card" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', border: '2px solid #F14635' }}>
+              <div style={{ fontWeight: 800, fontSize: '1.1rem' }}>{s.kaspiTitle}</div>
+              <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>{s.kaspiOrderCodeHint}</div>
+
+              <div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>{s.kaspiCourseFieldName}</div>
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                  <code style={{ flex: 1, fontSize: '1.1rem', fontWeight: 800, letterSpacing: '0.05em', padding: '0.5rem 0.75rem', borderRadius: '0.5rem', background: 'var(--bg-secondary, #f3f4f6)' }}>
+                    {kaspiOrder.orderCode}
+                  </code>
+                  <button className="btn btn-outline" style={{ whiteSpace: 'nowrap' }} onClick={copyOrderCode}>
+                    {copied ? s.kaspiCopied : s.kaspiCopy}
+                  </button>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontWeight: 700 }}>{s.kaspiAmountLabel}</span>
+                <span style={{ fontWeight: 800, fontSize: '1.2rem', color: 'var(--csca-red, #C8102E)' }}>
+                  {kaspiOrder.amount.toLocaleString('ru-RU')} {kaspiOrder.currency}
+                </span>
+              </div>
+
+              <a className="btn btn-primary" style={{ padding: '0.75rem', textAlign: 'center', background: '#F14635', borderColor: '#F14635' }}
+                 href={kaspiOrder.paymentUrl} target="_blank" rel="noopener noreferrer">
+                {s.payWithKaspi}
+              </a>
+
+              <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>{s.kaspiPendingNote}</div>
+
+              <button className="btn btn-outline" style={{ padding: '0.6rem' }} onClick={() => setKaspiOrder(null)}>
+                {s.kaspiBack}
+              </button>
+            </div>
+          ) : (
+            <>
+              <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>{s.choosePaymentMethod}</div>
+              <button className="btn btn-primary" style={{ padding: '0.75rem', background: '#F14635', borderColor: '#F14635' }} onClick={() => checkout('kaspi')} disabled={processing}>
+                {processing ? '…' : s.payWithKaspi}
+              </button>
+              <button className="btn btn-outline" style={{ padding: '0.75rem' }} onClick={() => checkout('polar')} disabled={processing}>
+                {processing ? '…' : s.payWithPolar}
+              </button>
+              <button className="btn btn-outline" style={{ padding: '0.75rem' }} onClick={() => navigate('/')}>
+                {s.continueShopping}
+              </button>
+            </>
+          )}
         </div>
       )}
     </div>

@@ -22,9 +22,10 @@ public class PurchaseController : ApiControllerBase
         _fx = fx;
     }
 
-    private static PurchaseDto ToDto(Purchase p) => new(
+    private static PurchaseDto ToDto(Purchase p, string? orderCode = null) => new(
         p.Id, p.ItemType, p.ItemCode, p.Title, p.Subjects,
-        p.Amount, p.Currency, p.Status, p.PurchasedAt, p.PolarOrderId, p.CheckoutRef);
+        p.Amount, p.Currency, p.Status, p.PurchasedAt, p.PolarOrderId, p.CheckoutRef,
+        p.PaymentProvider, p.ExternalPaymentId, orderCode);
 
     [HttpGet]
     public async Task<IActionResult> List()
@@ -34,7 +35,16 @@ public class PurchaseController : ApiControllerBase
             .Where(p => p.UserId == userId)
             .OrderByDescending(p => p.PurchasedAt)
             .ToListAsync();
-        return Ok(items.Select(ToDto));
+
+        var orderIds = items.Where(p => p.PaymentOrderId != null).Select(p => p.PaymentOrderId!.Value).Distinct().ToList();
+        var codeByOrderId = orderIds.Count == 0
+            ? new Dictionary<int, string>()
+            : await _db.PaymentOrders
+                .Where(o => orderIds.Contains(o.Id))
+                .ToDictionaryAsync(o => o.Id, o => o.OrderCode);
+
+        return Ok(items.Select(p => ToDto(p,
+            p.PaymentOrderId != null && codeByOrderId.TryGetValue(p.PaymentOrderId.Value, out var c) ? c : null)));
     }
 
     [HttpGet("admin/all")]

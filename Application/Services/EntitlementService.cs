@@ -77,30 +77,54 @@ public class EntitlementService : IEntitlementService
         return new CheckoutQuoteDto(total, currency);
     }
 
-    public async Task<CheckoutQuoteDto> GrantAsync(int userId, List<CheckoutLineDto> lines, PurchaseAmountsDto? amounts = null, string? polarOrderId = null, string? checkoutRef = null)
+    public async Task<OrderSnapshot> ResolveSnapshotAsync(List<CheckoutLineDto> lines)
     {
         var (total, currency, resolved) = await ResolveAsync(lines);
-        var totalLinePrice = resolved.Sum(l => l.Price);
+        var snapLines = resolved
+            .Select(l => new OrderLineSnapshot(
+                l.ItemType, l.ItemCode, l.Title, l.Subjects, l.Price, l.Language,
+                l.Grants.Select(g => new OrderGrantSnapshot(g.MockExamId, g.Runs)).ToList()))
+            .ToList();
+        return new OrderSnapshot(total, currency, snapLines);
+    }
 
-        foreach (var line in resolved)
+    public async Task<CheckoutQuoteDto> GrantAsync(int userId, List<CheckoutLineDto> lines, PurchaseAmountsDto? amounts = null, string? externalPaymentId = null, string? checkoutRef = null, PaymentOrder? order = null)
+    {
+        var snapshot = await ResolveSnapshotAsync(lines);
+        await GrantFromSnapshotAsync(userId, snapshot, amounts, externalPaymentId, checkoutRef, order);
+        return new CheckoutQuoteDto(snapshot.Total, snapshot.Currency);
+    }
+
+    public async Task GrantFromSnapshotAsync(int userId, OrderSnapshot snapshot, PurchaseAmountsDto? amounts = null, string? externalPaymentId = null, string? checkoutRef = null, PaymentOrder? order = null)
+    {
+        var currency = snapshot.Currency;
+        var totalLinePrice = snapshot.Lines.Sum(l => l.Price);
+
+        // order == null means the legacy Polar webhook (checkout created before PaymentOrder existed).
+        var isLegacyPolar = order == null;
+        var provider = isLegacyPolar ? PaymentProviders.Polar : order!.Provider;
+        var isPolar = provider == PaymentProviders.Polar;
+        var polarOrderId = isPolar ? externalPaymentId : null;
+
+        foreach (var line in snapshot.Lines)
         {
-            foreach (var (mockExamId, runs) in line.Grants)
+            foreach (var grant in line.Grants)
             {
                 var balance = await _db.UserMockRuns
-                    .FirstOrDefaultAsync(r => r.UserId == userId && r.MockExamId == mockExamId && r.Language == line.Language);
+                    .FirstOrDefaultAsync(r => r.UserId == userId && r.MockExamId == grant.MockExamId && r.Language == line.Language);
                 if (balance == null)
                 {
-                    _db.UserMockRuns.Add(new UserMockRuns { UserId = userId, MockExamId = mockExamId, RunsRemaining = runs, Language = line.Language });
+                    _db.UserMockRuns.Add(new UserMockRuns { UserId = userId, MockExamId = grant.MockExamId, RunsRemaining = grant.Runs, Language = line.Language });
                 }
                 else
                 {
-                    balance.RunsRemaining += runs;
+                    balance.RunsRemaining += grant.Runs;
                 }
             }
 
             decimal share = amounts == null ? 0m
                 : totalLinePrice > 0 ? line.Price / totalLinePrice
-                : (resolved.Count > 0 ? 1m / resolved.Count : 0m);
+                : (snapshot.Lines.Count > 0 ? 1m / snapshot.Lines.Count : 0m);
 
             _db.Purchases.Add(new Purchase
             {
@@ -120,12 +144,14 @@ public class EntitlementService : IEntitlementService
                 NetAmount = amounts != null ? Math.Round(amounts.Net * share, 2) : 0m,
                 TotalAmount = amounts != null ? Math.Round(amounts.Total * share, 2) : 0m,
                 PolarOrderId = polarOrderId,
-                CheckoutRef = checkoutRef,
+                CheckoutRef = checkoutRef ?? order?.CheckoutRef,
+                PaymentProvider = provider,
+                ExternalPaymentId = externalPaymentId,
+                PaymentOrderId = order?.Id,
             });
         }
 
         await _db.SaveChangesAsync();
-        return new CheckoutQuoteDto(total, currency);
     }
 
     public async Task UpdatePurchaseAmountsAsync(string polarOrderId, PurchaseAmountsDto amounts)
@@ -190,7 +216,15 @@ public class EntitlementService : IEntitlementService
 
         var resolved = new List<ResolvedLine>();
         decimal total = 0m;
-        string currency = "KZT";
+        string? currency = null;
+
+        // A checkout may only contain items in a single currency; the first line fixes it.
+        void ApplyCurrency(string lineCurrency)
+        {
+            if (currency == null) currency = lineCurrency;
+            else if (!string.Equals(currency, lineCurrency, StringComparison.OrdinalIgnoreCase))
+                throw new ArgumentException("Все товары в одном заказе должны быть в одной валюте.");
+        }
 
         foreach (var line in lines)
         {
@@ -204,7 +238,7 @@ public class EntitlementService : IEntitlementService
                     ?? throw new ArgumentException("Invalid run tier");
 
                 var lang = line.Language == "zh" ? "zh" : "en";
-                currency = tier.Currency;
+                ApplyCurrency(tier.Currency);
                 total += tier.Price;
                 resolved.Add(new ResolvedLine(
                     "mock",
@@ -234,7 +268,7 @@ public class EntitlementService : IEntitlementService
                 }
 
                 var lang = line.Language == "zh" ? "zh" : "en";
-                currency = pkg.Currency;
+                ApplyCurrency(pkg.Currency);
                 total += pkg.Price;
                 resolved.Add(new ResolvedLine(
                     "package",
@@ -251,6 +285,8 @@ public class EntitlementService : IEntitlementService
                     .FirstOrDefaultAsync(m => m.IsActive && m.Id == line.BookMaterialId)
                     ?? throw new ArgumentException("Invalid book");
 
+                // StudyMaterial has no own currency yet; books are priced in KZT.
+                ApplyCurrency("KZT");
                 total += material.Price;
                 resolved.Add(new ResolvedLine(
                     "book",
@@ -267,6 +303,6 @@ public class EntitlementService : IEntitlementService
             }
         }
 
-        return (total, currency, resolved);
+        return (total, currency ?? "KZT", resolved);
     }
 }

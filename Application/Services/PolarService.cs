@@ -13,6 +13,7 @@ namespace UniStart.Application.Services;
 public class PolarService : IPolarService
 {
     private readonly IEntitlementService _entitlements;
+    private readonly IPaymentOrderService _orders;
     private readonly IEmailService _email;
     private readonly UniStartDbContext _db;
     private readonly ILogger<PolarService> _logger;
@@ -25,9 +26,10 @@ public class PolarService : IPolarService
     private readonly string _baseUrl;
     private readonly bool _useSandbox;
 
-    public PolarService(IConfiguration config, IEntitlementService entitlements, IEmailService email, UniStartDbContext db, ILogger<PolarService> logger)
+    public PolarService(IConfiguration config, IEntitlementService entitlements, IPaymentOrderService orders, IEmailService email, UniStartDbContext db, ILogger<PolarService> logger)
     {
         _entitlements = entitlements;
+        _orders = orders;
         _email = email;
         _db = db;
         _logger = logger;
@@ -53,7 +55,7 @@ public class PolarService : IPolarService
         _http = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
     }
 
-    public async Task<string> CreateCheckoutUrlAsync(int userId, List<CheckoutLineDto> lines)
+    public async Task<PolarCheckoutResponse> CreateCheckoutUrlAsync(int userId, List<CheckoutLineDto> lines)
     {
         if (string.IsNullOrEmpty(_token) || string.IsNullOrEmpty(_productId))
         {
@@ -61,15 +63,18 @@ public class PolarService : IPolarService
             throw new InvalidOperationException("Polar is not configured (token/product id missing).");
         }
 
-        var quote = await _entitlements.QuoteAsync(lines);
-        var currency = quote.Currency.ToLowerInvariant();
-        var amountMinor = IsZeroDecimal(currency)
-            ? (long)Math.Round(quote.Total)
-            : (long)Math.Round(quote.Total * 100m);
-
         // Own correlation id so the success page can match this exact checkout to
         // its backend-confirmed Purchase (independent of Polar-internal ids).
         var cref = Guid.NewGuid().ToString("N");
+
+        // Create the internal Pending order first (trusted server price + stored lines).
+        var order = await _orders.CreateAsync(userId, PaymentProviders.Polar, lines, cref);
+
+        var currency = order.Currency.ToLowerInvariant();
+        var amountMinor = IsZeroDecimal(currency)
+            ? (long)Math.Round(order.Amount)
+            : (long)Math.Round(order.Amount * 100m);
+
         var successUrl = _successUrl + (_successUrl.Contains('?') ? "&" : "?") + "cref=" + cref;
 
         var payload = new
@@ -90,6 +95,7 @@ public class PolarService : IPolarService
                 ["userId"] = userId.ToString(),
                 ["lines"] = EncodeLines(lines),
                 ["cref"] = cref,
+                ["orderCode"] = order.OrderCode,
             },
         };
 
@@ -106,8 +112,9 @@ public class PolarService : IPolarService
         }
 
         using var doc = JsonDocument.Parse(body);
-        return doc.RootElement.GetProperty("url").GetString()
+        var url = doc.RootElement.GetProperty("url").GetString()
                ?? throw new InvalidOperationException("Polar did not return a checkout url.");
+        return new PolarCheckoutResponse("polar", order.OrderCode, url);
     }
 
     public async Task<bool> HandleWebhookAsync(string rawBody, string? webhookId, string? webhookTimestamp, string? webhookSignature)
@@ -140,10 +147,48 @@ public class PolarService : IPolarService
             _logger.LogWarning("Polar webhook missing metadata; type={Type}", type);
             return true;
         }
-        var lines = DecodeLines(linesRaw);
-        if (lines.Count == 0) return true;
 
         var amounts = ExtractAmounts(data);
+
+        // Preferred path: match the internal PaymentOrder and confirm it atomically/idempotently.
+        if (metadata.TryGetValue("orderCode", out var orderCode) && !string.IsNullOrEmpty(orderCode)
+            && !string.IsNullOrEmpty(orderId))
+        {
+            var order = await _db.PaymentOrders.FirstOrDefaultAsync(o => o.OrderCode == orderCode);
+            if (order == null)
+            {
+                _logger.LogWarning("Polar webhook: order {OrderCode} not found", orderCode);
+                return true;
+            }
+            if (order.Provider != PaymentProviders.Polar)
+            {
+                _logger.LogWarning("Polar webhook: order {OrderCode} is not a Polar order", orderCode);
+                return true;
+            }
+            if (order.UserId != userId)
+            {
+                _logger.LogWarning("Polar webhook: order {OrderCode} user mismatch (order={OrderUser}, metadata={MetaUser})",
+                    orderCode, order.UserId, userId);
+                return true;
+            }
+
+            var result = await _orders.ConfirmAndGrantAsync(order, orderId, amounts);
+            if (result == ConfirmResult.AlreadyProcessed)
+            {
+                await _entitlements.UpdatePurchaseAmountsAsync(orderId, amounts);
+                return true;
+            }
+            if (result == ConfirmResult.DuplicatePaymentId)
+                return true;
+
+            _logger.LogInformation("Polar grant applied for user {UserId}, order {OrderCode}/{OrderId}", order.UserId, orderCode, orderId);
+            await TrySendReceiptAsync(order.UserId, order.Amount, order.Currency);
+            return true;
+        }
+
+        // Legacy fallback: checkouts created before PaymentOrder existed carry no orderCode.
+        var lines = DecodeLines(linesRaw);
+        if (lines.Count == 0) return true;
 
         var dedupKey = $"polar:{orderId ?? webhookId}";
         var alreadyGranted = await _db.AppSettings.AnyAsync(s => s.Key == dedupKey);
@@ -155,28 +200,30 @@ public class PolarService : IPolarService
             return true;
         }
 
-        await _entitlements.GrantAsync(userId, lines, amounts, orderId, metadata.TryGetValue("cref", out var crefVal) ? crefVal : null);
+        var legacyQuote = await _entitlements.GrantAsync(userId, lines, amounts, orderId, metadata.TryGetValue("cref", out var crefVal) ? crefVal : null);
         _db.AppSettings.Add(new AppSetting { Key = dedupKey, Value = DateTime.UtcNow.ToString("o") });
         await _db.SaveChangesAsync();
 
         _logger.LogInformation("Polar grant applied for user {UserId}, order {OrderId}", userId, orderId);
+        await TrySendReceiptAsync(userId, legacyQuote.Total, legacyQuote.Currency);
+        return true;
+    }
 
+    private async Task TrySendReceiptAsync(int userId, decimal total, string currency)
+    {
         try
         {
             var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId);
             if (user != null && !string.IsNullOrWhiteSpace(user.Email))
             {
-                var quote = await _entitlements.QuoteAsync(lines);
                 var name = string.IsNullOrWhiteSpace(user.Name) ? user.FirstName : user.Name;
-                await _email.SendPurchaseReceiptAsync(user.Email, name, quote.Total, quote.Currency);
+                await _email.SendPurchaseReceiptAsync(user.Email, name, total, currency);
             }
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Failed to send purchase receipt for user {UserId}", userId);
         }
-
-        return true;
     }
 
     private static readonly HashSet<string> ZeroDecimal = new(StringComparer.OrdinalIgnoreCase)

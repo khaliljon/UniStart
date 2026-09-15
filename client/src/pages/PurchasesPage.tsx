@@ -13,15 +13,19 @@ import { fullDateLocalized, shortDateLocalized } from '../utils/dates';
 import { pickLocalized } from '../utils/localize';
 
 // Fire GA4 `purchase` only for the backend-confirmed (Paid) purchase matching the
-// checkout correlation id (cref) returned on the success URL. transaction_id is the
-// stable Polar order id. localStorage only prevents a repeat analytics send.
+// checkout correlation id (cref) returned on the success URL. transaction_id prefers
+// the provider-neutral external payment id, then legacy Polar id, then order code.
+// localStorage only prevents a repeat analytics send.
 const SENT_ORDERS_KEY = 'ga_purchased_orders';
 
 function reportPurchase(list: Purchase[], cref: string): boolean {
   try {
     const matched = list.filter((p) => p.status === 'Paid' && p.checkoutRef === cref);
     if (matched.length === 0) return false; // backend not confirmed yet
-    const orderId = matched.find((p) => p.polarOrderId)?.polarOrderId ?? cref;
+    const orderId = matched.find((p) => p.externalPaymentId)?.externalPaymentId
+      ?? matched.find((p) => p.polarOrderId)?.polarOrderId
+      ?? matched.find((p) => p.orderCode)?.orderCode
+      ?? cref;
     const sent = new Set<string>(JSON.parse(localStorage.getItem(SENT_ORDERS_KEY) || '[]'));
     if (sent.has(orderId)) return true;
     trackEvent('purchase', {

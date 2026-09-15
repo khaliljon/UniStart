@@ -28,6 +28,11 @@ public class Purchase : IAuditable
     public string? PolarOrderId { get; set; }
     public string? CheckoutRef { get; set; }
 
+    // Provider-neutral payment linkage (works for Polar, Kaspi, and future providers).
+    public string? PaymentProvider { get; set; }
+    public string? ExternalPaymentId { get; set; }
+    public int? PaymentOrderId { get; set; }
+
     public string Status { get; set; } = "Paid";
 
     public DateTime PurchasedAt { get; set; }

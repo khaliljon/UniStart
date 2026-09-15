@@ -10,11 +10,13 @@ namespace UniStart.Controllers;
 public class PaymentsController : ControllerBase
 {
     private readonly IPolarService _polar;
+    private readonly IKaspiService _kaspi;
     private readonly ILogger<PaymentsController> _logger;
 
-    public PaymentsController(IPolarService polar, ILogger<PaymentsController> logger)
+    public PaymentsController(IPolarService polar, IKaspiService kaspi, ILogger<PaymentsController> logger)
     {
         _polar = polar;
+        _kaspi = kaspi;
         _logger = logger;
     }
 
@@ -28,10 +30,20 @@ public class PaymentsController : ControllerBase
     [Authorize]
     public async Task<IActionResult> CreateCheckout([FromBody] RunCheckoutDto dto)
     {
+        var provider = (dto.Provider ?? "polar").Trim().ToLowerInvariant();
+        if (provider != "polar" && provider != "kaspi")
+            return BadRequest(new { error = $"Неподдерживаемый способ оплаты: {provider}." });
+
         try
         {
-            var url = await _polar.CreateCheckoutUrlAsync(CurrentUserId(), dto.Lines);
-            return Ok(new { url });
+            if (provider == "kaspi")
+            {
+                var kaspi = await _kaspi.CreateCheckoutAsync(CurrentUserId(), dto.Lines);
+                return Ok(kaspi);
+            }
+
+            var res = await _polar.CreateCheckoutUrlAsync(CurrentUserId(), dto.Lines);
+            return Ok(new { provider = res.Provider, orderCode = res.OrderCode, url = res.Url });
         }
         catch (ArgumentException ex) { return BadRequest(new { error = ex.Message }); }
         catch (InvalidOperationException ex) { return StatusCode(502, new { error = ex.Message }); }

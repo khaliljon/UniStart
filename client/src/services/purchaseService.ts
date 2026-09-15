@@ -12,6 +12,9 @@ export interface Purchase {
   purchasedAt: string;
   polarOrderId?: string | null;
   checkoutRef?: string | null;
+  paymentProvider?: string | null;
+  externalPaymentId?: string | null;
+  orderCode?: string | null;
 }
 
 export interface AdminPurchase extends Purchase {

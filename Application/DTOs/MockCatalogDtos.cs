@@ -52,6 +52,19 @@ public class CheckoutLineDto
 public class RunCheckoutDto
 {
     public List<CheckoutLineDto> Lines { get; set; } = new();
+
+    /// <summary>"polar" (default) or "kaspi".</summary>
+    public string? Provider { get; set; }
 }
 
 public record CheckoutQuoteDto(decimal Total, string Currency);
+
+/// <summary>Response for a Polar checkout: redirect the browser to <paramref name="Url"/>.</summary>
+public record PolarCheckoutResponse(string Provider, string OrderCode, string Url);
+
+/// <summary>
+/// Response for a Kaspi checkout. The frontend must show <paramref name="OrderCode"/> to the
+/// user (to paste into Kaspi's "Название курса" field) and open <paramref name="PaymentUrl"/>.
+/// Opening the URL is NOT a payment confirmation.
+/// </summary>
+public record KaspiCheckoutResponse(string Provider, string OrderCode, decimal Amount, string Currency, string PaymentUrl);

@@ -198,6 +198,17 @@ export interface CscaStrings {
   continueShopping: string;
   cartBrowse: string;
   addedToCart: string;
+  choosePaymentMethod: string;
+  payWithKaspi: string;
+  payWithPolar: string;
+  kaspiTitle: string;
+  kaspiOrderCodeHint: string;
+  kaspiCourseFieldName: string;
+  kaspiCopy: string;
+  kaspiCopied: string;
+  kaspiAmountLabel: string;
+  kaspiPendingNote: string;
+  kaspiBack: string;
 }
 
 const ru: CscaStrings = {
@@ -334,6 +345,17 @@ const ru: CscaStrings = {
   continueShopping: 'Продолжить покупки',
   cartBrowse: 'В каталог',
   addedToCart: 'Добавлено в корзину',
+  choosePaymentMethod: 'Выберите способ оплаты',
+  payWithKaspi: 'Оплатить через Kaspi',
+  payWithPolar: 'Оплатить картой (Polar)',
+  kaspiTitle: 'Оплата через Kaspi',
+  kaspiOrderCodeHint: 'Скопируйте код заказа и вставьте его в поле «Название курса» в форме Kaspi.',
+  kaspiCourseFieldName: 'Название курса',
+  kaspiCopy: 'Скопировать',
+  kaspiCopied: 'Скопировано',
+  kaspiAmountLabel: 'Сумма к оплате',
+  kaspiPendingNote: 'Доступ откроется после подтверждения оплаты администратором. Обычно это занимает немного времени.',
+  kaspiBack: 'Выбрать другой способ',
 };
 
 const en: CscaStrings = {
@@ -470,6 +492,17 @@ const en: CscaStrings = {
   continueShopping: 'Continue shopping',
   cartBrowse: 'Browse catalog',
   addedToCart: 'Added to cart',
+  choosePaymentMethod: 'Choose a payment method',
+  payWithKaspi: 'Pay via Kaspi',
+  payWithPolar: 'Pay by card (Polar)',
+  kaspiTitle: 'Pay via Kaspi',
+  kaspiOrderCodeHint: 'Copy the order code and paste it into the "Course name" field in the Kaspi form.',
+  kaspiCourseFieldName: 'Course name',
+  kaspiCopy: 'Copy',
+  kaspiCopied: 'Copied',
+  kaspiAmountLabel: 'Amount to pay',
+  kaspiPendingNote: 'Access is granted after an admin confirms your payment. This usually takes a little while.',
+  kaspiBack: 'Choose another method',
 };
 
 const kz: CscaStrings = {
@@ -604,6 +637,17 @@ const kz: CscaStrings = {
   continueShopping: 'Сатып алуды жалғастыру',
   cartBrowse: 'Каталогқа',
   addedToCart: 'Себетке қосылды',
+  choosePaymentMethod: 'Төлем әдісін таңдаңыз',
+  payWithKaspi: 'Kaspi арқылы төлеу',
+  payWithPolar: 'Картамен төлеу (Polar)',
+  kaspiTitle: 'Kaspi арқылы төлеу',
+  kaspiOrderCodeHint: 'Тапсырыс кодын көшіріп, оны Kaspi формасындағы «Курс атауы» өрісіне қойыңыз.',
+  kaspiCourseFieldName: 'Курс атауы',
+  kaspiCopy: 'Көшіру',
+  kaspiCopied: 'Көшірілді',
+  kaspiAmountLabel: 'Төлем сомасы',
+  kaspiPendingNote: 'Қолжетімділік әкімші төлемді растағаннан кейін ашылады. Әдетте бұл біраз уақыт алады.',
+  kaspiBack: 'Басқа әдісті таңдау',
 };
 
 export const cscaStrings: Record<Locale, CscaStrings> = { ru, en, kz };

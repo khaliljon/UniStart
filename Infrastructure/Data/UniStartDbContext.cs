@@ -62,6 +62,8 @@ public class UniStartDbContext : DbContext
     public DbSet<Purchase> Purchases => Set<Purchase>();
     public DbSet<ExamSitting> ExamSittings => Set<ExamSitting>();
 
+    public DbSet<PaymentOrder> PaymentOrders => Set<PaymentOrder>();
+
     public DbSet<StudyMaterial> StudyMaterials => Set<StudyMaterial>();
 
     public DbSet<SupportTicket> SupportTickets => Set<SupportTicket>();
@@ -798,11 +800,43 @@ public class UniStartDbContext : DbContext
             entity.Property(e => e.Amount).HasColumnType("numeric(12,2)");
             entity.Property(e => e.Currency).HasMaxLength(8).HasDefaultValue("KZT");
             entity.Property(e => e.Status).IsRequired().HasMaxLength(20).HasDefaultValue("Paid");
+            entity.Property(e => e.PaymentProvider).HasMaxLength(20);
+            entity.Property(e => e.ExternalPaymentId).HasMaxLength(100);
             entity.HasOne(e => e.User)
                   .WithMany()
                   .HasForeignKey(e => e.UserId)
                   .OnDelete(DeleteBehavior.Cascade);
+            // Nullable FK to PaymentOrders; never cascade-delete financial history.
+            entity.HasOne<PaymentOrder>()
+                  .WithMany()
+                  .HasForeignKey(e => e.PaymentOrderId)
+                  .OnDelete(DeleteBehavior.SetNull);
             entity.HasIndex(e => e.UserId).HasDatabaseName("IX_Purchases_UserId");
+            entity.HasIndex(e => e.PaymentOrderId).HasDatabaseName("IX_Purchases_PaymentOrderId");
+        });
+
+        modelBuilder.Entity<PaymentOrder>(entity =>
+        {
+            entity.ToTable("PaymentOrders");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.OrderCode).IsRequired().HasMaxLength(32);
+            entity.Property(e => e.Provider).IsRequired().HasMaxLength(20);
+            entity.Property(e => e.Status).IsRequired().HasMaxLength(20).HasDefaultValue(PaymentOrderStatuses.Pending);
+            entity.Property(e => e.Amount).HasColumnType("numeric(12,2)");
+            entity.Property(e => e.Currency).IsRequired().HasMaxLength(8).HasDefaultValue("KZT");
+            entity.Property(e => e.LinesJson).IsRequired().HasColumnType("jsonb");
+            entity.Property(e => e.ExternalPaymentId).HasMaxLength(100);
+            entity.Property(e => e.CheckoutRef).HasMaxLength(64);
+            entity.HasOne(e => e.User)
+                  .WithMany()
+                  .HasForeignKey(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Restrict);
+            entity.HasIndex(e => e.OrderCode).IsUnique().HasDatabaseName("IX_PaymentOrders_OrderCode");
+            entity.HasIndex(e => new { e.Provider, e.ExternalPaymentId })
+                  .IsUnique()
+                  .HasDatabaseName("IX_PaymentOrders_Provider_ExternalPaymentId")
+                  .HasFilter("\"ExternalPaymentId\" IS NOT NULL");
+            entity.HasIndex(e => e.UserId).HasDatabaseName("IX_PaymentOrders_UserId");
         });
 
         modelBuilder.Entity<ExamSitting>(entity =>

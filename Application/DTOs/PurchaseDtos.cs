@@ -13,7 +13,16 @@ public record PurchaseDto(
     string Status,
     DateTime PurchasedAt,
     string? PolarOrderId = null,
-    string? CheckoutRef = null);
+    string? CheckoutRef = null,
+    string? PaymentProvider = null,
+    string? ExternalPaymentId = null,
+    string? OrderCode = null);
+
+/// <summary>Admin request to manually confirm a Kaspi order after verifying the Kaspi register.</summary>
+public record KaspiConfirmDto(
+    [property: Required] string KaspiPaymentId,
+    [property: Required] decimal PaidAmount,
+    string? Note = null);
 
 public record AdminPurchaseDto(
     int Id,
