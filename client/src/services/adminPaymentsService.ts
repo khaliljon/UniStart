@@ -56,4 +56,8 @@ export const adminPaymentsService = {
   async confirmKaspiNotification(id: number): Promise<void> {
     await api.post(`/admin/payments/kaspi/notifications/${id}/confirm`);
   },
+
+  async rejectKaspiNotification(id: number): Promise<void> {
+    await api.post(`/admin/payments/kaspi/notifications/${id}/reject`);
+  },
 };

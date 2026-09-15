@@ -4,6 +4,28 @@ import { adminPaymentsService, type KaspiPendingOrder, type KaspiNotification } 
 
 const KASPI_FEE_RATE = 0.0095;
 
+// Calm, non-alarming status labels so unmatched/old emails don't look like required tasks.
+const notifStatusLabel = (s: string): string =>
+  s === 'Matched' ? 'Готово к подтверждению'
+  : s === 'RequiresReview' ? 'Не сопоставлен'
+  : s === 'Processed' ? 'Обработан'
+  : s === 'Rejected' ? 'Игнорируется'
+  : s;
+
+const friendlyReason = (msg?: string | null): string => {
+  if (!msg) return 'не удалось сопоставить автоматически';
+  const m = msg.toLowerCase();
+  if (m.includes('order code')) return 'отсутствует или неверный код заказа';
+  if (m.includes('order not found')) return 'заказ не найден';
+  if (m.includes('amount mismatch')) return 'сумма не совпадает';
+  if (m.includes('currency')) return 'валюта не KZT';
+  if (m.includes('order already')) return 'заказ уже обработан';
+  if (m.includes('payment id already') || m.includes('already used') || m.includes('already matched')) return 'этот платёж уже использован';
+  if (m.includes('authentication')) return 'письмо не прошло проверку подлинности';
+  if (m.includes('missing required')) return 'в письме не хватает данных';
+  return msg;
+};
+
 function AdminSalesPage() {
   const [data, setData] = useState<AdminSales | null>(null);
   const [loading, setLoading] = useState(true);
@@ -151,6 +173,21 @@ function AdminSalesPage() {
     } catch (e: unknown) {
       const err = e as { response?: { data?: { error?: string } } };
       setNotifError((p) => ({ ...p, [n.id]: err.response?.data?.error ?? 'Не удалось подтвердить платёж.' }));
+    } finally {
+      setConfirmingNotif(null);
+    }
+  };
+
+  const rejectNotification = async (n: KaspiNotification) => {
+    if (!window.confirm(`Игнорировать это письмо (${n.orderCode ?? 'без кода заказа'})? Доступ выдан не будет.`)) return;
+    setConfirmingNotif(n.id);
+    setNotifError((p) => ({ ...p, [n.id]: '' }));
+    try {
+      await adminPaymentsService.rejectKaspiNotification(n.id);
+      loadNotifications();
+    } catch (e: unknown) {
+      const err = e as { response?: { data?: { error?: string } } };
+      setNotifError((p) => ({ ...p, [n.id]: err.response?.data?.error ?? 'Не удалось изменить статус.' }));
     } finally {
       setConfirmingNotif(null);
     }
@@ -308,7 +345,7 @@ function AdminSalesPage() {
                     <div style={{ fontWeight: 800, fontSize: '1.05rem', letterSpacing: '0.03em' }}>
                       {n.orderCode ?? '—'}{' '}
                       <span style={{ fontSize: '0.72rem', fontWeight: 700, color: matched ? '#10b981' : '#b45309', padding: '0.1rem 0.45rem', borderRadius: '999px', background: matched ? 'rgba(16,185,129,0.12)' : 'rgba(245,158,11,0.15)' }}>
-                        {matched ? 'Совпадение' : 'Требует проверки'}
+                        {notifStatusLabel(n.status)}
                       </span>
                     </div>
                     <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
@@ -350,7 +387,7 @@ function AdminSalesPage() {
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                     <div style={{ fontSize: '0.82rem', color: '#b45309' }}>
-                      Причина: {n.errorMessage ?? 'не удалось сопоставить автоматически'}
+                      Причина: {friendlyReason(n.errorMessage)}
                     </div>
                     {n.orderCode && (
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem', alignItems: 'flex-end' }}>
@@ -370,8 +407,17 @@ function AdminSalesPage() {
                         </button>
                       </div>
                     )}
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <button className="btn btn-outline" style={{ color: 'var(--text-secondary)' }}
+                              onClick={() => rejectNotification(n)} disabled={confirmingNotif === n.id}>
+                        {confirmingNotif === n.id ? '…' : 'Игнорировать'}
+                      </button>
+                    </div>
                     {n.orderCode && confirmError[n.orderCode] && (
                       <div style={{ color: 'var(--error-color, #ef4444)', fontSize: '0.8rem' }}>{confirmError[n.orderCode]}</div>
+                    )}
+                    {notifError[n.id] && (
+                      <div style={{ color: 'var(--error-color, #ef4444)', fontSize: '0.8rem' }}>{notifError[n.id]}</div>
                     )}
                   </div>
                 )}

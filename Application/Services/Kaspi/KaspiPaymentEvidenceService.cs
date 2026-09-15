@@ -266,6 +266,19 @@ public partial class KaspiPaymentEvidenceService : IKaspiPaymentEvidenceService
         }
     }
 
+    public async Task<NotificationRejectResult> RejectAsync(int notificationId)
+    {
+        var n = await _db.KaspiPaymentNotifications.FirstOrDefaultAsync(x => x.Id == notificationId);
+        if (n == null) return NotificationRejectResult.NotFound;
+        // Only an unmatched review item can be dismissed; never touch Matched/Processed or the order.
+        if (n.Status != KaspiNotificationStatuses.RequiresReview) return NotificationRejectResult.NotReviewable;
+
+        n.Status = KaspiNotificationStatuses.Rejected;
+        n.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+        return NotificationRejectResult.Rejected;
+    }
+
     private async Task<DateTime?> ReadCheckpointAsync()
     {
         var row = await _db.AppSettings.FirstOrDefaultAsync(s => s.Key == CheckpointKey);

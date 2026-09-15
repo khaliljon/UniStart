@@ -12,6 +12,13 @@ public enum NotificationConfirmResult
     OrderMissing,
 }
 
+public enum NotificationRejectResult
+{
+    Rejected,
+    NotFound,
+    NotReviewable,
+}
+
 /// <summary>
 /// Turns raw payment evidence (from Gmail today, Kaspi API later) into reviewable
 /// <c>KaspiPaymentNotification</c> records and drives admin confirmation through the existing
@@ -25,4 +32,7 @@ public interface IKaspiPaymentEvidenceService
     Task<IReadOnlyList<KaspiNotificationDto>> ListAsync(IEnumerable<string> statuses);
 
     Task<NotificationConfirmResult> ConfirmAsync(int notificationId);
+
+    /// <summary>Dismisses a RequiresReview notification (→ Rejected). Never touches the order/grant.</summary>
+    Task<NotificationRejectResult> RejectAsync(int notificationId);
 }

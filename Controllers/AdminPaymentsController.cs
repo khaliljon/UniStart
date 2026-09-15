@@ -135,4 +135,21 @@ public class AdminPaymentsController : ControllerBase
             _ => StatusCode(500, new { error = "Unexpected confirmation result." }),
         };
     }
+
+    /// <summary>
+    /// Dismisses a RequiresReview Kaspi notification (marks it Rejected). Never grants access,
+    /// never touches the PaymentOrder/Purchase.
+    /// </summary>
+    [HttpPost("kaspi/notifications/{id:int}/reject")]
+    public async Task<IActionResult> RejectKaspiNotification(int id)
+    {
+        var result = await _evidence.RejectAsync(id);
+        return result switch
+        {
+            NotificationRejectResult.Rejected => Ok(new { status = "rejected" }),
+            NotificationRejectResult.NotFound => NotFound(new { error = "Notification not found." }),
+            NotificationRejectResult.NotReviewable => BadRequest(new { error = "Only a notification requiring review can be dismissed." }),
+            _ => StatusCode(500, new { error = "Unexpected result." }),
+        };
+    }
 }
