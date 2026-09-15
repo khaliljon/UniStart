@@ -246,13 +246,18 @@ public partial class KaspiPaymentEvidenceService : IKaspiPaymentEvidenceService
         switch (result)
         {
             case ConfirmResult.Granted:
+                n.Status = KaspiNotificationStatuses.Processed;
+                n.UpdatedAt = DateTime.UtcNow;
+                await _db.SaveChangesAsync();
+                // Only on a real first-time grant — same purchase receipt as Polar.
+                await _orders.SendPurchaseReceiptForOrderAsync(order);
+                return NotificationConfirmResult.Granted;
+
             case ConfirmResult.AlreadyProcessed:
                 n.Status = KaspiNotificationStatuses.Processed;
                 n.UpdatedAt = DateTime.UtcNow;
                 await _db.SaveChangesAsync();
-                return result == ConfirmResult.Granted
-                    ? NotificationConfirmResult.Granted
-                    : NotificationConfirmResult.AlreadyProcessed;
+                return NotificationConfirmResult.AlreadyProcessed;
 
             case ConfirmResult.DuplicatePaymentId:
                 n.Status = KaspiNotificationStatuses.RequiresReview;

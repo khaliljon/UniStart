@@ -12,14 +12,16 @@ public class PaymentOrderService : IPaymentOrderService
 {
     private readonly UniStartDbContext _db;
     private readonly IEntitlementService _entitlements;
+    private readonly IEmailService _email;
     private readonly ILogger<PaymentOrderService> _logger;
 
     private static readonly JsonSerializerOptions JsonOpts = new(JsonSerializerDefaults.Web);
 
-    public PaymentOrderService(UniStartDbContext db, IEntitlementService entitlements, ILogger<PaymentOrderService> logger)
+    public PaymentOrderService(UniStartDbContext db, IEntitlementService entitlements, IEmailService email, ILogger<PaymentOrderService> logger)
     {
         _db = db;
         _entitlements = entitlements;
+        _email = email;
         _logger = logger;
     }
 
@@ -130,6 +132,24 @@ public class PaymentOrderService : IPaymentOrderService
         ex.InnerException is PostgresException pg
         && pg.SqlState == PostgresErrorCodes.UniqueViolation
         && string.Equals(pg.ConstraintName, "IX_PaymentOrders_Provider_ExternalPaymentId", StringComparison.Ordinal);
+
+    public async Task SendPurchaseReceiptForOrderAsync(PaymentOrder order)
+    {
+        try
+        {
+            var user = order.User ?? await _db.Users.FirstOrDefaultAsync(u => u.Id == order.UserId);
+            if (user != null && !string.IsNullOrWhiteSpace(user.Email))
+            {
+                var name = string.IsNullOrWhiteSpace(user.Name) ? user.FirstName : user.Name;
+                await _email.SendPurchaseReceiptAsync(user.Email, name, order.Amount, order.Currency);
+            }
+        }
+        catch (Exception ex)
+        {
+            // Payment/grant already succeeded — an email failure must not affect it.
+            _logger.LogWarning(ex, "Failed to send purchase receipt for order {OrderCode}", order.OrderCode);
+        }
+    }
 
     private async Task<string> GenerateUniqueOrderCodeAsync(string provider)
     {

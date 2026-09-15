@@ -64,6 +64,8 @@ public class AdminPaymentsController : ControllerBase
         }
 
         var result = await _orders.ConfirmAndGrantAsync(order, paymentId, amounts: null);
+        if (result == ConfirmResult.Granted)
+            await _orders.SendPurchaseReceiptForOrderAsync(order); // same receipt as Polar, first grant only
         return result switch
         {
             ConfirmResult.Granted => Ok(new { orderCode = order.OrderCode, status = order.Status, paidAt = order.PaidAt }),

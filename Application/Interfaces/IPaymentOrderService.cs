@@ -34,4 +34,11 @@ public interface IPaymentOrderService
     /// Kaspi manual/automatic confirmation.
     /// </summary>
     Task<ConfirmResult> ConfirmAndGrantAsync(PaymentOrder order, string externalPaymentId, PurchaseAmountsDto? amounts = null);
+
+    /// <summary>
+    /// Sends the existing "purchase receipt" email for an order (provider-neutral). Best-effort:
+    /// never throws — an email failure must not affect the payment/grant. Call only after a real
+    /// first-time grant (result == Granted).
+    /// </summary>
+    Task SendPurchaseReceiptForOrderAsync(PaymentOrder order);
 }
