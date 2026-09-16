@@ -241,6 +241,20 @@ public partial class KaspiPaymentEvidenceService : IKaspiPaymentEvidenceService
             return NotificationConfirmResult.DuplicatePaymentId;
         }
 
+        // Backend guard: the trusted actual amount is the notification's own amount, never a value
+        // supplied by the admin. One order = one full payment; never grant on any mismatch.
+        if (n.Amount is null || decimal.Round(n.Amount.Value, 2) != decimal.Round(order.Amount, 2))
+        {
+            if (n.Status != KaspiNotificationStatuses.RequiresReview)
+            {
+                n.Status = KaspiNotificationStatuses.RequiresReview;
+                n.ErrorMessage = "amount mismatch";
+                n.UpdatedAt = DateTime.UtcNow;
+                await _db.SaveChangesAsync();
+            }
+            return NotificationConfirmResult.AmountMismatch;
+        }
+
         // The single grant gate — atomic + idempotent.
         var result = await _orders.ConfirmAndGrantAsync(order, n.KaspiPaymentId!, amounts: null);
         switch (result)

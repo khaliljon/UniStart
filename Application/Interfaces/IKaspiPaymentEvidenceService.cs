@@ -10,6 +10,7 @@ public enum NotificationConfirmResult
     AlreadyProcessed,
     DuplicatePaymentId,
     OrderMissing,
+    AmountMismatch,
 }
 
 public enum NotificationRejectResult

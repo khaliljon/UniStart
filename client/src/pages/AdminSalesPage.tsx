@@ -38,9 +38,6 @@ function AdminSalesPage() {
 
   const [pending, setPending] = useState<KaspiPendingOrder[]>([]);
   const [notifications, setNotifications] = useState<KaspiNotification[]>([]);
-  const [confirmInputs, setConfirmInputs] = useState<Record<string, { paymentId: string; amount: string }>>({});
-  const [confirming, setConfirming] = useState<string | null>(null);
-  const [confirmError, setConfirmError] = useState<Record<string, string>>({});
   const [confirmingNotif, setConfirmingNotif] = useState<number | null>(null);
   const [notifError, setNotifError] = useState<Record<number, string>>({});
 
@@ -124,42 +121,6 @@ function AdminSalesPage() {
       if (next.has(id)) next.delete(id); else next.add(id);
       return next;
     });
-
-  const setConfirmField = (code: string, field: 'paymentId' | 'amount', value: string) =>
-    setConfirmInputs((prev) => {
-      const cur = prev[code] ?? { paymentId: '', amount: '' };
-      return { ...prev, [code]: { ...cur, [field]: value } };
-    });
-
-  // Manual fallback (used for RequiresReview notifications): confirm by order code.
-  const submitConfirm = async (orderCode: string, currency: string) => {
-    const input = confirmInputs[orderCode] ?? { paymentId: '', amount: '' };
-    const paymentId = input.paymentId.trim();
-    const paidAmount = Number(input.amount);
-    if (!paymentId) {
-      setConfirmError((p) => ({ ...p, [orderCode]: 'Укажите Kaspi payment id.' }));
-      return;
-    }
-    if (!Number.isFinite(paidAmount) || paidAmount <= 0) {
-      setConfirmError((p) => ({ ...p, [orderCode]: 'Укажите корректную оплаченную сумму.' }));
-      return;
-    }
-    if (!window.confirm(`Подтвердить оплату заказа ${orderCode} на сумму ${paidAmount.toLocaleString('ru-RU')} ${currency}?`)) return;
-
-    setConfirming(orderCode);
-    setConfirmError((p) => ({ ...p, [orderCode]: '' }));
-    try {
-      await adminPaymentsService.confirmKaspi(orderCode, { kaspiPaymentId: paymentId, paidAmount });
-      loadPending();
-      loadNotifications();
-      loadSales();
-    } catch (e: unknown) {
-      const err = e as { response?: { data?: { error?: string } } };
-      setConfirmError((p) => ({ ...p, [orderCode]: err.response?.data?.error ?? 'Не удалось подтвердить оплату.' }));
-    } finally {
-      setConfirming(null);
-    }
-  };
 
   const confirmNotification = async (n: KaspiNotification) => {
     if (!window.confirm(`Подтвердить платёж по заказу ${n.orderCode ?? '—'} и выдать доступ?`)) return;
@@ -337,7 +298,9 @@ function AdminSalesPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
           {notifications.map((n) => {
             const matched = n.status === 'Matched';
-            const input = confirmInputs[n.orderCode ?? ''] ?? { paymentId: '', amount: '' };
+            const hasAmounts = n.amount != null && n.expectedAmount != null;
+            const delta = hasAmounts ? (n.amount as number) - (n.expectedAmount as number) : 0;
+            const isAmountMismatch = hasAmounts && delta !== 0;
             return (
               <div key={n.id} className="card" style={{ padding: '1rem 1.25rem', display: 'flex', flexDirection: 'column', gap: '0.6rem', border: `1px solid ${matched ? '#10b981' : '#f59e0b'}` }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
@@ -386,25 +349,18 @@ function AdminSalesPage() {
                   </div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    <div style={{ fontSize: '0.82rem', color: '#b45309' }}>
-                      Причина: {friendlyReason(n.errorMessage)}
-                    </div>
-                    {n.orderCode && (
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem', alignItems: 'flex-end' }}>
-                        <label style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                          Kaspi payment id
-                          <input value={input.paymentId} onChange={(e) => setConfirmField(n.orderCode!, 'paymentId', e.target.value)}
-                                 style={{ padding: '0.4rem 0.6rem', border: '1px solid var(--border-color)', borderRadius: '6px', minWidth: 200 }} />
-                        </label>
-                        <label style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                          Фактически оплачено ({n.currency})
-                          <input type="number" value={input.amount} onChange={(e) => setConfirmField(n.orderCode!, 'amount', e.target.value)}
-                                 placeholder={n.expectedAmount != null ? String(n.expectedAmount) : ''}
-                                 style={{ padding: '0.4rem 0.6rem', border: '1px solid var(--border-color)', borderRadius: '6px', minWidth: 160 }} />
-                        </label>
-                        <button className="btn btn-outline" onClick={() => submitConfirm(n.orderCode!, n.currency)} disabled={confirming === n.orderCode}>
-                          {confirming === n.orderCode ? '…' : 'Проверено вручную — подтвердить'}
-                        </button>
+                    {isAmountMismatch ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', fontSize: '0.82rem' }}>
+                        <div>Ожидалось: <b>{(n.expectedAmount as number).toLocaleString('ru-RU')} {n.currency}</b></div>
+                        <div>Фактически оплачено: <b>{(n.amount as number).toLocaleString('ru-RU')} {n.currency}</b></div>
+                        <div style={{ color: '#ef4444', fontWeight: 700 }}>
+                          {delta < 0 ? 'Недоплата' : 'Переплата'}: {Math.abs(delta).toLocaleString('ru-RU')} {n.currency}
+                        </div>
+                        <div style={{ color: '#b45309' }}>Причина: сумма не совпадает</div>
+                      </div>
+                    ) : (
+                      <div style={{ fontSize: '0.82rem', color: '#b45309' }}>
+                        Причина: {friendlyReason(n.errorMessage)}
                       </div>
                     )}
                     <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -413,9 +369,6 @@ function AdminSalesPage() {
                         {confirmingNotif === n.id ? '…' : 'Игнорировать'}
                       </button>
                     </div>
-                    {n.orderCode && confirmError[n.orderCode] && (
-                      <div style={{ color: 'var(--error-color, #ef4444)', fontSize: '0.8rem' }}>{confirmError[n.orderCode]}</div>
-                    )}
                     {notifError[n.id] && (
                       <div style={{ color: 'var(--error-color, #ef4444)', fontSize: '0.8rem' }}>{notifError[n.id]}</div>
                     )}

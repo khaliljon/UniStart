@@ -133,6 +133,7 @@ public class AdminPaymentsController : ControllerBase
             NotificationConfirmResult.NotFound => NotFound(new { error = "Notification not found." }),
             NotificationConfirmResult.NotMatched => BadRequest(new { error = "Only a matched notification can be confirmed. Review it manually." }),
             NotificationConfirmResult.DuplicatePaymentId => Conflict(new { error = "This Kaspi payment id is already used for another order." }),
+            NotificationConfirmResult.AmountMismatch => Conflict(new { error = "Фактическая сумма платежа не совпадает с суммой заказа. Доступ не выдан." }),
             NotificationConfirmResult.OrderMissing => BadRequest(new { error = "Linked order is missing or incomplete." }),
             _ => StatusCode(500, new { error = "Unexpected confirmation result." }),
         };
