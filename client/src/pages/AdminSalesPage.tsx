@@ -40,6 +40,7 @@ function AdminSalesPage() {
   const [notifications, setNotifications] = useState<KaspiNotification[]>([]);
   const [confirmingNotif, setConfirmingNotif] = useState<number | null>(null);
   const [notifError, setNotifError] = useState<Record<number, string>>({});
+  const [notifInfo, setNotifInfo] = useState<Record<number, string>>({});
 
   const params = {
     status: status || undefined,
@@ -149,6 +150,36 @@ function AdminSalesPage() {
     } catch (e: unknown) {
       const err = e as { response?: { data?: { error?: string } } };
       setNotifError((p) => ({ ...p, [n.id]: err.response?.data?.error ?? 'Не удалось изменить статус.' }));
+    } finally {
+      setConfirmingNotif(null);
+    }
+  };
+
+  const notifyUser = async (n: KaspiNotification) => {
+    setConfirmingNotif(n.id);
+    setNotifError((p) => ({ ...p, [n.id]: '' }));
+    setNotifInfo((p) => ({ ...p, [n.id]: '' }));
+    try {
+      await adminPaymentsService.notifyUserOfMismatch(n.id);
+      setNotifInfo((p) => ({ ...p, [n.id]: 'Письмо отправлено пользователю.' }));
+    } catch (e: unknown) {
+      const err = e as { response?: { data?: { error?: string } } };
+      setNotifError((p) => ({ ...p, [n.id]: err.response?.data?.error ?? 'Не удалось отправить письмо.' }));
+    } finally {
+      setConfirmingNotif(null);
+    }
+  };
+
+  const markRefunded = async (n: KaspiNotification) => {
+    if (!window.confirm(`Отметить полный возврат ${(n.amount ?? 0).toLocaleString('ru-RU')} ${n.currency} по заказу ${n.orderCode ?? '—'}? Доступ выдан не будет.`)) return;
+    setConfirmingNotif(n.id);
+    setNotifError((p) => ({ ...p, [n.id]: '' }));
+    try {
+      await adminPaymentsService.markRefunded(n.id);
+      loadNotifications();
+    } catch (e: unknown) {
+      const err = e as { response?: { data?: { error?: string } } };
+      setNotifError((p) => ({ ...p, [n.id]: err.response?.data?.error ?? 'Не удалось отметить возврат.' }));
     } finally {
       setConfirmingNotif(null);
     }
@@ -356,6 +387,7 @@ function AdminSalesPage() {
                         <div style={{ color: '#ef4444', fontWeight: 700 }}>
                           {delta < 0 ? 'Недоплата' : 'Переплата'}: {Math.abs(delta).toLocaleString('ru-RU')} {n.currency}
                         </div>
+                        <div style={{ fontWeight: 700 }}>Вернуть клиенту: {(n.amount as number).toLocaleString('ru-RU')} {n.currency}</div>
                         <div style={{ color: '#b45309' }}>Причина: сумма не совпадает</div>
                       </div>
                     ) : (
@@ -363,12 +395,25 @@ function AdminSalesPage() {
                         Причина: {friendlyReason(n.errorMessage)}
                       </div>
                     )}
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                      {isAmountMismatch && (
+                        <>
+                          <button className="btn btn-outline" onClick={() => notifyUser(n)} disabled={confirmingNotif === n.id}>
+                            {confirmingNotif === n.id ? '…' : 'Сообщить пользователю'}
+                          </button>
+                          <button className="btn btn-outline" onClick={() => markRefunded(n)} disabled={confirmingNotif === n.id}>
+                            {confirmingNotif === n.id ? '…' : 'Отметить возврат'}
+                          </button>
+                        </>
+                      )}
                       <button className="btn btn-outline" style={{ color: 'var(--text-secondary)' }}
                               onClick={() => rejectNotification(n)} disabled={confirmingNotif === n.id}>
                         {confirmingNotif === n.id ? '…' : 'Игнорировать'}
                       </button>
                     </div>
+                    {notifInfo[n.id] && (
+                      <div style={{ color: '#10b981', fontSize: '0.8rem' }}>{notifInfo[n.id]}</div>
+                    )}
                     {notifError[n.id] && (
                       <div style={{ color: 'var(--error-color, #ef4444)', fontSize: '0.8rem' }}>{notifError[n.id]}</div>
                     )}

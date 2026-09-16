@@ -20,6 +20,14 @@ public enum NotificationRejectResult
     NotReviewable,
 }
 
+public enum NotificationActionResult
+{
+    Done,
+    NotFound,
+    NotApplicable,
+    AlreadyResolved,
+}
+
 /// <summary>
 /// Turns raw payment evidence (from Gmail today, Kaspi API later) into reviewable
 /// <c>KaspiPaymentNotification</c> records and drives admin confirmation through the existing
@@ -36,4 +44,10 @@ public interface IKaspiPaymentEvidenceService
 
     /// <summary>Dismisses a RequiresReview notification (→ Rejected). Never touches the order/grant.</summary>
     Task<NotificationRejectResult> RejectAsync(int notificationId);
+
+    /// <summary>Emails the buyer that the paid amount didn't match (amount-mismatch review only). No state change.</summary>
+    Task<NotificationActionResult> NotifyUserOfMismatchAsync(int notificationId);
+
+    /// <summary>Records a manual full refund for an amount-mismatch review item. Never grants access.</summary>
+    Task<NotificationActionResult> MarkRefundedAsync(int notificationId, int adminUserId);
 }

@@ -17,4 +17,6 @@ public record KaspiNotificationDto(
     decimal? ExpectedAmount,
     bool OrderFound,
     bool AmountMatches,
-    bool PaymentIdUnique);
+    bool PaymentIdUnique,
+    string? ResolutionType = null,
+    DateTime? ResolvedAt = null);

@@ -155,4 +155,36 @@ public class AdminPaymentsController : ControllerBase
             _ => StatusCode(500, new { error = "Unexpected result." }),
         };
     }
+
+    /// <summary>Emails the buyer about an amount mismatch. No payment/grant changes.</summary>
+    [HttpPost("kaspi/notifications/{id:int}/notify-user")]
+    public async Task<IActionResult> NotifyUserOfMismatch(int id)
+    {
+        var result = await _evidence.NotifyUserOfMismatchAsync(id);
+        return MapAction(result, "notified");
+    }
+
+    /// <summary>Records a manual full refund for an amount-mismatch item. Never grants access.</summary>
+    [HttpPost("kaspi/notifications/{id:int}/mark-refunded")]
+    public async Task<IActionResult> MarkRefunded(int id)
+    {
+        var result = await _evidence.MarkRefundedAsync(id, CurrentUserId());
+        return MapAction(result, "refunded");
+    }
+
+    private IActionResult MapAction(NotificationActionResult result, string okStatus) => result switch
+    {
+        NotificationActionResult.Done => Ok(new { status = okStatus }),
+        NotificationActionResult.NotFound => NotFound(new { error = "Notification not found." }),
+        NotificationActionResult.NotApplicable => BadRequest(new { error = "Действие доступно только для заказа с несовпадением суммы." }),
+        NotificationActionResult.AlreadyResolved => Conflict(new { error = "Заявка уже обработана." }),
+        _ => StatusCode(500, new { error = "Unexpected result." }),
+    };
+
+    private int CurrentUserId()
+    {
+        var claim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                    ?? User.FindFirst("sub")?.Value;
+        return int.TryParse(claim, out var id) ? id : 0;
+    }
 }

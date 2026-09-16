@@ -60,4 +60,12 @@ export const adminPaymentsService = {
   async rejectKaspiNotification(id: number): Promise<void> {
     await api.post(`/admin/payments/kaspi/notifications/${id}/reject`);
   },
+
+  async notifyUserOfMismatch(id: number): Promise<void> {
+    await api.post(`/admin/payments/kaspi/notifications/${id}/notify-user`);
+  },
+
+  async markRefunded(id: number): Promise<void> {
+    await api.post(`/admin/payments/kaspi/notifications/${id}/mark-refunded`);
+  },
 };

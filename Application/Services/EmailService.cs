@@ -47,6 +47,13 @@ public class EmailService : IEmailService
         await SendEmailAsync(toEmail, subject, body);
     }
 
+    public async Task SendKaspiAmountMismatchEmailAsync(string toEmail, string userName, string orderCode, decimal expected, decimal actual, string currency)
+    {
+        var subject = "Проблема с оплатой заказа — UniStart";
+        var body = GetKaspiAmountMismatchTemplate(userName, orderCode, expected, actual, currency);
+        await SendEmailAsync(toEmail, subject, body);
+    }
+
     private async Task<bool> SendEmailAsync(string toEmail, string subject, string htmlBody)
     {
         var emailSettings = _config.GetSection("EmailSettings");
@@ -234,12 +241,46 @@ public class EmailService : IEmailService
     }
 
 
+    private string GetKaspiAmountMismatchTemplate(string userName, string orderCode, decimal expected, decimal actual, string currency)
+    {
+        var name = System.Net.WebUtility.HtmlEncode(userName);
+        var code = System.Net.WebUtility.HtmlEncode(orderCode);
+        var cur = System.Net.WebUtility.HtmlEncode(currency);
+        var inv = System.Globalization.CultureInfo.InvariantCulture;
+        var expectedStr = expected.ToString("N0", inv);
+        var actualStr = actual.ToString("N0", inv);
+        var content = $@"
+      <h2 style=""color:#1a1a2e;margin:0 0 16px;"">Здравствуйте, {name}!</h2>
+      <p style=""font-size:16px;line-height:1.6;color:#555;"">
+        Мы получили платёж по заказу <b>{code}</b>, но его сумма не совпадает с суммой заказа,
+        поэтому доступ пока <b>не активирован</b>.
+      </p>
+      <div style=""background:#fbeaec;border-radius:12px;padding:20px;margin:20px 0;"">
+        <div style=""display:flex;justify-content:space-between;font-size:15px;color:#555;margin-bottom:6px;"">
+          <span>Ожидалось:</span><span><b>{expectedStr} {cur}</b></span>
+        </div>
+        <div style=""display:flex;justify-content:space-between;font-size:15px;color:#555;"">
+          <span>Фактически оплачено:</span><span><b>{actualStr} {cur}</b></span>
+        </div>
+      </div>
+      <p style=""font-size:15px;line-height:1.6;color:#555;"">
+        Пожалуйста, свяжитесь с поддержкой, чтобы мы уточнили ситуацию и помогли её решить.
+      </p>
+      <p style=""font-size:15px;line-height:1.6;color:#c20f2c;font-weight:600;"">
+        Не совершайте дополнительный платёж до уточнения ситуации.
+      </p>";
+
+        return WrapInLayout("Проблема с оплатой заказа — UniStart", content, showNotificationSettings: false);
+    }
+
+
     public static readonly IReadOnlyList<(string Key, string Label)> PreviewKeys = new List<(string Key, string Label)>
     {
         ("verification", "Код подтверждения"),
         ("welcome", "Добро пожаловать"),
         ("password-reset", "Восстановление пароля"),
         ("purchase", "Чек об оплате"),
+        ("kaspi-mismatch", "Проблема с оплатой (Kaspi)"),
     };
 
     public string RenderPreview(string key) => key switch
@@ -248,6 +289,7 @@ public class EmailService : IEmailService
         "welcome" => GetWelcomeTemplate("Халыч Каландаров"),
         "password-reset" => GetPasswordResetTemplate("Халыч Каландаров", "605372"),
         "purchase" => GetPurchaseReceiptTemplate("Халыч Каландаров", 25000m, "KZT"),
+        "kaspi-mismatch" => GetKaspiAmountMismatchTemplate("Халыч Каландаров", "US-K-7QF2M9AH", 10990m, 10000m, "KZT"),
         _ => throw new ArgumentException($"Unknown preview key: {key}", nameof(key)),
     };
 }

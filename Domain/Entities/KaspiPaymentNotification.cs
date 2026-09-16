@@ -24,6 +24,13 @@ public static class KaspiPaymentSources
     public const string KaspiApi = "KaspiApi";
 }
 
+public static class KaspiResolutionTypes
+{
+    public const string Refunded = "Refunded";
+    public const string Ignored = "Ignored";
+    public const string Other = "Other";
+}
+
 /// <summary>
 /// Evidence of a Kaspi payment discovered from an external source (currently a Gmail
 /// notification email). This is deliberately separate from <see cref="PaymentOrder"/> so
@@ -66,6 +73,12 @@ public class KaspiPaymentNotification : IAuditable
 
     /// <summary>Short verdict/reason for RequiresReview/Rejected (no raw headers/body).</summary>
     public string? ErrorMessage { get; set; }
+
+    /// <summary>How a review item was resolved. See <see cref="KaspiResolutionTypes"/>.</summary>
+    public string? ResolutionType { get; set; }
+    public string? ResolutionNote { get; set; }
+    public DateTime? ResolvedAt { get; set; }
+    public int? ResolvedByUserId { get; set; }
 
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }

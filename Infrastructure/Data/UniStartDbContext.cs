@@ -853,6 +853,8 @@ public class UniStartDbContext : DbContext
             entity.Property(e => e.Currency).IsRequired().HasMaxLength(8).HasDefaultValue("KZT");
             entity.Property(e => e.Status).IsRequired().HasMaxLength(20).HasDefaultValue(KaspiNotificationStatuses.Detected);
             entity.Property(e => e.ErrorMessage).HasMaxLength(500);
+            entity.Property(e => e.ResolutionType).HasMaxLength(20);
+            entity.Property(e => e.ResolutionNote).HasMaxLength(500);
             // Never cascade-delete financial history when an order is removed.
             entity.HasOne(e => e.PaymentOrder)
                   .WithMany()

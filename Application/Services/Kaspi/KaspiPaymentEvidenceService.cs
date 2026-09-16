@@ -14,6 +14,7 @@ public partial class KaspiPaymentEvidenceService : IKaspiPaymentEvidenceService
     private readonly UniStartDbContext _db;
     private readonly IPaymentEvidenceSource _source;
     private readonly IPaymentOrderService _orders;
+    private readonly IEmailService _email;
     private readonly ILogger<KaspiPaymentEvidenceService> _logger;
     private readonly int _overlapMinutes;
 
@@ -26,12 +27,14 @@ public partial class KaspiPaymentEvidenceService : IKaspiPaymentEvidenceService
         UniStartDbContext db,
         IPaymentEvidenceSource source,
         IPaymentOrderService orders,
+        IEmailService email,
         IConfiguration config,
         ILogger<KaspiPaymentEvidenceService> logger)
     {
         _db = db;
         _source = source;
         _orders = orders;
+        _email = email;
         _logger = logger;
         _overlapMinutes = config.GetValue<int?>("GMAIL_KASPI_OVERLAP_MINUTES") ?? 10;
     }
@@ -203,7 +206,9 @@ public partial class KaspiPaymentEvidenceService : IKaspiPaymentEvidenceService
                 order?.UserId, order?.User?.Name, order?.User?.Email, order?.Amount,
                 OrderFound: order != null,
                 AmountMatches: amountMatches,
-                PaymentIdUnique: paymentIdUnique));
+                PaymentIdUnique: paymentIdUnique,
+                ResolutionType: n.ResolutionType,
+                ResolvedAt: n.ResolvedAt));
         }
         return result;
     }
@@ -296,6 +301,65 @@ public partial class KaspiPaymentEvidenceService : IKaspiPaymentEvidenceService
         n.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync();
         return NotificationRejectResult.Rejected;
+    }
+
+    // True when this review item is a genuine amount mismatch against its linked order.
+    private async Task<(bool IsMismatch, PaymentOrder? Order)> LoadMismatchAsync(KaspiPaymentNotification n)
+    {
+        if (n.Status != KaspiNotificationStatuses.RequiresReview || n.PaymentOrderId == null)
+            return (false, null);
+        var order = await _db.PaymentOrders.FirstOrDefaultAsync(o => o.Id == n.PaymentOrderId);
+        if (order == null) return (false, null);
+        var mismatch = n.Amount == null || decimal.Round(n.Amount.Value, 2) != decimal.Round(order.Amount, 2);
+        return (mismatch, order);
+    }
+
+    public async Task<NotificationActionResult> NotifyUserOfMismatchAsync(int notificationId)
+    {
+        var n = await _db.KaspiPaymentNotifications.FirstOrDefaultAsync(x => x.Id == notificationId);
+        if (n == null) return NotificationActionResult.NotFound;
+
+        var (isMismatch, order) = await LoadMismatchAsync(n);
+        if (!isMismatch || order == null) return NotificationActionResult.NotApplicable;
+
+        // Best-effort email; never changes any payment state.
+        try
+        {
+            var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == order.UserId);
+            if (user != null && !string.IsNullOrWhiteSpace(user.Email))
+            {
+                var name = string.IsNullOrWhiteSpace(user.Name) ? user.FirstName : user.Name;
+                await _email.SendKaspiAmountMismatchEmailAsync(user.Email, name, order.OrderCode, order.Amount, n.Amount ?? 0m, order.Currency);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to send Kaspi mismatch email for order {OrderCode}", order.OrderCode);
+        }
+        return NotificationActionResult.Done;
+    }
+
+    public async Task<NotificationActionResult> MarkRefundedAsync(int notificationId, int adminUserId)
+    {
+        var n = await _db.KaspiPaymentNotifications.FirstOrDefaultAsync(x => x.Id == notificationId);
+        if (n == null) return NotificationActionResult.NotFound;
+
+        // Idempotent: a second call on an already-resolved item is a safe no-op signal.
+        if (n.ResolutionType != null) return NotificationActionResult.AlreadyResolved;
+
+        var (isMismatch, _) = await LoadMismatchAsync(n);
+        if (!isMismatch) return NotificationActionResult.NotApplicable; // Matched/Processed/non-mismatch
+
+        // Record the manual refund only — never flip the order to Paid, never grant.
+        var now = DateTime.UtcNow;
+        n.ResolutionType = KaspiResolutionTypes.Refunded;
+        n.ResolutionNote = $"Full refund of {n.Amount} {n.Currency}";
+        n.ResolvedAt = now;
+        n.ResolvedByUserId = adminUserId;
+        n.Status = KaspiNotificationStatuses.Rejected; // finished / out of the active queue
+        n.UpdatedAt = now;
+        await _db.SaveChangesAsync();
+        return NotificationActionResult.Done;
     }
 
     private async Task<DateTime?> ReadCheckpointAsync()
