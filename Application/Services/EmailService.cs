@@ -264,7 +264,7 @@ public class EmailService : IEmailService
         </div>
       </div>
       <p style=""font-size:15px;line-height:1.6;color:#555;"">
-        Пожалуйста, свяжитесь с поддержкой, чтобы мы уточнили ситуацию и помогли её решить.
+        Пожалуйста, свяжитесь с поддержкой UniStart по адресу unistart.kz@gmail.com. Мы проверим платёж и подскажем дальнейшие действия.
       </p>
       <p style=""font-size:15px;line-height:1.6;color:#c20f2c;font-weight:600;"">
         Не совершайте дополнительный платёж до уточнения ситуации.
