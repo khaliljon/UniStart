@@ -387,8 +387,9 @@ public class AdminService : IAdminService
             .Select(g => new { UserId = g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.UserId, x => x.Count);
 
+        // Mock result = all questions of COMPLETED attempts (unanswered count as wrong).
         var mockAnswerStats = await _db.MockExamAnswers
-            .Where(a => userIds.Contains(a.Attempt.UserId) && (a.SelectedOptionId != null || a.SelectedOptions.Any()))
+            .Where(a => userIds.Contains(a.Attempt.UserId) && a.Attempt.Status == "completed")
             .GroupBy(a => a.Attempt.UserId)
             .Select(g => new { UserId = g.Key, Total = g.Count(), Correct = g.Count(a => a.IsCorrect) })
             .ToDictionaryAsync(x => x.UserId);
@@ -450,8 +451,8 @@ public class AdminService : IAdminService
             .CountAsync(a => a.UserId == id && a.AnswerOption.IsCorrect);
         var testSessions = await _db.TestSessions.CountAsync(s => s.UserId == id);
 
-        var mockTotal = await _db.MockExamAnswers.CountAsync(a => a.Attempt.UserId == id && (a.SelectedOptionId != null || a.SelectedOptions.Any()));
-        var mockCorrect = await _db.MockExamAnswers.CountAsync(a => a.Attempt.UserId == id && a.IsCorrect);
+        var mockTotal = await _db.MockExamAnswers.CountAsync(a => a.Attempt.UserId == id && a.Attempt.Status == "completed");
+        var mockCorrect = await _db.MockExamAnswers.CountAsync(a => a.Attempt.UserId == id && a.Attempt.Status == "completed" && a.IsCorrect);
         var mockSessions = await _db.MockExamAttempts.CountAsync(a => a.UserId == id);
 
         string? schoolName = null;
