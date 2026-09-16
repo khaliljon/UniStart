@@ -499,6 +499,12 @@ public static class UniStartStartupExtensions
             service => service.RefreshAsync(),
             "0 6 * * *");
 
+        // Close orphaned expired mock attempts (server-side deadline finalization).
+        RecurringJob.AddOrUpdate<IMockExamService>(
+            "mock-attempt-expiry",
+            service => service.ExpireOrphanedAttemptsAsync(),
+            "*/5 * * * *");
+
         // Poll Gmail for Kaspi payment notifications (read-only evidence). Off unless configured.
         if (app.Configuration.GetValue<bool>("GMAIL_KASPI_ENABLED"))
         {

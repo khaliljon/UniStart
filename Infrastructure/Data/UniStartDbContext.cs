@@ -389,6 +389,7 @@ public class UniStartDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Status).IsRequired().HasMaxLength(20);
             entity.Property(e => e.Language).HasMaxLength(8).HasDefaultValue("en");
+            entity.Property(e => e.CompletionReason).HasMaxLength(20);
             entity.HasOne(e => e.User)
                   .WithMany()
                   .HasForeignKey(e => e.UserId)
@@ -399,6 +400,8 @@ public class UniStartDbContext : DbContext
                   .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasIndex(e => new { e.UserId, e.Status }).HasDatabaseName("IX_MockExamAttempts_UserId_Status");
+            // Supports the expiry sweep: WHERE Status='in_progress' AND ExpiresAt <= now.
+            entity.HasIndex(e => new { e.Status, e.ExpiresAt }).HasDatabaseName("IX_MockExamAttempts_Status_ExpiresAt");
         });
 
         modelBuilder.Entity<MockExamAnswer>(entity =>

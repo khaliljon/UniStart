@@ -660,6 +660,7 @@ export interface MockExamAttempt {
   totalTimeMinutes: number;
   sectionNames?: string[];
   accessType?: 'free' | 'purchased' | 'full_access';
+  expiresAt?: string | null;
 }
 
 export interface MockExamSectionState {

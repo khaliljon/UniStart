@@ -52,7 +52,8 @@ public record MockExamAttemptDto(
     DateTime StartedAt,
     int TotalTimeMinutes,
     IEnumerable<string>? SectionNames = null,
-    string? AccessType = null
+    string? AccessType = null,
+    DateTime? ExpiresAt = null
 );
 
 public record MockExamSectionStateDto(

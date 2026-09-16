@@ -8,6 +8,13 @@ public class MockExamAttempt
     public DateTime StartedAt { get; set; } = DateTime.UtcNow;
     public DateTime? CompletedAt { get; set; }
     public string Status { get; set; } = "in_progress";
+
+    /// <summary>Authoritative server deadline, fixed at start. Null when the mock has no time limit.</summary>
+    public DateTime? ExpiresAt { get; set; }
+
+    /// <summary>Why the attempt ended: finished / time_expired / abandoned / auto_closed.</summary>
+    public string? CompletionReason { get; set; }
+
     public int CurrentSectionIndex { get; set; }
     public double? TotalScore { get; set; }
     public string? SectionScoresJson { get; set; }

@@ -31,6 +31,19 @@ public class MockExamService : IMockExamService
         return all.Where(s => selectedIds.Contains(s.Id)).OrderBy(s => s.SortOrder).ToList();
     }
 
+    // Single source of truth for the time limit: per-section sum if any, else the template total.
+    private static int ResolveLimitMinutes(IReadOnlyCollection<MockExamSection> effectiveSections, MockExam exam)
+    {
+        var sectionSum = effectiveSections.Sum(s => s.TimeLimitMinutes);
+        return sectionSum > 0 ? sectionSum : exam.TotalTimeMinutes;
+    }
+
+    private static DateTime? ComputeExpiresAt(DateTime startedAt, int limitMinutes) =>
+        limitMinutes > 0 ? startedAt.AddMinutes(limitMinutes) : (DateTime?)null;
+
+    private static bool IsExpired(MockExamAttempt a) =>
+        a.Status == "in_progress" && a.ExpiresAt.HasValue && DateTime.UtcNow >= a.ExpiresAt.Value;
+
     public async Task<IEnumerable<MockExamListDto>> GetAvailableMockExamsAsync(int userId)
     {
         var exams = await _context.MockExams
@@ -163,6 +176,7 @@ public class MockExamService : IMockExamService
         {
             old.Status = "abandoned";
             old.CompletedAt = DateTime.UtcNow;
+            old.CompletionReason = "abandoned";
         }
 
         // Filter sections if selectedSectionIds provided (used for configurable mock exam sections)
@@ -174,11 +188,16 @@ public class MockExamService : IMockExamService
         if (sections.Count == 0)
             throw new ArgumentException("No valid sections selected");
 
+        // Fix the authoritative deadline once, from a single resolved limit.
+        var startedAt = DateTime.UtcNow;
+        var resolvedLimit = ResolveLimitMinutes(sections, exam);
+
         var attempt = new MockExamAttempt
         {
             UserId = userId,
             MockExamId = mockExamId,
-            StartedAt = DateTime.UtcNow,
+            StartedAt = startedAt,
+            ExpiresAt = ComputeExpiresAt(startedAt, resolvedLimit),
             Status = "in_progress",
             CurrentSectionIndex = 0,
             SelectedSectionIdsJson = selectedSectionIds != null && selectedSectionIds.Count > 0
@@ -290,7 +309,8 @@ public class MockExamService : IMockExamService
             attempt.StartedAt,
             sections.Sum(s => s.TimeLimitMinutes),
             sections.Select(s => s.Name),
-            accessType
+            accessType,
+            attempt.ExpiresAt
         );
     }
 
@@ -311,15 +331,8 @@ public class MockExamService : IMockExamService
 
         if (attempt == null || attempt.Status != "in_progress") return null;
 
-        // Server-side timer enforcement: auto-complete if total exam time expired
-        var effectiveSections = GetEffectiveSections(attempt);
-        var totalTimeLimit = effectiveSections.Sum(s => s.TimeLimitMinutes);
-        if (totalTimeLimit > 0 && DateTime.UtcNow > attempt.StartedAt.AddMinutes(totalTimeLimit))
-        {
-            await CompleteExamInternalAsync(attempt);
-            await _context.SaveChangesAsync();
-            return null; // Exam auto-completed, no more sections
-        }
+        // Server deadline is the source of truth.
+        if (await FinalizeIfExpiredAsync(attempt)) return null; // Exam auto-completed, no more sections
 
         return await GetSectionStateAsync(attempt, attempt.CurrentSectionIndex);
     }
@@ -398,16 +411,8 @@ public class MockExamService : IMockExamService
             .FirstOrDefaultAsync(a => a.Id == attemptId && a.UserId == userId && a.Status == "in_progress");
         if (attempt == null) return false;
 
-        // Server-side timer enforcement: reject answers after total exam time expires
-        var effectiveSections = GetEffectiveSections(attempt);
-        var totalTimeLimit = effectiveSections.Sum(s => s.TimeLimitMinutes);
-        if (totalTimeLimit > 0 && DateTime.UtcNow > attempt.StartedAt.AddMinutes(totalTimeLimit))
-        {
-            // Auto-complete the exam since time expired
-            await CompleteExamInternalAsync(attempt);
-            await _context.SaveChangesAsync();
-            return false;
-        }
+        // Reject answers once the server deadline has passed (finalizes the attempt).
+        if (await FinalizeIfExpiredAsync(attempt)) return false;
 
         var answer = await _context.MockExamAnswers
             .Include(a => a.Question).ThenInclude(q => q.AnswerOptions)
@@ -451,18 +456,15 @@ public class MockExamService : IMockExamService
 
         var sections = GetEffectiveSections(attempt);
 
-        // Server-side timer enforcement: auto-complete if total exam time expired
-        var totalTimeLimit = sections.Sum(s => s.TimeLimitMinutes);
-        if (totalTimeLimit > 0 && DateTime.UtcNow > attempt.StartedAt.AddMinutes(totalTimeLimit))
+        // Server deadline reached → finalize; don't advance sections.
+        if (await FinalizeIfExpiredAsync(attempt))
         {
-            await CompleteExamInternalAsync(attempt);
-            await _context.SaveChangesAsync();
             return new MockExamAttemptDto(
                 attempt.Id, attempt.MockExamId, attempt.MockExam.Title,
                 attempt.Status, attempt.CurrentSectionIndex,
                 sections.Count, attempt.StartedAt,
-                totalTimeLimit,
-                sections.Select(s => s.Name)
+                ResolveLimitMinutes(sections, attempt.MockExam),
+                sections.Select(s => s.Name), attempt.AccessType, attempt.ExpiresAt
             );
         }
 
@@ -471,14 +473,13 @@ public class MockExamService : IMockExamService
         if (nextIndex >= sections.Count)
         {
             // Last section — complete the exam
-            await CompleteExamInternalAsync(attempt);
+            await FinalizeAttemptAsync(attempt, "finished", DateTime.UtcNow);
         }
         else
         {
             attempt.CurrentSectionIndex = nextIndex;
+            await _context.SaveChangesAsync();
         }
-
-        await _context.SaveChangesAsync();
 
         return new MockExamAttemptDto(
             attempt.Id,
@@ -488,8 +489,10 @@ public class MockExamService : IMockExamService
             attempt.CurrentSectionIndex,
             sections.Count,
             attempt.StartedAt,
-            sections.Sum(s => s.TimeLimitMinutes),
-            sections.Select(s => s.Name)
+            ResolveLimitMinutes(sections, attempt.MockExam),
+            sections.Select(s => s.Name),
+            attempt.AccessType,
+            attempt.ExpiresAt
         );
     }
 
@@ -501,10 +504,9 @@ public class MockExamService : IMockExamService
         if (attempt == null) return null;
 
         var sections = GetEffectiveSections(attempt);
-        await CompleteExamInternalAsync(attempt);
-
-        // Free-mock consumption is handled at start time (piecewise access gate).
-        await _context.SaveChangesAsync();
+        // If the deadline already passed, record time_expired (CompletedAt = ExpiresAt); else finished.
+        if (!await FinalizeIfExpiredAsync(attempt))
+            await FinalizeAttemptAsync(attempt, "finished", DateTime.UtcNow);
 
         return new MockExamAttemptDto(
             attempt.Id,
@@ -514,15 +516,18 @@ public class MockExamService : IMockExamService
             attempt.CurrentSectionIndex,
             sections.Count,
             attempt.StartedAt,
-            sections.Sum(s => s.TimeLimitMinutes),
-            sections.Select(s => s.Name)
+            ResolveLimitMinutes(sections, attempt.MockExam),
+            sections.Select(s => s.Name),
+            attempt.AccessType,
+            attempt.ExpiresAt
         );
     }
 
-    private async Task CompleteExamInternalAsync(MockExamAttempt attempt)
+    // Single idempotent finalizer. Scores from already-saved answers (unanswered = wrong),
+    // flips to completed with a reason, and persists. Safe to call repeatedly.
+    public async Task FinalizeAttemptAsync(MockExamAttempt attempt, string completionReason, DateTime completedAt)
     {
-        attempt.Status = "completed";
-        attempt.CompletedAt = DateTime.UtcNow;
+        if (attempt.Status != "in_progress") return; // idempotent no-op
 
         var allAnswers = await _context.MockExamAnswers
             .Where(a => a.AttemptId == attempt.Id)
@@ -558,6 +563,61 @@ public class MockExamService : IMockExamService
 
         attempt.TotalScore = totalCount > 0 ? Math.Round(100.0 * totalCorrect / totalCount, 1) : 0;
         attempt.SectionScoresJson = JsonSerializer.Serialize(sectionScores);
+        attempt.Status = "completed";
+        attempt.CompletionReason = completionReason;
+        attempt.CompletedAt = completedAt;
+        await _context.SaveChangesAsync();
+    }
+
+    // Finalizes the attempt if its server deadline has passed. Returns true when it did.
+    private async Task<bool> FinalizeIfExpiredAsync(MockExamAttempt attempt)
+    {
+        if (!IsExpired(attempt)) return false;
+        await FinalizeAttemptAsync(attempt, "time_expired", attempt.ExpiresAt!.Value);
+        return true;
+    }
+
+    // Closes any expired in-progress attempts for one user (used before list reads).
+    private async Task FinalizeExpiredForUserAsync(int userId)
+    {
+        var now = DateTime.UtcNow;
+        var expired = await _context.MockExamAttempts
+            .Include(a => a.MockExam).ThenInclude(m => m.Sections)
+            .Where(a => a.UserId == userId && a.Status == "in_progress" && a.ExpiresAt != null && a.ExpiresAt <= now)
+            .ToListAsync();
+        foreach (var a in expired)
+            await FinalizeAttemptAsync(a, "time_expired", a.ExpiresAt!.Value);
+    }
+
+    // Hangfire entry point: backfill missing deadlines, then close orphaned expired attempts.
+    public async Task<int> ExpireOrphanedAttemptsAsync()
+    {
+        const int batch = 200;
+
+        // Backfill ExpiresAt for legacy in-progress attempts using the current template.
+        var toBackfill = await _context.MockExamAttempts
+            .Include(a => a.MockExam).ThenInclude(m => m.Sections)
+            .Where(a => a.Status == "in_progress" && a.ExpiresAt == null)
+            .Take(batch)
+            .ToListAsync();
+        foreach (var a in toBackfill)
+        {
+            var limit = ResolveLimitMinutes(GetEffectiveSections(a), a.MockExam);
+            var exp = ComputeExpiresAt(a.StartedAt, limit);
+            if (exp != null) a.ExpiresAt = exp; // no reliable limit → leave null, never blind-close
+        }
+        if (toBackfill.Count > 0) await _context.SaveChangesAsync();
+
+        var now = DateTime.UtcNow;
+        var expired = await _context.MockExamAttempts
+            .Include(a => a.MockExam).ThenInclude(m => m.Sections)
+            .Where(a => a.Status == "in_progress" && a.ExpiresAt != null && a.ExpiresAt <= now)
+            .Take(batch)
+            .ToListAsync();
+        foreach (var a in expired)
+            await FinalizeAttemptAsync(a, "time_expired", a.ExpiresAt!.Value);
+
+        return expired.Count;
     }
 
     public async Task<MockExamResultDto?> GetResultsAsync(int userId, int attemptId)
@@ -567,7 +627,9 @@ public class MockExamService : IMockExamService
             .Include(a => a.MockExam).ThenInclude(m => m.Sections.OrderBy(s => s.SortOrder))
             .FirstOrDefaultAsync(a => a.Id == attemptId && a.UserId == userId);
 
-        if (attempt == null || attempt.Status != "completed") return null;
+        if (attempt == null) return null;
+        if (attempt.Status == "in_progress") await FinalizeIfExpiredAsync(attempt);
+        if (attempt.Status != "completed") return null;
         return await BuildResultsAsync(attempt);
     }
 
@@ -579,7 +641,9 @@ public class MockExamService : IMockExamService
             .Include(a => a.MockExam).ThenInclude(m => m.Sections.OrderBy(s => s.SortOrder))
             .FirstOrDefaultAsync(a => a.Id == attemptId);
 
-        if (attempt == null || attempt.Status != "completed") return null;
+        if (attempt == null) return null;
+        if (attempt.Status == "in_progress") await FinalizeIfExpiredAsync(attempt);
+        if (attempt.Status != "completed") return null;
         return await BuildResultsAsync(attempt);
     }
 
@@ -688,6 +752,9 @@ public class MockExamService : IMockExamService
 
     public async Task<IEnumerable<MockExamHistoryDto>> GetHistoryAsync(int userId)
     {
+        // Close any expired in-progress attempts so history never shows stale "in_progress".
+        await FinalizeExpiredForUserAsync(userId);
+
         return await _context.MockExamAttempts
             .Include(a => a.MockExam)
             .Where(a => a.UserId == userId && a.Status != "abandoned")
@@ -713,6 +780,7 @@ public class MockExamService : IMockExamService
 
         attempt.Status = "abandoned";
         attempt.CompletedAt = DateTime.UtcNow;
+        attempt.CompletionReason = "abandoned";
         await _context.SaveChangesAsync();
         return true;
     }
@@ -727,16 +795,10 @@ public class MockExamService : IMockExamService
 
         if (attempt == null) return null;
 
-        // Auto-complete if total exam time expired
-        var effectiveSections = GetEffectiveSections(attempt);
-        var totalTimeLimit = effectiveSections.Sum(s => s.TimeLimitMinutes);
-        if (totalTimeLimit > 0 && DateTime.UtcNow > attempt.StartedAt.AddMinutes(totalTimeLimit))
-        {
-            await CompleteExamInternalAsync(attempt);
-            await _context.SaveChangesAsync();
-            return null; // No longer active
-        }
+        // Expired attempts are finalized and no longer "active".
+        if (await FinalizeIfExpiredAsync(attempt)) return null;
 
+        var effectiveSections = GetEffectiveSections(attempt);
         return new MockExamAttemptDto(
             attempt.Id,
             attempt.MockExamId,
@@ -745,8 +807,10 @@ public class MockExamService : IMockExamService
             attempt.CurrentSectionIndex,
             effectiveSections.Count,
             attempt.StartedAt,
-            totalTimeLimit,
-            effectiveSections.Select(s => s.Name)
+            ResolveLimitMinutes(effectiveSections, attempt.MockExam),
+            effectiveSections.Select(s => s.Name),
+            attempt.AccessType,
+            attempt.ExpiresAt
         );
     }
 }

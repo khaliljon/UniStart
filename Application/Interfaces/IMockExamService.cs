@@ -28,4 +28,10 @@ public interface IMockExamService
     Task<bool> AbandonAttemptAsync(int userId, int attemptId);
 
     Task<MockExamAttemptDto?> GetActiveAttemptAsync(int userId);
+
+    /// <summary>Idempotently finalizes an in-progress attempt (scores saved answers, sets reason).</summary>
+    Task FinalizeAttemptAsync(UniStart.Domain.Entities.MockExamAttempt attempt, string completionReason, DateTime completedAt);
+
+    /// <summary>Hangfire: backfills deadlines and closes orphaned expired attempts. Returns count closed.</summary>
+    Task<int> ExpireOrphanedAttemptsAsync();
 }

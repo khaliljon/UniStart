@@ -139,9 +139,12 @@ function MockExamPage() {
       }
       setSectionState(section);
       setCurrentQIndex(0);
+      // Server ExpiresAt is the source of truth; fall back to startedAt+minutes only if absent.
+      const serverRemaining = effectiveAtt.expiresAt
+        ? Math.max(0, Math.floor((new Date(effectiveAtt.expiresAt).getTime() - Date.now()) / 1000))
+        : null;
       const elapsed = Math.floor((Date.now() - new Date(effectiveAtt.startedAt).getTime()) / 1000);
-      const totalSec = effectiveAtt.totalTimeMinutes * 60;
-      const remaining = Math.max(0, totalSec - elapsed);
+      const remaining = serverRemaining ?? Math.max(0, effectiveAtt.totalTimeMinutes * 60 - elapsed);
       setTimeLeft(remaining > 0 ? remaining : section.timeLimitMinutes * 60);
       setActiveAttempt(null);
       setPhase('section');
@@ -178,7 +181,9 @@ function MockExamPage() {
       const section = await mockExamService.getCurrentSection(att.attemptId);
       setSectionState(section);
       setCurrentQIndex(0);
-      setTimeLeft(att.totalTimeMinutes * 60);
+      setTimeLeft(att.expiresAt
+        ? Math.max(0, Math.floor((new Date(att.expiresAt).getTime() - Date.now()) / 1000))
+        : att.totalTimeMinutes * 60);
       setPhase('instructions');
     } catch (e) {
       const status = (e as { response?: { status?: number } })?.response?.status;
