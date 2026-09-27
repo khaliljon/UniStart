@@ -9,9 +9,11 @@ import { purchaseService } from '../services/purchaseService';
 import { examSittingsService } from '../services/examSittingsService';
 import { moks } from '../utils/plural';
 import { pickLocalized } from '../utils/localize';
+import { dateRangeLocalized } from '../utils/dates';
 import CscaNav from '../components/csca/CscaNav';
 import CscaFooter from '../components/csca/CscaFooter';
 import Reveal from '../components/csca/Reveal';
+import CscaTracksSection from '../components/csca/CscaTracksSection';
 import {
   BrushDivider, MistMountains, SealStamp,
 } from '../components/csca/ChineseMotifs';
@@ -52,7 +54,10 @@ function CscaLandingPage() {
 
   const s = cscaStrings[locale];
   const [nextDate, setNextDate] = useState<string>(getNextSitting().date);
+  const [nextEndDate, setNextEndDate] = useState<string | null>(getNextSitting().endDate ?? null);
   const { days, hours, minutes } = useCountdown(nextDate);
+  // Show the real upcoming sitting dates instead of a hardcoded registration note.
+  const nextLabel = dateRangeLocalized(nextDate, nextEndDate, locale);
 
   useEffect(() => {
     materialsService.list().then(setDbMaterials).catch(() => {});
@@ -62,6 +67,7 @@ function CscaLandingPage() {
       const now = Date.now();
       const upcoming = list.find((x) => new Date(x.date).getTime() >= now) ?? list[list.length - 1];
       setNextDate(upcoming.date);
+      setNextEndDate(upcoming.endDate ?? null);
     }).catch(() => {});
     if (isAuthenticated) {
       purchaseService.list()
@@ -154,7 +160,7 @@ function CscaLandingPage() {
           <div className="csca-countdown">
             <div className="csca-cd-label">
               <b>{s.cdNextExam}</b>
-              <span>{s.cdRegOpens}</span>
+              <span>{nextLabel}</span>
             </div>
             <div className="csca-cd-unit"><span className="csca-cd-num">{days}</span><span className="csca-cd-cap">{s.cdDays}</span></div>
             <div className="csca-cd-unit"><span className="csca-cd-num">{hours}</span><span className="csca-cd-cap">{s.cdHours}</span></div>
@@ -187,11 +193,16 @@ function CscaLandingPage() {
                 <span className="csca-subject-hanzi">{subj.hanzi}</span>
                 <div className="csca-subject-name">{subjectMeta[subj.key].name}</div>
                 <div className="csca-subject-tag">{subjectMeta[subj.key].tag}</div>
+                <div className="csca-subject-tag" style={{ marginTop: '0.45rem', fontWeight: 600 }}>
+                  {subj.minutes} {s.fmtMinutes} · {subj.questions} {s.fmtQuestions}
+                </div>
               </div>
             ))}
           </Reveal>
         </div>
       </section>
+
+      <CscaTracksSection />
 
       <section id="features" className="csca-section" style={{ background: 'rgba(255,255,255,0.5)' }}>
         <div className="csca-wrap">

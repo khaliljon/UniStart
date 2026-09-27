@@ -3,12 +3,14 @@ import api from './api';
 export interface ExamSitting {
   id: number;
   date: string;
+  endDate?: string | null;
   isActive: boolean;
   sortOrder: number;
 }
 
 export interface SaveExamSitting {
   date: string;
+  endDate?: string | null;
   isActive: boolean;
   sortOrder: number;
 }

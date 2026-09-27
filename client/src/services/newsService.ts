@@ -1,5 +1,7 @@
 import api from './api';
 
+export type NewsCategory = 'dates' | 'admission' | 'platform' | 'guide';
+
 export interface NewsItem {
   id: number;
   title: string;
@@ -16,6 +18,9 @@ export interface NewsItem {
   publishedAt: string | null;
   createdAt: string;
   updatedAt: string;
+  slug?: string | null;
+  category: NewsCategory;
+  isFeatured: boolean;
 }
 
 export interface NewsUpsert {
@@ -30,6 +35,8 @@ export interface NewsUpsert {
   bodyEn?: string | null;
   imageUrl?: string | null;
   isPublished: boolean;
+  category?: NewsCategory;
+  isFeatured?: boolean;
 }
 
 export const newsService = {
@@ -40,6 +47,11 @@ export const newsService = {
 
   async getById(id: number): Promise<NewsItem> {
     const res = await api.get<NewsItem>(`/news/${id}`);
+    return res.data;
+  },
+
+  async getBySlug(slug: string): Promise<NewsItem> {
+    const res = await api.get<NewsItem>(`/news/by-slug/${encodeURIComponent(slug)}`);
     return res.data;
   },
 

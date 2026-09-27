@@ -18,6 +18,7 @@ function CscaNewsPage() {
           readLess={s.newsReadLess}
           emptyText={s.newsEmpty}
           limit={24}
+          portal
         />
       </section>
     </CscaPageShell>

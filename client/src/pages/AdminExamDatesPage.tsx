@@ -22,7 +22,7 @@ function AdminExamDatesPage() {
 
   const save = async (it: ExamSitting) => {
     try {
-      const dto = { date: it.date, isActive: it.isActive, sortOrder: it.sortOrder };
+      const dto = { date: it.date, endDate: it.endDate || null, isActive: it.isActive, sortOrder: it.sortOrder };
       if (it.id < 0) {
         const created = await examSittingsService.create(dto);
         setItems((prev) => prev.map((x) => (x.id === it.id ? created : x)));
@@ -46,7 +46,7 @@ function AdminExamDatesPage() {
   const addRow = () => {
     const tempId = -Date.now();
     const nextOrder = items.reduce((m, x) => Math.max(m, x.sortOrder), 0) + 1;
-    setItems((prev) => [...prev, { id: tempId, date: '2026-01-01', isActive: true, sortOrder: nextOrder }]);
+    setItems((prev) => [...prev, { id: tempId, date: '2027-01-01', endDate: null, isActive: true, sortOrder: nextOrder }]);
   };
 
   const input: React.CSSProperties = { padding: '0.4rem 0.5rem', border: '1px solid var(--border-color)', borderRadius: 6, background: 'var(--card-background)', color: 'var(--text-primary)' };
@@ -61,6 +61,7 @@ function AdminExamDatesPage() {
       </div>
       <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1rem' }}>
         Даты показываются на лендинге и странице «О CSCA». Месяц подставляется автоматически из даты.
+        Сессия CSCA длится два дня — укажите «День 2», чтобы показывался диапазон (14–15 ноября).
         Неактивные даты скрыты от пользователей.
       </p>
 
@@ -71,7 +72,8 @@ function AdminExamDatesPage() {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
-                <th style={th}>Дата</th>
+                <th style={th}>День 1</th>
+                <th style={th}>День 2</th>
                 <th style={th}>Порядок</th>
                 <th style={th}>Активна</th>
                 <th style={th}></th>
@@ -83,6 +85,10 @@ function AdminExamDatesPage() {
                   <td style={td}>
                     <input type="date" value={it.date} style={input}
                            onChange={(e) => patch(it.id, { date: e.target.value })} />
+                  </td>
+                  <td style={td}>
+                    <input type="date" value={it.endDate ?? ''} style={input}
+                           onChange={(e) => patch(it.id, { endDate: e.target.value || null })} />
                   </td>
                   <td style={td}>
                     <input type="number" value={it.sortOrder} style={{ ...input, width: 70 }}
@@ -101,7 +107,7 @@ function AdminExamDatesPage() {
                 </tr>
               ))}
               {items.length === 0 && (
-                <tr><td style={td} colSpan={4}><span style={{ color: 'var(--text-secondary)' }}>Дат пока нет.</span></td></tr>
+                <tr><td style={td} colSpan={5}><span style={{ color: 'var(--text-secondary)' }}>Дат пока нет.</span></td></tr>
               )}
             </tbody>
           </table>

@@ -17,7 +17,6 @@ export interface CscaStrings {
   ctaStart: string;
   ctaLearnMore: string;
   cdNextExam: string;
-  cdRegOpens: string;
   cdDays: string;
   cdHours: string;
   cdMinutes: string;
@@ -44,6 +43,34 @@ export interface CscaStrings {
   subjChemistryTag: string;
   required: string;
   viewTopics: string;
+  tracksTitle: string;
+  tracksLead: string;
+  tracksNote: string;
+  trackIt: string;
+  trackEngineering: string;
+  trackChemistry: string;
+  trackMedicine: string;
+  trackEconomics: string;
+  trackInternational: string;
+  trackHumanities: string;
+  trackArchitecture: string;
+  trackMechanical: string;
+  trackIfChinese: string;
+  fmtMinutes: string;
+  fmtQuestions: string;
+  feeTitle: string;
+  feeSingle: string;
+  feeMultiple: string;
+  newsAll: string;
+  newsCatDates: string;
+  newsCatAdmission: string;
+  newsCatPlatform: string;
+  newsCatGuide: string;
+  newsFeatured: string;
+  newsSearch: string;
+  newsNothingFound: string;
+  newsBack: string;
+  newsMinRead: string;
   addToCalendar: string;
   calGoogle: string;
   calApple: string;
@@ -220,7 +247,7 @@ const ru: CscaStrings = {
   heroTitle: 'Твой путь в ведущие', heroTitleAccent: 'университеты Китая',
   heroSub: 'Системная подготовка к CSCA: пробные тесты с ИИ-объяснениями, официальные материалы и экспертное сопровождение на трёх языках.',
   ctaStart: 'Начать подготовку', ctaLearnMore: 'Узнать больше',
-  cdNextExam: 'Ближайший экзамен', cdRegOpens: 'Регистрация открывается в мае 2026',
+  cdNextExam: 'Ближайший экзамен',
   cdDays: 'дней', cdHours: 'часов', cdMinutes: 'минут',
   statStudents: 'Студентов', statQuestions: 'Тем в базе', statAnswered: 'Решённых заданий', statSuccess: 'Довольных учеников',
   aboutTitle: 'Что такое CSCA?', aboutLead: 'China Scholastic Competency Assessment',
@@ -233,6 +260,27 @@ const ru: CscaStrings = {
   subjPhysics: 'Физика', subjPhysicsTag: 'Технические направления',
   subjChemistry: 'Химия', subjChemistryTag: 'По специальности',
   required: 'Обязательно', viewTopics: 'Список тем',
+  tracksTitle: 'Какие предметы сдавать',
+  tracksLead: 'Ориентир по направлениям — подберите предметы под свою специальность.',
+  tracksNote: 'Требования отличаются по университетам и программам. Перед регистрацией проверьте условия вашего вуза.',
+  trackIt: 'IT и Computer Science',
+  trackEngineering: 'Инженерия и робототехника',
+  trackChemistry: 'Химия и химтехнологии',
+  trackMedicine: 'Медицина и фармацевтика',
+  trackEconomics: 'Экономика и бизнес',
+  trackInternational: 'Международные отношения',
+  trackHumanities: 'Гуманитарные направления',
+  trackArchitecture: 'Архитектура и строительство',
+  trackMechanical: 'Машиностроение и электротехника',
+  trackIfChinese: 'если программа на китайском',
+  fmtMinutes: 'мин', fmtQuestions: 'вопросов',
+  feeTitle: 'Стоимость экзамена',
+  feeSingle: '1 предмет', feeMultiple: '2 и более предметов',
+  newsAll: 'Все', newsCatDates: 'Даты экзамена', newsCatAdmission: 'Поступление',
+  newsCatPlatform: 'Платформа', newsCatGuide: 'Инструкции',
+  newsFeatured: 'Главное', newsSearch: 'Поиск по новостям',
+  newsNothingFound: 'Ничего не найдено.', newsBack: 'К новостям',
+  newsMinRead: 'мин чтения',
   addToCalendar: 'Добавить в календарь',
   calGoogle: 'Google Календарь', calApple: 'Apple / Outlook (.ics)',
   newsTitle: 'Новости CSCA', newsLead: 'Актуальная и достоверная информация об экзамене, датах и поступлении.',
@@ -369,7 +417,7 @@ const en: CscaStrings = {
   heroTitle: 'Your path to top', heroTitleAccent: 'universities in China',
   heroSub: 'Structured CSCA preparation: mock tests with AI explanations, official study materials and expert guidance in three languages.',
   ctaStart: 'Start preparing', ctaLearnMore: 'Learn more',
-  cdNextExam: 'Next exam', cdRegOpens: 'Registration opens May 2026',
+  cdNextExam: 'Next exam',
   cdDays: 'days', cdHours: 'hours', cdMinutes: 'minutes',
   statStudents: 'Students', statQuestions: 'Topics in base', statAnswered: 'Questions solved', statSuccess: 'Happy students',
   aboutTitle: 'What is CSCA?', aboutLead: 'China Scholastic Competency Assessment',
@@ -382,6 +430,27 @@ const en: CscaStrings = {
   subjPhysics: 'Physics', subjPhysicsTag: 'STEM programs',
   subjChemistry: 'Chemistry', subjChemistryTag: 'By specialty',
   required: 'Required', viewTopics: 'Topic list',
+  tracksTitle: 'Which subjects to take',
+  tracksLead: 'A guide by field of study — pick the subjects that match your programme.',
+  tracksNote: 'Requirements vary by university and programme. Always check your target programme before registering.',
+  trackIt: 'IT & Computer Science',
+  trackEngineering: 'Engineering & robotics',
+  trackChemistry: 'Chemistry & chemical engineering',
+  trackMedicine: 'Medicine & pharmacy',
+  trackEconomics: 'Economics & business',
+  trackInternational: 'International relations',
+  trackHumanities: 'Humanities',
+  trackArchitecture: 'Architecture & construction',
+  trackMechanical: 'Mechanical & electrical engineering',
+  trackIfChinese: 'if taught in Chinese',
+  fmtMinutes: 'min', fmtQuestions: 'questions',
+  feeTitle: 'Exam fee',
+  feeSingle: '1 subject', feeMultiple: '2 or more subjects',
+  newsAll: 'All', newsCatDates: 'Exam dates', newsCatAdmission: 'Admission',
+  newsCatPlatform: 'Platform', newsCatGuide: 'Guides',
+  newsFeatured: 'Featured', newsSearch: 'Search news',
+  newsNothingFound: 'Nothing found.', newsBack: 'Back to news',
+  newsMinRead: 'min read',
   addToCalendar: 'Add to calendar',
   calGoogle: 'Google Calendar', calApple: 'Apple / Outlook (.ics)',
   newsTitle: 'CSCA news', newsLead: 'Up-to-date, reliable information about the exam, dates and admissions.',
@@ -518,7 +587,7 @@ const kz: CscaStrings = {
   heroTitle: 'Қытайдың жетекші', heroTitleAccent: 'университеттеріне жол',
   heroSub: 'CSCA-ға жүйелі дайындық: ЖИ түсіндірмелері бар сынақ тесттері, ресми материалдар және үш тілде сарапшы қолдауы.',
   ctaStart: 'Дайындықты бастау', ctaLearnMore: 'Толығырақ',
-  cdNextExam: 'Жақын емтихан', cdRegOpens: 'Тіркеу 2026 жылдың мамырында ашылады',
+  cdNextExam: 'Жақын емтихан',
   cdDays: 'күн', cdHours: 'сағат', cdMinutes: 'минут',
   statStudents: 'Студент', statQuestions: 'Базадағы тақырып', statAnswered: 'Шешілген тапсырма', statSuccess: 'Риза оқушы',
   aboutTitle: 'CSCA дегеніміз не?', aboutLead: 'China Scholastic Competency Assessment',
@@ -531,6 +600,27 @@ const kz: CscaStrings = {
   subjPhysics: 'Физика', subjPhysicsTag: 'Техникалық бағыттар',
   subjChemistry: 'Химия', subjChemistryTag: 'Мамандық бойынша',
   required: 'Міндетті', viewTopics: 'Тақырыптар тізімі',
+  tracksTitle: 'Қандай пәндерді тапсыру керек',
+  tracksLead: 'Бағыттар бойынша нұсқау — мамандығыңызға сәйкес пәндерді таңдаңыз.',
+  tracksNote: 'Талаптар университет пен бағдарламаға байланысты әртүрлі. Тіркелу алдында талаптарды тексеріңіз.',
+  trackIt: 'IT және Computer Science',
+  trackEngineering: 'Инженерия және робототехника',
+  trackChemistry: 'Химия және химиялық технология',
+  trackMedicine: 'Медицина және фармацевтика',
+  trackEconomics: 'Экономика және бизнес',
+  trackInternational: 'Халықаралық қатынастар',
+  trackHumanities: 'Гуманитарлық бағыттар',
+  trackArchitecture: 'Сәулет және құрылыс',
+  trackMechanical: 'Машина жасау және электротехника',
+  trackIfChinese: 'бағдарлама қытай тілінде болса',
+  fmtMinutes: 'мин', fmtQuestions: 'сұрақ',
+  feeTitle: 'Емтихан құны',
+  feeSingle: '1 пән', feeMultiple: '2 және одан көп пән',
+  newsAll: 'Барлығы', newsCatDates: 'Емтихан күндері', newsCatAdmission: 'Қабылдау',
+  newsCatPlatform: 'Платформа', newsCatGuide: 'Нұсқаулықтар',
+  newsFeatured: 'Негізгі', newsSearch: 'Жаңалықтардан іздеу',
+  newsNothingFound: 'Ештеңе табылмады.', newsBack: 'Жаңалықтарға',
+  newsMinRead: 'мин оқу',
   addToCalendar: 'Күнтізбеге қосу',
   calGoogle: 'Google Күнтізбе', calApple: 'Apple / Outlook (.ics)',
   newsTitle: 'CSCA жаңалықтары', newsLead: 'Емтихан, күндер және қабылдау туралы өзекті ақпарат.',

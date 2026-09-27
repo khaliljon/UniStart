@@ -17,7 +17,10 @@ public record NewsArticleDto(
     string? SummaryKz = null,
     string? SummaryEn = null,
     string? BodyKz = null,
-    string? BodyEn = null);
+    string? BodyEn = null,
+    string? Slug = null,
+    string Category = "admission",
+    bool IsFeatured = false);
 
 public class NewsUpsertDto
 {
@@ -49,4 +52,9 @@ public class NewsUpsertDto
     public string? BodyKz { get; set; }
 
     public string? BodyEn { get; set; }
+
+    [MaxLength(30)]
+    public string? Category { get; set; }
+
+    public bool IsFeatured { get; set; }
 }

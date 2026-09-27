@@ -2,22 +2,23 @@
 // Update exam dates, pricing and stats here — the UI reads from this file.
 
 export interface CscaExamSitting {
-  /** ISO date (YYYY-MM-DD) of the exam sitting. */
+  /** ISO date (YYYY-MM-DD) of day 1 of the exam sitting. */
   date: string;
+  /** ISO date of day 2; sittings span two days. */
+  endDate?: string | null;
   /** Human label per locale is derived in the UI; this is the month key. */
   monthKey: string;
 }
 
-/** 2026 CSCA exam sittings (5 per year). Update as official dates are confirmed. */
+/** Official CSCA schedule Nov 2026 – Jun 2027. Fallback only — the DB is the source of truth. */
 export const CSCA_EXAM_SITTINGS: CscaExamSitting[] = [
-  { date: '2026-01-17', monthKey: 'january' },
-  { date: '2026-03-15', monthKey: 'march' },
-  { date: '2026-06-27', monthKey: 'june' },
-  { date: '2026-09-19', monthKey: 'september' },
-  { date: '2026-11-21', monthKey: 'november' },
+  { date: '2026-11-14', endDate: '2026-11-15', monthKey: 'november' },
+  { date: '2026-12-19', endDate: '2026-12-20', monthKey: 'december' },
+  { date: '2027-01-23', endDate: '2027-01-24', monthKey: 'january' },
+  { date: '2027-03-13', endDate: '2027-03-14', monthKey: 'march' },
+  { date: '2027-04-24', endDate: '2027-04-25', monthKey: 'april' },
+  { date: '2027-06-26', endDate: '2027-06-27', monthKey: 'june' },
 ];
-
-export const CSCA_REGISTRATION_OPENS = '2026-05-01';
 
 export function getNextSitting(now: Date = new Date()): CscaExamSitting {
   const upcoming = CSCA_EXAM_SITTINGS.find((s) => new Date(s.date).getTime() >= now.getTime());
@@ -34,15 +35,45 @@ export interface CscaSubject {
   hanzi: string;
   cover: string;
   required?: boolean;
+  /** Exam duration in minutes. */
+  minutes: number;
+  /** Number of questions. */
+  questions: number;
 }
 
 export const CSCA_SUBJECTS: CscaSubject[] = [
-  { key: 'math', hanzi: '数学', cover: 'linear-gradient(160deg,#8A0B1F,#C8102E)', required: true },
-  { key: 'physics', hanzi: '物理', cover: 'linear-gradient(160deg,#123a63,#1f5c9c)' },
-  { key: 'chemistry', hanzi: '化学', cover: 'linear-gradient(160deg,#14532d,#1f7a44)' },
-  { key: 'chineseTech', hanzi: '科技汉语', cover: 'linear-gradient(160deg,#5b3a1a,#a9762f)' },
-  { key: 'chineseHum', hanzi: '文科汉语', cover: 'linear-gradient(160deg,#4a2a5b,#8a4fa3)' },
+  { key: 'math', hanzi: '数学', cover: 'linear-gradient(160deg,#8A0B1F,#C8102E)', required: true, minutes: 60, questions: 48 },
+  { key: 'physics', hanzi: '物理', cover: 'linear-gradient(160deg,#123a63,#1f5c9c)', minutes: 60, questions: 48 },
+  { key: 'chemistry', hanzi: '化学', cover: 'linear-gradient(160deg,#14532d,#1f7a44)', minutes: 60, questions: 48 },
+  { key: 'chineseTech', hanzi: '科技汉语', cover: 'linear-gradient(160deg,#5b3a1a,#a9762f)', minutes: 90, questions: 80 },
+  { key: 'chineseHum', hanzi: '文科汉语', cover: 'linear-gradient(160deg,#4a2a5b,#8a4fa3)', minutes: 90, questions: 80 },
 ];
+
+export type CscaSubjectKey = CscaSubject['key'];
+
+/** Study tracks → which CSCA subjects they usually require. Guidance only. */
+export interface CscaTrack {
+  key: 'it' | 'engineering' | 'chemistry' | 'medicine' | 'economics' | 'international' | 'humanities' | 'architecture' | 'mechanical';
+  icon: string;
+  subjects: CscaSubjectKey[];
+  /** Subject is only needed for Chinese-taught programmes. */
+  conditional?: boolean;
+}
+
+export const CSCA_TRACKS: CscaTrack[] = [
+  { key: 'it', icon: '💻', subjects: ['math', 'physics'] },
+  { key: 'engineering', icon: '🤖', subjects: ['math', 'physics'] },
+  { key: 'chemistry', icon: '🧪', subjects: ['math', 'chemistry'] },
+  { key: 'medicine', icon: '🩺', subjects: ['math', 'chemistry'] },
+  { key: 'economics', icon: '📊', subjects: ['math'] },
+  { key: 'international', icon: '🌍', subjects: ['math', 'chineseHum'], conditional: true },
+  { key: 'humanities', icon: '📖', subjects: ['math', 'chineseHum'], conditional: true },
+  { key: 'architecture', icon: '🏗️', subjects: ['math', 'physics'] },
+  { key: 'mechanical', icon: '⚙️', subjects: ['math', 'physics'] },
+];
+
+/** Official CSCA exam fee in CNY. */
+export const CSCA_FEE = { single: 450, multiple: 700 };
 
 export interface CscaPackage {
   key: 'start' | 'standard' | 'advanced' | 'full';

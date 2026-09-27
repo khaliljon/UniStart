@@ -790,6 +790,10 @@ public class UniStartDbContext : DbContext
             entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
             entity.Property(e => e.Summary).HasMaxLength(500);
             entity.Property(e => e.ImageUrl).HasMaxLength(500);
+            entity.Property(e => e.Slug).HasMaxLength(220);
+            entity.Property(e => e.Category).IsRequired().HasMaxLength(30).HasDefaultValue(NewsCategories.Admission);
+            entity.HasIndex(e => e.Slug).IsUnique().HasDatabaseName("IX_NewsArticles_Slug")
+                  .HasFilter("\"Slug\" IS NOT NULL");
             entity.HasIndex(e => new { e.IsPublished, e.PublishedAt })
                   .HasDatabaseName("IX_NewsArticles_Published");
         });
@@ -882,12 +886,14 @@ public class UniStartDbContext : DbContext
             entity.ToTable("ExamSittings");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.IsActive).HasDefaultValue(true);
+            // Official CSCA schedule Nov 2026 – Jun 2027 (each sitting spans two days).
             entity.HasData(
-                new ExamSitting { Id = 1, Date = new DateOnly(2026, 1, 17), IsActive = true, SortOrder = 1 },
-                new ExamSitting { Id = 2, Date = new DateOnly(2026, 3, 15), IsActive = true, SortOrder = 2 },
-                new ExamSitting { Id = 3, Date = new DateOnly(2026, 6, 27), IsActive = true, SortOrder = 3 },
-                new ExamSitting { Id = 4, Date = new DateOnly(2026, 9, 19), IsActive = true, SortOrder = 4 },
-                new ExamSitting { Id = 5, Date = new DateOnly(2026, 11, 21), IsActive = true, SortOrder = 5 }
+                new ExamSitting { Id = 1, Date = new DateOnly(2026, 11, 14), EndDate = new DateOnly(2026, 11, 15), IsActive = true, SortOrder = 1 },
+                new ExamSitting { Id = 2, Date = new DateOnly(2026, 12, 19), EndDate = new DateOnly(2026, 12, 20), IsActive = true, SortOrder = 2 },
+                new ExamSitting { Id = 3, Date = new DateOnly(2027, 1, 23), EndDate = new DateOnly(2027, 1, 24), IsActive = true, SortOrder = 3 },
+                new ExamSitting { Id = 4, Date = new DateOnly(2027, 3, 13), EndDate = new DateOnly(2027, 3, 14), IsActive = true, SortOrder = 4 },
+                new ExamSitting { Id = 5, Date = new DateOnly(2027, 4, 24), EndDate = new DateOnly(2027, 4, 25), IsActive = true, SortOrder = 5 },
+                new ExamSitting { Id = 6, Date = new DateOnly(2027, 6, 26), EndDate = new DateOnly(2027, 6, 27), IsActive = true, SortOrder = 6 }
             );
         });
 

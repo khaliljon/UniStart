@@ -21,7 +21,36 @@ public class NewsController : ControllerBase
     private static NewsArticleDto ToDto(NewsArticle n) => new(
         n.Id, n.Title, n.Summary, n.Body, n.ImageUrl,
         n.IsPublished, n.PublishedAt, n.CreatedAt, n.UpdatedAt,
-        n.TitleKz, n.TitleEn, n.SummaryKz, n.SummaryEn, n.BodyKz, n.BodyEn);
+        n.TitleKz, n.TitleEn, n.SummaryKz, n.SummaryEn, n.BodyKz, n.BodyEn,
+        n.Slug, n.Category, n.IsFeatured);
+
+    // Transliterates Cyrillic and strips punctuation so titles become clean URLs.
+    private static string Slugify(string title)
+    {
+        const string cyr = "абвгдеёжзийклмнопрстуфхцчшщъыьэюя";
+        string[] lat = { "a","b","v","g","d","e","e","zh","z","i","y","k","l","m","n","o","p","r","s","t","u","f","h","c","ch","sh","sch","","y","","e","yu","ya" };
+        var sb = new System.Text.StringBuilder();
+        foreach (var ch in title.ToLowerInvariant())
+        {
+            var idx = cyr.IndexOf(ch);
+            if (idx >= 0) sb.Append(lat[idx]);
+            else if (char.IsLetterOrDigit(ch) && ch < 128) sb.Append(ch);
+            else if (char.IsWhiteSpace(ch) || ch == '-' || ch == '_') sb.Append('-');
+        }
+        var slug = System.Text.RegularExpressions.Regex.Replace(sb.ToString(), "-{2,}", "-").Trim('-');
+        return slug.Length > 180 ? slug[..180].Trim('-') : slug;
+    }
+
+    private async Task<string> UniqueSlugAsync(string title, int? excludeId = null)
+    {
+        var baseSlug = Slugify(title);
+        if (string.IsNullOrEmpty(baseSlug)) baseSlug = "news";
+        var slug = baseSlug;
+        var i = 2;
+        while (await _db.NewsArticles.AnyAsync(x => x.Slug == slug && (excludeId == null || x.Id != excludeId)))
+            slug = $"{baseSlug}-{i++}";
+        return slug;
+    }
 
     [HttpGet]
     [AllowAnonymous]
@@ -45,6 +74,18 @@ public class NewsController : ControllerBase
     {
         var n = await _db.NewsArticles.FindAsync(id);
         if (n == null || !n.IsPublished) return NotFound();
+        return Ok(ToDto(n));
+    }
+
+    /// <summary>Public article lookup by slug (falls back to numeric id).</summary>
+    [HttpGet("by-slug/{slug}")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetBySlug(string slug)
+    {
+        var n = await _db.NewsArticles.FirstOrDefaultAsync(x => x.Slug == slug && x.IsPublished);
+        if (n == null && int.TryParse(slug, out var id))
+            n = await _db.NewsArticles.FirstOrDefaultAsync(x => x.Id == id && x.IsPublished);
+        if (n == null) return NotFound();
         return Ok(ToDto(n));
     }
 
@@ -76,6 +117,9 @@ public class NewsController : ControllerBase
             ImageUrl = string.IsNullOrWhiteSpace(dto.ImageUrl) ? null : dto.ImageUrl.Trim(),
             IsPublished = dto.IsPublished,
             PublishedAt = dto.IsPublished ? DateTime.UtcNow : null,
+            Category = NewsCategories.Normalize(dto.Category),
+            IsFeatured = dto.IsFeatured,
+            Slug = await UniqueSlugAsync(dto.Title),
         };
         _db.NewsArticles.Add(article);
         await _db.SaveChangesAsync();
@@ -101,6 +145,10 @@ public class NewsController : ControllerBase
         article.BodyEn = string.IsNullOrWhiteSpace(dto.BodyEn) ? null : dto.BodyEn;
         article.ImageUrl = string.IsNullOrWhiteSpace(dto.ImageUrl) ? null : dto.ImageUrl.Trim();
         article.IsPublished = dto.IsPublished;
+        article.Category = NewsCategories.Normalize(dto.Category);
+        article.IsFeatured = dto.IsFeatured;
+        if (string.IsNullOrWhiteSpace(article.Slug))
+            article.Slug = await UniqueSlugAsync(dto.Title, article.Id);
         if (dto.IsPublished && !wasPublished)
             article.PublishedAt = DateTime.UtcNow;
         else if (!dto.IsPublished)

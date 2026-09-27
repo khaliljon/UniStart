@@ -32,3 +32,22 @@ export function shortDateLocalized(iso: string, locale: Loc): string {
   }
   return d.toLocaleDateString(tagFor(locale));
 }
+
+/** "14–15 ноября 2026" for two-day sittings; falls back to a single date. */
+export function dateRangeLocalized(startIso: string, endIso: string | null | undefined, locale: Loc): string {
+  if (!endIso) return fullDateLocalized(startIso, locale);
+  const a = new Date(startIso);
+  const b = new Date(endIso);
+  if (a.getTime() === b.getTime()) return fullDateLocalized(startIso, locale);
+
+  // Same month → collapse to "14–15 <month> <year>".
+  if (a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth()) {
+    const month = monthNameLocalized(startIso, locale).toLowerCase();
+    return locale === 'kz'
+      ? `${a.getFullYear()} ж. ${a.getDate()}–${b.getDate()} ${month}`
+      : locale === 'en'
+        ? `${monthNameLocalized(startIso, locale)} ${a.getDate()}–${b.getDate()}, ${a.getFullYear()}`
+        : `${a.getDate()}–${b.getDate()} ${month} ${a.getFullYear()}`;
+  }
+  return `${fullDateLocalized(startIso, locale)} – ${fullDateLocalized(endIso, locale)}`;
+}

@@ -3,7 +3,14 @@ import { newsService, type NewsItem, type NewsUpsert } from '../services/newsSer
 import adminService from '../services/adminService';
 import { useToast } from '../components/Toast';
 
-const EMPTY: NewsUpsert = { title: '', summary: '', body: '', titleKz: '', titleEn: '', summaryKz: '', summaryEn: '', bodyKz: '', bodyEn: '', imageUrl: '', isPublished: false };
+const EMPTY: NewsUpsert = { title: '', summary: '', body: '', titleKz: '', titleEn: '', summaryKz: '', summaryEn: '', bodyKz: '', bodyEn: '', imageUrl: '', isPublished: false, category: 'admission', isFeatured: false };
+
+const CATEGORY_LABELS: Record<string, string> = {
+  dates: 'Даты экзамена',
+  admission: 'Поступление',
+  platform: 'Платформа',
+  guide: 'Инструкции',
+};
 
 function AdminNewsPage() {
   const { showToast } = useToast();
@@ -47,6 +54,7 @@ function AdminNewsPage() {
       summaryKz: n.summaryKz ?? '', summaryEn: n.summaryEn ?? '',
       bodyKz: n.bodyKz ?? '', bodyEn: n.bodyEn ?? '',
       imageUrl: n.imageUrl ?? '', isPublished: n.isPublished,
+      category: n.category ?? 'admission', isFeatured: n.isFeatured ?? false,
     });
   };
   const cancel = () => { setEditingId(null); setForm(EMPTY); };
@@ -158,6 +166,20 @@ function AdminNewsPage() {
             {form.imageUrl && (
               <img src={form.imageUrl} alt="" style={{ marginTop: '0.5rem', maxHeight: 120, borderRadius: '0.5rem', objectFit: 'cover' }} />
             )}
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem' }}>
+            Рубрика
+            <select value={form.category ?? 'admission'}
+                    onChange={(e) => setForm({ ...form, category: e.target.value as NewsUpsert['category'] })}
+                    style={{ padding: '0.4rem 0.6rem', border: '1px solid var(--border-color)', borderRadius: 6, background: 'var(--card-background)', color: 'var(--text-primary)' }}>
+              {Object.entries(CATEGORY_LABELS).map(([k, label]) => (
+                <option key={k} value={k}>{label}</option>
+              ))}
+            </select>
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem' }}>
+            <input type="checkbox" checked={form.isFeatured ?? false} onChange={(e) => setForm({ ...form, isFeatured: e.target.checked })} />
+            Главная новость (крупный блок сверху)
           </label>
           <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem' }}>
             <input type="checkbox" checked={form.isPublished} onChange={(e) => setForm({ ...form, isPublished: e.target.checked })} />

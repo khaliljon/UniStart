@@ -6,8 +6,9 @@ import CscaPageShell, { CscaPageHero } from '../components/csca/CscaPageShell';
 import { BrushDivider } from '../components/csca/ChineseMotifs';
 import { CSCA_SUBJECTS, CSCA_EXAM_SITTINGS } from '../cscaConfig';
 import { examSittingsService } from '../services/examSittingsService';
-import { monthNameLocalized, fullDateLocalized } from '../utils/dates';
+import { monthNameLocalized, dateRangeLocalized } from '../utils/dates';
 import AddToCalendarButton from '../components/csca/AddToCalendarButton';
+import CscaTracksSection from '../components/csca/CscaTracksSection';
 
 function AboutCscaPage() {
   const navigate = useNavigate();
@@ -29,10 +30,11 @@ function AboutCscaPage() {
   };
   void monthLabel;
 
-  const [sittings, setSittings] = useState<{ date: string }[]>(CSCA_EXAM_SITTINGS.map((x) => ({ date: x.date })));
+  const [sittings, setSittings] = useState<{ date: string; endDate?: string | null }[]>(
+    CSCA_EXAM_SITTINGS.map((x) => ({ date: x.date, endDate: x.endDate ?? null })));
   useEffect(() => {
     examSittingsService.list()
-      .then((list) => { if (list.length > 0) setSittings(list.map((x) => ({ date: x.date }))); })
+      .then((list) => { if (list.length > 0) setSittings(list.map((x) => ({ date: x.date, endDate: x.endDate ?? null }))); })
       .catch(() => {});
   }, []);
   const monthName = (iso: string) => monthNameLocalized(iso, locale);
@@ -59,11 +61,16 @@ function AboutCscaPage() {
                 <span className="csca-subject-hanzi">{subj.hanzi}</span>
                 <div className="csca-subject-name">{subjectMeta[subj.key].name}</div>
                 <div className="csca-subject-tag">{subjectMeta[subj.key].tag}</div>
+                <div className="csca-subject-tag" style={{ marginTop: '0.45rem', fontWeight: 600 }}>
+                  {subj.minutes} {s.fmtMinutes} · {subj.questions} {s.fmtQuestions}
+                </div>
               </div>
             ))}
           </div>
         </div>
       </section>
+
+      <CscaTracksSection />
 
       <section className="csca-section" style={{ background: 'rgba(255,255,255,0.5)' }}>
         <div className="csca-wrap">
@@ -80,7 +87,7 @@ function AboutCscaPage() {
                   <div>
                     <div style={{ fontWeight: 700, color: 'var(--csca-ink)' }}>{monthName(sit.date)}</div>
                     <div style={{ fontSize: '0.85rem', color: 'var(--csca-ink-soft)' }}>
-                      {fullDateLocalized(sit.date, locale)}
+                      {dateRangeLocalized(sit.date, sit.endDate, locale)}
                     </div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>

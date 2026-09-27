@@ -45,6 +45,7 @@ const CscaCoursesPage = lazy(() => import('./pages/CscaCoursesPage'))
 const AboutUsPage = lazy(() => import('./pages/AboutUsPage'))
 const ContactsPage = lazy(() => import('./pages/ContactsPage'))
 const CscaNewsPage = lazy(() => import('./pages/CscaNewsPage'))
+const CscaNewsArticlePage = lazy(() => import('./pages/CscaNewsArticlePage'))
 const PurchasesPage = lazy(() => import('./pages/PurchasesPage'))
 const CartPage = lazy(() => import('./pages/CartPage'))
 const MaterialsPage = lazy(() => import('./pages/MaterialsPage'))
@@ -131,6 +132,7 @@ function App() {
       <Route path="/referral-terms" element={<ReferralTermsPage />} />
       <Route path="/csca/about" element={<AboutCscaPage />} />
       <Route path="/csca/news" element={<CscaNewsPage />} />
+      <Route path="/csca/news/:slug" element={<CscaNewsArticlePage />} />
       <Route path="/csca/courses" element={<CscaCoursesPage />} />
       <Route path="/csca/materials" element={<CscaMaterialsPage />} />
       <Route path="/csca/mocks" element={<CscaMocksPage />} />

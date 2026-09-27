@@ -1,5 +1,18 @@
 namespace UniStart.Domain.Entities;
 
+public static class NewsCategories
+{
+    public const string Dates = "dates";
+    public const string Admission = "admission";
+    public const string Platform = "platform";
+    public const string Guide = "guide";
+
+    public static readonly string[] All = { Dates, Admission, Platform, Guide };
+
+    public static string Normalize(string? value) =>
+        value != null && All.Contains(value) ? value : Admission;
+}
+
 /// <summary>
 /// A CSCA news / information article. Managed from the admin panel and shown
 /// on the public landing page and the student dashboard.
@@ -9,6 +22,15 @@ public class NewsArticle : IAuditable
     public int Id { get; set; }
 
     public string Title { get; set; } = string.Empty;
+
+    /// <summary>URL-friendly identifier used by /csca/news/{slug}.</summary>
+    public string? Slug { get; set; }
+
+    /// <summary>See <see cref="NewsCategories"/>.</summary>
+    public string Category { get; set; } = NewsCategories.Admission;
+
+    /// <summary>Highlighted as the lead story on the news portal.</summary>
+    public bool IsFeatured { get; set; }
 
     public string Summary { get; set; } = string.Empty;
 
