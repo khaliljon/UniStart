@@ -1,1 +1,0 @@
-import{b as e,j as r}from"./index-BHtc7iYm.js";import{L as a}from"./LegalDocumentView-D_rUvuZZ.js";import"./localize-i5KYzjjt.js";import"./legalService-qFJtEben.js";function m(){const{t}=e();return r.jsx(a,{slug:"terms",fallbackTitle:t.legal.termsTitle,footerLink:{to:"/privacy",label:t.legal.privacyTitle}})}export{m as default};

@@ -83,6 +83,8 @@ function NewsBlock() {
       emptyText={s.newsEmpty}
       limit={6}
       appTheme
+      featuredOnly
+      basePath="/news"
     />
   );
 }

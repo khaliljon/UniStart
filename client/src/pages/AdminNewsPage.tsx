@@ -199,11 +199,11 @@ function AdminNewsPage() {
           </label>
           <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem' }}>
             <input type="checkbox" checked={form.isFeatured ?? false} onChange={(e) => setForm({ ...form, isFeatured: e.target.checked })} />
-            Главная новость (крупный блок сверху)
+            Главная новость (одна на весь сайт — она показывается на главной странице)
           </label>
           <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem' }}>
             <input type="checkbox" checked={form.isPublished} onChange={(e) => setForm({ ...form, isPublished: e.target.checked })} />
-            Опубликовать (видно на лендинге и главной)
+            Опубликовать (видно на лендинге и в разделе «Новости»)
           </label>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <button className="btn btn-primary" disabled={saving} onClick={save}>{saving ? '…' : 'Сохранить'}</button>

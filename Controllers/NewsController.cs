@@ -75,6 +75,15 @@ public class NewsController : ControllerBase
         return null;
     }
 
+    /// <summary>Only one article may be featured — it is the single story shown on the dashboard.</summary>
+    private async Task ClearOtherFeaturedAsync(int? exceptId)
+    {
+        var others = await _db.NewsArticles
+            .Where(x => x.IsFeatured && (exceptId == null || x.Id != exceptId))
+            .ToListAsync();
+        foreach (var other in others) other.IsFeatured = false;
+    }
+
     /// <summary>Resolves the requested slug: normalizes it or generates one from the title.</summary>
     private async Task<(string? Slug, string? Error)> ResolveSlugAsync(string? requested, string title, int? excludeId)
     {
@@ -179,6 +188,7 @@ public class NewsController : ControllerBase
             IsFeatured = dto.IsFeatured,
             Slug = slug!,
         };
+        if (dto.IsFeatured) await ClearOtherFeaturedAsync(exceptId: null);
         _db.NewsArticles.Add(article);
         await _db.SaveChangesAsync();
         return CreatedAtAction(nameof(GetById), new { id = article.Id }, ToDto(article));
@@ -208,6 +218,7 @@ public class NewsController : ControllerBase
         article.IsPublished = dto.IsPublished;
         article.Category = NewsCategories.Normalize(dto.Category);
         article.IsFeatured = dto.IsFeatured;
+        if (dto.IsFeatured) await ClearOtherFeaturedAsync(exceptId: article.Id);
 
         if (!string.Equals(article.Slug, slug, StringComparison.Ordinal))
         {

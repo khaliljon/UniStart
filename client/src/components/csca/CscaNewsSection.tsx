@@ -20,14 +20,13 @@ interface Props {
   portal?: boolean;
   /** Route prefix for article links ('/csca/news' on the landing, '/news' in the app). */
   basePath?: string;
+  /** Dashboard mode: render only the featured story. */
+  featuredOnly?: boolean;
 }
 
 const CATEGORY_ORDER: NewsCategory[] = ['dates', 'admission', 'guide', 'platform'];
 
-/** Rough reading time from the body length. */
-const readMinutes = (text: string) => Math.max(1, Math.round(text.trim().split(/\s+/).length / 180));
-
-export default function CscaNewsSection({ title, lead, readMore, emptyText, limit = 6, section = false, appTheme = false, id, portal = false, basePath = '/csca/news' }: Props) {
+export default function CscaNewsSection({ title, lead, readMore, emptyText, limit = 6, section = false, appTheme = false, id, portal = false, basePath = '/csca/news', featuredOnly = false }: Props) {
   const { locale } = useTranslation();
   const s = cscaStrings[locale];
   const [items, setItems] = useState<NewsItem[] | null>(null);
@@ -65,10 +64,17 @@ export default function CscaNewsSection({ title, lead, readMore, emptyText, limi
     });
   }, [localized, cat, q]);
 
+  // The dashboard shows exactly one story: the featured one, or the newest as a fallback.
+  const visible = useMemo(() => {
+    if (!featuredOnly) return filtered;
+    const lead = filtered.find((n) => n.raw.isFeatured) ?? filtered[0];
+    return lead ? [lead] : [];
+  }, [filtered, featuredOnly]);
+
   const featured = portal && cat === 'all' && !q.trim()
-    ? filtered.find((n) => n.raw.isFeatured) ?? null
+    ? visible.find((n) => n.raw.isFeatured) ?? null
     : null;
-  const rest = featured ? filtered.filter((n) => n.raw.id !== featured.raw.id) : filtered;
+  const rest = featured ? visible.filter((n) => n.raw.id !== featured.raw.id) : visible;
 
   const cardClass = appTheme ? 'card' : 'csca-card';
   const subColor = appTheme ? 'var(--text-secondary)' : 'var(--csca-ink-soft, var(--text-secondary))';
@@ -85,7 +91,6 @@ export default function CscaNewsSection({ title, lead, readMore, emptyText, limi
         <div className="csca-news-meta">
           <span className={`csca-news-cat csca-news-cat-${n.raw.category}`}>{catLabel[n.raw.category] ?? ''}</span>
           <span style={{ color: subColor }}>{n.raw.publishedAt ? fullDateLocalized(n.raw.publishedAt, locale) : ''}</span>
-          {n.body && <span style={{ color: subColor }}>· {readMinutes(n.body)} {s.newsMinRead}</span>}
         </div>
         <Link to={href(n.raw)} className="csca-news-title">{n.title}</Link>
         <p className="csca-news-sum" style={{ color: subColor }}>{n.summary}</p>
@@ -115,7 +120,7 @@ export default function CscaNewsSection({ title, lead, readMore, emptyText, limi
         </div>
       )}
 
-      {items && filtered.length === 0 ? (
+      {items && visible.length === 0 ? (
         <p className={appTheme ? undefined : 'csca-lead'} style={{ textAlign: 'center', color: appTheme ? 'var(--text-secondary)' : undefined }}>
           {q.trim() || cat !== 'all' ? s.newsNothingFound : emptyText}
         </p>
