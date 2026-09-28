@@ -1264,8 +1264,8 @@ select option,
 
 .csca-news-card { display: flex; flex-direction: column; padding: 0; overflow: hidden; }
 .csca-news-media { display: block; aspect-ratio: 16 / 9; overflow: hidden; background: var(--csca-cloud); }
-.csca-news-media img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.35s ease; }
-.csca-news-card:hover .csca-news-media img { transform: scale(1.04); }
+/* contain (not cover) so logos/posters are never cut off on any screen size */
+.csca-news-media img { width: 100%; height: 100%; object-fit: contain; display: block; padding: 0.5rem; }
 .csca-news-body { display: flex; flex-direction: column; gap: 0.55rem; padding: 1.25rem; flex: 1; }
 .csca-news-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; font-size: 0.76rem; }
 .csca-news-cat {
@@ -1287,14 +1287,17 @@ select option,
 .csca-news-card-lead { border-color: rgba(200,16,46,0.3); }
 @media (min-width: 900px) {
   .csca-news-card-lead { flex-direction: row; }
-  .csca-news-card-lead .csca-news-media { flex: 0 0 48%; aspect-ratio: auto; }
+  .csca-news-card-lead .csca-news-media { flex: 0 0 48%; aspect-ratio: auto; min-height: 260px; }
   .csca-news-card-lead .csca-news-body { padding: 2rem; justify-content: center; }
   .csca-news-card-lead .csca-news-title { font-size: 1.6rem; }
   .csca-news-card-lead .csca-news-sum { font-size: 1rem; }
 }
 
 .csca-article { max-width: 760px; }
-.csca-article-cover { width: 100%; border-radius: 1rem; margin-bottom: 1.5rem; display: block; }
+.csca-article-cover {
+  width: 100%; max-height: 70vh; object-fit: contain; border-radius: 1rem;
+  margin-bottom: 1.5rem; display: block; background: var(--csca-cloud);
+}
 .csca-article-body {
   white-space: pre-wrap; font-size: 1.02rem; line-height: 1.8; color: var(--csca-ink-soft);
 }
