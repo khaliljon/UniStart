@@ -433,7 +433,7 @@ function AdminMocksPage() {
                       return (
                         <span style={{ fontSize: '0.75rem', color: short ? 'var(--error-color, #ef4444)' : 'var(--text-secondary)' }}>
                           {short
-                            ? `⚠ В банке только ${avail} вопросов — мок стартует с ${avail}`
+                            ? `В банке только ${avail} вопросов — мок стартует с ${avail}`
                             : `В банке: ${avail} вопросов`}
                         </span>
                       );

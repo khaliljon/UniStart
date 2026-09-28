@@ -1217,7 +1217,6 @@ select option,
   display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem;
 }
 .csca-track { display: flex; flex-direction: column; gap: 0.55rem; padding: 1.25rem; }
-.csca-track-icon { font-size: 1.6rem; line-height: 1; }
 .csca-track-name { font-weight: 700; font-size: 1rem; color: var(--csca-ink); }
 .csca-track-subjects { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: auto; }
 .csca-track-chip {

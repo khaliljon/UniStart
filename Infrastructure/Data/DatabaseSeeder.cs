@@ -179,8 +179,39 @@ public class DatabaseSeeder
         }
 
         await SeedLegalDocumentsAsync();
+        await SeedSpecialtyTracksAsync();
 
         await _context.SaveChangesAsync();
+    }
+
+    /// <summary>Seeds the default field-of-study → subjects mapping once; admins edit it afterwards.</summary>
+    private async Task SeedSpecialtyTracksAsync()
+    {
+        if (await _context.SpecialtyTracks.AnyAsync()) return;
+
+        var defaults = new (string Ru, string Kz, string En, string Subjects, bool Cond)[]
+        {
+            ("IT и Computer Science", "IT және Computer Science", "IT & Computer Science", "math,physics", false),
+            ("Инженерия и робототехника", "Инженерия және робототехника", "Engineering & robotics", "math,physics", false),
+            ("Химия и химтехнологии", "Химия және химиялық технология", "Chemistry & chemical engineering", "math,chemistry", false),
+            ("Медицина и фармацевтика", "Медицина және фармацевтика", "Medicine & pharmacy", "math,chemistry", false),
+            ("Экономика и бизнес", "Экономика және бизнес", "Economics & business", "math", false),
+            ("Международные отношения", "Халықаралық қатынастар", "International relations", "math,chineseHum", true),
+            ("Гуманитарные направления", "Гуманитарлық бағыттар", "Humanities", "math,chineseHum", true),
+            ("Архитектура и строительство", "Сәулет және құрылыс", "Architecture & construction", "math,physics", false),
+            ("Машиностроение и электротехника", "Машина жасау және электротехника", "Mechanical & electrical engineering", "math,physics", false),
+        };
+
+        var order = 1;
+        foreach (var (ru, kz, en, subjects, cond) in defaults)
+        {
+            _context.SpecialtyTracks.Add(new SpecialtyTrack
+            {
+                Name = ru, NameKz = kz, NameEn = en,
+                Subjects = subjects, ConditionalChinese = cond,
+                SortOrder = order++, IsActive = true,
+            });
+        }
     }
 
     private async Task SeedLegalDocumentsAsync()

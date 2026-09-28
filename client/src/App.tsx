@@ -33,6 +33,7 @@ const AdminMocksPage = lazy(() => import('./pages/AdminMocksPage'))
 const AdminSalesPage = lazy(() => import('./pages/AdminSalesPage'))
 const AdminPricingPage = lazy(() => import('./pages/AdminPricingPage'))
 const AdminExamDatesPage = lazy(() => import('./pages/AdminExamDatesPage'))
+const AdminSpecialtyTracksPage = lazy(() => import('./pages/AdminSpecialtyTracksPage'))
 const LandingPage = lazy(() => import('./pages/CscaLandingPage'))
 const PrivacyPage = lazy(() => import('./pages/PrivacyPage'))
 const TermsPage = lazy(() => import('./pages/TermsPage'))
@@ -96,6 +97,7 @@ function AdminRoutes() {
       <Route path="sales" element={<AdminSalesPage />} />
       <Route path="pricing" element={<AdminPricingPage />} />
       <Route path="exam-dates" element={<AdminExamDatesPage />} />
+      <Route path="specialty-tracks" element={<AdminSpecialtyTracksPage />} />
       <Route path="content" element={<AdminContentPage />} />
       <Route path="news" element={<AdminNewsPage />} />
       <Route path="support" element={<AdminSupportPage />} />

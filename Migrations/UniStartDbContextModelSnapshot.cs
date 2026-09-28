@@ -251,50 +251,37 @@ namespace UniStart.Migrations
                         new
                         {
                             Id = 1,
-                            Date = new DateOnly(2026, 11, 14),
-                            EndDate = new DateOnly(2026, 11, 15),
+                            Date = new DateOnly(2026, 1, 17),
                             IsActive = true,
                             SortOrder = 1
                         },
                         new
                         {
                             Id = 2,
-                            Date = new DateOnly(2026, 12, 19),
-                            EndDate = new DateOnly(2026, 12, 20),
+                            Date = new DateOnly(2026, 3, 15),
                             IsActive = true,
                             SortOrder = 2
                         },
                         new
                         {
                             Id = 3,
-                            Date = new DateOnly(2027, 1, 23),
-                            EndDate = new DateOnly(2027, 1, 24),
+                            Date = new DateOnly(2026, 6, 27),
                             IsActive = true,
                             SortOrder = 3
                         },
                         new
                         {
                             Id = 4,
-                            Date = new DateOnly(2027, 3, 13),
-                            EndDate = new DateOnly(2027, 3, 14),
+                            Date = new DateOnly(2026, 9, 19),
                             IsActive = true,
                             SortOrder = 4
                         },
                         new
                         {
                             Id = 5,
-                            Date = new DateOnly(2027, 4, 24),
-                            EndDate = new DateOnly(2027, 4, 25),
+                            Date = new DateOnly(2026, 11, 21),
                             IsActive = true,
                             SortOrder = 5
-                        },
-                        new
-                        {
-                            Id = 6,
-                            Date = new DateOnly(2027, 6, 26),
-                            EndDate = new DateOnly(2027, 6, 27),
-                            IsActive = true,
-                            SortOrder = 6
                         });
                 });
 
@@ -1691,6 +1678,57 @@ namespace UniStart.Migrations
                         .HasDatabaseName("IX_ReferralUsages_ReferredUserId");
 
                     b.ToTable("ReferralUsages", (string)null);
+                });
+
+            modelBuilder.Entity("UniStart.Domain.Entities.SpecialtyTrack", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("ConditionalChinese")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<string>("NameEn")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<string>("NameKz")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Subjects")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SortOrder")
+                        .HasDatabaseName("IX_SpecialtyTracks_SortOrder");
+
+                    b.ToTable("SpecialtyTracks", (string)null);
                 });
 
             modelBuilder.Entity("UniStart.Domain.Entities.StrategyGuide", b =>

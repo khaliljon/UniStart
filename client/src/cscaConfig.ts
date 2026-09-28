@@ -51,27 +51,6 @@ export const CSCA_SUBJECTS: CscaSubject[] = [
 
 export type CscaSubjectKey = CscaSubject['key'];
 
-/** Study tracks → which CSCA subjects they usually require. Guidance only. */
-export interface CscaTrack {
-  key: 'it' | 'engineering' | 'chemistry' | 'medicine' | 'economics' | 'international' | 'humanities' | 'architecture' | 'mechanical';
-  icon: string;
-  subjects: CscaSubjectKey[];
-  /** Subject is only needed for Chinese-taught programmes. */
-  conditional?: boolean;
-}
-
-export const CSCA_TRACKS: CscaTrack[] = [
-  { key: 'it', icon: '💻', subjects: ['math', 'physics'] },
-  { key: 'engineering', icon: '🤖', subjects: ['math', 'physics'] },
-  { key: 'chemistry', icon: '🧪', subjects: ['math', 'chemistry'] },
-  { key: 'medicine', icon: '🩺', subjects: ['math', 'chemistry'] },
-  { key: 'economics', icon: '📊', subjects: ['math'] },
-  { key: 'international', icon: '🌍', subjects: ['math', 'chineseHum'], conditional: true },
-  { key: 'humanities', icon: '📖', subjects: ['math', 'chineseHum'], conditional: true },
-  { key: 'architecture', icon: '🏗️', subjects: ['math', 'physics'] },
-  { key: 'mechanical', icon: '⚙️', subjects: ['math', 'physics'] },
-];
-
 /** Official CSCA exam fee in CNY. */
 export const CSCA_FEE = { single: 450, multiple: 700 };
 

@@ -62,6 +62,8 @@ public class UniStartDbContext : DbContext
     public DbSet<Purchase> Purchases => Set<Purchase>();
     public DbSet<ExamSitting> ExamSittings => Set<ExamSitting>();
 
+    public DbSet<SpecialtyTrack> SpecialtyTracks => Set<SpecialtyTrack>();
+
     public DbSet<PaymentOrder> PaymentOrders => Set<PaymentOrder>();
 
     public DbSet<KaspiPaymentNotification> KaspiPaymentNotifications => Set<KaspiPaymentNotification>();
@@ -886,15 +888,27 @@ public class UniStartDbContext : DbContext
             entity.ToTable("ExamSittings");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.IsActive).HasDefaultValue(true);
-            // Official CSCA schedule Nov 2026 – Jun 2027 (each sitting spans two days).
+            // Seed stays frozen at the original rows: exam dates are admin-managed content, so
+            // HasData must never update/insert here (it would overwrite or collide with admin rows).
             entity.HasData(
-                new ExamSitting { Id = 1, Date = new DateOnly(2026, 11, 14), EndDate = new DateOnly(2026, 11, 15), IsActive = true, SortOrder = 1 },
-                new ExamSitting { Id = 2, Date = new DateOnly(2026, 12, 19), EndDate = new DateOnly(2026, 12, 20), IsActive = true, SortOrder = 2 },
-                new ExamSitting { Id = 3, Date = new DateOnly(2027, 1, 23), EndDate = new DateOnly(2027, 1, 24), IsActive = true, SortOrder = 3 },
-                new ExamSitting { Id = 4, Date = new DateOnly(2027, 3, 13), EndDate = new DateOnly(2027, 3, 14), IsActive = true, SortOrder = 4 },
-                new ExamSitting { Id = 5, Date = new DateOnly(2027, 4, 24), EndDate = new DateOnly(2027, 4, 25), IsActive = true, SortOrder = 5 },
-                new ExamSitting { Id = 6, Date = new DateOnly(2027, 6, 26), EndDate = new DateOnly(2027, 6, 27), IsActive = true, SortOrder = 6 }
+                new ExamSitting { Id = 1, Date = new DateOnly(2026, 1, 17), IsActive = true, SortOrder = 1 },
+                new ExamSitting { Id = 2, Date = new DateOnly(2026, 3, 15), IsActive = true, SortOrder = 2 },
+                new ExamSitting { Id = 3, Date = new DateOnly(2026, 6, 27), IsActive = true, SortOrder = 3 },
+                new ExamSitting { Id = 4, Date = new DateOnly(2026, 9, 19), IsActive = true, SortOrder = 4 },
+                new ExamSitting { Id = 5, Date = new DateOnly(2026, 11, 21), IsActive = true, SortOrder = 5 }
             );
+        });
+
+        modelBuilder.Entity<SpecialtyTrack>(entity =>
+        {
+            entity.ToTable("SpecialtyTracks");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(120);
+            entity.Property(e => e.NameKz).HasMaxLength(120);
+            entity.Property(e => e.NameEn).HasMaxLength(120);
+            entity.Property(e => e.Subjects).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.HasIndex(e => e.SortOrder).HasDatabaseName("IX_SpecialtyTracks_SortOrder");
         });
 
         modelBuilder.Entity<SupportTicket>(entity =>

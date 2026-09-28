@@ -547,7 +547,6 @@ export default function TopicsPage() {
             fontSize: '2rem',
             margin: '0 auto 1.25rem'
           }}>
-            📝
           </div>
           <h2 style={{ fontSize: '1.35rem', fontWeight: '700', marginBottom: '0.75rem' }}>
             {t.practice.noQuestionsYet}

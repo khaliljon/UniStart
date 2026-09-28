@@ -167,7 +167,7 @@ function ProfilePage() {
           {s.supportSocialsDesc}
         </p>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem' }}>
-          <a className="btn btn-primary" href={SOCIAL_LINKS.supportBot} target="_blank" rel="noopener noreferrer">💬 {s.socialSupportBot}</a>
+          <a className="btn btn-primary" href={SOCIAL_LINKS.supportBot} target="_blank" rel="noopener noreferrer">{s.socialSupportBot}</a>
           <a className="btn btn-outline" href={SOCIAL_LINKS.telegramChannel} target="_blank" rel="noopener noreferrer">{s.socialTelegram}</a>
           <a className="btn btn-outline" href={SOCIAL_LINKS.instagram} target="_blank" rel="noopener noreferrer">Instagram</a>
           <a className="btn btn-outline" href={SOCIAL_LINKS.tiktok} target="_blank" rel="noopener noreferrer">TikTok</a>

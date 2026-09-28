@@ -1,6 +1,9 @@
+import { useEffect, useState } from 'react';
 import { useTranslation } from '../../i18n';
 import { cscaStrings } from '../../i18n/csca';
-import { CSCA_TRACKS, CSCA_FEE, type CscaSubjectKey } from '../../cscaConfig';
+import { CSCA_FEE, type CscaSubjectKey } from '../../cscaConfig';
+import { specialtyTrackService, type SpecialtyTrack } from '../../services/specialtyTrackService';
+import { pickLocalized } from '../../utils/localize';
 import { BrushDivider } from './ChineseMotifs';
 import Reveal from './Reveal';
 
@@ -13,6 +16,15 @@ interface Props {
 export default function CscaTracksSection({ section = true, background }: Props) {
   const { locale } = useTranslation();
   const s = cscaStrings[locale];
+  const [tracks, setTracks] = useState<SpecialtyTrack[]>([]);
+
+  useEffect(() => {
+    let alive = true;
+    specialtyTrackService.list()
+      .then((data) => { if (alive) setTracks(data); })
+      .catch(() => { if (alive) setTracks([]); });
+    return () => { alive = false; };
+  }, []);
 
   const subjectName: Record<CscaSubjectKey, string> = {
     math: s.subjMath,
@@ -22,17 +34,7 @@ export default function CscaTracksSection({ section = true, background }: Props)
     chineseHum: s.subjChineseHum,
   };
 
-  const trackName: Record<(typeof CSCA_TRACKS)[number]['key'], string> = {
-    it: s.trackIt,
-    engineering: s.trackEngineering,
-    chemistry: s.trackChemistry,
-    medicine: s.trackMedicine,
-    economics: s.trackEconomics,
-    international: s.trackInternational,
-    humanities: s.trackHumanities,
-    architecture: s.trackArchitecture,
-    mechanical: s.trackMechanical,
-  };
+  if (tracks.length === 0) return null;
 
   const inner = (
     <div className="csca-wrap">
@@ -45,16 +47,15 @@ export default function CscaTracksSection({ section = true, background }: Props)
       </div>
 
       <div className="csca-tracks-grid">
-        {CSCA_TRACKS.map((track) => (
-          <div className="csca-card csca-track" key={track.key}>
-            <span className="csca-track-icon" aria-hidden="true">{track.icon}</span>
-            <div className="csca-track-name">{trackName[track.key]}</div>
+        {tracks.map((track) => (
+          <div className="csca-card csca-track" key={track.id}>
+            <div className="csca-track-name">{pickLocalized(track.name, track.nameKz, track.nameEn, locale)}</div>
             <div className="csca-track-subjects">
               {track.subjects.map((k) => (
-                <span className="csca-track-chip" key={k}>{subjectName[k]}</span>
+                <span className="csca-track-chip" key={k}>{subjectName[k as CscaSubjectKey] ?? k}</span>
               ))}
             </div>
-            {track.conditional && <div className="csca-track-note">{s.trackIfChinese}</div>}
+            {track.conditionalChinese && <div className="csca-track-note">{s.trackIfChinese}</div>}
           </div>
         ))}
       </div>
@@ -65,7 +66,7 @@ export default function CscaTracksSection({ section = true, background }: Props)
           <span><b>{CSCA_FEE.single} ¥</b> — {s.feeSingle}</span>
           <span><b>{CSCA_FEE.multiple} ¥</b> — {s.feeMultiple}</span>
         </div>
-        <p className="csca-track-disclaimer">⚠️ {s.tracksNote}</p>
+        <p className="csca-track-disclaimer">{s.tracksNote}</p>
       </div>
     </div>
   );

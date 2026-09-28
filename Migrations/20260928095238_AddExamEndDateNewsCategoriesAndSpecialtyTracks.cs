@@ -1,12 +1,13 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
 namespace UniStart.Migrations
 {
     /// <inheritdoc />
-    public partial class AddExamSittingEndDateAndNewsCategories : Migration
+    public partial class AddExamEndDateNewsCategoriesAndSpecialtyTracks : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -39,45 +40,61 @@ namespace UniStart.Migrations
                 type: "date",
                 nullable: true);
 
+            migrationBuilder.CreateTable(
+                name: "SpecialtyTracks",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Name = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: false),
+                    NameKz = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: true),
+                    NameEn = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: true),
+                    Subjects = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    ConditionalChinese = table.Column<bool>(type: "boolean", nullable: false),
+                    SortOrder = table.Column<int>(type: "integer", nullable: false),
+                    IsActive = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_SpecialtyTracks", x => x.Id);
+                });
+
             migrationBuilder.UpdateData(
                 table: "ExamSittings",
                 keyColumn: "Id",
                 keyValue: 1,
-                columns: new[] { "Date", "EndDate" },
-                values: new object[] { new DateOnly(2026, 11, 14), new DateOnly(2026, 11, 15) });
+                column: "EndDate",
+                value: null);
 
             migrationBuilder.UpdateData(
                 table: "ExamSittings",
                 keyColumn: "Id",
                 keyValue: 2,
-                columns: new[] { "Date", "EndDate" },
-                values: new object[] { new DateOnly(2026, 12, 19), new DateOnly(2026, 12, 20) });
+                column: "EndDate",
+                value: null);
 
             migrationBuilder.UpdateData(
                 table: "ExamSittings",
                 keyColumn: "Id",
                 keyValue: 3,
-                columns: new[] { "Date", "EndDate" },
-                values: new object[] { new DateOnly(2027, 1, 23), new DateOnly(2027, 1, 24) });
+                column: "EndDate",
+                value: null);
 
             migrationBuilder.UpdateData(
                 table: "ExamSittings",
                 keyColumn: "Id",
                 keyValue: 4,
-                columns: new[] { "Date", "EndDate" },
-                values: new object[] { new DateOnly(2027, 3, 13), new DateOnly(2027, 3, 14) });
+                column: "EndDate",
+                value: null);
 
             migrationBuilder.UpdateData(
                 table: "ExamSittings",
                 keyColumn: "Id",
                 keyValue: 5,
-                columns: new[] { "Date", "EndDate" },
-                values: new object[] { new DateOnly(2027, 4, 24), new DateOnly(2027, 4, 25) });
-
-            migrationBuilder.InsertData(
-                table: "ExamSittings",
-                columns: new[] { "Id", "Date", "EndDate", "IsActive", "SortOrder" },
-                values: new object[] { 6, new DateOnly(2027, 6, 26), new DateOnly(2027, 6, 27), true, 6 });
+                column: "EndDate",
+                value: null);
 
             migrationBuilder.CreateIndex(
                 name: "IX_NewsArticles_Slug",
@@ -85,19 +102,22 @@ namespace UniStart.Migrations
                 column: "Slug",
                 unique: true,
                 filter: "\"Slug\" IS NOT NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SpecialtyTracks_SortOrder",
+                table: "SpecialtyTracks",
+                column: "SortOrder");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropTable(
+                name: "SpecialtyTracks");
+
             migrationBuilder.DropIndex(
                 name: "IX_NewsArticles_Slug",
                 table: "NewsArticles");
-
-            migrationBuilder.DeleteData(
-                table: "ExamSittings",
-                keyColumn: "Id",
-                keyValue: 6);
 
             migrationBuilder.DropColumn(
                 name: "Category",
@@ -114,41 +134,6 @@ namespace UniStart.Migrations
             migrationBuilder.DropColumn(
                 name: "EndDate",
                 table: "ExamSittings");
-
-            migrationBuilder.UpdateData(
-                table: "ExamSittings",
-                keyColumn: "Id",
-                keyValue: 1,
-                column: "Date",
-                value: new DateOnly(2026, 1, 17));
-
-            migrationBuilder.UpdateData(
-                table: "ExamSittings",
-                keyColumn: "Id",
-                keyValue: 2,
-                column: "Date",
-                value: new DateOnly(2026, 3, 15));
-
-            migrationBuilder.UpdateData(
-                table: "ExamSittings",
-                keyColumn: "Id",
-                keyValue: 3,
-                column: "Date",
-                value: new DateOnly(2026, 6, 27));
-
-            migrationBuilder.UpdateData(
-                table: "ExamSittings",
-                keyColumn: "Id",
-                keyValue: 4,
-                column: "Date",
-                value: new DateOnly(2026, 9, 19));
-
-            migrationBuilder.UpdateData(
-                table: "ExamSittings",
-                keyColumn: "Id",
-                keyValue: 5,
-                column: "Date",
-                value: new DateOnly(2026, 11, 21));
         }
     }
 }

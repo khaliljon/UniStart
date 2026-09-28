@@ -274,7 +274,6 @@ function TestPage() {
             alignItems: 'center', justifyContent: 'center',
             margin: '0 auto 1rem', fontSize: '2rem'
           }}>
-            📝
           </div>
           <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '1rem' }}>
             {t.practice.noQuestionsYet}

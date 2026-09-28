@@ -46,15 +46,6 @@ export interface CscaStrings {
   tracksTitle: string;
   tracksLead: string;
   tracksNote: string;
-  trackIt: string;
-  trackEngineering: string;
-  trackChemistry: string;
-  trackMedicine: string;
-  trackEconomics: string;
-  trackInternational: string;
-  trackHumanities: string;
-  trackArchitecture: string;
-  trackMechanical: string;
   trackIfChinese: string;
   fmtMinutes: string;
   fmtQuestions: string;
@@ -263,15 +254,6 @@ const ru: CscaStrings = {
   tracksTitle: 'Какие предметы сдавать',
   tracksLead: 'Ориентир по направлениям — подберите предметы под свою специальность.',
   tracksNote: 'Требования отличаются по университетам и программам. Перед регистрацией проверьте условия вашего вуза.',
-  trackIt: 'IT и Computer Science',
-  trackEngineering: 'Инженерия и робототехника',
-  trackChemistry: 'Химия и химтехнологии',
-  trackMedicine: 'Медицина и фармацевтика',
-  trackEconomics: 'Экономика и бизнес',
-  trackInternational: 'Международные отношения',
-  trackHumanities: 'Гуманитарные направления',
-  trackArchitecture: 'Архитектура и строительство',
-  trackMechanical: 'Машиностроение и электротехника',
   trackIfChinese: 'если программа на китайском',
   fmtMinutes: 'мин', fmtQuestions: 'вопросов',
   feeTitle: 'Стоимость экзамена',
@@ -372,7 +354,7 @@ const ru: CscaStrings = {
   downloadPdf: '⇓ Скачать PDF',
   materialsEmptyOwned: 'У вас пока нет материалов. Приобретите учебники на Главной.',
   minShort: 'мин',
-  firstMockFree: '🎁 Первый мок — бесплатно',
+  firstMockFree: 'Первый мок — бесплатно',
   firstMockFreeDesc: 'Начните любой пробник бесплатно во вкладке «Пробные экзамены». Дальше — покупка моков поштучно или пакетом.',
   mocksFullLead: 'Полноформатный пробник в реальных экзаменационных условиях с таймером по секциям',
   freeMockBannerDesc: 'Выберите любой пробник ниже и пройдите один мок бесплатно. Купить ещё моки можно на Главной.',
@@ -433,15 +415,6 @@ const en: CscaStrings = {
   tracksTitle: 'Which subjects to take',
   tracksLead: 'A guide by field of study — pick the subjects that match your programme.',
   tracksNote: 'Requirements vary by university and programme. Always check your target programme before registering.',
-  trackIt: 'IT & Computer Science',
-  trackEngineering: 'Engineering & robotics',
-  trackChemistry: 'Chemistry & chemical engineering',
-  trackMedicine: 'Medicine & pharmacy',
-  trackEconomics: 'Economics & business',
-  trackInternational: 'International relations',
-  trackHumanities: 'Humanities',
-  trackArchitecture: 'Architecture & construction',
-  trackMechanical: 'Mechanical & electrical engineering',
   trackIfChinese: 'if taught in Chinese',
   fmtMinutes: 'min', fmtQuestions: 'questions',
   feeTitle: 'Exam fee',
@@ -542,7 +515,7 @@ const en: CscaStrings = {
   downloadPdf: '⇓ Download PDF',
   materialsEmptyOwned: 'You have no materials yet. Buy textbooks on the Home page.',
   minShort: 'min',
-  firstMockFree: '🎁 First mock — free',
+  firstMockFree: 'First mock — free',
   firstMockFreeDesc: 'Start any mock for free in the “Mock exams” tab. After that — buy mocks individually or as a package.',
   mocksFullLead: 'A full-length mock under real exam conditions with a per-section timer',
   freeMockBannerDesc: 'Pick any mock below and take one for free. You can buy more mocks on the Home page.',
@@ -603,15 +576,6 @@ const kz: CscaStrings = {
   tracksTitle: 'Қандай пәндерді тапсыру керек',
   tracksLead: 'Бағыттар бойынша нұсқау — мамандығыңызға сәйкес пәндерді таңдаңыз.',
   tracksNote: 'Талаптар университет пен бағдарламаға байланысты әртүрлі. Тіркелу алдында талаптарды тексеріңіз.',
-  trackIt: 'IT және Computer Science',
-  trackEngineering: 'Инженерия және робототехника',
-  trackChemistry: 'Химия және химиялық технология',
-  trackMedicine: 'Медицина және фармацевтика',
-  trackEconomics: 'Экономика және бизнес',
-  trackInternational: 'Халықаралық қатынастар',
-  trackHumanities: 'Гуманитарлық бағыттар',
-  trackArchitecture: 'Сәулет және құрылыс',
-  trackMechanical: 'Машина жасау және электротехника',
   trackIfChinese: 'бағдарлама қытай тілінде болса',
   fmtMinutes: 'мин', fmtQuestions: 'сұрақ',
   feeTitle: 'Емтихан құны',
@@ -711,7 +675,7 @@ const kz: CscaStrings = {
   downloadPdf: '⇓ PDF жүктеу',
   materialsEmptyOwned: 'Сізде әзірше материалдар жоқ. Оқулықтарды Басты беттен сатып алыңыз.',
   minShort: 'мин',
-  firstMockFree: '🎁 Алғашқы мок — тегін',
+  firstMockFree: 'Алғашқы мок — тегін',
   firstMockFreeDesc: '«Сынақ емтихандар» бөлімінде кез келген пробникті тегін бастаңыз. Ары қарай — моктарды даналап немесе пакетпен сатып алу.',
   mocksFullLead: 'Нақты емтихан жағдайында бөлімдер бойынша таймермен толық сынақ',
   freeMockBannerDesc: 'Төмендегі кез келген пробникті таңдап, бір мокты тегін тапсырыңыз. Көбірек мок сатып алуды Басты беттен жасай аласыз.',
