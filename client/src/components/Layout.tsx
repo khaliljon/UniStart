@@ -36,6 +36,11 @@ function Layout() {
                 </NavLink>
               </li>
               <li>
+                <NavLink to="/news" onClick={() => setMenuOpen(false)}>
+                  {t.nav.news}
+                </NavLink>
+              </li>
+              <li>
                 <NavLink to="/learn?tab=mock" onClick={() => setMenuOpen(false)}>
                   {t.nav.exams}
                 </NavLink>

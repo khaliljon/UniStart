@@ -47,9 +47,43 @@ public class NewsController : ControllerBase
         if (string.IsNullOrEmpty(baseSlug)) baseSlug = "news";
         var slug = baseSlug;
         var i = 2;
-        while (await _db.NewsArticles.AnyAsync(x => x.Slug == slug && (excludeId == null || x.Id != excludeId)))
+        while (await IsSlugTakenAsync(slug, excludeId))
             slug = $"{baseSlug}-{i++}";
         return slug;
+    }
+
+    /// <summary>A slug is taken if another article uses it now or used it before.</summary>
+    private async Task<bool> IsSlugTakenAsync(string slug, int? excludeId)
+    {
+        var byCurrent = await _db.NewsArticles.AnyAsync(x => x.Slug == slug && (excludeId == null || x.Id != excludeId));
+        if (byCurrent) return true;
+        return await _db.NewsSlugHistories.AnyAsync(h => h.Slug == slug && (excludeId == null || h.NewsArticleId != excludeId));
+    }
+
+    private static readonly System.Text.RegularExpressions.Regex SlugFormat =
+        new("^[a-z0-9]+(?:-[a-z0-9]+)*$", System.Text.RegularExpressions.RegexOptions.Compiled);
+
+    /// <summary>Validates a manually entered slug. Returns an error message, or null when valid.</summary>
+    private async Task<string?> ValidateSlugAsync(string slug, int? excludeId)
+    {
+        if (slug.Length > 180)
+            return "Slug слишком длинный (максимум 180 символов).";
+        if (!SlugFormat.IsMatch(slug))
+            return "Slug может содержать только латинские буквы в нижнем регистре, цифры и дефисы. Например: csca-registration.";
+        if (await IsSlugTakenAsync(slug, excludeId))
+            return "Такой slug уже используется другой новостью.";
+        return null;
+    }
+
+    /// <summary>Resolves the requested slug: normalizes it or generates one from the title.</summary>
+    private async Task<(string? Slug, string? Error)> ResolveSlugAsync(string? requested, string title, int? excludeId)
+    {
+        var slug = requested?.Trim().ToLowerInvariant();
+        if (string.IsNullOrEmpty(slug))
+            return (await UniqueSlugAsync(title, excludeId), null);
+
+        var error = await ValidateSlugAsync(slug, excludeId);
+        return error != null ? (null, error) : (slug, null);
     }
 
     [HttpGet]
@@ -77,16 +111,37 @@ public class NewsController : ControllerBase
         return Ok(ToDto(n));
     }
 
-    /// <summary>Public article lookup by slug (falls back to numeric id).</summary>
+    /// <summary>
+    /// Public article lookup by slug. Retired slugs resolve to their article and answer 301
+    /// so old links keep working; unknown slugs return 404.
+    /// </summary>
     [HttpGet("by-slug/{slug}")]
     [AllowAnonymous]
     public async Task<IActionResult> GetBySlug(string slug)
     {
-        var n = await _db.NewsArticles.FirstOrDefaultAsync(x => x.Slug == slug && x.IsPublished);
-        if (n == null && int.TryParse(slug, out var id))
-            n = await _db.NewsArticles.FirstOrDefaultAsync(x => x.Id == id && x.IsPublished);
-        if (n == null) return NotFound();
-        return Ok(ToDto(n));
+        var key = slug.Trim().ToLowerInvariant();
+
+        var n = await _db.NewsArticles.FirstOrDefaultAsync(x => x.Slug == key && x.IsPublished);
+        if (n != null) return Ok(ToDto(n));
+
+        // Retired slug → permanent redirect to the current one (never chained: history always
+        // points at the article, so one hop always lands on the canonical slug).
+        var history = await _db.NewsSlugHistories
+            .Include(h => h.NewsArticle)
+            .FirstOrDefaultAsync(h => h.Slug == key);
+        if (history?.NewsArticle is { IsPublished: true } target)
+        {
+            Response.Headers.Location = $"/api/news/by-slug/{target.Slug}";
+            return StatusCode(StatusCodes.Status301MovedPermanently, ToDto(target));
+        }
+
+        if (int.TryParse(key, out var id))
+        {
+            var byId = await _db.NewsArticles.FirstOrDefaultAsync(x => x.Id == id && x.IsPublished);
+            if (byId != null) return Ok(ToDto(byId));
+        }
+
+        return NotFound();
     }
 
     [HttpGet("all")]
@@ -103,6 +158,9 @@ public class NewsController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Create([FromBody] NewsUpsertDto dto)
     {
+        var (slug, slugError) = await ResolveSlugAsync(dto.Slug, dto.Title, excludeId: null);
+        if (slugError != null) return BadRequest(new { field = "slug", error = slugError });
+
         var article = new NewsArticle
         {
             Title = dto.Title.Trim(),
@@ -119,7 +177,7 @@ public class NewsController : ControllerBase
             PublishedAt = dto.IsPublished ? DateTime.UtcNow : null,
             Category = NewsCategories.Normalize(dto.Category),
             IsFeatured = dto.IsFeatured,
-            Slug = await UniqueSlugAsync(dto.Title),
+            Slug = slug!,
         };
         _db.NewsArticles.Add(article);
         await _db.SaveChangesAsync();
@@ -132,6 +190,9 @@ public class NewsController : ControllerBase
     {
         var article = await _db.NewsArticles.FindAsync(id);
         if (article == null) return NotFound();
+
+        var (slug, slugError) = await ResolveSlugAsync(dto.Slug, dto.Title, excludeId: article.Id);
+        if (slugError != null) return BadRequest(new { field = "slug", error = slugError });
 
         var wasPublished = article.IsPublished;
         article.Title = dto.Title.Trim();
@@ -147,8 +208,21 @@ public class NewsController : ControllerBase
         article.IsPublished = dto.IsPublished;
         article.Category = NewsCategories.Normalize(dto.Category);
         article.IsFeatured = dto.IsFeatured;
-        if (string.IsNullOrWhiteSpace(article.Slug))
-            article.Slug = await UniqueSlugAsync(dto.Title, article.Id);
+
+        if (!string.Equals(article.Slug, slug, StringComparison.Ordinal))
+        {
+            var previous = article.Slug;
+            // The new slug may be one this article used before — drop it from history so the
+            // redirect chain can never point back at itself.
+            var reclaimed = await _db.NewsSlugHistories
+                .FirstOrDefaultAsync(h => h.Slug == slug && h.NewsArticleId == article.Id);
+            if (reclaimed != null) _db.NewsSlugHistories.Remove(reclaimed);
+
+            article.Slug = slug!;
+
+            if (!string.IsNullOrWhiteSpace(previous))
+                _db.NewsSlugHistories.Add(new NewsSlugHistory { Slug = previous, NewsArticleId = article.Id });
+        }
         if (dto.IsPublished && !wasPublished)
             article.PublishedAt = DateTime.UtcNow;
         else if (!dto.IsPublished)

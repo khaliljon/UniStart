@@ -23,8 +23,8 @@ public class NewsArticle : IAuditable
 
     public string Title { get; set; } = string.Empty;
 
-    /// <summary>URL-friendly identifier used by /csca/news/{slug}.</summary>
-    public string? Slug { get; set; }
+    /// <summary>URL-friendly identifier used by /csca/news/{slug}. Shared by all language versions.</summary>
+    public string Slug { get; set; } = string.Empty;
 
     /// <summary>See <see cref="NewsCategories"/>.</summary>
     public string Category { get; set; } = NewsCategories.Admission;

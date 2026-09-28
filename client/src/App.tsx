@@ -50,6 +50,7 @@ const CscaNewsArticlePage = lazy(() => import('./pages/CscaNewsArticlePage'))
 const PurchasesPage = lazy(() => import('./pages/PurchasesPage'))
 const CartPage = lazy(() => import('./pages/CartPage'))
 const MaterialsPage = lazy(() => import('./pages/MaterialsPage'))
+const AppNewsPage = lazy(() => import('./pages/AppNewsPage'))
 const AdminNewsPage = lazy(() => import('./pages/AdminNewsPage'))
 const AdminSupportPage = lazy(() => import('./pages/AdminSupportPage'))
 
@@ -68,6 +69,8 @@ function StudentRoutes() {
       <Route path="purchases" element={<PurchasesPage />} />
       <Route path="cart" element={<CartPage />} />
       <Route path="materials" element={<MaterialsPage />} />
+      <Route path="news" element={<AppNewsPage />} />
+      <Route path="news/:slug" element={<CscaNewsArticlePage appTheme />} />
       <Route path="exams/result/:attemptId" element={<MockExamPage />} />
       <Route path="diagnostic" element={<DiagnosticTestPage />} />
       <Route path="tutors" element={<Navigate to="/" replace />} />

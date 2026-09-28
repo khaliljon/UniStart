@@ -94,6 +94,20 @@ public class SeoController : ControllerBase
             urls.Add(($"{origin}/landing", "weekly", "0.9"));
             urls.Add(($"{origin}/privacy", "monthly", "0.3"));
             urls.Add(($"{origin}/terms", "monthly", "0.3"));
+            urls.Add(($"{origin}/csca/about", "monthly", "0.8"));
+            urls.Add(($"{origin}/csca/news", "daily", "0.8"));
+            urls.Add(($"{origin}/csca/mocks", "monthly", "0.7"));
+            urls.Add(($"{origin}/csca/materials", "monthly", "0.7"));
+
+            // Published articles are indexed by their canonical slug only.
+            var slugs = await _db.NewsArticles
+                .Where(n => n.IsPublished && n.Slug != "")
+                .OrderByDescending(n => n.PublishedAt ?? n.CreatedAt)
+                .Select(n => n.Slug)
+                .Take(500)
+                .ToListAsync();
+            foreach (var slug in slugs)
+                urls.Add(($"{origin}/csca/news/{Uri.EscapeDataString(slug)}", "monthly", "0.6"));
         }
 
         var urlEntries = string.Join("\n", urls.Select(u => $"""

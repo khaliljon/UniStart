@@ -29,6 +29,7 @@ export interface Translations {
 
   nav: {
     home: string;
+    news: string;
     learn: string;
     progress: string;
     plan: string;

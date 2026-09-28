@@ -59,6 +59,8 @@ public class UniStartDbContext : DbContext
 
     public DbSet<NewsArticle> NewsArticles => Set<NewsArticle>();
 
+    public DbSet<NewsSlugHistory> NewsSlugHistories => Set<NewsSlugHistory>();
+
     public DbSet<Purchase> Purchases => Set<Purchase>();
     public DbSet<ExamSitting> ExamSittings => Set<ExamSitting>();
 
@@ -792,12 +794,23 @@ public class UniStartDbContext : DbContext
             entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
             entity.Property(e => e.Summary).HasMaxLength(500);
             entity.Property(e => e.ImageUrl).HasMaxLength(500);
-            entity.Property(e => e.Slug).HasMaxLength(220);
+            entity.Property(e => e.Slug).IsRequired().HasMaxLength(220);
             entity.Property(e => e.Category).IsRequired().HasMaxLength(30).HasDefaultValue(NewsCategories.Admission);
-            entity.HasIndex(e => e.Slug).IsUnique().HasDatabaseName("IX_NewsArticles_Slug")
-                  .HasFilter("\"Slug\" IS NOT NULL");
+            entity.HasIndex(e => e.Slug).IsUnique().HasDatabaseName("IX_NewsArticles_Slug");
             entity.HasIndex(e => new { e.IsPublished, e.PublishedAt })
                   .HasDatabaseName("IX_NewsArticles_Published");
+        });
+
+        modelBuilder.Entity<NewsSlugHistory>(entity =>
+        {
+            entity.ToTable("NewsSlugHistories");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Slug).IsRequired().HasMaxLength(220);
+            entity.HasIndex(e => e.Slug).IsUnique().HasDatabaseName("IX_NewsSlugHistories_Slug");
+            entity.HasOne(e => e.NewsArticle)
+                  .WithMany()
+                  .HasForeignKey(e => e.NewsArticleId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<Purchase>(entity =>

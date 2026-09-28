@@ -28,6 +28,7 @@ export const ru: Translations = {
   },
   nav: {
     home: 'Главная',
+    news: 'Новости',
     learn: 'Обучение',
     progress: 'Прогресс',
     plan: 'План',

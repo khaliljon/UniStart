@@ -1216,9 +1216,9 @@ select option,
 .csca-tracks-grid {
   display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem;
 }
-.csca-track { display: flex; flex-direction: column; gap: 0.55rem; padding: 1.25rem; }
+.csca-track { display: flex; flex-direction: column; gap: 0.55rem; padding: 1.25rem; justify-content: center; text-align: center; align-items: center; }
 .csca-track-name { font-weight: 700; font-size: 1rem; color: var(--csca-ink); }
-.csca-track-subjects { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: auto; }
+.csca-track-subjects { display: flex; flex-wrap: wrap; gap: 0.35rem; justify-content: center; }
 .csca-track-chip {
   font-size: 0.78rem; font-weight: 600; padding: 0.22rem 0.6rem; border-radius: 999px;
   color: var(--c-red); background: rgba(200,16,46,0.08); border: 1px solid rgba(200,16,46,0.14);

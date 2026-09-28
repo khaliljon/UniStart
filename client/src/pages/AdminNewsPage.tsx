@@ -3,7 +3,7 @@ import { newsService, type NewsItem, type NewsUpsert } from '../services/newsSer
 import adminService from '../services/adminService';
 import { useToast } from '../components/Toast';
 
-const EMPTY: NewsUpsert = { title: '', summary: '', body: '', titleKz: '', titleEn: '', summaryKz: '', summaryEn: '', bodyKz: '', bodyEn: '', imageUrl: '', isPublished: false, category: 'admission', isFeatured: false };
+const EMPTY: NewsUpsert = { title: '', summary: '', body: '', titleKz: '', titleEn: '', summaryKz: '', summaryEn: '', bodyKz: '', bodyEn: '', imageUrl: '', isPublished: false, category: 'admission', isFeatured: false, slug: '' };
 
 const CATEGORY_LABELS: Record<string, string> = {
   dates: 'Даты экзамена',
@@ -18,6 +18,7 @@ function AdminNewsPage() {
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState<NewsUpsert>(EMPTY);
+  const [slugError, setSlugError] = useState('');
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -55,12 +56,14 @@ function AdminNewsPage() {
       bodyKz: n.bodyKz ?? '', bodyEn: n.bodyEn ?? '',
       imageUrl: n.imageUrl ?? '', isPublished: n.isPublished,
       category: n.category ?? 'admission', isFeatured: n.isFeatured ?? false,
+      slug: n.slug ?? '',
     });
   };
-  const cancel = () => { setEditingId(null); setForm(EMPTY); };
+  const cancel = () => { setEditingId(null); setForm(EMPTY); setSlugError(''); };
 
   const save = async () => {
     if (!form.title.trim()) { showToast('Заголовок обязателен', 'error'); return; }
+    setSlugError('');
     setSaving(true);
     try {
       if (editingId && editingId > 0) {
@@ -72,8 +75,14 @@ function AdminNewsPage() {
       }
       cancel();
       load();
-    } catch {
-      showToast('Ошибка сохранения', 'error');
+    } catch (e: unknown) {
+      const err = e as { response?: { data?: { field?: string; error?: string } } };
+      if (err.response?.data?.field === 'slug') {
+        setSlugError(err.response.data.error ?? 'Некорректный slug');
+        showToast(err.response.data.error ?? 'Некорректный slug', 'error');
+      } else {
+        showToast('Ошибка сохранения', 'error');
+      }
     } finally {
       setSaving(false);
     }
@@ -116,6 +125,17 @@ function AdminNewsPage() {
           </label>
           <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>Заголовок (EN)
             <input style={inputStyle} value={form.titleEn ?? ''} onChange={(e) => setForm({ ...form, titleEn: e.target.value })} placeholder="Leave empty to fall back to Russian" />
+          </label>
+          <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>Slug — адрес новости
+            <input
+              style={{ ...inputStyle, ...(slugError ? { borderColor: '#ef4444' } : {}) }}
+              value={form.slug ?? ''}
+              onChange={(e) => { setForm({ ...form, slug: e.target.value }); setSlugError(''); }}
+              placeholder="csca-registration"
+            />
+            <span style={{ display: 'block', marginTop: '0.25rem', fontSize: '0.78rem', fontWeight: 400, color: slugError ? '#ef4444' : 'var(--text-secondary)' }}>
+              {slugError || 'Латинские буквы, цифры и дефисы. Например: csca-registration. Общий для всех языков; пустое поле — сгенерируем из заголовка.'}
+            </span>
           </label>
           <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>Краткое описание (тизер)
             <textarea style={{ ...inputStyle, minHeight: 60 }} value={form.summary} onChange={(e) => setForm({ ...form, summary: e.target.value })} />

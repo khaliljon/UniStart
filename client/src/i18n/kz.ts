@@ -28,6 +28,7 @@ export const kz: Translations = {
   },
   nav: {
     home: 'Басты бет',
+    news: 'Жаңалықтар',
     learn: 'Оқу',
     progress: 'Прогресс',
     plan: 'Жоспар',

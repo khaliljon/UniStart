@@ -180,8 +180,53 @@ public class DatabaseSeeder
 
         await SeedLegalDocumentsAsync();
         await SeedSpecialtyTracksAsync();
+        await BackfillNewsSlugsAsync();
 
         await _context.SaveChangesAsync();
+    }
+
+    // Replaces the migration's "news-{id}" placeholders with readable slugs, once.
+    private async Task BackfillNewsSlugsAsync()
+    {
+        var placeholders = await _context.NewsArticles
+            .Where(n => n.Slug.StartsWith("news-"))
+            .ToListAsync();
+        if (placeholders.Count == 0) return;
+
+        var taken = (await _context.NewsArticles.Select(n => n.Slug).ToListAsync())
+            .Concat(await _context.NewsSlugHistories.Select(h => h.Slug).ToListAsync())
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var article in placeholders)
+        {
+            var baseSlug = SlugifyTitle(article.Title);
+            if (baseSlug.Length == 0) continue; // keep the placeholder rather than risk a clash
+
+            var candidate = baseSlug;
+            var i = 2;
+            while (taken.Contains(candidate) && candidate != article.Slug)
+                candidate = $"{baseSlug}-{i++}";
+
+            taken.Remove(article.Slug);
+            taken.Add(candidate);
+            article.Slug = candidate;
+        }
+    }
+
+    private static string SlugifyTitle(string title)
+    {
+        const string cyr = "абвгдеёжзийклмнопрстуфхцчшщъыьэюя";
+        string[] lat = { "a","b","v","g","d","e","e","zh","z","i","y","k","l","m","n","o","p","r","s","t","u","f","h","c","ch","sh","sch","","y","","e","yu","ya" };
+        var sb = new System.Text.StringBuilder();
+        foreach (var ch in title.ToLowerInvariant())
+        {
+            var idx = cyr.IndexOf(ch);
+            if (idx >= 0) sb.Append(lat[idx]);
+            else if (char.IsLetterOrDigit(ch) && ch < 128) sb.Append(ch);
+            else if (char.IsWhiteSpace(ch) || ch == '-' || ch == '_') sb.Append('-');
+        }
+        var slug = System.Text.RegularExpressions.Regex.Replace(sb.ToString(), "-{2,}", "-").Trim('-');
+        return slug.Length > 180 ? slug[..180].Trim('-') : slug;
     }
 
     /// <summary>Seeds the default field-of-study → subjects mapping once; admins edit it afterwards.</summary>

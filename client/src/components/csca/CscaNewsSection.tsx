@@ -18,6 +18,8 @@ interface Props {
   id?: string;
   /** Full portal chrome: lead story, category chips and search. */
   portal?: boolean;
+  /** Route prefix for article links ('/csca/news' on the landing, '/news' in the app). */
+  basePath?: string;
 }
 
 const CATEGORY_ORDER: NewsCategory[] = ['dates', 'admission', 'guide', 'platform'];
@@ -25,7 +27,7 @@ const CATEGORY_ORDER: NewsCategory[] = ['dates', 'admission', 'guide', 'platform
 /** Rough reading time from the body length. */
 const readMinutes = (text: string) => Math.max(1, Math.round(text.trim().split(/\s+/).length / 180));
 
-export default function CscaNewsSection({ title, lead, readMore, emptyText, limit = 6, section = false, appTheme = false, id, portal = false }: Props) {
+export default function CscaNewsSection({ title, lead, readMore, emptyText, limit = 6, section = false, appTheme = false, id, portal = false, basePath = '/csca/news' }: Props) {
   const { locale } = useTranslation();
   const s = cscaStrings[locale];
   const [items, setItems] = useState<NewsItem[] | null>(null);
@@ -70,7 +72,7 @@ export default function CscaNewsSection({ title, lead, readMore, emptyText, limi
 
   const cardClass = appTheme ? 'card' : 'csca-card';
   const subColor = appTheme ? 'var(--text-secondary)' : 'var(--csca-ink-soft, var(--text-secondary))';
-  const href = (n: NewsItem) => `/csca/news/${n.slug ?? n.id}`;
+  const href = (n: NewsItem) => `${basePath}/${n.slug ?? n.id}`;
 
   const card = (n: (typeof filtered)[number], big = false) => (
     <article className={`${cardClass} csca-news-card${big ? ' csca-news-card-lead' : ''}`} key={n.raw.id}>

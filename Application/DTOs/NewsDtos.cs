@@ -56,5 +56,9 @@ public class NewsUpsertDto
     [MaxLength(30)]
     public string? Category { get; set; }
 
+    /// <summary>Shared across all language versions; auto-generated from the title when blank.</summary>
+    [MaxLength(220)]
+    public string? Slug { get; set; }
+
     public bool IsFeatured { get; set; }
 }

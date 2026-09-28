@@ -28,6 +28,7 @@ export const en: Translations = {
   },
   nav: {
     home: 'Home',
+    news: 'News',
     learn: 'Learn',
     progress: 'Progress',
     plan: 'Plan',

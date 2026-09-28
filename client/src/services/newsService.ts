@@ -36,6 +36,7 @@ export interface NewsUpsert {
   imageUrl?: string | null;
   isPublished: boolean;
   category?: NewsCategory;
+  slug?: string | null;
   isFeatured?: boolean;
 }
 
