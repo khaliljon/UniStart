@@ -1,0 +1,1 @@
+import{g as a}from"./index-BHtc7iYm.js";const c={list:()=>a.get("/specialty-tracks").then(t=>t.data),adminList:()=>a.get("/specialty-tracks/admin/all").then(t=>t.data),create:t=>a.post("/specialty-tracks/admin",t).then(e=>e.data),update:(t,e)=>a.put(`/specialty-tracks/admin/${t}`,e).then(s=>s.data),remove:t=>a.delete(`/specialty-tracks/admin/${t}`).then(()=>{})};export{c as s};

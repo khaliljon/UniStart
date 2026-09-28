@@ -36,6 +36,12 @@
   --csca-gold: #C9A24B;
   --csca-gold-soft: #E4C878;
   --csca-cloud: #F2ECE0;
+  /* Short aliases used by csca-* components; defined globally so in-app pages get them too. */
+  --c-red: #C8102E;
+  --c-red-deep: #8A0B1F;
+  --c-ink: #1A1A1A;
+  --c-paper: #F7F3EA;
+  --c-gold: #C9A24B;
   --font-hanzi: 'Noto Serif SC', 'Noto Sans SC', serif;
   --font-display: 'Noto Serif SC', 'Inter', serif;
   --font-body: 'Inter', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -64,6 +70,8 @@
   --csca-ink: #f1f5f9;
   --csca-ink-soft: #94a3b8;
   --csca-cloud: #293548;
+  --c-red: #E85D6A;
+  --c-ink: #f1f5f9;
   --border-color: #334155;
   --border: #334155;
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
@@ -1266,6 +1274,25 @@ select option,
   background: rgba(255,255,255,0.85); border: 1px solid rgba(26,26,26,0.12);
 }
 .csca-news-search:focus { outline: none; border-color: var(--c-red); }
+
+/* Toolbar surfaces are hardcoded light for the landing; give them real dark-theme
+   contrast in the app (light pills + grey text were unreadable). */
+[data-theme="dark"] .csca-news-chip {
+  background: var(--card-background); border-color: rgba(255,255,255,0.14); color: #cbd5e1;
+}
+[data-theme="dark"] .csca-news-chip:hover { border-color: var(--c-red); color: #fff; }
+[data-theme="dark"] .csca-news-chip.is-active { background: var(--c-red); border-color: var(--c-red); color: #fff; }
+[data-theme="dark"] .csca-news-search {
+  background: var(--card-background); border-color: rgba(255,255,255,0.14); color: var(--text-primary);
+}
+[data-theme="dark"] .csca-news-search::placeholder { color: #94a3b8; }
+/* The landing keeps its light toolbar even when the app theme is dark. */
+[data-theme="dark"] .csca-landing .csca-news-chip {
+  background: rgba(255,255,255,0.75); border-color: rgba(26,26,26,0.1); color: var(--csca-ink-soft);
+}
+[data-theme="dark"] .csca-landing .csca-news-search {
+  background: rgba(255,255,255,0.85); border-color: rgba(26,26,26,0.12); color: var(--csca-ink);
+}
 
 .csca-news-grid {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.25rem;
