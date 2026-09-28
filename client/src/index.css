@@ -58,6 +58,12 @@
   --bg-secondary: #293548;
   --text-primary: #f1f5f9;
   --text-secondary: #94a3b8;
+
+  /* CSCA "ink" palette is reused by in-app pages (news portal/article), so it must
+     follow the dark theme. The landing re-forces the light values below. */
+  --csca-ink: #f1f5f9;
+  --csca-ink-soft: #94a3b8;
+  --csca-cloud: #293548;
   --border-color: #334155;
   --border: #334155;
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
@@ -1054,6 +1060,10 @@ select option,
 }
 
 .csca-landing {
+  /* The public landing stays light even when the app theme is dark. */
+  --csca-ink: #1A1A1A;
+  --csca-ink-soft: #3D3A36;
+  --csca-cloud: #F2ECE0;
   --c-red: var(--csca-red);
   --c-red-deep: var(--csca-red-deep);
   --c-ink: var(--csca-ink);
@@ -1276,6 +1286,18 @@ select option,
 .csca-news-cat-admission { background: rgba(31,92,156,0.12); color: #1f5c9c; }
 .csca-news-cat-platform { background: rgba(31,122,68,0.12); color: #1f7a44; }
 .csca-news-cat-guide { background: rgba(169,118,47,0.14); color: #8a5f1f; }
+
+/* Category chips outside the (always light) landing need lighter ink on dark cards. */
+[data-theme="dark"] .csca-news-cat { background: rgba(232,93,106,0.16); color: #f19aa3; }
+[data-theme="dark"] .csca-news-cat-dates { background: rgba(232,93,106,0.16); color: #f19aa3; }
+[data-theme="dark"] .csca-news-cat-admission { background: rgba(96,165,250,0.16); color: #93c5fd; }
+[data-theme="dark"] .csca-news-cat-platform { background: rgba(52,211,153,0.16); color: #6ee7b7; }
+[data-theme="dark"] .csca-news-cat-guide { background: rgba(251,191,36,0.16); color: #fcd34d; }
+[data-theme="dark"] .csca-landing .csca-news-cat { background: rgba(200,16,46,0.08); color: var(--c-red); }
+[data-theme="dark"] .csca-landing .csca-news-cat-dates { background: rgba(200,16,46,0.1); color: var(--c-red); }
+[data-theme="dark"] .csca-landing .csca-news-cat-admission { background: rgba(31,92,156,0.12); color: #1f5c9c; }
+[data-theme="dark"] .csca-landing .csca-news-cat-platform { background: rgba(31,122,68,0.12); color: #1f7a44; }
+[data-theme="dark"] .csca-landing .csca-news-cat-guide { background: rgba(169,118,47,0.14); color: #8a5f1f; }
 .csca-news-title {
   font-weight: 700; font-size: 1.1rem; line-height: 1.35; color: var(--csca-ink);
   text-decoration: none; transition: color 0.18s;
